@@ -1,0 +1,17 @@
+IDC business contribution scope
+
+- Business-owned code may be added or changed under apps/lina-vben, including
+  apps/lina-vben/apps/web-customer and its required workspace/build registration.
+- Business-owned website runtimes, contracts, SDKs, starter templates, default
+  websites, developer documentation, and package validation may be added or changed
+  under apps/lina-websites. Website packages must remain independent from lina-vben.
+- Ownership, rather than the parent directory alone, defines the edit boundary.
+- Existing Lina-owned host implementation, including lina-core, existing web-antd host
+  pages, and unrelated shared framework packages, remains out of scope unless a later
+  requirement explicitly demonstrates that a host change is necessary.
+- Project-owned business integrations must remain separable from Lina-owned host code so
+  upstream Lina fixes can still be synchronized without carrying business behavior into
+  the host implementation.
+- Host defects are recorded but are expected to be resolved by upstream Lina updates.
+- Customer-facing source must remain an independent application and must not be added
+  to the Lina administration application.

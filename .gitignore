@@ -9,7 +9,6 @@
 .hgignore.swp
 *.swp
 *.orig
-.contributing
 
 # =============================================================================
 # OS
@@ -29,6 +28,8 @@ temp/
 assets/
 !.github/assets/
 !.github/assets/linapro-logo.webp
+!apps/lina-websites/sites/default/app/assets/
+!apps/lina-websites/sites/default/app/assets/styles.css
 
 # =============================================================================
 # Agent / AI tooling local config
