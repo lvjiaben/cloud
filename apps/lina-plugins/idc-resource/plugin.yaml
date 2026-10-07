@@ -1,0 +1,258 @@
+id: idc-resource
+name: LinaPro IDC Resource
+version: v0.1.25
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Provider accounts, capacity observations, server instances, allocation, and asynchronous resource operations for the IDC platform.
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
+    - id: idc-core
+      version: ">=0.1.60 <1.0.0"
+business_extensions:
+  - point: resource-provider
+    version: v1
+    role: owner
+    owner: idc-resource
+    methods:
+      - connection.verify
+      - capabilities.discover
+      - configuration.candidates
+      - catalog.products.list
+      - catalog.products.detail
+      - provision.parameters.build
+      - provider-capacity.list
+      - operation.execute
+      - task.query
+      - resource.query
+public_assets:
+  - source: frontend/dist
+    mount: /
+menus:
+  - key: plugin:idc-resource:provider-configuration
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Provider Configuration
+    path: /idc/resource/provider-configuration
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:configuration:list
+    icon: lucide:cloud-cog
+    type: M
+    sort: 28
+    remark: Server provider connector, credentials, channel lifecycle, and resource pools
+  - key: plugin:idc-resource:provider-configuration:write
+    parent_key: plugin:idc-resource:provider-configuration
+    name: Manage Provider Configuration
+    perms: idc:admin:resource:configuration:write
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:overview
+    parent_key: plugin:idc-core:resource-operations
+    name: Resource Overview
+    path: /idc/resource/overview
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:overview:list
+    icon: lucide:layout-dashboard
+    type: M
+    sort: 29
+    remark: Local resource pools, Provider capacity observations, finance, expiry, and task overview
+  - key: plugin:idc-resource:provider-capacity
+    parent_key: plugin:idc-core:resource-operations
+    name: Provider Capacity Observations
+    path: /idc/resource/provider-capacity
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:provider-capacity:list
+    icon: lucide:database-zap
+    type: M
+    sort: 30
+    remark: Provider capacity collection status; never creates or synchronizes generic product inventory
+  - key: plugin:idc-resource:provider-capacity:refresh
+    parent_key: plugin:idc-resource:provider-capacity
+    name: Collect Provider Capacity
+    perms: idc:admin:resource:provider-capacity:refresh
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:health
+    parent_key: plugin:idc-core:resource-operations
+    name: Provider Health
+    path: /idc/resource/health
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:health:list
+    icon: lucide:activity
+    type: M
+    sort: 31
+    remark: Provider health signals, automatic write protection, and safe threshold policy
+  - key: plugin:idc-resource:health:policy
+    parent_key: plugin:idc-resource:health
+    name: Update Health Policy
+    perms: idc:admin:resource:health-policy:write
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:tasks
+    parent_key: plugin:idc-core:resource-operations
+    name: Provider Tasks
+    path: /idc/resource/tasks
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:task:list
+    icon: lucide:list-checks
+    type: M
+    sort: 32
+    remark: Bounded Provider task queue, redacted evidence, and safe manual takeover
+  - key: plugin:idc-resource:tasks:query
+    parent_key: plugin:idc-resource:tasks
+    name: View Provider Task Evidence
+    perms: idc:admin:resource:task:query
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:tasks:manual-takeover
+    parent_key: plugin:idc-resource:tasks
+    name: Take Over Provider Task
+    perms: idc:admin:resource:task:manual-takeover
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-resource:channel-secret-manage
+    parent_key: plugin:idc-core:resource-operations
+    name: Manage Provider Channel Secrets
+    perms: idc:admin:resource:channel-secret:manage
+    type: B
+    visible: 0
+    sort: 99
+
+  - key: plugin:idc-resource:server-accessories
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Management
+    path: /idc/resource/server-accessories
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:server-accessory:view
+    icon: lucide:server-cog
+    type: M
+    sort: 33
+    remark: Server list, safe batch operations, and capability-driven accessory management
+  - key: plugin:idc-resource:server-renewals
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Renewals
+    path: /idc/resource/server-renewals
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:server-batch:view
+    icon: lucide:calendar-sync
+    type: M
+    sort: 34
+    remark: Preview and confirm renewals selected from resource-owned server entitlements
+  - key: plugin:idc-resource:server-renewals:safe
+    parent_key: plugin:idc-resource:server-renewals
+    name: Confirm Server Renewals
+    perms: idc:admin:resource:server-batch:safe
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:server-accessories:snapshot-delete
+    parent_key: plugin:idc-resource:server-accessories
+    name: Delete Server Snapshots
+    perms: idc:admin:resource:server-accessory:snapshot:delete
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-resource:server-accessories:snapshot-create
+    parent_key: plugin:idc-resource:server-accessories
+    name: Create Server Snapshots
+    perms: idc:admin:resource:server-accessory:snapshot:create
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-resource:server-accessories:snapshot-restore
+    parent_key: plugin:idc-resource:server-accessories
+    name: Restore Server Snapshots
+    perms: idc:admin:resource:server-accessory:snapshot:restore
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-resource:server-accessories:backup-delete
+    parent_key: plugin:idc-resource:server-accessories
+    name: Delete Server Backups
+    perms: idc:admin:resource:server-accessory:backup:delete
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-resource:server-accessories:backup-create
+    parent_key: plugin:idc-resource:server-accessories
+    name: Create Server Backups
+    perms: idc:admin:resource:server-accessory:backup:create
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-resource:server-accessories:backup-restore
+    parent_key: plugin:idc-resource:server-accessories
+    name: Restore Server Backups
+    perms: idc:admin:resource:server-accessory:backup:restore
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-resource:server-accessories:security-group-attach
+    parent_key: plugin:idc-resource:server-accessories
+    name: Attach Server Security Groups
+    perms: idc:admin:resource:server-accessory:security-group:attach
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-resource:server-accessories:security-group-detach
+    parent_key: plugin:idc-resource:server-accessories
+    name: Detach Server Security Groups
+    perms: idc:admin:resource:server-accessory:security-group:detach
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-resource:server-accessories:nat-create
+    parent_key: plugin:idc-resource:server-accessories
+    name: Create Server NAT Rules
+    perms: idc:admin:resource:server-accessory:nat:create
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-resource:server-accessories:nat-delete
+    parent_key: plugin:idc-resource:server-accessories
+    name: Delete Server NAT Rules
+    perms: idc:admin:resource:server-accessory:nat:delete
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-resource:server-accessories:virtual-media-mount
+    parent_key: plugin:idc-resource:server-accessories
+    name: Mount Server Virtual Media
+    perms: idc:admin:resource:server-accessory:virtual-media:mount
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-resource:server-accessories:virtual-media-unmount
+    parent_key: plugin:idc-resource:server-accessories
+    name: Unmount Server Virtual Media
+    perms: idc:admin:resource:server-accessory:virtual-media:unmount
+    type: B
+    visible: 0
+    sort: 11
+  - key: plugin:idc-resource:server-accessories:traffic-add
+    parent_key: plugin:idc-resource:server-accessories
+    name: Add Server Traffic Package
+    perms: idc:admin:resource:server-accessory:traffic:add
+    type: B
+    visible: 0
+    sort: 12

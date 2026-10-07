@@ -1,0 +1,75 @@
+{
+  "menu": "Invoice profiles",
+  "title": "Invoice profiles",
+  "eyebrow": "Invoice details",
+  "heading": "Manage reusable invoice profiles",
+  "subtitle": "Save personal or business invoice details for future requests. Submitted requests keep their original snapshot and are never rewritten by later edits.",
+  "refresh": "Refresh",
+  "add": "Add profile",
+  "securityTitle": "Full bank account numbers are never shown again",
+  "securityDescription": "Bank accounts are encrypted by the server. Editing keeps the saved value unless you explicitly choose Replace or Clear.",
+  "loadFailed": "Invoice profiles are temporarily unavailable. Try again later.",
+  "retry": "Try again",
+  "empty": "No invoice profiles have been saved",
+  "loadMore": "Load more",
+  "default": "Default",
+  "notConfigured": "Not provided",
+  "status": {
+    "active": "Active",
+    "archived": "Deactivated"
+  },
+  "type": {
+    "individual": "Personal",
+    "enterprise": "Business"
+  },
+  "fields": {
+    "type": "Profile type",
+    "taxNo": "Tax number",
+    "bank": "Bank",
+    "bankAccount": "Bank account",
+    "updated": "Last updated"
+  },
+  "actions": {
+    "edit": "Edit",
+    "setDefault": "Set as default",
+    "deactivate": "Deactivate"
+  },
+  "form": {
+    "createTitle": "Add invoice profile",
+    "editTitle": "Edit invoice profile",
+    "type": "Profile type",
+    "title": "Name",
+    "taxNo": "Business tax number",
+    "address": "Registered address (optional)",
+    "phone": "Registered phone (optional)",
+    "bankName": "Bank (optional)",
+    "bankAction": "Bank account action",
+    "bankAccount": "Bank account (optional)",
+    "bankAccountHelp": "Only the last few characters are shown after saving. The full value is never displayed again.",
+    "savedBank": "The saved account is {masked}. This page cannot read the full value.",
+    "noSavedBank": "No bank account is saved. Choose Replace to add one.",
+    "individualClearsBankTitle": "Changing to a personal profile clears this profile's bank account",
+    "individualClearsBankDescription": "After saving, this profile will no longer retain business tax or bank details. Previously submitted invoice requests keep their original snapshots.",
+    "makeDefault": "Also make this the default profile",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "bankAction": {
+    "keep": "Keep saved account",
+    "replace": "Replace account",
+    "clear": "Clear account"
+  },
+  "deactivate": {
+    "title": "Deactivate this invoice profile?",
+    "description": "It cannot be selected for new invoice requests, but existing requests and history remain available.",
+    "defaultDescription": "This is the current default. Deactivating it will not silently choose another profile. You can set a new default later, and all existing requests and history remain available.",
+    "cancel": "Keep active",
+    "confirm": "Deactivate"
+  },
+  "messages": {
+    "created": "The invoice profile was added.",
+    "updated": "The invoice profile was updated.",
+    "defaultSet": "The default invoice profile was updated.",
+    "deactivated": "The invoice profile was deactivated and its history was retained."
+  }
+}

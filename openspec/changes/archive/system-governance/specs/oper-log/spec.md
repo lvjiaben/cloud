@@ -100,7 +100,7 @@
 - **THEN** 返回包含所有操作日志的 xlsx 文件
 
 ### Requirement: 操作日志前端页面
-系统 SHALL 通过 `linapro-monitor-operlog` 源码插件在前端系统监控菜单下提供操作日志管理页面。
+系统 SHALL 通过 `monitor-operlog` 源码插件在前端系统监控菜单下提供操作日志管理页面。
 
 #### Scenario: 操作日志列表页
 - **WHEN** 管理员访问操作日志页面

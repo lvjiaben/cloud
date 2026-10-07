@@ -156,7 +156,9 @@ export async function createAdminApiContext(): Promise<APIRequestContext> {
   return createApiContext(config.adminUser, config.adminPass);
 }
 
-export async function expectSuccess<T>(response: APIResponse): Promise<T> {
+export async function expectSuccess<T>(
+  response: Pick<APIResponse, "json" | "ok" | "url">,
+): Promise<T> {
   expect(response.ok()).toBeTruthy();
   const payload = (await response.json()) as ApiEnvelope<T> & {
     errorCode?: string;
@@ -314,10 +316,9 @@ export async function listPlugins(
 }
 
 export async function getPlugin(api: APIRequestContext, id: string) {
-  const result = await listPlugins(api, id);
-  const item = result.list.find((plugin) => plugin.id === id);
-  expect(item, `missing plugin: ${id}`).toBeTruthy();
-  return item!;
+  return expectSuccess<PluginItem>(
+    await api.get(`plugins/${encodeURIComponent(id)}`),
+  );
 }
 
 export async function installPlugin(

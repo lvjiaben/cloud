@@ -11,6 +11,7 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/os/gtime"
 
 	"lina-core/internal/service/plugin/internal/catalog"
 	"lina-core/internal/service/plugin/internal/plugintypes"
@@ -902,6 +903,11 @@ func encodeJSONValue(value interface{}) ([]byte, error) {
 // normalizeResourceValue converts time values into JSON-safe strings.
 func normalizeResourceValue(value interface{}) interface{} {
 	switch typedValue := value.(type) {
+	case *gtime.Time:
+		if typedValue == nil {
+			return ""
+		}
+		return typedValue.Layout(time.RFC3339Nano)
 	case *time.Time:
 		if typedValue == nil {
 			return ""

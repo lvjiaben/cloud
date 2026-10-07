@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Dynamic plugin code uses stable host capabilities; constructor exceptions are restricted to the WASM guest composition boundary.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/content-notice/backend/guest.go",
+      "maxCalls": 1,
+      "reason": "Dynamic WASM guest composition boundary; constructs the single controller route dispatcher for the module."
+    },
+    {
+      "path": "apps/lina-plugins/content-notice/backend/internal/controller/notice/notice_new.go",
+      "maxCalls": 1,
+      "reason": "Dynamic controller composition boundary; constructs one notice service from the guest's host-governed bridge services."
+    }
+  ]
+}

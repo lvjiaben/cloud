@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "paths": {
+      "@vben/request": ["../../../lina-vben/packages/effects/request/src/index.ts"],
+      "vue-router": ["../../../lina-vben/apps/web-antd/node_modules/vue-router"],
+      "#/api/request": ["./test-support/request.d.ts"],
+      "#/*": ["../../../lina-vben/apps/web-antd/src/*"]
+    },
+    "types": ["vite/client", "vitest/globals", "../../../lina-vben/packages/types/global"]
+  },
+  "include": ["pages/**/*.test.ts", "test-support/**/*.d.ts"]
+}

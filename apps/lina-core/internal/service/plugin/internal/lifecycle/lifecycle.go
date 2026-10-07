@@ -41,6 +41,14 @@ type Service interface {
 	// UpdateStatus executes enable or disable lifecycle orchestration for source
 	// and dynamic plugins after the root facade has applied governance guards.
 	UpdateStatus(ctx context.Context, pluginID string, status int, options UpdateStatusOptions) error
+	// StopNewBusiness closes only new-business admission for an installed plugin.
+	StopNewBusiness(ctx context.Context, pluginID string) error
+	// ResumeNewBusiness reopens admission after runtime and dependency readiness checks.
+	ResumeNewBusiness(ctx context.Context, pluginID string, frameworkVersion string) error
+	// CanAcceptNewBusiness reports the authoritative current admission decision.
+	CanAcceptNewBusiness(ctx context.Context, pluginID string) (bool, error)
+	// CheckBusinessImpact returns bounded aggregates from every required business owner.
+	CheckBusinessImpact(ctx context.Context, pluginID string) (*BusinessImpactReport, error)
 	// RegisterLifecycleObserver subscribes one synchronous lifecycle observer
 	// and returns its unsubscribe function.
 	RegisterLifecycleObserver(observer LifecycleObserver) func()

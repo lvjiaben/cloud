@@ -1,0 +1,54 @@
+id: idc-channel
+name: IDC Downstream Channel
+version: v0.1.2
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Downstream access tokens, product publication, channel requests, compatibility adapters, and webhook delivery.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.0 <1.0.0"
+    - id: vben-adapter
+      version: "=0.1.0"
+
+public_assets:
+  - source: frontend/pages
+    mount: /
+    index: index.html
+
+customer_surfaces:
+  - key: channel-tokens
+    version: v1
+    title: 渠道访问令牌
+    icon: lucide:key-round
+    slot: customer.products
+    route: channel-tokens
+    entry: customer/channel-tokens/index.html
+    bridge_capabilities:
+      - channel.account.v1
+    status: active
+
+menus:
+  - key: plugin:idc-channel:tokens
+    parent_key: plugin:idc-core:customer-sales
+    name: Downstream channel tokens
+    path: /idc/channel
+    component: system/plugin/dynamic-page
+    perms: idc:admin:channel:token
+    type: M
+    sort: 90
+    icon: lucide:network
+    remark: Manage downstream channel tokens and verified capabilities

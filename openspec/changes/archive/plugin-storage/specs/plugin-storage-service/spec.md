@@ -97,7 +97,7 @@
 
 #### Scenario: 安装云插件后出现配置入口
 
-- **WHEN** 管理员安装并同步 `linapro-storage-oss`（或 cos / obs / qiniu / aws / azure / s3）
+- **WHEN** 管理员安装并同步 `storage-oss`（或 cos / obs / qiniu / aws / azure / s3）
 - **THEN** 「系统设置」目录下 MUST 出现对应配置菜单
 - **AND** 业务插件调用 `Storage()` 的代码路径 MUST 无需修改
 

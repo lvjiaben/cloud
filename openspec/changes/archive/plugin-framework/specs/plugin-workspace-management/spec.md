@@ -172,7 +172,7 @@
 
 ### Requirement: 插件锁定状态必须由工具维护
 
-系统 SHALL 在 `apps/lina-plugins/.linapro-plugins.lock.yaml` 记录插件安装和更新状态。锁定状态文件由工具生成和更新，用于诊断和更新判断；用户维护的插件来源配置仍以 `hack/config.yaml` 为准。Git 来源锁定记录仓级 `ref`/resolved commit；市场来源记录版本与 distribution 坐标，不得用 `version` 伪装 Git ref。
+系统 SHALL 在 `apps/lina-plugins/.plugins.lock.yaml` 记录插件安装和更新状态。锁定状态文件由工具生成和更新，用于诊断和更新判断；用户维护的插件来源配置仍以 `hack/config.yaml` 为准。Git 来源锁定记录仓级 `ref`/resolved commit；市场来源记录版本与 distribution 坐标，不得用 `version` 伪装 Git ref。
 
 #### Scenario: 安装后写入锁定状态
 - **WHEN** `plugins.install` 成功安装插件

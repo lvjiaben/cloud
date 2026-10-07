@@ -136,6 +136,59 @@ func TestBootstrapAutoEnableSourcePluginUpdatesStartupSnapshot(t *testing.T) {
 	}
 }
 
+// TestBootstrapAutoEnableDynamicPluginUpdatesStartupSnapshot verifies the
+// dynamic reconciler observes lifecycle writes made during startup instead of
+// reading the stale pre-bootstrap registry snapshot.
+func TestBootstrapAutoEnableDynamicPluginUpdatesStartupSnapshot(t *testing.T) {
+	var (
+		ctx      = context.Background()
+		service  = newTestService()
+		pluginID = "plugin-dev-dynamic-auto-enable-snapshot"
+	)
+
+	artifactPath := testutil.CreateTestRuntimeStorageArtifactWithFrontendAssets(
+		t,
+		pluginID,
+		"Dynamic Auto Enable Snapshot Plugin",
+		"v0.1.0",
+		testutil.DefaultTestRuntimeFrontendAssets(),
+		nil,
+		nil,
+	)
+
+	setTestPluginAutoEnableOverride([]string{pluginID})
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	t.Cleanup(func() {
+		setTestPluginAutoEnableOverride(nil)
+		testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+		if cleanupErr := os.Remove(artifactPath); cleanupErr != nil && !os.IsNotExist(cleanupErr) {
+			t.Fatalf("failed to remove artifact %s: %v", artifactPath, cleanupErr)
+		}
+	})
+
+	startupCtx, err := service.WithStartupDataSnapshot(ctx)
+	if err != nil {
+		t.Fatalf("expected startup snapshot context build to succeed, got error: %v", err)
+	}
+	if err = service.BootstrapAutoEnable(startupCtx); err != nil {
+		t.Fatalf("expected dynamic plugin startup bootstrap with snapshot to succeed, got error: %v", err)
+	}
+
+	registry, err := service.getPluginRegistry(ctx, pluginID)
+	if err != nil {
+		t.Fatalf("expected dynamic plugin registry lookup to succeed, got error: %v", err)
+	}
+	if registry == nil {
+		t.Fatal("expected dynamic plugin registry row after startup bootstrap")
+	}
+	if registry.Installed != statusflag.Installed.Int() || registry.Status != statusflag.EnabledValue.Int() {
+		t.Fatalf("expected dynamic plugin to be installed and enabled, got %#v", registry)
+	}
+	if registry.CurrentState != plugintypes.HostStateEnabled.String() {
+		t.Fatalf("expected dynamic plugin current state enabled, got %s", registry.CurrentState)
+	}
+}
+
 // TestBootstrapAutoEnableReusesDynamicAuthorizationSnapshot verifies startup
 // bootstrap can reinstall and enable a dynamic plugin after one confirmed host
 // service authorization snapshot already exists for the target release.
@@ -203,6 +256,9 @@ func TestBootstrapAutoEnableReusesDynamicAuthorizationSnapshot(t *testing.T) {
 	}
 	if err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.EnabledValue.Int(), Authorization: authorization}); err != nil {
 		t.Fatalf("expected initial dynamic plugin enable to succeed, got error: %v", err)
+	}
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
 	}
 	if err := service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true}); err != nil {
 		t.Fatalf("expected dynamic plugin uninstall to succeed, got error: %v", err)
@@ -498,7 +554,7 @@ func TestBootstrapAutoEnableHonorsPerEntryMockDataOptIn(t *testing.T) {
 
 // TestReconcileAutoEnabledTenantPluginsProvisionsTenantScopedEntries verifies
 // startup auto-enable bridges host-level plugin enablement into tenant-scoped
-// provisioning after the linapro-tenant-core provider has registered.
+// provisioning after the tenant-core provider has registered.
 func TestReconcileAutoEnabledTenantPluginsProvisionsTenantScopedEntries(t *testing.T) {
 	var (
 		ctx      = context.Background()
@@ -627,6 +683,19 @@ func TestBootstrapBuiltinPluginsInstallsAndEnablesSourcePlugin(t *testing.T) {
 	if registry.CurrentState != plugintypes.HostStateEnabled.String() {
 		t.Fatalf("expected builtin current state enabled, got %s", registry.CurrentState)
 	}
+	if err = service.storeSvc.SetPluginNewBusinessState(ctx, pluginID, plugintypes.NewBusinessStateStopped); err != nil {
+		t.Fatalf("expected persisted stopped state setup to succeed, got error: %v", err)
+	}
+	if err = service.BootstrapBuiltinPlugins(ctx); err != nil {
+		t.Fatalf("expected builtin bootstrap to restore admission, got error: %v", err)
+	}
+	registry, err = service.getPluginRegistry(ctx, pluginID)
+	if err != nil {
+		t.Fatalf("expected registry lookup after admission repair to succeed, got error: %v", err)
+	}
+	if plugintypes.NormalizeNewBusinessState(registry.NewBusinessState) != plugintypes.NewBusinessStateAccepting {
+		t.Fatalf("expected builtin new-business state accepting, got %s", registry.NewBusinessState)
+	}
 }
 
 // TestBootstrapBuiltinPluginsDoesNotLoadMockData verifies builtin startup
@@ -689,9 +758,30 @@ func TestBootstrapBuiltinPluginsUpgradesPendingSourcePlugin(t *testing.T) {
 		pluginID    = "plugin-dev-builtin-bootstrap-upgrade"
 		oldVersion  = "v0.1.0"
 		newVersion  = "v0.2.0"
+		oldMenuKey  = "plugin:" + pluginID + ":old"
+		newMenuKey  = "plugin:" + pluginID + ":new"
+		guardTable  = "plugin_dev_builtin_bootstrap_upgrade_guard"
+		guardFunc   = "plugin_dev_builtin_bootstrap_upgrade_guard_fn"
 		manifestDir = testutil.CreateTestPluginDir(t, pluginID)
 		manifest    = filepath.Join(manifestDir, "plugin.yaml")
 	)
+	testutil.WriteTestFile(
+		t,
+		filepath.Join(manifestDir, "manifest", "sql", "001-builtin-upgrade-constraint-trigger.sql"),
+		"CREATE TABLE IF NOT EXISTS "+guardTable+" (id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY);\n"+
+			"CREATE OR REPLACE FUNCTION "+guardFunc+"() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END; $$;\n"+
+			"DO $constraint_trigger$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgrelid = '"+guardTable+"'::regclass AND tgname = 'trg_plugin_dev_builtin_bootstrap_upgrade_guard') THEN CREATE CONSTRAINT TRIGGER trg_plugin_dev_builtin_bootstrap_upgrade_guard AFTER INSERT ON "+guardTable+" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "+guardFunc+"(); END IF; END; $constraint_trigger$;\n",
+	)
+	dropMockTableIfExists(t, ctx, guardTable)
+	if _, err := g.DB().Exec(ctx, "DROP FUNCTION IF EXISTS "+guardFunc+"();"); err != nil {
+		t.Fatalf("expected builtin upgrade guard function cleanup to succeed, got error: %v", err)
+	}
+	t.Cleanup(func() {
+		dropMockTableIfExists(t, ctx, guardTable)
+		if _, err := g.DB().Exec(ctx, "DROP FUNCTION IF EXISTS "+guardFunc+"();"); err != nil {
+			t.Errorf("cleanup builtin upgrade guard function: %v", err)
+		}
+	})
 
 	writeTestSourcePluginManifestWithExtra(
 		t,
@@ -699,7 +789,7 @@ func TestBootstrapBuiltinPluginsUpgradesPendingSourcePlugin(t *testing.T) {
 		pluginID,
 		"Builtin Bootstrap Upgrade",
 		oldVersion,
-		"plugin:"+pluginID+":old",
+		oldMenuKey,
 		"distribution: builtin\n",
 	)
 	cleanupTestPluginIDs(t, ctx, pluginID)
@@ -713,7 +803,7 @@ func TestBootstrapBuiltinPluginsUpgradesPendingSourcePlugin(t *testing.T) {
 		pluginID,
 		"Builtin Bootstrap Upgrade",
 		newVersion,
-		"plugin:"+pluginID+":new",
+		newMenuKey,
 		"distribution: builtin\n",
 	)
 
@@ -727,6 +817,20 @@ func TestBootstrapBuiltinPluginsUpgradesPendingSourcePlugin(t *testing.T) {
 	}
 	if registry.Version != newVersion {
 		t.Fatalf("expected builtin effective version %s after startup upgrade, got %s", newVersion, registry.Version)
+	}
+	oldMenu, err := testutil.QueryMenuByKey(ctx, oldMenuKey)
+	if err != nil {
+		t.Fatalf("expected old builtin menu query after startup upgrade to succeed, got error: %v", err)
+	}
+	if oldMenu != nil {
+		t.Fatal("expected startup upgrade to remove the old builtin manifest menu")
+	}
+	newMenu, err := testutil.QueryMenuByKey(ctx, newMenuKey)
+	if err != nil {
+		t.Fatalf("expected new builtin menu query after startup upgrade to succeed, got error: %v", err)
+	}
+	if newMenu == nil {
+		t.Fatal("expected startup upgrade to synchronize the new builtin manifest menu")
 	}
 	assertPluginInstalledState(t, ctx, service, pluginID, statusflag.Installed.Int(), statusflag.EnabledValue.Int())
 }

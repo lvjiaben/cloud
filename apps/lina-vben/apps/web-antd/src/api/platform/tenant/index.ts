@@ -6,7 +6,7 @@ import type {
 
 import { pluginApiPath, requestClient } from '#/api/request';
 
-const pluginID = 'linapro-tenant-core';
+const pluginID = 'tenant-core';
 
 export async function platformTenantList(params?: PlatformTenantListParams) {
   const res = await requestClient.get<{

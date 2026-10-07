@@ -22,6 +22,41 @@ var (
 		"Plugin is not installed",
 		gcode.CodeInvalidParameter,
 	)
+	// CodePluginNewBusinessResumeNotReady reports that a stopped plugin is not
+	// ready to accept new bindings, purchases, or fulfillment tasks again.
+	CodePluginNewBusinessResumeNotReady = bizerr.MustDefine(
+		"PLUGIN_NEW_BUSINESS_RESUME_NOT_READY",
+		"Plugin {pluginId} is not ready to accept new business",
+		gcode.CodeInvalidOperation,
+	)
+	// CodePluginNewBusinessMustStopFirst enforces the explicit first lifecycle
+	// phase before disable or uninstall can be considered.
+	CodePluginNewBusinessMustStopFirst = bizerr.MustDefine(
+		"PLUGIN_NEW_BUSINESS_MUST_STOP_FIRST",
+		"Stop new business for plugin {pluginId} before disabling or uninstalling it",
+		gcode.CodeInvalidOperation,
+	)
+	// CodePluginBusinessImpactCheckFailed reports that a trusted business owner
+	// could not produce a valid bounded impact projection.
+	CodePluginBusinessImpactCheckFailed = bizerr.MustDefine(
+		"PLUGIN_BUSINESS_IMPACT_CHECK_FAILED",
+		"Plugin {pluginId} impact could not be checked safely",
+		gcode.CodeInternalError,
+	)
+	// CodePluginBusinessReferencesBlocked reports non-drained objects that still
+	// need the plugin for current or historical service actions.
+	CodePluginBusinessReferencesBlocked = bizerr.MustDefine(
+		"PLUGIN_BUSINESS_REFERENCES_BLOCKED",
+		"Plugin {pluginId} still has {blockingCount} business objects that require migration or manual takeover",
+		gcode.CodeInvalidOperation,
+	)
+	// CodePluginBusinessDataPurgeDenied prevents lifecycle cleanup from deleting
+	// historical evidence owned by business-extension plugins.
+	CodePluginBusinessDataPurgeDenied = bizerr.MustDefine(
+		"PLUGIN_BUSINESS_DATA_PURGE_DENIED",
+		"Plugin {pluginId} business history cannot be deleted during uninstall",
+		gcode.CodeInvalidOperation,
+	)
 	// CodePluginInstallModeInvalid reports that an install request used an unsupported install mode.
 	// messageKey is derived as error.plugin.install.mode.invalid.
 	CodePluginInstallModeInvalid = bizerr.MustDefine(

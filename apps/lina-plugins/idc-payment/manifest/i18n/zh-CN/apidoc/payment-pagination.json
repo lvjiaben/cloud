@@ -1,0 +1,21 @@
+{
+  "plugins.idc_payment.api.admin.v1.PaymentChannelListReq.fields.page.dc": "从 1 开始的页码",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelListReq.fields.pageSize.dc": "每页记录数量，范围为 1 至 100",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelListRes.fields.total.dc": "当前可见筛选范围的准确总条数",
+  "plugins.idc_payment.api.admin.v1.ReconciliationHealthReq.fields.page.dc": "从 1 开始的页码",
+  "plugins.idc_payment.api.admin.v1.ReconciliationHealthReq.fields.pageSize.dc": "每页记录数量，范围为 1 至 100",
+  "plugins.idc_payment.api.admin.v1.ReconciliationHealthRes.fields.total.dc": "当前可见筛选范围的准确总条数",
+  "plugins.idc_payment.api.admin.v1.ReconciliationBatchListReq.fields.page.dc": "从 1 开始的页码",
+  "plugins.idc_payment.api.admin.v1.ReconciliationBatchListReq.fields.pageSize.dc": "每页记录数量，范围为 1 至 100",
+  "plugins.idc_payment.api.admin.v1.ReconciliationBatchListRes.fields.total.dc": "当前可见筛选范围的准确总条数",
+  "plugins.idc_payment.api.admin.v1.ReconciliationDifferenceListReq.fields.page.dc": "从 1 开始的页码",
+  "plugins.idc_payment.api.admin.v1.ReconciliationDifferenceListReq.fields.pageSize.dc": "每页记录数量，范围为 1 至 100",
+  "plugins.idc_payment.api.admin.v1.ReconciliationDifferenceListRes.fields.total.dc": "当前可见筛选范围的准确总条数",
+  "plugins.idc_payment.api.admin.v1.ExceptionFundListReq.fields.page.dc": "从 1 开始的页码",
+  "plugins.idc_payment.api.admin.v1.ExceptionFundListReq.fields.pageSize.dc": "每页记录数量，范围为 1 至 100",
+  "plugins.idc_payment.api.admin.v1.ExceptionFundListRes.fields.total.dc": "当前可见筛选范围的准确总条数",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelListReq.meta.dc": "按页返回已配置支付渠道及准确可见总数，不包含凭据。",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelListReq.schema.dc": "按页返回已配置支付渠道及准确可见总数，不包含凭据。",
+  "plugins.idc_payment.api.admin.v1.ExceptionFundListReq.meta.dc": "按页返回待处理或争议资金及相同范围的准确总条数。",
+  "plugins.idc_payment.api.admin.v1.ExceptionFundListReq.schema.dc": "按页返回待处理或争议资金及相同范围的准确总条数。"
+}

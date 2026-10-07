@@ -10,7 +10,12 @@ import (
 	"github.com/gogf/gf/v2/net/goai"
 
 	"lina-core/internal/service/plugin/internal/openapi"
+	pluginruntime "lina-core/internal/service/plugin/internal/runtime"
+	"lina-core/pkg/bizerr"
 )
+
+type PageBridgeGrantInput = pluginruntime.PageBridgeGrantInput
+type PageBridgeGrantOutput = pluginruntime.PageBridgeGrantOutput
 
 // StartRuntimeReconciler starts the background reconciler loop for dynamic plugins.
 func (s *serviceImpl) StartRuntimeReconciler(ctx context.Context) {
@@ -28,6 +33,18 @@ func (s *serviceImpl) ListRuntimeStates(ctx context.Context) (*RuntimeStateListO
 		return nil, err
 	}
 	return s.runtimeSvc.ListRuntimeStates(ctx)
+}
+
+// IssuePageBridgeGrant signs one exact isolated-page API route authorization.
+func (s *serviceImpl) IssuePageBridgeGrant(ctx context.Context, input PageBridgeGrantInput) (*PageBridgeGrantOutput, error) {
+	if err := s.ensureRuntimeCacheFresh(ctx); err != nil {
+		return nil, bizerr.WrapCode(err, CodePluginPageBridgeGrantDenied)
+	}
+	out, err := s.runtimeSvc.IssuePageBridgeGrant(ctx, input)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, CodePluginPageBridgeGrantDenied)
+	}
+	return out, nil
 }
 
 // PrewarmRuntimeFrontendBundles preloads frontend bundles for enabled dynamic plugins.

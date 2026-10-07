@@ -1,0 +1,41 @@
+{
+  "actions": {
+    "add": "添加公钥",
+    "cancel": "取消",
+    "revoke": "撤销",
+    "save": "保存"
+  },
+  "confirm": {
+    "revoke": "确定撤销这把公钥吗？撤销后，新的开通或重装操作不能再选择它。"
+  },
+  "create": {
+    "placeholder": "请粘贴一整行以 ssh-ed25519、ssh-rsa 或 ecdsa-sha2-... 开头的内容",
+    "title": "添加 SSH 公钥",
+    "warning": "这里只能粘贴 .pub 公钥文件的内容。请勿粘贴私钥。"
+  },
+  "empty": "还没有保存 SSH 公钥",
+  "fields": {
+    "actions": "操作",
+    "algorithm": "算法",
+    "fingerprint": "SHA256 指纹",
+    "name": "名称",
+    "publicKey": "公钥内容",
+    "status": "状态"
+  },
+  "menu": "SSH 公钥",
+  "messages": {
+    "created": "公钥已保存",
+    "privateRejected": "这段内容像是私钥。为了安全，系统没有上传它。",
+    "required": "请填写名称并粘贴一把公钥",
+    "revoked": "公钥已撤销"
+  },
+  "notice": {
+    "description": "系统只保存公钥，页面只显示 SHA256 指纹。只有商品和服务器供应商都明确支持时，才会把你选择的公钥用于开通或重装。",
+    "title": "私钥必须始终留在你自己的设备上"
+  },
+  "status": {
+    "active": "可用",
+    "revoked": "已撤销"
+  },
+  "title": "SSH 公钥"
+}

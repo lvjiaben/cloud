@@ -207,7 +207,7 @@ func TestParseRuntimeArtifactLoadsRoutesAndBridgeSpec(t *testing.T) {
 			Type:    pluginv1.PluginTypeDynamic.String(),
 			Dependencies: &plugintypes.DependencySpec{
 				Plugins: []*plugintypes.PluginDependencySpec{
-					{ID: "linapro-ai-core", Version: ">=0.1.0"},
+					{ID: "ai-core", Version: ">=0.1.0"},
 				},
 			},
 		},
@@ -225,7 +225,7 @@ func TestParseRuntimeArtifactLoadsRoutesAndBridgeSpec(t *testing.T) {
 					},
 				},
 				{
-					Owner:   "linapro-ai-core",
+					Owner:   "ai-core",
 					Service: "ai",
 					Version: "v1",
 					Methods: []string{
@@ -271,7 +271,7 @@ func TestParseRuntimeArtifactLoadsRoutesAndBridgeSpec(t *testing.T) {
 	}
 	var ownerAIService *protocol.HostServiceSpec
 	for _, item := range manifest.HostServices {
-		if item.Owner == "linapro-ai-core" && item.Service == "ai" {
+		if item.Owner == "ai-core" && item.Service == "ai" {
 			ownerAIService = item
 			break
 		}
@@ -314,7 +314,7 @@ func TestParseRuntimeArtifactRejectsOwnerHostServiceWithoutDependency(t *testing
 			ABIVersion:  protocol.SupportedABIVersion,
 			HostServices: []*protocol.HostServiceSpec{
 				{
-					Owner:   "linapro-ai-core",
+					Owner:   "ai-core",
 					Service: "ai",
 					Version: "v1",
 					Methods: []string{
@@ -542,7 +542,7 @@ func TestParseRuntimeArtifactPreservesDependencies(t *testing.T) {
 				Framework: &plugintypes.FrameworkDependencySpec{Version: ">=0.1.0 <1.0.0"},
 				Plugins: []*plugintypes.PluginDependencySpec{
 					{
-						ID:      "linapro-tenant-core",
+						ID:      "tenant-core",
 						Version: ">=0.1.0",
 					},
 				},
@@ -574,7 +574,7 @@ func TestParseRuntimeArtifactPreservesDependencies(t *testing.T) {
 		t.Fatalf("expected one plugin dependency, got %#v", manifest.Dependencies.Plugins)
 	}
 	dependency := manifest.Dependencies.Plugins[0]
-	if dependency.ID != "linapro-tenant-core" || dependency.Version != ">=0.1.0" {
+	if dependency.ID != "tenant-core" || dependency.Version != ">=0.1.0" {
 		t.Fatalf("unexpected plugin dependency: %#v", dependency)
 	}
 }
@@ -592,7 +592,7 @@ func TestParseRuntimeArtifactRejectsUnsupportedDependencyPolicyFields(t *testing
 			manifestBody: map[string]any{
 				"dependencies": map[string]any{
 					"plugins": []map[string]any{
-						{"id": "linapro-tenant-core", "required": true},
+						{"id": "tenant-core", "required": true},
 					},
 				},
 			},
@@ -603,7 +603,7 @@ func TestParseRuntimeArtifactRejectsUnsupportedDependencyPolicyFields(t *testing
 			manifestBody: map[string]any{
 				"dependencies": map[string]any{
 					"plugins": []map[string]any{
-						{"id": "linapro-tenant-core", "install": "auto"},
+						{"id": "tenant-core", "install": "auto"},
 					},
 				},
 			},

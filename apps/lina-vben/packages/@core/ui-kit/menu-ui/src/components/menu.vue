@@ -42,6 +42,7 @@ defineOptions({ name: 'Menu' });
 const props = withDefaults(defineProps<Props>(), {
   accordion: true,
   collapse: false,
+  lockedOpen: false,
   mode: 'vertical',
   rounded: true,
   theme: 'dark',
@@ -91,8 +92,19 @@ const getSlot = computed(() => {
 
 watch(
   () => props.collapse,
-  (value) => {
-    if (value) openedMenus.value = [];
+  async (value) => {
+    if (value) {
+      openedMenus.value = [];
+      return;
+    }
+    if (props.lockedOpen && props.mode === 'vertical') {
+      await nextTick();
+      Object.values(subMenus.value).forEach(({ path }) => {
+        if (!openedMenus.value.includes(path)) {
+          openedMenus.value.push(path);
+        }
+      });
+    }
   },
 );
 
@@ -258,6 +270,9 @@ function handleMenuItemClick(data: MenuItemClicked) {
 }
 
 function handleSubMenuClick({ parentPaths, path }: MenuItemRegistered) {
+  if (props.lockedOpen && props.mode === 'vertical' && !props.collapse) {
+    return;
+  }
   const isOpened = openedMenus.value.includes(path);
 
   if (isOpened) {
@@ -279,6 +294,9 @@ function close(path: string) {
  * 关闭、折叠菜单
  */
 function closeMenu(path: string, parentPaths: string[]) {
+  if (props.lockedOpen && props.mode === 'vertical' && !props.collapse) {
+    return;
+  }
   if (props.accordion) {
     openedMenus.value = subMenus.value[path]?.parentPaths ?? [];
   }
@@ -315,6 +333,14 @@ function addMenuItem(item: MenuItemRegistered) {
 
 function addSubMenu(subMenu: MenuItemRegistered) {
   subMenus.value[subMenu.path] = subMenu;
+  if (
+    props.lockedOpen &&
+    props.mode === 'vertical' &&
+    !props.collapse &&
+    !openedMenus.value.includes(subMenu.path)
+  ) {
+    openedMenus.value.push(subMenu.path);
+  }
 }
 
 function removeSubMenu(subMenu: MenuItemRegistered) {

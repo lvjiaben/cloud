@@ -58,7 +58,7 @@ describe('formatMenuPermissionLabel', () => {
 
     expect(
       formatMenuPermissionShortLabel(
-        'Dynamic Route Permission:linapro-demo-dynamic:record:create',
+        'Dynamic Route Permission:demo-dynamic:record:create',
       ),
     ).toBe('Record Create');
   });
@@ -68,7 +68,7 @@ describe('formatMenuPermissionLabel', () => {
 
     expect(
       formatMenuPermissionShortLabel(
-        'Dynamic Route Permission:linapro-demo-dynamic:backend:view',
+        'Dynamic Route Permission:demo-dynamic:backend:view',
       ),
     ).toBe('后端查看');
   });

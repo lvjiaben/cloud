@@ -213,9 +213,35 @@ func normalizeEmbeddedResourcePath(value string) string {
 	return normalized
 }
 
-func collectFrontendAssets(pluginDir string, embeddedResources *embeddedStaticResourceSet) ([]*frontendAsset, error) {
+func collectFrontendAssets(
+	pluginDir string,
+	embeddedResources *embeddedStaticResourceSet,
+	publicAssets []*publicAssetSpec,
+) ([]*frontendAsset, error) {
+	sourcePrefixes := []string{"frontend/pages"}
+	if len(publicAssets) > 0 {
+		sourcePrefixes = make([]string, 0, len(publicAssets))
+		for _, item := range publicAssets {
+			if item == nil || strings.TrimSpace(item.Source) == "" {
+				continue
+			}
+			sourcePrefixes = append(sourcePrefixes, normalizeEmbeddedResourcePath(item.Source))
+		}
+	}
+
 	if embeddedResources != nil {
-		paths := embeddedResources.ListFiles("frontend/pages", "")
+		paths := make([]string, 0)
+		seen := make(map[string]struct{})
+		for _, sourcePrefix := range sourcePrefixes {
+			for _, filePath := range embeddedResources.ListFiles(sourcePrefix, "") {
+				if _, exists := seen[filePath]; exists {
+					continue
+				}
+				seen[filePath] = struct{}{}
+				paths = append(paths, filePath)
+			}
+		}
+		sort.Strings(paths)
 		assets := make([]*frontendAsset, 0, len(paths))
 		for _, filePath := range paths {
 			content, ok := embeddedResources.ReadFile(filePath)
@@ -235,30 +261,36 @@ func collectFrontendAssets(pluginDir string, embeddedResources *embeddedStaticRe
 		return assets, nil
 	}
 
-	frontendDir := filepath.Join(pluginDir, "frontend", "pages")
-	info, err := os.Stat(frontendDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []*frontendAsset{}, nil
-		}
-		return nil, err
-	}
-	if !info.IsDir() {
-		return nil, fmt.Errorf("runtime frontend pages path is not a directory: %s", frontendDir)
-	}
-
 	paths := make([]string, 0)
-	if err = filepath.WalkDir(frontendDir, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	seen := make(map[string]struct{})
+	for _, sourcePrefix := range sourcePrefixes {
+		frontendDir := filepath.Join(pluginDir, filepath.FromSlash(sourcePrefix))
+		info, err := os.Stat(frontendDir)
+		if err != nil {
+			if os.IsNotExist(err) && len(publicAssets) == 0 {
+				continue
+			}
+			return nil, err
 		}
-		if entry.IsDir() {
+		if !info.IsDir() {
+			return nil, fmt.Errorf("runtime frontend asset source is not a directory: %s", frontendDir)
+		}
+		if err = filepath.WalkDir(frontendDir, func(path string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			if _, exists := seen[path]; exists {
+				return nil
+			}
+			seen[path] = struct{}{}
+			paths = append(paths, path)
 			return nil
+		}); err != nil {
+			return nil, err
 		}
-		paths = append(paths, path)
-		return nil
-	}); err != nil {
-		return nil, err
 	}
 
 	sort.Strings(paths)

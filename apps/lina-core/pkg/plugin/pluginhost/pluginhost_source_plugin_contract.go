@@ -26,6 +26,14 @@ type sourcePluginLifecycle struct {
 	plugin *sourcePlugin
 }
 
+// RegisterBusinessImpactHandler registers one bounded business-impact provider.
+func (r *sourcePluginLifecycle) RegisterBusinessImpactHandler(handler SourcePluginBusinessImpactHandler) error {
+	if r == nil || r.plugin == nil {
+		return gerror.New("pluginhost: source plugin lifecycle facade is nil")
+	}
+	return r.plugin.registerBusinessImpactHandler(handler)
+}
+
 // sourcePluginHooks is the hook-registration facade bound to one source plugin
 // definition.
 type sourcePluginHooks struct {
@@ -52,6 +60,12 @@ type sourcePluginProviders struct {
 // sourcePluginAccess is the access-control registration facade bound to one
 // source plugin definition.
 type sourcePluginAccess struct {
+	plugin *sourcePlugin
+}
+
+// sourcePluginBusinessExtensions is the owner validation facade bound to one
+// source plugin definition.
+type sourcePluginBusinessExtensions struct {
 	plugin *sourcePlugin
 }
 
@@ -119,6 +133,14 @@ func (p *sourcePlugin) Access() AccessDeclarations {
 	return p.access
 }
 
+// BusinessExtensions returns owner-defined provider declaration validation.
+func (p *sourcePlugin) BusinessExtensions() BusinessExtensionDeclarations {
+	if p == nil {
+		return nil
+	}
+	return p.businessExtensions
+}
+
 // ProvideTenant declares one source-plugin tenant provider factory.
 func (r *sourcePluginProviders) ProvideTenant(factory tenantspi.ProviderFactory) error {
 	if r == nil || r.plugin == nil {
@@ -143,6 +165,14 @@ func (r *sourcePluginProviders) ProvideCapability(descriptor capregistry.Descrip
 	return r.plugin.registerCapabilityDescriptor(descriptor)
 }
 
+// ProvideBusinessExtensionMethods registers the source provider's governed method dispatcher.
+func (r *sourcePluginProviders) ProvideBusinessExtensionMethods(handler SourcePluginBusinessExtensionMethodHandler) error {
+	if r == nil || r.plugin == nil {
+		return gerror.New("pluginhost: source plugin provider facade is nil")
+	}
+	return r.plugin.registerBusinessExtensionMethodHandler(handler)
+}
+
 // ProvideExternalIdentity declares one source-plugin external-identity provider ID.
 func (r *sourcePluginProviders) ProvideExternalIdentity(providerID string) error {
 	if r == nil || r.plugin == nil {
@@ -152,7 +182,7 @@ func (r *sourcePluginProviders) ProvideExternalIdentity(providerID string) error
 }
 
 // ProvideExternalIdentityProvider declares this source plugin's external-identity
-// provider engine factory (linapro-extlogin-core). It is distinct from
+// provider engine factory (extlogin-core). It is distinct from
 // ProvideExternalIdentity, which stamps provider-ID ownership for calling
 // plugins. A plugin that supplies the engine need not own any provider ID.
 func (r *sourcePluginProviders) ProvideExternalIdentityProvider(factory extidspi.ProviderFactory) error {

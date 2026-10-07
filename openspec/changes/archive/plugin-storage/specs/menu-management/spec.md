@@ -29,25 +29,25 @@
 
 #### Scenario: 组织插件挂载菜单
 
-- **WHEN** `linapro-org-core` 将其菜单同步到宿主时
+- **WHEN** `org-core` 将其菜单同步到宿主时
 - **THEN** 其菜单挂载到 `组织管理`
 - **AND** 不挂载到 `扩展中心`
 
 #### Scenario: 内容插件挂载菜单
 
-- **WHEN** `linapro-content-notice` 将其菜单同步到宿主时
+- **WHEN** `content-notice` 将其菜单同步到宿主时
 - **THEN** 其菜单挂载到 `内容管理`
 - **AND** 不挂载到 `扩展中心`
 
 #### Scenario: 监控插件挂载菜单
 
-- **WHEN** `linapro-monitor-online`、`linapro-monitor-server`、`linapro-monitor-operlog` 或 `linapro-monitor-loginlog` 将菜单同步到宿主时
+- **WHEN** `monitor-online`、`monitor-server`、`monitor-operlog` 或 `monitor-loginlog` 将菜单同步到宿主时
 - **THEN** 这些菜单挂载到 `系统监控`
 - **AND** `扩展中心/插件管理` 仍负责安装和启停管理
 
 #### Scenario: 云存储 provider 插件挂载菜单
 
-- **WHEN** `linapro-storage-cos`、`linapro-storage-oss`、`linapro-storage-obs`、`linapro-storage-qiniu`、`linapro-storage-aws`、`linapro-storage-azure` 或 `linapro-storage-s3` 将菜单同步到宿主时
+- **WHEN** `storage-cos`、`storage-oss`、`storage-obs`、`storage-qiniu`、`storage-aws`、`storage-azure` 或 `storage-s3` 将菜单同步到宿主时
 - **THEN** 其配置管理菜单 MUST 挂载到 `系统设置`（`parent_key: setting`）
 - **AND** 不挂载到独立的 `存储管理` 一级目录
 - **AND** 不挂载到 `扩展中心` 作为配置入口父目录
@@ -59,7 +59,7 @@
 
 #### Scenario: 内容管理无可见菜单
 
-- **WHEN** `linapro-content-notice` 未安装、未启用或当前用户无权访问其菜单时
+- **WHEN** `content-notice` 未安装、未启用或当前用户无权访问其菜单时
 - **THEN** `内容管理` 不出现在左侧导航中
 
 #### Scenario: 部分系统监控插件缺失

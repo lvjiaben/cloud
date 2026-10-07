@@ -1,0 +1,2341 @@
+{
+  "dict": {
+    "idc_async_task_status": {
+      "dead_letter": {
+        "label": "Dead letter"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "manual_takeover": {
+        "label": "Manual takeover"
+      },
+      "name": "IDC async task status",
+      "pending": {
+        "label": "Pending"
+      },
+      "remark": "Asynchronous business task lifecycle",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "retry_wait": {
+        "label": "Waiting to retry"
+      },
+      "running": {
+        "label": "Running"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_audit_actor_type": {
+      "external": {
+        "label": "External caller"
+      },
+      "name": "IDC audit actor type",
+      "remark": "Business audit actor types",
+      "system": {
+        "label": "System"
+      },
+      "user": {
+        "label": "User"
+      }
+    },
+    "idc_audit_result": {
+      "denied": {
+        "label": "Denied"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "name": "IDC audit result",
+      "remark": "Business audit operation results",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_audit_risk": {
+      "critical": {
+        "label": "Critical"
+      },
+      "high": {
+        "label": "High"
+      },
+      "low": {
+        "label": "Low"
+      },
+      "medium": {
+        "label": "Medium"
+      },
+      "name": "IDC audit risk",
+      "remark": "Business audit risk levels"
+    },
+    "idc_binding_source": {
+      "admin_invitation": {
+        "label": "Admin invitation"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC binding source",
+      "onboarding": {
+        "label": "Customer onboarding"
+      },
+      "remark": "Customer identity binding sources"
+    },
+    "idc_binding_status": {
+      "active": {
+        "label": "Active"
+      },
+      "name": "IDC binding status",
+      "remark": "Identity and customer binding lifecycle",
+      "revoked": {
+        "label": "Revoked"
+      }
+    },
+    "idc_contact_channel": {
+      "email": {
+        "label": "Email"
+      },
+      "name": "IDC contact channel",
+      "phone": {
+        "label": "Phone"
+      },
+      "remark": "Verified onboarding contact channels"
+    },
+    "idc_customer_status": {
+      "active": {
+        "label": "Active"
+      },
+      "anonymized": {
+        "label": "Anonymized"
+      },
+      "disabled": {
+        "label": "Disabled"
+      },
+      "name": "IDC customer status",
+      "pending_activation": {
+        "label": "Pending activation"
+      },
+      "remark": "Customer subject lifecycle",
+      "restricted": {
+        "label": "Restricted"
+      }
+    },
+    "idc_customer_type": {
+      "enterprise": {
+        "label": "Enterprise"
+      },
+      "individual": {
+        "label": "Individual"
+      },
+      "name": "IDC customer type",
+      "remark": "Individual and enterprise customer types"
+    },
+    "idc_idempotency_status": {
+      "failed": {
+        "label": "Failed"
+      },
+      "in_progress": {
+        "label": "In progress"
+      },
+      "name": "IDC idempotency status",
+      "remark": "Request idempotency lifecycle",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_onboarding_status": {
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "consumed": {
+        "label": "Consumed"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "name": "IDC onboarding status",
+      "pending": {
+        "label": "Pending"
+      },
+      "remark": "Customer onboarding intent lifecycle",
+      "verified": {
+        "label": "Verified"
+      }
+    },
+    "idc_outbox_status": {
+      "dead_letter": {
+        "label": "Dead letter"
+      },
+      "name": "IDC outbox status",
+      "pending": {
+        "label": "Pending"
+      },
+      "processing": {
+        "label": "Processing"
+      },
+      "published": {
+        "label": "Published"
+      },
+      "remark": "Transactional outbox lifecycle",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "retry_wait": {
+        "label": "Waiting to retry"
+      }
+    },
+    "idc_principal_audience": {
+      "customer": {
+        "label": "Customer"
+      },
+      "name": "IDC principal audience",
+      "remark": "Mutually exclusive identity audiences",
+      "staff": {
+        "label": "Staff"
+      }
+    },
+    "idc_task_attempt_status": {
+      "failed": {
+        "label": "Failed"
+      },
+      "name": "IDC task attempt status",
+      "remark": "Asynchronous task attempt outcomes",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "running": {
+        "label": "Running"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_address_type": {
+      "billing": {
+        "label": "Billing address"
+      },
+      "contact": {
+        "label": "Contact address"
+      },
+      "name": "IDC customer address type",
+      "registered": {
+        "label": "Registered address"
+      },
+      "remark": "Customer address usage types",
+      "service": {
+        "label": "Service address"
+      }
+    },
+    "idc_assignment_source": {
+      "manual": {
+        "label": "Manual assignment"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC customer relationship assignment source",
+      "remark": "Assignment sources for customer levels, groups, tags, and related relationships",
+      "rule": {
+        "label": "Rule assignment"
+      }
+    },
+    "idc_assignment_status": {
+      "active": {
+        "label": "Active"
+      },
+      "name": "IDC customer relationship assignment status",
+      "remark": "Lifecycle for customer contact roles, levels, groups, tags, and field values",
+      "revoked": {
+        "label": "Revoked"
+      }
+    },
+    "idc_attachment_scan_status": {
+      "clean": {
+        "label": "Clean"
+      },
+      "failed": {
+        "label": "Scan failed"
+      },
+      "infected": {
+        "label": "Threat detected"
+      },
+      "name": "IDC attachment scan status",
+      "pending": {
+        "label": "Pending scan"
+      },
+      "remark": "Private customer attachment security scan lifecycle"
+    },
+    "idc_attachment_status": {
+      "available": {
+        "label": "Available"
+      },
+      "name": "IDC attachment status",
+      "pending": {
+        "label": "Pending"
+      },
+      "quarantined": {
+        "label": "Quarantined"
+      },
+      "remark": "Private customer attachment availability lifecycle",
+      "removed": {
+        "label": "Removed"
+      }
+    },
+    "idc_blacklist_scope": {
+      "all_business": {
+        "label": "All business"
+      },
+      "name": "IDC blacklist restriction scope",
+      "purchase": {
+        "label": "Purchase"
+      },
+      "refund": {
+        "label": "Refund"
+      },
+      "registration": {
+        "label": "Registration"
+      },
+      "remark": "Customer blacklist business restriction scopes",
+      "resource_operation": {
+        "label": "Resource operation"
+      }
+    },
+    "idc_blacklist_risk_level": {
+      "critical": {
+        "label": "Critical"
+      },
+      "high": {
+        "label": "High"
+      },
+      "low": {
+        "label": "Low"
+      },
+      "medium": {
+        "label": "Medium"
+      },
+      "name": "IDC blacklist risk level",
+      "remark": "Risk severity of customer blacklist restrictions"
+    },
+    "idc_blacklist_status": {
+      "active": {
+        "label": "Active"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "name": "IDC blacklist status",
+      "pending": {
+        "label": "Pending review"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Customer blacklist review and enforcement lifecycle",
+      "revoked": {
+        "label": "Revoked"
+      }
+    },
+    "idc_consent_action": {
+      "granted": {
+        "label": "Granted"
+      },
+      "name": "IDC consent action",
+      "remark": "Customer consent grant and withdrawal actions",
+      "withdrawn": {
+        "label": "Withdrawn"
+      }
+    },
+    "idc_consent_source": {
+      "admin": {
+        "label": "Admin portal"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC consent source",
+      "portal": {
+        "label": "Customer portal"
+      },
+      "remark": "Collection sources for customer consent evidence",
+      "system": {
+        "label": "System"
+      }
+    },
+    "idc_consent_type": {
+      "account_closure": {
+        "label": "Account closure"
+      },
+      "data_export": {
+        "label": "Data export"
+      },
+      "marketing": {
+        "label": "Marketing"
+      },
+      "name": "IDC consent type",
+      "privacy": {
+        "label": "Privacy policy"
+      },
+      "remark": "Customer terms, privacy, and sensitive-information consent types",
+      "sensitive_personal_information": {
+        "label": "Sensitive personal information"
+      },
+      "terms": {
+        "label": "Terms of service"
+      }
+    },
+    "idc_contact_role": {
+      "billing": {
+        "label": "Billing contact"
+      },
+      "name": "IDC contact role",
+      "operations": {
+        "label": "Operations contact"
+      },
+      "primary": {
+        "label": "Primary contact"
+      },
+      "remark": "Notification contact roles within a customer subject",
+      "technical": {
+        "label": "Technical contact"
+      }
+    },
+    "idc_custom_field_customer_scope": {
+      "all": {
+        "label": "All customers"
+      },
+      "enterprise": {
+        "label": "Enterprise customers"
+      },
+      "individual": {
+        "label": "Individual customers"
+      },
+      "name": "IDC custom-field customer scope",
+      "remark": "Customer-type scopes where a custom field applies"
+    },
+    "idc_custom_field_data_type": {
+      "boolean": {
+        "label": "Boolean"
+      },
+      "date": {
+        "label": "Date"
+      },
+      "datetime": {
+        "label": "Date and time"
+      },
+      "decimal": {
+        "label": "Decimal"
+      },
+      "integer": {
+        "label": "Integer"
+      },
+      "multi_select": {
+        "label": "Multiple select"
+      },
+      "name": "IDC custom-field data type",
+      "remark": "Stable data types for customer custom fields",
+      "single_select": {
+        "label": "Single select"
+      },
+      "text": {
+        "label": "Text"
+      }
+    },
+    "idc_custom_field_visibility": {
+      "admin_only": {
+        "label": "Admin only"
+      },
+      "customer_edit": {
+        "label": "Customer editable"
+      },
+      "customer_read": {
+        "label": "Customer read-only"
+      },
+      "name": "IDC custom-field visibility",
+      "remark": "Admin and customer visibility for customer custom fields"
+    },
+    "idc_customer_attachment_category": {
+      "customer_provided": {
+        "label": "Customer provided"
+      },
+      "general": {
+        "label": "General"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC customer attachment category",
+      "remark": "Business categories for customer attachments",
+      "risk": {
+        "label": "Risk"
+      },
+      "sales": {
+        "label": "Sales"
+      },
+      "support": {
+        "label": "Support"
+      }
+    },
+    "idc_customer_attachment_visibility": {
+      "admin_only": {
+        "label": "Admin only"
+      },
+      "customer_visible": {
+        "label": "Customer visible"
+      },
+      "name": "IDC customer attachment visibility",
+      "remark": "Admin and customer visibility for customer attachments"
+    },
+    "idc_customer_note_category": {
+      "billing": {
+        "label": "Billing"
+      },
+      "compliance": {
+        "label": "Compliance"
+      },
+      "general": {
+        "label": "General"
+      },
+      "name": "IDC customer note category",
+      "remark": "Business categories for internal customer notes",
+      "risk": {
+        "label": "Risk"
+      },
+      "sales": {
+        "label": "Sales"
+      },
+      "service": {
+        "label": "Service"
+      }
+    },
+    "idc_customer_note_status": {
+      "active": {
+        "label": "Active"
+      },
+      "name": "IDC customer note status",
+      "remark": "Internal customer note lifecycle",
+      "withdrawn": {
+        "label": "Withdrawn"
+      }
+    },
+    "idc_customer_risk_category": {
+      "abuse": {
+        "label": "Abuse"
+      },
+      "compliance": {
+        "label": "Compliance"
+      },
+      "identity": {
+        "label": "Identity"
+      },
+      "name": "IDC customer risk category",
+      "other": {
+        "label": "Other"
+      },
+      "payment": {
+        "label": "Payment"
+      },
+      "refund": {
+        "label": "Refund"
+      },
+      "remark": "Business categories for customer risk signals",
+      "resource": {
+        "label": "Resource"
+      },
+      "security": {
+        "label": "Security"
+      }
+    },
+    "idc_customer_risk_level": {
+      "critical": {
+        "label": "Critical"
+      },
+      "high": {
+        "label": "High"
+      },
+      "info": {
+        "label": "Information"
+      },
+      "low": {
+        "label": "Low"
+      },
+      "medium": {
+        "label": "Medium"
+      },
+      "name": "IDC customer risk level",
+      "remark": "Customer risk severity including informational signals"
+    },
+    "idc_customer_risk_source": {
+      "compliance": {
+        "label": "Compliance"
+      },
+      "manual": {
+        "label": "Manual"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC customer risk source",
+      "payment": {
+        "label": "Payment"
+      },
+      "provider": {
+        "label": "Provider"
+      },
+      "remark": "Sources of customer risk signals",
+      "rule": {
+        "label": "Rule"
+      }
+    },
+    "idc_customer_risk_status": {
+      "acknowledged": {
+        "label": "Acknowledged"
+      },
+      "dismissed": {
+        "label": "Dismissed"
+      },
+      "name": "IDC customer risk status",
+      "open": {
+        "label": "Open"
+      },
+      "remark": "Customer risk review and resolution lifecycle",
+      "resolved": {
+        "label": "Resolved"
+      }
+    },
+    "idc_customer_account_status_reason": {
+      "account_reactivated": {
+        "label": "Account reactivated"
+      },
+      "activation_completed": {
+        "label": "Activation completed"
+      },
+      "approved_closure": {
+        "label": "Approved closure"
+      },
+      "manual_disable": {
+        "label": "Manually disabled"
+      },
+      "name": "IDC customer account state reason",
+      "remark": "Stable reasons for customer account lifecycle transitions",
+      "restriction_resolved": {
+        "label": "Restriction resolved"
+      },
+      "risk_restriction": {
+        "label": "Risk restriction"
+      },
+      "verification_required": {
+        "label": "Verification required"
+      }
+    },
+    "idc_customer_account_transition_source": {
+      "closure": {
+        "label": "Closure workflow"
+      },
+      "name": "IDC customer account transition source",
+      "remark": "Trusted sources of customer account lifecycle transitions",
+      "staff": {
+        "label": "Authorized staff"
+      }
+    },
+    "idc_customer_closure_finding": {
+      "active_contracts": {
+        "label": "Active contracts exist"
+      },
+      "active_services": {
+        "label": "Active services exist"
+      },
+      "in_progress_operations": {
+        "label": "Business operations are in progress"
+      },
+      "legal_retention": {
+        "label": "Legal retention obligations exist"
+      },
+      "name": "IDC customer closure finding",
+      "remark": "Bounded aggregate findings from the closure precheck",
+      "unsettled_funds": {
+        "label": "Unsettled funds exist"
+      },
+      "unsettled_invoices": {
+        "label": "Unsettled invoices exist"
+      }
+    },
+    "idc_customer_closure_status": {
+      "anonymizing": {
+        "label": "Anonymization in progress"
+      },
+      "approved": {
+        "label": "Approved"
+      },
+      "blocked": {
+        "label": "Blocked by precheck"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "completed": {
+        "label": "Completed"
+      },
+      "name": "IDC customer closure status",
+      "pending_review": {
+        "label": "Pending review"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Controlled customer closure request lifecycle"
+    },
+    "idc_customer_data_export_format": {
+      "json_zip": {
+        "label": "JSON archive"
+      },
+      "name": "IDC customer data export format",
+      "remark": "Private customer-owned data export container formats"
+    },
+    "idc_customer_data_export_scope": {
+      "name": "IDC customer data export scope",
+      "own_deliverable_data": {
+        "label": "My deliverable data"
+      },
+      "remark": "Customer-owned data eligible for private export"
+    },
+    "idc_customer_legal_change_reason": {
+      "enterprise_registration_change": {
+        "label": "Enterprise registration changed"
+      },
+      "identifier_correction": {
+        "label": "Identifier correction"
+      },
+      "legal_name_change": {
+        "label": "Legal name changed"
+      },
+      "name": "IDC legal information change reason",
+      "other": {
+        "label": "Other"
+      },
+      "remark": "Review reasons for verified legal projection changes"
+    },
+    "idc_customer_legal_change_status": {
+      "approved": {
+        "label": "Approved"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "name": "IDC legal information change status",
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Legal information change review lifecycle",
+      "submitted": {
+        "label": "Submitted"
+      },
+      "under_review": {
+        "label": "Under review"
+      }
+    },
+    "idc_data_sensitivity": {
+      "name": "IDC data sensitivity",
+      "ordinary": {
+        "label": "Ordinary"
+      },
+      "personal": {
+        "label": "Personal information"
+      },
+      "remark": "Data sensitivity levels for customer custom fields",
+      "sensitive": {
+        "label": "Sensitive information"
+      }
+    },
+    "idc_follow_up_channel": {
+      "email": {
+        "label": "Email"
+      },
+      "meeting": {
+        "label": "Meeting"
+      },
+      "name": "IDC customer follow-up channel",
+      "other": {
+        "label": "Other"
+      },
+      "phone": {
+        "label": "Phone"
+      },
+      "remark": "Contact channels used for customer follow-up activities",
+      "sms": {
+        "label": "SMS"
+      },
+      "ticket": {
+        "label": "Ticket"
+      },
+      "wechat": {
+        "label": "WeChat"
+      }
+    },
+    "idc_follow_up_kind": {
+      "activity": {
+        "label": "Follow-up record"
+      },
+      "name": "IDC customer follow-up type",
+      "plan": {
+        "label": "Plan"
+      },
+      "remark": "Customer follow-up plan and activity types"
+    },
+    "idc_follow_up_status": {
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "completed": {
+        "label": "Completed"
+      },
+      "name": "IDC customer follow-up status",
+      "planned": {
+        "label": "Planned"
+      },
+      "remark": "Customer follow-up plan lifecycle"
+    },
+    "idc_invoice_title_type": {
+      "enterprise": {
+        "label": "Enterprise"
+      },
+      "individual": {
+        "label": "Individual"
+      },
+      "name": "IDC invoice title type",
+      "remark": "Title subject type of customer invoicing profiles"
+    },
+    "idc_notification_channel": {
+      "email": {
+        "label": "Email"
+      },
+      "in_app": {
+        "label": "In-app message"
+      },
+      "name": "IDC notification channel",
+      "remark": "Channels supported by customer notification preferences",
+      "sms": {
+        "label": "SMS"
+      },
+      "wechat_official": {
+        "label": "WeChat Official Account"
+      },
+      "wechat_work": {
+        "label": "WeCom"
+      }
+    },
+    "idc_notification_topic": {
+      "account": {
+        "label": "Account"
+      },
+      "billing": {
+        "label": "Billing"
+      },
+      "marketing": {
+        "label": "Marketing"
+      },
+      "name": "IDC notification topic",
+      "remark": "Business topics for customer notification preferences",
+      "security": {
+        "label": "Security"
+      },
+      "service": {
+        "label": "Service"
+      },
+      "support": {
+        "label": "Support"
+      }
+    },
+    "idc_record_status": {
+      "active": {
+        "label": "Active"
+      },
+      "archived": {
+        "label": "Archived"
+      },
+      "name": "IDC common archive status",
+      "remark": "Lifecycle for archivable customer configuration and profile records"
+    },
+    "idc_catalog_activation_status": {
+      "active": {
+        "label": "Active"
+      },
+      "inactive": {
+        "label": "Inactive"
+      },
+      "name": "IDC catalog activation status",
+      "remark": "Activation state for catalog configuration records"
+    },
+    "idc_catalog_charge_type": {
+      "name": "IDC catalog charge type",
+      "one_time": {
+        "label": "One time"
+      },
+      "recurring": {
+        "label": "Recurring"
+      },
+      "remark": "One-time, recurring, tiered, usage, and trial charging",
+      "tiered": {
+        "label": "Tiered"
+      },
+      "trial": {
+        "label": "Trial"
+      },
+      "usage": {
+        "label": "Usage"
+      }
+    },
+    "idc_catalog_compatibility_type": {
+      "allows": {
+        "label": "Allows"
+      },
+      "excludes": {
+        "label": "Excludes"
+      },
+      "name": "IDC catalog compatibility rule type",
+      "remark": "Compatibility relationships between configuration options",
+      "requires": {
+        "label": "Requires"
+      }
+    },
+    "idc_catalog_period_unit": {
+      "day": {
+        "label": "Day"
+      },
+      "hour": {
+        "label": "Hour"
+      },
+      "month": {
+        "label": "Month"
+      },
+      "name": "IDC catalog billing period unit",
+      "once": {
+        "label": "Once"
+      },
+      "remark": "Product billing period units",
+      "year": {
+        "label": "Year"
+      }
+    },
+    "idc_catalog_price_phase": {
+      "both": {
+        "label": "New purchase and renewal"
+      },
+      "name": "IDC catalog price phase",
+      "new_purchase": {
+        "label": "New purchase only"
+      },
+      "remark": "New-purchase and renewal price applicability",
+      "renewal": {
+        "label": "Renewal only"
+      }
+    },
+    "idc_catalog_product_status": {
+      "active": {
+        "label": "On sale"
+      },
+      "draft": {
+        "label": "Draft"
+      },
+      "name": "IDC catalog product status",
+      "remark": "Server product lifecycle",
+      "retired": {
+        "label": "Retired"
+      },
+      "suspended": {
+        "label": "Suspended"
+      }
+    },
+    "idc_catalog_quantity_mode": {
+      "fixed": {
+        "label": "Fixed amount"
+      },
+      "name": "IDC catalog quantity mode",
+      "per_unit": {
+        "label": "Per unit"
+      },
+      "remark": "Fixed, per-unit, tiered, and usage quantity charging",
+      "tiered": {
+        "label": "Tiered"
+      },
+      "usage": {
+        "label": "Usage"
+      }
+    },
+    "idc_catalog_selection_mode": {
+      "multiple": {
+        "label": "Multiple select"
+      },
+      "name": "IDC catalog selection mode",
+      "quantity": {
+        "label": "Quantity"
+      },
+      "remark": "Configuration-group selection behavior",
+      "single": {
+        "label": "Single select"
+      }
+    },
+    "idc_catalog_tier_mode": {
+      "graduated": {
+        "label": "Graduated tiers"
+      },
+      "name": "IDC catalog tier mode",
+      "remark": "How quantities spanning multiple price tiers are charged"
+    },
+    "idc_catalog_usage_collection_unit": {
+      "day": {
+        "label": "Day"
+      },
+      "hour": {
+        "label": "Hour"
+      },
+      "month": {
+        "label": "Month"
+      },
+      "name": "IDC usage collection period unit",
+      "remark": "Collection period for authoritative usage measurements"
+    },
+    "idc_catalog_usage_missing_policy": {
+      "estimate_previous_period": {
+        "label": "Estimate from previous complete period"
+      },
+      "name": "IDC missing usage policy",
+      "pending_recalculation": {
+        "label": "Wait for recalculation"
+      },
+      "remark": "Fail-closed or explicit estimate behavior when authoritative usage is missing"
+    },
+    "idc_catalog_usage_rounding_mode": {
+      "down": {
+        "label": "Round down"
+      },
+      "name": "IDC usage rounding mode",
+      "nearest": {
+        "label": "Round to nearest"
+      },
+      "remark": "Integer rounding for billable usage quantities",
+      "up": {
+        "label": "Round up"
+      }
+    },
+    "idc_catalog_version_source": {
+      "copy": {
+        "label": "Product copy"
+      },
+      "manual": {
+        "label": "Manual"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC catalog version source",
+      "remark": "Product draft and version sources"
+    },
+    "idc_catalog_version_status": {
+      "draft": {
+        "label": "Draft"
+      },
+      "name": "IDC catalog version status",
+      "published": {
+        "label": "Published"
+      },
+      "remark": "Product publication version lifecycle",
+      "retired": {
+        "label": "Retired"
+      },
+      "superseded": {
+        "label": "Superseded"
+      }
+    },
+    "idc_commerce_cart_status": {
+      "abandoned": {
+        "label": "Abandoned"
+      },
+      "active": {
+        "label": "Active"
+      },
+      "checked_out": {
+        "label": "Checked out"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "merged": {
+        "label": "Merged"
+      },
+      "name": "IDC commerce cart status",
+      "remark": "Shopping cart lifecycle"
+    },
+    "idc_commerce_cart_item_status": {
+      "active": {
+        "label": "Active"
+      },
+      "name": "IDC commerce cart item status",
+      "remark": "Shopping cart item lifecycle",
+      "removed": {
+        "label": "Removed"
+      },
+      "needs_reprice": {
+        "label": "Requote required"
+      },
+      "unavailable": {
+        "label": "Unavailable"
+      }
+    },
+    "idc_commerce_quote_purpose": {
+      "addon": {
+        "label": "Add-on"
+      },
+      "change": {
+        "label": "Configuration change"
+      },
+      "ip_change": {
+        "label": "IP change"
+      },
+      "name": "IDC commerce quote purpose",
+      "new_purchase": {
+        "label": "New purchase"
+      },
+      "remark": "Business purpose of an immutable quote",
+      "renewal": {
+        "label": "Renewal"
+      }
+    },
+    "idc_commerce_quote_source": {
+      "channel": {
+        "label": "Downstream channel"
+      },
+      "customer": {
+        "label": "Customer"
+      },
+      "guest": {
+        "label": "Guest"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC commerce quote source",
+      "remark": "Source that requested an immutable quote",
+      "staff": {
+        "label": "Staff"
+      },
+      "system": {
+        "label": "System"
+      }
+    },
+    "idc_commerce_inventory_decision": {
+      "available": {
+        "label": "Available"
+      },
+      "name": "IDC commerce inventory decision",
+      "remark": "Inventory decision locked by a quote item"
+    },
+    "idc_commerce_fulfillment_mode": {
+      "automatic": {
+        "label": "Automatic"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC commerce fulfillment mode",
+      "remark": "Fulfillment mode locked by a quote item"
+    },
+    "idc_commerce_risk_decision": {
+      "approved": {
+        "label": "Approved"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC commerce risk decision",
+      "remark": "Risk gate decision locked by a quote"
+    },
+    "idc_commerce_order_status": {
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "fulfilled": {
+        "label": "Fulfilled"
+      },
+      "fulfilling": {
+        "label": "Fulfilling"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC commerce order status",
+      "paid": {
+        "label": "Paid"
+      },
+      "partially_fulfilled": {
+        "label": "Partially fulfilled"
+      },
+      "partially_refunded": {
+        "label": "Partially refunded"
+      },
+      "payment_processing": {
+        "label": "Payment processing"
+      },
+      "pending_payment": {
+        "label": "Pending payment"
+      },
+      "refunded": {
+        "label": "Refunded"
+      },
+      "remark": "Customer order lifecycle"
+    },
+    "idc_commerce_order_source": {
+      "admin": {
+        "label": "Admin console"
+      },
+      "channel": {
+        "label": "Downstream channel"
+      },
+      "portal": {
+        "label": "Customer portal"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC commerce order source",
+      "remark": "Source that submitted a customer order"
+    },
+    "idc_commerce_reservation_status": {
+      "committed": {
+        "label": "Committed"
+      },
+      "consumed": {
+        "label": "Consumed"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "held": {
+        "label": "Held"
+      },
+      "name": "IDC commerce inventory reservation status",
+      "partial": {
+        "label": "Partially settled"
+      },
+      "released": {
+        "label": "Released"
+      },
+      "remark": "Inventory reservation lifecycle"
+    },
+    "idc_commerce_inventory_release_reason": {
+      "fulfillment_failed": {
+        "label": "Fulfillment failed"
+      },
+      "manual_release": {
+        "label": "Manual release"
+      },
+      "name": "IDC commerce inventory release reason",
+      "order_cancelled": {
+        "label": "Order cancelled"
+      },
+      "payment_expired": {
+        "label": "Payment expired"
+      },
+      "remark": "Reason for releasing an inventory reservation",
+      "rerouted": {
+        "label": "Rerouted"
+      }
+    },
+    "idc_commerce_fulfillment_status": {
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "executing": {
+        "label": "Executing"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC commerce fulfillment unit status",
+      "pending_payment": {
+        "label": "Pending payment"
+      },
+      "ready": {
+        "label": "Ready"
+      },
+      "remark": "Per-server fulfillment lifecycle",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_commerce_quote_charge_kind": {
+      "base": {
+        "label": "Base product"
+      },
+      "name": "IDC commerce quote charge kind",
+      "option": {
+        "label": "Configuration option"
+      },
+      "remark": "Normalized charge components in an immutable quote"
+    },
+    "idc_commerce_quote_adjustment_type": {
+      "agent_price": {
+        "label": "Agent price"
+      },
+      "campaign_discount": {
+        "label": "Campaign discount"
+      },
+      "coupon": {
+        "label": "Coupon"
+      },
+      "customer_price": {
+        "label": "Customer price"
+      },
+      "manual_discount": {
+        "label": "Manual discount"
+      },
+      "name": "IDC commerce quote adjustment type",
+      "remark": "Discount and price adjustments locked by an immutable quote",
+      "voucher": {
+        "label": "Voucher"
+      }
+    },
+    "idc_billing_invoice_status": {
+      "bad_debt": {
+        "label": "Bad debt"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "draft": {
+        "label": "Draft"
+      },
+      "name": "IDC billing invoice status",
+      "overdue": {
+        "label": "Overdue"
+      },
+      "paid": {
+        "label": "Paid"
+      },
+      "partially_paid": {
+        "label": "Partially paid"
+      },
+      "partially_refunded": {
+        "label": "Partially refunded"
+      },
+      "pending_payment": {
+        "label": "Pending payment"
+      },
+      "refunded": {
+        "label": "Refunded"
+      },
+      "remark": "Receivable invoice lifecycle"
+    },
+    "idc_billing_invoice_source": {
+      "change": {
+        "label": "Service change"
+      },
+      "consolidation": {
+        "label": "Consolidation"
+      },
+      "manual": {
+        "label": "Manual"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC billing invoice source",
+      "order": {
+        "label": "Order"
+      },
+      "remark": "Business source of a receivable invoice",
+      "renewal": {
+        "label": "Renewal"
+      }
+    },
+    "idc_billing_account_type": {
+      "accounts_receivable": {
+        "label": "Accounts receivable"
+      },
+      "adjustment_clearing": {
+        "label": "Adjustment clearing"
+      },
+      "bad_debt_expense": {
+        "label": "Bad debt expense"
+      },
+      "customer_balance": {
+        "label": "Customer balance"
+      },
+      "customer_commission": {
+        "label": "Customer commission"
+      },
+      "customer_credit": {
+        "label": "Customer credit"
+      },
+      "customer_gift": {
+        "label": "Customer gift value"
+      },
+      "merchant_cash": {
+        "label": "Merchant cash"
+      },
+      "name": "IDC ledger account type",
+      "payment_clearing": {
+        "label": "Payment clearing"
+      },
+      "refund_clearing": {
+        "label": "Refund clearing"
+      },
+      "remark": "Separated balance, credit, gift, commission, and system accounts",
+      "revenue": {
+        "label": "Revenue"
+      },
+      "tax_payable": {
+        "label": "Tax payable"
+      },
+      "waiver_expense": {
+        "label": "Waiver expense"
+      }
+    },
+    "idc_billing_account_status": {
+      "active": {
+        "label": "Active"
+      },
+      "closed": {
+        "label": "Closed"
+      },
+      "frozen": {
+        "label": "Frozen"
+      },
+      "name": "IDC ledger account status",
+      "remark": "Currency-specific ledger account lifecycle"
+    },
+    "idc_billing_normal_balance": {
+      "credit": {
+        "label": "Credit"
+      },
+      "debit": {
+        "label": "Debit"
+      },
+      "name": "IDC normal balance direction",
+      "remark": "Normal debit or credit direction of a double-entry account"
+    },
+    "idc_billing_transaction_type": {
+      "adjustment": {
+        "label": "Adjustment"
+      },
+      "balance_payment": {
+        "label": "Balance payment"
+      },
+      "commission": {
+        "label": "Commission"
+      },
+      "credit": {
+        "label": "Credit"
+      },
+      "gift": {
+        "label": "Gift value"
+      },
+      "invoice_issuance": {
+        "label": "Invoice issuance"
+      },
+      "manual_receipt": {
+        "label": "Manual receipt"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC ledger transaction type",
+      "payment": {
+        "label": "Payment"
+      },
+      "recharge": {
+        "label": "Recharge"
+      },
+      "refund": {
+        "label": "Refund"
+      },
+      "remark": "Append-only financial event type",
+      "reversal": {
+        "label": "Reversal"
+      },
+      "writeoff": {
+        "label": "Write-off"
+      }
+    },
+    "idc_billing_entry_direction": {
+      "credit": {
+        "label": "Credit"
+      },
+      "debit": {
+        "label": "Debit"
+      },
+      "name": "IDC ledger entry direction",
+      "remark": "Debit or credit ledger entry"
+    },
+    "idc_billing_hold_status": {
+      "active": {
+        "label": "Active"
+      },
+      "consumed": {
+        "label": "Consumed"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "name": "IDC fund hold status",
+      "partially_consumed": {
+        "label": "Partially consumed"
+      },
+      "released": {
+        "label": "Released"
+      },
+      "remark": "Same-currency customer balance hold lifecycle"
+    },
+    "idc_billing_payment_source": {
+      "balance": {
+        "label": "Customer balance"
+      },
+      "channel_payment": {
+        "label": "Online channel"
+      },
+      "credit": {
+        "label": "Customer credit"
+      },
+      "manual_receipt": {
+        "label": "Manual receipt"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC payment allocation source",
+      "remark": "Source of an effective invoice payment"
+    },
+    "idc_billing_refund_source": {
+      "balance_credit": {
+        "label": "Refund to balance"
+      },
+      "channel_refund": {
+        "label": "Channel refund"
+      },
+      "credit_release": {
+        "label": "Credit release"
+      },
+      "manual": {
+        "label": "Manual refund"
+      },
+      "migration": {
+        "label": "Migration"
+      },
+      "name": "IDC refund allocation source",
+      "remark": "Source of an invoice refund result"
+    },
+    "idc_billing_adjustment_type": {
+      "balance_credit": {
+        "label": "Balance credit"
+      },
+      "balance_debit": {
+        "label": "Balance debit"
+      },
+      "invoice_waiver": {
+        "label": "Invoice waiver"
+      },
+      "manual_receipt": {
+        "label": "Manual receipt"
+      },
+      "name": "IDC financial adjustment type",
+      "remark": "Reviewed financial adjustment intent",
+      "writeoff": {
+        "label": "Bad debt write-off"
+      }
+    },
+    "idc_billing_adjustment_status": {
+      "approved": {
+        "label": "Approved"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "name": "IDC financial adjustment status",
+      "pending_review": {
+        "label": "Pending review"
+      },
+      "posted": {
+        "label": "Posted"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Adjustment review and posting lifecycle"
+    },
+    "idc_billing_approval_decision": {
+      "approved": {
+        "label": "Approved"
+      },
+      "name": "IDC adjustment approval decision",
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Second-person financial approval decision"
+    },
+    "idc_commerce_cancellation_source": {
+      "admin": {
+        "label": "Administrator"
+      },
+      "customer": {
+        "label": "Customer"
+      },
+      "name": "IDC order cancellation source",
+      "payment": {
+        "label": "Payment system"
+      },
+      "remark": "Trusted source of an order cancellation intent",
+      "system": {
+        "label": "System"
+      }
+    },
+    "idc_commerce_cancellation_reason": {
+      "customer_requested": {
+        "label": "Customer requested"
+      },
+      "manual_rejected": {
+        "label": "Manual review rejected"
+      },
+      "name": "IDC order cancellation reason",
+      "payment_expired": {
+        "label": "Payment expired"
+      },
+      "remark": "Stable business reason for an order cancellation",
+      "risk_rejected": {
+        "label": "Risk review rejected"
+      }
+    },
+    "idc_commerce_cancellation_status": {
+      "completed": {
+        "label": "Completed"
+      },
+      "manual_review": {
+        "label": "Manual reconciliation required"
+      },
+      "name": "IDC order cancellation status",
+      "pending_payment_closure": {
+        "label": "Waiting for payment closure"
+      },
+      "remark": "Order cancellation and payment-closure coordination lifecycle"
+    },
+    "idc_commerce_order_review_type": {
+      "name": "IDC order review type",
+      "remark": "Independent order review gates",
+      "risk": {
+        "label": "Risk review"
+      }
+    },
+    "idc_commerce_order_review_status": {
+      "approved": {
+        "label": "Approved"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "name": "IDC order review status",
+      "pending": {
+        "label": "Pending"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Order review lifecycle"
+    },
+    "idc_commerce_order_review_reason": {
+      "name": "IDC order review reason",
+      "order_cancelled": {
+        "label": "Order cancelled"
+      },
+      "payment_expired": {
+        "label": "Payment expired"
+      },
+      "remark": "Stable order review decision reason",
+      "risk_approved": {
+        "label": "Risk review approved"
+      },
+      "risk_rejected": {
+        "label": "Risk review rejected"
+      }
+    },
+    "idc_commerce_payment_context_status": {
+      "awaiting_identity": {
+        "label": "Awaiting identity"
+      },
+      "awaiting_order_review": {
+        "label": "Awaiting order review"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "closed": {
+        "label": "Closed"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "name": "IDC payment preparation context status",
+      "ready": {
+        "label": "Ready for payment"
+      },
+      "remark": "Recoverable order payment preparation and identity state"
+    },
+    "idc_commerce_payment_context_reason": {
+      "identity_expired": {
+        "label": "Identity verification expired"
+      },
+      "identity_pending": {
+        "label": "Identity verification is pending"
+      },
+      "identity_rejected": {
+        "label": "Identity verification was rejected"
+      },
+      "identity_revoked": {
+        "label": "Identity verification was revoked"
+      },
+      "identity_unverified": {
+        "label": "Identity is not verified"
+      },
+      "name": "IDC payment preparation reason",
+      "order_cancelled": {
+        "label": "Order was cancelled"
+      },
+      "order_not_payable": {
+        "label": "Order is not payable"
+      },
+      "order_review_required": {
+        "label": "Order review is still required"
+      },
+      "payment_expired": {
+        "label": "Payment window expired"
+      },
+      "payment_ready": {
+        "label": "Order is ready for payment"
+      },
+      "remark": "Stable payment preparation decision reason"
+    },
+    "idc_commerce_assisted_quote_status": {
+      "approved": {
+        "label": "Approved"
+      },
+      "name": "IDC assisted quote status",
+      "ordered": {
+        "label": "Ordered"
+      },
+      "pending_approval": {
+        "label": "Pending approval"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Independent approval and checkout lifecycle for staff-assisted quotes"
+    },
+    "idc_commerce_assisted_payment_term": {
+      "extended_prepay": {
+        "label": "Extended prepayment deadline"
+      },
+      "name": "IDC assisted quote payment term",
+      "remark": "Prepayment-only standard or approved extended deadlines",
+      "standard_prepay": {
+        "label": "Standard prepayment"
+      }
+    },
+    "idc_commerce_assisted_quote_decision": {
+      "approved": {
+        "label": "Approved"
+      },
+      "name": "IDC assisted quote decision",
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Independent staff decision for assisted quotes"
+    },
+    "idc_service_entitlement_status": {
+      "active": {
+        "label": "Active"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "grace": {
+        "label": "Grace period"
+      },
+      "name": "IDC Service Entitlement Status",
+      "pending_activation": {
+        "label": "Pending activation"
+      },
+      "remark": "Customer service entitlement lifecycle",
+      "terminated": {
+        "label": "Terminated"
+      },
+      "terminating": {
+        "label": "Terminating"
+      }
+    },
+    "idc_service_runtime_status": {
+      "changing": {
+        "label": "Changing"
+      },
+      "name": "IDC Service Runtime Status",
+      "pending_provision": {
+        "label": "Pending provision"
+      },
+      "provisioning": {
+        "label": "Provisioning"
+      },
+      "remark": "Local server runtime-state projection",
+      "resuming": {
+        "label": "Resuming"
+      },
+      "running": {
+        "label": "Running"
+      },
+      "stopped": {
+        "label": "Stopped"
+      },
+      "suspended": {
+        "label": "Suspended"
+      },
+      "terminated": {
+        "label": "Terminated"
+      },
+      "terminating": {
+        "label": "Terminating"
+      },
+      "unknown": {
+        "label": "Unknown"
+      }
+    },
+    "idc_service_provider_task_status": {
+      "executing": {
+        "label": "Executing"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC Provider Task Status",
+      "none": {
+        "label": "No task"
+      },
+      "pending": {
+        "label": "Pending"
+      },
+      "remark": "Redacted Provider task-state projection for a service",
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_service_renewal_mode": {
+      "local_entitlement": {
+        "label": "Local entitlement"
+      },
+      "name": "IDC Renewal Fulfillment Mode",
+      "provider_confirmed": {
+        "label": "Provider confirmed"
+      },
+      "remark": "Wait for Provider confirmation or advance only local entitlement",
+      "unresolved": {
+        "label": "Unresolved"
+      }
+    },
+    "idc_business_operation_type": {
+      "addon": {
+        "label": "Add-on"
+      },
+      "change": {
+        "label": "Configuration change"
+      },
+      "ip_change": {
+        "label": "IP change"
+      },
+      "name": "IDC Business Operation Type",
+      "new_purchase": {
+        "label": "New purchase"
+      },
+      "console": {
+        "label": "Console"
+      },
+      "reboot": {
+        "label": "Reboot"
+      },
+      "reinstall": {
+        "label": "Reinstall"
+      },
+      "reset_password": {
+        "label": "Reset password"
+      },
+      "resize": {
+        "label": "Resize"
+      },
+      "refund": {
+        "label": "Refund"
+      },
+      "remark": "Unified service business-operation types",
+      "renewal": {
+        "label": "Renewal"
+      },
+      "resume": {
+        "label": "Resume"
+      },
+      "start": {
+        "label": "Start"
+      },
+      "stop": {
+        "label": "Stop"
+      },
+      "suspend": {
+        "label": "Suspend"
+      },
+      "terminate": {
+        "label": "Terminate"
+      }
+    },
+    "idc_business_operation_status": {
+      "awaiting_financial_settlement": {
+        "label": "Awaiting financial settlement"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "compensating": {
+        "label": "Compensating"
+      },
+      "executing": {
+        "label": "Executing"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "financially_settled": {
+        "label": "Financially settled"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC Business Operation Status",
+      "quoted": {
+        "label": "Quoted"
+      },
+      "ready": {
+        "label": "Ready"
+      },
+      "remark": "Unified business-operation Saga lifecycle",
+      "refunding": {
+        "label": "Refunding"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_service_price_phase": {
+      "addon": {
+        "label": "Server accessory"
+      },
+      "name": "IDC Service Price Snapshot Phase",
+      "new_purchase": {
+        "label": "New purchase"
+      },
+      "remark": "Immutable new-purchase, renewal, or accessory price snapshot",
+      "renewal": {
+        "label": "Renewal"
+      }
+    },
+    "idc_service_renewal_attempt_outcome": {
+      "balance_settled": {
+        "label": "Balance settled"
+      },
+      "exhausted": {
+        "label": "Attempts exhausted"
+      },
+      "insufficient_balance": {
+        "label": "Insufficient balance"
+      },
+      "name": "IDC Automatic Renewal Attempt Outcome",
+      "remark": "Same-currency balance payment and retry outcomes for automatic renewal",
+      "retryable_failure": {
+        "label": "Waiting to retry"
+      },
+      "zero_settled": {
+        "label": "Zero amount settled"
+      }
+    },
+    "idc_service_lifecycle_action": {
+      "enter_grace": {
+        "label": "Enter grace period"
+      },
+      "mark_expired": {
+        "label": "Mark expired"
+      },
+      "name": "IDC Service Lifecycle Task Action",
+      "reminder": {
+        "label": "Expiry reminder"
+      },
+      "remark": "Scheduled reminder, grace, suspension, recovery, and termination actions",
+      "resume": {
+        "label": "Resume service"
+      },
+      "suspend": {
+        "label": "Suspend service"
+      },
+      "terminate": {
+        "label": "Terminate service"
+      }
+    },
+    "idc_service_lifecycle_task_status": {
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "claimed": {
+        "label": "Claimed"
+      },
+      "dispatched": {
+        "label": "Dispatched"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "manual_review": {
+        "label": "Manual review"
+      },
+      "name": "IDC Service Lifecycle Task Status",
+      "pending": {
+        "label": "Pending"
+      },
+      "remark": "Task-only expiry scheduling and execution lifecycle",
+      "succeeded": {
+        "label": "Succeeded"
+      }
+    },
+    "idc_credit_application_status": {
+      "name": "IDC Credit Application Status",
+      "remark": "Per-currency credit application and approval lifecycle",
+      "pending_review": {
+        "label": "Pending review"
+      },
+      "approved": {
+        "label": "Approved"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "expired": {
+        "label": "Expired"
+      }
+    },
+    "idc_credit_account_status": {
+      "name": "IDC Credit Account Status",
+      "remark": "Per-currency credit account lifecycle",
+      "pending_activation": {
+        "label": "Pending activation"
+      },
+      "active": {
+        "label": "Active"
+      },
+      "frozen": {
+        "label": "Frozen"
+      },
+      "expired": {
+        "label": "Expired"
+      },
+      "closed": {
+        "label": "Closed"
+      },
+      "bad_debt": {
+        "label": "Bad debt"
+      }
+    },
+    "idc_credit_exposure_status": {
+      "name": "IDC Credit Exposure Status",
+      "remark": "Credit reservation, billing, repayment, release, and write-off lifecycle",
+      "unbilled": {
+        "label": "Unbilled"
+      },
+      "partially_billed": {
+        "label": "Partially billed"
+      },
+      "billed": {
+        "label": "Billed"
+      },
+      "partially_repaid": {
+        "label": "Partially repaid"
+      },
+      "settled": {
+        "label": "Settled"
+      },
+      "released": {
+        "label": "Released"
+      },
+      "written_off": {
+        "label": "Written off"
+      }
+    },
+    "idc_credit_statement_status": {
+      "name": "IDC Credit Statement Status",
+      "remark": "Credit statement repayment, delinquency, and write-off lifecycle",
+      "open": {
+        "label": "Open"
+      },
+      "partially_paid": {
+        "label": "Partially paid"
+      },
+      "paid": {
+        "label": "Paid"
+      },
+      "overdue": {
+        "label": "Overdue"
+      },
+      "written_off": {
+        "label": "Written off"
+      },
+      "cancelled": {
+        "label": "Cancelled"
+      },
+      "refunded": {
+        "label": "Refunded"
+      }
+    },
+    "idc_credit_repayment_status": {
+      "name": "IDC Credit Repayment Status",
+      "remark": "Credit repayment confirmation and allocation lifecycle",
+      "pending": {
+        "label": "Pending"
+      },
+      "confirmed": {
+        "label": "Confirmed"
+      },
+      "partially_allocated": {
+        "label": "Partially allocated"
+      },
+      "allocated": {
+        "label": "Allocated"
+      },
+      "refunded": {
+        "label": "Refunded"
+      },
+      "failed": {
+        "label": "Failed"
+      }
+    },
+    "idc_credit_delinquency_status": {
+      "name": "IDC Credit Delinquency Status",
+      "remark": "Grace, freeze, service action, write-off, and resolution lifecycle",
+      "grace_period": {
+        "label": "Grace period"
+      },
+      "frozen": {
+        "label": "Frozen"
+      },
+      "service_action_pending": {
+        "label": "Service action pending"
+      },
+      "written_off": {
+        "label": "Written off"
+      },
+      "resolved": {
+        "label": "Resolved"
+      }
+    },
+    "idc_credit_movement_type": {
+      "name": "IDC Credit Movement Type",
+      "remark": "Immutable credit projection movement type",
+      "limit_granted": {
+        "label": "Limit granted"
+      },
+      "limit_adjusted": {
+        "label": "Limit adjusted"
+      },
+      "reserve": {
+        "label": "Reserved"
+      },
+      "release": {
+        "label": "Released"
+      },
+      "bill": {
+        "label": "Billed"
+      },
+      "repayment": {
+        "label": "Repaid"
+      },
+      "prepayment": {
+        "label": "Prepaid"
+      },
+      "refund": {
+        "label": "Refund released"
+      },
+      "late_fee": {
+        "label": "Late fee"
+      },
+      "freeze": {
+        "label": "Frozen"
+      },
+      "unfreeze": {
+        "label": "Unfrozen"
+      },
+      "expire": {
+        "label": "Expired"
+      },
+      "close": {
+        "label": "Closed"
+      },
+      "delinquency": {
+        "label": "Marked delinquent"
+      },
+      "cure": {
+        "label": "Delinquency cured"
+      },
+      "writeoff": {
+        "label": "Written off"
+      },
+      "recovery": {
+        "label": "Recovered"
+      },
+      "migration": {
+        "label": "Migrated"
+      }
+    },
+    "idc_credit_writeoff_type": {
+      "name": "IDC Credit Write-off Type",
+      "remark": "Credit bad-debt write-off and reversal type",
+      "writeoff": {
+        "label": "Write-off"
+      },
+      "reversal": {
+        "label": "Write-off reversal"
+      }
+    },
+    "idc_content_category_group": {
+      "name": "IDC content category group",
+      "remark": "Fixed content category groups resolved by the current interface language",
+      "uncategorized": {
+        "label": "Uncategorized"
+      }
+    },
+    "idc_refund_status": {
+      "name": "IDC refund status",
+      "remark": "Online refund request and execution lifecycle",
+      "pending_review": {
+        "label": "Pending review"
+      },
+      "approved": {
+        "label": "Approved"
+      },
+      "awaiting_balance_consent": {
+        "label": "Awaiting balance consent"
+      },
+      "executing": {
+        "label": "Refunding"
+      },
+      "succeeded": {
+        "label": "Refunded"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "manual_confirmation": {
+        "label": "Manual confirmation"
+      },
+      "rejected": {
+        "label": "Rejected"
+      }
+    },
+    "idc_refund_reason": {
+      "name": "IDC refund reason",
+      "remark": "Fixed customer-selectable refund reasons",
+      "duplicate_purchase": {
+        "label": "Duplicate purchase"
+      },
+      "wrong_configuration": {
+        "label": "Wrong configuration"
+      },
+      "service_issue": {
+        "label": "Service issue"
+      },
+      "no_longer_needed": {
+        "label": "No longer needed"
+      },
+      "other": {
+        "label": "Other"
+      }
+    },
+    "idc_refund_approval_mode": {
+      "name": "IDC refund approval mode",
+      "remark": "Automatic or staff refund review",
+      "automatic": {
+        "label": "Automatic"
+      },
+      "manual": {
+        "label": "Manual"
+      }
+    },
+    "idc_refund_execution_status": {
+      "name": "IDC refund execution status",
+      "remark": "Durable refund money command lifecycle",
+      "pending": {
+        "label": "Pending"
+      },
+      "claimed": {
+        "label": "Claimed"
+      },
+      "succeeded": {
+        "label": "Succeeded"
+      },
+      "failed": {
+        "label": "Failed"
+      },
+      "result_unknown": {
+        "label": "Result unknown"
+      },
+      "manual_confirmation": {
+        "label": "Manual confirmation"
+      }
+    },
+    "idc_verification_status": {
+      "expired": {
+        "label": "Expired"
+      },
+      "name": "IDC customer verification status",
+      "pending": {
+        "label": "Pending"
+      },
+      "rejected": {
+        "label": "Rejected"
+      },
+      "remark": "Individual and enterprise customer verification lifecycle",
+      "revoked": {
+        "label": "Revoked"
+      },
+      "unverified": {
+        "label": "Unverified"
+      },
+      "verified": {
+        "label": "Verified"
+      }
+    }
+  }
+}

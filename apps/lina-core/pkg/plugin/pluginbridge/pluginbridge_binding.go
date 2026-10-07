@@ -111,11 +111,40 @@ func applyGuestRouteValues(target reflect.Value, request *protocol.BridgeRequest
 			setGuestRequestFieldValue(fieldValue, raw, true)
 			return true
 		}
-		if values, ok := request.Route.QueryValues[jsonName]; ok && len(values) > 0 {
-			setGuestRequestFieldValue(fieldValue, values[0], false)
+		if values := guestQueryValues(request.Route.QueryValues, jsonName); len(values) > 0 {
+			setGuestRequestFieldValues(fieldValue, values)
 		}
 		return true
 	})
+}
+
+// guestQueryValues accepts both repeated keys (`ids=1&ids=2`) and the
+// bracketed array form (`ids[]=1&ids[]=2`) emitted by the web clients.
+func guestQueryValues(queryValues map[string][]string, jsonName string) []string {
+	if values := queryValues[jsonName]; len(values) > 0 {
+		return values
+	}
+	return queryValues[jsonName+"[]"]
+}
+
+// setGuestRequestFieldValues binds all query values when the DTO field is a
+// slice and otherwise preserves the existing first-value behavior.
+func setGuestRequestFieldValues(fieldValue reflect.Value, values []string) {
+	if !fieldValue.IsValid() || !fieldValue.CanSet() || len(values) == 0 {
+		return
+	}
+	if fieldValue.Kind() != reflect.Slice {
+		setGuestRequestFieldValue(fieldValue, values[0], false)
+		return
+	}
+
+	result := reflect.MakeSlice(fieldValue.Type(), 0, len(values))
+	for _, raw := range values {
+		item := reflect.New(fieldValue.Type().Elem()).Elem()
+		setGuestRequestFieldValue(item, raw, false)
+		result = reflect.Append(result, item)
+	}
+	fieldValue.Set(result)
 }
 
 // walkGuestRequestFields visits each exported non-anonymous field that exposes

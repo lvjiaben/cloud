@@ -66,16 +66,17 @@ func TestBatchGetAppliesDataScope(t *testing.T) {
 func TestBatchGetAllowsHostSystemOrchestrationWithoutDataScope(t *testing.T) {
 	ctx := context.Background()
 	scopeSvc := &recordingDataScope{empty: true}
+	const missingUserID capabilityusercap.UserID = "2147483647"
 
 	systemCtx := bizctxcap.WithCurrentContext(ctx, bizctxcap.CurrentContext{PlatformBypass: true})
-	result, err := NewCapabilityAdapter(nil, nil, scopeSvc, nil).BatchGet(systemCtx, []capabilityusercap.UserID{"7"})
+	result, err := NewCapabilityAdapter(nil, nil, scopeSvc, nil).BatchGet(systemCtx, []capabilityusercap.UserID{missingUserID})
 	if err != nil {
 		t.Fatalf("batch get users failed: %v", err)
 	}
 	if scopeSvc.applyCalls != 0 {
 		t.Fatalf("expected host system orchestration to bypass request data scope, calls=%d", scopeSvc.applyCalls)
 	}
-	if !containsUserID(result.MissingIDs, "7") {
+	if !containsUserID(result.MissingIDs, missingUserID) {
 		t.Fatalf("expected missing row to stay opaque, got %#v", result)
 	}
 }

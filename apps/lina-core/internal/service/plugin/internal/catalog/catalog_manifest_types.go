@@ -9,6 +9,7 @@ import (
 	hostconfig "lina-core/internal/service/config"
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/pkg/menutype"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 	"lina-core/pkg/plugin/pluginhost"
 )
@@ -71,6 +72,13 @@ type Manifest struct {
 	I18N *hostconfig.I18nConfig `yaml:"i18n"`
 	// Dependencies declares host and plugin dependency constraints.
 	Dependencies *plugintypes.DependencySpec `yaml:"dependencies"`
+	// BusinessExtensions independently declares versioned business-owner or
+	// provider capabilities. It is not inferred from plugin ID, type, or distribution.
+	BusinessExtensions []*capmodel.BusinessExtensionDeclaration `yaml:"business_extensions" json:"business_extensions,omitempty"`
+	// AdminSurfaces declares governed administration-console pages and menus.
+	AdminSurfaces []*capmodel.FrontendSurfaceDeclaration `yaml:"admin_surfaces" json:"admin_surfaces,omitempty"`
+	// CustomerSurfaces declares governed signed-in customer-center pages and menus.
+	CustomerSurfaces []*capmodel.FrontendSurfaceDeclaration `yaml:"customer_surfaces" json:"customer_surfaces,omitempty"`
 	// Menus holds manifest-declared host menu entries.
 	Menus []*MenuSpec `yaml:"menus"`
 	// PublicAssets declares plugin-relative frontend asset directories that the
@@ -326,6 +334,13 @@ type ArtifactManifest struct {
 	Description string `json:"description,omitempty" yaml:"description,omitempty"`
 	// Dependencies declares host and plugin dependency constraints.
 	Dependencies *plugintypes.DependencySpec `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	// BusinessExtensions declares versioned business capabilities independently
+	// from runtime and distribution metadata.
+	BusinessExtensions []*capmodel.BusinessExtensionDeclaration `json:"business_extensions,omitempty" yaml:"business_extensions,omitempty"`
+	// AdminSurfaces declares administration-console frontend surfaces.
+	AdminSurfaces []*capmodel.FrontendSurfaceDeclaration `json:"admin_surfaces,omitempty" yaml:"admin_surfaces,omitempty"`
+	// CustomerSurfaces declares signed-in customer-center frontend surfaces.
+	CustomerSurfaces []*capmodel.FrontendSurfaceDeclaration `json:"customer_surfaces,omitempty" yaml:"customer_surfaces,omitempty"`
 	// Menus holds manifest-declared host menu entries.
 	Menus []*MenuSpec `json:"menus,omitempty" yaml:"menus,omitempty"`
 	// PublicAssets declares frontend asset prefixes that may be served through

@@ -1,0 +1,130 @@
+{
+  "common": {
+    "cancelChanges": "Discard changes",
+    "refresh": "Refresh",
+    "retry": "Retry"
+  },
+  "type": {
+    "enterprise": "Business customer",
+    "individual": "Individual customer"
+  },
+  "status": {
+    "active": "Active",
+    "disabled": "Disabled",
+    "pending_activation": "Pending activation",
+    "restricted": "Restricted"
+  },
+  "verification": {
+    "expired": "Verification expired",
+    "pending": "Verification in progress",
+    "rejected": "Verification rejected",
+    "revoked": "Verification revoked",
+    "unverified": "Not verified",
+    "verified": "Verified"
+  },
+  "profile": {
+    "accountCard": "Account information",
+    "accountStatus": "Account status",
+    "countryCode": "Country or region code",
+    "customerNo": "Customer number",
+    "customerType": "Customer type",
+    "displayName": "Display name",
+    "editCard": "Editable details",
+    "eyebrow": "Account profile",
+    "heading": "Manage your basic profile",
+    "identifier": "Identity or registration number",
+    "legalName": "Verified name",
+    "legalNote": "Verified names, identity numbers and business registration details cannot be changed here. Submit them for review from the verification page.",
+    "loadFailed": "Your profile could not be loaded. Please retry.",
+    "locale": "Preferred language",
+    "localeEn": "English",
+    "localeZh": "简体中文",
+    "menu": "Account profile",
+    "save": "Save profile",
+    "saved": "Your account profile has been saved.",
+    "subtitle": "These are ordinary display details. They do not change verification, your password or account permissions.",
+    "title": "Account profile",
+    "verification": "Verification status"
+  },
+  "contacts": {
+    "add": "Add contact",
+    "archive": "Deactivate",
+    "archiveCancel": "Keep active",
+    "archiveConfirm": "Deactivate",
+    "archiveDescription": "This contact will stop receiving new notifications. Existing history remains retained.",
+    "archiveTitle": "Deactivate this contact?",
+    "archived": "The contact has been deactivated.",
+    "authorityWarning": "Notification contacts only receive messages you authorize. They do not gain sign-in, payment, server operation or contract signing authority.",
+    "callingCode": "Calling code",
+    "cancel": "Cancel",
+    "createTitle": "Add notification contact",
+    "created": "The contact has been added.",
+    "description": "Manage recipients for billing, service and security notices. Enter at least an email address or a phone number.",
+    "edit": "Edit",
+    "editTitle": "Edit notification contact",
+    "email": "Email",
+    "empty": "There are no notification contacts yet.",
+    "name": "Contact name",
+    "phone": "Phone number",
+    "save": "Save contact",
+    "status": {
+      "active": "Active",
+      "archived": "Deactivated"
+    },
+    "title": "Notification contacts",
+    "updated": "The contact has been updated.",
+    "verification": {
+      "unverified": "Not verified",
+      "verified": "Verified"
+    },
+    "verificationReset": "Changing the email address or phone number clears its previous verification. Verify the new destination before using it for notifications."
+  },
+  "data": {
+    "closureAction": "Request account closure",
+    "closureBlocked": "Some items must be resolved before a closure request can be submitted.",
+    "closureCancel": "Not now",
+    "closureConfirm": "Submit request",
+    "closureConfirmDescription": "The system first checks funds, billing invoices, servers, contracts and in-progress work. Passing the check only starts a manual review; it does not immediately delete the account.",
+    "closureConfirmTitle": "Request account closure?",
+    "closureDescription": "Closure is not immediate deletion. Funds, billing invoices, servers, contracts and in-progress work are checked first. Ordinary profile data is anonymized only after approval. Contract, tax invoice and audit evidence required by law remains retained.",
+    "closurePending": "Your closure request is waiting for manual review. Every blocking condition will be checked again before final processing.",
+    "closureSafety": "Closure is blocked while there are funds, unpaid billing invoices, active servers, active contracts or in-progress work.",
+    "closureSubmitted": "Your closure request has been submitted for review.",
+    "closureTitle": "Account closure",
+    "download": "Download export",
+    "expiresAt": "File expires",
+    "exportAction": "Request export",
+    "exportDescription": "The system creates a private archive for this account only. It is never public and is not kept behind a long-lived ordinary link.",
+    "exportFailed": "The export request was not submitted. Sign in again and retry.",
+    "exportRequested": "The export task was created. Refresh its status in a moment.",
+    "exportSecurity": "Exporting sensitive data requires a recent full sign-in. The private file and download access both expire shortly.",
+    "exportTitle": "Export my data",
+    "eyebrow": "Data rights",
+    "findingsTitle": "Check results",
+    "heading": "Download your data or request closure",
+    "menu": "Data and closure",
+    "refreshStatus": "Refresh export status",
+    "requestNo": "Request number",
+    "requestedAt": "Requested at",
+    "resolveFindings": "Resolve the items above, then submit a new closure request.",
+    "status": "Status",
+    "subtitle": "Every action is bound to the signed-in customer account. A staff account cannot enter this area and act on your behalf.",
+    "title": "Data and closure"
+  },
+  "exportStatus": {
+    "cancelled": "Cancelled",
+    "failed": "Generation failed",
+    "pending": "Waiting",
+    "ready": "Ready to download",
+    "running": "Generating",
+    "succeeded": "Generated"
+  },
+  "closureFinding": {
+    "active_contracts": "Contracts still in progress",
+    "active_services": "Active server services",
+    "in_progress_operations": "Business operations still in progress",
+    "legal_retention": "Evidence that must be retained by law (does not block the request)",
+    "unsettled_funds": "Unsettled balance or held funds",
+    "unsettled_invoices": "Unsettled billing invoices"
+  }
+}

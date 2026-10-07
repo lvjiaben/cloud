@@ -1,0 +1,84 @@
+{
+  "platformMenu": "Platform verification",
+  "platform": {
+    "title": "Platform verification",
+    "description": "Every account verifies the account holder first. Enterprise verification becomes available afterwards and upgrades the account only when approved.",
+    "personalFirst": "Complete identity verification before enterprise verification",
+    "personalTab": "Identity verification",
+    "enterpriseTab": "Enterprise verification",
+    "gateFailed": "Identity status is temporarily unavailable. Enterprise verification remains safely locked; try again later."
+  },
+  "account": "Account center · Identity",
+  "lead": "Identity verification is completed once. Returning here never means approval; the system rechecks the authoritative Aliyun result.",
+  "loadFailed": "Identity verification is temporarily unavailable. Try again later.",
+  "menu": "Identity verification",
+  "personalOnly": "This entry is for individual customers. Enterprise customers use the enterprise verification flow.",
+  "reload": "Reload",
+  "returnChecking": "You returned from the verification page. The system is rechecking the result with Aliyun…",
+  "returnPending": "The authoritative check completed, but Aliyun has not confirmed approval. Check again later instead of starting another attempt.",
+  "title": "Verify who you are before the first payment",
+  "status": {
+    "expired": "Expired",
+    "hint": "Status comes only from local evidence or an authoritative Aliyun query, never result parameters in the browser address.",
+    "rejected": "Not passed",
+    "review_required": "Merchant review required",
+    "title": "Current verification status",
+    "unverified": "Not verified",
+    "verified": "Verified",
+    "verifying": "Verification in progress"
+  },
+  "verified": {
+    "description": "The first-payment identity gate was updated from a server-authoritative result.",
+    "name": "Name",
+    "number": "Identity document",
+    "time": "Verified at",
+    "title": "Identity verification passed"
+  },
+  "payment": {
+    "continue": "Return to the original order",
+    "failed": "Identity passed, but automatic payment recovery is temporarily unavailable. Retry from the original order without creating another order.",
+    "orders": "Back to my orders",
+    "pending": "Identity passed, but the original payment preparation still needs a server recheck. You can retry safely from the order.",
+    "ready": "The original payment preparation was revalidated and is ready to continue."
+  },
+  "verifying": {
+    "query": "Recheck authoritative result",
+    "querying": "Checking…",
+    "title": "Verification is in progress"
+  },
+  "review": {
+    "description": "There is no force-approve action. The merchant works from masked case evidence; never send a full identity number in a ticket.",
+    "title": "Contact the merchant for assistance"
+  },
+  "retry": {
+    "description": "A rejected or expired attempt can be submitted again. Document and age checks still run on the server.",
+    "title": "You can start a new verification"
+  },
+  "form": {
+    "invalid": "Enter your legal name and a valid 18-digit resident identity number, then grant separate consent.",
+    "lead": "The first release supports mainland Chinese individual customers aged 14 or above with an 18-digit resident identity card.",
+    "name": "Legal name",
+    "namePlaceholder": "Name exactly as shown on the identity card",
+    "number": "Resident identity card number",
+    "numberPlaceholder": "18-digit resident identity card number",
+    "safety": "The name and identity number are never written to browser storage or retained in ordinary case, audit, or task records.",
+    "start": "Consent and continue to Aliyun",
+    "starting": "Starting securely…",
+    "title": "Enter your own identity information"
+  },
+  "consent": {
+    "accept": "I have read and separately consent to the sensitive-personal-information processing above, and I confirm this is my own information.",
+    "data": "Your legal name, 18-digit resident identity card number, and face/liveness information collected directly on the Aliyun verification page.",
+    "dataTitle": "Information processed",
+    "purpose": "Used to satisfy the first-payment identity requirement, prevent impersonation, and create an auditable verification conclusion. Declining prevents the first payment.",
+    "purposeTitle": "Purpose and necessity",
+    "recipient": "The IDC merchant operating this site uses its own Aliyun account for financial-grade real-person verification. End customers neither configure nor pay for that technical account.",
+    "recipientTitle": "Recipient and responsibility",
+    "rights": "Contact the merchant to access, correct, or lawfully delete information, or withdraw consent for later processing. Withdrawal does not affect prior lawful processing and may prevent the first payment.",
+    "rightsTitle": "Your rights",
+    "storage": "The provider integration region is mainland China. This system does not store face images or liveness video; it retains masked results, necessary evidence, and a protected encrypted snapshot for the period required by applicable law and the merchant privacy policy.",
+    "storageTitle": "Storage and processing region",
+    "title": "Separate consent for sensitive personal information",
+    "version": "Notice version"
+  }
+}

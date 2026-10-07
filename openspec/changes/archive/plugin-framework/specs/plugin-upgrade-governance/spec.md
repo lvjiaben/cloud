@@ -24,8 +24,8 @@
 
 #### Scenario: Provider 升级后不满足下游插件依赖版本
 
-- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`linapro-org-core`版本范围`>=1.0.0 <2.0.0`
-- **AND** 管理员尝试将`linapro-org-core`升级为不满足该范围的新版本
+- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`org-core`版本范围`>=1.0.0 <2.0.0`
+- **AND** 管理员尝试将`org-core`升级为不满足该范围的新版本
 - **THEN** 升级请求失败或要求先处理下游依赖
 - **AND** 错误包含下游插件 ID、provider 插件 ID 和所需版本范围
 - **AND** 即使`consumer`当前已禁用，升级仍 MUST 被阻断

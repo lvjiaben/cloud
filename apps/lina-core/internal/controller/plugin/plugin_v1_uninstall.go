@@ -31,5 +31,5 @@ func (c *ControllerV1) Uninstall(ctx context.Context, req *v1.UninstallReq) (res
 // resolvePurgeStorageData converts the optional public yes/no flag into the
 // effective uninstall storage-purge behavior.
 func resolvePurgeStorageData(value *statusflag.YesNo) bool {
-	return yesNoPtrToBool(value, true)
+	return yesNoPtrToBool(value, false)
 }

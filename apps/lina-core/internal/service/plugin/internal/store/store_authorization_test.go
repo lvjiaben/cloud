@@ -13,7 +13,7 @@ import (
 // install-time authorization cannot preserve a host core table grant.
 func TestBuildAuthorizedHostServiceSpecsForPluginRejectsCoreTables(t *testing.T) {
 	_, err := BuildAuthorizedHostServiceSpecsForPlugin(
-		"linapro-demo-dynamic",
+		"demo-dynamic",
 		[]*protocol.HostServiceSpec{{
 			Service: protocol.HostServiceData,
 			Methods: []string{protocol.HostServiceMethodDataList},
@@ -34,7 +34,7 @@ func TestBuildAuthorizedHostServiceSpecsForPluginRejectsCoreTables(t *testing.T)
 // install-time authorization preserves only explicitly confirmed plugin-owned tables.
 func TestBuildAuthorizedHostServiceSpecsForPluginKeepsOwnedTables(t *testing.T) {
 	authorized, err := BuildAuthorizedHostServiceSpecsForPlugin(
-		"linapro-demo-dynamic",
+		"demo-dynamic",
 		[]*protocol.HostServiceSpec{{
 			Service: protocol.HostServiceData,
 			Methods: []string{
@@ -42,14 +42,14 @@ func TestBuildAuthorizedHostServiceSpecsForPluginKeepsOwnedTables(t *testing.T) 
 				protocol.HostServiceMethodDataUpdate,
 			},
 			Tables: []string{
-				"plugin_linapro_demo_dynamic_record",
-				"plugin_linapro_demo_dynamic_archive",
+				"plugin_demo_dynamic_record",
+				"plugin_demo_dynamic_archive",
 			},
 		}},
 		&HostServiceAuthorizationInput{Services: []*HostServiceAuthorizationDecision{{
 			Service: protocol.HostServiceData,
 			Methods: []string{protocol.HostServiceMethodDataList},
-			Tables:  []string{"plugin_linapro_demo_dynamic_record"},
+			Tables:  []string{"plugin_demo_dynamic_record"},
 		}}},
 	)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestBuildAuthorizedHostServiceSpecsForPluginKeepsOwnedTables(t *testing.T) 
 	if len(authorized[0].Methods) != 1 || authorized[0].Methods[0] != protocol.HostServiceMethodDataList {
 		t.Fatalf("expected method narrowing to keep list only, got %#v", authorized[0].Methods)
 	}
-	if len(authorized[0].Tables) != 1 || authorized[0].Tables[0] != "plugin_linapro_demo_dynamic_record" {
+	if len(authorized[0].Tables) != 1 || authorized[0].Tables[0] != "plugin_demo_dynamic_record" {
 		t.Fatalf("expected confirmed plugin-owned table only, got %#v", authorized[0].Tables)
 	}
 }
@@ -71,10 +71,10 @@ func TestBuildAuthorizedHostServiceSpecsForPluginKeepsOwnedTables(t *testing.T) 
 // same service name.
 func TestBuildAuthorizedHostServiceSpecsForPluginUsesOwnerAwareIdentity(t *testing.T) {
 	authorized, err := BuildAuthorizedHostServiceSpecsForPlugin(
-		"linapro-demo-dynamic",
+		"demo-dynamic",
 		[]*protocol.HostServiceSpec{
 			{
-				Owner:   "linapro-ai-core",
+				Owner:   "ai-core",
 				Service: "ai",
 				Version: "v1",
 				Methods: []string{"text.generate"},
@@ -93,7 +93,7 @@ func TestBuildAuthorizedHostServiceSpecsForPluginUsesOwnerAwareIdentity(t *testi
 			},
 		},
 		&HostServiceAuthorizationInput{Services: []*HostServiceAuthorizationDecision{{
-			Owner:        " LINAPRO-AI-CORE ",
+			Owner:        " ai-core ",
 			Service:      " AI ",
 			Version:      " V1 ",
 			Methods:      []string{"text.generate"},
@@ -106,7 +106,7 @@ func TestBuildAuthorizedHostServiceSpecsForPluginUsesOwnerAwareIdentity(t *testi
 	if len(authorized) != 1 {
 		t.Fatalf("expected one authorized owner-aware host service, got %#v", authorized)
 	}
-	if authorized[0].Owner != "linapro-ai-core" || authorized[0].Service != "ai" || authorized[0].Version != "v1" {
+	if authorized[0].Owner != "ai-core" || authorized[0].Service != "ai" || authorized[0].Version != "v1" {
 		t.Fatalf("expected owner-aware identity to be preserved, got %#v", authorized[0])
 	}
 	if len(authorized[0].Resources) != 1 || authorized[0].Resources[0].Ref != "purpose:summary" {

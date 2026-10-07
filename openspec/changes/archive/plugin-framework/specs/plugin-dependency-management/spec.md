@@ -214,15 +214,15 @@ TBD - created by archiving change plugin-dependency-management. Update Purpose a
 
 #### Scenario: 缺失硬 Provider 插件阻断启用
 
-- **WHEN** 插件`consumer`在`dependencies.plugins`中硬依赖`linapro-tenant-core`
-- **AND** `linapro-tenant-core`未安装、未启用或版本不满足
+- **WHEN** 插件`consumer`在`dependencies.plugins`中硬依赖`tenant-core`
+- **AND** `tenant-core`未安装、未启用或版本不满足
 - **THEN** 启用`consumer`失败
 - **AND** 系统不得执行该插件启用后的路由发布、cron 注册或运行时状态切换
 
 #### Scenario: Provider 升级受下游插件依赖保护
 
-- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`linapro-org-core`版本范围`>=1.0.0 <2.0.0`
-- **AND** 管理员尝试将`linapro-org-core`升级为不满足该范围的版本
+- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`org-core`版本范围`>=1.0.0 <2.0.0`
+- **AND** 管理员尝试将`org-core`升级为不满足该范围的版本
 - **THEN** 升级请求失败
 - **AND** 错误包含下游插件 ID、provider 插件 ID 和版本要求
 
@@ -283,14 +283,14 @@ TBD - created by archiving change plugin-dependency-management. Update Purpose a
 
 #### Scenario: 源码插件 import owner backend/cap
 
-- **WHEN** 源码插件生产代码 import `lina-plugin-linapro-ai-core/backend/cap/aicap/aitext`
-- **THEN** 该插件`plugin.yaml` MUST 在`dependencies.plugins`中声明`id: linapro-ai-core`
+- **WHEN** 源码插件生产代码 import `lina-plugin-ai-core/backend/cap/aicap/aitext`
+- **THEN** 该插件`plugin.yaml` MUST 在`dependencies.plugins`中声明`id: ai-core`
 - **AND** 治理扫描 MUST 在缺少依赖声明时失败
 
 #### Scenario: 动态插件声明 owner host service
 
-- **WHEN** 动态插件`hostServices`声明`owner: linapro-ai-core`
-- **THEN** 该插件`dependencies.plugins` MUST 声明`linapro-ai-core`和兼容版本范围
+- **WHEN** 动态插件`hostServices`声明`owner: ai-core`
+- **THEN** 该插件`dependencies.plugins` MUST 声明`ai-core`和兼容版本范围
 - **AND** 清单校验、artifact 校验、安装或启用路径 MUST 在依赖缺失时阻断
 
 #### Scenario: 不引入 capability 依赖块
@@ -311,23 +311,23 @@ TBD - created by archiving change plugin-dependency-management. Update Purpose a
 
 #### Scenario: 禁用被已启用动态插件依赖的 owner
 
-- **WHEN** 动态插件依赖`linapro-ai-core`并已授权调用`owner: linapro-ai-core service: ai`
+- **WHEN** 动态插件依赖`ai-core`并已授权调用`owner: ai-core service: ai`
 - **AND** 该动态插件当前已启用
-- **AND** 管理员尝试禁用`linapro-ai-core`
+- **AND** 管理员尝试禁用`ai-core`
 - **THEN** 禁用请求 MUST 被依赖检查阻断
 - **AND** 阻断结果 MUST 列出依赖该 owner 的动态插件和对应 owner 能力声明
 
 #### Scenario: 下游动态插件已禁用时允许禁用 owner
 
-- **WHEN** 动态插件依赖`linapro-ai-core`并已授权调用`owner: linapro-ai-core service: ai`
+- **WHEN** 动态插件依赖`ai-core`并已授权调用`owner: ai-core service: ai`
 - **AND** 该动态插件当前已安装但已禁用
-- **AND** 管理员尝试禁用`linapro-ai-core`
+- **AND** 管理员尝试禁用`ai-core`
 - **THEN** 禁用请求 MUST 成功（在无其他已启用下游硬依赖时）
 
 #### Scenario: 升级 owner 后版本不满足
 
-- **WHEN** 已安装下游插件声明`linapro-ai-core`版本范围`>=0.1.0 <0.2.0`
-- **AND** 管理员尝试升级`linapro-ai-core`到`v0.2.0`
+- **WHEN** 已安装下游插件声明`ai-core`版本范围`>=0.1.0 <0.2.0`
+- **AND** 管理员尝试升级`ai-core`到`v0.2.0`
 - **THEN** 升级预检查 MUST 阻断或要求下游插件先调整依赖范围
 - **AND** 系统不得执行会破坏下游插件运行期 owner 能力授权的发布切换
 

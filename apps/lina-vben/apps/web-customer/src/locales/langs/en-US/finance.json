@@ -1,0 +1,150 @@
+{
+  "eyebrow": "Customer finance",
+  "lead": "Balances, receivables, transactions, and renewal policies always come from current backend facts. Currencies remain separate without hidden conversion.",
+  "views": {
+    "overview": "Financial overview",
+    "invoices": "My invoices",
+    "transactions": "Transactions",
+    "renewals": "Automatic renewal"
+  },
+  "overview": {
+    "openInvoices": "Open invoices",
+    "autoRenew": "Automatic renewals"
+  },
+  "creditPayment": {
+    "action": "Pay with credit",
+    "title": "Confirm credit payment",
+    "description": "This payment is {amount}. Estimated available credit afterward is {remaining}. The server checks the limit again before settling.",
+    "confirm": "Confirm credit payment",
+    "success": "Credit payment completed and the order is financially settled.",
+    "failed": "Credit payment did not complete. The invoice and limit remain unchanged."
+  },
+  "account": {
+    "customer_balance": "Balance account",
+    "customer_credit": "Credit account",
+    "customer_gift": "Gift account",
+    "customer_commission": "Commission account"
+  },
+  "amount": {
+    "balance": "Balance",
+    "available": "Available",
+    "outstanding": "Outstanding",
+    "total": "Invoice total"
+  },
+  "status": {
+    "all": "All statuses",
+    "active": "Active",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "grace": "Grace period",
+    "overdue": "Overdue",
+    "paid": "Paid",
+    "partially_paid": "Partially paid",
+    "pending": "Pending",
+    "confirming": "Confirming",
+    "failed": "Not completed",
+    "pending_payment": "Awaiting payment",
+    "refunded": "Refunded",
+    "submitted": "Submitted, awaiting provider confirmation",
+    "succeeded": "Completed"
+  },
+  "invoice": {
+    "detailTitle": "Invoice {invoiceNo}",
+    "due": "Payment due",
+    "items": "Invoice items"
+  },
+  "transaction": {
+    "businessAmount": "Business amount",
+    "change": "Account change",
+    "posted": "Posted"
+  },
+  "filters": { "currency": "Currency, e.g. CNY" },
+  "empty": {
+    "balances": "No balance accounts yet",
+    "invoices": "No invoices yet",
+    "transactions": "No transactions yet",
+    "renewals": "No renewable long-term entitlements yet"
+  },
+  "recharge": {
+    "action": "Recharge",
+    "title": "Add account balance",
+    "description": "Choose a currency and a payment channel enabled by this merchant. Confirmed funds are credited to the matching balance.",
+    "currency": "Currency",
+    "amount": "Amount",
+    "channel": "Payment channel",
+    "mode": "Payment method",
+    "continue": "Continue to payment",
+    "cancel": "Not now",
+    "close": "Close",
+    "invalid": "Enter a positive amount and choose a payment channel and method.",
+    "failed": "Recharge could not be started. Check the payment channel and try again.",
+    "confirmationNote": "Returning from the cashier does not credit funds. Balance changes only after the payment platform confirms success.",
+    "scanTitle": "Scan with WeChat",
+    "scanDescription": "Scan this code in WeChat. After payment, select “Check credit status” to read the server-confirmed result.",
+    "checkStatus": "Check credit status",
+    "modes": {
+      "alipay_page": "Alipay desktop website",
+      "alipay_wap": "Alipay mobile website",
+      "wechat_h5": "WeChat H5",
+      "wechat_native": "WeChat QR code",
+      "wechat_jsapi": "WeChat Official Account",
+      "epay_cashier": "EPay cashier"
+    },
+    "unavailable": "No payment channel has passed the capability gate, so recharge is unavailable. Existing balance payments still work."
+  },
+  "paymentReturn": {
+    "title": "Payment confirmation",
+    "eyebrow": "Secure payment status",
+    "complete": "Recharge credited",
+    "confirming": "Waiting for payment confirmation",
+    "description": "This page shows the server-confirmed result. Returning from a cashier never credits the balance by itself.",
+    "attemptNo": "Payment reference",
+    "currency": "Currency",
+    "refresh": "Refresh status",
+    "back": "Back to finance",
+    "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly."
+  },
+  "merge": {
+    "action": "Merge selected invoices",
+    "selected": "{count} selected",
+    "title": "Merge these invoices?",
+    "description": "Only untouched invoices for the same customer and currency are merged. Source invoices remain immutable evidence.",
+    "confirm": "Confirm merge"
+  },
+  "balancePayment": {
+    "action": "Pay from balance",
+    "title": "Confirm balance payment",
+    "description": "Use the available balance in the same currency? The server charges the exact current outstanding amount.",
+    "confirm": "Confirm payment"
+  },
+  "renewal": {
+    "note": "Automatic renewal only uses same-currency available balance. Insufficient funds never create a false success.",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "configure": "Configure renewal",
+    "entitlementStatus": "Entitlement status",
+    "expiry": "Entitlement expiry",
+    "nextAttempt": "Next attempt",
+    "insufficient": "Automatic renewal could not finish because the balance is insufficient. The current policy retries after funds are added.",
+    "failureNotify": "Notify me when renewal fails",
+    "cycles": "Cycles per renewal",
+    "leadDays": "Lead time (days)",
+    "attempts": "Maximum attempts",
+    "retryHours": "Retry interval (hours)"
+  },
+  "actions": {
+    "apply": "Apply filters",
+    "backToInvoices": "Back to invoices",
+    "detail": "View details",
+    "next": "Next",
+    "previous": "Previous",
+    "retry": "Reload",
+    "save": "Save policy"
+  },
+  "messages": {
+    "loadFailed": "Financial data is temporarily unavailable. Try again shortly.",
+    "merged": "Invoices were merged safely and the list was refreshed.",
+    "paid": "Balance payment succeeded and invoice facts were refreshed.",
+    "renewalSaved": "Automatic-renewal policy updated."
+  }
+}

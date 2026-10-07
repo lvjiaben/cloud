@@ -1,0 +1,38 @@
+{
+  "menu": {
+    "plugin:org-core:dept": {
+      "title": "Departments"
+    },
+    "plugin:org-core:dept:add": {
+      "title": "Create"
+    },
+    "plugin:org-core:dept:edit": {
+      "title": "Update"
+    },
+    "plugin:org-core:dept:query": {
+      "title": "Query"
+    },
+    "plugin:org-core:dept:remove": {
+      "title": "Delete"
+    },
+    "plugin:org-core:post": {
+      "title": "Positions"
+    },
+    "plugin:org-core:post:add": {
+      "title": "Create"
+    },
+    "plugin:org-core:post:edit": {
+      "title": "Update"
+    },
+    "plugin:org-core:post:export": {
+      "title": "Export"
+    },
+    "plugin:org-core:post:query": {
+      "title": "Query"
+    },
+    "plugin:org-core:post:remove": {
+      "title": "Delete"
+    }
+  }
+}
+

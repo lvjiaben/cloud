@@ -27,6 +27,9 @@ type Service interface {
 	RequestBodyLimit(r *ghttp.Request)
 	// Auth validates JWT token and injects user info into context.
 	Auth(r *ghttp.Request)
+	// OptionalAuth preserves anonymous reads while validating any supplied access token
+	// through Auth, including online-session and impersonation context checks.
+	OptionalAuth(r *ghttp.Request)
 	// Tenancy resolves tenant identity and injects it into context.
 	Tenancy(r *ghttp.Request)
 	// RequirePermission declares static permission requirements for manually registered routes.

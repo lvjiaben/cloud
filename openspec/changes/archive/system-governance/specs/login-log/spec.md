@@ -68,7 +68,7 @@
 - **THEN** 返回包含符合条件的所有登录日志的 xlsx 文件
 
 ### Requirement: 登录日志前端页面
-系统 SHALL 通过 `linapro-monitor-loginlog` 源码插件在前端系统监控菜单下提供登录日志管理页面。
+系统 SHALL 通过 `monitor-loginlog` 源码插件在前端系统监控菜单下提供登录日志管理页面。
 
 #### Scenario: 登录日志列表页
 - **WHEN** 管理员访问登录日志页面

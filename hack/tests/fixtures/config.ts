@@ -5,8 +5,8 @@
 // centralized here so that test files only depend on this single source of
 // truth. Override via environment variables when running tests against a
 // non-default deployment:
-//   - E2E_BASE_URL          backend public origin for browser tests (default 127.0.0.1:9120)
-//   - E2E_BACKEND_BASE_URL  backend HTTP origin (default 127.0.0.1:9120)
+//   - E2E_BASE_URL          admin frontend origin for browser tests (default 127.0.0.1:6031)
+//   - E2E_BACKEND_BASE_URL  backend HTTP origin (default 127.0.0.1:6030)
 //   - E2E_API_BASE_URL      backend `/api/v1/` base URL; overrides backendBaseURL when set
 //   - E2E_PUBLIC_BASE_URL   backend public origin (no `/api/v1/` suffix); overrides backendBaseURL when set
 //   - E2E_WORKSPACE_BASE_PATH  admin workspace browser entry path (default /admin)
@@ -14,8 +14,8 @@
 // 所有端口（后端公共入口、后端 HTTP 接口）集中到此处，测试文件不应再单独
 // 硬编码端口或回退地址。如需在非默认部署下运行测试，可通过上述环境变量覆盖。
 
-const backendBaseURL = process.env.E2E_BACKEND_BASE_URL ?? 'http://127.0.0.1:9120';
-const browserBaseURL = process.env.E2E_BASE_URL ?? backendBaseURL;
+const backendBaseURL = process.env.E2E_BACKEND_BASE_URL ?? 'http://127.0.0.1:6030';
+const browserBaseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:6031';
 const workspaceBasePath = normalizeWorkspaceBasePath(
   process.env.E2E_WORKSPACE_BASE_PATH ?? '/admin',
 );

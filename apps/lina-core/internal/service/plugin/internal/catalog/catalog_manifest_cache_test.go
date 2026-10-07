@@ -144,6 +144,39 @@ func TestRuntimeManifestCacheDetectsAtomicReplacementWithSameStat(t *testing.T) 
 	}
 }
 
+func TestRuntimeArtifactFingerprintDetectsSameStatMiddleMutation(t *testing.T) {
+	artifactPath := filepath.Join(t.TempDir(), "middle-mutation.wasm")
+	content := make([]byte, 128*1024)
+	for index := range content {
+		content[index] = byte(index % 251)
+	}
+	if err := os.WriteFile(artifactPath, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(artifactPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := runtimeArtifactFingerprint(artifactPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content[80*1024] ^= 0xff
+	if err = os.WriteFile(artifactPath, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err = os.Chtimes(artifactPath, info.ModTime(), info.ModTime()); err != nil {
+		t.Fatal(err)
+	}
+	after, err := runtimeArtifactFingerprint(artifactPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before == after {
+		t.Fatal("complete artifact fingerprint missed an in-place middle mutation")
+	}
+}
+
 // TestRuntimeManifestCacheInvalidatesByPlugin verifies explicit plugin-scoped
 // invalidation forces only the target artifact to be reparsed.
 func TestRuntimeManifestCacheInvalidatesByPlugin(t *testing.T) {

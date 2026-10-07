@@ -1,0 +1,147 @@
+// Package dept implements department management for the org-core source
+// plugin. It owns plugin_org_core_dept and related organization queries through plugin-local
+// services instead of depending on host-internal dept packages.
+package dept
+
+import (
+	"context"
+
+	"lina-core/pkg/plugin/capability/tenantcap"
+	"lina-core/pkg/plugin/capability/usercap"
+	entitymodel "lina-plugin-org-core/backend/internal/model/entity"
+)
+
+// Table and column constants for organization storage.
+const (
+	colDeptID        = "id"
+	colDeptParentID  = "parent_id"
+	colDeptAncestors = "ancestors"
+	colDeptName      = "name"
+	colDeptCode      = "code"
+	colDeptOrderNum  = "order_num"
+	colDeptLeader    = "leader"
+	colDeptPhone     = "phone"
+	colDeptEmail     = "email"
+	colDeptStatus    = "status"
+	colDeptRemark    = "remark"
+
+	colUserDeptID = "dept_id"
+	colUserUserID = "user_id"
+)
+
+// Service defines tenant-scoped department management for the org-core plugin.
+type Service interface {
+	// List queries tenant-visible departments with optional name and status filters.
+	List(ctx context.Context, in ListInput) (*ListOutput, error)
+	// Create creates one tenant-owned department record after validating parent
+	// scope and code uniqueness.
+	Create(ctx context.Context, in CreateInput) (int, error)
+	// GetByID retrieves one tenant-visible department detail by primary key or
+	// returns a business not-found error.
+	GetByID(ctx context.Context, id int) (*DeptEntity, error)
+	// Update updates one tenant-visible department record while preserving tree
+	// integrity and code uniqueness.
+	Update(ctx context.Context, in UpdateInput) error
+	// Delete deletes one tenant-visible department when no child or user binding
+	// blocks it.
+	Delete(ctx context.Context, id int) error
+	// Tree returns the tenant-visible department tree without mutating state.
+	Tree(ctx context.Context) ([]*TreeNode, error)
+	// Exclude returns tenant-visible department candidates excluding one subtree.
+	Exclude(ctx context.Context, in ExcludeInput) ([]*DeptEntity, error)
+	// Users returns selectable users for one tenant-visible department subtree
+	// using keyword and limit filters.
+	Users(ctx context.Context, deptID int, keyword string, limit int) ([]*DeptUser, error)
+	// DescendantDeptIDs returns the given tenant-visible department plus descendants.
+	DescendantDeptIDs(ctx context.Context, deptID int) ([]int, error)
+}
+
+// Ensure serviceImpl implements Service.
+var _ Service = (*serviceImpl)(nil)
+
+// serviceImpl implements Service.
+type serviceImpl struct {
+	tenantSvc tenantcap.Service // tenantSvc provides tenant context and plugin table filtering.
+	users     usercap.Service   // users resolves host-owned user projections through usercap.
+}
+
+// New creates and returns a new department service instance.
+func New(tenantSvc tenantcap.Service, users usercap.Service) Service {
+	return &serviceImpl{tenantSvc: tenantSvc, users: users}
+}
+
+// pluginTableFilter returns the tenant table-filter slice from the injected tenant service.
+func (s *serviceImpl) pluginTableFilter() tenantcap.FilterService {
+	if s == nil || s.tenantSvc == nil {
+		return nil
+	}
+	return s.tenantSvc.Filter()
+}
+
+// tenantFilterContext returns current tenant metadata for write ownership fields.
+func (s *serviceImpl) tenantFilterContext(ctx context.Context) tenantcap.TenantFilterContext {
+	if filter := s.pluginTableFilter(); filter != nil {
+		return filter.Context(ctx)
+	}
+	return tenantcap.TenantFilterContext{}
+}
+
+// DeptEntity mirrors the plugin-local generated plugin_org_core_dept entity.
+type DeptEntity = entitymodel.Dept
+
+// ListInput defines filters for department list queries.
+type ListInput struct {
+	Name   string
+	Status *int
+}
+
+// ListOutput defines the department list result.
+type ListOutput struct {
+	List []*DeptEntity
+}
+
+// CreateInput defines the create-department input.
+type CreateInput struct {
+	ParentId int
+	Name     string
+	Code     string
+	OrderNum int
+	Leader   int
+	Phone    string
+	Email    string
+	Status   int
+	Remark   string
+}
+
+// UpdateInput defines the update-department input.
+type UpdateInput struct {
+	Id       int
+	ParentId *int
+	Name     *string
+	Code     *string
+	OrderNum *int
+	Leader   *int
+	Phone    *string
+	Email    *string
+	Status   *int
+	Remark   *string
+}
+
+// ExcludeInput defines the exclude-subtree input.
+type ExcludeInput struct {
+	Id int
+}
+
+// TreeNode represents one department tree node.
+type TreeNode struct {
+	Id       int         `json:"id"`
+	Label    string      `json:"label"`
+	Children []*TreeNode `json:"children"`
+}
+
+// DeptUser represents one selectable user row.
+type DeptUser struct {
+	Id       string `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+}

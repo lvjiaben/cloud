@@ -1,0 +1,58 @@
+{
+  "customer": {
+    "menu": "Referrals & commissions",
+    "lead": "Referral relationships and commissions are scoped to the signed-in customer. Settlement requests freeze available funds before review.",
+    "refresh": "Refresh",
+    "loadFailed": "Referral or commission data is temporarily unavailable. Please try again.",
+    "status": {
+      "first_touch": "First touch",
+      "last_touch": "Last touch",
+      "pending": "Pending maturity",
+      "matured": "Matured",
+      "reversed": "Reversed",
+      "pending_review": "Pending review",
+      "approved": "Approved",
+      "paid": "Paid",
+      "failed": "Failed"
+    },
+    "referral": {
+      "tab": "My referrals",
+      "menu": "My referrals",
+      "title": "My referral relationships",
+      "linkTitle": "Share your referral link",
+      "linkLead": "When a new customer registers through this link and completes an eligible order, the relationship is recorded under the attribution policy.",
+      "copy": "Copy link",
+      "copied": "Referral link copied.",
+      "copyFailed": "Copy failed. Select the link manually.",
+      "code": "Referral code",
+      "policy": "Attribution policy",
+      "expires": "Valid until",
+      "referred": "Referred customers",
+      "attributed": "Attributed orders",
+      "qualified": "Eligible orders",
+      "rejected": "Rejected attributions"
+    },
+    "commission": {
+      "tab": "My commissions",
+      "menu": "My commissions",
+      "title": "My commissions",
+      "available": "Available to settle",
+      "pending": "Pending maturity",
+      "matured": "Matured total",
+      "frozen": "Frozen for settlement",
+      "requestTitle": "Request settlement",
+      "requestLead": "Only available commission in the selected currency can be requested. The amount is frozen immediately and paid after review.",
+      "currency": "Currency",
+      "amount": "Amount (major unit)",
+      "request": "Request settlement",
+      "invalidAmount": "Enter a valid positive amount.",
+      "insufficient": "The amount exceeds your available commission.",
+      "requested": "Settlement request submitted. Check its status below.",
+      "requestFailed": "Settlement request failed; your commission balance was unchanged.",
+      "settlementsTitle": "Settlement requests",
+      "entriesTitle": "Commission ledger",
+      "emptySettlements": "No settlement requests yet.",
+      "emptyEntries": "No commission entries yet."
+    }
+  }
+}

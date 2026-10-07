@@ -536,15 +536,15 @@ func TestValidateHostServiceSpecsForPluginAcceptsOwnedDataTables(t *testing.T) {
 		Service: hostservices.HostServiceData,
 		Methods: []string{hostservices.HostServiceMethodDataList, hostservices.HostServiceMethodDataUpdate},
 		Tables: []string{
-			" plugin_linapro_demo_dynamic_record ",
-			"plugin_linapro_demo_dynamic",
+			" plugin_demo_dynamic_record ",
+			"plugin_demo_dynamic",
 		},
 	}}
 
-	if err := ValidateHostServiceSpecsForPlugin("linapro-demo-dynamic", specs); err != nil {
+	if err := ValidateHostServiceSpecsForPlugin("demo-dynamic", specs); err != nil {
 		t.Fatalf("expected plugin-owned data tables to validate, got %v", err)
 	}
-	if len(specs[0].Tables) != 2 || specs[0].Tables[0] != "plugin_linapro_demo_dynamic" || specs[0].Tables[1] != "plugin_linapro_demo_dynamic_record" {
+	if len(specs[0].Tables) != 2 || specs[0].Tables[0] != "plugin_demo_dynamic" || specs[0].Tables[1] != "plugin_demo_dynamic_record" {
 		t.Fatalf("expected normalized plugin-owned tables, got %#v", specs[0].Tables)
 	}
 }
@@ -552,7 +552,7 @@ func TestValidateHostServiceSpecsForPluginAcceptsOwnedDataTables(t *testing.T) {
 // TestValidateHostServiceSpecsForPluginRejectsCoreDataTables verifies dynamic
 // data service declarations cannot authorize host sys_* core tables.
 func TestValidateHostServiceSpecsForPluginRejectsCoreDataTables(t *testing.T) {
-	err := ValidateHostServiceSpecsForPlugin("linapro-demo-dynamic", []*HostServiceSpec{{
+	err := ValidateHostServiceSpecsForPlugin("demo-dynamic", []*HostServiceSpec{{
 		Service: hostservices.HostServiceData,
 		Methods: []string{hostservices.HostServiceMethodDataList},
 		Tables:  []string{"sys_plugin_node_state"},
@@ -566,10 +566,10 @@ func TestValidateHostServiceSpecsForPluginRejectsCoreDataTables(t *testing.T) {
 // official capability plugin tables stay inaccessible through another plugin's
 // generic data host service authorization.
 func TestNormalizeHostServiceSpecsForPluginRejectsOtherPluginDataTables(t *testing.T) {
-	normalized, err := NormalizeHostServiceSpecsForPlugin("linapro-demo-dynamic", []*HostServiceSpec{{
+	normalized, err := NormalizeHostServiceSpecsForPlugin("demo-dynamic", []*HostServiceSpec{{
 		Service: hostservices.HostServiceData,
 		Methods: []string{hostservices.HostServiceMethodDataList},
-		Tables:  []string{"plugin_linapro_org_dept"},
+		Tables:  []string{"plugin_org_core_dept"},
 	}})
 	if err == nil {
 		t.Fatal("expected other plugin data table to be rejected")
@@ -654,7 +654,7 @@ func TestValidateHostServiceSpecsAcceptsCacheLockNotifyResources(t *testing.T) {
 // plugin-owned host services normalize owner, service, version, and methods.
 func TestValidateHostServiceSpecsAcceptsOwnerAwareDeclarations(t *testing.T) {
 	specs := []*HostServiceSpec{{
-		Owner:   " LINAPRO-AI-CORE ",
+		Owner:   " ai-core ",
 		Service: " AI ",
 		Version: " V1 ",
 		Methods: []string{
@@ -666,7 +666,7 @@ func TestValidateHostServiceSpecsAcceptsOwnerAwareDeclarations(t *testing.T) {
 	if err := ValidateHostServiceSpecs(specs); err != nil {
 		t.Fatalf("expected owner-aware host service declaration to validate, got %v", err)
 	}
-	if specs[0].Owner != "linapro-ai-core" || specs[0].Service != "ai" || specs[0].Version != "v1" {
+	if specs[0].Owner != "ai-core" || specs[0].Service != "ai" || specs[0].Version != "v1" {
 		t.Fatalf("expected normalized owner-aware identity, got %#v", specs[0])
 	}
 	expectedMethods := []string{"text.generate", "text.method_status.get"}
@@ -683,7 +683,7 @@ func TestValidateHostServiceSpecsAcceptsOwnerAwareDeclarations(t *testing.T) {
 func TestValidateHostServiceSpecsRequiresOwnerAndVersionPair(t *testing.T) {
 	for _, testCase := range []HostServiceSpec{
 		{
-			Owner:   "linapro-ai-core",
+			Owner:   "ai-core",
 			Service: "ai",
 			Methods: []string{"text.generate"},
 		},
@@ -704,7 +704,7 @@ func TestValidateHostServiceSpecsRequiresOwnerAndVersionPair(t *testing.T) {
 // capabilities cannot be encoded into the service string.
 func TestValidateHostServiceSpecsRejectsPluginKeyService(t *testing.T) {
 	err := ValidateHostServiceSpecs([]*HostServiceSpec{{
-		Service: "plugin:linapro-ai-core:ai:v1",
+		Service: "plugin:ai-core:ai:v1",
 		Methods: []string{"text.generate"},
 	}})
 	if err == nil {
@@ -723,7 +723,7 @@ func TestValidateHostServiceSpecsUsesOwnerAwareIdentityForDuplicates(t *testing.
 			Methods: []string{"text.generate"},
 		},
 		{
-			Owner:   "linapro-ai-core",
+			Owner:   "ai-core",
 			Service: "ai",
 			Version: "v1",
 			Methods: []string{"text.generate"},
@@ -733,19 +733,19 @@ func TestValidateHostServiceSpecsUsesOwnerAwareIdentityForDuplicates(t *testing.
 	if err := ValidateHostServiceSpecs(specs); err != nil {
 		t.Fatalf("expected same service from different owners to validate, got %v", err)
 	}
-	if specs[0].Owner != "linapro-ai-core" || specs[1].Owner != "other-ai-core" {
+	if specs[0].Owner != "ai-core" || specs[1].Owner != "other-ai-core" {
 		t.Fatalf("expected owner-aware sorting by identity, got %#v", specs)
 	}
 
 	err := ValidateHostServiceSpecs([]*HostServiceSpec{
 		{
-			Owner:   "linapro-ai-core",
+			Owner:   "ai-core",
 			Service: "ai",
 			Version: "v1",
 			Methods: []string{"text.generate"},
 		},
 		{
-			Owner:   " LINAPRO-AI-CORE ",
+			Owner:   " ai-core ",
 			Service: " AI ",
 			Version: " V1 ",
 			Methods: []string{"text.method_status.get"},
@@ -815,7 +815,7 @@ func TestHostServiceSpecJSONUsesResourcePathsForStorage(t *testing.T) {
 // serialization preserves structured plugin-owned identity fields.
 func TestHostServiceSpecJSONRoundTripsOwnerVersion(t *testing.T) {
 	spec := &HostServiceSpec{
-		Owner:   "linapro-ai-core",
+		Owner:   "ai-core",
 		Service: "ai",
 		Version: "v1",
 		Methods: []string{"text.generate"},
@@ -830,7 +830,7 @@ func TestHostServiceSpecJSONRoundTripsOwnerVersion(t *testing.T) {
 	if err = json.Unmarshal(payload, &encoded); err != nil {
 		t.Fatalf("expected marshaled owner-aware host service json to decode, got %v", err)
 	}
-	if encoded["owner"] != "linapro-ai-core" || encoded["service"] != "ai" || encoded["version"] != "v1" {
+	if encoded["owner"] != "ai-core" || encoded["service"] != "ai" || encoded["version"] != "v1" {
 		t.Fatalf("expected owner/service/version fields in json, got %#v", encoded)
 	}
 
@@ -925,7 +925,7 @@ func TestHostServiceSpecYAMLUsesResourcePathsForManifest(t *testing.T) {
 // serialization preserves structured plugin-owned identity fields.
 func TestHostServiceSpecYAMLRoundTripsOwnerVersion(t *testing.T) {
 	spec := &HostServiceSpec{
-		Owner:   "linapro-ai-core",
+		Owner:   "ai-core",
 		Service: "ai",
 		Version: "v1",
 		Methods: []string{"text.generate"},
@@ -940,7 +940,7 @@ func TestHostServiceSpecYAMLRoundTripsOwnerVersion(t *testing.T) {
 	if err = yaml.Unmarshal(payload, &encoded); err != nil {
 		t.Fatalf("expected marshaled owner-aware host service yaml to decode, got %v", err)
 	}
-	if encoded["owner"] != "linapro-ai-core" || encoded["service"] != "ai" || encoded["version"] != "v1" {
+	if encoded["owner"] != "ai-core" || encoded["service"] != "ai" || encoded["version"] != "v1" {
 		t.Fatalf("expected owner/service/version fields in yaml, got %#v", encoded)
 	}
 

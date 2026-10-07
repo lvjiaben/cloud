@@ -803,7 +803,7 @@
       },
       "email": {
         "delivery": {
-          "unavailable": "邮件通知投递不可用，请安装并启用 linapro-mail-core",
+          "unavailable": "邮件通知投递不可用，请安装并启用 mail-core",
           "failed": "邮件通知投递失败"
         },
         "recipient": {
@@ -827,6 +827,42 @@
       }
     },
     "plugin": {
+      "new": {
+        "business": {
+          "resume": {
+            "not": {
+              "ready": "插件 {pluginId} 当前未满足恢复新业务的条件"
+            }
+          },
+          "must": {
+            "stop": {
+              "first": "停用或卸载插件 {pluginId} 前，请先停止新销售"
+            }
+          }
+        }
+      },
+      "business": {
+        "impact": {
+          "check": {
+            "failed": "无法安全完成插件 {pluginId} 的业务影响检查，已拒绝本次操作"
+          }
+        },
+        "references": {
+          "blocked": "插件 {pluginId} 仍有 {blockingCount} 个业务对象依赖它，请先完成迁移或人工接管"
+        },
+        "data": {
+          "purge": {
+            "denied": "卸载插件 {pluginId} 时不能删除历史业务证据"
+          }
+        }
+      },
+      "page": {
+        "bridge": {
+          "grant": {
+            "denied": "该插件页面请求不可用或当前账号已无权访问"
+          }
+        }
+      },
       "auto": {
         "enable": {
           "discovery": {
@@ -938,6 +974,12 @@
         "installed": "插件未安装"
       },
       "lifecycle": {
+        "lock": {
+          "unavailable": "插件 {pluginId} 的生命周期保护暂时不可用，请稍后重试"
+        },
+        "already": {
+          "running": "插件 {pluginId} 正在执行其他生命周期操作，请稍后重试"
+        },
         "precondition": {
           "vetoed": "当前操作被插件保护策略阻止：{reasons}"
         }

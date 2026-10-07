@@ -45,7 +45,13 @@ func (s *serviceImpl) UpgradeSourcePlugin(ctx context.Context, pluginID string) 
 	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
 		return nil, err
 	}
-	return s.lifecycleSvc.UpgradeSourcePlugin(ctx, pluginID)
+	var result *SourceUpgradeResult
+	err := s.withPluginLifecycleLock(ctx, pluginID, "source-runtime-upgrade", func(lockedCtx context.Context) error {
+		var upgradeErr error
+		result, upgradeErr = s.lifecycleSvc.UpgradeSourcePlugin(lockedCtx, pluginID)
+		return upgradeErr
+	})
+	return result, err
 }
 
 // ValidateSourcePluginUpgradeReadiness scans source-plugin version drift
@@ -66,7 +72,13 @@ func (s *serviceImpl) ExecuteRuntimeUpgrade(
 	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
 		return nil, err
 	}
-	return s.lifecycleSvc.ExecuteRuntimeUpgrade(ctx, pluginID, options)
+	var result *RuntimeUpgradeResult
+	err := s.withPluginLifecycleLock(ctx, pluginID, "dynamic-runtime-upgrade", func(lockedCtx context.Context) error {
+		var upgradeErr error
+		result, upgradeErr = s.lifecycleSvc.ExecuteRuntimeUpgrade(lockedCtx, pluginID, options)
+		return upgradeErr
+	})
+	return result, err
 }
 
 // upgradeCachePublisher publishes upgrade cache changes through the root

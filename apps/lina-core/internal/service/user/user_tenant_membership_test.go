@@ -24,9 +24,9 @@ import (
 
 const (
 	// userTenantMembershipTestMembershipTable is the plugin-owned membership table used by tests.
-	userTenantMembershipTestMembershipTable = "plugin_linapro_tenant_core_user_membership"
+	userTenantMembershipTestMembershipTable = "plugin_tenant_core_user_membership"
 	// userTenantMembershipTestTenantTable is the plugin-owned tenant table used by tests.
-	userTenantMembershipTestTenantTable = "plugin_linapro_tenant_core_tenant"
+	userTenantMembershipTestTenantTable = "plugin_tenant_core_tenant"
 	// userTenantMembershipTestActive marks an active membership row.
 	userTenantMembershipTestActive = 1
 )
@@ -569,12 +569,12 @@ func TestUserListTenantContextIgnoresCrossTenantFilter(t *testing.T) {
 }
 
 // ensureUserTenantMembershipTestTables creates the plugin-owned tables used by
-// the host user service tests when the linapro-tenant-core plugin is not installed.
+// the host user service tests when the tenant-core plugin is not installed.
 func ensureUserTenantMembershipTestTables(t *testing.T, ctx context.Context) {
 	t.Helper()
 
 	statements := []string{
-		`CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_tenant (
+		`CREATE TABLE IF NOT EXISTS plugin_tenant_core_tenant (
 			id BIGSERIAL PRIMARY KEY,
 			code VARCHAR(64) NOT NULL UNIQUE,
 			name VARCHAR(128) NOT NULL,
@@ -582,7 +582,7 @@ func ensureUserTenantMembershipTestTables(t *testing.T, ctx context.Context) {
 			plan VARCHAR(64),
 			deleted_at TIMESTAMP NULL
 		)`,
-		`CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_user_membership (
+		`CREATE TABLE IF NOT EXISTS plugin_tenant_core_user_membership (
 				id BIGSERIAL PRIMARY KEY,
 				user_id BIGINT NOT NULL,
 				tenant_id BIGINT NOT NULL,

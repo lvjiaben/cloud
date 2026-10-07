@@ -1,5 +1,6 @@
 import type {
   PluginAuthorizationPayload,
+  PluginBusinessImpact,
   PluginDependencyCheckResult,
   PluginInstallResult,
   PluginListParams,
@@ -148,6 +149,23 @@ export function pluginDisable(pluginId: string) {
     `/plugins/${pluginId}/disable`,
     undefined,
     buildPluginLifecycleRequestConfig(),
+  );
+}
+
+/** 停止插件接受新销售、新绑定和新履约任务，已有服务继续可用。 */
+export function pluginStopNewBusiness(pluginId: string) {
+  return requestClient.put(`/plugins/${pluginId}/new-business/stop`);
+}
+
+/** 在服务端完成运行状态和依赖检查后恢复插件接受新业务。 */
+export function pluginResumeNewBusiness(pluginId: string) {
+  return requestClient.put(`/plugins/${pluginId}/new-business/resume`);
+}
+
+/** 查询停用或卸载前的可信业务影响汇总。 */
+export function pluginBusinessImpact(pluginId: string) {
+  return requestClient.get<PluginBusinessImpact>(
+    `/plugins/${pluginId}/business-impact`,
   );
 }
 

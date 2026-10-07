@@ -1,0 +1,2 @@
+import { access, readFile, readdir } from "node:fs/promises";
+const entry=new URL("../dist/mount.js",import.meta.url);await access(entry);const module=await import(`${entry.href}?v=${Date.now()}`);if(typeof module.mount!=="function")throw new Error("mount export missing");const files=await readdir(new URL("../dist/",import.meta.url));if(files.some((file)=>file.endsWith(".css")))throw new Error("styles must be inline");const source=await readFile(entry,"utf8");if(!source.includes("provider-configuration-workspace"))throw new Error("workspace missing");

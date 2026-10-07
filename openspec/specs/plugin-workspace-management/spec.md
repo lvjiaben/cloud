@@ -165,7 +165,7 @@ TBD - created by archiving change plugin-workspace-management. Update Purpose af
 
 ### Requirement: 插件锁定状态必须由工具维护
 
-系统 SHALL 在 `apps/lina-plugins/.linapro-plugins.lock.yaml` 记录插件安装和更新状态。锁定状态文件由工具生成和更新，用于诊断和更新判断；用户维护的插件来源配置仍以 `hack/config.yaml` 为准。
+系统 SHALL 在 `apps/lina-plugins/.plugins.lock.yaml` 记录插件安装和更新状态。锁定状态文件由工具生成和更新，用于诊断和更新判断；用户维护的插件来源配置仍以 `hack/config.yaml` 为准。
 
 #### Scenario: 安装后写入锁定状态
 - **WHEN** `make plugins.install` 成功安装插件

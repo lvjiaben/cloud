@@ -14,9 +14,9 @@
 
 - [x] **FB-1**: COS/OSS 等菜单品牌图标（去掉误用 QQ 图标等）
 - [x] **FB-2**: 存储相关目录排序（后收敛为挂系统设置，无独立一级目录）
-- [x] **FB-3**: 新增 `linapro-storage-aws`；`linapro-storage-s3` 改为通用 S3 协议插件
+- [x] **FB-3**: 新增 `storage-aws`；`storage-s3` 改为通用 S3 协议插件
 - [x] **FB-4**: COS 腾讯云品牌图标；S3 命名去掉「兼容」字样
-- [x] **FB-5 / P0**: 新增 `linapro-storage-obs`、`linapro-storage-azure`
+- [x] **FB-5 / P0**: 新增 `storage-obs`、`storage-azure`
 - [x] **FB-6~7**: 连接测试失败展示（短 Toast + 详情；标题字号）；后收敛为 Modal.error
 - [x] **FB-8**: COS 启用后上传「重置文件读取位置失败」
 - [x] **FB-9**: 品牌 SVG 不得进宿主 `packages/icons`；插件 `frontend/icons` + 构建期注册
@@ -24,7 +24,7 @@
 - [x] **FB-11**: 去掉宿主「存储管理」一级目录；云配置挂「系统设置」
 - [x] **FB-12~13**: S3 菜单命名迭代为「存储管理-S3」
 - [x] **FB-14**: 测试连接失败统一 Modal.error；更新 S3 TC003
-- [x] **P0 扩展**: 七牛 `linapro-storage-qiniu`（sort=35）
+- [x] **P0 扩展**: 七牛 `storage-qiniu`（sort=35）
 
 ## Verification
 

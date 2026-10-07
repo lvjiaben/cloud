@@ -66,161 +66,6 @@
       "clearAllConfirm": "Clear all notifications?"
     }
   },
-  "dashboard": {
-    "analytics": {
-      "overview": {
-        "users": {
-          "title": "Users",
-          "total": "Total Users"
-        },
-        "visits": {
-          "title": "Visits",
-          "total": "Total Visits"
-        },
-        "downloads": {
-          "title": "Downloads",
-          "total": "Total Downloads"
-        },
-        "usage": {
-          "title": "Usage",
-          "total": "Total Usage"
-        }
-      },
-      "tabs": {
-        "trends": "Traffic Trends",
-        "visits": "Monthly Visits"
-      },
-      "cards": {
-        "channels": "Visit Channels",
-        "sources": "Traffic Sources"
-      },
-      "sources": {
-        "search": "Search Engines",
-        "direct": "Direct Traffic",
-        "email": "Email Campaigns",
-        "ads": "Affiliate Ads"
-      },
-      "channels": {
-        "visits": "Visits",
-        "trend": "Trend",
-        "web": "Web",
-        "mobile": "Mobile",
-        "client": "Client",
-        "thirdParty": "Third-party",
-        "other": "Other"
-      },
-      "sales": {
-        "title": "Commercial Mix",
-        "outsourcing": "Outsourcing",
-        "customDevelopment": "Custom Development",
-        "technicalSupport": "Technical Support",
-        "remote": "Remote Delivery"
-      }
-    },
-    "workspace": {
-      "greeting": "Good morning, {name}. Let us get your day started.",
-      "defaultName": "Administrator",
-      "weather": "Sunny today, 20C - 32C.",
-      "sections": {
-        "projects": "Projects",
-        "trends": "Recent Activity",
-        "quickNav": "Quick Navigation",
-        "todos": "To-do Items",
-        "trafficSources": "Traffic Sources"
-      },
-      "stats": {
-        "todos": "To-dos",
-        "projects": "Projects",
-        "team": "Team"
-      },
-      "quickNav": {
-        "userManagement": "User Management",
-        "menuManagement": "Menu Management",
-        "systemParameters": "System Parameters",
-        "extensionCenter": "Extension Center",
-        "apiDocs": "API Docs",
-        "scheduledJobs": "Scheduled Jobs"
-      },
-      "projects": {
-        "linapro": {
-          "group": "Full-stack framework",
-          "content": "Let the framework carry the complexity."
-        },
-        "goframe": {
-          "group": "Backend framework",
-          "content": "Steady foundations make faster delivery."
-        },
-        "vue": {
-          "group": "Frontend framework",
-          "content": "Change is easier when it stays visible."
-        },
-        "vben": {
-          "group": "Admin workspace",
-          "content": "Smooth details compound into speed."
-        },
-        "antDesign": {
-          "group": "Design system",
-          "content": "Order makes the experience feel light."
-        },
-        "typescript": {
-          "group": "Type system",
-          "content": "Clear boundaries make delivery calmer."
-        }
-      },
-      "todos": {
-        "reviewShortcuts": {
-          "title": "Review Workbench Shortcuts",
-          "content": "Confirm that user, menu, parameter, plugin, API doc, and scheduled job entries all reach the right pages."
-        },
-        "verifyI18n": {
-          "title": "Verify Workspace i18n",
-          "content": "Check that Simplified Chinese and English workspace copy stay aligned."
-        },
-        "preparePluginDemo": {
-          "title": "Prepare Plugin Extension Demo",
-          "content": "Organize demo data for dynamic plugin install, enablement, and page refresh."
-        },
-        "inspectJobLogs": {
-          "title": "Inspect Scheduled Job Logs",
-          "content": "Confirm host and plugin job trigger results remain traceable."
-        },
-        "syncApiDocs": {
-          "title": "Sync API Documentation Examples",
-          "content": "Update debugging notes for core host APIs and plugin APIs."
-        }
-      },
-      "trends": {
-        "justNow": "Just now",
-        "oneHourAgo": "1 hour ago",
-        "oneDayAgo": "1 day ago",
-        "twoDaysAgo": "2 days ago",
-        "threeDaysAgo": "3 days ago",
-        "oneWeekAgo": "1 week ago",
-        "people": {
-          "platformTeam": "Platform Team",
-          "accessTeam": "Access Team",
-          "extensionCenter": "Extension Center",
-          "apiDocs": "API Docs",
-          "scheduler": "Scheduler",
-          "configCenter": "Parameter Center",
-          "aiWorkflow": "AI Workflow",
-          "testSuite": "Test Suite",
-          "releasePipeline": "Release Pipeline"
-        },
-        "items": {
-          "releasedWorkspaceNav": "Published the <a>workspace quick navigation</a> demo entries",
-          "alignedAccessMenus": "Aligned <a>user management</a> and <a>menu management</a> page permissions",
-          "publishedPluginDemo": "Published a <a>dynamic plugin installation</a> demo package",
-          "refreshedApiDocs": "Refreshed the <a>OpenAPI debugging docs</a>",
-          "checkedSchedulerLogs": "Completed a <a>scheduled job run log</a> check",
-          "updatedPublicConfig": "Updated <a>login page display parameters</a>",
-          "draftedOpenSpec": "Generated an <a>OpenSpec change proposal</a>",
-          "passedPlaywright": "Passed the <a>Playwright regression run</a>",
-          "archivedDemoIteration": "Archived the <a>LinaPro demo iteration</a>"
-        }
-      }
-    }
-  },
   "system": {
     "user": {
       "tableTitle": "User List",
@@ -887,6 +732,7 @@
         "pluginScope": "Plugin Scope",
         "runtimeState": "Runtime State",
         "pluginStatus": "Plugin Status",
+        "newBusinessState": "New Business",
         "effectiveVersion": "Effective Version",
         "discoveredVersion": "Discovered Version"
       },
@@ -899,6 +745,17 @@
         "disabled": "Disabled",
         "enabled": "Enabled"
       },
+      "newBusiness": {
+        "accepting": "Selling",
+        "stoppedLabel": "Stopped",
+        "acceptingHint": "New interface bindings, product-version bindings, purchases, and fulfillment tasks are allowed.",
+        "stoppedHint": "New sales are stopped while existing customer services, queries, renewals, support, and downloads remain available.",
+        "stop": "Stop New Sales",
+        "stopConfirmTitle": "Stop new sales for this plugin?",
+        "stopConfirmContent": "New interface bindings, product-version bindings, purchases, and automatic fulfillment tasks will be rejected. Existing services remain visible and available.",
+        "stopped": "New sales stopped; existing services remain available",
+        "resumed": "New business admission resumed"
+      },
       "pluginScope": {
         "platformOnly": "Platform Only",
         "global": "Global",
@@ -909,6 +766,7 @@
         "notInstalled": "Not Installed"
       },
       "actions": {
+        "developerGuide": "Developer Guide",
         "syncPlugins": "Synchronize Plugins",
         "uploadPlugin": "Upload Plugin",
         "install": "Install",
@@ -922,6 +780,92 @@
         "installMockDataLabel": "Install mock data?",
         "installMockDataTooltip": "When checked, the host loads the plugin's manifest/sql/mock-data SQL files in a single database transaction after the install SQL succeeds. Any failure rolls back only the mock data; the plugin install itself remains in effect. Mock data is intended for demo and feature validation, not production use.",
         "installMockDataHelpHint": "Learn more"
+      },
+      "guide": {
+        "title": "Plugin Developer Guide",
+        "summary": "Build, test, and deliver plugins through the single LinaPro plugin system",
+        "boundary": "LinaPro source plugins let developers compose a platform. The finished platform keeps stable business owners as hidden built-in foundations, while merchants manage only governed dynamic WASM extensions here. Business configuration remains in its business page.",
+        "quickTitle": "Start from scratch",
+        "quickSteps": {
+          "step1": "Choose a safe kebab-case plugin ID and keep it stable after installation.",
+          "step2": "Choose source or dynamic WASM runtime and builtin or managed distribution independently.",
+          "step3": "Declare only the business extension points, host services, and frontend surfaces actually required.",
+          "step4": "Use structured declarations for interface, product, and customer configuration; never accept executable code.",
+          "step5": "Add Chinese, English, unit, integration, and real-browser tests.",
+          "step6": "Build the package and verify install, upgrade, stop-new-business, disable, and uninstall flows."
+        },
+        "sections": {
+          "start": {
+            "title": "1. Choose a plugin shape",
+            "body": "Separate the two audiences. LinaPro lets framework developers compose systems with source plugins without polluting the host. A finished merchant platform keeps stable business owners as hidden built-in foundations. Merchants manage only governed dynamic WASM extensions here; each business setting stays on its owning business page."
+          },
+          "dimensions": {
+            "title": "2. Keep four manifest dimensions separate",
+            "body": "Declare runtime type (source or dynamic), distribution (builtin or managed), business extension points, and frontend surfaces independently. Frontend surfaces then split into admin and signed-in customer declarations. Never infer any dimension from a plugin ID, folder name, or menu title."
+          },
+          "manifest": {
+            "title": "3. Write plugin.yaml",
+            "body": "Declare a stable ID, version, runtime, distribution, dependencies, business extensions, admin and customer surfaces, locales, and requested host services. Capabilities are never inferred from the plugin name.",
+            "example": "id: example-ssl\nversion: v0.1.0\ntype: dynamic\ndistribution: managed\nbusiness_extensions:\n  - point: product-fulfillment\n    owner: idc-core\n    version: v1\n    interface_configuration_cardinality: multiple"
+          },
+          "extensions": {
+            "title": "4. Declare business extension points",
+            "body": "Product automation uses product-fulfillment. Server connectors additionally use resource-provider from idc-resource. Messaging, payment, and website templates may only extend the points published by their business owners. Each declared point is authorized and validated separately."
+          },
+          "source": {
+            "title": "5. Build a source plugin",
+            "body": "Keep all business code in apps/lina-plugins/<plugin-id>/. Depend only on public contracts under another plugin's backend/cap, never its internal packages, tables, or an internal HTTP loop. Read a plugin-local AGENTS.md before changing that plugin when it exists."
+          },
+          "dynamic": {
+            "title": "6. Build a dynamic WASM plugin",
+            "body": "Dynamic plugins never receive raw host tokens, supplier secrets, host globals, or another plugin's state. Network calls use host-managed confidential outbound execution, and page data uses a versioned page bridge. The host checks plugin, release, capability, method, identity, and data scope."
+          },
+          "surfaces": {
+            "title": "7. Admin and customer surfaces",
+            "body": "Declare menus, titles, icons, permissions, host slots, routes, and entries separately for admin and customer surfaces. Pages inherit host theme, locale, typography, and spacing; they may not override reserved routes, pollute global styles, or create double headers, double scrollbars, and blank flashes."
+          },
+          "pageBridge": {
+            "title": "8. Use the secure page bridge",
+            "body": "An isolated dynamic page receives neither the host access token nor arbitrary request headers. Declare only the bridge capabilities needed by that exact surface. The host binds every request to the plugin, release, surface, capability, method, route, current staff permission and data scope, or current-customer ownership. Use the built-in loading, height, route, title, locale, and theme synchronization instead of starting a second application shell."
+          },
+          "interfaces": {
+            "title": "9. Model interface instances correctly",
+            "body": "Declare structured fields and choose multiple when a merchant may keep many named supplier, messaging, or payment interfaces. Use singleton only for a genuine one-record global setting. Cardinality limits configuration records only; it never limits plugin-owned news, orders, certificates, or other CRUD data. Secrets belong only in interface configuration."
+          },
+          "fulfillment": {
+            "title": "10. Implement generic product fulfillment",
+            "body": "A product provider separately declares merchant-product and customer-purchase fields. Product setup selects one compatible connector instance, and each published version freezes at most one exact interface and contract version. Manual handling needs no connector. Plugin work starts durably and asynchronously only after staff approval or confirmed payment. Use idempotency, query-first recovery, bounded retry, result-unknown handling, evidence, and manual takeover to prevent duplicate provisioning, delivery, or charging."
+          },
+          "secrets": {
+            "title": "11. Keep secrets behind confidential outbound",
+            "body": "Never put API keys, passwords, supplier tokens, private keys, or raw host tokens in WASM input, pages, logs, state, or normal responses. The business owner issues a short-lived opaque runtime context for one authorized operation. The host resolves the selected interface and credentials, performs exact-origin confidential outbound calls, enforces time and byte limits, and returns only approved response fields."
+          },
+          "testing": {
+            "title": "12. Test the complete behavior",
+            "body": "Run Go unit tests, PostgreSQL integration tests, frontend type checks, independent builds, locale checks, plugin governance checks, and Playwright browser tests. Dynamic pages also cover first and repeat entry, light and dark themes, Chinese and English, narrow screens, slow resources, refresh, and permission changes.",
+            "example": "go test ./...\nmake.cmd i18n.check plugins=1\nmake.cmd plugins.check\npnpm run check:type\npnpm run build"
+          },
+          "package": {
+            "title": "13. Build the WASM package",
+            "body": "Build from the plugin root and inspect the packaged manifest, WASM module, public assets, SQL, and locale resources together. The artifact declaration must match plugin.yaml. Keep generated output outside source directories, then install the package through this existing plugin manager.",
+            "example": "go run ./hack/tools/linactl wasm dir=apps/lina-plugins/<plugin-id> out=temp/output/<plugin-id>"
+          },
+          "lifecycle": {
+            "title": "14. Verify the complete lifecycle",
+            "body": "Verify upload and installation, then upgrade. Stopping new business blocks new interfaces, bindings, purchases, and fulfillment while existing service pages and required actions remain available. Disable and uninstall are blocked while products, in-flight work, active services, or historical actions still depend on the plugin. Orders, snapshots, and evidence are never deleted."
+          }
+        },
+        "rulesTitle": "Mandatory boundaries",
+        "rules": {
+          "rule1": "A plugin reads only its own data or explicitly authorized host capabilities.",
+          "rule2": "Supplier secrets never enter WASM, pages, logs, or normal responses.",
+          "rule3": "User interfaces do not expose raw enums, internal IDs, or technical errors.",
+          "rule4": "All user-visible content is supplied in Chinese and English.",
+          "rule5": "Lists and discovery use set-based reads and avoid N+1 queries.",
+          "rule6": "Admin permissions, data scope, and customer ownership are rechecked server-side.",
+          "rule7": "Third-party side effects use idempotency, query-first recovery, and manual takeover.",
+          "rule8": "A task is complete only after tests and review pass."
+        }
       },
       "auth": {
         "installTitle": "Install Plugin",
@@ -1027,6 +971,7 @@
           "auth": "Auth",
           "bizctx": "Business Context",
           "cache": "Cache",
+          "confidentialoutbound": "Secure External API Access",
           "data": "Data",
           "dict": "Dictionary",
           "files": "Files",

@@ -1,0 +1,5 @@
+{
+  "menu": {
+    "plugin:idc-ai:copilot": { "title": "AI Operations Copilot" }
+  }
+}

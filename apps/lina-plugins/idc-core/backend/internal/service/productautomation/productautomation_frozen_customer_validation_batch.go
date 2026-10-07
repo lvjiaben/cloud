@@ -1,0 +1,227 @@
+package productautomation
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/gogf/gf/v2/errors/gerror"
+
+	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-core/pkg/plugin/capability/plugincap"
+	"lina-plugin-idc-core/backend/internal/model/entity"
+	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
+	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
+)
+
+const maximumFrozenConfigurationBatch = 100
+
+type frozenValidationBatchRow struct {
+	VersionNo                      string   `orm:"version_no"`
+	BindingInterfaceInstanceNo     string   `orm:"binding_interface_instance_no"`
+	InterfaceDisplayNameSnapshot   string   `orm:"interface_display_name_snapshot"`
+	PluginID                       string   `orm:"plugin_id"`
+	ExtensionPointCode             string   `orm:"extension_point_code"`
+	PluginReleaseVersion           string   `orm:"plugin_release_version"`
+	ContractVersion                string   `orm:"contract_version"`
+	AuthorizedMethods              []string `orm:"authorized_methods"`
+	ReleaseDigest                  string   `orm:"release_digest"`
+	BindingDeclarationDigest       string   `orm:"binding_declaration_digest"`
+	ConfigurationInterfaceNo       string   `orm:"configuration_interface_no"`
+	InterfaceConfigurationRevision int64    `orm:"interface_configuration_revision"`
+	ProductSchemaVersion           string   `orm:"product_schema_version"`
+	ProductDeclarationSnapshot     string   `orm:"product_declaration_snapshot"`
+	CustomerSchemaVersion          string   `orm:"customer_schema_version"`
+	CustomerDeclarationSnapshot    string   `orm:"customer_declaration_snapshot"`
+	VersionDeclarationDigest       string   `orm:"version_declaration_digest"`
+	InterfaceSchemaVersion         string   `orm:"interface_schema_version"`
+	InterfaceDeclarationSnapshot   string   `orm:"interface_declaration_snapshot"`
+	InterfacePublicValueSnapshot   string   `orm:"interface_public_value_snapshot"`
+	InterfaceDeclarationDigest     string   `orm:"interface_declaration_digest"`
+	InterfaceValueDigest           string   `orm:"interface_value_digest"`
+}
+
+func (s *frozenCustomerConfigurationValidator) ValidateBatch(ctx context.Context, inputs []FrozenCustomerConfigurationInput) ([]FrozenCustomerConfigurationEvidence, error) {
+	if len(inputs) < 1 || len(inputs) > maximumFrozenConfigurationBatch {
+		return nil, gerror.New("frozen customer configuration batch is invalid")
+	}
+	versionNos := make([]string, 0, len(inputs))
+	versionSeen := make(map[string]struct{}, len(inputs))
+	for _, input := range inputs {
+		if !validFrozenConfigurationInput(input) {
+			return nil, gerror.New("frozen customer configuration evidence is invalid")
+		}
+		if _, exists := versionSeen[input.VersionNo]; !exists {
+			versionSeen[input.VersionNo] = struct{}{}
+			versionNos = append(versionNos, input.VersionNo)
+		}
+	}
+	var rows []frozenValidationBatchRow
+	if err := s.database.GetScan(ctx, &rows, `SELECT binding.version_no,
+binding.interface_instance_no AS binding_interface_instance_no,binding.plugin_id,binding.extension_point_code,
+binding.interface_display_name_snapshot,
+binding.plugin_release_version,binding.contract_version,binding.authorized_methods,binding.release_digest,
+binding.declaration_digest AS binding_declaration_digest,
+configuration.interface_instance_no AS configuration_interface_no,configuration.interface_configuration_revision,
+configuration.product_schema_version,configuration.product_declaration_snapshot,
+configuration.customer_schema_version,configuration.customer_declaration_snapshot,
+configuration.declaration_digest AS version_declaration_digest,
+revision.schema_version AS interface_schema_version,revision.declaration_snapshot AS interface_declaration_snapshot,
+revision.public_value_snapshot AS interface_public_value_snapshot,
+revision.declaration_digest AS interface_declaration_digest,revision.value_digest AS interface_value_digest
+FROM plugin_idc_core_catalog_product_version_fulfillment_binding binding
+JOIN plugin_idc_core_catalog_product_version_configuration configuration
+  ON configuration.tenant_id=binding.tenant_id AND configuration.version_no=binding.version_no
+JOIN plugin_idc_core_product_automation_interface_configuration_revision revision
+  ON revision.tenant_id=configuration.tenant_id
+ AND revision.interface_instance_no=configuration.interface_instance_no
+ AND revision.revision=configuration.interface_configuration_revision
+WHERE binding.tenant_id=0 AND binding.version_no IN(?)`, versionNos); err != nil {
+		return nil, gerror.Wrap(err, "load frozen configuration batch evidence")
+	}
+	if len(rows) != len(versionNos) {
+		return nil, gerror.New("frozen configuration batch evidence is unavailable")
+	}
+	byVersion := make(map[string]frozenValidationBatchRow, len(rows))
+	for _, row := range rows {
+		byVersion[row.VersionNo] = row
+	}
+	exactCache, err := s.loadFrozenProviderEvidenceBatch(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]FrozenCustomerConfigurationEvidence, len(inputs))
+	fileBatches := make([]purchaseconfigurationfile.OrderEvidenceBatchInput, 0)
+	fileResultIndex := make([]int, 0)
+	for index, input := range inputs {
+		row, ok := byVersion[input.VersionNo]
+		if !ok {
+			return nil, gerror.New("frozen configuration binding evidence does not match")
+		}
+		evidence, fileBatch, err := s.validateFrozenBatchItem(input, row, exactCache)
+		if err != nil {
+			return nil, err
+		}
+		result[index] = evidence
+		if fileBatch != nil {
+			fileBatches = append(fileBatches, *fileBatch)
+			fileResultIndex = append(fileResultIndex, index)
+		}
+	}
+	if len(fileBatches) > 0 {
+		verified, err := s.files.VerifyOrderEvidenceBatch(ctx, fileBatches)
+		if err != nil || len(verified) != len(fileBatches) {
+			return nil, gerror.New("frozen customer files are unavailable")
+		}
+		for index, fields := range verified {
+			result[fileResultIndex[index]].VerifiedFiles = fields
+		}
+	}
+	return result, nil
+}
+
+func validFrozenConfigurationInput(input FrozenCustomerConfigurationInput) bool {
+	return input.OrderNo != "" && len(input.OrderNo) <= 64 && input.CustomerNo != "" && len(input.CustomerNo) <= 40 && input.UploaderUserID > 0 &&
+		validateBusinessNo(input.VersionNo, "ver") == nil && validateBusinessNo(input.InterfaceInstanceNo, "pfi") == nil &&
+		input.InterfaceConfigurationRevision > 0 && validConfigurationDigest(input.CustomerDeclarationDigest) &&
+		validConfigurationDigest(input.CandidateSnapshotDigest) && validConfigurationDigest(input.CustomerValueDigest)
+}
+
+func (s *frozenCustomerConfigurationValidator) validateFrozenBatchItem(
+	input FrozenCustomerConfigurationInput,
+	row frozenValidationBatchRow,
+	exactCache map[string]*capmodel.BusinessExtensionProviderEvidence,
+) (FrozenCustomerConfigurationEvidence, *purchaseconfigurationfile.OrderEvidenceBatchInput, error) {
+	if row.BindingInterfaceInstanceNo != input.InterfaceInstanceNo || row.ConfigurationInterfaceNo != input.InterfaceInstanceNo || row.InterfaceConfigurationRevision != input.InterfaceConfigurationRevision {
+		return FrozenCustomerConfigurationEvidence{}, nil, gerror.New("frozen configuration binding evidence does not match")
+	}
+	exact := exactCache[frozenProviderEvidenceKey(row)]
+	if exact == nil {
+		return FrozenCustomerConfigurationEvidence{}, nil, gerror.New("frozen configuration provider evidence is unavailable")
+	}
+	binding := &entity.CatalogProductVersionFulfillmentBinding{VersionNo: row.VersionNo, InterfaceInstanceNo: row.BindingInterfaceInstanceNo, InterfaceDisplayNameSnapshot: row.InterfaceDisplayNameSnapshot, PluginId: row.PluginID, ExtensionPointCode: row.ExtensionPointCode, PluginReleaseVersion: row.PluginReleaseVersion, ContractVersion: row.ContractVersion, AuthorizedMethods: row.AuthorizedMethods, ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.BindingDeclarationDigest}
+	if !sameExactEvidence(bindingEvidence(binding), exact) {
+		return FrozenCustomerConfigurationEvidence{}, nil, gerror.New("frozen configuration provider evidence does not match")
+	}
+	customer, err := validateFrozenBatchDeclarations(row, input, exact)
+	if err != nil {
+		return FrozenCustomerConfigurationEvidence{}, nil, err
+	}
+	candidateJSON, err := json.Marshal(input.Candidates)
+	if err != nil || configurationDigest(candidateJSON) != input.CandidateSnapshotDigest {
+		return FrozenCustomerConfigurationEvidence{}, nil, gerror.New("frozen customer candidate snapshot does not match")
+	}
+	compiled, err := configurationcontract.CompileResolved(customer, input.Values, configurationSurfaceCustomer, exact.AuthorizedMethods, input.Candidates)
+	if err != nil || configurationDigest(compiled.ValuesJSON) != input.CustomerValueDigest {
+		return FrozenCustomerConfigurationEvidence{}, nil, gerror.New("frozen customer values are invalid")
+	}
+	evidence := FrozenCustomerConfigurationEvidence{CustomerValueDigest: input.CustomerValueDigest, CandidateSnapshotDigest: input.CandidateSnapshotDigest}
+	fileInputs, err := frozenCustomerFileInputs(input, customer)
+	if err != nil || len(fileInputs) == 0 {
+		return evidence, nil, err
+	}
+	batch := &purchaseconfigurationfile.OrderEvidenceBatchInput{
+		Owner:  purchaseconfigurationfile.OrderEvidenceOwner{OrderNo: input.OrderNo, CustomerNo: input.CustomerNo, UploaderUserID: input.UploaderUserID},
+		Fields: fileInputs,
+	}
+	return evidence, batch, nil
+}
+
+func (s *frozenCustomerConfigurationValidator) loadFrozenProviderEvidenceBatch(ctx context.Context, rows []frozenValidationBatchRow) (map[string]*capmodel.BusinessExtensionProviderEvidence, error) {
+	inputs := make([]plugincap.BusinessExtensionProviderExactInput, 0, len(rows))
+	keys := make([]string, 0, len(rows))
+	seen := make(map[string]struct{}, len(rows))
+	for _, row := range rows {
+		key := frozenProviderEvidenceKey(row)
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		keys = append(keys, key)
+		inputs = append(inputs, plugincap.BusinessExtensionProviderExactInput{PluginID: row.PluginID, ReleaseVersion: row.PluginReleaseVersion, Point: row.ExtensionPointCode, ContractVersion: row.ContractVersion, ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.BindingDeclarationDigest})
+	}
+	exactItems, err := s.extensions.GetProvidersExact(ctx, inputs)
+	if err != nil || len(exactItems) != len(inputs) {
+		return nil, gerror.New("frozen configuration provider evidence is unavailable")
+	}
+	result := make(map[string]*capmodel.BusinessExtensionProviderEvidence, len(exactItems))
+	for index, exact := range exactItems {
+		if exact == nil {
+			return nil, gerror.New("frozen configuration provider evidence is unavailable")
+		}
+		result[keys[index]] = exact
+	}
+	return result, nil
+}
+
+func frozenProviderEvidenceKey(row frozenValidationBatchRow) string {
+	return fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%s\x00%s", row.PluginID, row.PluginReleaseVersion, row.ExtensionPointCode, row.ContractVersion, row.ReleaseDigest, row.BindingDeclarationDigest)
+}
+
+func validateFrozenBatchDeclarations(
+	row frozenValidationBatchRow,
+	input FrozenCustomerConfigurationInput,
+	exact *capmodel.BusinessExtensionProviderEvidence,
+) (*capmodel.ConfigurationSchemaDeclaration, error) {
+	customer, err := decodeConfigurationDeclaration(row.CustomerDeclarationSnapshot)
+	if err != nil || !sameExactConfiguration(customer, exact.CustomerConfiguration) {
+		return nil, gerror.New("frozen customer declaration is unavailable")
+	}
+	product, err := decodeConfigurationDeclaration(row.ProductDeclarationSnapshot)
+	if err != nil || !sameExactConfiguration(product, exact.ProductConfiguration) {
+		return nil, gerror.New("frozen product declaration is unavailable")
+	}
+	interfaceSchema, err := decodeConfigurationDeclaration(row.InterfaceDeclarationSnapshot)
+	if err != nil || !sameExactConfiguration(interfaceSchema, exact.InterfaceConfiguration) || configurationSchemaVersion(interfaceSchema) != row.InterfaceSchemaVersion || configurationDeclarationDigest(interfaceSchema) != row.InterfaceDeclarationDigest || configurationStoredJSONDigest([]byte(row.InterfacePublicValueSnapshot)) != row.InterfaceValueDigest {
+		return nil, gerror.New("frozen interface configuration evidence does not match")
+	}
+	customerJSON, err := configurationDeclarationJSON(customer)
+	if err != nil || configurationDigest(customerJSON) != input.CustomerDeclarationDigest {
+		return nil, gerror.New("frozen customer declaration digest does not match")
+	}
+	productJSON, err := configurationDeclarationJSON(product)
+	if err != nil || configurationDigest(append(append([]byte{}, productJSON...), customerJSON...)) != row.VersionDeclarationDigest || configurationSchemaVersion(product) != row.ProductSchemaVersion || configurationSchemaVersion(customer) != row.CustomerSchemaVersion {
+		return nil, gerror.New("frozen product version declaration evidence does not match")
+	}
+	return customer, nil
+}

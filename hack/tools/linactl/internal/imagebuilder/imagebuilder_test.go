@@ -4,6 +4,7 @@
 package imagebuilder
 
 import (
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
@@ -26,8 +27,9 @@ func TestNormalizeBuildConfigSinglePlatform(t *testing.T) {
 		t.Fatalf("MultiPlatform = true, want false")
 	}
 	path := buildOutputBinaryRelPath(cfg, cfg.Targets[0])
-	if path != "temp/output/lina" {
-		t.Fatalf("single-platform binary path = %q, want temp/output/lina", path)
+	want := filepath.Join("temp", "output", "lina")
+	if path != want {
+		t.Fatalf("single-platform binary path = %q, want %q", path, want)
 	}
 }
 
@@ -66,11 +68,11 @@ func TestNormalizeBuildConfigMultiPlatform(t *testing.T) {
 	if cfg.Platform != "linux/amd64,linux/arm64" {
 		t.Fatalf("Platform = %q, want linux/amd64,linux/arm64", cfg.Platform)
 	}
-	if got := buildOutputBinaryRelPath(cfg, cfg.Targets[0]); got != "temp/output/linux_amd64/lina" {
-		t.Fatalf("amd64 binary path = %q, want temp/output/linux_amd64/lina", got)
+	if got, want := buildOutputBinaryRelPath(cfg, cfg.Targets[0]), filepath.Join("temp", "output", "linux_amd64", "lina"); got != want {
+		t.Fatalf("amd64 binary path = %q, want %q", got, want)
 	}
-	if got := buildOutputBinaryRelPath(cfg, cfg.Targets[1]); got != "temp/output/linux_arm64/lina" {
-		t.Fatalf("arm64 binary path = %q, want temp/output/linux_arm64/lina", got)
+	if got, want := buildOutputBinaryRelPath(cfg, cfg.Targets[1]), filepath.Join("temp", "output", "linux_arm64", "lina"); got != want {
+		t.Fatalf("arm64 binary path = %q, want %q", got, want)
 	}
 }
 
@@ -177,7 +179,7 @@ func TestBuildxDockerArgs(t *testing.T) {
 		"build",
 		"--platform", "linux/amd64,linux/arm64",
 		"--build-arg", "BASE_IMAGE=alpine:3.22",
-		"-f", "/repo/hack/docker/Dockerfile",
+		"-f", filepath.Join("/repo", "hack", "docker", "Dockerfile"),
 		"-t", "ghcr.io/linaproai/linapro:v1.0.0",
 		"--push",
 		".",
@@ -202,7 +204,7 @@ func TestDockerBuildArgs(t *testing.T) {
 		"--build-arg", "BASE_IMAGE=alpine:3.22",
 		"--build-arg", "TARGETOS=linux",
 		"--build-arg", "TARGETARCH=arm64",
-		"-f", "/repo/hack/docker/Dockerfile",
+		"-f", filepath.Join("/repo", "hack", "docker", "Dockerfile"),
 		"-t", "linapro:test",
 		".",
 	}

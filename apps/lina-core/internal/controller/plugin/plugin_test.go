@@ -55,7 +55,7 @@ func TestBuildPluginDependencyCheckResultProjectsAllSections(t *testing.T) {
 				RequiredVersion: "<0.3.0",
 				OwnerHostServices: []*pluginsvc.DependencyOwnerHostServiceSummary{
 					{
-						Owner:   "linapro-ai-core",
+						Owner:   "ai-core",
 						Service: "ai",
 						Version: "v1",
 						Methods: []string{"text.generate"},
@@ -107,10 +107,10 @@ func TestBuildHostServicePermissionItemsProjectsTablesAndResources(t *testing.T)
 		{
 			Service: protocol.HostServiceData,
 			Methods: []string{protocol.HostServiceMethodDataList},
-			Tables:  []string{"plugin_linapro_demo_dynamic_record"},
+			Tables:  []string{"plugin_demo_dynamic_record"},
 		},
 		{
-			Owner:   "linapro-ai-core",
+			Owner:   "ai-core",
 			Service: "ai",
 			Version: "v1",
 			Methods: []string{"text.generate"},
@@ -122,7 +122,7 @@ func TestBuildHostServicePermissionItemsProjectsTablesAndResources(t *testing.T)
 
 	items := buildHostServicePermissionItems(
 		specs,
-		map[string]string{"plugin_linapro_demo_dynamic_record": "Dynamic plugin record table"},
+		map[string]string{"plugin_demo_dynamic_record": "Dynamic plugin record table"},
 	)
 	if len(items) != 2 {
 		t.Fatalf("expected 2 host service items, got %d", len(items))
@@ -140,7 +140,7 @@ func TestBuildHostServicePermissionItemsProjectsTablesAndResources(t *testing.T)
 	}
 
 	ownerItem := items[1]
-	if ownerItem.Owner != "linapro-ai-core" || ownerItem.Service != "ai" || ownerItem.Version != "v1" {
+	if ownerItem.Owner != "ai-core" || ownerItem.Service != "ai" || ownerItem.Version != "v1" {
 		t.Fatalf("expected second service identity to be preserved, got %#v", ownerItem)
 	}
 	if len(ownerItem.Resources) != 1 || ownerItem.Resources[0].Ref != "purpose:summary" {
@@ -160,7 +160,7 @@ func TestBuildHostServicePermissionItemsProjectsTablesAndResources(t *testing.T)
 func TestBuildAuthorizationInputPreservesOwnerAwareIdentity(t *testing.T) {
 	input := buildAuthorizationInput(&v1.HostServiceAuthorizationReq{
 		Services: []*v1.HostServiceAuthorizationServiceReq{{
-			Owner:        " linapro-ai-core ",
+			Owner:        " ai-core ",
 			Service:      " ai ",
 			Version:      " v1 ",
 			Methods:      []string{"text.generate"},
@@ -172,7 +172,7 @@ func TestBuildAuthorizationInputPreservesOwnerAwareIdentity(t *testing.T) {
 		t.Fatalf("expected one authorization service input, got %#v", input)
 	}
 	decision := input.Services[0]
-	if decision.Owner != "linapro-ai-core" || decision.Service != "ai" || decision.Version != "v1" {
+	if decision.Owner != "ai-core" || decision.Service != "ai" || decision.Version != "v1" {
 		t.Fatalf("expected owner-aware authorization identity to be trimmed, got %#v", decision)
 	}
 	if len(decision.ResourceRefs) != 1 || decision.ResourceRefs[0] != "purpose:summary" {

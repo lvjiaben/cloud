@@ -685,6 +685,18 @@ func (rootNoopPlugins) ListTenantPlugins(context.Context, capabilityplugincap.Te
 	return &capmodel.PageResult[*capabilityplugincap.TenantPluginInfo]{Items: []*capabilityplugincap.TenantPluginInfo{}}, nil
 }
 
+func (rootNoopPlugins) ListBusinessExtensionProviders(context.Context, capabilityplugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{}}, nil
+}
+
+func (rootNoopPlugins) GetBusinessExtensionProviderExact(context.Context, capabilityplugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	return nil, nil
+}
+
+func (rootNoopPlugins) GetBusinessExtensionProvidersExact(context.Context, []capabilityplugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	return []*capmodel.BusinessExtensionProviderEvidence{}, nil
+}
+
 // IsEnabled reports plugins as disabled in construction-only tests.
 func (rootNoopPlugins) IsEnabled(context.Context, capabilityplugincap.PluginID) (bool, error) {
 	return false, nil

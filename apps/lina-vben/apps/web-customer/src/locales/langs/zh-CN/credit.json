@@ -1,0 +1,78 @@
+{
+  "menu": "信用账户",
+  "eyebrow": "先用后付 · 逐币种独立额度",
+  "title": "信用账户",
+  "description": "申请授信、查看额度和账单，并使用同币种余额安全还款。",
+  "loadFailed": "信用账户暂时无法读取，请稍后重试。",
+  "retry": "重新加载",
+  "metrics": {
+    "available": "可用额度合计",
+    "pending": "待审核申请",
+    "open": "待还账单",
+    "overdue": "逾期账单"
+  },
+  "tabs": {
+    "accounts": "我的额度",
+    "applications": "授信申请",
+    "statements": "信用账单"
+  },
+  "account": {
+    "available": "当前可用",
+    "total": "总额度",
+    "unbilled": "未出账",
+    "billed": "已出账",
+    "empty": "还没有已开通的信用账户"
+  },
+  "table": {
+    "number": "编号",
+    "currency": "币种",
+    "requested": "申请额度",
+    "progress": "审核进度",
+    "status": "状态",
+    "total": "账单金额",
+    "outstanding": "待还金额",
+    "due": "还款日期",
+    "action": "操作"
+  },
+  "status": {
+    "pending_review": "待审核",
+    "approved": "已批准",
+    "rejected": "已拒绝",
+    "cancelled": "已取消",
+    "expired": "已过期",
+    "active": "可用",
+    "frozen": "已冻结",
+    "closed": "已关闭",
+    "bad_debt": "坏账",
+    "open": "待还款",
+    "partially_paid": "部分还款",
+    "paid": "已还清",
+    "overdue": "已逾期",
+    "written_off": "已核销",
+    "refunded": "已退款"
+  },
+  "application": {
+    "button": "申请授信",
+    "title": "提交授信申请",
+    "help": "请如实填写额度和有效期。证明材料只提供给有权审核人员查看。",
+    "currency": "申请币种",
+    "limit": "申请额度",
+    "from": "开始日期",
+    "until": "结束日期",
+    "files": "证明材料",
+    "fileHelp": "最多 10 个 PDF、JPG 或 PNG；每个 20 MiB，合计 200 MiB。",
+    "fileRejected": "文件格式、大小或数量不符合要求。",
+    "invalid": "请填写有效额度、日期，并至少上传一个证明文件。",
+    "success": "授信申请已提交",
+    "failed": "授信申请提交失败，已上传材料不会形成申请，请重试。"
+  },
+  "repayment": {
+    "button": "余额还款",
+    "title": "使用余额还款",
+    "amount": "请输入还款金额",
+    "help": "本账单待还 {amount}，当前同币种可用余额 {balance}。",
+    "invalid": "还款金额必须大于零且不能超过待还金额。",
+    "success": "还款成功，额度已经按实际归还本金释放。",
+    "failed": "还款没有完成，余额和账单保持不变。"
+  }
+}

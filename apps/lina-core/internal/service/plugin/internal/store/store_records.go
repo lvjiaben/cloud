@@ -2,7 +2,30 @@
 
 package store
 
-import "time"
+import (
+	"strings"
+	"time"
+)
+
+const (
+	migrationErrorMessageMaxCharacters  = 1024
+	migrationErrorMessageHeadCharacters = 256
+	migrationErrorMessageOmission       = "\n...[truncated]...\n"
+)
+
+// BoundedMigrationErrorMessage keeps the persisted failure diagnostic within
+// the sys_plugin_migration VARCHAR(1024) contract. The beginning identifies
+// the failed phase while the tail retains the database driver's root cause.
+func BoundedMigrationErrorMessage(message string) string {
+	normalized := []rune(strings.TrimSpace(message))
+	if len(normalized) <= migrationErrorMessageMaxCharacters {
+		return string(normalized)
+	}
+	omission := []rune(migrationErrorMessageOmission)
+	tailStart := len(normalized) - (migrationErrorMessageMaxCharacters - migrationErrorMessageHeadCharacters - len(omission))
+	return string(normalized[:migrationErrorMessageHeadCharacters]) +
+		migrationErrorMessageOmission + string(normalized[tailStart:])
+}
 
 // PluginRecord is the store-owned projection of one sys_plugin row.
 type PluginRecord struct {
@@ -27,6 +50,8 @@ type PluginRecord struct {
 	ScopeNature             string
 	InstallMode             string
 	AutoEnableForNewTenants bool
+	NewBusinessState        string
+	NewBusinessStoppedAt    *time.Time
 	CreatedAt               *time.Time
 	UpdatedAt               *time.Time
 }

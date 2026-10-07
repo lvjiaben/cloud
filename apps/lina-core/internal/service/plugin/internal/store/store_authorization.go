@@ -5,6 +5,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"reflect"
 	"strings"
 
@@ -15,6 +18,8 @@ import (
 	"lina-core/internal/dao"
 	"lina-core/internal/model/do"
 	"lina-core/internal/service/plugin/internal/catalog"
+	"lina-core/internal/service/plugin/internal/plugintypes"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 )
 
@@ -71,6 +76,9 @@ func (s *serviceImpl) ParseManifestSnapshot(content string) (*ManifestSnapshot, 
 		return cached, nil
 	}
 	snapshot := &ManifestSnapshot{}
+	if err := catalog.ValidateYAMLBusinessExtensionSnapshotSchema([]byte(trimmed)); err != nil {
+		return nil, gerror.Wrap(err, "plugin release manifest_snapshot contains unsupported business extension fields")
+	}
 	root := &yaml.Node{}
 	if err := yaml.Unmarshal([]byte(trimmed), root); err != nil {
 		return nil, gerror.Wrap(err, "parse plugin release manifest_snapshot failed")
@@ -95,8 +103,62 @@ func (s *serviceImpl) ParseManifestSnapshot(content string) (*ManifestSnapshot, 
 	}
 	snapshot.RequestedHostServices = requestedHostServices
 	snapshot.AuthorizedHostServices = authorizedHostServices
+	if err := validateManifestSnapshotBusinessDeclarations(snapshot); err != nil {
+		return nil, gerror.Wrap(err, "parse plugin business extension snapshot failed")
+	}
 	s.storeCachedManifestSnapshot(cacheKey, snapshot)
 	return cloneManifestSnapshot(snapshot), nil
+}
+
+func validateManifestSnapshotBusinessDeclarations(snapshot *ManifestSnapshot) error {
+	if snapshot == nil {
+		return nil
+	}
+	requested := &catalog.Manifest{
+		ID: snapshot.ID, Dependencies: plugintypes.CloneDependencySpec(snapshot.Dependencies),
+		BusinessExtensions: catalog.CloneBusinessExtensionDeclarations(snapshot.BusinessExtensions),
+		AdminSurfaces:      catalog.CloneFrontendSurfaceDeclarations(snapshot.AdminSurfaces),
+		CustomerSurfaces:   catalog.CloneFrontendSurfaceDeclarations(snapshot.CustomerSurfaces),
+	}
+	if err := catalog.ValidateBusinessExtensions(requested); err != nil {
+		return err
+	}
+	if err := catalog.ValidateFrontendSurfaces(requested); err != nil {
+		return err
+	}
+	authorized := &catalog.Manifest{
+		ID: snapshot.ID, Dependencies: plugintypes.CloneDependencySpec(snapshot.Dependencies),
+		BusinessExtensions: catalog.CloneBusinessExtensionDeclarations(snapshot.AuthorizedBusinessExtensions),
+	}
+	if err := catalog.ValidateBusinessExtensions(authorized); err != nil {
+		return err
+	}
+	requestedSet := make(map[string]struct{}, len(requested.BusinessExtensions))
+	for _, declaration := range requested.BusinessExtensions {
+		requestedSet[manifestSnapshotBusinessExtensionKey(declaration)] = struct{}{}
+	}
+	for _, declaration := range authorized.BusinessExtensions {
+		if _, ok := requestedSet[manifestSnapshotBusinessExtensionKey(declaration)]; !ok {
+			return gerror.Newf("authorized business extension was not requested: %s", manifestSnapshotBusinessExtensionKey(declaration))
+		}
+	}
+	snapshot.BusinessExtensions = requested.BusinessExtensions
+	snapshot.AuthorizedBusinessExtensions = authorized.BusinessExtensions
+	snapshot.AdminSurfaces = requested.AdminSurfaces
+	snapshot.CustomerSurfaces = requested.CustomerSurfaces
+	return nil
+}
+
+func manifestSnapshotBusinessExtensionKey(declaration *capmodel.BusinessExtensionDeclaration) string {
+	if declaration == nil {
+		return ""
+	}
+	content, err := json.Marshal(declaration)
+	if err != nil {
+		return ""
+	}
+	digest := sha256.Sum256(content)
+	return hex.EncodeToString(digest[:])
 }
 
 // applyExistingHostServiceAuthorization carries forward an existing release
@@ -202,12 +264,73 @@ func (s *serviceImpl) PersistReleaseHostServiceAuthorization(
 		}
 		snapshot.HostServiceAuthConfirmed = true
 	}
+	if len(manifest.BusinessExtensions) > 0 {
+		if s.catalogSvc == nil {
+			return nil, gerror.New("plugin catalog service is required for business extension authorization")
+		}
+		snapshot.AuthorizedBusinessExtensions, err = s.catalogSvc.AuthorizeManifestBusinessExtensions(manifest)
+		if err != nil {
+			return nil, gerror.Wrap(err, "authorize plugin business extensions failed")
+		}
+	}
 
 	content, err := yaml.Marshal(snapshot)
 	if err != nil {
 		return nil, gerror.Wrap(err, "build plugin release authorization snapshot failed")
 	}
 
+	if _, err = dao.SysPluginRelease.Ctx(ctx).
+		Where(do.SysPluginRelease{Id: release.Id}).
+		Data(do.SysPluginRelease{ManifestSnapshot: string(content)}).
+		Update(); err != nil {
+		return nil, err
+	}
+	s.invalidateReleaseManifestCacheForPlugin(release.PluginId)
+	if _, err = s.RefreshStartupReleaseByID(ctx, release.Id); err != nil {
+		return nil, err
+	}
+	return snapshot, nil
+}
+
+// PersistReleaseBusinessExtensionAuthorization freezes only business extension
+// authorization for source-plugin install paths that do not use dynamic hostServices.
+func (s *serviceImpl) PersistReleaseBusinessExtensionAuthorization(
+	ctx context.Context,
+	manifest *catalog.Manifest,
+) (*ManifestSnapshot, error) {
+	if manifest == nil {
+		return nil, gerror.New("plugin manifest cannot be nil")
+	}
+	release, err := s.GetRelease(ctx, manifest.ID, manifest.Version)
+	if err != nil {
+		return nil, err
+	}
+	if release == nil {
+		return nil, gerror.Newf("plugin release does not exist: %s@%s", manifest.ID, manifest.Version)
+	}
+	snapshot, err := s.ParseManifestSnapshot(release.ManifestSnapshot)
+	if err != nil {
+		return nil, err
+	}
+	if snapshot == nil {
+		snapshot, err = s.buildManifestSnapshotModel(manifest)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if len(manifest.BusinessExtensions) > 0 {
+		if s.catalogSvc == nil {
+			return nil, gerror.New("plugin catalog service is required for business extension authorization")
+		}
+		snapshot.AuthorizedBusinessExtensions, err = s.catalogSvc.AuthorizeManifestBusinessExtensions(manifest)
+		if err != nil {
+			return nil, gerror.Wrap(err, "authorize plugin business extensions failed")
+		}
+	}
+	content, err := yaml.Marshal(snapshot)
+	if err != nil {
+		return nil, gerror.Wrap(err, "build plugin business extension authorization snapshot failed")
+	}
 	if _, err = dao.SysPluginRelease.Ctx(ctx).
 		Where(do.SysPluginRelease{Id: release.Id}).
 		Data(do.SysPluginRelease{ManifestSnapshot: string(content)}).

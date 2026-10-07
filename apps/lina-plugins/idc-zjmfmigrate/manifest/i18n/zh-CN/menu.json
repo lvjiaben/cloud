@@ -1,0 +1,11 @@
+{
+  "menu": {
+    "plugin:idc-zjmfmigrate:migration": { "title": "迁移检查" },
+    "plugin:idc-zjmfmigrate:preflight": { "title": "执行迁移预检" },
+    "plugin:idc-zjmfmigrate:write": { "title": "写入迁移批次" },
+    "plugin:idc-zjmfmigrate:decide": { "title": "处理迁移冲突" },
+    "plugin:idc-zjmfmigrate:reconcile": { "title": "执行迁移对账" },
+    "plugin:idc-zjmfmigrate:cutover": { "title": "检查迁移切换" },
+    "plugin:idc-zjmfmigrate:rollback": { "title": "回退迁移批次" }
+  }
+}

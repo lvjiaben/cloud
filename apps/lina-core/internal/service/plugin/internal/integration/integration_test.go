@@ -49,6 +49,40 @@ import (
 	"lina-core/pkg/statusflag"
 )
 
+// isolateSourcePluginCallbacks replaces unrelated build-linked source plugins
+// with asset-preserving declarations that have no runtime callbacks. Generic
+// integration tests can then exercise their own fixture without constructing
+// every official plugin and its deployment-owned secrets.
+func isolateSourcePluginCallbacks(t *testing.T, keepIDs ...string) {
+	t.Helper()
+
+	keep := make(map[string]struct{}, len(keepIDs))
+	for _, pluginID := range keepIDs {
+		keep[strings.TrimSpace(pluginID)] = struct{}{}
+	}
+	cleanups := make([]func(), 0)
+	for _, definition := range pluginhost.ListSourcePlugins() {
+		if definition == nil {
+			continue
+		}
+		if _, ok := keep[definition.ID()]; ok {
+			continue
+		}
+		declarations := pluginhost.NewDeclarations(definition.ID())
+		declarations.Assets().UseEmbeddedFiles(definition.GetEmbeddedFiles())
+		cleanup, err := pluginhost.RegisterSourcePluginForTest(declarations)
+		if err != nil {
+			t.Fatalf("isolate source plugin %s: %v", definition.ID(), err)
+		}
+		cleanups = append(cleanups, cleanup)
+	}
+	t.Cleanup(func() {
+		for index := len(cleanups) - 1; index >= 0; index-- {
+			cleanups[index]()
+		}
+	})
+}
+
 // capabilityScopeRecorder records plugin-scope binding performed by
 // capabilityowner.ServicesForPlugin.
 type capabilityScopeRecorder struct {
@@ -869,6 +903,18 @@ func (scopedCapabilityPlugins) ListTenantPlugins(context.Context, capabilityplug
 	return &capmodel.PageResult[*capabilityplugincap.TenantPluginInfo]{Items: []*capabilityplugincap.TenantPluginInfo{}}, nil
 }
 
+func (scopedCapabilityPlugins) ListBusinessExtensionProviders(context.Context, capabilityplugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{}}, nil
+}
+
+func (scopedCapabilityPlugins) GetBusinessExtensionProviderExact(context.Context, capabilityplugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	return nil, nil
+}
+
+func (scopedCapabilityPlugins) GetBusinessExtensionProvidersExact(context.Context, []capabilityplugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	return []*capmodel.BusinessExtensionProviderEvidence{}, nil
+}
+
 // Config returns a blank plugin configuration reader for registration-only tests.
 func (scopedCapabilityPlugins) Config() capabilityplugincap.ConfigService {
 	return scopedCapabilityPluginConfig{}
@@ -1113,6 +1159,7 @@ func (emptySourceServicesDirectory) Tenant() tenantcapsvc.Service { return nil }
 // capabilityowner.ServicesForPlugin before exposing them to a source plugin.
 func TestSourcePluginCallbacksUsePluginScopedServices(t *testing.T) {
 	const pluginID = "plugin-dev-source-capability-scope"
+	isolateSourcePluginCallbacks(t, pluginID)
 
 	recorder := &capabilityScopeRecorder{}
 	services := testutil.NewServicesWithCapabilities(recorder)

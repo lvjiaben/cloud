@@ -114,6 +114,9 @@ func TestPluginManagementRuntimeRoutesAreBound(t *testing.T) {
 	}{
 		{method: "GET", route: "/api/v1/plugins/{id}"},
 		{method: "GET", route: "/api/v1/plugins/{id}/dependencies"},
+		{method: "PUT", route: "/api/v1/plugins/{id}/new-business/stop"},
+		{method: "PUT", route: "/api/v1/plugins/{id}/new-business/resume"},
+		{method: "GET", route: "/api/v1/plugins/{id}/business-impact"},
 		{method: "GET", route: "/api/v1/plugins/{id}/upgrade/preview"},
 		{method: "POST", route: "/api/v1/plugins/{id}/upgrade"},
 	}
@@ -179,6 +182,40 @@ func TestDynamicPluginRootRoutesPrecedeSPAFallback(t *testing.T) {
 	}
 	if response.Header.Get("Location") != "" {
 		t.Fatalf("expected no SPA redirect for dynamic route, got location=%q", response.Header.Get("Location"))
+	}
+}
+
+// TestPluginDiscoveryUsesOptionalAuthentication guards the actual route split:
+// anonymous shell discovery stays public, authenticated discovery keeps identity,
+// and plugin management retains its independent permission checks.
+func TestPluginDiscoveryUsesOptionalAuthentication(t *testing.T) {
+	var (
+		ctx     = t.Context()
+		server  = ghttp.GetServer("cmd-discovery-identity-" + guid.S())
+		runtime = newRouteBindingTestRuntime(ctx)
+	)
+	server.SetPort(0)
+	server.SetDumpRouterMap(false)
+	bindHostAPIRoutes(ctx, server, runtime)
+	if err := server.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := server.Shutdown(); err != nil {
+			t.Errorf("shutdown discovery route server: %v", err)
+		}
+	})
+	discovery := mustFindRoute(t, server, "GET", "/api/v1/plugins/dynamic")
+	if !strings.Contains(discovery.Middleware, "OptionalAuth") || strings.Contains(discovery.Middleware, "Service.Permission") {
+		t.Fatalf("unexpected discovery middleware: %s", discovery.Middleware)
+	}
+	login := mustFindRoute(t, server, "POST", "/api/v1/auth/login")
+	if strings.Contains(login.Middleware, "OptionalAuth") || strings.Contains(login.Middleware, "Service.Auth") {
+		t.Fatalf("login must remain public: %s", login.Middleware)
+	}
+	management := mustFindRoute(t, server, "GET", "/api/v1/plugins/{id}")
+	if !strings.Contains(management.Middleware, "Service.Auth") || !strings.Contains(management.Middleware, "Service.Permission") {
+		t.Fatalf("plugin management lost its gates: %s", management.Middleware)
 	}
 }
 

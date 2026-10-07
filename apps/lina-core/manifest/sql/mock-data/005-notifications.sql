@@ -50,7 +50,7 @@ INSERT INTO sys_notify_message (
 )
 SELECT
     0,
-    'linapro-content-notice',
+    'content-notice',
     'notice',
     'mock-maintenance',
     'announcement',
@@ -65,7 +65,7 @@ WHERE admin."username" = 'admin'
       SELECT 1
       FROM sys_notify_message existing
       WHERE existing."tenant_id" = 0
-        AND existing."plugin_id" = 'linapro-content-notice'
+        AND existing."plugin_id" = 'content-notice'
         AND existing."source_type" = 'notice'
         AND existing."source_id" = 'mock-maintenance'
   );
@@ -87,7 +87,7 @@ INSERT INTO sys_notify_delivery (
 )
 SELECT
     0,
-    "msg"."id",
+    msg."id",
     'inbox',
     'inbox',
     'user',
@@ -99,12 +99,12 @@ SELECT
     TIMESTAMPTZ '2026-04-20 09:00:10',
     TIMESTAMPTZ '2026-04-20 09:00:10',
     TIMESTAMPTZ '2026-04-20 09:00:10'
-FROM sys_notify_message "msg"
+FROM sys_notify_message msg
 JOIN sys_user u ON u."username" IN ('admin', 'user002', 'user060')
-WHERE "msg"."tenant_id" = 0
-  AND "msg"."source_type" = 'system'
-  AND "msg"."source_id" = 'mock-welcome'
-  AND "msg"."id" = (
+WHERE msg."tenant_id" = 0
+  AND msg."source_type" = 'system'
+  AND msg."source_id" = 'mock-welcome'
+  AND msg."id" = (
       SELECT latest."id"
       FROM sys_notify_message latest
       WHERE latest."tenant_id" = 0
@@ -117,7 +117,7 @@ WHERE "msg"."tenant_id" = 0
       SELECT 1
       FROM sys_notify_delivery existing
       WHERE existing."tenant_id" = 0
-        AND existing."message_id" = "msg"."id"
+        AND existing."message_id" = msg."id"
         AND existing."channel_key" = 'inbox'
         AND existing."recipient_type" = 'user'
         AND existing."user_id" = u."id"
@@ -140,7 +140,7 @@ INSERT INTO sys_notify_delivery (
 )
 SELECT
     0,
-    "msg"."id",
+    msg."id",
     'inbox',
     'inbox',
     'user',
@@ -152,12 +152,12 @@ SELECT
     TIMESTAMPTZ '2026-04-21 10:31:00',
     TIMESTAMPTZ '2026-04-21 10:31:00',
     TIMESTAMPTZ '2026-04-21 10:31:00'
-FROM sys_notify_message "msg"
+FROM sys_notify_message msg
 JOIN sys_user u ON u."username" IN ('admin', 'user009', 'user021')
-WHERE "msg"."tenant_id" = 0
-  AND "msg"."source_type" = 'notice'
-  AND "msg"."source_id" = 'mock-maintenance'
-  AND "msg"."id" = (
+WHERE msg."tenant_id" = 0
+  AND msg."source_type" = 'notice'
+  AND msg."source_id" = 'mock-maintenance'
+  AND msg."id" = (
       SELECT latest."id"
       FROM sys_notify_message latest
       WHERE latest."tenant_id" = 0
@@ -170,7 +170,7 @@ WHERE "msg"."tenant_id" = 0
       SELECT 1
       FROM sys_notify_delivery existing
       WHERE existing."tenant_id" = 0
-        AND existing."message_id" = "msg"."id"
+        AND existing."message_id" = msg."id"
         AND existing."channel_key" = 'inbox'
         AND existing."recipient_type" = 'user'
         AND existing."user_id" = u."id"

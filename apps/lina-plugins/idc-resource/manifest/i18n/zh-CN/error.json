@@ -1,0 +1,77 @@
+{
+  "error": {
+    "idc": {
+      "resource": {
+        "catalog": {
+          "invalid": "上游商品查询条件不正确",
+          "not": { "accessible": "无权查看该接口的上游商品" },
+          "unavailable": "未能读取上游商品，请检查接口连接及连接器是否支持商品读取"
+        },
+        "configuration": {
+          "invalid": "上游渠道或资源池配置填写不正确",
+          "not": { "accessible": "无权访问该上游配置" },
+          "conflict": "配置已经变化，或启用渠道前账号密码尚未配置完整，请刷新后重试",
+          "unavailable": "上游配置服务暂时不可用"
+        },
+        "provider": {
+          "verification": {
+            "not": {
+              "accessible": "无权验证该供应商接口连接"
+            },
+            "unavailable": "供应商接口连接验证服务暂时不可用"
+          },
+          "capacity": {
+            "invalid": "供应商容量观测请求无效",
+            "not": {
+              "accessible": "无权访问该供应商容量观测目标"
+            },
+            "conflict": "同一渠道和观测类型已有采集任务正在执行",
+            "unavailable": "供应商容量观测服务暂时不可用"
+          }
+        },
+        "overview": {
+          "invalid": "资源概览查询参数无效",
+          "not": {
+            "accessible": "无权访问资源运营总览"
+          },
+          "unavailable": "资源运营总览暂时不可用"
+        },
+        "health": {
+          "management": {
+            "invalid": "供应商健康检查请求无效",
+            "not": {
+              "accessible": "无权访问该供应商健康检查目标"
+            },
+            "conflict": "健康策略版本或当前样本窗口已发生变化，请刷新后重试",
+            "unavailable": "供应商健康检查服务暂时不可用"
+          }
+        },
+        "task": {
+          "management": {
+            "invalid": "供应商任务请求无效",
+            "not": {
+              "accessible": "无权访问该供应商任务目标"
+            },
+            "conflict": "任务版本、状态、证据或已有接管记录已变化，请刷新后重新核对证据",
+            "unavailable": "供应商任务管理服务暂时不可用"
+          }
+        },
+        "channel": {
+          "secret": {
+            "invalid": "渠道秘密请求无效",
+            "not": {
+              "accessible": "无权访问该渠道秘密"
+            },
+            "recent": {
+              "authentication": {
+                "required": "修改渠道秘密前请重新登录"
+              }
+            },
+            "conflict": "渠道秘密已发生变化，请刷新后重试",
+            "unavailable": "渠道秘密服务暂时不可用"
+          }
+        }
+      }
+    }
+  }
+}

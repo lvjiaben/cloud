@@ -79,6 +79,18 @@ interface RouteMeta {
    * iframe 地址
    */
   iframeSrc?: string;
+  /** Version-frozen dynamic plugin page rendered only in the isolated sandbox. */
+  pluginSandboxSrc?: string;
+  /** Exact bridge capabilities granted to this isolated plugin surface. */
+  pluginSurfaceCapabilities?: string[];
+  /** Staff or customer host identity used by this surface. */
+  pluginSurfaceHost?: 'admin' | 'customer';
+  /** Plugin that owns this isolated surface. */
+  pluginSurfaceId?: string;
+  /** Stable surface contract key. */
+  pluginSurfaceKey?: string;
+  /** Versioned page bridge contract. */
+  pluginSurfaceVersion?: string;
   /**
    * 路由标题运行时 i18n 键
    */

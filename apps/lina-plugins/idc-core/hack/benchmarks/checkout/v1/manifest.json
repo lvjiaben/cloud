@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "benchmarkId": "idc-checkout-v1",
+  "description": "Local checkout transaction plus ready payment-preparation projection",
+  "hardware": {
+    "minimumLogicalCpus": 4,
+    "minimumMemoryGiB": 8,
+    "storageClass": "local-ssd",
+    "databaseNetwork": "loopback",
+    "minimumPostgreSqlMajor": 14
+  },
+  "dataset": {
+    "totalCustomerCount": 76,
+    "benchmarkCustomerCount": 73,
+    "catalogProductCount": 1,
+    "inventorySellableUnits": 10000,
+    "cartItemsPerOrder": 8,
+    "configurationSelectionsPerItem": 1,
+    "quantityPerItem": 1,
+    "currencyCode": "CNY",
+    "datasetScript": "dataset.sql"
+  },
+  "workload": {
+    "coldSamples": 1,
+    "warmupSamples": 8,
+    "measuredSamples": 64,
+    "concurrency": 8,
+    "coldCacheDefinition": "first checkout and payment-preparation evaluation before checkout warmup; PostgreSQL and operating-system page caches are not forcibly purged",
+    "warmCacheDefinition": "same process and isolated schema after eight complete checkout and payment-preparation evaluations"
+  },
+  "gates": {
+    "p95Milliseconds": 2000,
+    "p99Milliseconds": 5000,
+    "maximumQueriesPerSample": 50,
+    "maximumQueryGrowthFromOneToEightItems": 2,
+    "maximumErrorRate": 0,
+    "maximumExternalNetworkCalls": 0
+  }
+}

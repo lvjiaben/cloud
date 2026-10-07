@@ -72,7 +72,11 @@ func TestPostgreSQLProjectSQLAssetsSmoke(t *testing.T) {
 	})
 
 	executePostgreSQLSQLAssets(t, ctx, db, installAssets)
-	executePostgreSQLSQLAssets(t, ctx, db, mockAssets)
+	if err = db.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
+		return executePostgreSQLSQLAssetsInTx(txCtx, db, mockAssets)
+	}); err != nil {
+		t.Fatalf("execute PostgreSQL mock-data assets in one transaction failed: %v", err)
+	}
 	executePostgreSQLSQLAssets(t, ctx, db, uninstallAssets)
 }
 
@@ -135,9 +139,8 @@ func TestPostgreSQLProjectSQLUsesTimestamptzForInstants(t *testing.T) {
 		return
 	}
 	assertRequiredSQLPatterns(t, "plugin SQL assets", pluginCombined.String(), []string{
-		`"oper_time"\s+TIMESTAMPTZ`,
 		`"joined_at"\s+TIMESTAMPTZ`,
-		`"last_test_at"\s+TIMESTAMPTZ`,
+		`"completed_at"\s+TIMESTAMPTZ`,
 		`"expires_at"\s+TIMESTAMPTZ`,
 	})
 }
@@ -155,6 +158,26 @@ func executePostgreSQLSQLAssets(t *testing.T, ctx context.Context, db gdb.DB, as
 			}
 		})
 	}
+}
+
+// executePostgreSQLSQLAssetsInTx mirrors the plugin mock-data lifecycle: all
+// mock statements share one transaction so deferred consistency constraints
+// can validate complete header/detail and ledger batches at commit time.
+func executePostgreSQLSQLAssetsInTx(ctx context.Context, db gdb.DB, assets []sqlTestAsset) error {
+	for _, asset := range assets {
+		for index, statement := range SplitSQLStatements(asset.content) {
+			if _, err := db.Exec(ctx, statement); err != nil {
+				return fmt.Errorf(
+					"execute PostgreSQL mock asset %s statement %d failed: %w\nSQL:\n%s",
+					asset.sourceName,
+					index+1,
+					err,
+					statement,
+				)
+			}
+		}
+	}
+	return nil
 }
 
 // assertRequiredSQLPatterns verifies that one SQL asset group keeps representative

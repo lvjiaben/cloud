@@ -104,11 +104,11 @@ func TestOpenAPII18nBundlesCoverCurrentMetadata(t *testing.T) {
 	)
 	if testsupport.OfficialPluginsWorkspaceReady(repoRoot) {
 		managedPluginIDs := openAPII18NManagedPluginIDSet(t)
-		if _, ok := managedPluginIDs["linapro-monitor-loginlog"]; ok {
-			requiredKeys = append(requiredKeys, "plugins.linapro_monitor_loginlog.api.loginlog.v1.ListReq.meta.tags")
+		if _, ok := managedPluginIDs["monitor-loginlog"]; ok {
+			requiredKeys = append(requiredKeys, "plugins.monitor_loginlog.api.loginlog.v1.ListReq.meta.tags")
 		}
-		if _, ok := managedPluginIDs["linapro-demo-dynamic"]; ok {
-			requiredKeys = append(requiredKeys, "plugins.linapro_demo_dynamic.paths.get.api.v1.backend_summary.meta.summary")
+		if _, ok := managedPluginIDs["demo-dynamic"]; ok {
+			requiredKeys = append(requiredKeys, "plugins.demo_dynamic.paths.get.api.v1.backend_summary.meta.summary")
 		}
 	}
 
@@ -284,17 +284,17 @@ func TestOpenAPIHostCatalogMergeIgnoresGeneratedEntityKeys(t *testing.T) {
 // runtime even if a malformed bundle is supplied.
 func TestOpenAPIPluginCatalogMergeRejectsForeignNamespaces(t *testing.T) {
 	target := map[string]string{}
-	mergeOpenAPIPluginMessageCatalog(context.Background(), target, "linapro-demo-source", map[string]string{
-		"plugins.linapro_demo_source.api.demo.v1.PingReq.meta.summary":                  "查询源码插件示例公开 ping",
-		"plugins.linapro_demo_source.backend.internal.model.entity.Record.fields.id.dc": "不应合并",
+	mergeOpenAPIPluginMessageCatalog(context.Background(), target, "demo-source", map[string]string{
+		"plugins.demo_source.api.demo.v1.PingReq.meta.summary":                  "查询源码插件示例公开 ping",
+		"plugins.demo_source.backend.internal.model.entity.Record.fields.id.dc": "不应合并",
 		"plugins.other_plugin.api.demo.v1.PingReq.meta.summary":                         "不应合并",
 		"core.openapi.info.title": "不应合并",
 	})
 
-	if got := target["plugins.linapro_demo_source.api.demo.v1.PingReq.meta.summary"]; got != "查询源码插件示例公开 ping" {
+	if got := target["plugins.demo_source.api.demo.v1.PingReq.meta.summary"]; got != "查询源码插件示例公开 ping" {
 		t.Fatalf("expected plugin-owned apidoc key to merge, got %q", got)
 	}
-	if _, ok := target["plugins.linapro_demo_source.backend.internal.model.entity.Record.fields.id.dc"]; ok {
+	if _, ok := target["plugins.demo_source.backend.internal.model.entity.Record.fields.id.dc"]; ok {
 		t.Fatal("expected generated entity apidoc key from plugin bundle to be ignored")
 	}
 	if _, ok := target["plugins.other_plugin.api.demo.v1.PingReq.meta.summary"]; ok {

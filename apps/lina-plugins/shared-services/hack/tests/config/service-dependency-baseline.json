@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/shared-services/backend/cap/challengecap/source/client.go",
+      "maxCalls": 1,
+      "reason": "Shared challenge capability client composition boundary; constructs the source client."
+    },
+    {
+      "path": "apps/lina-plugins/shared-services/backend/cap/inboxcap/source/client.go",
+      "maxCalls": 1,
+      "reason": "Shared inbox capability client composition boundary; constructs the source client."
+    },
+    {
+      "path": "apps/lina-plugins/shared-services/backend/internal/composition/runtime.go",
+      "maxCalls": 2,
+      "reason": "Shared-services runtime composition boundary; wires its private services once."
+    },
+    {
+      "path": "apps/lina-plugins/shared-services/backend/plugin.go",
+      "maxCalls": 2,
+      "reason": "Shared-services plugin composition boundary; wires private services once."
+    }
+  ]
+}

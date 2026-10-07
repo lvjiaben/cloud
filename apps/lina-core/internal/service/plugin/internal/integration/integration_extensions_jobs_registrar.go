@@ -18,9 +18,10 @@ import (
 
 // sourceJobRegistrar registers source-plugin scheduled jobs into GoFrame cron.
 type sourceJobRegistrar struct {
-	pluginID string
-	service  *serviceImpl
-	services capability.Services
+	pluginID           string
+	service            *serviceImpl
+	services           capability.Services
+	businessExtensions pluginhost.BusinessExtensionRegistrar
 }
 
 // Ensure sourceJobRegistrar satisfies the published registrar contract.
@@ -34,10 +35,18 @@ func newSourceJobRegistrar(pluginID string, service *serviceImpl) pluginhost.Job
 		services = service.sourceServicesForPlugin(normalizedPluginID)
 	}
 	return &sourceJobRegistrar{
-		pluginID: normalizedPluginID,
-		service:  service,
-		services: services,
+		pluginID:           normalizedPluginID,
+		service:            service,
+		services:           services,
+		businessExtensions: businessExtensionsForOwner(service, normalizedPluginID),
 	}
+}
+
+func (r *sourceJobRegistrar) BusinessExtensions() pluginhost.BusinessExtensionRegistrar {
+	if r == nil {
+		return nil
+	}
+	return r.businessExtensions
 }
 
 // Add registers one guarded scheduled job.

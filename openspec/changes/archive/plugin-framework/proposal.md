@@ -35,7 +35,7 @@ Phase A-D 治理的核心问题包括：catalog 反向回调环、setter 注入�
 - 将生产者包中仅用于自组合的分类接口合并回默认`Service`接口，将跨包窄接口移动到消费者包，收敛`i18n.Service`并删除无业务入口的管理诊断 API。
 
 - **插件拥有的非核心领域能力**：非核心领域契约由领域 owner 插件在`backend/cap`维护；`lina-core`只保留内核、依赖治理、通用 descriptor 注册、动态路由、授权、审计与生命周期治理。
-- **AI owner 试点**：以`linapro-ai-core`为第一批 owner，将`AI`契约、DTO、SPI、动态 guest SDK 与能力方法状态迁出 core；删除`ProvideAIText`、AI 专属 codec/dispatcher，改为通用 descriptor + owner-aware dispatcher。
+- **AI owner 试点**：以`ai-core`为第一批 owner，将`AI`契约、DTO、SPI、动态 guest SDK 与能力方法状态迁出 core；删除`ProvideAIText`、AI 专属 codec/dispatcher，改为通用 descriptor + owner-aware dispatcher。
 - **owner-aware hostServices**：动态插件申请 owner 能力时显式声明`owner`/`version`/`service`/`methods`/资源范围，并在`dependencies.plugins`硬依赖 owner 插件；安装/启用/升级/卸载路径阻断缺失依赖、版本不满足与反向破坏。
 - **跨插件 import 边界**：生产代码只能依赖其他插件的`backend/cap/...`，禁止`backend/internal`、DAO/DO/Entity、controller/service 或`backend/pkg`领域入口。
 - **宿主分层简化**：新增 core-owned host service 方法强制 JSON envelope；dedicated codec 冻结为方法级名单；wire 常量单一维护在`hostservices`；upgrade 编排归 lifecycle 拥有，根 facade 不再平行持有`upgrade.Service`。

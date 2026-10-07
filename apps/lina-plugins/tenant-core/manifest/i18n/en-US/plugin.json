@@ -1,0 +1,7 @@
+{
+  "plugin.tenant-core.name": "Multi Tenant",
+  "plugin.tenant-core.description": "Tenant management, memberships, built-in resolver policy, and lifecycle governance.",
+  "plugin.tenant-core.uninstall_blocked.tenants_exist": "Tenants exist. Delete tenants before uninstalling the tenant-core plugin.",
+  "plugin.tenant-core.disable_blocked.tenants_exist": "Tenants exist. Delete tenants before disabling the tenant-core plugin.",
+  "plugin.tenant-core.tenant_delete_blocked.resources_exist": "The tenant still has protected resources."
+}

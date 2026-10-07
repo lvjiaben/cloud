@@ -35,7 +35,11 @@ func runStatus(ctx context.Context, a *app, input commandInput) error {
 	if err != nil {
 		return err
 	}
-	services := devservice.Services(a.root, backendPort, frontendPort)
+	customerPort, err := input.Int("customer_port", portFromEnv("LINA_CUSTOMER_PORT", defaultCustomerPort))
+	if err != nil {
+		return err
+	}
+	services := devservice.Services(a.root, backendPort, frontendPort, customerPort)
 
 	if _, err = fmt.Fprintln(a.stdout, ""); err != nil {
 		return fmt.Errorf("write status output: %w", err)

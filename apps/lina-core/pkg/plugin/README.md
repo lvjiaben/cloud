@@ -16,7 +16,7 @@ This package owns the plugin kernel, source-plugin contribution API, dynamic plu
 
 `capability.Services` is the runtime directory for core-owned domain capabilities. Source plugins consume these entries through the `capability.Services` returned by `pluginhost` registrar and callback inputs; dynamic plugins declare the matching entries that are explicitly published as dynamic `hostServices` and call them through `pluginbridge.Services`. Each core-owned domain exposes one plugin-visible `Service`; method-level contracts carry risk, authorization, data-permission, context, performance, and cache governance. Domain methods rely on the standard business `ctx` for current user, tenant, permission, and data-scope information; dynamic `hostServices` authorization stays inside the dispatcher. `I18n()` remains a source-plugin runtime capability, while dynamic-plugin i18n resources are discovered, merged, cached, and served by the host. Plugin lifecycle and plugin state belong to `Plugins()`; tenant plugin governance and tenant-filter context belong to `Tenant()`. Host-internal scope helpers are not exposed through ordinary plugin-facing access.
 
-Plugin-owned non-core capabilities are not owned by `capability.Services`. The owner plugin publishes its ordinary consumer contract, provider `SPI`, dynamic guest SDK, descriptor helper, and version policy under `apps/lina-plugins/<plugin-id>/backend/cap/<domain>cap`. `lina-core` receives the owner descriptor, indexes `owner + service + version + method`, validates dependencies and authorization snapshots, dispatches owner-aware dynamic calls, records audit envelopes, and invalidates runtime caches after lifecycle changes. `AI` is the first plugin-owned capability family and is owned by `apps/lina-plugins/linapro-ai-core/backend/cap/aicap`.
+Plugin-owned non-core capabilities are not owned by `capability.Services`. The owner plugin publishes its ordinary consumer contract, provider `SPI`, dynamic guest SDK, descriptor helper, and version policy under `apps/lina-plugins/<plugin-id>/backend/cap/<domain>cap`. `lina-core` receives the owner descriptor, indexes `owner + service + version + method`, validates dependencies and authorization snapshots, dispatches owner-aware dynamic calls, records audit envelopes, and invalidates runtime caches after lifecycle changes. `AI` is the first plugin-owned capability family and is owned by `apps/lina-plugins/ai-core/backend/cap/aicap`.
 
 ### Unified Services and Dynamic Plugins
 
@@ -27,8 +27,8 @@ Dynamic plugins may use only the concrete methods that are registered in the dyn
 | Domain capability | Responsibility boundary | Runtime and validation path |
 | --- | --- | --- |
 | `APIDoc` | Resolves route text and title operation keys in localized API documentation. | Served through the capability directory or `apidoc` host calls; validation focuses on route and operation-key payloads. |
-| `Auth` | Handles tenant token selection/switch, impersonation, authz, and external-identity login via `Token()`, `Authz()`, and `ExternalLogin()`. **Installed dynamic and source plugins share the same trust and rights model**: the host stamps caller plugin ID; source ownership uses `ProvideExternalIdentity`; dynamic ownership uses `auth` hostService `resources.ref` (provider ID); wire method `external_login.login_by_verified_identity`. Token/session minting stays host-owned. SPA handoff is closed over `linapro-extlogin-core`. | Runtime checks enablement, method authorization, and provider ownership. External-identity engine is `linapro-extlogin-core`; without it, external login fails closed. |
-| `AI` | Plugin-owned by `linapro-ai-core`; aggregates typed AI sub-capabilities for text, image, embedding, audio, vision, document, safety, and video, including method-level status projections. | Source plugins import `linapro-ai-core/backend/cap/aicap`; dynamic plugins declare `owner: linapro-ai-core`, `service: ai`, and `version: v1`. `lina-core` governs descriptor discovery, dependency checks, authorization snapshots, owner-aware routing, audit, and cache invalidation. |
+| `Auth` | Handles tenant token selection/switch, impersonation, authz, and external-identity login via `Token()`, `Authz()`, and `ExternalLogin()`. **Installed dynamic and source plugins share the same trust and rights model**: the host stamps caller plugin ID; source ownership uses `ProvideExternalIdentity`; dynamic ownership uses `auth` hostService `resources.ref` (provider ID); wire method `external_login.login_by_verified_identity`. Token/session minting stays host-owned. SPA handoff is closed over `extlogin-core`. | Runtime checks enablement, method authorization, and provider ownership. External-identity engine is `extlogin-core`; without it, external login fails closed. |
+| `AI` | Plugin-owned by `ai-core`; aggregates typed AI sub-capabilities for text, image, embedding, audio, vision, document, safety, and video, including method-level status projections. | Source plugins import `ai-core/backend/cap/aicap`; dynamic plugins declare `owner: ai-core`, `service: ai`, and `version: v1`. `lina-core` governs descriptor discovery, dependency checks, authorization snapshots, owner-aware routing, audit, and cache invalidation. |
 | `Users` | Provides base user reads, bounded listing, visibility, governed writes, credentials, role assignment, and `CreateFromExternal` (least-privilege mint from external identity). Dynamic `users` publishes `users.create_from_external` among other authorized methods. | Host keeps visibility boundaries. `CreateFromExternal` is operator-less and least-privilege; dynamic callers must declare and be authorized for the method. |
 | `BizCtx` | Projects the current business request context. | Used as a read-only runtime context bridge for request user, tenant, locale, and request metadata. |
 | `Dict` | Resolves dictionary value labels, lists bounded value candidates, and validates typed value visibility. | Host validation stays within visible dictionary types and values. |
@@ -49,7 +49,98 @@ Dynamic plugins may use only the concrete methods that are registered in the dyn
 
 ### Plugin Distribution
 
-Plugin manifests and lifecycle callback snapshots include `distribution`, which is normalized by the host to `managed` or `builtin`. Omitted values are treated as `managed`. `builtin` is a source-plugin-only governance mode for project components compiled with the host: the host installs, enables, and safely upgrades them during startup, and ordinary plugin-management write actions are rejected. Dynamic plugins must remain `managed` and cannot self-declare built-in governance.
+Plugin manifests and lifecycle callback snapshots include `distribution`, which is normalized by the host to `managed` or `builtin`. Omitted values are treated as `managed`. `builtin` is a source-plugin-only governance mode for project components compiled with the host: the host installs, enables, and safely upgrades them during startup, ordinary plugin-management write actions are rejected, and the plugin-management list excludes them before filtering, pagination, and total calculation. Read-only detail lookup remains available to trusted host integrations that must inspect required capabilities. Dynamic plugins must remain `managed` and cannot self-declare built-in governance.
+
+### Business Extensions and Frontend Surfaces
+
+Plugin manifests keep four independent dimensions. `type` selects the runtime (`source` or `dynamic`), `distribution` selects lifecycle governance (`builtin` or `managed`), `business_extensions` declares business placement, and frontend surfaces declare presentation. That fourth dimension is split into separately governed `admin_surfaces` and `customer_surfaces`. The host never infers any dimension from a plugin name.
+
+Built-in business owners publish versioned `business_extensions` with `role: owner`. Managed providers use `role: provider`, name the owner plugin explicitly, and declare a versioned `dependencies.plugins` edge to that owner. Batch discovery first indexes all owner publications, then accepts only providers whose owner, point, version, and requested methods match. This is one in-memory projection over an already loaded manifest batch, not one query per plugin. The initial published point identifiers are `product-fulfillment`, `sms-channel`, `payment-method`, and `website-template`; future owner plugins may publish additional safe kebab-case points.
+
+Provider extensions may attach independently versioned `interface_configuration`, `product_configuration`, and `customer_configuration` schemas. A provider with `interface_configuration` must also declare `interface_configuration_cardinality` as `multiple` for many named interface instances or `singleton` for one global settings record. Cardinality governs settings records only; it never limits plugin-owned business rows or CRUD features. The first protocol version supports exactly `single_line`, `multi_line`, `integer`, `decimal`, `boolean`, `single_select`, `multi_select`, `date`, `datetime`, `secret`, `tree_select`, `address`, and `file`. The only text formats are the host-owned `phone`, `email`, `domain`, and `url` validators. A `secret` field is restricted to interface configuration; product and customer schemas are available only to `product-fulfillment` providers. File fields name a safe host-governed `upload_policy` and cannot provide a URL.
+
+Choice fields use either a bounded bilingual `static_candidates` list or one versioned `dynamic_candidates` method already present in the extension's authorized `methods`, never both. Conditions are bounded `and`/`or` trees over `equal`, `not_equal`, `contains`, numeric comparisons, `empty`, and `not_empty`. Results are restricted to `show`, `hide`, `require`, `disable`, `filter_candidates`, `requires`, and `excludes`. Unknown nested keys are rejected in both source YAML and dynamic artifact JSON, so scripts, expressions, arbitrary regular expressions, upload endpoints, and undeclared dynamic methods cannot be hidden in a manifest.
+
+```yaml
+type: dynamic
+distribution: managed
+dependencies:
+  plugins:
+    - id: commerce-core
+      version: ">=0.1.0 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: commerce-core
+    methods: [fulfill, query, colors.list]
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: api_secret
+          type: secret
+          label: { en-US: API secret, zh-CN: 接口密钥 }
+          required: true
+    product_configuration:
+      version: v1
+      fields:
+        - key: model
+          type: single_line
+          label: { en-US: Model, zh-CN: 型号 }
+    customer_configuration:
+      version: v1
+      fields:
+        - key: color
+          type: single_select
+          label: { en-US: Color, zh-CN: 颜色 }
+          dynamic_candidates:
+            version: v1
+            method: colors.list
+customer_surfaces:
+  - key: my-products
+    version: v1
+    title: My products
+    slot: customer.products
+    route: my-products
+    entry: customer/index.html
+    bridge_capabilities: [products.query-own]
+public_assets:
+  - source: frontend
+    mount: customer
+```
+
+Release snapshots freeze requested and host-accepted business extension declarations, including all three configuration schemas, together with the separate admin/customer surfaces. Dynamic WASM artifacts must embed the same complete declarations as `plugin.yaml`; differing runtime distribution, business extensions, nested configuration, or surfaces are rejected. Discovery evidence returns detached safe schemas and calculates its declaration digest over the complete normalized declaration, so a field, candidate, condition, action, or schema-version change produces different frozen evidence.
+
+An extension owner may define one bounded, non-executable `provider_metadata` object without moving its business schema into the host. The host understands only `type`, `version`, and JSON-compatible `values`; it normalizes, clones, freezes, authorizes, and includes the complete object in the declaration digest. The source owner registers the typed validator for the exact extension point and contract version during declaration setup:
+
+```go
+if err := declarations.BusinessExtensions().RegisterProviderValidator(
+    "example-extension",
+    "v1",
+    validateExampleProviderDeclarations,
+); err != nil {
+    return err
+}
+```
+
+The validator receives an isolated clone of the provider release's complete normalized declaration group, so it can enforce required metadata, typed fields, method authorization, and release-wide uniqueness without mutating the host snapshot. Source and dynamic providers use the same catalog path. Metadata with a missing owner registration, an unsupported contract version, duplicate owner registration, or a validator rejection fails installation and upgrade closed. The host never guesses the metadata's business meaning.
+
+Business owners discover new-binding candidates through the governed `plugins.business_extensions.list` projection. It performs one bounded authoritative registry/active-release read, returns only the provider identity, display name, release/contract versions, allowed methods, and release/declaration digests, and fails closed when any selected snapshot is uncertain. An empty method set is valid for selecting and binding the provider; method authorization is required only when an owner later invokes a concrete method. `plugins.business_extensions.exact.get` verifies one frozen declaration for a retained historical release, while `plugins.business_extensions.exact.batch_get` verifies a bounded input-ordered collection with one authoritative release query; neither implies current runtime availability. A source business owner must still commit a new binding through `HTTPRegistrar.BusinessExtensions().WithNewBusinessAdmission`: the host rechecks the active release while holding the provider lifecycle lock, keeps that renewable lock across the owner's transaction callback, and serializes stop-new-business, disable, uninstall, and active-release upgrades against the callback. Background owners receive the same owner-bound, fail-closed facade through `JobsRegistrar.BusinessExtensions()`; the jobs registrar never falls back to an unscoped service when the binding is unavailable. Losing lease renewal cancels the callback context and fails admission closed so a context-aware database transaction rolls back. Lock names and registry tables are never exposed to the owner.
+
+Source owners invoke a concrete provider method only through the owner-bound `BusinessExtensionRegistrar.InvokeProviderMethod` facade. Every call supplies complete frozen release/declaration evidence, one authorized method, a declared `new-business` or `existing-business` purpose, and a versioned bounded JSON object. Calls that need host-resolved interface state may additionally carry one bounded, high-entropy `runtimeContext.contextId`; source and dynamic providers receive the same opaque ID, while interface instances, revisions, configuration values, credentials, secrets, and tokens remain behind an owner-aware host service whose caller plugin ID is stamped by the host. Calls that do not need interface state omit `runtimeContext`. One provider invocation may use at most eight confidential outbound steps under one deadline and total-byte budget. Steps are strictly sequenced; replay, concurrency, cross-invocation use, expiry, and budget overruns fail before the supplier handler starts, and the owner revokes the context immediately when the provider invocation ends. The host rechecks the active release and lifecycle state while holding the same provider lock: stopped providers reject new-business calls but continue exact existing-business operations; disabled, missing, mismatched, or unauthorized providers fail closed. Source providers explicitly register one method dispatcher through `Providers().ProvideBusinessExtensionMethods`. Dynamic providers receive the same envelope through the existing isolated WASM guest dispatcher using the fixed `BusinessExtensionBridgeRequest` DTO; no public HTTP self-call, raw token, identity snapshot, secret handle, or private manifest state is provided. Requests and responses have strict byte, object, array, depth, string, complexity, and five-second execution bounds.
+
+The administration host currently publishes `admin.catalog-products`, `admin.resource-operations`, `admin.orders-finance`, `admin.notification-marketing`, `admin.compliance-governance`, `admin.support-content`, and `admin.extension-management`. The signed-in customer host publishes `customer.products`, `customer.finance`, `customer.account`, `customer.security`, `customer.compliance`, and `customer.support`. Administration surfaces must declare a non-empty host permission. The host always generates `/plugins/{plugin-id}/...` administration routes and `/account/plugins/{plugin-id}/...` customer routes, so a plugin cannot replace `/system`, `/auth`, or another host route. Dynamic surface entries must be plugin-relative and covered by `public_assets`; remote URLs and traversal are rejected. Administration surfaces are materialized into the existing permission-filtered menu tree, while customer surfaces are returned only after authentication and mounted below an existing customer business group. These gates do not yet grant page-bridge methods: bridge authorization, identity/data-scope enforcement, and isolated page loading remain separate runtime checks.
+
+The public `GET /api/v1/plugins/dynamic` discovery endpoint uses optional authentication: requests without `Authorization` receive runtime states without customer surfaces; supplied access tokens go through the same online-session validation as protected APIs. Valid customer and staff-assisted customer sessions preserve their target user, tenant, and acting-staff context. Invalid supplied identities are rejected, not promoted or silently trusted. Dynamic surface declarations and their `public_assets` coverage are projected together from the same immutable effective release; a staged package cannot fill missing or invalid effective declarations. Discovery does not grant any page-bridge capability or business-data access.
+
+### Isolated Page Bridge
+
+Managed dynamic pages run in an isolated iframe without `allow-same-origin` and never receive an access token, host state, or caller-supplied headers. Pages use version `1.0` of the `linapro.plugin-page-bridge` message protocol; every message must match the current iframe, plugin ID, surface key, and protocol version exactly. `host.view.v1` is a built-in baseline capability for every governed surface. It only supports `ready`, height, unified error, title, and plugin-local route synchronization, is not listed in `bridge_capabilities`, and cannot access business data.
+
+Business calls require three matching bindings. The surface lists a capability in `bridge_capabilities`; one exact active dynamic route or host-captured source-owner DTO route binds the same capability through `pageBridgeCapability` and `pageBridgeHost`; and the host backend issues a two-minute tamper-proof ticket for the current login session, user, tenant, provider release, server-resolved owner release, administration/customer host, surface, surface version, capability, HTTP method, and actual path. The page request cannot choose `ownerPluginId`; it is returned only after the host finds one unambiguous route. Before issuance, an administration surface rechecks both the surface permission and the exact owner-route permission. Customer surfaces reject a super administrator entering directly, tenant impersonation and another merchant context. Dynamic self-owned customer routes retain their self-only scope requirement. Source-owned customer routes must use `RouteGroup.BindCustomerPageBridge`: its authoritative owner callback receives the original authenticated context and must return the same host user ID as the requesting customer. Missing proof, rejection or a different identity fails closed. This admits a real customer without backoffice roles, including a valid staff-assisted customer session, without granting employee privileges. The result is never cached across requests. The owner route still performs ordinary staff permission/data-scope checks or current-customer object ownership checks afterwards, including revocation since issuance. The browser carries only the opaque ticket. A missing layer, disabled release, expired or modified ticket, mismatch, changed method or path, identity change, or cross-surface request is rejected. The plugin page cannot obtain ticket contents, provide arbitrary headers, select another owner namespace, or use a query capability to reach an unbound mutation route.
+
+Each page may have at most eight bridge requests in flight. Duplicate in-flight `requestId` values are rejected and each request is cancelled after 30 seconds. Switching plugin or surface, retrying, or unmounting cancels prior requests and drops late responses from the old page. The host removes its skeleton only after the plugin sends `ready`, preventing a loaded HTML shell with slow scripts or subresources from flashing blank content.
 
 ## Dynamic-Plugin-Only Capabilities
 
@@ -83,7 +174,7 @@ when multiple provider plugins are serviceable. File-center object content
 (upload/download/delete) uses the same provider selection rules; list and search
 remain on `sys_file`. Client direct access follows the same selection rules and
 never exposes long-lived access keys to the frontend. Official cloud backends
-(`linapro-storage-cos`, `linapro-storage-oss`, `linapro-storage-aws`, `linapro-storage-s3`, and related plugins) register via
+(`storage-cos`, `storage-oss`, `storage-aws`, `storage-s3`, and related plugins) register via
 `storagecap.Provide` and expose credentials under the host stable **System Settings**
 menu (`menu_key=setting`).
 
@@ -180,6 +271,26 @@ Orchestration:
 
 Dynamic plugins express declaration-time contracts through `plugin.yaml`, WASM custom sections, `pluginbridge.Declarations.Routes().Group(...)`, `pluginbridge.Declarations.Jobs().Register(...)`, and embedded `protocol` contracts, such as routes, jobs, lifecycle handlers, backend resources, frontend assets, SQL, i18n resources, and `hostServices`.
 
+### Stop New Business, Disable, and Uninstall
+
+These are separate lifecycle stages:
+
+- `accepting` allows the plugin to be selected for new interfaces, product versions, purchases, and fulfillment tasks. `stopped` blocks only those new-business paths; the plugin remains enabled and existing customer menus and service operations remain available.
+- Disable and uninstall require `stopped`, followed by trusted aggregate checks from stable source business owners registered with `RegisterBusinessImpactHandler`. The bounded categories cover selling product versions, in-flight tasks, active services, and pending historical actions.
+- Required owners come only from authorized provider declarations frozen in the currently effective release. A staged artifact cannot weaken that set, and a missing required owner handler fails closed.
+- Owners return aggregate counts only. Provider errors, unsupported categories, duplicate categories, or invalid counts fail closed and block the action.
+- Stop/resume admission, disable, and uninstall share a per-plugin cross-instance lifecycle lock so admission cannot reopen between the drain check and the final state write.
+- `force` may bypass only plugin-owned lifecycle callback vetoes when host policy permits it. It cannot bypass stop-new-business, trusted business impact, dependency, or historical-evidence gates.
+- Uninstall preserves data by default. Plugins declaring business extensions cannot purge historical products, orders, configuration snapshots, interface references, fulfillment evidence, or audit records; missing dynamic artifacts do not weaken this rule.
+
+Stable built-in business owners register the impact projection through:
+
+```go
+plugin.Lifecycle().RegisterBusinessImpactHandler(handler)
+```
+
+Every new product binding, purchase, and fulfillment write path must use the host's authoritative `CanAcceptNewBusiness` gate. Hiding a UI candidate is not a security control.
+
 ### Runtime Capabilities
 
 Runtime capabilities are the services available while plugin business logic is executing.
@@ -189,6 +300,8 @@ Source plugins access runtime capabilities through the `capability.Services` dir
 Dynamic plugins access published runtime capabilities through `pluginbridge.Services`. Calls are encoded through `pluginbridge/protocol`, transported through `WASI host call`, authorized by derived `HostCapabilities` and confirmed `HostServices`, then dispatched by `apps/lina-core/internal/service/plugin/internal/wasm`. Dynamic plugins do not receive the top-level compatibility shortcuts or `I18n()`, but they can call the registered governance methods under `Plugins()` and `Tenant()` when authorized by `hostServices`.
 
 For each guest execution, the host builds a request-local `HostServices` authorization snapshot and every host call still checks `service`, `method`, and resource identity against that snapshot. Owner-aware plugin-owned calls additionally check `owner`, `version`, the calling plugin's `dependencies.plugins` declaration, owner plugin enablement, descriptor registration, and method authorization before dispatching to the owner handler.
+
+Supplier operations that require credentials must not use the ordinary `network.request` bridge. A source business owner issues one short-lived runtime context for the exact provider plugin, release, declaration, interface instance, business-extension method, and purpose. The dynamic provider receives only that opaque context ID and may pass it only to an owner-aware host service explicitly declared by its manifest. The host accepts a runtime-context resource only when the current business-extension invocation carries the same context ID, owner, and provider plugin; a different context, owner, plugin, method, ordinary route execution, or static resource declaration fails before the owner handler runs. The owner service resolves endpoint and credential state inside the trusted host process, applies its own bounded operation contract, and returns only a safe projection. For example, `idc-core/supplier-interface-runtime@v1` can execute a bounded same-origin login session without returning the password or access token to the guest. Legacy `WithConfidentialOutboundContext` bindings remain an owner-specific implementation for resource operations and retain their one-use, expiry, replay, and field-whitelist protections. Runtime contexts are revoked when the surrounding invocation ends and are never persisted or cached.
 
 ## Dynamic Plugin Host Service Declarations
 
@@ -237,12 +350,12 @@ Owner-aware plugin-owned shape:
 ```yaml
 dependencies:
   plugins:
-    - id: linapro-ai-core
+    - id: ai-core
       version: ">=0.1.0"
 
 hostServices:
   - service: ai
-    owner: linapro-ai-core
+    owner: ai-core
     version: v1
     methods:
       - text.generate
@@ -263,6 +376,7 @@ catalog implementation and only lists core-owned services.
 | `runtime` | None | `host:runtime` | `log.write`<br/>`state.get`<br/>`state.get_many`<br/>`state.set`<br/>`state.set_many`<br/>`state.delete`<br/>`state.delete_many`<br/>`info.now`<br/>`info.uuid`<br/>`info.node` |
 | `storage` | `resources.paths` | `host:storage` | `put`<br/>`put.init`<br/>`put.chunk`<br/>`put.commit`<br/>`put.abort`<br/>`get`<br/>`delete`<br/>`delete.batch`<br/>`list`<br/>`list.cursor`<br/>`stat`<br/>`stat.batch` |
 | `network` | `resources[].url` | `host:http:request` | `request` |
+| `confidentialoutbound` | None | `host:confidential-outbound` | `execute` |
 | `data` | `resources.tables` | `host:data:read`<br/>`host:data:mutate` | `list`<br/>`get`<br/>`batch_get`<br/>`create`<br/>`update`<br/>`delete`<br/>`transaction` |
 | `cache` | `resources[].ref` | `host:cache` | `get`<br/>`get_many`<br/>`set`<br/>`set_many`<br/>`delete`<br/>`delete_many`<br/>`incr`<br/>`expire` |
 | `lock` | `resources[].ref` | `host:lock` | `acquire`<br/>`renew`<br/>`release` |
@@ -276,7 +390,7 @@ catalog implementation and only lists core-owned services.
 | `files` | None | `host:files` | `files.batch_get`<br/>`files.list`<br/>`files.visible.ensure`<br/>`files.upload`<br/>`files.create_from_storage`<br/>`files.metadata.update`<br/>`files.delete`<br/>`files.delete_many` |
 | `jobs` | None | `host:jobs` | `jobs.batch_get`<br/>`jobs.list`<br/>`jobs.visible.ensure`<br/>`jobs.create`<br/>`jobs.update`<br/>`jobs.delete`<br/>`jobs.run`<br/>`jobs.status.set`<br/>`jobs.register` |
 | `notifications` | None except `messages.send`, which uses `resources[].ref` | `host:notifications` | `messages.batch_get`<br/>`messages.list`<br/>`messages.by_source.batch_get`<br/>`messages.visible.ensure`<br/>`messages.send`<br/>`messages.delete`<br/>`messages.by_source.delete`<br/>`messages.mark_read`<br/>`messages.mark_unread` |
-| `plugins` | None | `host:plugins` | `plugins.current.get`<br/>`plugins.batch_get`<br/>`plugins.registry.list`<br/>`plugins.tenant.list`<br/>`config.get`<br/>`plugins.state.enabled.check`<br/>`plugins.state.provider_enabled.check`<br/>`plugins.state.enabled_authoritative.check`<br/>`plugins.lifecycle.tenant_plugin_disable.ensure`<br/>`plugins.lifecycle.tenant_plugin_disabled.notify`<br/>`plugins.lifecycle.tenant_delete.ensure`<br/>`plugins.lifecycle.tenant_deleted.notify` |
+| `plugins` | None | `host:plugins` | `plugins.current.get`<br/>`plugins.batch_get`<br/>`plugins.registry.list`<br/>`plugins.tenant.list`<br/>`plugins.business_extensions.list`<br/>`plugins.business_extensions.exact.get`<br/>`plugins.business_extensions.exact.batch_get`<br/>`config.get`<br/>`plugins.state.enabled.check`<br/>`plugins.state.provider_enabled.check`<br/>`plugins.state.enabled_authoritative.check`<br/>`plugins.lifecycle.tenant_plugin_disable.ensure`<br/>`plugins.lifecycle.tenant_plugin_disabled.notify`<br/>`plugins.lifecycle.tenant_delete.ensure`<br/>`plugins.lifecycle.tenant_deleted.notify` |
 | `route` | None | `host:route` | `metadata.get` |
 | `sessions` | None | `host:sessions` | `sessions.current.get`<br/>`sessions.list`<br/>`sessions.batch_get`<br/>`sessions.users.online.batch_get`<br/>`sessions.visible.ensure`<br/>`sessions.revoke`<br/>`sessions.revoke_many` |
 | `org` | None | `host:org` | `capability.available`<br/>`capability.status`<br/>`org.assignment.user_profiles.batch_get`<br/>`org.department.tree.list`<br/>`org.department.batch_get`<br/>`org.department.list`<br/>`org.post.batch_get`<br/>`org.post.options.list`<br/>`org.department.visible.ensure_many`<br/>`org.post.visible.ensure_many`<br/>`org.department.create`<br/>`org.department.update`<br/>`org.department.delete`<br/>`org.post.create`<br/>`org.post.update`<br/>`org.post.delete`<br/>`org.assignment.by_user.replace`<br/>`org.assignment.by_user.cleanup` |

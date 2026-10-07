@@ -35,6 +35,14 @@ type PluginDynamicStateItem struct {
 	StatusKey string
 	// RuntimeState reports whether plugin business entries may run.
 	RuntimeState RuntimeUpgradeState
+	// Type distinguishes source pages from isolated dynamic-plugin pages.
+	Type string
+	// AdminSurfaces contains host-governed administration-console entries from
+	// the effective release, never from an unpromoted upgrade candidate.
+	AdminSurfaces []*catalog.FrontendSurfaceBinding
+	// CustomerSurfaces contains host-governed signed-in customer-center entries
+	// from the effective release.
+	CustomerSurfaces []*catalog.FrontendSurfaceBinding
 }
 
 // ListRuntimeStates returns public plugin runtime states for shell slot rendering.
@@ -63,6 +71,29 @@ func (s *serviceImpl) ListRuntimeStates(ctx context.Context) (*RuntimeStateListO
 		}
 
 		manifest := manifestByID[pluginID]
+		effectiveManifest := manifest
+		release, releaseErr := s.storeSvc.GetRegistryRelease(readCtx, registry)
+		if releaseErr != nil {
+			// A registry release lookup failure must never expose declarations
+			// scanned from a staged package that is not the effective release.
+			effectiveManifest = nil
+		} else if release != nil {
+			effectiveManifest = nil
+			if snapshot, snapshotErr := s.storeSvc.ParseManifestSnapshot(release.ManifestSnapshot); snapshotErr == nil && snapshot != nil {
+				effectiveManifest = &catalog.Manifest{
+					ID: snapshot.ID, Name: snapshot.Name, Version: snapshot.Version, Type: snapshot.Type,
+					Distribution:     snapshot.Distribution,
+					PublicAssets:     catalog.ClonePublicAssetSpecs(snapshot.PublicAssets),
+					AdminSurfaces:    catalog.CloneFrontendSurfaceDeclarations(snapshot.AdminSurfaces),
+					CustomerSurfaces: catalog.CloneFrontendSurfaceDeclarations(snapshot.CustomerSurfaces),
+				}
+			}
+		} else if registry.ReleaseId > 0 || plugintypes.NormalizeType(registry.Type) == pluginv1.PluginTypeDynamic {
+			// Dynamic plugins may only publish surfaces from an immutable active
+			// release. A missing row or pointer is corrupt runtime state, so never
+			// fall back to the staged artifact discovered on disk.
+			effectiveManifest = nil
+		}
 
 		var (
 			installed    = registry.Installed
@@ -88,14 +119,23 @@ func (s *serviceImpl) ListRuntimeStates(ctx context.Context) (*RuntimeStateListO
 			generation = 1
 		}
 
+		var adminSurfaces, customerSurfaces []*catalog.FrontendSurfaceBinding
+		if surfaceDiscovery, surfaceErr := catalog.BuildManifestFrontendSurfaceDiscovery(effectiveManifest); surfaceErr == nil {
+			adminSurfaces = surfaceDiscovery.Admin
+			customerSurfaces = surfaceDiscovery.Customer
+		}
+
 		items = append(items, &PluginDynamicStateItem{
-			Id:           pluginID,
-			Installed:    installed,
-			Enabled:      enabled,
-			Version:      registry.Version,
-			Generation:   generation,
-			StatusKey:    s.storeSvc.BuildPluginStatusKey(pluginID),
-			RuntimeState: runtimeState,
+			Id:               pluginID,
+			Installed:        installed,
+			Enabled:          enabled,
+			Version:          registry.Version,
+			Generation:       generation,
+			StatusKey:        s.storeSvc.BuildPluginStatusKey(pluginID),
+			RuntimeState:     runtimeState,
+			Type:             registry.Type,
+			AdminSurfaces:    adminSurfaces,
+			CustomerSurfaces: customerSurfaces,
 		})
 	}
 	return &RuntimeStateListOutput{List: items}, nil

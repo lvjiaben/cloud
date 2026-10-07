@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "packageId": "example-site",
+  "version": "1.0.0",
+  "name": {
+    "zhCN": "示例官网",
+    "enUS": "Example website"
+  },
+  "publisher": {
+    "publisherId": "example-publisher",
+    "keyId": "example-key-1",
+    "signatureAlgorithm": "ed25519",
+    "signature": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+  },
+  "compatibility": {
+    "siteContract": "1.0",
+    "platformApi": ">=1.0.0 <2.0.0"
+  },
+  "runtime": {
+    "kind": "nuxt-node-1",
+    "entry": "server/index.mjs",
+    "publicAssets": "public",
+    "healthPath": "/__site/health"
+  },
+  "locales": ["zh-CN", "en-US"],
+  "routes": {
+    "public": ["/", "/products", "/products/:slug"]
+  },
+  "capabilities": ["catalog.read"],
+  "files": [
+    {
+      "path": "server/index.mjs",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "size": 0
+    }
+  ]
+}

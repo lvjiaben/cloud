@@ -1,0 +1,25 @@
+{
+  "formatVersion": 1,
+  "files": {
+    "contract-editor.d.mts": {
+      "bytes": 709,
+      "sha256": "9f798049aa64dc683b875b10dddd6cddae3918c6bd21fd3baa16a492b987860f"
+    },
+    "contract-editor.mjs": {
+      "bytes": 411301,
+      "sha256": "cdc82e4c28cc6e958da1081eb99ebcc6ebda8ed73e329e1d70dc2eec84edd045"
+    },
+    "pdf.d.mts": {
+      "bytes": 63,
+      "sha256": "6c56f96f791796fba315db9048c2cd7ac5d9a097035e0505fcb8cf7f551c8e2a"
+    },
+    "pdf.mjs": {
+      "bytes": 427831,
+      "sha256": "5e355f2221ebcdbdf75a6247e3cdef740100438e9e07fdf0a04a5aaadca27531"
+    },
+    "pdf.worker.mjs": {
+      "bytes": 1203668,
+      "sha256": "18e2903f25b4d7429f1c298f6f182ca5e33ea0f80b54bce59b91c31a3163219c"
+    }
+  }
+}

@@ -87,6 +87,14 @@ describe('post-login landing path', () => {
     ).toBe(SAFE_FALLBACK_HOME_PATH);
   });
 
+  it('never lands on an operational page hidden from the delivered admin menu', () => {
+    expect(
+      resolvePostLoginLandingPath({
+        preferredPaths: ['/platform/tenants'],
+      }),
+    ).toBe('/idc/operations/workbench');
+  });
+
   it('finds first navigable leaf menu in sidebar order', () => {
     expect(
       findFirstNavigableMenuPath([

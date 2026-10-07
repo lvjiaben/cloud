@@ -231,6 +231,9 @@ func TestDynamicPluginInstallAndUninstallManageMenusFromManifest(t *testing.T) {
 		t.Fatalf("expected runtime plugin menu not to be granted to admin role, got count=%d", roleMenuCount)
 	}
 
+	if err = services.Lifecycle.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 	if err = services.Lifecycle.Uninstall(ctx, pluginID, lifecycle.UninstallOptions{}); err != nil {
 		t.Fatalf("expected runtime plugin uninstall to succeed, got error: %v", err)
 	}
@@ -402,6 +405,9 @@ func TestDynamicPluginRoutePermissionsMaterializeHiddenMenus(t *testing.T) {
 		t.Fatal("expected synthetic permission menu to be nested under the plugin entry menu")
 	}
 
+	if err = services.Lifecycle.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 	if err = services.Lifecycle.Uninstall(ctx, pluginID, lifecycle.UninstallOptions{}); err != nil {
 		t.Fatalf("expected runtime plugin uninstall to succeed, got error: %v", err)
 	}
@@ -1111,8 +1117,8 @@ func TestSyncPluginMenusResolvesChosenExternalParent(t *testing.T) {
 
 	const (
 		parentKey = "custom-plugin-parent"
-		pluginID  = "linapro-tenant-core"
-		menuKey   = "plugin:linapro-tenant-core:platform:tenants"
+		pluginID  = "tenant-core"
+		menuKey   = "plugin:tenant-core:platform:tenants"
 	)
 
 	testutil.CleanupPluginMenuRowsHard(t, ctx, pluginID)

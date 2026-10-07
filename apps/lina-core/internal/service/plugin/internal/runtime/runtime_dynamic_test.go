@@ -14,12 +14,15 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
 
+	"lina-core/internal/dao"
+	"lina-core/internal/model/do"
 	"lina-core/internal/service/plugin/internal/catalog"
 	"lina-core/internal/service/plugin/internal/lifecycle"
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/internal/service/plugin/internal/runtime"
 	"lina-core/internal/service/plugin/internal/testutil"
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 	"lina-core/pkg/statusflag"
 )
@@ -210,6 +213,232 @@ func TestListRuntimeStatesScansDynamicManifestsOnce(t *testing.T) {
 	}
 }
 
+// TestListRuntimeStatesPublishesOnlyEffectiveSurfaceAssets verifies that both
+// surface declarations and their public asset coverage come from the immutable
+// effective release, never an unpromoted artifact on disk.
+func TestListRuntimeStatesPublishesOnlyEffectiveSurfaceAssets(t *testing.T) {
+	var (
+		services = testutil.NewServices()
+		ctx      = context.Background()
+	)
+	const pluginID = "plugin-dev-dynamic-effective-assets"
+	artifactPath := testutil.CreateTestRuntimeStorageArtifact(
+		t, pluginID, "Effective assets plugin", "v1.0.0", nil, nil,
+	)
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	t.Cleanup(func() { testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID) })
+
+	frontendAssets := testutil.DefaultTestRuntimeFrontendAssets()
+	writeArtifact := func(version, mount string) {
+		t.Helper()
+		testutil.WriteRuntimeWasmArtifact(t, artifactPath, &catalog.ArtifactManifest{
+			ID: pluginID, Name: "Effective assets plugin", Version: version, Type: pluginv1.PluginTypeDynamic.String(),
+			ScopeNature: pluginv1.ScopeNatureTenantAware.String(), SupportsMultiTenant: &testutil.DefaultTestSupportsMultiTenant,
+			DefaultInstallMode: pluginv1.InstallModeTenantScoped.String(),
+			PublicAssets:       []*catalog.PublicAssetSpec{{Source: "frontend/pages", Mount: mount}},
+			AdminSurfaces: []*capmodel.FrontendSurfaceDeclaration{{
+				Key: "admin-page", Version: "v1", Title: "Admin page", Slot: capmodel.FrontendSlotAdminExtensionManagement,
+				Route: "admin-page", Entry: mount + "/index.html", Permission: "plugin:query",
+			}},
+			CustomerSurfaces: []*capmodel.FrontendSurfaceDeclaration{{
+				Key: "customer-page", Version: "v1", Title: "Customer page", Slot: capmodel.FrontendSlotCustomerProducts,
+				Route: "customer-page", Entry: mount + "/index.html",
+			}},
+		}, &catalog.ArtifactSpec{
+			RuntimeKind: protocol.RuntimeKindWasm, ABIVersion: protocol.SupportedABIVersion, FrontendAssetCount: len(frontendAssets),
+		}, frontendAssets, nil, nil, nil, nil, nil)
+	}
+	writeArtifact("v1.0.0", "published")
+	manifest, err := services.Catalog.LoadManifestFromArtifactPath(artifactPath)
+	if err != nil {
+		t.Fatalf("load active artifact: %v", err)
+	}
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync active artifact: %v", err)
+	}
+	if _, err = services.Lifecycle.Install(ctx, pluginID, lifecycle.InstallOptions{}); err != nil {
+		t.Fatalf("install active artifact: %v", err)
+	}
+	writeArtifact("v1.1.0", "candidate")
+
+	var output *runtime.RuntimeStateListOutput
+	sqls, err := gdb.CatchSQL(ctx, func(ctx context.Context) error {
+		var listErr error
+		output, listErr = services.Runtime.ListRuntimeStates(ctx)
+		return listErr
+	})
+	if err != nil {
+		t.Fatalf("list runtime states: %v", err)
+	}
+	item := findRuntimeStateItem(output.List, pluginID)
+	if item == nil || len(item.AdminSurfaces) != 1 || len(item.CustomerSurfaces) != 1 {
+		t.Fatalf("expected effective admin and customer surfaces, got %#v", item)
+	}
+	for _, surface := range []*catalog.FrontendSurfaceBinding{item.AdminSurfaces[0], item.CustomerSurfaces[0]} {
+		if surface.PluginVersion != "v1.0.0" || surface.EntryURL != "/x-assets/"+pluginID+"/v1.0.0/published/index.html" {
+			t.Fatalf("expected only effective release asset coverage, got %#v", surface)
+		}
+	}
+	assertNoReleasePointQueries(t, sqls)
+
+	// A valid candidate must not supply missing public assets for a corrupt
+	// effective snapshot; publication must retain the existing fail-closed rule.
+	manifest.PublicAssets = nil
+	snapshot, err := services.Store.BuildManifestSnapshot(manifest)
+	if err != nil {
+		t.Fatalf("build snapshot without public assets: %v", err)
+	}
+	registry, err := services.Store.GetRegistry(ctx, pluginID)
+	if err != nil || registry == nil || registry.ReleaseId <= 0 {
+		t.Fatalf("expected active release pointer: %v", err)
+	}
+	if _, err = dao.SysPluginRelease.Ctx(ctx).Where(do.SysPluginRelease{Id: registry.ReleaseId}).
+		Data(do.SysPluginRelease{ManifestSnapshot: snapshot}).Update(); err != nil {
+		t.Fatalf("remove effective public asset coverage: %v", err)
+	}
+	output, err = services.Runtime.ListRuntimeStates(ctx)
+	if err != nil {
+		t.Fatalf("list runtime states with missing coverage: %v", err)
+	}
+	item = findRuntimeStateItem(output.List, pluginID)
+	if item == nil || len(item.AdminSurfaces) != 0 || len(item.CustomerSurfaces) != 0 {
+		t.Fatalf("candidate must not rescue missing effective asset coverage: %#v", item)
+	}
+}
+
+func TestListRuntimeStatesFailsClosedWhenEffectiveSurfaceSnapshotIsCorrupt(t *testing.T) {
+	services := testutil.NewServices()
+	ctx := context.Background()
+
+	const pluginID = "plugin-dev-dynamic-effective-surface"
+	artifactPath := testutil.CreateTestRuntimeStorageArtifact(
+		t, pluginID, "Effective surface plugin", "v1.0.0", nil, nil,
+	)
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	t.Cleanup(func() { testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID) })
+
+	manifest, err := services.Catalog.LoadManifestFromArtifactPath(artifactPath)
+	if err != nil {
+		t.Fatalf("load active artifact: %v", err)
+	}
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync active artifact: %v", err)
+	}
+	if _, err = services.Lifecycle.Install(ctx, pluginID, lifecycle.InstallOptions{}); err != nil {
+		t.Fatalf("install active artifact: %v", err)
+	}
+
+	frontendAssets := testutil.DefaultTestRuntimeFrontendAssets()
+	testutil.WriteRuntimeWasmArtifact(
+		t,
+		artifactPath,
+		&catalog.ArtifactManifest{
+			ID: pluginID, Name: "Staged surface plugin", Version: "v1.1.0", Type: pluginv1.PluginTypeDynamic.String(),
+			ScopeNature: pluginv1.ScopeNatureTenantAware.String(), SupportsMultiTenant: &testutil.DefaultTestSupportsMultiTenant,
+			DefaultInstallMode: pluginv1.InstallModeTenantScoped.String(),
+			PublicAssets:       []*catalog.PublicAssetSpec{{Source: "frontend/pages", Mount: ""}},
+			CustomerSurfaces: []*capmodel.FrontendSurfaceDeclaration{{
+				Key: "staged-page", Version: "v1", Title: "Staged page", Slot: capmodel.FrontendSlotCustomerProducts,
+				Route: "staged-page", Entry: "index.html",
+			}},
+		},
+		&catalog.ArtifactSpec{RuntimeKind: protocol.RuntimeKindWasm, ABIVersion: protocol.SupportedABIVersion, FrontendAssetCount: len(frontendAssets)},
+		frontendAssets, nil, nil, nil, nil, nil,
+	)
+
+	registry, err := services.Store.GetRegistry(ctx, pluginID)
+	if err != nil || registry == nil || registry.ReleaseId <= 0 {
+		t.Fatalf("expected active release pointer, registry=%#v err=%v", registry, err)
+	}
+	if _, err = dao.SysPluginRelease.Ctx(ctx).
+		Where(do.SysPluginRelease{Id: registry.ReleaseId}).
+		Data(do.SysPluginRelease{ManifestSnapshot: "not: [valid"}).
+		Update(); err != nil {
+		t.Fatalf("corrupt effective release snapshot: %v", err)
+	}
+
+	output, err := services.Runtime.ListRuntimeStates(ctx)
+	if err != nil {
+		t.Fatalf("list runtime states: %v", err)
+	}
+	item := findRuntimeStateItem(output.List, pluginID)
+	if item == nil {
+		t.Fatal("expected installed plugin runtime item")
+	}
+	if len(item.CustomerSurfaces) != 0 || len(item.AdminSurfaces) != 0 {
+		t.Fatalf("corrupt effective snapshot must fail closed instead of exposing staged surfaces: %#v", item)
+	}
+}
+
+func TestListRuntimeStatesFailsClosedWhenDynamicPluginHasNoEffectiveRelease(t *testing.T) {
+	services := testutil.NewServices()
+	ctx := context.Background()
+
+	const pluginID = "plugin-dev-dynamic-missing-effective-release"
+	artifactPath := testutil.CreateTestRuntimeStorageArtifact(
+		t, pluginID, "Missing effective release plugin", "v1.0.0", nil, nil,
+	)
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	t.Cleanup(func() { testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID) })
+
+	manifest, err := services.Catalog.LoadManifestFromArtifactPath(artifactPath)
+	if err != nil {
+		t.Fatalf("load active artifact: %v", err)
+	}
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync active artifact: %v", err)
+	}
+	if _, err = services.Lifecycle.Install(ctx, pluginID, lifecycle.InstallOptions{}); err != nil {
+		t.Fatalf("install active artifact: %v", err)
+	}
+
+	frontendAssets := testutil.DefaultTestRuntimeFrontendAssets()
+	testutil.WriteRuntimeWasmArtifact(
+		t,
+		artifactPath,
+		&catalog.ArtifactManifest{
+			ID: pluginID, Name: "Staged surface plugin", Version: "v1.0.0", Type: pluginv1.PluginTypeDynamic.String(),
+			ScopeNature: pluginv1.ScopeNatureTenantAware.String(), SupportsMultiTenant: &testutil.DefaultTestSupportsMultiTenant,
+			DefaultInstallMode: pluginv1.InstallModeTenantScoped.String(),
+			PublicAssets:       []*catalog.PublicAssetSpec{{Source: "frontend/pages", Mount: ""}},
+			CustomerSurfaces: []*capmodel.FrontendSurfaceDeclaration{{
+				Key: "staged-page", Version: "v1", Title: "Staged page", Slot: capmodel.FrontendSlotCustomerProducts,
+				Route: "staged-page", Entry: "index.html",
+			}},
+		},
+		&catalog.ArtifactSpec{RuntimeKind: protocol.RuntimeKindWasm, ABIVersion: protocol.SupportedABIVersion, FrontendAssetCount: len(frontendAssets)},
+		frontendAssets, nil, nil, nil, nil, nil,
+	)
+
+	registry, err := services.Store.GetRegistry(ctx, pluginID)
+	if err != nil || registry == nil || registry.ReleaseId <= 0 {
+		t.Fatalf("expected installed release pointer, registry=%#v err=%v", registry, err)
+	}
+	if _, err = dao.SysPluginRelease.Ctx(ctx).
+		Where(do.SysPluginRelease{PluginId: pluginID}).
+		Delete(); err != nil {
+		t.Fatalf("delete effective release rows: %v", err)
+	}
+	if _, err = dao.SysPlugin.Ctx(ctx).
+		Where(do.SysPlugin{PluginId: pluginID}).
+		Data(do.SysPlugin{ReleaseId: 0}).
+		Update(); err != nil {
+		t.Fatalf("clear effective release pointer: %v", err)
+	}
+
+	output, err := services.Runtime.ListRuntimeStates(ctx)
+	if err != nil {
+		t.Fatalf("list runtime states: %v", err)
+	}
+	item := findRuntimeStateItem(output.List, pluginID)
+	if item == nil {
+		t.Fatal("expected installed plugin runtime item")
+	}
+	if len(item.CustomerSurfaces) != 0 || len(item.AdminSurfaces) != 0 {
+		t.Fatalf("dynamic plugin without an effective release must not expose staged surfaces: %#v", item)
+	}
+}
+
 // TestInstallRepairsEmptyReleaseArchive verifies a same-version lifecycle pass
 // replaces a corrupt zero-byte release artifact before the release is activated.
 func TestInstallRepairsEmptyReleaseArchive(t *testing.T) {
@@ -295,6 +524,9 @@ func TestInstallRepairsEmptyReleaseArchive(t *testing.T) {
 	}
 	if activeManifest == nil || activeManifest.ID != pluginID {
 		t.Fatalf("expected repaired active manifest for %s, got %#v", pluginID, activeManifest)
+	}
+	if err = services.Lifecycle.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
 	}
 	if err = services.Lifecycle.Uninstall(ctx, pluginID, lifecycle.UninstallOptions{}); err != nil {
 		t.Fatalf("expected uninstall to load repaired archive, got error: %v", err)

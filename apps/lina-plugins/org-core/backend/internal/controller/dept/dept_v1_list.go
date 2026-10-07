@@ -1,0 +1,24 @@
+// dept_v1_list.go implements the controller method that returns department list data.
+
+package dept
+
+import (
+	"context"
+
+	v1 "lina-plugin-org-core/backend/api/dept/v1"
+	deptsvc "lina-plugin-org-core/backend/internal/service/dept"
+)
+
+// List returns department list.
+func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (res *v1.ListRes, err error) {
+	out, err := c.deptSvc.List(ctx, deptsvc.ListInput{Name: req.Name, Status: req.Status})
+	if err != nil {
+		return nil, err
+	}
+	items := make([]*v1.DeptItem, 0, len(out.List))
+	for _, item := range out.List {
+		dto := toAPIDeptItem(item)
+		items = append(items, &dto)
+	}
+	return &v1.ListRes{List: items}, nil
+}

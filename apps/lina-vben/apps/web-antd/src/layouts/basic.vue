@@ -512,6 +512,22 @@ function handlePluginRegistryMaybeChanged() {
   void notifyPluginRegistryChangedIfNeeded();
 }
 
+function handlePluginIframeLoad(event: Event) {
+  const target = event.target;
+  if (!(target instanceof HTMLIFrameElement)) {
+    return;
+  }
+  const source = target.getAttribute('src') || target.src;
+  if (!resolvePluginIdFromAssetURL(source)) {
+    return;
+  }
+  // Dynamic iframe metadata may become observable only after the route-level
+  // watcher has already run. Capture the exact generation as soon as the
+  // hosted page finishes loading so a later focus check cannot mistake the
+  // upgraded generation for the initial baseline.
+  void syncPluginPageGenerationBaseline();
+}
+
 // Fetch messages when notification panel is likely to open
 // The Notification component triggers @read when opened
 // We fetch on mount to have data ready
@@ -533,6 +549,7 @@ onMounted(() => {
     await refreshPluginAwareAccess();
   });
   window.addEventListener('focus', handlePluginRegistryMaybeChanged);
+  document.addEventListener('load', handlePluginIframeLoad, true);
   document.addEventListener(
     'visibilitychange',
     handlePluginRegistryMaybeChanged,
@@ -543,6 +560,7 @@ onBeforeUnmount(() => {
   disposePluginRegistryListener?.();
   disposePluginRegistryListener = null;
   window.removeEventListener('focus', handlePluginRegistryMaybeChanged);
+  document.removeEventListener('load', handlePluginIframeLoad, true);
   document.removeEventListener(
     'visibilitychange',
     handlePluginRegistryMaybeChanged,

@@ -1,0 +1,6 @@
+{
+  "plugin.idc-v10.name": "魔方 V10 供应商接口",
+  "plugin.idc-v10.description": "使用独立 JWT 与控制台供应商协议的魔方 V10 托管连接器",
+  "error.idc.v10.catalog.invalid": "上游商品选择无效，请重新选择",
+  "error.idc.v10.catalog.unavailable": "暂时无法读取上游商品，请检查接口后重试"
+}

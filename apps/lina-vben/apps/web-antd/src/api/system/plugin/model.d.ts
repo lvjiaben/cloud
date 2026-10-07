@@ -1,12 +1,11 @@
 export type PluginType = 'dynamic' | 'source' | string;
 export type PluginDistribution = 'builtin' | 'managed' | string;
+export type PluginNewBusinessState = 'accepting' | 'stopped' | string;
 
 export interface PluginListParams {
   pageNum?: number;
   pageSize?: number;
   id?: string;
-  /** Compatibility field; list always includes builtin plugins. */
-  includeBuiltin?: boolean;
   installed?: number;
   name?: string;
   status?: number;
@@ -28,6 +27,8 @@ export interface PluginListItem {
   installed: number;
   installedAt: number | null;
   enabled: number;
+  newBusinessState: PluginNewBusinessState;
+  newBusinessStoppedAt: number | null;
   autoEnableManaged: number;
   autoEnableForNewTenants?: boolean;
   supportsMultiTenant?: boolean;
@@ -42,10 +43,40 @@ export interface PluginListItem {
   scopeNature?: 'platform_only' | 'tenant_aware' | string;
 }
 
+export interface PluginBusinessImpactItem {
+  ownerPluginId: string;
+  category:
+    | 'active_services'
+    | 'in_flight_tasks'
+    | 'pending_historical_actions'
+    | 'selling_product_versions'
+    | string;
+  totalCount: number;
+  blockingCount: number;
+}
+
+export interface PluginBusinessImpact {
+  id: string;
+  blockingCount: number;
+  canDisable: boolean;
+  canUninstall: boolean;
+  items: PluginBusinessImpactItem[];
+}
+
 export interface SystemPlugin extends PluginListItem {
+  businessExtensions?: PluginBusinessExtension[];
+  authorizedBusinessExtensions?: PluginBusinessExtension[];
   requestedHostServices?: HostServicePermissionItem[];
   authorizedHostServices?: HostServicePermissionItem[];
   declaredRoutes?: PluginRouteReviewItem[];
+}
+
+export interface PluginBusinessExtension {
+  point: string;
+  version: string;
+  role: 'owner' | 'provider' | string;
+  owner: string;
+  methods?: string[];
 }
 
 export type PluginRuntimeState =
@@ -268,6 +299,25 @@ export interface PluginDynamicState {
   generation: number;
   statusKey: string;
   runtimeState?: PluginRuntimeState;
+  type?: PluginType;
+  adminSurfaces?: PluginRuntimeFrontendSurface[];
+  customerSurfaces?: PluginRuntimeFrontendSurface[];
+}
+
+export interface PluginRuntimeFrontendSurface {
+  pluginId: string;
+  pluginType: PluginType;
+  key: string;
+  version: string;
+  title: string;
+  icon?: string;
+  permission?: string;
+  slot: string;
+  routePath: string;
+  entry: string;
+  entryUrl?: string;
+  status?: string;
+  bridgeCapabilities?: string[];
 }
 
 export interface PluginUploadDynamicResult {

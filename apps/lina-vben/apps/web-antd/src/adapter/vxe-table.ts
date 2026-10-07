@@ -6,6 +6,7 @@ import { Tag, Tooltip } from 'ant-design-vue';
 import { $t } from '@vben/locales';
 import { preferences } from '@vben/preferences';
 import {
+  normalizeVbenGridUsage,
   setupVbenVxeTable,
   useVbenVxeGrid as useBaseVbenVxeGrid,
 } from '@vben/plugins/vxe-table';
@@ -222,7 +223,7 @@ setupVbenVxeTable({
 
 export function useVbenVxeGrid(...args: Parameters<typeof useBaseVbenVxeGrid>) {
   const normalizedArgs = args.map((arg) =>
-    adaptEnglishGridOptions(arg),
+    adaptEnglishGridOptions(normalizeVbenGridUsage(arg)),
   ) as Parameters<typeof useBaseVbenVxeGrid>;
   const [BaseGrid, gridApi] = useBaseVbenVxeGrid(...normalizedArgs);
 

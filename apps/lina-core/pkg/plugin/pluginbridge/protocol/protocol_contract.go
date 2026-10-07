@@ -40,11 +40,12 @@ const (
 	BridgeFailureCodeNotFound     = contract.BridgeFailureCodeNotFound
 	BridgeFailureCodeInternal     = contract.BridgeFailureCodeInternal
 
-	ExecutionSourceRoute         = contract.ExecutionSourceRoute
-	ExecutionSourceHook          = contract.ExecutionSourceHook
-	ExecutionSourceJobs          = contract.ExecutionSourceJobs
-	ExecutionSourceJobsDiscovery = contract.ExecutionSourceJobsDiscovery
-	ExecutionSourceLifecycle     = contract.ExecutionSourceLifecycle
+	ExecutionSourceRoute             = contract.ExecutionSourceRoute
+	ExecutionSourceHook              = contract.ExecutionSourceHook
+	ExecutionSourceJobs              = contract.ExecutionSourceJobs
+	ExecutionSourceJobsDiscovery     = contract.ExecutionSourceJobsDiscovery
+	ExecutionSourceLifecycle         = contract.ExecutionSourceLifecycle
+	ExecutionSourceBusinessExtension = contract.ExecutionSourceBusinessExtension
 
 	DefaultJobContractTimezone          = contract.DefaultJobContractTimezone
 	DefaultJobContractTimeoutSeconds    = contract.DefaultJobContractTimeoutSeconds

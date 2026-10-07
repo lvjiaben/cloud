@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/tetratelabs/wazero"
 
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	bridgecontract "lina-core/pkg/plugin/pluginbridge/contract"
 	bridgecodec "lina-core/pkg/plugin/pluginbridge/protocol"
 )
@@ -60,18 +61,19 @@ func (r *runtimeImpl) ExecuteBridge(
 	// Inject host call context so that host function callbacks can access
 	// plugin identity and capabilities.
 	ctx = withHostCallContext(ctx, &hostCallContext{
-		runtime:                   r.hostServices,
-		pluginID:                  input.PluginID,
-		capabilities:              input.Capabilities,
-		hostServices:              hostServices,
-		hostServiceSnapshot:       hostServiceSnapshot,
-		artifactDefaultConfig:     append([]byte(nil), input.ArtifactDefaultConfig...),
-		artifactManifestResources: cloneExecutionManifestResources(input.ArtifactManifestResources),
-		executionSource:           input.ExecutionSource,
-		routePath:                 input.RoutePath,
-		requestID:                 input.RequestID,
-		identity:                  input.Identity,
-		jobCollector:              input.JobCollector,
+		runtime:                        r.hostServices,
+		pluginID:                       input.PluginID,
+		capabilities:                   input.Capabilities,
+		hostServices:                   hostServices,
+		hostServiceSnapshot:            hostServiceSnapshot,
+		artifactDefaultConfig:          append([]byte(nil), input.ArtifactDefaultConfig...),
+		artifactManifestResources:      cloneExecutionManifestResources(input.ArtifactManifestResources),
+		executionSource:                input.ExecutionSource,
+		routePath:                      input.RoutePath,
+		requestID:                      input.RequestID,
+		identity:                       input.Identity,
+		jobCollector:                   input.JobCollector,
+		confidentialOutboundInvocation: cloneConfidentialOutboundInvocation(input.ConfidentialOutboundInvocation),
 	})
 
 	var (
@@ -123,6 +125,14 @@ func (r *runtimeImpl) ExecuteBridge(
 		return nil, err
 	}
 	return response, nil
+}
+
+func cloneConfidentialOutboundInvocation(input *confidentialoutbound.Invocation) *confidentialoutbound.Invocation {
+	if input == nil {
+		return nil
+	}
+	cloned := *input
+	return &cloned
 }
 
 // bridgeExecutionContext returns a deadline-bound context for one dynamic

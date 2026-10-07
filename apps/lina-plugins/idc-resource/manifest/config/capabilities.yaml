@@ -1,0 +1,22 @@
+schema_version: v1
+visibility: internal
+
+lifecycle:
+  disable_sequence:
+    - stop_new
+    - drain_active
+    - preserve_history
+  enable_sequence:
+    - resume_after_validation
+
+switches:
+  - key: provider_accounts
+    kind: resource_provider
+  - key: provider_capacity_observation
+    kind: provider_capacity
+  - key: server_lifecycle
+    kind: resource_instance
+  - key: automatic_allocation
+    kind: resource_allocation
+  - key: asynchronous_operations
+    kind: resource_operation

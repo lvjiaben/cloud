@@ -12,6 +12,9 @@ const (
 	CapabilityStorage = "host:storage"
 	// CapabilityHTTPRequest grants access to governed outbound HTTP requests.
 	CapabilityHTTPRequest = "host:http:request"
+	// CapabilityConfidentialOutbound grants access to one-use host-managed
+	// supplier operations bound to an exact business-extension invocation.
+	CapabilityConfidentialOutbound = "host:confidential-outbound"
 	// CapabilityDataRead grants access to read-oriented data service methods.
 	CapabilityDataRead = "host:data:read"
 	// CapabilityDataMutate grants access to write-oriented data service methods.

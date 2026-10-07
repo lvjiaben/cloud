@@ -792,11 +792,11 @@ func TestPluginRegistrationFailFastHelpers(t *testing.T) {
 			path string
 			want bool
 		}{
-			{path: "apps/lina-plugins/linapro-demo-source/backend/plugin.go", want: true},
+			{path: "apps/lina-plugins/demo-source/backend/plugin.go", want: true},
 			{path: "apps/lina-plugins/acme-demo/backend/plugin.go", want: true},
 			{path: "apps/lina-core/internal/cmd/cmd.go", want: false},
-			{path: "apps/lina-plugins/linapro-demo-source/backend/other.go", want: false},
-			{path: "apps/lina-plugins/linapro-demo-source/plugin.go", want: false},
+			{path: "apps/lina-plugins/demo-source/backend/other.go", want: false},
+			{path: "apps/lina-plugins/demo-source/plugin.go", want: false},
 			{path: "apps/lina-plugins/../evil/backend/plugin.go", want: false},
 		}
 		for _, tc := range cases {

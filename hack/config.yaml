@@ -53,20 +53,20 @@ plugins:
     root: "."
     ref: "main"
     items:
-      - id: linapro-demo-source
-      - id: linapro-demo-dynamic
-      - id: linapro-content-notice
-      - id: linapro-monitor-loginlog
-      - id: linapro-monitor-server
-      - id: linapro-monitor-online
-      - id: linapro-monitor-operlog
-      - id: linapro-ai-core
-      - id: linapro-org-core
-      - id: linapro-tenant-core
+      - id: demo-source
+      - id: demo-dynamic
+      - id: content-notice
+      - id: monitor-loginlog
+      - id: monitor-server
+      - id: monitor-online
+      - id: monitor-operlog
+      - id: ai-core
+      - id: org-core
+      - id: tenant-core
   # Example marketplace origin:
   # public-market:
   #   type: marketplace
   #   url: "https://linapro.ai"
   #   items:
-  #     - id: linapro-demo-source
+  #     - id: demo-source
   #       version: "v1.0.0"

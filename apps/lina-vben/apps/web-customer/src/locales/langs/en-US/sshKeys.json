@@ -1,0 +1,41 @@
+{
+  "actions": {
+    "add": "Add public key",
+    "cancel": "Cancel",
+    "revoke": "Revoke",
+    "save": "Save"
+  },
+  "confirm": {
+    "revoke": "Revoke this public key? It will no longer be available for new provisioning or reinstall operations."
+  },
+  "create": {
+    "placeholder": "Paste one line beginning with ssh-ed25519, ssh-rsa, or ecdsa-sha2-...",
+    "title": "Add SSH public key",
+    "warning": "Paste only the contents of a .pub public-key file. Never paste a private key."
+  },
+  "empty": "No SSH public keys saved",
+  "fields": {
+    "actions": "Actions",
+    "algorithm": "Algorithm",
+    "fingerprint": "SHA256 fingerprint",
+    "name": "Name",
+    "publicKey": "Public key",
+    "status": "Status"
+  },
+  "menu": "SSH public keys",
+  "messages": {
+    "created": "Public key saved",
+    "privateRejected": "This looks like a private key. For your safety, it was not uploaded.",
+    "required": "Enter a name and paste one public key",
+    "revoked": "Public key revoked"
+  },
+  "notice": {
+    "description": "Only the public key is stored. The system shows its SHA256 fingerprint and will use it only when both the product and server provider explicitly support key injection.",
+    "title": "Your private key always stays on your device"
+  },
+  "status": {
+    "active": "Active",
+    "revoked": "Revoked"
+  },
+  "title": "SSH public keys"
+}

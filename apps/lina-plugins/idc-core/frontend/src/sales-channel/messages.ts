@@ -1,0 +1,16 @@
+export const salesChannelMessages = {
+  'sales.eyebrow': { en: 'IDC operations · Sales', zh: 'IDC 运营 · 销售' },
+  'sales.title': { en: 'Sales channels', zh: '代理与销售' },
+  'sales.subtitle': { en: 'Qualification, referral attribution and commission status in one view.', zh: '把代理资格、推荐归因和佣金状态放在一个页面里。' },
+  'sales.refresh': { en: 'Refresh', zh: '刷新' },
+  'sales.qualifications': { en: 'Active qualifications', zh: '有效代理资格' },
+  'sales.links': { en: 'Active referral links', zh: '有效推荐链接' },
+  'sales.attributions': { en: 'Eligible attributions', zh: '有效推荐归因' },
+  'sales.maturity': { en: 'Maturity to review', zh: '待成熟处理' },
+  'sales.settlement': { en: 'Settlement to review', zh: '待结算处理' },
+  'sales.currency': { en: 'Commission by currency', zh: '按币种查看佣金' },
+  'sales.accrued': { en: 'Accrued', zh: '已计提' },
+  'sales.matured': { en: 'Matured', zh: '已成熟' },
+  'sales.failed': { en: 'The sales summary could not be loaded.', zh: '销售汇总暂时加载失败。' },
+  'sales.empty': { en: 'No commission activity yet.', zh: '暂时没有佣金记录。' },
+} as const;

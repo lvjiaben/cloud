@@ -1,0 +1,17 @@
+website_delivery:
+  hard_dependencies:
+    - idc-core
+  optional_runtime_capabilities:
+    - payment
+    - resource
+    - compliance
+    - notification
+    - sales-channel
+    - ai-copilot
+  unavailable_capability_behavior: fail-only-the-dependent-journey
+
+feature_switch_lifecycle:
+  stop_new: true
+  drain_active: true
+  preserve_history: true
+  resume_after_validation: true

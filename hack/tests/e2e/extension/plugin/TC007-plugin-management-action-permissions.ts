@@ -87,7 +87,9 @@ async function expectApiFailure(
     expect(text, `${message}, body=${text}`).toContain(expectedText);
     return;
   }
-  expect(text, `${message}, status=${response.status()}`).toContain(expectedText);
+  expect(text, `${message}, status=${response.status()}`).toContain(
+    expectedText,
+  );
 }
 
 function repoRoot() {
@@ -103,7 +105,13 @@ function artifactPath() {
 }
 
 function runtimeStorageArtifactPath() {
-  return path.join(tempDir(), "output", `${pluginID}.wasm`);
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  const storageDir = configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
+  return path.join(storageDir, `${pluginID}.wasm`);
 }
 
 function cleanupPluginRows() {
@@ -170,7 +178,8 @@ function writeRuntimeArtifact() {
     "lina.plugin.manifest",
     Buffer.from(
       JSON.stringify({
-        description: "Runtime plugin used to verify plugin management action permissions.",
+        description:
+          "Runtime plugin used to verify plugin management action permissions.",
         id: pluginID,
         name: "Plugin Management Permission E2E",
         type: "dynamic",
@@ -198,7 +207,9 @@ function writeRuntimeArtifact() {
 }
 
 async function createAdminApiContext(): Promise<APIRequestContext> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: {
       username: config.adminUser,
@@ -212,7 +223,10 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
   );
   await anonymousApi.dispose();
 
-  expect(loginPayload?.accessToken, "管理员登录后应返回 accessToken").toBeTruthy();
+  expect(
+    loginPayload?.accessToken,
+    "管理员登录后应返回 accessToken",
+  ).toBeTruthy();
   return playwrightRequest.newContext({
     baseURL: apiBaseURL,
     extraHTTPHeaders: {
@@ -222,7 +236,9 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
 }
 
 async function loginByPassword(username: string, password: string) {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   try {
     const loginResponse = await anonymousApi.post("auth/login", {
       data: {
@@ -235,7 +251,10 @@ async function loginByPassword(username: string, password: string) {
       loginResponse,
       `登录失败: ${username}`,
     );
-    expect(loginPayload?.accessToken, "登录成功后应返回 accessToken").toBeTruthy();
+    expect(
+      loginPayload?.accessToken,
+      "登录成功后应返回 accessToken",
+    ).toBeTruthy();
     return loginPayload.accessToken as string;
   } finally {
     await anonymousApi.dispose();
@@ -295,10 +314,13 @@ async function installPlugin(adminApi: APIRequestContext) {
   await expectApiSuccess(response, "管理员安装动态插件失败");
 }
 
-async function setPluginEnabled(
-  adminApi: APIRequestContext,
-  enabled: boolean,
-) {
+async function setPluginEnabled(adminApi: APIRequestContext, enabled: boolean) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      "管理员停止插件新业务失败",
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
@@ -306,6 +328,12 @@ async function setPluginEnabled(
     response,
     `管理员切换插件状态失败: enabled=${enabled}`,
   );
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      "管理员恢复插件新业务失败",
+    );
+  }
 }
 
 async function getAdminDeptID(adminApi: APIRequestContext) {
@@ -441,16 +469,19 @@ test.describe("TC-3 插件管理动作权限校验", () => {
     const queryUserApi = await createApiContext(queryUserToken);
 
     try {
-      const uploadResponse = await queryUserApi.post("plugins/dynamic/package", {
-        multipart: {
-          overwriteSupport: "1",
-          file: {
-            name: path.basename(artifactPath()),
-            mimeType: "application/wasm",
-            buffer: readFileSync(artifactPath()),
+      const uploadResponse = await queryUserApi.post(
+        "plugins/dynamic/package",
+        {
+          multipart: {
+            overwriteSupport: "1",
+            file: {
+              name: path.basename(artifactPath()),
+              mimeType: "application/wasm",
+              buffer: readFileSync(artifactPath()),
+            },
           },
         },
-      });
+      );
       await expectApiFailure(
         uploadResponse,
         "查询用户不应允许上传动态插件",
@@ -458,7 +489,9 @@ test.describe("TC-3 插件管理动作权限校验", () => {
       );
 
       await uploadDynamicPlugin(adminApi);
-      const installResponse = await queryUserApi.post(`plugins/${pluginID}/install`);
+      const installResponse = await queryUserApi.post(
+        `plugins/${pluginID}/install`,
+      );
       await expectApiFailure(
         installResponse,
         "查询用户不应允许安装动态插件",
@@ -489,12 +522,16 @@ test.describe("TC-3 插件管理动作权限校验", () => {
       await pluginPage.gotoManage();
       await pluginPage.searchByPluginId(pluginID);
 
-      await expect(page.getByRole("button", { name: /卸\s*载/ })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /卸\s*载/ })).toHaveCount(
+        0,
+      );
       await expect(pluginPage.pluginEnabledSwitch(pluginID)).toHaveClass(
         /ant-switch-disabled/,
       );
 
-      const disableResponse = await queryUserApi.put(`plugins/${pluginID}/disable`);
+      const disableResponse = await queryUserApi.put(
+        `plugins/${pluginID}/disable`,
+      );
       await expectApiFailure(
         disableResponse,
         "查询用户不应允许禁用插件",
@@ -506,7 +543,9 @@ test.describe("TC-3 插件管理动作权限校验", () => {
         .poll(async () => (await findPlugin(adminApi))?.enabled ?? 1)
         .toBe(0);
 
-      const enableResponse = await queryUserApi.put(`plugins/${pluginID}/enable`);
+      const enableResponse = await queryUserApi.put(
+        `plugins/${pluginID}/enable`,
+      );
       await expectApiFailure(
         enableResponse,
         "查询用户不应允许启用插件",
@@ -518,7 +557,9 @@ test.describe("TC-3 插件管理动作权限校验", () => {
         .poll(async () => (await findPlugin(adminApi))?.enabled ?? 0)
         .toBe(1);
 
-      const uninstallResponse = await queryUserApi.delete(`plugins/${pluginID}`);
+      const uninstallResponse = await queryUserApi.delete(
+        `plugins/${pluginID}`,
+      );
       await expectApiFailure(
         uninstallResponse,
         "查询用户不应允许卸载插件",

@@ -35,7 +35,7 @@ type ListItem struct {
 	DisplayName string `json:"displayName" dc:"Processor display name" eg:"Task log cleaning"`
 	Description string `json:"description" dc:"Processor description" eg:"Clean task execution logs according to policy"`
 	Source      Source `json:"source" dc:"Processor source: host=host plugin=plugin" eg:"host"`
-	PluginId    string `json:"pluginId" dc:"Source plugin ID; host processor is an empty string" eg:"linapro-demo-source"`
+	PluginId    string `json:"pluginId" dc:"Source plugin ID; host processor is an empty string" eg:"demo-source"`
 }
 
 // ListRes defines the response for querying registered job handlers.

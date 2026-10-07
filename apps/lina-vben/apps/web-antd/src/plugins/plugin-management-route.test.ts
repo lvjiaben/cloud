@@ -42,28 +42,28 @@ describe('plugin management route resolver', () => {
   it('treats settings and management pages as navigable and skips modals', () => {
     getPluginPages.mockReturnValue([
       page({
-        key: 'linapro-auth-ldap:settings',
-        pluginId: 'linapro-auth-ldap',
-        routePath: 'linapro-auth-ldap-settings',
+        key: 'auth-ldap:settings',
+        pluginId: 'auth-ldap',
+        routePath: 'auth-ldap-settings',
       }),
       page({
-        key: 'linapro-auth-ldap:components/settings-modal',
-        pluginId: 'linapro-auth-ldap',
-        routePath: 'linapro-auth-ldap-components-settings-modal',
+        key: 'auth-ldap:components/settings-modal',
+        pluginId: 'auth-ldap',
+        routePath: 'auth-ldap-components-settings-modal',
       }),
       page({
-        key: 'linapro-auth-ldap:settings-drawer',
-        pluginId: 'linapro-auth-ldap',
-        routePath: 'linapro-auth-ldap-settings-drawer',
+        key: 'auth-ldap:settings-drawer',
+        pluginId: 'auth-ldap',
+        routePath: 'auth-ldap-settings-drawer',
       }),
     ]);
 
-    expect(hasPluginManagementPage('linapro-auth-ldap')).toBe(true);
+    expect(hasPluginManagementPage('auth-ldap')).toBe(true);
     expect(
-      getPluginManagementPages('linapro-auth-ldap').map((item) => item.key),
-    ).toEqual(['linapro-auth-ldap:settings']);
-    expect(pickPluginManagementPage('linapro-auth-ldap')?.routePath).toBe(
-      'linapro-auth-ldap-settings',
+      getPluginManagementPages('auth-ldap').map((item) => item.key),
+    ).toEqual(['auth-ldap:settings']);
+    expect(pickPluginManagementPage('auth-ldap')?.routePath).toBe(
+      'auth-ldap-settings',
     );
   });
 
@@ -71,23 +71,23 @@ describe('plugin management route resolver', () => {
     // Intentionally register pages in reverse alphabetical / last-menu-first order.
     getPluginPages.mockReturnValue([
       page({
-        key: 'linapro-ai-core:invocation-logs',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:invocation-logs',
+        pluginId: 'ai-core',
         routePath: '/ai/invocations',
       }),
       page({
-        key: 'linapro-ai-core:model-management',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:model-management',
+        pluginId: 'ai-core',
         routePath: '/ai/models',
       }),
       page({
-        key: 'linapro-ai-core:provider-management',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:provider-management',
+        pluginId: 'ai-core',
         routePath: '/ai/providers',
       }),
       page({
-        key: 'linapro-ai-core:tier-management',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:tier-management',
+        pluginId: 'ai-core',
         routePath: '/ai/tiers',
       }),
     ]);
@@ -115,7 +115,7 @@ describe('plugin management route resolver', () => {
 
     expect(
       resolvePluginManagementPath(
-        'linapro-ai-core',
+        'ai-core',
         {
           getRoutes: () => [
             { path: '/ai/invocations' },
@@ -129,20 +129,20 @@ describe('plugin management route resolver', () => {
     ).toBe('/ai/providers');
 
     expect(
-      pickPluginManagementPage('linapro-ai-core', accessMenus)?.routePath,
+      pickPluginManagementPage('ai-core', accessMenus)?.routePath,
     ).toBe('/ai/providers');
   });
 
   it('falls back to the first matching router registration when menus are empty', () => {
     getPluginPages.mockReturnValue([
       page({
-        key: 'linapro-ai-core:invocation-logs',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:invocation-logs',
+        pluginId: 'ai-core',
         routePath: '/ai/invocations',
       }),
       page({
-        key: 'linapro-ai-core:provider-management',
-        pluginId: 'linapro-ai-core',
+        key: 'ai-core:provider-management',
+        pluginId: 'ai-core',
         routePath: '/ai/providers',
       }),
     ]);
@@ -150,7 +150,7 @@ describe('plugin management route resolver', () => {
     // Router registration order: providers first (first menu), invocations last.
     expect(
       resolvePluginManagementPath(
-        'linapro-ai-core',
+        'ai-core',
         {
           getRoutes: () => [
             { path: '/ai/providers' },
@@ -165,21 +165,21 @@ describe('plugin management route resolver', () => {
   it('resolves full nested router paths and returns null when route is missing', () => {
     getPluginPages.mockReturnValue([
       page({
-        key: 'linapro-auth-ldap:settings',
-        pluginId: 'linapro-auth-ldap',
-        routePath: 'linapro-auth-ldap-settings',
+        key: 'auth-ldap:settings',
+        pluginId: 'auth-ldap',
+        routePath: 'auth-ldap-settings',
       }),
     ]);
 
-    const nested = resolvePluginManagementPath('linapro-auth-ldap', {
+    const nested = resolvePluginManagementPath('auth-ldap', {
       getRoutes: () => [
-        { path: '/auth-login/linapro-auth-ldap-settings' },
+        { path: '/auth-login/auth-ldap-settings' },
         { path: '/system/plugin' },
       ],
     } as any);
-    expect(nested).toBe('/auth-login/linapro-auth-ldap-settings');
+    expect(nested).toBe('/auth-login/auth-ldap-settings');
 
-    const missing = resolvePluginManagementPath('linapro-auth-ldap', {
+    const missing = resolvePluginManagementPath('auth-ldap', {
       getRoutes: () => [{ path: '/system/plugin' }],
     } as any);
     expect(missing).toBeNull();

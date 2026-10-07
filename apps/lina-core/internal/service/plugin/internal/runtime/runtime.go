@@ -32,6 +32,9 @@ import (
 // IntegrationService abstracts the integration service methods runtime needs
 // while avoiding a package import cycle with plugin/internal/integration.
 type IntegrationService interface {
+	// ListSourceRouteBindings returns the host-captured source owner routes used
+	// for exact cross-plugin page-bridge resolution.
+	ListSourceRouteBindings() []pluginhost.SourceRouteBinding
 	// SyncPluginMenusAndPermissions synchronizes all plugin menus and dynamic route
 	// permission entries for the given manifest.
 	SyncPluginMenusAndPermissions(ctx context.Context, manifest *catalog.Manifest) error
@@ -111,6 +114,13 @@ type Service interface {
 		manifest *catalog.Manifest,
 		request *bridgecontract.BridgeRequestEnvelopeV1,
 	) (*bridgecontract.BridgeResponseEnvelopeV1, error)
+	// ExecuteBusinessExtensionMethod runs one internal provider call through the
+	// same isolated WASM runtime without publishing an HTTP route.
+	ExecuteBusinessExtensionMethod(
+		ctx context.Context,
+		manifest *catalog.Manifest,
+		requestBody []byte,
+	) (*bridgecontract.BridgeResponseEnvelopeV1, error)
 	// RegisterDynamicRouteDispatcher binds the fixed-prefix dispatcher into one host
 	// router group so dynamic routes reuse the standard RouterGroup registration flow.
 	RegisterDynamicRouteDispatcher(group *ghttp.RouterGroup)
@@ -127,6 +137,11 @@ type Service interface {
 		ctx context.Context,
 		in *DynamicRouteDispatchInput,
 	) (*bridgecontract.BridgeResponseEnvelopeV1, error)
+	// IssuePageBridgeGrant signs one exact, short-lived isolated-page route grant.
+	IssuePageBridgeGrant(ctx context.Context, input PageBridgeGrantInput) (*PageBridgeGrantOutput, error)
+	// AuthorizeSourcePageBridgeRouteMiddleware validates an exact grant on one
+	// source-owner route after the normal identity middleware has run.
+	AuthorizeSourcePageBridgeRouteMiddleware(r *ghttp.Request)
 
 	// ReconcileDynamicPluginRequest submits a desired-state transition to the reconciler loop.
 	ReconcileDynamicPluginRequest(ctx context.Context, pluginID string, desiredState string, options DynamicReconcileOptions) error

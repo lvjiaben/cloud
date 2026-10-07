@@ -6,23 +6,23 @@ describe('resolvePluginSvgIconId', () => {
   it('maps a flat plugin icon path to a namespaced svg icon id', () => {
     expect(
       resolvePluginSvgIconId(
-        '/repo/apps/lina-plugins/linapro-storage-qiniu/frontend/icons/mark.svg',
+        '/repo/apps/lina-plugins/storage-qiniu/frontend/icons/mark.svg',
       ),
-    ).toBe('svg:linapro-storage-qiniu-mark');
+    ).toBe('svg:storage-qiniu-mark');
   });
 
   it('accepts windows-style separators', () => {
     expect(
       resolvePluginSvgIconId(
-        String.raw`C:\repo\apps\lina-plugins\linapro-storage-cos\frontend\icons\mark.svg`,
+        String.raw`C:\repo\apps\lina-plugins\storage-cos\frontend\icons\mark.svg`,
       ),
-    ).toBe('svg:linapro-storage-cos-mark');
+    ).toBe('svg:storage-cos-mark');
   });
 
   it('rejects nested paths under frontend/icons', () => {
     expect(
       resolvePluginSvgIconId(
-        '/apps/lina-plugins/linapro-storage-cos/frontend/icons/nested/mark.svg',
+        '/apps/lina-plugins/storage-cos/frontend/icons/nested/mark.svg',
       ),
     ).toBeNull();
   });

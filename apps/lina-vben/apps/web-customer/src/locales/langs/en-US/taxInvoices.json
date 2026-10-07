@@ -1,0 +1,95 @@
+{
+  "menu": "My invoices",
+  "title": "My invoices",
+  "eyebrow": "TAX INVOICES",
+  "heading": "Request an invoice and track its progress",
+  "subtitle": "Choose a saved invoice profile and paid bills, then enter the amount requested from each bill. The back office confirms the invoice type and reviews the request.",
+  "refresh": "Refresh",
+  "noticeTitle": "The back office confirms the invoice type",
+  "noticeDescription": "You do not choose an invoice type. A submitted request first enters review and immediately reserves the invoiceable amount from each selected bill.",
+  "steps": {
+    "profile": "1. Choose an invoice profile",
+    "invoices": "2. Choose bills and enter amounts",
+    "submit": "3. Submit the request"
+  },
+  "profile": {
+    "placeholder": "Choose an active invoice profile",
+    "default": "Default",
+    "individual": "Personal",
+    "enterprise": "Business",
+    "empty": "No active invoice profile is available. Add or reactivate one under Invoice profiles first.",
+    "manage": "Manage invoice profiles"
+  },
+  "invoice": {
+    "empty": "No paid bill currently has an invoiceable balance.",
+    "billNo": "Bill number",
+    "orderNo": "Order number",
+    "settledAt": "Paid at",
+    "paid": "Paid bill amount",
+    "allocated": "Already requested or issued",
+    "remaining": "Invoiceable balance",
+    "amount": "Amount for this request",
+    "amountPlaceholder": "Enter an amount",
+    "differentCurrency": "One request can combine bills in one currency only",
+    "selectionLimit": "One request can include up to 20 bills",
+    "amountRequired": "Enter an amount for this bill",
+    "amountInvalid": "Enter an amount above zero with valid decimal places",
+    "amountTooLarge": "The amount cannot exceed this bill's invoiceable balance"
+  },
+  "selectionSummary": "{count} bills selected, request total {amount}",
+  "submit": "Submit invoice request",
+  "submitting": "Submitting",
+  "submitHint": "After submission, this profile snapshot and bill allocation are frozen. Later profile edits do not change this request.",
+  "messages": {
+    "created": "Invoice request submitted for back-office review.",
+    "reused": "The earlier successful submission of this same request was recovered.",
+    "createFailed": "Submission failed. Check the amounts, refresh, and try again."
+  },
+  "history": {
+    "title": "Request history",
+    "description": "Only your requests and customer-visible processing reasons appear here.",
+    "empty": "No invoice request yet.",
+    "loadFailed": "Request history is temporarily unavailable.",
+    "loadMore": "Load more",
+    "requestNo": "Request number",
+    "amount": "Requested amount",
+    "submittedAt": "Submitted at",
+    "invoiceType": "Invoice type",
+    "invoiceNo": "Invoice number",
+    "issuedAt": "Issued at",
+    "deliveredAt": "Delivered at",
+    "reason": "Processing reason"
+  },
+  "status": {
+    "draft": "Draft",
+    "pending_review": "Pending review",
+    "approved_pending_submission": "Approved, awaiting submission",
+    "rejected": "Rejected",
+    "queued": "Queued",
+    "submitting": "Issuing",
+    "issued": "Issued",
+    "delivered": "Delivered",
+    "failed": "Issuing failed",
+    "result_unknown": "Confirming result",
+    "red_letter_pending": "Red-letter processing",
+    "red_lettered": "Red-lettered",
+    "canceled": "Canceled"
+  },
+  "invoiceType": {
+    "pending_confirmation": "Invoice type pending back-office confirmation",
+    "vat_electronic_normal": "Electronic VAT general invoice",
+    "vat_electronic_special": "Electronic VAT special invoice",
+    "digital_electronic_normal": "Digital electronic general invoice",
+    "digital_electronic_special": "Digital electronic special invoice"
+  },
+  "reason": {
+    "buyer_or_tax_information_incorrect": "The invoice profile or tax information needs correction",
+    "amount_or_billing_invoice_adjustment_required": "The requested amount or selected bills need adjustment",
+    "duplicate_request": "This request duplicates an existing request",
+    "business_not_invoiceable": "This business cannot currently be invoiced",
+    "customer_requested_cancellation": "Canceled at your request",
+    "order_or_refund_changed": "The order or refund situation changed",
+    "other": "The request could not continue. Contact the merchant for details"
+  },
+  "loadFailed": "Invoiceable information is temporarily unavailable. Try again later."
+}

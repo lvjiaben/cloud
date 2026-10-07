@@ -1,0 +1,16 @@
+{
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.meta.tags": "IDC 客户服务器",
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.meta.summary": "查询我的服务器",
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.meta.dc": "返回当前登录客户拥有的有界服务器列表。",
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.schema.dc": "返回当前登录客户拥有的有界服务器列表。",
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.fields.cursor.dc": "上一页返回的不透明游标",
+  "plugins.idc_resource.api.serverpage.v1.ServerListReq.fields.limit.dc": "本页返回一至五十台服务器",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailReq.meta.tags": "IDC 客户服务器",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailReq.meta.summary": "查询我的服务器详情",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailReq.meta.dc": "返回当前登录客户拥有的一台服务器。",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailReq.schema.dc": "返回当前登录客户拥有的一台服务器。",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailReq.fields.serverNo.dc": "客户可见的服务器编号",
+  "plugins.idc_resource.api.serverpage.v1.ServerListRes.fields.items.dc": "当前客户拥有的服务器列表",
+  "plugins.idc_resource.api.serverpage.v1.ServerListRes.fields.nextCursor.dc": "下一页的不透明游标，结束时为空",
+  "plugins.idc_resource.api.serverpage.v1.ServerDetailRes.fields.item.dc": "当前客户拥有的服务器详情"
+}

@@ -7,7 +7,7 @@
 
 ### Requirement: 宿主必须通过 AI 命名空间暴露类型化多模态子能力
 
-系统 SHALL 由`linapro-ai-core/backend/cap/aicap`在`AI()`命名空间下暴露图片、向量、音频、视觉、文档、安全审核和视频等类型化子能力。根`lina-core/pkg/plugin/capability.Services` MUST NOT 新增`AIImage()`、`AIEmbedding()`、`AIAudio()`等按子能力展开的根方法，也 MUST NOT 继续作为多模态`AI`契约 owner。
+系统 SHALL 由`ai-core/backend/cap/aicap`在`AI()`命名空间下暴露图片、向量、音频、视觉、文档、安全审核和视频等类型化子能力。根`lina-core/pkg/plugin/capability.Services` MUST NOT 新增`AIImage()`、`AIEmbedding()`、`AIAudio()`等按子能力展开的根方法，也 MUST NOT 继续作为多模态`AI`契约 owner。
 
 #### Scenario: 调用方获取图片能力
 
@@ -70,7 +70,7 @@
 
 #### Scenario: 插件禁用后能力降级
 
-- **WHEN** `linapro-ai-core`插件被禁用、卸载或 provider factory 启动失败
+- **WHEN** `ai-core`插件被禁用、卸载或 provider factory 启动失败
 - **THEN** 所有多模态子能力 MUST 返回不可用状态
 - **AND** 宿主 MUST NOT 产生 500 或返回 nil service
 

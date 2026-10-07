@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-ai/backend/plugin.go",
+      "maxCalls": 3,
+      "reason": "IDC AI plugin composition boundary; wires its private services once during plugin registration."
+    }
+  ]
+}

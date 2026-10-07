@@ -43,9 +43,6 @@ type ListInput struct {
 	Status *int
 	// Installed filters by installed flag.
 	Installed *int
-	// IncludeBuiltin is retained for API compatibility and no longer filters list results.
-	// Ordinary management lists always include distribution=builtin plugins.
-	IncludeBuiltin bool
 }
 
 // ListCache stores one complete unfiltered plugin management summary read model.

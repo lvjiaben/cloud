@@ -1,0 +1,75 @@
+{
+  "menu": "发票抬头",
+  "title": "发票抬头",
+  "eyebrow": "开票资料",
+  "heading": "管理常用发票抬头",
+  "subtitle": "保存个人或企业抬头，申请发票时直接选择。已经提交的开票申请会保留当时资料，不会被之后的修改覆盖。",
+  "refresh": "刷新列表",
+  "add": "新增抬头",
+  "securityTitle": "银行账号不会在页面回显",
+  "securityDescription": "银行账号由服务端加密保存。编辑时默认保留，只有明确选择“更换”或“清除”才会改变。",
+  "loadFailed": "暂时无法读取发票抬头，请稍后重试。",
+  "retry": "重新读取",
+  "empty": "还没有保存发票抬头",
+  "loadMore": "加载更多抬头",
+  "default": "默认",
+  "notConfigured": "未填写",
+  "status": {
+    "active": "使用中",
+    "archived": "已停用"
+  },
+  "type": {
+    "individual": "个人抬头",
+    "enterprise": "企业抬头"
+  },
+  "fields": {
+    "type": "抬头类型",
+    "taxNo": "税号",
+    "bank": "开户行",
+    "bankAccount": "银行账号",
+    "updated": "最近更新"
+  },
+  "actions": {
+    "edit": "编辑",
+    "setDefault": "设为默认",
+    "deactivate": "停用"
+  },
+  "form": {
+    "createTitle": "新增发票抬头",
+    "editTitle": "编辑发票抬头",
+    "type": "抬头类型",
+    "title": "名称",
+    "taxNo": "企业税号",
+    "address": "注册地址（选填）",
+    "phone": "注册电话（选填）",
+    "bankName": "开户行（选填）",
+    "bankAction": "银行账号处理方式",
+    "bankAccount": "银行账号（选填）",
+    "bankAccountHelp": "提交后只显示末尾几位，原账号不会回显。",
+    "savedBank": "当前保存的是 {masked}，页面不会读取完整账号。",
+    "noSavedBank": "当前没有保存银行账号。选择“更换”可以新增。",
+    "individualClearsBankTitle": "切换为个人抬头会清除本抬头的银行账号",
+    "individualClearsBankDescription": "保存后，本抬头不再保留企业税务和银行资料；以前已经提交的开票申请仍保留原快照。",
+    "makeDefault": "同时设为默认抬头",
+    "cancel": "取消",
+    "save": "保存"
+  },
+  "bankAction": {
+    "keep": "保留原账号",
+    "replace": "更换账号",
+    "clear": "清除账号"
+  },
+  "deactivate": {
+    "title": "停用这个发票抬头？",
+    "description": "停用后不能用于新的开票申请，但已有申请和历史资料都会保留。",
+    "defaultDescription": "这是当前默认抬头。停用后系统不会偷偷选择其他抬头，之后可以由你重新设置默认。已有申请和历史资料都会保留。",
+    "cancel": "继续使用",
+    "confirm": "确认停用"
+  },
+  "messages": {
+    "created": "发票抬头已新增。",
+    "updated": "发票抬头已更新。",
+    "defaultSet": "默认发票抬头已更新。",
+    "deactivated": "发票抬头已停用，历史资料仍然保留。"
+  }
+}

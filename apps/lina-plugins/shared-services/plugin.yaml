@@ -1,0 +1,20 @@
+id: shared-services
+name: LinaPro Shared Services
+version: v0.1.0
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Reusable human-verification proofs and idempotent in-app messages for plugins.
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文

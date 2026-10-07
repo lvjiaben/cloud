@@ -1,0 +1,10 @@
+{
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationField.fields.uploadPolicy.dc": "不包含上传地址或令牌的宿主文件要求",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.allowedExtensions.dc": "允许的小写文件扩展名",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.allowedMimeTypes.dc": "允许的服务端检查 MIME 类型",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.maximumFileBytes.dc": "单个文件最大字节数",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.maximumFiles.dc": "该字段最多允许的文件数量",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.maximumTotalBytes.dc": "该字段全部文件的最大总字节数",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationUploadPolicy.fields.safetyScanRequired.dc": "文件可用前是否必须通过宿主安全扫描",
+  "plugins.idc_core.api.public.v1.PurchaseConfigurationValue.fields.fileTokens.dc": "按精确登录账号和冻结字段策略重新校验的受治理文件令牌"
+}

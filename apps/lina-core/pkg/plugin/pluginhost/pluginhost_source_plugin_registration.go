@@ -14,10 +14,40 @@ import (
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
 )
 
+// registerBusinessImpactHandler registers one bounded business-impact provider.
+func (p *sourcePlugin) registerBusinessImpactHandler(handler SourcePluginBusinessImpactHandler) error {
+	if p == nil {
+		return gerror.New(errMsgSourcePluginNil)
+	}
+	if handler == nil {
+		return gerror.New("pluginhost: business impact handler is nil")
+	}
+	if p.businessImpact != nil {
+		return gerror.New("pluginhost: business impact handler is already registered")
+	}
+	p.businessImpact = handler
+	return nil
+}
+
 // Shared registration error messages (kept as package constants for goconst).
 const (
 	errMsgSourcePluginNil = "pluginhost: source plugin is nil"
 )
+
+// registerBusinessExtensionMethodHandler stores one source provider method dispatcher.
+func (p *sourcePlugin) registerBusinessExtensionMethodHandler(handler SourcePluginBusinessExtensionMethodHandler) error {
+	if p == nil {
+		return gerror.New(errMsgSourcePluginNil)
+	}
+	if handler == nil {
+		return gerror.New("pluginhost: business extension method handler is nil")
+	}
+	if p.businessExtensionMethods != nil {
+		return gerror.New("pluginhost: business extension method handler is already registered")
+	}
+	p.businessExtensionMethods = handler
+	return nil
+}
 
 // RegisterBeforeInstallHandler registers one source-plugin pre-install callback.
 func (p *sourcePlugin) registerBeforeInstallHandler(handler SourcePluginBeforeLifecycleHandler) error {
@@ -371,7 +401,7 @@ func (p *sourcePlugin) registerExternalIdentityProvider(providerID string) error
 }
 
 // registerExternalIdentityProviderFactory records the external-identity provider
-// engine factory declared by this source plugin (linapro-extlogin-core). It is
+// engine factory declared by this source plugin (extlogin-core). It is
 // orthogonal to registerExternalIdentityProvider: the factory supplies the
 // resolve/provision engine, while the ID list stamps ownership for calling
 // plugins. Only one engine factory may be declared per plugin.

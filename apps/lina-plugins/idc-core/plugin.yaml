@@ -1,0 +1,1171 @@
+id: idc-core
+name: LinaPro IDC Core
+version: v0.1.93
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Core customer, general catalog, commerce, support, and merchant-governance boundaries for the operations platform.
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
+    - id: shared-services
+      version: ">=0.1.0 <1.0.0"
+    - id: staff-access
+      version: ">=0.1.0 <1.0.0"
+
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: owner
+    owner: idc-core
+    methods:
+      - configuration.candidates
+      - configuration.validate
+      - provision
+      - query
+      - service.detail
+      - service.sync
+      - service.validation.update
+      - service.revalidate
+      - service.cancel
+      - service.download
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+menus:
+  - key: plugin:idc-core:customer-sales
+    name: Customer and Sales
+    path: idc-customer-sales
+    icon: lucide:users-round
+    type: D
+    sort: 4
+    remark: Customer, sales, and assisted quote workspaces
+  - key: plugin:idc-core:catalog-products
+    name: Catalog and Products
+    path: idc-catalog-products
+    icon: lucide:boxes
+    type: D
+    sort: 5
+    remark: General product catalog and pricing workspaces
+  - key: plugin:idc-core:resource-operations
+    name: Servers and Resources
+    path: idc-resource-operations
+    icon: lucide:server-cog
+    type: D
+    sort: 6
+    remark: Server, inventory, and provider operations
+  - key: plugin:idc-core:orders-finance
+    name: Orders and Finance
+    path: idc-orders-finance
+    icon: lucide:receipt-text
+    type: D
+    sort: 7
+    remark: Orders, payments, reconciliation, and finance
+  - key: plugin:idc-core:support-content
+    name: Support and Content
+    path: idc-support-content
+    icon: lucide:messages-square
+    type: D
+    sort: 8
+    remark: Tickets, support settings, and public content
+  - key: plugin:idc-core:notification-marketing
+    name: Notifications and Marketing
+    path: idc-notification-marketing
+    icon: lucide:megaphone
+    type: D
+    sort: 9
+    remark: Notification delivery and marketing operations
+  - key: plugin:idc-core:compliance-governance
+    name: Compliance and Governance
+    path: idc-compliance-governance
+    icon: lucide:shield-check
+    type: D
+    sort: 10
+    remark: Compliance, contracts, and governance workspaces
+  - key: plugin:idc-core:operations-workbench
+    parent_key: dashboard
+    name: Operations Workbench
+    path: /idc/operations/workbench
+    component: system/plugin/dynamic-page
+    perms: idc:admin:operations:workbench:view
+    icon: lucide:activity
+    type: M
+    sort: 0
+    remark: Bounded operational queues and original-currency metrics
+  - key: plugin:idc-core:sales-channel
+    parent_key: plugin:idc-core:customer-sales
+    name: Sales Channel Operations
+    path: /idc/sales-channel
+    component: system/plugin/dynamic-page
+    perms: idc:admin:sales-channel:overview:view
+    icon: lucide:handshake
+    type: M
+    sort: 32
+    remark: Agent, affiliate, sales ownership, and commission overview
+  - key: plugin:idc-core:sales-channel:overview
+    parent_key: plugin:idc-core:sales-channel
+    name: View Sales Channel Overview
+    perms: idc:admin:sales-channel:overview:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:sales-channel:offer
+    parent_key: plugin:idc-core:sales-channel
+    name: View Sales Offers
+    perms: idc:admin:sales-channel:offer:view
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:sales-channel:affiliate
+    parent_key: plugin:idc-core:sales-channel
+    name: Manage Affiliates
+    perms: idc:admin:sales-channel:affiliate:manage
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:sales-channel:qualification
+    parent_key: plugin:idc-core:sales-channel
+    name: Manage Agent Qualifications
+    perms: idc:admin:sales-channel:qualification:manage
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:sales-channel:commission
+    parent_key: plugin:idc-core:sales-channel
+    name: View Commissions
+    perms: idc:admin:sales-channel:commission:view
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:sales-channel:commission:review
+    parent_key: plugin:idc-core:sales-channel:commission
+    name: Review Commission Settlements
+    perms: idc:admin:sales-channel:commission:review
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:sales-channel:commission:payout
+    parent_key: plugin:idc-core:sales-channel:commission
+    name: Process Commission Payouts
+    perms: idc:admin:sales-channel:commission:payout
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:operations-workbench:view
+    parent_key: plugin:idc-core:operations-workbench
+    name: View Operations Workbench
+    perms: idc:admin:operations:workbench:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:operations-workbench:report
+    parent_key: plugin:idc-core:operations-workbench
+    name: View Operations Reports
+    perms: idc:admin:operations:report:view
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:operations-workbench:tasks
+    parent_key: plugin:idc-core:operations-workbench
+    name: View Operations Tasks
+    perms: idc:admin:operations:tasks:view
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:operations-workbench:alerts
+    parent_key: plugin:idc-core:operations-workbench
+    name: View Operations Alerts
+    perms: idc:admin:operations:alerts:view
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:operations:contract-template-list
+    parent_key: plugin:idc-core:compliance-governance
+    name: List Selectable Contract Templates
+    perms: idc:admin:contract-policy:template:list
+    type: B
+    visible: 0
+    sort: 99
+  - key: plugin:idc-core:customers
+    parent_key: plugin:idc-core:customer-sales
+    name: Customer Management
+    path: /idc/customers
+    component: system/plugin/dynamic-page
+    perms: idc:admin:customer:list
+    icon: lucide:users
+    type: M
+    sort: 10
+    remark: IDC customer management and customer 360 overview
+  - key: plugin:idc-core:customers:query
+    parent_key: plugin:idc-core:customers
+    name: Customer Details
+    perms: idc:admin:customer:query
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:customers:tag-batch
+    parent_key: plugin:idc-core:customers
+    name: Batch Customer Tags
+    perms: idc:admin:customer:tag:batch
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:customers:update
+    parent_key: plugin:idc-core:customers
+    name: Update Customer Account State
+    perms: idc:admin:customer:update
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:customers:assist
+    parent_key: plugin:idc-core:customers
+    name: Start Read-only Customer Assistance
+    perms: idc:admin:customer:assist
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:customers:create
+    parent_key: plugin:idc-core:customers
+    name: Create Customer and Send Activation Invitation
+    perms: idc:admin:customer:create
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:customers:contract-policy-write
+    parent_key: plugin:idc-core:customers
+    name: Edit Enterprise Contract Rules
+    perms: idc:admin:customer:contract-policy:write
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:catalog
+    parent_key: plugin:idc-core:catalog-products
+    name: Catalog Management
+    path: /idc/catalog
+    component: system/plugin/dynamic-page
+    perms: idc:admin:catalog:product:list
+    icon: lucide:boxes
+    type: M
+    sort: 20
+    remark: General products, versions, pricing, and publication readiness
+  - key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog-products
+    name: Catalog Categories
+    path: /idc/catalog/categories
+    component: system/plugin/dynamic-page
+    perms: idc:admin:catalog:category:list
+    icon: lucide:folder-tree
+    type: M
+    sort: 21
+    remark: Search, create, edit, soft-delete, and restore catalog categories
+  - key: plugin:idc-core:catalog-automation-interfaces
+    parent_key: plugin:idc-core:catalog-products
+    name: Automation Interfaces
+    path: /idc/catalog/automation-interfaces
+    component: system/plugin/dynamic-page
+    perms: idc:admin:catalog:automation-interface:view
+    icon: lucide:workflow
+    type: M
+    sort: 22
+    remark: Manage product-fulfillment provider interfaces and new-sales state
+  - key: plugin:idc-core:catalog-automation-interfaces:view
+    parent_key: plugin:idc-core:catalog-automation-interfaces
+    name: View Automation Interfaces
+    perms: idc:admin:catalog:automation-interface:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:catalog-automation-interfaces:manage
+    parent_key: plugin:idc-core:catalog-automation-interfaces
+    name: Manage Automation Interfaces
+    perms: idc:admin:catalog:automation-interface:manage
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:catalog-automation-interfaces:binding-write
+    parent_key: plugin:idc-core:catalog-automation-interfaces
+    name: Bind Product Fulfillment Interface
+    perms: idc:admin:catalog:fulfillment-binding:write
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:catalog-automation-interfaces:configuration-write
+    parent_key: plugin:idc-core:catalog-automation-interfaces
+    name: Configure Product Automation
+    perms: idc:admin:catalog:configuration:write
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:catalog:query
+    parent_key: plugin:idc-core:catalog
+    name: View Catalog Product
+    perms: idc:admin:catalog:product:query
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:catalog:publish
+    parent_key: plugin:idc-core:catalog
+    name: Publish Catalog Product
+    perms: idc:admin:catalog:product:publish
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:catalog:category-list
+    parent_key: plugin:idc-core:catalog-categories
+    name: List Catalog Categories
+    perms: idc:admin:catalog:category:list
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:catalog:category-create
+    parent_key: plugin:idc-core:catalog-categories
+    name: Create Catalog Category
+    perms: idc:admin:catalog:category:create
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:catalog:category-update
+    parent_key: plugin:idc-core:catalog-categories
+    name: Edit Catalog Category
+    perms: idc:admin:catalog:category:update
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:catalog:category-delete
+    parent_key: plugin:idc-core:catalog-categories
+    name: Delete Catalog Category
+    perms: idc:admin:catalog:category:delete
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:catalog:category-restore
+    parent_key: plugin:idc-core:catalog-categories
+    name: Restore Catalog Category
+    perms: idc:admin:catalog:category:restore
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:catalog:product-create
+    parent_key: plugin:idc-core:catalog
+    name: Create Catalog Product
+    perms: idc:admin:catalog:product:create
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:catalog:billing-write
+    parent_key: plugin:idc-core:catalog
+    name: Edit Catalog Billing Rules
+    perms: idc:admin:catalog:billing:write
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:catalog:price-write
+    parent_key: plugin:idc-core:catalog
+    name: Edit Catalog Prices
+    perms: idc:admin:catalog:price:write
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:catalog:tax-write
+    parent_key: plugin:idc-core:catalog
+    name: Edit Catalog Tax Policies
+    perms: idc:admin:catalog:tax:write
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-core:catalog:cost-write
+    parent_key: plugin:idc-core:catalog
+    name: Edit Product Version Costs
+    perms: idc:admin:catalog:cost:write
+    type: B
+    visible: 0
+    sort: 11
+  - key: plugin:idc-core:catalog:contract-policy-write
+    parent_key: plugin:idc-core:catalog
+    name: Edit Product Contract Rules
+    perms: idc:admin:catalog:contract-policy:write
+    type: B
+    visible: 0
+    sort: 13
+  - key: plugin:idc-core:support
+    parent_key: plugin:idc-core:support-content
+    name: Support Desk
+    path: /idc/support
+    component: system/plugin/dynamic-page
+    perms: idc:admin:support:ticket:list
+    icon: lucide:messages-square
+    type: M
+    sort: 24
+    remark: Support queues, customer-visible replies, internal notes, SLA, and ticket actions
+  - key: plugin:idc-core:server-operation-security
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Operation Security
+    path: /idc/resource/server-operation-security
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:server-operation-policy:read
+    icon: lucide:shield-check
+    type: M
+    sort: 23
+    remark: Merchant-local recent-login protection for dangerous customer server actions
+  - key: plugin:idc-core:server-operation-security:write
+    parent_key: plugin:idc-core:server-operation-security
+    name: Update Server Operation Security
+    perms: idc:admin:resource:server-operation-policy:write
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:server-batches:safe
+    parent_key: plugin:idc-core:resource-operations
+    name: Run Safe Server Batches
+    perms: idc:admin:resource:server-batch:safe
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:server-batches:view
+    parent_key: plugin:idc-core:resource-operations
+    name: View Server Batch Operations
+    perms: idc:admin:resource:server-batch:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:server-batches:dangerous
+    parent_key: plugin:idc-core:resource-operations
+    name: Run Dangerous Server Batches
+    perms: idc:admin:resource:server-batch:dangerous
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:accessory-price:read
+    parent_key: plugin:idc-core:resource-operations
+    name: View Server Accessory Prices
+    perms: idc:admin:resource:accessory-price:read
+    type: B
+    visible: 0
+    sort: 24
+  - key: plugin:idc-core:ip-change-policy
+    parent_key: plugin:idc-core:resource-operations
+    name: Server IP Change Policy
+    path: /idc/resource/ip-change-policy
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:ip-change-policy:read
+    icon: lucide:network
+    type: M
+    sort: 25
+    remark: Merchant-local IP-change qualification, frequency, price, and inventory freshness policy
+  - key: plugin:idc-core:ip-change-policy:write
+    parent_key: plugin:idc-core:ip-change-policy
+    name: Publish Server IP Change Policy
+    perms: idc:admin:resource:ip-change-policy:write
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:accessory-price:write
+    parent_key: plugin:idc-core:resource-operations
+    name: Publish Server Accessory Prices
+    perms: idc:admin:resource:accessory-price:write
+    type: B
+    visible: 0
+    sort: 25
+  - key: plugin:idc-core:support:query
+    parent_key: plugin:idc-core:support
+    name: View Support Ticket
+    perms: idc:admin:support:ticket:query
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:support:create
+    parent_key: plugin:idc-core:support
+    name: Create Internal Support Ticket
+    perms: idc:admin:support:ticket:create
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:support:reply
+    parent_key: plugin:idc-core:support
+    name: Reply to Support Ticket
+    perms: idc:admin:support:ticket:reply
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:support:note
+    parent_key: plugin:idc-core:support
+    name: Add Internal Support Note
+    perms: idc:admin:support:ticket:note
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:support:claim
+    parent_key: plugin:idc-core:support
+    name: Claim Support Ticket
+    perms: idc:admin:support:ticket:claim
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:support:transfer
+    parent_key: plugin:idc-core:support
+    name: Transfer Support Ticket
+    perms: idc:admin:support:ticket:transfer
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:support:resolve
+    parent_key: plugin:idc-core:support
+    name: Resolve Support Ticket
+    perms: idc:admin:support:ticket:resolve
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:support:close
+    parent_key: plugin:idc-core:support
+    name: Close Support Ticket
+    perms: idc:admin:support:ticket:close
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:support:reopen
+    parent_key: plugin:idc-core:support
+    name: Reopen Support Ticket
+    perms: idc:admin:support:ticket:reopen
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:support:merge
+    parent_key: plugin:idc-core:support
+    name: Merge Support Tickets
+    perms: idc:admin:support:ticket:merge
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-core:support:split
+    parent_key: plugin:idc-core:support
+    name: Split Support Ticket
+    perms: idc:admin:support:ticket:split
+    type: B
+    visible: 0
+    sort: 11
+  - key: plugin:idc-core:support:escalate
+    parent_key: plugin:idc-core:support
+    name: Escalate Support Ticket
+    perms: idc:admin:support:ticket:escalate
+    type: B
+    visible: 0
+    sort: 12
+  - key: plugin:idc-core:support:hide
+    parent_key: plugin:idc-core:support
+    name: Hide Support Content
+    perms: idc:admin:support:ticket:hide
+    type: B
+    visible: 0
+    sort: 13
+  - key: plugin:idc-core:support:view-all
+    parent_key: plugin:idc-core:support
+    name: View All Support Tickets
+    perms: idc:admin:support:ticket:view-all
+    type: B
+    visible: 0
+    sort: 14
+  - key: plugin:idc-core:support:merge-all
+    parent_key: plugin:idc-core:support
+    name: Merge Across Authorized Support Queues
+    perms: idc:admin:support:ticket:merge-all
+    type: B
+    visible: 0
+    sort: 15
+  - key: plugin:idc-core:support:upstream-forward
+    parent_key: plugin:idc-core:support
+    name: Forward Support Ticket Upstream
+    perms: idc:admin:support:ticket:upstream-forward
+    type: B
+    visible: 0
+    sort: 16
+  - key: plugin:idc-core:support-settings
+    parent_key: plugin:idc-core:support-content
+    name: Support Settings
+    path: /idc/support/settings
+    component: system/plugin/dynamic-page
+    perms: idc:admin:support:configuration:manage
+    icon: lucide:settings-2
+    type: M
+    sort: 25
+    remark: Support automation policy and governed support configuration
+  - key: plugin:idc-core:content
+    parent_key: plugin:idc-core:support-content
+    name: Content Management
+    path: /idc/content
+    component: system/plugin/dynamic-page
+    perms: idc:admin:content:manage
+    icon: lucide:newspaper
+    type: M
+    sort: 26
+    remark: News, announcements, knowledge, and download management
+  - key: plugin:idc-core:marketing
+    parent_key: plugin:idc-core:notification-marketing
+    name: Marketing Operations
+    path: /idc/marketing
+    component: system/plugin/dynamic-page
+    perms: idc:admin:marketing:overview
+    icon: lucide:chart-no-axes-combined
+    type: M
+    sort: 30
+    remark: Segmentation, campaigns, promotion assets, points, consent, recharge bonus, and cashback overview
+  - key: plugin:idc-core:marketing:segment-list
+    parent_key: plugin:idc-core:marketing
+    name: List Marketing Segments
+    perms: idc:admin:marketing:segment:list
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:marketing:segment-query
+    parent_key: plugin:idc-core:marketing
+    name: Query Marketing Segment Details
+    perms: idc:admin:marketing:segment:query
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:marketing:campaign-list
+    parent_key: plugin:idc-core:marketing
+    name: List Marketing Campaigns
+    perms: idc:admin:marketing:campaign:list
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:marketing:campaign-query
+    parent_key: plugin:idc-core:marketing
+    name: Query Marketing Campaign Details
+    perms: idc:admin:marketing:campaign:query
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:marketing:campaign-newcomer-update
+    parent_key: plugin:idc-core:marketing
+    name: Update Newcomer Campaign Setting
+    perms: idc:admin:marketing:campaign:newcomer:update
+    type: B
+    visible: 0
+    sort: 41
+  - key: plugin:idc-core:marketing:asset-list
+    parent_key: plugin:idc-core:marketing
+    name: List Promotion Assets
+    perms: idc:admin:marketing:asset:list
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:marketing:asset-query
+    parent_key: plugin:idc-core:marketing
+    name: Query Promotion Asset Details
+    perms: idc:admin:marketing:asset:query
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:marketing:points-list
+    parent_key: plugin:idc-core:marketing
+    name: List Points Accounts
+    perms: idc:admin:marketing:points:list
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:marketing:points-query
+    parent_key: plugin:idc-core:marketing
+    name: Query Points Account Details
+    perms: idc:admin:marketing:points:query
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:marketing:grant-list
+    parent_key: plugin:idc-core:marketing
+    name: List Granted Value
+    perms: idc:admin:marketing:grant:list
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:marketing:grant-query
+    parent_key: plugin:idc-core:marketing
+    name: Query Granted Value Details
+    perms: idc:admin:marketing:grant:query
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-core:marketing:asset-issue
+    parent_key: plugin:idc-core:marketing
+    name: Issue Promotion Assets
+    perms: idc:admin:marketing:asset:issue
+    type: B
+    visible: 0
+    sort: 11
+  - key: plugin:idc-core:marketing:asset-revoke
+    parent_key: plugin:idc-core:marketing
+    name: Revoke Promotion Assets
+    perms: idc:admin:marketing:asset:revoke
+    type: B
+    visible: 0
+    sort: 12
+  - key: plugin:idc-core:marketing:points-credit
+    parent_key: plugin:idc-core:marketing
+    name: Credit Points
+    perms: idc:admin:marketing:points:credit
+    type: B
+    visible: 0
+    sort: 13
+  - key: plugin:idc-core:marketing:points-reverse
+    parent_key: plugin:idc-core:marketing
+    name: Reverse Points Awards
+    perms: idc:admin:marketing:points:reverse
+    type: B
+    visible: 0
+    sort: 14
+  - key: plugin:idc-core:marketing:grant-post
+    parent_key: plugin:idc-core:marketing
+    name: Request Granted Value Posting
+    perms: idc:admin:marketing:grant:post
+    type: B
+    visible: 0
+    sort: 15
+  - key: plugin:idc-core:marketing:grant-reverse
+    parent_key: plugin:idc-core:marketing
+    name: Request Granted Value Reversal
+    perms: idc:admin:marketing:grant:reverse
+    type: B
+    visible: 0
+    sort: 16
+  - key: plugin:idc-core:marketing:grant-review
+    parent_key: plugin:idc-core:marketing
+    name: Review Granted Value Financial Actions
+    perms: idc:admin:marketing:grant:review
+    type: B
+    visible: 0
+    sort: 17
+  - key: plugin:idc-core:marketing:performance-list
+    parent_key: plugin:idc-core:marketing
+    name: View Campaign Performance
+    perms: idc:admin:marketing:performance:list
+    type: B
+    visible: 0
+    sort: 18
+  - key: plugin:idc-core:marketing:abuse-list
+    parent_key: plugin:idc-core:marketing
+    name: View Marketing Abuse Cases
+    perms: idc:admin:marketing:abuse:list
+    type: B
+    visible: 0
+    sort: 19
+  - key: plugin:idc-core:marketing:abuse-review
+    parent_key: plugin:idc-core:marketing
+    name: Review Marketing Abuse Cases
+    perms: idc:admin:marketing:abuse:review
+    type: B
+    visible: 0
+    sort: 20
+  - key: plugin:idc-core:marketing:cost-missing-list
+    parent_key: plugin:idc-core:marketing
+    name: View Missing Marketing Costs
+    perms: idc:admin:marketing:cost:missing:list
+    type: B
+    visible: 0
+    sort: 21
+  - key: plugin:idc-core:marketing:cost-correct
+    parent_key: plugin:idc-core:marketing
+    name: Correct Missing Marketing Costs
+    perms: idc:admin:marketing:cost:correct
+    type: B
+    visible: 0
+    sort: 22
+  - key: plugin:idc-core:marketing:coupon-code-generate
+    parent_key: plugin:idc-core:marketing
+    name: Generate Coupon Code Batches
+    perms: idc:admin:marketing:coupon-code:generate
+    type: B
+    visible: 0
+    sort: 23
+  - key: plugin:idc-core:commerce-orders
+    parent_key: plugin:idc-core:orders-finance
+    name: Commerce Orders
+    path: /idc/orders
+    component: system/plugin/dynamic-page
+    perms: idc:admin:commerce:order:list
+    icon: lucide:clipboard-list
+    type: M
+    sort: 32
+    remark: Order, invoice, inventory, review, and fulfillment operations
+  - key: plugin:idc-core:product-fulfillment-tasks
+    parent_key: plugin:idc-core:orders-finance
+    name: Product Fulfillment Tasks
+    path: /idc/product-fulfillment/tasks
+    component: system/plugin/dynamic-page
+    perms: idc:admin:product-fulfillment:task:list
+    icon: lucide:list-checks
+    type: M
+    sort: 33
+    remark: General product fulfillment review, progress, and manual handling
+  - key: plugin:idc-core:product-fulfillment-tasks:list
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: List Product Fulfillment Tasks
+    perms: idc:admin:product-fulfillment:task:list
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:product-fulfillment-tasks:query
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: View Product Fulfillment Task
+    perms: idc:admin:product-fulfillment:task:query
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:product-fulfillment-tasks:review-approve
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Approve and Start Product Fulfillment
+    perms: idc:admin:product-fulfillment:review-approve
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:product-fulfillment-tasks:review-reject
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Reject Product Fulfillment Review
+    perms: idc:admin:product-fulfillment:review-reject
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:product-fulfillment-tasks:takeover
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Take Over Product Fulfillment
+    perms: idc:admin:product-fulfillment:takeover
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:product-fulfillment-tasks:manual-conclude
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Conclude Manual Product Fulfillment
+    perms: idc:admin:product-fulfillment:manual-conclude
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:service-entitlements:list
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: View Managed Services
+    perms: idc:admin:service-entitlement:list
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:service-entitlements:action
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Run Managed Service Actions
+    perms: idc:admin:service-entitlement:action
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:service-entitlements:takeover
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Take Over Managed Service Actions
+    perms: idc:admin:service-entitlement:takeover
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:service-entitlements:download
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Download Managed Service Files
+    perms: idc:admin:service-entitlement:download
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-core:commerce:risk-review-approve
+    parent_key: plugin:idc-core:commerce-orders
+    name: Approve Order Risk Reviews
+    perms: idc:admin:commerce:risk-review:approve
+    type: B
+    visible: 0
+    sort: 40
+  - key: plugin:idc-core:commerce:risk-review-reject
+    parent_key: plugin:idc-core:commerce-orders
+    name: Reject Order Risk Reviews
+    perms: idc:admin:commerce:risk-review:reject
+    type: B
+    visible: 0
+    sort: 41
+  - key: plugin:idc-core:commerce:order-list
+    parent_key: plugin:idc-core:commerce-orders
+    name: View Orders
+    perms: idc:admin:commerce:order:list
+    type: B
+    visible: 0
+    sort: 42
+  - key: plugin:idc-core:commerce:order-query
+    parent_key: plugin:idc-core:commerce-orders
+    name: View Order Details
+    perms: idc:admin:commerce:order:query
+    type: B
+    visible: 0
+    sort: 43
+  - key: plugin:idc-core:commerce:contract-policy-write
+    parent_key: plugin:idc-core:commerce-orders
+    name: Edit Order Contract Rules
+    perms: idc:admin:commerce:contract-policy:write
+    type: B
+    visible: 0
+    sort: 44
+  - key: plugin:idc-core:assisted-quotes
+    parent_key: plugin:idc-core:customer-sales
+    name: Assisted Quotes
+    path: /idc/assisted-quotes
+    component: system/plugin/dynamic-page
+    perms: idc:admin:commerce:assisted-quote:list
+    icon: lucide:badge-dollar-sign
+    type: M
+    sort: 31
+    remark: Independently approved staff-assisted quotes and safe order checkout
+  - key: plugin:idc-core:assisted-quotes:list
+    parent_key: plugin:idc-core:assisted-quotes
+    name: View Assisted Quotes
+    perms: idc:admin:commerce:assisted-quote:list
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:assisted-quotes:query
+    parent_key: plugin:idc-core:assisted-quotes
+    name: View Assisted Quote Details
+    perms: idc:admin:commerce:assisted-quote:query
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:assisted-quotes:create
+    parent_key: plugin:idc-core:assisted-quotes
+    name: Request Assisted Quote
+    perms: idc:admin:commerce:assisted-quote:create
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:assisted-quotes:approve
+    parent_key: plugin:idc-core:assisted-quotes
+    name: Approve Assisted Quote
+    perms: idc:admin:commerce:assisted-quote:approve
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:assisted-quotes:reject
+    parent_key: plugin:idc-core:assisted-quotes
+    name: Reject Assisted Quote
+    perms: idc:admin:commerce:assisted-quote:reject
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:assisted-quotes:checkout
+    parent_key: plugin:idc-core:assisted-quotes
+    name: Checkout Assisted Quote
+    perms: idc:admin:commerce:assisted-quote:checkout
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:financial-management
+    parent_key: plugin:idc-core:orders-finance
+    name: Financial Management
+    path: /idc/finance
+    component: system/plugin/dynamic-page
+    perms: idc:admin:billing:overview
+    icon: lucide:landmark
+    type: M
+    sort: 34
+    remark: Receivables, invoices, immutable ledger transactions, and reviewed financial adjustments
+  - key: plugin:idc-core:financial-management:invoice-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Billing Invoices
+    perms: idc:admin:billing:invoice:list
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:financial-management:invoice-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Billing Invoice Details
+    perms: idc:admin:billing:invoice:query
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:financial-management:transaction-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Ledger Transactions
+    perms: idc:admin:billing:transaction:list
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-core:financial-management:transaction-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Ledger Transaction Details
+    perms: idc:admin:billing:transaction:query
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-core:financial-management:adjustment-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Financial Adjustments
+    perms: idc:admin:billing:adjustment:list
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-core:financial-management:adjustment-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Financial Adjustment Details
+    perms: idc:admin:billing:adjustment:query
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-core:financial-management:manual-receipt-create
+    parent_key: plugin:idc-core:financial-management
+    name: Create Reviewed Manual Receipts
+    perms: idc:admin:billing:manual-receipt:create
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-core:financial-management:invoice-waiver-create
+    parent_key: plugin:idc-core:financial-management
+    name: Create Reviewed Invoice Waivers
+    perms: idc:admin:billing:invoice-waiver:create
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:financial-management:adjustment-review
+    parent_key: plugin:idc-core:financial-management
+    name: Review Financial Adjustments
+    perms: idc:admin:billing:adjustment:review
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:financial-management:adjustment-policy-write
+    parent_key: plugin:idc-core:financial-management
+    name: Configure Adjustment Review Policies
+    perms: idc:admin:billing:adjustment-policy:write
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-core:financial-management:credit-application-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Credit Applications
+    perms: idc:admin:billing:credit-application:list
+    type: B
+    visible: 0
+    sort: 11
+  - key: plugin:idc-core:financial-management:credit-application-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Credit Application Details
+    perms: idc:admin:billing:credit-application:query
+    type: B
+    visible: 0
+    sort: 12
+  - key: plugin:idc-core:financial-management:credit-application-review
+    parent_key: plugin:idc-core:financial-management
+    name: Review Credit Applications
+    perms: idc:admin:billing:credit-application:review
+    type: B
+    visible: 0
+    sort: 13
+  - key: plugin:idc-core:financial-management:credit-account-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Credit Accounts
+    perms: idc:admin:billing:credit-account:list
+    type: B
+    visible: 0
+    sort: 14
+  - key: plugin:idc-core:financial-management:credit-account-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Credit Account Details
+    perms: idc:admin:billing:credit-account:query
+    type: B
+    visible: 0
+    sort: 15
+  - key: plugin:idc-core:financial-management:credit-statement-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Credit Statements
+    perms: idc:admin:billing:credit-statement:list
+    type: B
+    visible: 0
+    sort: 16
+  - key: plugin:idc-core:financial-management:credit-statement-query
+    parent_key: plugin:idc-core:financial-management
+    name: Query Credit Statement Details
+    perms: idc:admin:billing:credit-statement:query
+    type: B
+    visible: 0
+    sort: 17
+  - key: plugin:idc-core:financial-management:credit-policy-write
+    parent_key: plugin:idc-core:financial-management
+    name: Configure Credit Policies
+    perms: idc:admin:billing:credit-policy:write
+    type: B
+    visible: 0
+    sort: 18
+  - key: plugin:idc-core:financial-management:invoice-resend
+    parent_key: plugin:idc-core:financial-management
+    name: Resend Billing Invoices
+    perms: idc:admin:billing:invoice:resend
+    type: B
+    visible: 0
+    sort: 19
+  - key: plugin:idc-core:financial-management:note-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Internal Financial Notes
+    perms: idc:admin:billing:note:list
+    type: B
+    visible: 0
+    sort: 20
+  - key: plugin:idc-core:financial-management:note-create
+    parent_key: plugin:idc-core:financial-management
+    name: Append Internal Financial Notes
+    perms: idc:admin:billing:note:create
+    type: B
+    visible: 0
+    sort: 21
+  - key: plugin:idc-core:financial-management:personal-filter
+    parent_key: plugin:idc-core:financial-management
+    name: Manage Personal Financial Filters
+    perms: idc:admin:billing:filter:personal
+    type: B
+    visible: 0
+    sort: 22
+  - key: plugin:idc-core:financial-management:export
+    parent_key: plugin:idc-core:financial-management
+    name: Export Financial XLSX Files
+    perms: idc:admin:billing:export
+    type: B
+    visible: 0
+    sort: 23
+  - key: plugin:idc-core:financial-management:refund-list
+    parent_key: plugin:idc-core:financial-management
+    name: List Refund Requests
+    perms: idc:admin:billing:refund:list
+    type: B
+    visible: 0
+    sort: 25
+  - key: plugin:idc-core:financial-management:refund-query
+    parent_key: plugin:idc-core:financial-management
+    name: View Refund Evidence
+    perms: idc:admin:billing:refund:query
+    type: B
+    visible: 0
+    sort: 26
+  - key: plugin:idc-core:financial-management:refund-review
+    parent_key: plugin:idc-core:financial-management
+    name: Review Refund Requests
+    perms: idc:admin:billing:refund:review
+    type: B
+    visible: 0
+    sort: 27
+  - key: plugin:idc-core:financial-management:refund-policy-write
+    parent_key: plugin:idc-core:financial-management
+    name: Configure Refund Policies
+    perms: idc:admin:billing:refund-policy:write
+    type: B
+    visible: 0
+    sort: 28

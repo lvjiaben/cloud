@@ -18,6 +18,10 @@ import {
 } from "../../../support/api/job";
 
 test.describe("TC-9 执行日志查询与删除", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_job_log_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -25,7 +29,7 @@ test.describe("TC-9 执行日志查询与删除", () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
   });
 
@@ -110,9 +114,7 @@ test.describe("TC-9 执行日志查询与删除", () => {
     await expect(deleteDialog).toContainText("删除所有执行日志");
     await expect(deleteDialog.locator(".ant-picker-range")).toBeVisible();
 
-    await deleteDialog
-      .getByRole("button", { name: /确\s*(认|定)/ })
-      .click();
+    await deleteDialog.getByRole("button", { name: /确\s*(认|定)/ }).click();
     await expect(
       adminPage.getByText("请选择完整的执行日志日期范围"),
     ).toBeVisible();

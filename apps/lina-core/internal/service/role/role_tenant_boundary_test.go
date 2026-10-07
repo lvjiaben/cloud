@@ -150,7 +150,7 @@ func TestTenantRoleRejectsPlatformPrimaryUser(t *testing.T) {
 }
 
 // TestTenantRoleRequiresActiveMembershipWhenTableExists verifies tenant role
-// assignment checks the linapro-tenant-core membership table when it is installed.
+// assignment checks the tenant-core membership table when it is installed.
 func TestTenantRoleRequiresActiveMembershipWhenTableExists(t *testing.T) {
 	ctx := datascope.WithTenantScope(context.Background(), 62024)
 	svc := newDefaultRoleTestService()
@@ -372,7 +372,7 @@ func (roleTenantBoundaryProvider) EnsureUsersInTenant(
 	if len(userIDs) == 0 || tenantID <= tenantcap.PLATFORM {
 		return nil
 	}
-	count, err := dao.SysUser.DB().Model("plugin_linapro_tenant_core_user_membership").Safe().Ctx(ctx).
+	count, err := dao.SysUser.DB().Model("plugin_tenant_core_user_membership").Safe().Ctx(ctx).
 		WhereIn("user_id", userIDs).
 		Where("tenant_id", int(tenantID)).
 		Where("status", 1).
@@ -492,12 +492,12 @@ func insertRoleTenantBoundaryUserRole(t *testing.T, ctx context.Context, userID 
 	}
 }
 
-// ensureRoleTenantBoundaryMembershipTable creates the minimal linapro-tenant-core
+// ensureRoleTenantBoundaryMembershipTable creates the minimal tenant-core
 // membership table needed by role assignment tests when the plugin schema is not installed.
 func ensureRoleTenantBoundaryMembershipTable(t *testing.T, ctx context.Context) {
 	t.Helper()
 	_, err := dao.SysUser.DB().Exec(ctx, `
-CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_user_membership (
+CREATE TABLE IF NOT EXISTS plugin_tenant_core_user_membership (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     tenant_id BIGINT NOT NULL,
@@ -512,7 +512,7 @@ CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_user_membership (
 // insertRoleTenantBoundaryMembership inserts one active or inactive membership row.
 func insertRoleTenantBoundaryMembership(t *testing.T, ctx context.Context, userID int, tenantID int, status int) {
 	t.Helper()
-	if _, err := dao.SysUser.DB().Model("plugin_linapro_tenant_core_user_membership").Safe().Ctx(ctx).Data(struct {
+	if _, err := dao.SysUser.DB().Model("plugin_tenant_core_user_membership").Safe().Ctx(ctx).Data(struct {
 		UserID   int `orm:"user_id"`
 		TenantID int `orm:"tenant_id"`
 		Status   int `orm:"status"`
@@ -531,7 +531,7 @@ func cleanupRoleTenantBoundaryMembershipRows(t *testing.T, ctx context.Context, 
 	if len(userIDs) == 0 {
 		return
 	}
-	if _, err := dao.SysUser.DB().Model("plugin_linapro_tenant_core_user_membership").Safe().Ctx(ctx).Unscoped().WhereIn("user_id", userIDs).Delete(); err != nil {
+	if _, err := dao.SysUser.DB().Model("plugin_tenant_core_user_membership").Safe().Ctx(ctx).Unscoped().WhereIn("user_id", userIDs).Delete(); err != nil {
 		t.Errorf("cleanup role tenant boundary membership rows failed: %v", err)
 	}
 }

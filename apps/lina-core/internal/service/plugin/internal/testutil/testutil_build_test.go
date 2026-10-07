@@ -21,10 +21,10 @@ use (
 `)
 	pluginRoot := filepath.Join(repoRoot, "apps", "lina-plugins")
 	writeBuildWorkspaceTestFile(t, filepath.Join(pluginRoot, "go.mod"), "module lina-plugins\n")
-	writeBuildWorkspaceTestFile(t, filepath.Join(pluginRoot, "linapro-demo-dynamic", "go.mod"), "module linapro-demo-dynamic\n")
-	writeBuildWorkspaceTestFile(t, filepath.Join(pluginRoot, "linapro-demo-dynamic", "plugin.yaml"), "id: linapro-demo-dynamic\n")
+	writeBuildWorkspaceTestFile(t, filepath.Join(pluginRoot, "demo-dynamic", "go.mod"), "module demo-dynamic\n")
+	writeBuildWorkspaceTestFile(t, filepath.Join(pluginRoot, "demo-dynamic", "plugin.yaml"), "id: demo-dynamic\n")
 
-	if err := ensureBuildWasmPluginWorkspace(repoRoot, filepath.Join(pluginRoot, "linapro-demo-dynamic")); err != nil {
+	if err := ensureBuildWasmPluginWorkspace(repoRoot, filepath.Join(pluginRoot, "demo-dynamic")); err != nil {
 		t.Fatalf("ensureBuildWasmPluginWorkspace returned error: %v", err)
 	}
 
@@ -39,7 +39,7 @@ use (
 	if strings.Contains(text, "../apps/lina-plugins\n") {
 		t.Fatalf("expected generated workspace to skip official plugin root module, got:\n%s", text)
 	}
-	if !strings.Contains(text, "../apps/lina-plugins/linapro-demo-dynamic\n") {
+	if !strings.Contains(text, "../apps/lina-plugins/demo-dynamic\n") {
 		t.Fatalf("expected generated workspace to include dynamic plugin module, got:\n%s", text)
 	}
 	if _, err = os.Stat(filepath.Join(repoRoot, "temp", "official-plugins", "go.mod")); err != nil {

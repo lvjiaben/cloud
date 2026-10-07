@@ -29,13 +29,7 @@ import { usePriorityValues } from '@vben/hooks';
 import { EmptyIcon } from '@vben/icons';
 import { $t } from '@vben/locales';
 import { usePreferences } from '@vben/preferences';
-import {
-  cloneDeep,
-  cn,
-  isBoolean,
-  isEqual,
-  mergeWithArrayOverride,
-} from '@vben/utils';
+import { cloneDeep, cn, isEqual, mergeWithArrayOverride } from '@vben/utils';
 
 import { VbenHelpTooltip, VbenLoading } from '@vben-core/shadcn-ui';
 
@@ -74,30 +68,9 @@ const {
   tableTitle,
   tableTitleHelp,
   showSearchForm,
-  separator,
 } = usePriorityValues(props, state);
 
 const { isMobile } = usePreferences();
-const isSeparator = computed(() => {
-  if (
-    !formOptions.value ||
-    showSearchForm.value === false ||
-    separator.value === false
-  ) {
-    return false;
-  }
-  if (separator.value === true || separator.value === undefined) {
-    return true;
-  }
-  return separator.value.show !== false;
-});
-const separatorBg = computed(() => {
-  return !separator.value ||
-    isBoolean(separator.value) ||
-    !separator.value.backgroundColor
-    ? undefined
-    : separator.value.backgroundColor;
-});
 const slots: SetupContext['slots'] = useSlots();
 
 const [Form, formApi] = useTableForm({
@@ -416,16 +389,7 @@ onUnmounted(() => {
           v-if="formOptions"
           v-show="showSearchForm !== false"
           :class="
-            cn(
-              'relative rounded-sm py-3',
-              isCompactForm
-                ? isSeparator
-                  ? 'pb-8'
-                  : 'pb-4'
-                : isSeparator
-                  ? 'pb-4'
-                  : 'pb-0',
-            )
+            cn('relative rounded-sm py-3', isCompactForm ? 'pb-4' : 'pb-0')
           "
         >
           <slot name="form">
@@ -454,13 +418,6 @@ onUnmounted(() => {
               </template>
             </Form>
           </slot>
-          <div
-            v-if="isSeparator"
-            :style="{
-              ...(separatorBg ? { backgroundColor: separatorBg } : undefined),
-            }"
-            class="absolute bottom-1 -left-2 z-100 h-2 w-[calc(100%+1rem)] overflow-hidden bg-background-deep md:bottom-2 md:h-3"
-          ></div>
         </div>
       </template>
       <!-- loading -->

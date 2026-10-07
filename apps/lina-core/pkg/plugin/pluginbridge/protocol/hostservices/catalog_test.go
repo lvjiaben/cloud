@@ -160,27 +160,28 @@ func loadHostservicesWireConstants(t *testing.T) map[string]string {
 
 // hostServiceConstNamesForTest maps catalog service wire values to HostService* names.
 var hostServiceConstNamesForTest = map[string]string{
-	"runtime":       "HostServiceRuntime",
-	"storage":       "HostServiceStorage",
-	"network":       "HostServiceNetwork",
-	"data":          "HostServiceData",
-	"cache":         "HostServiceCache",
-	"lock":          "HostServiceLock",
-	"hostconfig":    "HostServiceHostConfig",
-	"manifest":      "HostServiceManifest",
-	"apidoc":        "HostServiceAPIDoc",
-	"auth":          "HostServiceAuth",
-	"users":         "HostServiceUsers",
-	"bizctx":        "HostServiceBizCtx",
-	"dict":          "HostServiceDict",
-	"files":         "HostServiceFiles",
-	"jobs":          "HostServiceJobs",
-	"notifications": "HostServiceNotifications",
-	"plugins":       "HostServicePlugins",
-	"route":         "HostServiceRoute",
-	"sessions":      "HostServiceSessions",
-	"org":           "HostServiceOrg",
-	"tenant":        "HostServiceTenant",
+	"runtime":              "HostServiceRuntime",
+	"storage":              "HostServiceStorage",
+	"network":              "HostServiceNetwork",
+	"confidentialoutbound": "HostServiceConfidentialOutbound",
+	"data":                 "HostServiceData",
+	"cache":                "HostServiceCache",
+	"lock":                 "HostServiceLock",
+	"hostconfig":           "HostServiceHostConfig",
+	"manifest":             "HostServiceManifest",
+	"apidoc":               "HostServiceAPIDoc",
+	"auth":                 "HostServiceAuth",
+	"users":                "HostServiceUsers",
+	"bizctx":               "HostServiceBizCtx",
+	"dict":                 "HostServiceDict",
+	"files":                "HostServiceFiles",
+	"jobs":                 "HostServiceJobs",
+	"notifications":        "HostServiceNotifications",
+	"plugins":              "HostServicePlugins",
+	"route":                "HostServiceRoute",
+	"sessions":             "HostServiceSessions",
+	"org":                  "HostServiceOrg",
+	"tenant":               "HostServiceTenant",
 }
 
 func TestCoreCatalogKeepsStaticServicesCoreOwned(t *testing.T) {
@@ -198,15 +199,15 @@ func TestCoreCatalogKeepsStaticServicesCoreOwned(t *testing.T) {
 
 func TestCatalogWithDescriptorsProjectsOwnerMethods(t *testing.T) {
 	descriptor := capregistry.Descriptor{
-		OwnerPluginID:   "linapro-ai-core",
+		OwnerPluginID:   "ai-core",
 		Service:         "ai",
 		Version:         "v1",
-		SourceContract:  "lina-plugin-linapro-ai-core/backend/cap/aicap",
-		DynamicContract: "lina-plugin-linapro-ai-core/backend/cap/aicap/bridge",
+		SourceContract:  "lina-plugin-ai-core/backend/cap/aicap",
+		DynamicContract: "lina-plugin-ai-core/backend/cap/aicap/bridge",
 		Methods: []capregistry.MethodDescriptor{
 			{
 				Method:          "text.generate",
-				Capability:      "plugin.linapro-ai-core.ai.text.v1",
+				Capability:      "plugin.ai-core.ai.text.v1",
 				Risk:            capregistry.RiskLevelExecute,
 				ResourceKind:    capregistry.ResourceKindKey,
 				RequestPayload:  "aitext.GenerateRequest",
@@ -220,7 +221,7 @@ func TestCatalogWithDescriptorsProjectsOwnerMethods(t *testing.T) {
 	}
 	var found bool
 	for _, service := range catalog {
-		if service.Owner != "linapro-ai-core" || service.Service != "ai" || service.Version != "v1" {
+		if service.Owner != "ai-core" || service.Service != "ai" || service.Version != "v1" {
 			continue
 		}
 		found = true

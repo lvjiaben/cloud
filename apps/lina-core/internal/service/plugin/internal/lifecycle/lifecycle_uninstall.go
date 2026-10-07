@@ -41,6 +41,25 @@ func (s *serviceImpl) Uninstall(ctx context.Context, pluginID string, options Un
 	if err = s.ensureNoReverseDependencies(ctx, pluginID); err != nil {
 		return err
 	}
+	registry, err := s.requireInstalledRegistry(ctx, pluginID)
+	if err != nil {
+		return err
+	}
+	if err = s.ensurePluginStoppedNewBusiness(ctx, pluginID); err != nil {
+		return err
+	}
+	if err = s.ensurePluginBusinessDrained(ctx, pluginID); err != nil {
+		return err
+	}
+	if options.PurgeStorageData {
+		hasBusinessEvidence, impactErr := s.activeReleaseHasBusinessEvidence(ctx, registry)
+		if impactErr != nil {
+			return impactErr
+		}
+		if hasBusinessEvidence {
+			return bizerr.NewCode(CodePluginBusinessDataPurgeDenied, bizerr.P("pluginId", pluginID))
+		}
+	}
 	if plugintypes.NormalizeType(manifest.Type) == pluginv1.PluginTypeSource {
 		return s.uninstallSource(ctx, manifest, options)
 	}
@@ -65,6 +84,17 @@ func (s *serviceImpl) uninstallWithoutDesiredManifest(
 	}
 	if err = s.ensureNoReverseDependencies(ctx, pluginID); err != nil {
 		return err
+	}
+	if err = s.ensurePluginStoppedNewBusiness(ctx, pluginID); err != nil {
+		return err
+	}
+	if err = s.ensurePluginBusinessDrained(ctx, pluginID); err != nil {
+		return err
+	}
+	if options.PurgeStorageData {
+		// Without the staged artifact the host cannot prove that plugin-owned
+		// storage contains no preserved business history, so purge fails closed.
+		return bizerr.NewCode(CodePluginBusinessDataPurgeDenied, bizerr.P("pluginId", pluginID))
 	}
 	return s.uninstallDynamicWithRegistry(ctx, pluginID, registry, options)
 }

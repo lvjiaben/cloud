@@ -127,6 +127,13 @@ func UnmarshalValuesJSON(items [][]byte) ([]any, error) {
 
 // NewEQFilter builds one equality filter.
 func NewEQFilter(field string, value any) (*Filter, error) {
+	// Equality is also the governed way to express SQL IS NULL. Keep generic
+	// value marshaling strict for keys and mutations, while preserving an
+	// explicit JSON null for equality filters so plan validation can distinguish
+	// it from a missing valueJson field.
+	if value == nil {
+		return &Filter{Field: field, Operator: FilterOperatorEQ, ValueJSON: []byte("null")}, nil
+	}
 	valueJSON, err := MarshalValueJSON(value)
 	if err != nil {
 		return nil, err

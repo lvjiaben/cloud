@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-zjmfmigrate/backend/plugin.go",
+      "maxCalls": 2,
+      "reason": "Migration plugin composition boundary; wires private migration services once."
+    },
+    {
+      "path": "apps/lina-plugins/idc-zjmfmigrate/backend/guest.go",
+      "maxCalls": 1,
+      "reason": "Dynamic WASM guest composition boundary; constructs the single migration controller route dispatcher for the module."
+    },
+    {
+      "path": "apps/lina-plugins/idc-zjmfmigrate/backend/internal/controller/admin/admin.go",
+      "maxCalls": 1,
+      "reason": "Dynamic controller composition boundary; constructs one migration service from the guest's host-governed record store and business context."
+    }
+  ]
+}

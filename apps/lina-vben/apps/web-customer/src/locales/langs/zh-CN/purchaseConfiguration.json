@@ -1,0 +1,42 @@
+{
+  "actions": {
+    "back": "返回",
+    "freeze": "确认配置并返回购物车",
+    "quote": "校验并查看价格"
+  },
+  "catalog": {
+    "configure": "选择配置",
+    "empty": "暂无可购买商品",
+    "loadFailed": "商品列表加载失败，请稍后重试",
+    "loadMore": "加载更多",
+    "loadMoreFailed": "更多商品加载失败，已加载的商品仍可继续查看",
+    "menu": "商品选购",
+    "refresh": "刷新",
+    "retry": "重试",
+    "title": "商品选购",
+    "unavailable": "暂不可购买"
+  },
+  "file": {
+    "drag": "点击或拖拽文件到这里上传",
+    "policy": "最多 {count} 个文件，单个不超过 {size} MB，支持 {extensions}",
+    "remove": "移除",
+    "removeFailed": "文件移除失败，请稍后重试",
+    "revoked": "文件已移除",
+    "uploaded": "文件检查通过",
+    "uploadFailed": "文件上传失败，请检查文件后重试"
+  },
+  "messages": {
+    "frozen": "购买配置已保存到当前商品",
+    "evaluateFailed": "配置校验暂时失败，请稍后重试",
+    "fieldInvalid": "请检查这一项的填写内容",
+    "changedDuringSubmit": "提交期间配置发生变化，请重新确认后再提交",
+    "freezeFailed": "购买配置保存失败，请稍后重试",
+    "invalid": "请检查购买配置中的必填项和填写内容",
+    "loadFailed": "购买配置加载失败，请稍后重试",
+    "navigationFailed": "配置已保存，请返回购物车继续操作",
+    "previewOnly": "当前未关联购物车商品，可以校验配置并查看价格；从商品购买入口进入后可以保存到购物车。",
+    "quoteFailed": "价格计算失败，请稍后重试",
+    "quoted": "配置校验通过，价格已更新"
+  },
+  "title": "商品购买配置"
+}

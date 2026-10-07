@@ -15,6 +15,10 @@ import {
 } from "../../../support/api/job";
 
 test.describe("TC-1 时区持久化与 Cron 预览", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_timezone_job_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;

@@ -1,0 +1,22 @@
+schema_version: v1
+visibility: internal
+
+lifecycle:
+  disable_sequence:
+    - stop_new
+    - drain_active
+    - preserve_history
+  enable_sequence:
+    - resume_after_validation
+
+switches:
+  - key: customer_accounts
+    kind: core_customer
+  - key: product_catalog
+    kind: core_catalog
+  - key: order_billing
+    kind: core_commerce
+  - key: support_coordination
+    kind: core_support
+  - key: merchant_governance
+    kind: core_governance

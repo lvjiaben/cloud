@@ -113,18 +113,27 @@ func (s *serviceImpl) ExecuteManifestSQLFiles(
 	}
 
 	err = dao.SysPluginMigration.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
+		if err = lockPluginMigrationStream(txCtx, manifest.ID); err != nil {
+			return err
+		}
+		inherited, loadErr := loadSucceededMigrationAssets(txCtx, manifest.ID, direction)
+		if loadErr != nil {
+			return loadErr
+		}
 		for index, asset := range sqlAssets {
 			if asset == nil {
 				return gerror.New("plugin SQL asset cannot be nil")
 			}
 			var (
 				checksum     = fmt.Sprintf("%x", sha256.Sum256([]byte(asset.Content)))
-				migrationKey = buildMigrationKey(direction, index+1)
+				migrationKey = buildAssetMigrationKey(direction, asset.Key)
 				executedAt   = time.Now()
-				execErr      = s.executeSQLAsset(txCtx, manifest.ID, direction, asset)
 			)
-			if execErr != nil {
-				return gerror.Wrapf(execErr, "execute plugin SQL failed: %s", asset.Key)
+			if direction != plugintypes.MigrationDirectionUpgrade ||
+				!inherited.contains(migrationAssetIdentity(asset.Key), checksum) {
+				if execErr := s.executeSQLAsset(txCtx, manifest.ID, direction, asset); execErr != nil {
+					return gerror.Wrapf(execErr, "execute plugin SQL failed: %s", asset.Key)
+				}
 			}
 			if recordErr := s.recordMigration(txCtx, manifest.ID, release.Id, direction, migrationKey, index+1, checksum, &executedAt, nil); recordErr != nil {
 				return recordErr
@@ -137,6 +146,89 @@ func (s *serviceImpl) ExecuteManifestSQLFiles(
 	}
 	datahost.InvalidateTableContractCache(ctx, manifest.ID, "plugin_sql_"+direction.String())
 	return nil
+}
+
+type succeededMigrationAssets struct {
+	stable map[string]map[string]struct{}
+	legacy map[string]struct{}
+}
+
+func (assets succeededMigrationAssets) contains(identity string, checksum string) bool {
+	if checksums := assets.stable[identity]; checksums != nil {
+		if _, ok := checksums[checksum]; ok {
+			return true
+		}
+	}
+	_, ok := assets.legacy[checksum]
+	return ok
+}
+
+// lockPluginMigrationStream serializes one plugin's migration decisions across
+// processes. The registry row already exists before lifecycle SQL is invoked,
+// so its row lock is the stable per-plugin transaction fence.
+func lockPluginMigrationStream(ctx context.Context, pluginID string) error {
+	var row *entity.SysPlugin
+	err := dao.SysPlugin.Ctx(ctx).
+		Fields(dao.SysPlugin.Columns().Id).
+		Where(do.SysPlugin{PluginId: pluginID}).
+		LockUpdate().
+		Scan(&row)
+	if err != nil {
+		return err
+	}
+	if row == nil || row.Id <= 0 {
+		return gerror.Newf("plugin registry row does not exist for migration: %s", pluginID)
+	}
+	return nil
+}
+
+// loadSucceededMigrationAssets returns install/upgrade assets whose effects
+// are already committed. New ledger rows use a stable key derived from the
+// asset basename. Legacy positional rows can only be inherited by checksum;
+// this preserves pre-stable-key development databases without replaying every
+// historical migration against the final schema.
+func loadSucceededMigrationAssets(
+	ctx context.Context,
+	pluginID string,
+	direction plugintypes.MigrationDirection,
+) (succeededMigrationAssets, error) {
+	result := succeededMigrationAssets{
+		stable: make(map[string]map[string]struct{}),
+		legacy: make(map[string]struct{}),
+	}
+	if direction != plugintypes.MigrationDirectionUpgrade {
+		return result, nil
+	}
+	var rows []*entity.SysPluginMigration
+	err := dao.SysPluginMigration.Ctx(ctx).
+		Fields(
+			dao.SysPluginMigration.Columns().MigrationKey,
+			dao.SysPluginMigration.Columns().Checksum,
+		).
+		Where(do.SysPluginMigration{PluginId: pluginID, Status: plugintypes.MigrationExecutionStatusSucceeded.String()}).
+		WhereIn(dao.SysPluginMigration.Columns().Phase, []string{
+			plugintypes.MigrationDirectionInstall.String(),
+			plugintypes.MigrationDirectionUpgrade.String(),
+		}).
+		Scan(&rows)
+	if err != nil {
+		return succeededMigrationAssets{}, err
+	}
+	for _, row := range rows {
+		if row == nil || strings.TrimSpace(row.Checksum) == "" {
+			continue
+		}
+		identity, stable := migrationIdentityFromKey(row.MigrationKey)
+		if !stable {
+			result.legacy[row.Checksum] = struct{}{}
+			continue
+		}
+		if result.stable[identity] == nil {
+			result.stable[identity] = make(map[string]struct{})
+		}
+		result.stable[identity][row.Checksum] = struct{}{}
+	}
+	return result, nil
 }
 
 // ResolveSQLAssets extracts lifecycle SQL either from embedded runtime artifact sections
@@ -278,6 +370,38 @@ func buildMigrationKey(direction plugintypes.MigrationDirection, sequenceNo int)
 	return fmt.Sprintf("%s-step-%03d", normalizedDirection, sequenceNo)
 }
 
+func buildAssetMigrationKey(direction plugintypes.MigrationDirection, assetKey string) string {
+	normalizedDirection := strings.TrimSpace(strings.ToLower(direction.String()))
+	if normalizedDirection == "" {
+		normalizedDirection = plugintypes.MigrationDirectionInstall.String()
+	}
+	return normalizedDirection + "-step-asset-" + migrationAssetIdentity(assetKey)
+}
+
+func migrationAssetIdentity(assetKey string) string {
+	normalizedKey := strings.ReplaceAll(strings.TrimSpace(assetKey), `\`, "/")
+	digest := sha256.Sum256([]byte(normalizedKey))
+	return fmt.Sprintf("%x", digest[:16])
+}
+
+func migrationIdentityFromKey(migrationKey string) (string, bool) {
+	const marker = "-step-asset-"
+	index := strings.Index(strings.TrimSpace(migrationKey), marker)
+	if index <= 0 {
+		return "", false
+	}
+	identity := strings.TrimSpace(migrationKey[index+len(marker):])
+	if len(identity) != 32 {
+		return "", false
+	}
+	for _, character := range identity {
+		if (character < '0' || character > '9') && (character < 'a' || character > 'f') {
+			return "", false
+		}
+	}
+	return identity, true
+}
+
 // getMigration loads one previously recorded migration attempt for the given
 // release and migration key.
 func (s *serviceImpl) getMigration(
@@ -316,7 +440,7 @@ func (s *serviceImpl) recordMigration(
 	message := ""
 	if execErr != nil {
 		status = plugintypes.MigrationExecutionStatusFailed
-		message = execErr.Error()
+		message = store.BoundedMigrationErrorMessage(execErr.Error())
 	}
 
 	existing, err := s.getMigration(ctx, pluginID, releaseID, phase, migrationKey)

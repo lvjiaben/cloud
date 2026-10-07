@@ -318,8 +318,15 @@ export class LoginPage {
 
   async loginAndWaitForRedirect(username: string, password: string) {
     await this.login(username, password);
-    await this.page.waitForURL((url) => !url.pathname.includes("/auth/login"), {
-      timeout: 15000,
-    });
+    await this.page.waitForURL(
+      (url) => {
+        const hashPath = url.hash.replace(/^#/, "");
+        return (
+          !url.pathname.includes("/auth/login") ||
+          (hashPath.startsWith("/") && !hashPath.includes("/auth/login"))
+        );
+      },
+      { timeout: 15000 },
+    );
   }
 }

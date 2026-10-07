@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
+import { test, expect } from "../../../fixtures/auth";
 
 import {
   buildShellJobPayload,
@@ -14,9 +14,13 @@ import {
   listLogs,
   setCronShellEnabled,
   triggerJob,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-6 手动触发任务', () => {
+test.describe("TC-6 手动触发任务", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_manual_job_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -24,7 +28,7 @@ test.describe('TC-6 手动触发任务', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
   });
 
@@ -38,14 +42,17 @@ test.describe('TC-6 手动触发任务', () => {
     await api.dispose();
   });
 
-  test('TC-6a~d: 手动触发生成 manual 日志，且不计入 executedCount', async () => {
+  test("TC-6a~d: 手动触发生成 manual 日志，且不计入 executedCount", async () => {
     const defaultGroup = await getDefaultGroup(api);
-    const created = await createJob(api, buildShellJobPayload({
-      groupId: defaultGroup.id,
-      name: jobName,
-      status: 'enabled',
-      cronExpr: '0 0 1 1 *',
-    }));
+    const created = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId: defaultGroup.id,
+        name: jobName,
+        status: "enabled",
+        cronExpr: "0 0 1 1 *",
+      }),
+    );
     jobId = created.id;
 
     const beforeDetail = await getJob(api, jobId);
@@ -53,22 +60,27 @@ test.describe('TC-6 手动触发任务', () => {
     expect(triggered.logId).toBeGreaterThan(0);
 
     await expect
-      .poll(async () => {
-        const logDetail = await getLog(api, triggered.logId);
-        return logDetail.status;
-      }, {
-        timeout: 10000,
-        message: '手动触发后应生成成功日志',
-      })
-      .toBe('success');
+      .poll(
+        async () => {
+          const logDetail = await getLog(api, triggered.logId);
+          return logDetail.status;
+        },
+        {
+          timeout: 10000,
+          message: "手动触发后应生成成功日志",
+        },
+      )
+      .toBe("success");
 
     const logDetail = await getLog(api, triggered.logId);
-    expect(logDetail.trigger).toBe('manual');
+    expect(logDetail.trigger).toBe("manual");
 
     const afterDetail = await getJob(api, jobId);
     expect(afterDetail.executedCount).toBe(beforeDetail.executedCount);
 
     const logList = await listLogs(api, jobId);
-    expect(logList.list.some((item) => item.id === triggered.logId)).toBeTruthy();
+    expect(
+      logList.list.some((item) => item.id === triggered.logId),
+    ).toBeTruthy();
   });
 });

@@ -19,6 +19,7 @@ import (
 
 	jobv1 "lina-core/api/job/v1"
 	"lina-core/internal/service/plugin/internal/capabilityowner"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability"
 	"lina-core/pkg/plugin/capability/apidoccap"
@@ -1407,12 +1408,12 @@ func TestHandleHostServiceInvokeTenantGovernanceMethods(t *testing.T) {
 		hcc,
 		protocol.HostServiceTenant,
 		protocol.HostServiceMethodTenantPluginSetEnabled,
-		marshalCapabilityJSONRequest(t, tenantPluginSetEnabledRequest{PluginID: "linapro-demo-dynamic", Enabled: true}),
+		marshalCapabilityJSONRequest(t, tenantPluginSetEnabledRequest{PluginID: "demo-dynamic", Enabled: true}),
 	)
 	if setResponse.Status != protocol.HostCallStatusSuccess {
 		t.Fatalf("expected tenant plugin set success, got status=%d payload=%s", setResponse.Status, string(setResponse.Payload))
 	}
-	if tenantPluginSvc.lastPluginID != "linapro-demo-dynamic" || !tenantPluginSvc.lastEnabled {
+	if tenantPluginSvc.lastPluginID != "demo-dynamic" || !tenantPluginSvc.lastEnabled {
 		t.Fatalf("unexpected tenant plugin set call: plugin=%q enabled=%v", tenantPluginSvc.lastPluginID, tenantPluginSvc.lastEnabled)
 	}
 
@@ -1544,13 +1545,13 @@ func TestHandleHostServiceInvokeAITextGenerate(t *testing.T) {
 		t.Fatalf("unexpected routed ai request: source=%s request=%#v", aiSvc.lastSourcePluginID, aiSvc.lastRequest)
 	}
 	if !invoker.called ||
-		invoker.invocation.OwnerPluginID != "linapro-ai-core" ||
+		invoker.invocation.OwnerPluginID != "ai-core" ||
 		invoker.invocation.Service != "ai" ||
 		invoker.invocation.Version != "v1" ||
 		invoker.invocation.Method != "text.generate" {
 		t.Fatalf("expected owner-aware invocation, got called=%v invocation=%#v", invoker.called, invoker.invocation)
 	}
-	if invoker.invocation.Services == nil || services.scopeRecorder.last() != "linapro-ai-core" {
+	if invoker.invocation.Services == nil || services.scopeRecorder.last() != "ai-core" {
 		t.Fatalf("expected owner-scoped services, got services=%T lastScope=%q", invoker.invocation.Services, services.scopeRecorder.last())
 	}
 	if aiSvc.lastRequest.MaxOutputTokens != 512 {
@@ -1851,7 +1852,7 @@ func TestHandleHostServiceInvokeAIRejectsUnauthorizedMethod(t *testing.T) {
 	hcc := aiTextHostCallContext()
 	hcc.hostServices = []*protocol.HostServiceSpec{
 		{
-			Owner:   "linapro-ai-core",
+			Owner:   "ai-core",
 			Service: "ai",
 			Version: "v1",
 			Methods: []string{
@@ -1961,6 +1962,7 @@ func TestConfigureDomainHostServicesRejectNil(t *testing.T) {
 		noopTestConfigFactory{},
 		noopTestHostConfigService{},
 		noopTestManifestFactory{},
+		confidentialoutbound.New(),
 	); err == nil {
 		t.Fatal("expected nil domain host service directory to return an error")
 	}
@@ -2116,7 +2118,7 @@ func aiTextHostCallContext() *hostCallContext {
 		capabilities: map[string]struct{}{},
 		hostServices: []*protocol.HostServiceSpec{
 			{
-				Owner:   "linapro-ai-core",
+				Owner:   "ai-core",
 				Service: "ai",
 				Version: "v1",
 				Methods: []string{
@@ -2345,18 +2347,18 @@ func configureOwnerCapabilityForTest(
 	t.Helper()
 	registry := capregistry.NewRegistry()
 	descriptor := capregistry.Descriptor{
-		OwnerPluginID:   "linapro-ai-core",
+		OwnerPluginID:   "ai-core",
 		Service:         "ai",
 		Version:         "v1",
-		SourceContract:  "lina-plugin-linapro-ai-core/backend/cap/aicap",
-		DynamicContract: "lina-plugin-linapro-ai-core/backend/cap/aicap/bridge",
+		SourceContract:  "lina-plugin-ai-core/backend/cap/aicap",
+		DynamicContract: "lina-plugin-ai-core/backend/cap/aicap/bridge",
 		Invoker:         invoker,
 		Methods:         make([]capregistry.MethodDescriptor, 0, len(methods)),
 	}
 	for _, method := range methods {
 		descriptor.Methods = append(descriptor.Methods, capregistry.MethodDescriptor{
 			Method:       method,
-			Capability:   "plugin.linapro-ai-core.ai.v1",
+			Capability:   "plugin.ai-core.ai.v1",
 			Risk:         capregistry.RiskLevelExecute,
 			ResourceKind: capregistry.ResourceKindNone,
 		})
@@ -2438,8 +2440,8 @@ func sanitizeAIHostServiceError(error) string {
 }
 
 const (
-	aiOwnerPluginID                   = "linapro-ai-core"
-	aiTextCapabilityID                = "plugin.linapro-ai-core.ai.text.v1"
+	aiOwnerPluginID                   = "ai-core"
+	aiTextCapabilityID                = "plugin.ai-core.ai.text.v1"
 	aiTierBasic                       = "basic"
 	aiMessageRoleUser                 = "user"
 	aiCapabilityTypeText              = "text"
@@ -2587,6 +2589,18 @@ func (*capabilityHostServicePluginsService) List(
 	capabilityplugincap.ListInput,
 ) (*capmodel.PageResult[*capabilityplugincap.PluginInfo], error) {
 	return &capmodel.PageResult[*capabilityplugincap.PluginInfo]{Items: []*capabilityplugincap.PluginInfo{}}, nil
+}
+
+func (*capabilityHostServicePluginsService) ListBusinessExtensionProviders(context.Context, capabilityplugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{}}, nil
+}
+
+func (*capabilityHostServicePluginsService) GetBusinessExtensionProviderExact(context.Context, capabilityplugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	return nil, nil
+}
+
+func (*capabilityHostServicePluginsService) GetBusinessExtensionProvidersExact(context.Context, []capabilityplugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	return []*capmodel.BusinessExtensionProviderEvidence{}, nil
 }
 
 // ListTenantPlugins returns an empty fake tenant plugin page.

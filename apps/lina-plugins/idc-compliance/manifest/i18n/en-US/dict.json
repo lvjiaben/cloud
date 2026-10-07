@@ -1,0 +1,216 @@
+{
+  "dict": {
+    "idc_compliance_privacy_assessment_type": {
+      "name": "Privacy impact assessment type", "remark": "Six separately versioned privacy impact assessments",
+      "personal_verification": { "label": "Personal verification" }, "enterprise_verification": { "label": "Enterprise verification" },
+      "electronic_contract": { "label": "Electronic contract" }, "tax_invoice": { "label": "Tax invoice" },
+      "local_sensitive_export": { "label": "Local sensitive export" }, "ai_safe_projection": { "label": "AI safe projection" }
+    },
+    "idc_compliance_privacy_data_type": {
+      "name": "Privacy data type", "remark": "Per-category retention and deletion data",
+      "personal_verification_material": { "label": "Personal verification material" }, "enterprise_verification_material": { "label": "Enterprise verification material" },
+      "electronic_contract_evidence": { "label": "Electronic contract evidence" }, "tax_invoice_evidence": { "label": "Tax invoice evidence" },
+      "sensitive_access_audit": { "label": "Sensitive access audit" }, "local_sensitive_export": { "label": "Local redacted support export" }
+    },
+    "idc_compliance_privacy_hold_reason": {
+      "name": "Privacy deletion hold reason", "remark": "Stable basis for continued retention",
+      "contract": { "label": "Contract" }, "tax": { "label": "Tax" }, "dispute": { "label": "Dispute" },
+      "audit": { "label": "Audit" }, "legal_hold": { "label": "Legal hold" }
+    },
+    "idc_compliance_privacy_incident_stage": {
+      "name": "Privacy incident stage", "remark": "Closed incident-response workflow",
+      "discovered": { "label": "Discovered" }, "contained": { "label": "Contained" }, "assessed": { "label": "Assessed" },
+      "notification_pending": { "label": "Notification pending" }, "notification_confirmed": { "label": "Notification confirmed" },
+      "remediating": { "label": "Remediating" }, "resolved": { "label": "Resolved" }
+    },
+    "idc_compliance_privacy_request_status": {
+      "name": "Privacy request status", "remark": "Customer export and deletion request status",
+      "submitted": { "label": "Submitted" }, "processing": { "label": "Processing" }, "retention_blocked": { "label": "Retention required" },
+      "completed": { "label": "Completed" }, "rejected": { "label": "Rejected" }
+    },
+    "idc_compliance_contract_auto_sign_source": {
+      "manual_optional": { "label": "Optional contract created by staff" },
+      "name": "Enterprise auto-sign contract source",
+      "remark": "New-contract sources explicitly allowed by an enterprise auto-sign authorization",
+      "required_order": { "label": "Required order contract" }
+    },
+    "idc_compliance_contract_auto_sign_status": {
+      "active": { "label": "Active" },
+      "expired": { "label": "Expired" },
+      "name": "Enterprise auto-sign authorization status",
+      "remark": "Immutable lifecycle of an installation-local enterprise auto-sign authorization",
+      "revoked": { "label": "Revoked" }
+    },
+    "idc_compliance_enterprise_applicant_role": {
+      "authorized_agent": { "label": "Authorized agent" },
+      "legal_representative": { "label": "Legal representative" },
+      "name": "Enterprise verification applicant role",
+      "remark": "Legal role of the person submitting enterprise verification evidence"
+    },
+    "idc_compliance_enterprise_encryption_key_status": {
+      "active": { "label": "Active" },
+      "name": "Enterprise verification encryption key status",
+      "remark": "Installation-local enterprise material key generation state",
+      "retired": { "label": "Retired" }
+    },
+    "idc_compliance_enterprise_decision_reason": {
+      "agent_authorization_invalid": {
+        "label": "Authorized-agent documents are invalid"
+      },
+      "business_scope_unsupported": {
+        "label": "Business scope is not supported"
+      },
+      "duplicate_registration_risk": {
+        "label": "Enterprise registration identifier may be duplicated"
+      },
+      "legal_information_mismatch": {
+        "label": "Legal information does not match the evidence"
+      },
+      "manual_review_passed": { "label": "Manual review passed" },
+      "materials_incomplete": { "label": "Submitted materials are incomplete" },
+      "materials_unreadable": { "label": "Submitted materials are unreadable" },
+      "name": "Enterprise verification decision reason",
+      "registration_identifier_invalid": {
+        "label": "Enterprise registration identifier is invalid"
+      },
+      "registration_status_unverifiable": {
+        "label": "Enterprise registration status cannot be verified"
+      },
+      "remark": "Stable customer-actionable reasons for enterprise verification decisions",
+      "representative_identity_mismatch": {
+        "label": "Legal representative identity does not match"
+      }
+    },
+    "idc_compliance_enterprise_material_encryption_state": {
+      "encrypted": { "label": "Encrypted" },
+      "name": "Enterprise verification material encryption state",
+      "remark": "Encryption state of enterprise evidence in private object storage"
+    },
+    "idc_compliance_enterprise_material_status": {
+      "available": { "label": "Available for review" },
+      "deleted": { "label": "Deleted" },
+      "deletion_pending": { "label": "Deletion pending" },
+      "legal_hold": { "label": "Legal hold" },
+      "name": "Enterprise verification material status",
+      "quarantined": { "label": "Pending confirmation" },
+      "remark": "Retention and disposition state of encrypted enterprise evidence",
+      "superseded": { "label": "Superseded" }
+    },
+    "idc_compliance_enterprise_material_type": {
+      "agent_id": { "label": "Authorized agent identity document" },
+      "authorization_letter": { "label": "Letter of authorization" },
+      "business_license": { "label": "Business license" },
+      "legal_representative_id": {
+        "label": "Legal representative identity document"
+      },
+      "name": "Enterprise verification material type",
+      "organization_certificate": { "label": "Organization certificate" },
+      "other": { "label": "Other evidence" },
+      "remark": "Evidence categories accepted by enterprise manual verification"
+    },
+    "idc_compliance_enterprise_material_upload_status": {
+      "completed": { "label": "Completed" },
+      "name": "Enterprise verification upload reservation status",
+      "remark": "Upload reservation state after the server assigns a material number",
+      "reserved": { "label": "Reserved" }
+    },
+    "idc_compliance_enterprise_verification_status": {
+      "canceled": { "label": "Canceled" },
+      "draft": { "label": "Draft" },
+      "expired": { "label": "Expired" },
+      "name": "Enterprise verification case status",
+      "pending": { "label": "Pending review" },
+      "rejected": { "label": "Rejected" },
+      "remark": "Complete lifecycle of an enterprise manual-verification case",
+      "review_required": { "label": "Review required" },
+      "verified": { "label": "Verified" },
+      "verifying": { "label": "Under review" }
+    },
+    "idc_compliance_provider_configuration_status": {
+      "configured": { "label": "Configured" },
+      "disabled": { "label": "Disabled" },
+      "draft": { "label": "Draft" },
+      "name": "IDC compliance provider configuration status",
+      "remark": "Installation-wide compliance provider configuration lifecycle",
+      "updating": { "label": "Updating" }
+    },
+    "idc_compliance_provider_validation_status": {
+      "name": "IDC compliance provider validation status",
+      "reachable": { "label": "Reachable" },
+      "rejected": { "label": "Rejected" },
+      "remark": "Read-only connectivity outcome without raw provider messages",
+      "unavailable": { "label": "Temporarily unavailable" },
+      "untested": { "label": "Not tested" }
+    },
+    "idc_compliance_personal_verification_status": {
+      "expired": { "label": "Expired" },
+      "name": "Personal verification status",
+      "rejected": { "label": "Rejected" },
+      "remark": "Customer-safe state derived only from locally persisted or provider-authoritative evidence",
+      "review_required": { "label": "Merchant review required" },
+      "unverified": { "label": "Not verified" },
+      "verified": { "label": "Verified" },
+      "verifying": { "label": "Verification in progress" }
+    },
+    "idc_compliance_tax_invoice_status": {
+      "approved_pending_submission": { "label": "Waiting for invoice submission" },
+      "canceled": { "label": "Canceled" },
+      "delivered": { "label": "Delivered" },
+      "draft": { "label": "Draft" },
+      "failed": { "label": "Issuance failed" },
+      "issued": { "label": "Issued" },
+      "name": "Tax invoice request status",
+      "pending_review": { "label": "Pending review" },
+      "queued": { "label": "Queued for submission" },
+      "red_letter_pending": { "label": "Red-letter processing" },
+      "partially_red_lettered": { "label": "Partially red-lettered" },
+      "red_lettered": { "label": "Red-lettered" },
+      "rejected": { "label": "Rejected" },
+      "remark": "Stable tax invoice request lifecycle from review through delivery and red-letter handling",
+      "result_unknown": { "label": "Result needs confirmation" },
+      "submitting": { "label": "Submitting" }
+    },
+    "idc_compliance_red_letter_status": {
+      "awaiting_confirmation": { "label": "Customer confirmation required" },
+      "canceled": { "label": "Canceled" },
+      "completed": { "label": "Completed" },
+      "failed": { "label": "Failed" },
+      "manual_required": { "label": "Manual handling required" },
+      "name": "Red-letter task status",
+      "pending_review": { "label": "Pending" },
+      "processing": { "label": "Processing" },
+      "queued": { "label": "Queued" },
+      "remark": "Stable supplier-neutral red-letter correction lifecycle",
+      "result_unknown": { "label": "Result needs confirmation" },
+      "submitting": { "label": "Submitting" }
+    },
+    "idc_compliance_red_letter_manual_reason": {
+      "allocation_selection_required": { "label": "Select the original invoice" },
+      "name": "Red-letter manual handling reason",
+      "provider_automation_unavailable": { "label": "Manual red-letter handling is required" },
+      "provider_definitive_failure": { "label": "The provider definitively rejected the operation" },
+      "provider_result_unknown": { "label": "The provider result needs confirmation" },
+      "remark": "Stable reasons that require staff to handle a red-letter task"
+    },
+    "idc_compliance_tax_invoice_decision_reason": {
+      "amount_or_billing_invoice_adjustment_required": { "label": "The amount or billing details need adjustment" },
+      "business_not_invoiceable": { "label": "The current business item cannot be invoiced" },
+      "buyer_or_tax_information_incorrect": { "label": "The title or tax information is incorrect" },
+      "customer_requested_cancellation": { "label": "Canceled at the customer's request" },
+      "duplicate_request": { "label": "Duplicate request" },
+      "name": "Tax invoice request closing reason",
+      "order_or_refund_changed": { "label": "The order or refund status changed" },
+      "other": { "label": "Other reason" },
+      "remark": "Stable customer-visible reasons for rejecting or safely canceling a tax invoice request"
+    },
+    "idc_compliance_tax_invoice_type": {
+      "digital_electronic_normal": { "label": "Digital electronic normal invoice" },
+      "digital_electronic_special": { "label": "Digital electronic special invoice" },
+      "name": "Tax invoice type",
+      "pending_confirmation": { "label": "Waiting for staff confirmation" },
+      "remark": "Customer pending state and provider-gated invoice types",
+      "vat_electronic_normal": { "label": "VAT electronic normal invoice" },
+      "vat_electronic_special": { "label": "VAT electronic special invoice" }
+    }
+  }
+}

@@ -290,6 +290,14 @@ func (p *integrationDelegateProvider) CanExposeBusinessEntries(ctx context.Conte
 	return service == nil || service.CanExposeBusinessEntries(ctx, pluginID)
 }
 
+func (p *integrationDelegateProvider) ListSourceRouteBindings() []pluginhost.SourceRouteBinding {
+	service := p.serviceSnapshot()
+	if service == nil {
+		return []pluginhost.SourceRouteBinding{}
+	}
+	return service.ListSourceRouteBindings()
+}
+
 func (p *integrationDelegateProvider) serviceSnapshot() runtime.IntegrationService {
 	if p == nil {
 		return nil

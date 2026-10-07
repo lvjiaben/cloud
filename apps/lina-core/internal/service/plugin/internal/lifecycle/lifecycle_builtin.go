@@ -68,7 +68,7 @@ func (s *serviceImpl) bootstrapBuiltinPlugin(
 	if pluginID == "" {
 		return nil
 	}
-	return s.ensurePluginStateDuringStartupUnwrapped(ctx, pluginID, func(registry *store.PluginRecord) bool {
+	if err := s.ensurePluginStateDuringStartupUnwrapped(ctx, pluginID, func(registry *store.PluginRecord) bool {
 		return s.isBuiltinStartupReady(ctx, registry, manifest)
 	}, func() error {
 		if err := s.installBuiltinPluginIfNeeded(ctx, manifest, options.FrameworkVersion); err != nil {
@@ -80,8 +80,17 @@ func (s *serviceImpl) bootstrapBuiltinPlugin(
 		if err := s.enableBuiltinPluginIfNeeded(ctx, manifest, options.FrameworkVersion); err != nil {
 			return err
 		}
+		if err := s.resumeBuiltinPluginIfNeeded(ctx, manifest.ID); err != nil {
+			return err
+		}
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+	// A source manifest can change without a version bump during local
+	// development. Reconcile its menu projection on every startup so parent
+	// placement, labels, and permissions do not stay stale until reinstall.
+	return s.integrationSvc.SyncPluginMenusAndPermissions(ctx, manifest)
 }
 
 // installBuiltinPluginIfNeeded installs one builtin source plugin without
@@ -154,6 +163,22 @@ func (s *serviceImpl) enableBuiltinPluginIfNeeded(
 	return nil
 }
 
+// resumeBuiltinPluginIfNeeded restores admission for a host-governed builtin.
+// Ordinary management endpoints intentionally reject builtin writes, so startup
+// convergence must also repair a persisted stopped state left by an older
+// managed-plugin release.
+func (s *serviceImpl) resumeBuiltinPluginIfNeeded(ctx context.Context, pluginID string) error {
+	registry, err := s.storeSvc.GetRegistry(ctx, pluginID)
+	if err != nil {
+		return bizerr.WrapCode(err, CodePluginRegistryReadFailed, bizerr.P("pluginId", pluginID))
+	}
+	if registry != nil &&
+		plugintypes.NormalizeNewBusinessState(registry.NewBusinessState) == plugintypes.NewBusinessStateAccepting {
+		return nil
+	}
+	return s.storeSvc.SetPluginNewBusinessState(ctx, pluginID, plugintypes.NewBusinessStateAccepting)
+}
+
 // isBuiltinStartupReady reports whether one builtin plugin has fully converged
 // for startup route, frontend, and cron registration.
 func (s *serviceImpl) isBuiltinStartupReady(
@@ -165,6 +190,9 @@ func (s *serviceImpl) isBuiltinStartupReady(
 		return false
 	}
 	if strings.TrimSpace(registry.CurrentState) != plugintypes.HostStateEnabled.String() {
+		return false
+	}
+	if plugintypes.NormalizeNewBusinessState(registry.NewBusinessState) != plugintypes.NewBusinessStateAccepting {
 		return false
 	}
 	projection, err := s.storeSvc.BuildRuntimeUpgradeState(ctx, registry, manifest)

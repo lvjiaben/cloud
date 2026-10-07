@@ -1,0 +1,4 @@
+{
+  "plugin.idc-zjmfcloud.name": "IDC ZJMFCloud Provider",
+  "plugin.idc-zjmfcloud.description": "Provides resource-owned product configuration discovery and ZJMF public-cloud v1 server operations."
+}

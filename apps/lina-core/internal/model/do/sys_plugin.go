@@ -37,4 +37,6 @@ type SysPlugin struct {
 	CreatedAt               *time.Time // Creation time
 	UpdatedAt               *time.Time // Update time
 	DeletedAt               *time.Time // Deletion time
+	NewBusinessState        any        // New business admission state: accepting/stopped; it does not control existing-service visibility
+	NewBusinessStoppedAt    *time.Time // Time when the plugin most recently stopped accepting new business
 }

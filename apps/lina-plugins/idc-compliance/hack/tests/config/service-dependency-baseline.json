@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/internal/composition/contract_signer.go",
+      "maxCalls": 3,
+      "reason": "Compliance contract-signer composition boundary; constructs the plugin-owned signer services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/internal/composition/contract.go",
+      "maxCalls": 2,
+      "reason": "Compliance contract composition boundary; wires contract services from explicit dependencies."
+    },
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/internal/composition/enterprise_verification.go",
+      "maxCalls": 3,
+      "reason": "Compliance enterprise-verification composition boundary; constructs plugin-owned services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/internal/composition/personal_verification.go",
+      "maxCalls": 4,
+      "reason": "Compliance personal-verification composition boundary; constructs plugin-owned services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/internal/composition/tax_invoice.go",
+      "maxCalls": 2,
+      "reason": "Compliance tax-invoice composition boundary; constructs plugin-owned services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-compliance/backend/plugin.go",
+      "maxCalls": 20,
+      "reason": "IDC compliance plugin composition boundary; wires its private service graph once."
+    }
+  ]
+}

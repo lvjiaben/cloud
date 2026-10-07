@@ -16,7 +16,7 @@
 
 `capability.Services`是 core-owned 领域能力运行期目录。源码插件通过`pluginhost`注册器和回调输入返回的`capability.Services`消费这些入口；动态插件声明已经显式发布为动态`hostServices`的匹配入口，再通过`pluginbridge.Services`调用。每个 core-owned 领域只暴露一个插件可见`Service`；方法级契约承载风险、授权、数据权限、上下文、性能和缓存治理。领域方法依赖标准业务`ctx`获取当前用户、租户、权限和数据权限信息；动态`hostServices`授权保留在 dispatcher 内部校验。`I18n()`保留为源码插件运行期能力；动态插件 i18n 资源由宿主发现、合并、缓存和分发。插件生命周期归属`Plugins().Lifecycle()`，插件启用状态查询归属`Plugins().State()`；租户插件治理和租户过滤上下文归属`Tenant()`。宿主内部 scope helper 不通过普通插件可见入口暴露。
 
-plugin-owned 非核心能力不归属`capability.Services`。owner 插件在`apps/lina-plugins/<plugin-id>/backend/cap/<domain>cap`下发布普通消费契约、provider `SPI`、动态 guest SDK、descriptor helper 和版本策略。`lina-core`接收 owner descriptor，建立`owner + service + version + method`索引，校验依赖和授权快照，分发 owner-aware 动态调用，记录审计 envelope，并在生命周期变化后失效运行期缓存。`AI`是第一组 plugin-owned 能力族，归属`apps/lina-plugins/linapro-ai-core/backend/cap/aicap`。
+plugin-owned 非核心能力不归属`capability.Services`。owner 插件在`apps/lina-plugins/<plugin-id>/backend/cap/<domain>cap`下发布普通消费契约、provider `SPI`、动态 guest SDK、descriptor helper 和版本策略。`lina-core`接收 owner descriptor，建立`owner + service + version + method`索引，校验依赖和授权快照，分发 owner-aware 动态调用，记录审计 envelope，并在生命周期变化后失效运行期缓存。`AI`是第一组 plugin-owned 能力族，归属`apps/lina-plugins/ai-core/backend/cap/aicap`。
 
 ### 统一`Service`与动态插件
 
@@ -27,8 +27,8 @@ plugin-owned 非核心能力不归属`capability.Services`。owner 插件在`app
 | 领域能力 | 职责边界 | 运行期与校验路径 |
 | --- | --- | --- |
 | `APIDoc` | 解析本地化 API 文档中的路由文本和标题 operation key。 | 通过能力目录或`apidoc`host call 提供；校验关注路由和 operation key 载荷。 |
-| `Auth` | 通过`Token()`、`Authz()`和`ExternalLogin()`子能力处理租户 token 选择或切换、代用户 token、权限投影与外部身份登录。**安装授权后源码与动态插件同权同信**：宿主盖章调用方 pluginID；源码 ownership 用`ProvideExternalIdentity`，动态用`hostServices`下`auth`的`resources.ref`（provider ID）；方法 wire 为`external_login.login_by_verified_identity`。token/session 铸造仍在宿主。SPA handoff 由`linapro-extlogin-core`闭环。 | 运行期检查启用、方法授权与 provider ownership。外部身份引擎为`linapro-extlogin-core`；未装引擎时登录 fail-closed。 |
-| `AI` | 由`linapro-ai-core`以 plugin-owned 方式拥有；聚合文本、图片、向量、音频、视觉、文档、安全审核和视频等类型化 AI 子能力，并提供方法级状态投影。 | 源码插件 import `linapro-ai-core/backend/cap/aicap`；动态插件声明`owner: linapro-ai-core`、`service: ai`和`version: v1`。`lina-core`只治理 descriptor 发现、依赖检查、授权快照、owner-aware 路由、审计和缓存失效。 |
+| `Auth` | 通过`Token()`、`Authz()`和`ExternalLogin()`子能力处理租户 token 选择或切换、代用户 token、权限投影与外部身份登录。**安装授权后源码与动态插件同权同信**：宿主盖章调用方 pluginID；源码 ownership 用`ProvideExternalIdentity`，动态用`hostServices`下`auth`的`resources.ref`（provider ID）；方法 wire 为`external_login.login_by_verified_identity`。token/session 铸造仍在宿主。SPA handoff 由`extlogin-core`闭环。 | 运行期检查启用、方法授权与 provider ownership。外部身份引擎为`extlogin-core`；未装引擎时登录 fail-closed。 |
+| `AI` | 由`ai-core`以 plugin-owned 方式拥有；聚合文本、图片、向量、音频、视觉、文档、安全审核和视频等类型化 AI 子能力，并提供方法级状态投影。 | 源码插件 import `ai-core/backend/cap/aicap`；动态插件声明`owner: ai-core`、`service: ai`和`version: v1`。`lina-core`只治理 descriptor 发现、依赖检查、授权快照、owner-aware 路由、审计和缓存失效。 |
 | `Users` | 提供用户基础读取、有界列表、可见性、受治理写入、状态与凭证，以及`CreateFromExternal`（从外部身份最小权限建号）。动态`users`含`users.create_from_external`等已发布方法。 | 宿主保持可见性边界。`CreateFromExternal`无操作员、最小权限；需在`hostServices`中声明授权后可用。 |
 | `BizCtx` | 投影当前业务请求上下文。 | 作为只读运行期上下文桥接当前用户、租户、语言和请求元数据。 |
 | `Dict` | 解析字典值标签、列出有界字典候选，并校验类型化值可见性。 | 宿主校验保持在可见字典类型和值范围内。 |
@@ -49,7 +49,98 @@ plugin-owned 非核心能力不归属`capability.Services`。owner 插件在`app
 
 ### 插件分发治理
 
-插件 manifest 和生命周期回调快照包含`distribution`，宿主会将其归一化为`managed`或`builtin`。省略时视为`managed`。`builtin`是仅适用于源码插件的治理模式，用于随宿主编译交付的项目组成能力：宿主会在启动时自动安装、启用和安全升级，普通插件管理写操作会被拒绝。动态插件必须保持`managed`语义，不能自声明内建治理。
+插件 manifest 和生命周期回调快照包含`distribution`，宿主会将其归一化为`managed`或`builtin`。省略时视为`managed`。`builtin`是仅适用于源码插件的治理模式，用于随宿主编译交付的项目组成能力：宿主会在启动时自动安装、启用和安全升级，普通插件管理写操作会被拒绝，插件管理列表也会在筛选、分页和总数计算前排除它们。可信宿主集成仍可通过只读详情查询检查这些系统必需能力。动态插件必须保持`managed`语义，不能自声明内建治理。
+
+### 业务扩展点与前端表面
+
+插件清单把四个维度分开保存：`type`只表示运行方式（`source`或`dynamic`），`distribution`只表示生命周期管理方式（`builtin`或`managed`），`business_extensions`表示业务扩展点，前端表面表示展示能力。第四个维度再分为独立治理的`admin_surfaces`和`customer_surfaces`。宿主不得根据插件名称猜测任何维度。
+
+内置业务拥有方使用`role: owner`发布版本化`business_extensions`。托管提供方使用`role: provider`，明确写出拥有方插件 ID，并在`dependencies.plugins`中声明带版本范围的依赖。批量发现会先一次性建立全部拥有方索引，再只接受拥有方、扩展点、版本和方法集合都匹配的提供方；它处理已经加载的一整批清单，不会为每个插件单独查一次数据库。首批扩展点标识为`product-fulfillment`、`sms-channel`、`payment-method`和`website-template`；未来业务拥有方仍可发布新的安全 kebab-case 标识。
+
+提供方扩展可以分别声明独立版本的`interface_configuration`、`product_configuration`和`customer_configuration`。声明了`interface_configuration`的提供方还必须把`interface_configuration_cardinality`声明为`multiple`或`singleton`：前者允许管理员创建多条有名称的接口实例，后者只允许保存一份全局设置。这个数量规则只约束设置记录，不限制插件自己拥有的业务数据和增删改查功能。首版字段类型固定为`single_line`、`multi_line`、`integer`、`decimal`、`boolean`、`single_select`、`multi_select`、`date`、`datetime`、`secret`、`tree_select`、`address`和`file`十三种。文本格式只允许宿主拥有的`phone`、`email`、`domain`和`url`校验。`secret`只能用于接口配置；商品和客户配置只允许`product-fulfillment`提供方声明。文件字段只能引用安全的宿主`upload_policy`，不能填写上传网址。
+
+选择字段只能二选一：使用有界双语`static_candidates`，或者使用已经进入该扩展授权`methods`的版本化`dynamic_candidates`方法。条件只能在有界`and`/`or`树中使用`equal`、`not_equal`、`contains`、数值比较、`empty`和`not_empty`；结果只能是`show`、`hide`、`require`、`disable`、`filter_candidates`、`requires`和`excludes`。源码`YAML`和动态包`JSON`中不认识的嵌套键都会被拒绝，因此脚本、表达式、任意正则、上传地址和未声明动态方法不能藏进清单。
+
+```yaml
+type: dynamic
+distribution: managed
+dependencies:
+  plugins:
+    - id: commerce-core
+      version: ">=0.1.0 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: commerce-core
+    methods: [fulfill, query, colors.list]
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: api_secret
+          type: secret
+          label: { en-US: API secret, zh-CN: 接口密钥 }
+          required: true
+    product_configuration:
+      version: v1
+      fields:
+        - key: model
+          type: single_line
+          label: { en-US: Model, zh-CN: 型号 }
+    customer_configuration:
+      version: v1
+      fields:
+        - key: color
+          type: single_select
+          label: { en-US: Color, zh-CN: 颜色 }
+          dynamic_candidates:
+            version: v1
+            method: colors.list
+customer_surfaces:
+  - key: my-products
+    version: v1
+    title: 我的产品
+    slot: customer.products
+    route: my-products
+    entry: customer/index.html
+    bridge_capabilities: [products.query-own]
+public_assets:
+  - source: frontend
+    mount: customer
+```
+
+发布版本快照会同时冻结插件申请和宿主接受的完整业务扩展声明，包括三类配置方案，以及彼此独立的后台/客户中心表面。动态 WASM 包必须嵌入与`plugin.yaml`完全一致的完整声明；运行分发方式、业务扩展点、嵌套配置或前端表面不一致时会被拒绝。发现证据返回隔离副本形式的安全配置声明，并用完整规范化声明计算摘要，所以字段、候选、条件、动作或方案版本发生变化都会形成不同的冻结证据。
+
+业务扩展拥有方可以定义一个有界、不可执行的`provider_metadata`对象，不需要把自己的业务方案写进宿主。宿主只理解`type`、`version`和可转换为`JSON`的`values`，负责规范化、深拷贝、冻结、授权，并把完整对象计入声明摘要。源码业务拥有方在装配声明时，为精确扩展点和契约版本注册类型化校验器：
+
+```go
+if err := declarations.BusinessExtensions().RegisterProviderValidator(
+    "example-extension",
+    "v1",
+    validateExampleProviderDeclarations,
+); err != nil {
+    return err
+}
+```
+
+校验器收到的是该提供方发布版本完整规范化声明组的隔离副本，因此可以检查必填元数据、类型化字段、方法授权和整个发布版本内的唯一性，又不会改动宿主快照。源码提供方和动态提供方走同一条清单校验路径。缺少拥有方注册、契约版本不支持、拥有方重复注册或校验器拒绝时，安装和升级都会失败关闭。宿主不会猜测元数据的业务含义。
+
+业务拥有方通过受治理的`plugins.business_extensions.list`发现可用于新绑定的候选。宿主只做一次有上限的注册表与活动发布版本权威读取，只返回插件身份、显示名称、发布/契约版本、允许方法及发布/声明摘要；任何候选快照无法确定时都会整体拒绝。允许方法为空时仍可选择和绑定提供方，只有业务拥有方以后调用某个具体方法时才校验该方法授权。`plugins.business_extensions.exact.get`按冻结证据核对一个保留的历史声明，`plugins.business_extensions.exact.batch_get`则按输入顺序用一次权威发布版本查询核对有上限的一组声明；两者都不代表插件当前还能运行。源码业务拥有方真正提交新绑定时，仍必须调用`HTTPRegistrar.BusinessExtensions().WithNewBusinessAdmission`：宿主持有并持续续租提供方生命周期锁后重新核对活动发布版本，并让这把锁覆盖拥有方的本地事务回调；停止新业务、停用、卸载和切换活动发布版本都与该回调串行。后台任务通过`JobsRegistrar.BusinessExtensions()`获得同样按拥有方绑定、缺失即拒绝的门面；绑定不存在时，任务注册器绝不会退回到无归属的通用服务。续租一旦失败，宿主会取消回调上下文并拒绝本次准入，让正确使用上下文的数据库事务回滚。拥有方不会拿到锁名，也不能读取插件注册表。
+
+源码业务拥有方只能通过绑定自身身份的`BusinessExtensionRegistrar.InvokeProviderMethod`调用提供方具体方法。每次调用必须带齐冻结的发布与声明证据、一个已授权方法、明确的`new-business`或`existing-business`用途，以及版本化且有上限的`JSON`对象。需要解析接口运行状态的调用可以额外携带一个有界、高熵的`runtimeContext.contextId`；源码和动态提供方只能取得同一个不透明编号，接口实例、修订号、配置值、凭据、秘密和令牌仍留在调用方插件身份由宿主权威填写的宿主服务之后。不需要接口状态的调用省略`runtimeContext`。同一次提供方调用最多执行八个机密外联步骤，并共同受总时限和总字节数限制。步骤必须严格递增；重放、并发、跨调用使用、过期或超出预算都会在供应商处理器开始前被拒绝，提供方调用结束后拥有方立即撤销上下文。宿主在持有同一提供方生命周期锁时重新核对活动发布版本和运行状态：停止新业务后拒绝新业务调用，但已有冻结业务仍可继续精确调用；插件已停用、缺失、证据不符或方法未授权时一律失败关闭。源码提供方通过`Providers().ProvideBusinessExtensionMethods`显式注册一个方法分发器。动态提供方通过现有隔离`WASM`执行器接收同一信封，固定使用`BusinessExtensionBridgeRequest`请求类型；宿主不会发起公开`HTTP`回环，也不会提供原始令牌、身份快照、秘密句柄或私有清单状态。请求和响应都有严格的字节数、对象字段数、数组项数、深度、字符串、总复杂度和五秒执行上限。
+
+后台当前发布`admin.catalog-products`、`admin.resource-operations`、`admin.orders-finance`、`admin.notification-marketing`、`admin.compliance-governance`、`admin.support-content`和`admin.extension-management`插槽。登录后客户中心发布`customer.products`、`customer.finance`、`customer.account`、`customer.security`、`customer.compliance`和`customer.support`插槽。后台表面必须声明非空宿主权限。宿主统一生成`/plugins/{plugin-id}/...`后台路由和`/account/plugins/{plugin-id}/...`客户路由，因此插件不能覆盖`/system`、`/auth`或其他宿主路由。动态表面入口必须是插件内相对路径并被`public_assets`覆盖，远程网址和路径越界会直接被拒绝。后台表面进入现有按员工权限过滤的菜单树；客户表面只在登录后返回，并且只能挂到已有客户业务分组。清单声明不会自动获得页面桥能力，页面桥授权、身份与数据范围校验和隔离页面加载仍是彼此独立的运行期门禁。
+
+公开的`GET /api/v1/plugins/dynamic`发现接口使用可选认证：未携带`Authorization`时只返回不含客户页面的运行状态；携带访问令牌时必须经过与受保护接口相同的在线会话校验。有效客户及员工协助客户的会话保留目标客户、租户和真实员工上下文。无效身份直接拒绝，不得提升或静默信任。动态页面声明及其`public_assets`覆盖范围一起从同一个不可变的已生效版本快照投影；待升级包不能补齐缺失或无效的已生效声明。发现页面不等于获得页面桥能力或业务数据访问权。
+
+### 隔离页面桥
+
+托管动态页面运行在不含`allow-same-origin`的隔离 iframe 中，不接收访问令牌、宿主状态或自定义请求头。页面使用`linapro.plugin-page-bridge`版本`1.0`消息协议；每条消息都必须精确匹配当前 iframe、插件 ID、表面 key 和协议版本。`host.view.v1`是所有受治理表面的宿主基础能力，只提供`ready`、高度同步、统一错误、标题和插件页内路由同步，不需要写入`bridge_capabilities`，也不能访问业务数据。
+
+业务调用必须同时满足三层绑定：表面的`bridge_capabilities`声明能力；活动动态路由或宿主捕获的源码拥有方 DTO 路由通过`pageBridgeCapability`和`pageBridgeHost`绑定同一能力；宿主后端再为当前登录会话、用户、租户、提供方发布版本、服务端确定的拥有方发布版本、后台或客户宿主、表面、表面版本、能力、HTTP 方法和实际路径签发两分钟有效的防篡改票据。页面请求不能选择`ownerPluginId`，只有宿主找到唯一准确路由后才会把它返回。签发前后台表面会同时重新检查表面权限和拥有方路由权限；客户表面继续拒绝超级管理员身份直接进入、租户模拟和跨商家上下文。动态插件自有客户路由保留本人数据范围要求；源码拥有方客户路由必须通过`RouteGroup.BindCustomerPageBridge`注册权威身份回调，使用原始已认证上下文返回与当前客户一致的宿主用户编号。缺失证明、校验失败或身份不符都会拒绝。无后台角色的真实客户及有效安全协助目标因此可以访问，但不会获得员工权限，校验结果也不会跨请求缓存。拥有方路由随后仍须执行普通后台权限与数据范围或当前客户对象所有权检查，包括签发后的身份撤销。浏览器只携带不透明票据。缺少任意一层、插件停用、票据过期或被修改、能力不一致、方法或路径变化、身份变化以及跨表面调用都会拒绝。插件页面不能取得票据内容、提供任意请求头、自选另一个拥有方命名空间，也不能用查询能力调用未绑定的写路由。
+
+页面最多同时执行 8 个桥请求；在途重复`requestId`会拒绝，单次请求 30 秒后取消。切换插件、切换表面、重试或卸载页面时，宿主会取消旧请求并丢弃旧页面迟到的响应。插件必须发送`ready`后宿主才移除骨架屏，以免脚本或子资源仍在加载时出现白屏。
 
 ## 动态插件专属能力
 
@@ -76,7 +167,7 @@ plugin-owned 非核心能力不归属`capability.Services`。owner 插件在`app
 | 浏览器/客户端需要绕过宿主中转上传或下载云对象。 | 文件中心`direct-upload/*`与`direct-download` HTTP API；插件侧`Storage().CreateDirectPut` / `ConfirmDirectPut` / `CreateDirectGet` | 宿主签发中立`DirectAccess`（`presigned_url` / `form_post` / `temporary_credentials` / `proxy`），密钥永不下发；object key 由宿主按租户/插件作用域分配；local 或不支持时 mode=`proxy` 回退中转。文件中心仍须`complete`后才写`sys_file`。 |
 | 大对象需要云 Multipart 或宿主分片中转。 | 文件中心`direct-upload/init` 自动策略 + `direct-upload/part-url` / `upload/chunked/*`；云 Provider 可选实现`storagecap.MultipartUploadProvider` | init 按大小阈值与能力探测返回中立`strategy.channel`（`direct`/`proxy`）与`strategy.encoding`（`single`/`multipart`）。直传分片使用 part 级短时访问；中转分片由宿主拼装或经 Provider UploadPart。源码插件可在 Provider 支持时调用 Service Multipart 方法；动态插件一期仍用`Put`（guest 传输分片），不暴露公共 Multipart API。 |
 
-`Storage()`provider 选择不依赖主配置项。宿主在恰好一个 storage provider 插件可服务时使用该插件，没有可服务 provider 时回退到内置本地 provider，多个 provider 插件同时可服务时拒绝 storage 调用。官方云后端（`linapro-storage-cos`、`linapro-storage-oss`、`linapro-storage-aws`、`linapro-storage-s3`等）通过`storagecap.Provide`注册，并在宿主稳定目录**系统设置**（`menu_key=setting`）下提供凭证配置页。文件中心对象内容写入/读取/删除与插件`Storage()`共用同一套 provider 选择规则（0→local，1→云，≥2→冲突）；列表与检索仍基于`sys_file`。客户端直连同样遵守该选择规则，且永不把永久 AK/SK 暴露给前端。
+`Storage()`provider 选择不依赖主配置项。宿主在恰好一个 storage provider 插件可服务时使用该插件，没有可服务 provider 时回退到内置本地 provider，多个 provider 插件同时可服务时拒绝 storage 调用。官方云后端（`storage-cos`、`storage-oss`、`storage-aws`、`storage-s3`等）通过`storagecap.Provide`注册，并在宿主稳定目录**系统设置**（`menu_key=setting`）下提供凭证配置页。文件中心对象内容写入/读取/删除与插件`Storage()`共用同一套 provider 选择规则（0→local，1→云，≥2→冲突）；列表与检索仍基于`sys_file`。客户端直连同样遵守该选择规则，且永不把永久 AK/SK 暴露给前端。
 
 ## 插件配置来源
 
@@ -153,6 +244,26 @@ Core-owned provider factory 声明归属`pluginhost.Declarations.Providers()`。
 
 动态插件通过`plugin.yaml`、WASM 自定义 section、`pluginbridge.Declarations.Routes().Group(...)`、`pluginbridge.Declarations.Jobs().Register(...)`以及嵌入的`protocol`契约表达声明期契约，例如路由、任务、生命周期处理器、后端资源、前端资源、SQL、i18n 资源和`hostServices`。
 
+### 停止新业务、停用与卸载
+
+这三个动作是不同阶段，不能互相代替：
+
+- `accepting`表示插件可作为新接口、新商品版本、购买和履约任务的候选；`stopped`只阻止这些新业务，插件仍保持启用，已有客户菜单和服务操作继续可用。
+- 停用和卸载前必须先进入`stopped`，再由宿主向注册了`RegisterBusinessImpactHandler`的可信源码业务 owner 批量查询在售商品版本、在途任务、活动服务和待执行历史动作。
+- 宿主只按当前生效 release 已冻结并授权的 provider 扩展声明确定必须参与检查的 owner，不读取待安装产物来削弱保护；缺少任一必需 owner 的处理器时按检查失败处理。
+- owner 只返回四类有界汇总数量，不返回对象详情；任一查询失败、分类越界或数量不合法时，宿主都会拒绝停用和卸载。
+- 停止/恢复新业务、停用和卸载共用按插件划分的跨实例生命周期锁，停售检查与最终状态写入之间不能被另一个请求重新开放新业务。
+- `force`只能在宿主允许时跳过插件自己的生命周期回调否决，不能跳过停售、业务占用、依赖或历史证据保护门禁。
+- 卸载默认保留数据。声明了业务扩展点的插件不能通过卸载删除历史商品、订单、配置快照、接口引用、履约证据和审计记录；动态产物丢失时也不能用“清理数据”绕过该保护。
+
+稳定的内建业务 owner 注册影响检查的入口如下：
+
+```go
+plugin.Lifecycle().RegisterBusinessImpactHandler(handler)
+```
+
+新商品绑定、购买和履约写入路径必须调用宿主的`CanAcceptNewBusiness`权威门禁；只在页面隐藏候选不构成安全控制。
+
 ### 运行期能力
 
 运行期能力是在插件业务逻辑执行时可用的 service。
@@ -162,6 +273,8 @@ Core-owned provider factory 声明归属`pluginhost.Declarations.Providers()`。
 动态插件通过`pluginbridge.Services`访问已发布的运行期能力。调用会通过`pluginbridge/protocol`编码，经由`WASI host call`传输，由派生的`HostCapabilities`和已确认的`HostServices`授权，再由`apps/lina-core/internal/service/plugin/internal/wasm`分发执行。动态插件不接收顶层兼容快捷入口或`I18n()`，但可以在`hostServices`授权后调用`Plugins()`和`Tenant()`下已经注册的治理方法。
 
 每次 guest 执行时，宿主会构建请求级`HostServices`授权快照，每次 host call 仍按该快照校验`service`、`method`和资源身份。owner-aware plugin-owned 调用还会先校验`owner`、`version`、调用插件的`dependencies.plugins`声明、owner 插件启用状态、descriptor 注册状态和 method 授权，再分发到 owner handler。
+
+依赖供应商凭据的操作不得使用普通`network.request`桥。源码业务拥有方只为精确的提供方插件、发布版本、声明、接口实例、业务扩展方法和用途签发一个短时运行上下文。动态提供方只能取得这个不透明编号，也只能把它交给清单已明确声明的拥有方宿主服务。只有当前业务扩展调用携带完全相同的上下文编号、拥有方和提供方插件时，宿主才允许把该编号作为运行资源；上下文、拥有方、插件或方法不一致，来自普通路由，或者企图拿它冒充静态资源声明时，都会在进入拥有方处理器前失败关闭。拥有方服务在可信宿主进程内解析接口地址和凭据，按自身有界契约执行，并只返回安全投影。例如`idc-core/supplier-interface-runtime@v1`可以完成一次有上限的同源登录会话，密码和访问令牌都不会返回动态插件。旧`WithConfidentialOutboundContext`仍可作为资源操作拥有方的专用实现，并继续执行一次性使用、过期、重放拒绝和响应字段白名单。运行上下文在外围调用结束时撤销，不写数据库也不进入缓存。
 
 ## 动态插件 Host Service 声明
 
@@ -210,12 +323,12 @@ owner-aware plugin-owned 结构：
 ```yaml
 dependencies:
   plugins:
-    - id: linapro-ai-core
+    - id: ai-core
       version: ">=0.1.0"
 
 hostServices:
   - service: ai
-    owner: linapro-ai-core
+    owner: ai-core
     version: v1
     methods:
       - text.generate
@@ -232,6 +345,7 @@ hostServices:
 | `runtime` | 无 | `host:runtime` | `log.write`<br/>`state.get`<br/>`state.get_many`<br/>`state.set`<br/>`state.set_many`<br/>`state.delete`<br/>`state.delete_many`<br/>`info.now`<br/>`info.uuid`<br/>`info.node` |
 | `storage` | `resources.paths` | `host:storage` | `put`<br/>`put.init`<br/>`put.chunk`<br/>`put.commit`<br/>`put.abort`<br/>`get`<br/>`delete`<br/>`delete.batch`<br/>`list`<br/>`list.cursor`<br/>`stat`<br/>`stat.batch` |
 | `network` | `resources[].url` | `host:http:request` | `request` |
+| `confidentialoutbound` | 无 | `host:confidential-outbound` | `execute` |
 | `data` | `resources.tables` | `host:data:read`<br/>`host:data:mutate` | `list`<br/>`get`<br/>`batch_get`<br/>`create`<br/>`update`<br/>`delete`<br/>`transaction` |
 | `cache` | `resources[].ref` | `host:cache` | `get`<br/>`get_many`<br/>`set`<br/>`set_many`<br/>`delete`<br/>`delete_many`<br/>`incr`<br/>`expire` |
 | `lock` | `resources[].ref` | `host:lock` | `acquire`<br/>`renew`<br/>`release` |
@@ -245,7 +359,7 @@ hostServices:
 | `files` | 无 | `host:files` | `files.batch_get`<br/>`files.list`<br/>`files.visible.ensure`<br/>`files.upload`<br/>`files.create_from_storage`<br/>`files.metadata.update`<br/>`files.delete`<br/>`files.delete_many` |
 | `jobs` | 无 | `host:jobs` | `jobs.batch_get`<br/>`jobs.list`<br/>`jobs.visible.ensure`<br/>`jobs.create`<br/>`jobs.update`<br/>`jobs.delete`<br/>`jobs.run`<br/>`jobs.status.set`<br/>`jobs.register` |
 | `notifications` | 除`messages.send`使用`resources[].ref`外无需资源声明 | `host:notifications` | `messages.batch_get`<br/>`messages.list`<br/>`messages.by_source.batch_get`<br/>`messages.visible.ensure`<br/>`messages.send`<br/>`messages.delete`<br/>`messages.by_source.delete`<br/>`messages.mark_read`<br/>`messages.mark_unread` |
-| `plugins` | 无 | `host:plugins` | `plugins.current.get`<br/>`plugins.batch_get`<br/>`plugins.registry.list`<br/>`plugins.tenant.list`<br/>`config.get`<br/>`plugins.state.enabled.check`<br/>`plugins.state.provider_enabled.check`<br/>`plugins.state.enabled_authoritative.check`<br/>`plugins.lifecycle.tenant_plugin_disable.ensure`<br/>`plugins.lifecycle.tenant_plugin_disabled.notify`<br/>`plugins.lifecycle.tenant_delete.ensure`<br/>`plugins.lifecycle.tenant_deleted.notify` |
+| `plugins` | 无 | `host:plugins` | `plugins.current.get`<br/>`plugins.batch_get`<br/>`plugins.registry.list`<br/>`plugins.tenant.list`<br/>`plugins.business_extensions.list`<br/>`plugins.business_extensions.exact.get`<br/>`plugins.business_extensions.exact.batch_get`<br/>`config.get`<br/>`plugins.state.enabled.check`<br/>`plugins.state.provider_enabled.check`<br/>`plugins.state.enabled_authoritative.check`<br/>`plugins.lifecycle.tenant_plugin_disable.ensure`<br/>`plugins.lifecycle.tenant_plugin_disabled.notify`<br/>`plugins.lifecycle.tenant_delete.ensure`<br/>`plugins.lifecycle.tenant_deleted.notify` |
 | `route` | 无 | `host:route` | `metadata.get` |
 | `sessions` | 无 | `host:sessions` | `sessions.current.get`<br/>`sessions.list`<br/>`sessions.batch_get`<br/>`sessions.users.online.batch_get`<br/>`sessions.visible.ensure`<br/>`sessions.revoke`<br/>`sessions.revoke_many` |
 | `org` | 无 | `host:org` | `capability.available`<br/>`capability.status`<br/>`org.assignment.user_profiles.batch_get`<br/>`org.department.tree.list`<br/>`org.department.batch_get`<br/>`org.department.list`<br/>`org.post.batch_get`<br/>`org.post.options.list`<br/>`org.department.visible.ensure_many`<br/>`org.post.visible.ensure_many`<br/>`org.department.create`<br/>`org.department.update`<br/>`org.department.delete`<br/>`org.post.create`<br/>`org.post.update`<br/>`org.post.delete`<br/>`org.assignment.by_user.replace`<br/>`org.assignment.by_user.cleanup` |

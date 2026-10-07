@@ -116,7 +116,12 @@ function tempDir() {
 }
 
 function runtimeStorageDir() {
-  return path.join(tempDir(), "output");
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  return configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
 }
 
 function tempArtifactPath() {
@@ -282,7 +287,9 @@ async function loginByPassword(
   username: string,
   password: string,
 ): Promise<string> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: { username, password, clientType: "web" },
   });
@@ -293,7 +300,9 @@ async function loginByPassword(
   return loginPayload.accessToken as string;
 }
 
-async function createApiContext(accessToken: string): Promise<APIRequestContext> {
+async function createApiContext(
+  accessToken: string,
+): Promise<APIRequestContext> {
   return playwrightRequest.newContext({
     baseURL: apiBaseURL,
     extraHTTPHeaders: {
@@ -303,10 +312,15 @@ async function createApiContext(accessToken: string): Promise<APIRequestContext>
 }
 
 async function createAdminApiContext() {
-  return createApiContext(await loginByPassword(config.adminUser, config.adminPass));
+  return createApiContext(
+    await loginByPassword(config.adminUser, config.adminPass),
+  );
 }
 
-async function uploadDynamicPlugin(adminApi: APIRequestContext, artifactPath: string) {
+async function uploadDynamicPlugin(
+  adminApi: APIRequestContext,
+  artifactPath: string,
+) {
   const response = await adminApi.post("plugins/dynamic/package", {
     multipart: {
       overwriteSupport: "0",
@@ -326,10 +340,25 @@ async function installPlugin(adminApi: APIRequestContext) {
 }
 
 async function setPluginEnabled(adminApi: APIRequestContext, enabled: boolean) {
+  if (!enabled) {
+    const stopResponse = await adminApi.put(
+      `plugins/${pluginID}/new-business/stop`,
+    );
+    assertOk(stopResponse, "停止动态插件新业务失败");
+    expect((await stopResponse.json())?.code ?? 0).toBe(0);
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
   assertOk(response, `切换插件状态失败: ${enabled}`);
+  expect((await response.json())?.code ?? 0).toBe(0);
+  if (enabled) {
+    const resumeResponse = await adminApi.put(
+      `plugins/${pluginID}/new-business/resume`,
+    );
+    assertOk(resumeResponse, "恢复动态插件新业务失败");
+    expect((await resumeResponse.json())?.code ?? 0).toBe(0);
+  }
 }
 
 async function createRole(adminApi: APIRequestContext, menuIDs: number[]) {
@@ -413,7 +442,8 @@ function buildRuntimeGovernanceArtifact() {
     id: pluginID,
     name: pluginName,
     version: pluginVersion,
-    description: "Runtime plugin used to verify role-menu governance and data scope filtering.",
+    description:
+      "Runtime plugin used to verify role-menu governance and data scope filtering.",
     menus: [
       {
         key: pluginMenuKey,
@@ -523,7 +553,9 @@ test.describe("TC-2 动态插件权限治理", () => {
     const userID = await createUser(adminApi!, roleID);
     seedUserOwnedPluginRecord(userID);
 
-    const userApi = await createApiContext(await loginByPassword(testUsername, testPassword));
+    const userApi = await createApiContext(
+      await loginByPassword(testUsername, testPassword),
+    );
     const userInfo = await fetchUserInfo(userApi);
     expect(
       hasMenuName(userInfo.menus ?? [], pluginMenuName),
@@ -535,7 +567,10 @@ test.describe("TC-2 动态插件权限治理", () => {
     ).toContain(pluginPermission);
 
     const selfScopedRecords = await queryPluginResource(userApi);
-    expect(selfScopedRecords.total, "仅本人数据权限应只返回用户自己的插件记录").toBe(1);
+    expect(
+      selfScopedRecords.total,
+      "仅本人数据权限应只返回用户自己的插件记录",
+    ).toBe(1);
     expect(selfScopedRecords.list?.[0]?.title).toBe("user-owned");
 
     await setPluginEnabled(adminApi!, false);

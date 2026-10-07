@@ -1,0 +1,206 @@
+id: idc-zjmfcloud
+name: IDC ZJMFCloud Provider
+version: v0.2.5
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed ZJMF public-cloud v1 connector for product configuration discovery and idc-resource-owned server execution.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.21 <1.0.0"
+
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods:
+      - configuration.candidates
+      - provision
+      - query
+    product_configuration:
+      version: v1
+      fields:
+        - key: region
+          type: single_select
+          label:
+            en-US: Region
+            zh-CN: 地区
+          required: true
+          dynamic_candidates:
+            version: v1
+            method: configuration.candidates
+        - key: line
+          type: single_select
+          label:
+            en-US: Network line
+            zh-CN: 线路
+          required: true
+          dynamic_candidates:
+            version: v1
+            method: configuration.candidates
+        - key: cpu
+          type: integer
+          label:
+            en-US: CPU cores
+            zh-CN: 处理器核心数
+          required: true
+          minimum: "1"
+          maximum: "1024"
+        - key: memory
+          type: integer
+          label:
+            en-US: Memory (MiB)
+            zh-CN: 内存（MiB）
+          required: true
+          minimum: "128"
+          maximum: "1048576"
+        - key: system_disk
+          type: integer
+          label:
+            en-US: System disk (GiB)
+            zh-CN: 系统盘（GiB）
+          required: true
+          minimum: "1"
+          maximum: "1048576"
+        - key: data_disk
+          type: integer
+          label:
+            en-US: Data disk (GiB)
+            zh-CN: 数据盘（GiB）
+          required: true
+          minimum: "0"
+          maximum: "1048576"
+        - key: bandwidth
+          type: integer
+          label:
+            en-US: Bandwidth (Mbps)
+            zh-CN: 带宽（Mbps）
+          required: true
+          minimum: "1"
+          maximum: "1000000"
+    customer_configuration:
+      version: v1
+      fields:
+        - key: operating_system
+          type: single_select
+          label:
+            en-US: Operating system
+            zh-CN: 操作系统
+          required: true
+          dynamic_candidates:
+            version: v1
+            method: configuration.candidates
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability:
+          enUS: ZJMFCloud server configuration with idc-resource-owned provisioning and ongoing management
+          zhCN: 智简魔方云服务器配置，以及由 idc-resource 负责的开通和持续管理
+        granularity: per_quantity_unit
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: unsupported
+        entitlementOwnerId: idc-resource
+        methodRoles:
+          provision: provision
+          query: query
+  - point: resource-provider
+    version: v1
+    role: provider
+    owner: idc-resource
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: endpoint
+          type: single_line
+          label: { en-US: ZJMFCloud API endpoint, zh-CN: 魔方云接口地址 }
+          required: true
+          text_format: url
+          maximum_length: 2048
+        - key: username
+          type: secret
+          label: { en-US: API username, zh-CN: API 用户名 }
+          required: true
+        - key: password
+          type: secret
+          label: { en-US: API password, zh-CN: API 密码 }
+          required: true
+    methods:
+      - connection.verify
+      - capabilities.discover
+      - configuration.candidates
+      - provision.parameters.build
+      - provider-capacity.list
+      - operation.execute
+      - task.query
+      - resource.query
+    provider_metadata:
+      type: resource-provider-contract
+      version: v1
+      values:
+        providerId: zjmfcloud-v1
+        authenticationProfiles:
+          profiles:
+            default:
+              strategy: login_session
+              fields: { username: username, password: password }
+              loginPath: /administrator/v1/login
+              tokenJSONPath: [$]
+              tokenHeader: Access-Token
+              sessionTTLSeconds: 3600
+
+admin_surfaces:
+  - key: server-management
+    version: v1
+    title: 魔方云服务器管理
+    icon: lucide:server-cog
+    permission: idc:admin:resource:server:view
+    slot: admin.resource-operations
+    route: zjmfcloud-servers
+    entry: admin/server-management/index.html
+    status: active
+
+customer_surfaces:
+  - key: servers
+    version: v1
+    title: 云服务器
+    icon: lucide:server
+    slot: customer.products
+    route: zjmfcloud-servers
+    entry: customer/servers/index.html
+    bridge_capabilities:
+      - customer-servers.read
+    status: active
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+hostServices:
+  - service: confidentialoutbound
+    methods:
+      - execute
+  - owner: idc-resource
+    service: resource-read
+    version: v1
+    methods:
+      - current-customer-servers.list
+      - current-customer-server.get

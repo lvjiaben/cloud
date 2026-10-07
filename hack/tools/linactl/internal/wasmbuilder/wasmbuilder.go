@@ -32,7 +32,7 @@ func buildRuntimeWasmArtifactFromSource(pluginDir string, outputDir string) (*Ru
 		return nil, err
 	}
 
-	frontendAssets, err := collectFrontendAssets(pluginDir, embeddedResources)
+	frontendAssets, err := collectFrontendAssets(pluginDir, embeddedResources, manifest.PublicAssets)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,8 @@
+stop_new: true
+drain_active: true
+preserve_history: true
+resume_after_validation: true
+switch_kinds:
+  - ai_provider
+  - readonly_tool
+  - assistant_surface

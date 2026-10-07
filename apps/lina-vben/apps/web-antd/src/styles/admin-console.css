@@ -1,0 +1,81 @@
+/* Management-only enterprise cloud console skin. The customer console and
+ * public website run in separate documents, so these rules stay isolated. */
+html[data-admin-console='true'] {
+  --radius: 0rem;
+}
+
+html[data-admin-console='true']:not(.dark) {
+  --header: 0 0% 100%;
+  --menu: 0 0% 100%;
+  --sidebar: 0 0% 100%;
+  --sidebar-deep: 214 32% 96%;
+}
+
+body.admin-console-app *,
+body.admin-console-app *::before,
+body.admin-console-app *::after {
+  border-radius: 0 !important;
+}
+
+/* Keep controls whose meaning depends on being circular. */
+body.admin-console-app
+  :where(
+    .ant-avatar,
+    .ant-badge-status-dot,
+    .ant-progress-circle,
+    .ant-radio-inner,
+    .ant-radio-inner::after,
+    .rounded-full
+  ),
+body.admin-console-app .ant-switch,
+body.admin-console-app .ant-switch-handle,
+body.admin-console-app .ant-switch-handle::before,
+body.admin-console-app .ant-switch-handle::after {
+  border-radius: 9999px !important;
+}
+
+/* Ant Design paints the visible switch thumb on a pseudo-element. Keep this
+ * selector outside :where() so it wins over the console-wide square reset. */
+body.admin-console-app .ant-switch-handle::before,
+body.admin-console-app .ant-switch-handle::after {
+  border-radius: 9999px !important;
+}
+
+body.admin-console-app :where(.ant-card, .card-box) {
+  border-color: hsl(var(--border));
+  box-shadow: none !important;
+}
+
+/* Plugin pages also use semantic `*-card` classes instead of Ant Card. */
+body.admin-console-app
+  :where(
+    [class$='-card'],
+    [class*='-card '],
+    [class$='__card'],
+    [class*='__card ']
+  ) {
+  box-shadow: none !important;
+}
+
+body.admin-console-app :where(.ant-card-head) {
+  min-height: 48px;
+  border-bottom-color: hsl(var(--border));
+}
+
+body.admin-console-app :where(.ant-btn-primary) {
+  box-shadow: none;
+}
+
+/* Keep this installation's tables on the panel surface without changing
+ * the page background or Vben's interactive state colors. */
+body.admin-console-app .vxe-grid {
+  --vxe-ui-layout-background-color: hsl(var(--card));
+  --vxe-ui-table-header-background-color: hsl(var(--muted));
+  --vxe-ui-table-row-striped-background-color: hsl(var(--card));
+  --vxe-ui-table-border-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+body.admin-console-app .vxe-grid .vxe-table--empty-content {
+  color: hsl(var(--muted-foreground));
+}

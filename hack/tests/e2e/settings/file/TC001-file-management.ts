@@ -346,7 +346,10 @@ test.describe('TC001 文件管理', () => {
     if (initialCount > 0) {
       // Listen for successful delete response
       const deleteResponsePromise = adminPage.waitForResponse(
-        (resp) => resp.url().includes('/file/') && resp.request().method() === 'DELETE' && resp.status() === 200,
+        (resp) =>
+          resp.url().includes('/file') &&
+          resp.request().method() === 'DELETE' &&
+          resp.status() === 200,
         { timeout: 10000 },
       );
 

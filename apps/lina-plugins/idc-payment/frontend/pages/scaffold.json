@@ -1,0 +1,7 @@
+{
+  "owner": "idc-payment",
+  "phase": "reconciliation-operations",
+  "userVisiblePage": true,
+  "route": "/idc/payment-reconciliation",
+  "entry": "../dist/mount.js"
+}

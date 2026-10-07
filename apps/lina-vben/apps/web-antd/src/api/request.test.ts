@@ -126,8 +126,8 @@ describe('request API helpers', () => {
   it('uses the default host API base when the test environment omits VITE_GLOB_API_URL', async () => {
     const { pluginApiPath } = await importRequestWithApiURL();
 
-    expect(pluginApiPath('linapro-tenant-core', '/auth/login-tenants')).toBe(
-      `${window.location.origin}/x/linapro-tenant-core/api/v1/auth/login-tenants`,
+    expect(pluginApiPath('tenant-core', '/auth/login-tenants')).toBe(
+      `${window.location.origin}/x/tenant-core/api/v1/auth/login-tenants`,
     );
   });
 
@@ -136,8 +136,8 @@ describe('request API helpers', () => {
       'https://example.test/api/v1/',
     );
 
-    expect(pluginApiPath('/linapro-tenant-core/', 'platform/tenants')).toBe(
-      'https://example.test/x/linapro-tenant-core/api/v1/platform/tenants',
+    expect(pluginApiPath('/tenant-core/', 'platform/tenants')).toBe(
+      'https://example.test/x/tenant-core/api/v1/platform/tenants',
     );
   });
 

@@ -1,0 +1,17 @@
+{
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.meta.dc": "分别分页查询当前员工可见的本地供应商接口、资源池及其真实使用统计。",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.schema.dc": "分别分页查询当前员工可见的本地供应商接口、资源池及其真实使用统计。",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.channelPage.dc": "接口页码，默认第一页",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.channelPageSize.dc": "接口每页条数，可选十、二十、五十或一百，默认二十",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.poolPage.dc": "资源池页码，默认第一页",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.poolPageSize.dc": "资源池每页条数，可选十、二十、五十或一百，默认二十",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.channelKeyword.dc": "可选的接口名称搜索，最多一百二十八个字符",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListReq.fields.availableChannelsOnly.dc": "资源池选择时排除已删除接口，默认不排除",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListRes.fields.channelTotal.dc": "相同搜索条件与员工可见范围内的准确接口总数",
+  "plugins.idc_resource.api.admin.v1.ProviderConfigurationListRes.fields.poolTotal.dc": "相同员工可见范围内的准确资源池总数",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelUsageItem.fields.activeInstances.dc": "当前绑定此接口且服务权益已激活的本地实例数，与开关机无关",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelUsageItem.fields.totalInstances.dc": "当前绑定此接口的全部本地实例数，包含导入和已终止实例",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelUsageItem.fields.configuredProducts.dc": "当前生效版本使用此接口的未删除商品去重数量",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelItem.fields.usage.dc": "由分页目录提供的权威本地使用统计",
+  "plugins.idc_resource.api.admin.v1.ResourcePoolItem.fields.channelName.dc": "资源池所属接口名称，不受当前接口分页影响"
+}

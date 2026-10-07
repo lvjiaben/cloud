@@ -13,27 +13,27 @@ func TestRegistryRegistersDescriptorAndIndexesMethods(t *testing.T) {
 	t.Parallel()
 
 	registry := NewRegistry()
-	descriptor := testDescriptor("linapro-ai-core", "ai", "v1", "text.generate", "text.method_status.get")
+	descriptor := testDescriptor("ai-core", "ai", "v1", "text.generate", "text.method_status.get")
 	if err := registry.Register(descriptor); err != nil {
 		t.Fatalf("register descriptor: %v", err)
 	}
 
-	stored, ok := registry.LookupDescriptor("linapro-ai-core", "ai", "v1")
+	stored, ok := registry.LookupDescriptor("ai-core", "ai", "v1")
 	if !ok {
 		t.Fatal("expected descriptor to be indexed")
 	}
-	if stored.OwnerPluginID != "linapro-ai-core" || stored.Service != "ai" || stored.Version != "v1" {
+	if stored.OwnerPluginID != "ai-core" || stored.Service != "ai" || stored.Version != "v1" {
 		t.Fatalf("unexpected descriptor key: %#v", stored)
 	}
 	if len(stored.Methods) != 2 {
 		t.Fatalf("expected two methods, got %#v", stored.Methods)
 	}
 
-	method, ok := registry.LookupMethod("linapro-ai-core", "ai", "v1", "text.generate")
+	method, ok := registry.LookupMethod("ai-core", "ai", "v1", "text.generate")
 	if !ok {
 		t.Fatal("expected method to be indexed")
 	}
-	if method.OwnerPluginID != "linapro-ai-core" || method.Descriptor.Method != "text.generate" {
+	if method.OwnerPluginID != "ai-core" || method.Descriptor.Method != "text.generate" {
 		t.Fatalf("unexpected indexed method: %#v", method)
 	}
 	if method.Descriptor.Capability != "host:ai:text.generate" {
@@ -45,14 +45,14 @@ func TestRegistryIndexesMethodInvoker(t *testing.T) {
 	t.Parallel()
 
 	invoker := testInvoker{}
-	descriptor := testDescriptor("linapro-ai-core", "ai", "v1", "text.generate")
+	descriptor := testDescriptor("ai-core", "ai", "v1", "text.generate")
 	descriptor.Invoker = invoker
 	registry := NewRegistry()
 	if err := registry.Register(descriptor); err != nil {
 		t.Fatalf("register descriptor: %v", err)
 	}
 
-	method, ok := registry.LookupMethod("linapro-ai-core", "ai", "v1", "text.generate")
+	method, ok := registry.LookupMethod("ai-core", "ai", "v1", "text.generate")
 	if !ok {
 		t.Fatal("expected method to be indexed")
 	}
@@ -106,7 +106,7 @@ func TestRegistryRejectsDuplicateDescriptorAndMethods(t *testing.T) {
 	t.Parallel()
 
 	registry := NewRegistry()
-	descriptor := testDescriptor("linapro-ai-core", "ai", "v1", "text.generate")
+	descriptor := testDescriptor("ai-core", "ai", "v1", "text.generate")
 	if err := registry.Register(descriptor); err != nil {
 		t.Fatalf("register descriptor: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestRegistryRejectsDuplicateDescriptorAndMethods(t *testing.T) {
 		t.Fatalf("expected duplicate descriptor rejection, got %v", err)
 	}
 
-	err := NewRegistry().Register(testDescriptor("linapro-ai-core", "ai", "v1", "text.generate", "text.generate"))
+	err := NewRegistry().Register(testDescriptor("ai-core", "ai", "v1", "text.generate", "text.generate"))
 	if err == nil || !strings.Contains(err.Error(), "duplicate method") {
 		t.Fatalf("expected duplicate method rejection, got %v", err)
 	}
@@ -123,7 +123,7 @@ func TestRegistryRejectsDuplicateDescriptorAndMethods(t *testing.T) {
 func TestRegistryRejectsMissingRequiredFields(t *testing.T) {
 	t.Parallel()
 
-	valid := testDescriptor("linapro-ai-core", "ai", "v1", "text.generate")
+	valid := testDescriptor("ai-core", "ai", "v1", "text.generate")
 	tests := []struct {
 		name   string
 		mutate func(*Descriptor)
@@ -175,13 +175,13 @@ func TestNilRegistryRejectsRegistrationAndReadsEmpty(t *testing.T) {
 	t.Parallel()
 
 	var registry *Registry
-	if err := registry.Register(testDescriptor("linapro-ai-core", "ai", "v1", "text.generate")); err == nil {
+	if err := registry.Register(testDescriptor("ai-core", "ai", "v1", "text.generate")); err == nil {
 		t.Fatal("expected nil registry registration to fail")
 	}
-	if _, ok := registry.LookupDescriptor("linapro-ai-core", "ai", "v1"); ok {
+	if _, ok := registry.LookupDescriptor("ai-core", "ai", "v1"); ok {
 		t.Fatal("expected nil registry descriptor lookup to miss")
 	}
-	if _, ok := registry.LookupMethod("linapro-ai-core", "ai", "v1", "text.generate"); ok {
+	if _, ok := registry.LookupMethod("ai-core", "ai", "v1", "text.generate"); ok {
 		t.Fatal("expected nil registry method lookup to miss")
 	}
 	if descriptors := registry.Descriptors(); descriptors != nil {

@@ -38,7 +38,7 @@ func (f fakeJobmgmtI18nService) Translate(_ context.Context, key string, fallbac
 // built-in jobs are localized by their stable Jobs handler i18n key.
 func TestTranslateHandlerSourceTextUsesPluginHandlerKey(t *testing.T) {
 	var (
-		handlerRef     = "plugin:linapro-demo-source/jobs:heartbeat"
+		handlerRef     = "plugin:demo-source/jobs:heartbeat"
 		nameKey        = jobmeta.HandlerI18nKey(handlerRef, jobNameI18nField)
 		descriptionKey = jobmeta.HandlerI18nKey(handlerRef, jobDescriptionI18nField)
 	)
@@ -65,7 +65,7 @@ func TestTranslateHandlerSourceTextUsesPluginHandlerKey(t *testing.T) {
 func TestListJobsKeywordMatchesLocalizedBuiltinJobName(t *testing.T) {
 	var (
 		ctx        = context.Background()
-		handlerRef = "plugin:linapro-demo-source/jobs:" + uniqueTestName("source-plugin-echo-inspection")
+		handlerRef = "plugin:demo-source/jobs:" + uniqueTestName("source-plugin-echo-inspection")
 		sourceName = uniqueTestName("Source Plugin Echo Inspection")
 		nameKey    = jobmeta.HandlerI18nKey(handlerRef, jobNameI18nField)
 		registry   = jobhandler.New()
@@ -76,7 +76,7 @@ func TestListJobsKeywordMatchesLocalizedBuiltinJobName(t *testing.T) {
 		Description:  "Runs a lightweight source-plugin inspection task for scheduler integration validation.",
 		ParamsSchema: `{"type":"object","properties":{}}`,
 		Source:       jobhandlerv1.SourcePlugin,
-		PluginID:     "linapro-demo-source",
+		PluginID:     "demo-source",
 		Invoke:       func(context.Context, json.RawMessage) (any, error) { return nil, nil },
 	}); err != nil {
 		t.Fatalf("register plugin job handler: %v", err)

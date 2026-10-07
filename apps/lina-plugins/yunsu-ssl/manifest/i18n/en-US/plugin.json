@@ -1,0 +1,5 @@
+{
+  "plugin.yunsu-ssl.name": "Yunsu SSL Certificates",
+  "plugin.yunsu-ssl.description": "Issue, validate, query, and manage Yunsu SSL certificate applications.",
+  "plugin.yunsu-ssl.certificates.title": "SSL Certificates"
+}

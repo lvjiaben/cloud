@@ -12,14 +12,14 @@ vi.mock('#/plugins/slot-registry', () => ({
 
 const cachedDisabledPluginState = new Map<string, PluginDynamicState>([
   [
-    'linapro-demo-source',
+    'demo-source',
     {
       enabled: 0,
       generation: 2,
-      id: 'linapro-demo-source',
+      id: 'demo-source',
       installed: 1,
       runtimeState: 'normal',
-      statusKey: 'sys_plugin.status:linapro-demo-source',
+      statusKey: 'sys_plugin.status:demo-source',
       version: 'v0.1.0',
     },
   ],
@@ -27,14 +27,14 @@ const cachedDisabledPluginState = new Map<string, PluginDynamicState>([
 
 const freshEnabledPluginState = new Map<string, PluginDynamicState>([
   [
-    'linapro-demo-source',
+    'demo-source',
     {
       enabled: 1,
       generation: 3,
-      id: 'linapro-demo-source',
+      id: 'demo-source',
       installed: 1,
       runtimeState: 'normal',
-      statusKey: 'sys_plugin.status:linapro-demo-source',
+      statusKey: 'sys_plugin.status:demo-source',
       version: 'v0.1.0',
     },
   ],
@@ -50,11 +50,11 @@ describe('plugin access route filtering', () => {
       {
         component: 'system/plugin/dynamic-page',
         meta: {
-          authority: ['linapro-demo-source'],
+          authority: ['demo-source'],
           title: 'Source Plugin Demo',
         },
         name: 'LinaproDemoSourceSidebarEntry',
-        path: 'linapro-demo-source-sidebar-entry',
+        path: 'demo-source-sidebar-entry',
       },
     ];
 

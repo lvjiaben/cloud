@@ -1,0 +1,4 @@
+{
+  "plugin.idc-dcim.name": "DCIM Server Connector",
+  "plugin.idc-dcim.description": "Managed DCIM server connector with a frozen legacy or BMS protocol per interface revision."
+}

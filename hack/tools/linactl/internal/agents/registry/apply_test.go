@@ -16,6 +16,7 @@ import (
 func newSkillsFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	requireSymlinkSupport(t, root)
 	if err := os.MkdirAll(filepath.Join(root, ".agents", "skills"), 0o755); err != nil {
 		t.Fatalf("create skills source: %v", err)
 	}
@@ -25,6 +26,7 @@ func newSkillsFixture(t *testing.T) string {
 func newMDFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	requireSymlinkSupport(t, root)
 	if err := os.WriteFile(filepath.Join(root, MDSourceFile), []byte("# AGENTS.md\n"), 0o644); err != nil {
 		t.Fatalf("create AGENTS.md: %v", err)
 	}
@@ -34,6 +36,7 @@ func newMDFixture(t *testing.T) string {
 func newPromptsFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	requireSymlinkSupport(t, root)
 	if err := os.MkdirAll(filepath.Join(root, ".agents", "prompts", "opsx"), 0o755); err != nil {
 		t.Fatalf("create prompts source: %v", err)
 	}
@@ -48,6 +51,16 @@ func trySymlink(t *testing.T, oldname, newname string) {
 		}
 		t.Fatalf("symlink: %v", err)
 	}
+}
+
+func requireSymlinkSupport(t *testing.T, root string) {
+	t.Helper()
+	source := filepath.Join(root, ".symlink-probe-source")
+	link := filepath.Join(root, ".symlink-probe-link")
+	if err := os.Mkdir(source, 0o755); err != nil {
+		t.Fatalf("create symlink probe source: %v", err)
+	}
+	trySymlink(t, source, link)
 }
 
 func TestSkillsApplyLinkCreatesAndIsIdempotent(t *testing.T) {

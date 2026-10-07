@@ -162,11 +162,17 @@ const isClosed = ref(true);
 watch(
   () => state?.value?.isOpen,
   (value) => {
-    isClosed.value = false;
+    // A compatibility wrapper may open the API before this component mounts.
+    // Observe the current state immediately so the first rendered open drawer
+    // does not retain the initial `hidden` class behind its overlay.
+    if (value || unref(hasOpened)) {
+      isClosed.value = false;
+    }
     if (value && !unref(hasOpened)) {
       hasOpened.value = true;
     }
   },
+  { immediate: true },
 );
 function handleClosed() {
   isClosed.value = true;

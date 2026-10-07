@@ -39,7 +39,7 @@ const emit = defineEmits<{
 const currentPlugin = ref<SystemPlugin | null>(null);
 const dependencyCheck = ref<null | PluginDependencyCheckResult>(null);
 const dependencyLoading = ref(false);
-const purgeStorageData = ref(true);
+const purgeStorageData = ref(false);
 
 const [BasicModal, modalApi] = useVbenModal({
   onClosed: handleClosed,
@@ -53,7 +53,9 @@ const isAutoEnableManaged = computed(
   () => currentPlugin.value?.autoEnableManaged === 1,
 );
 const supportsPurgeStorageData = computed(
-  () => isSourcePlugin.value || isDynamicPlugin.value,
+  () =>
+    (isSourcePlugin.value || isDynamicPlugin.value) &&
+    (currentPlugin.value?.businessExtensions?.length ?? 0) === 0,
 );
 const reverseDependencyBlocked = computed(() => {
   return (
@@ -72,7 +74,7 @@ async function handleOpenChange(open: boolean) {
   const data = modalApi.getData<{ row: SystemPlugin }>();
   currentPlugin.value = data?.row ?? null;
   dependencyCheck.value = currentPlugin.value?.dependencyCheck ?? null;
-  purgeStorageData.value = supportsPurgeStorageData.value;
+  purgeStorageData.value = false;
   await refreshDependencyCheck();
   updateConfirmDisabled();
 }
@@ -259,7 +261,7 @@ function handleClosed() {
   currentPlugin.value = null;
   dependencyCheck.value = null;
   dependencyLoading.value = false;
-  purgeStorageData.value = true;
+  purgeStorageData.value = false;
   updateConfirmDisabled();
 }
 

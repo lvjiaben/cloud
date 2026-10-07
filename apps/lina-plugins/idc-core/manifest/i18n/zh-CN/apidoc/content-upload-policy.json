@@ -1,0 +1,11 @@
+{
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyReq.meta.tags": "IDC 内容中心",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyReq.meta.summary": "获取内容上传策略",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyReq.meta.dc": "返回管理员开始上传下载文件前使用的当前失败关闭大小与扩展名策略。",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyReq.schema.dc": "返回管理员开始上传下载文件前使用的当前失败关闭大小与扩展名策略。",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyRes.fields.ordinaryMaxSizeBytes.dc": "普通图片、PDF 和办公文档上传允许的最大字节数",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyRes.fields.inspectionRequiredMaxSizeBytes.dc": "需要安全检查的文件允许的最大字节数；该类上传不可用时为零",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyRes.fields.inspectionRequiredAvailable.dc": "当前本机扫描器通过部署自检后，是否允许开始需要安全检查的文件上传",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyRes.fields.ordinaryExtensions.dc": "普通上传路径接受的小写文件扩展名",
+  "plugins.idc_core.api.admin.v1.ContentUploadPolicyRes.fields.inspectionRequiredExtensions.dc": "仅在安全检查上传路径接受的小写文件扩展名"
+}

@@ -5,6 +5,7 @@ package plugin
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -19,6 +20,7 @@ import (
 	i18nsvc "lina-core/internal/service/i18n"
 	"lina-core/internal/service/locker"
 	"lina-core/internal/service/plugin/internal/catalog"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	plugindep "lina-core/internal/service/plugin/internal/dependency"
 	"lina-core/internal/service/plugin/internal/frontend"
 	"lina-core/internal/service/plugin/internal/integration"
@@ -112,6 +114,10 @@ type (
 	// PluginDynamicStateItem represents public runtime state of one plugin.
 	PluginDynamicStateItem = runtime.PluginDynamicStateItem
 
+	// FrontendSurfaceBinding is one host-governed frontend surface projected
+	// from the effective plugin release.
+	FrontendSurfaceBinding = catalog.FrontendSurfaceBinding
+
 	// HostServiceAuthorizationInput defines one install/enable authorization confirmation payload.
 	HostServiceAuthorizationInput = store.HostServiceAuthorizationInput
 
@@ -202,6 +208,9 @@ type UpdateStatusOptions struct {
 	Authorization *HostServiceAuthorizationInput
 }
 
+type BusinessImpactItem = lifecycle.BusinessImpactItem
+type BusinessImpactReport = lifecycle.BusinessImpactReport
+
 // ManagedJobQuery defines one plugin-owned scheduled-job discovery request.
 type ManagedJobQuery struct {
 	// PluginID optionally narrows discovery to one plugin. Empty means all matching plugins.
@@ -227,6 +236,8 @@ type Service interface {
 	stateService
 	capabilityEnvService
 	tenantLifecycleService
+	// ForBusinessExtensionOwner returns a source-only owner-scoped discovery and admission facade.
+	ForBusinessExtensionOwner(pluginID string) pluginhost.BusinessExtensionRegistrar
 }
 
 // managementService defines plugin management and management-read contracts.
@@ -253,6 +264,13 @@ type managementService interface {
 	// UpdateStatus updates plugin status and optionally persists one dynamic-plugin
 	// host-service authorization snapshot before enabling.
 	UpdateStatus(ctx context.Context, pluginID string, options UpdateStatusOptions) error
+	// StopNewBusiness removes the plugin from new-business admission without
+	// disabling existing-service routes or menus.
+	StopNewBusiness(ctx context.Context, pluginID string) error
+	// ResumeNewBusiness reopens admission after runtime and dependency checks.
+	ResumeNewBusiness(ctx context.Context, pluginID string) error
+	// CheckBusinessImpact returns trusted owner aggregates for lifecycle review.
+	CheckBusinessImpact(ctx context.Context, pluginID string) (*BusinessImpactReport, error)
 	// UpdateTenantProvisioningPolicy updates the platform-owned new-tenant plugin provisioning policy.
 	UpdateTenantProvisioningPolicy(ctx context.Context, pluginID string, autoEnableForNewTenants bool) error
 	// ListSourceUpgradeStatuses scans source manifests and returns one
@@ -281,6 +299,9 @@ type managementService interface {
 	) (*RuntimeUpgradeResult, error)
 	// ListRuntimeStates returns public plugin runtime states for shell slot rendering.
 	ListRuntimeStates(ctx context.Context) (*RuntimeStateListOutput, error)
+	// IssuePageBridgeGrant signs one exact isolated-page API request after
+	// validating the active dynamic release and frontend surface contract.
+	IssuePageBridgeGrant(ctx context.Context, input PageBridgeGrantInput) (*PageBridgeGrantOutput, error)
 	// UploadDynamicPackage validates and stores a runtime WASM package.
 	UploadDynamicPackage(ctx context.Context, in *DynamicUploadInput) (*DynamicUploadOutput, error)
 	// ResolveResourcePermission resolves the plugin-scoped permission required
@@ -388,6 +409,9 @@ type stateService interface {
 	// current tenant/request scope and returns false when authoritative state
 	// cannot be resolved.
 	IsEnabledAuthoritative(ctx context.Context, pluginID string) bool
+	// CanAcceptNewBusiness is the fail-closed gate for all future new provider
+	// bindings, purchases, and fulfillment tasks.
+	CanAcceptNewBusiness(ctx context.Context, pluginID string) bool
 }
 
 // capabilityEnvService defines provider construction inputs scoped to one plugin.
@@ -471,8 +495,20 @@ type serviceImpl struct {
 	activeDynamicArtifactSnapshot map[string]string
 	// wasmRuntime owns dynamic-plugin WASM execution and host-call dependencies.
 	wasmRuntime *wasmRuntimeProvider
+	// confidentialOutbound owns one-use host-only supplier-call contexts shared
+	// by owner facades and the dynamic WASM host-service dispatcher.
+	confidentialOutbound *confidentialoutbound.Registry
 	// runtimeUpgradeLockStore coordinates explicit runtime upgrades across cluster nodes.
 	runtimeUpgradeLockStore coordination.LockStore
+	// lifecycleLockSvc serializes business-admission, status, and uninstall
+	// transitions for the same plugin across processes and cluster nodes.
+	lifecycleLockSvc locker.Service
+	// lifecycleLockRenewInterval overrides the default lease renewal cadence in tests.
+	lifecycleLockRenewInterval time.Duration
+	// lifecycleLockRenewTimeout bounds one persistence/coordination renewal call.
+	lifecycleLockRenewTimeout time.Duration
+	// lifecycleLockRenew overrides the concrete renewal call in deterministic tests.
+	lifecycleLockRenew func(context.Context, *locker.Instance) error
 	// managementListCache stores the plugin-management summary read model.
 	managementListCache *management.ListCache
 	// tenantSvc provides tenant governance, startup consistency, and tenant plugin provisioning.
@@ -540,12 +576,14 @@ func New(
 	if err != nil {
 		return nil, gerror.Wrap(err, "build source capability registry failed")
 	}
+	confidentialOutboundRegistry := confidentialoutbound.New()
 	wasmRuntimeInstance, err := newWasmHostServiceRuntime(
 		capabilityServices,
 		ownerCapabilities,
 		pluginConfigFactory,
 		hostConfigSvc,
 		manifestresource.NewFactory(""),
+		confidentialOutboundRegistry,
 	)
 	if err != nil {
 		return nil, err
@@ -627,10 +665,13 @@ func New(
 		i18nSvc:                       i18nSvc,
 		activeDynamicArtifactSnapshot: make(map[string]string),
 		wasmRuntime:                   wasmRuntime,
+		confidentialOutbound:          confidentialOutboundRegistry,
 		runtimeUpgradeLockStore:       runtimeUpgradeLockStore,
+		lifecycleLockSvc:              reconcilerLockSvc,
 		managementListCache:           management.NewListCache(),
 		tenantSvc:                     tenantSvc,
 	}
+	integrationSvc.BindBusinessExtensionHost(service)
 	cacheChangeNotifier.BindService(service)
 	dependencyValidator.BindService(service)
 	service.runtimeCacheRevisionCtrl = newRuntimeCacheRevisionController(

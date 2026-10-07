@@ -1,0 +1,17 @@
+{
+  "title": "Buy traffic package",
+  "name": "Package name",
+  "capacity": "Traffic capacity",
+  "price": "One-time tax-inclusive price",
+  "availability": "Availability",
+  "actions": "Actions",
+  "available": "Available",
+  "soldOut": "Sold out",
+  "buy": "Buy",
+  "confirm": "Confirm traffic package order",
+  "createOrder": "Place order",
+  "expiryWarning": "Validity follows the upstream traffic reset rules. An exact expiry date is not currently provided.",
+  "executionWarning": "Traffic is added only to this server. Paid packages execute after payment; purchasing does not start or unsuspend the server.",
+  "paymentRequired": "Order created. Complete payment to start the traffic addition.",
+  "created": "Traffic addition has been queued"
+}

@@ -23,6 +23,10 @@ import {
 const password = "test123456";
 
 test.describe("TC-18 定时任务数据权限", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   let adminApi: APIRequestContext;
   let limitedApi: APIRequestContext;
   let roleID = 0;
@@ -35,10 +39,16 @@ test.describe("TC-18 定时任务数据权限", () => {
 
   test.beforeAll(async () => {
     adminApi = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(adminApi, "sys.cron.shell.enabled");
+    originalShellSwitch = await getConfigByKey(
+      adminApi,
+      "sys.cron.shell.enabled",
+    );
     await setCronShellEnabled(adminApi, true);
     await expect
-      .poll(async () => (await getConfigByKey(adminApi, "sys.cron.shell.enabled")).value)
+      .poll(
+        async () =>
+          (await getConfigByKey(adminApi, "sys.cron.shell.enabled")).value,
+      )
       .toBe("true");
 
     const suffix = Date.now().toString();
@@ -125,6 +135,8 @@ test.describe("TC-18 定时任务数据权限", () => {
     ).toBeTruthy();
 
     await expectBusinessError(await limitedApi.get(`job/${hiddenJobID}`));
-    await expectBusinessError(await limitedApi.post(`job/${hiddenJobID}/trigger`));
+    await expectBusinessError(
+      await limitedApi.post(`job/${hiddenJobID}/trigger`),
+    );
   });
 });

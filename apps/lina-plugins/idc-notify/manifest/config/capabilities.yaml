@@ -1,0 +1,7 @@
+stop_new: true
+drain_active: true
+preserve_history: true
+resume_after_validation: true
+switch_kinds:
+  - delivery_channel
+  - notification_event

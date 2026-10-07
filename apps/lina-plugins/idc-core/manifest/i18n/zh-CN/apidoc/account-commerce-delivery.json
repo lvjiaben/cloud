@@ -1,0 +1,17 @@
+{
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.productNameZhCN.dc": "冻结的简体中文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.productNameEnUS.dc": "冻结的英文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.quantity.dc": "交付商品数量",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.statusCode.dc": "客户安全状态：待付款、待审核、处理中、已完成、未完成或已取消",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.ongoingService.dc": "交付商品是否包含持续服务管理",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.startedAt.dc": "处理开始时间，Unix 毫秒时间戳；没有时为零",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.completedAt.dc": "处理完成时间，Unix 毫秒时间戳；没有时为零",
+  "plugins.idc_core.api.account.v1.CommerceDelivery.fields.updatedAt.dc": "最后一次权威更新时间，Unix 毫秒时间戳",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.productNameZhCN.dc": "冻结的简体中文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.productNameEnUS.dc": "冻结的英文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.statusCode.dc": "客户安全服务状态：有效、暂停、到期或终止",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.startedAt.dc": "服务开始时间，Unix 毫秒时间戳",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.expiresAt.dc": "服务到期时间，Unix 毫秒时间戳；没有时为零",
+  "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.deliveries.dc": "每个订单项对应一条客户安全交付记录",
+  "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.serviceEntitlements.dc": "交付完成后创建的持续服务权益"
+}

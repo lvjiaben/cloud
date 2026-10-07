@@ -4,13 +4,31 @@
 package pluginhost
 
 import (
+	"context"
 	"io/fs"
+	"sync"
+
+	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/plugin/capability/authcap/extlogin/extidspi"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/capregistry"
 	"lina-core/pkg/plugin/capability/orgcap/orgspi"
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
 )
+
+type sourceBusinessExtensionCallerKey struct{}
+
+// SourceBusinessExtensionCallerPluginID returns the host-authenticated source
+// provider identity for the current business-extension handler invocation.
+// Callers cannot manufacture this context value because its key is private.
+func SourceBusinessExtensionCallerPluginID(ctx context.Context) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
+	value, ok := ctx.Value(sourceBusinessExtensionCallerKey{}).(string)
+	return value, ok && value != ""
+}
 
 // sourcePlugin stores one compile-time source plugin definition behind the
 // published grouped Declarations interface.
@@ -31,52 +49,67 @@ type sourcePlugin struct {
 	providers ProviderDeclarations
 	// access exposes grouped menu and permission access-control helpers.
 	access AccessDeclarations
+	// businessExtensions exposes owner-owned provider metadata validation.
+	businessExtensions BusinessExtensionDeclarations
 
-	embeddedFiles          fs.FS
-	tenantProvider         tenantspi.ProviderFactory
-	orgProvider            orgspi.ProviderFactory
-	capabilities           []capregistry.Descriptor
-	externalIdentities     []string
-	externalIdentityEngine extidspi.ProviderFactory
-	beforeInstall          SourcePluginBeforeLifecycleHandler
-	afterInstall           SourcePluginAfterLifecycleHandler
-	beforeEnable           SourcePluginBeforeLifecycleHandler
-	afterEnable            SourcePluginAfterLifecycleHandler
-	beforeUpgrade          SourcePluginBeforeUpgradeHandler
-	upgradeHandler         SourcePluginUpgradeHandler
-	afterUpgrade           SourcePluginUpgradeHandler
-	beforeDisable          SourcePluginBeforeLifecycleHandler
-	afterDisable           SourcePluginAfterLifecycleHandler
-	beforeUninstall        SourcePluginBeforeLifecycleHandler
-	afterUninstall         SourcePluginAfterLifecycleHandler
-	globalBeforeInstall    SourcePluginGlobalLifecycleHandler
-	globalBeforeEnable     SourcePluginGlobalLifecycleHandler
-	globalBeforeDisable    SourcePluginGlobalLifecycleHandler
-	globalBeforeUninstall  SourcePluginGlobalLifecycleHandler
-	beforeTenantDis        SourcePluginBeforeTenantLifecycleHandler
-	afterTenantDis         SourcePluginAfterTenantLifecycleHandler
-	beforeTenantDel        SourcePluginBeforeTenantLifecycleHandler
-	afterTenantDel         SourcePluginAfterTenantLifecycleHandler
-	beforeModeChange       SourcePluginBeforeInstallModeChangeHandler
-	afterModeChange        SourcePluginAfterInstallModeChangeHandler
-	uninstallHandler       SourcePluginUninstallHandler
-	hookHandlers           []*HookHandlerRegistration
-	routeRegistrars        []*RouteHandlerRegistration
-	jobRegistrars          []*JobHandlerRegistration
-	menuFilters            []*MenuFilterHandlerRegistration
-	permissionFilters      []*PermissionFilterHandlerRegistration
+	embeddedFiles               fs.FS
+	tenantProvider              tenantspi.ProviderFactory
+	orgProvider                 orgspi.ProviderFactory
+	capabilities                []capregistry.Descriptor
+	businessExtensionMethods    SourcePluginBusinessExtensionMethodHandler
+	externalIdentities          []string
+	externalIdentityEngine      extidspi.ProviderFactory
+	businessImpact              SourcePluginBusinessImpactHandler
+	beforeInstall               SourcePluginBeforeLifecycleHandler
+	afterInstall                SourcePluginAfterLifecycleHandler
+	beforeEnable                SourcePluginBeforeLifecycleHandler
+	afterEnable                 SourcePluginAfterLifecycleHandler
+	beforeUpgrade               SourcePluginBeforeUpgradeHandler
+	upgradeHandler              SourcePluginUpgradeHandler
+	afterUpgrade                SourcePluginUpgradeHandler
+	beforeDisable               SourcePluginBeforeLifecycleHandler
+	afterDisable                SourcePluginAfterLifecycleHandler
+	beforeUninstall             SourcePluginBeforeLifecycleHandler
+	afterUninstall              SourcePluginAfterLifecycleHandler
+	globalBeforeInstall         SourcePluginGlobalLifecycleHandler
+	globalBeforeEnable          SourcePluginGlobalLifecycleHandler
+	globalBeforeDisable         SourcePluginGlobalLifecycleHandler
+	globalBeforeUninstall       SourcePluginGlobalLifecycleHandler
+	beforeTenantDis             SourcePluginBeforeTenantLifecycleHandler
+	afterTenantDis              SourcePluginAfterTenantLifecycleHandler
+	beforeTenantDel             SourcePluginBeforeTenantLifecycleHandler
+	afterTenantDel              SourcePluginAfterTenantLifecycleHandler
+	beforeModeChange            SourcePluginBeforeInstallModeChangeHandler
+	afterModeChange             SourcePluginAfterInstallModeChangeHandler
+	uninstallHandler            SourcePluginUninstallHandler
+	hookHandlers                []*HookHandlerRegistration
+	routeRegistrars             []*RouteHandlerRegistration
+	jobRegistrars               []*JobHandlerRegistration
+	menuFilters                 []*MenuFilterHandlerRegistration
+	permissionFilters           []*PermissionFilterHandlerRegistration
+	businessExtensionMu         sync.RWMutex
+	businessExtensionValidators map[string]BusinessExtensionProviderValidator
+}
+
+// GetBusinessImpactHandler returns the registered business-impact provider.
+func (p *sourcePlugin) GetBusinessImpactHandler() SourcePluginBusinessImpactHandler {
+	if p == nil {
+		return nil
+	}
+	return p.businessImpact
 }
 
 // NewDeclarations creates and returns a new grouped source-plugin declarations facade.
 func NewDeclarations(id string) Declarations {
 	plugin := &sourcePlugin{
-		id:                id,
-		capabilities:      make([]capregistry.Descriptor, 0),
-		hookHandlers:      make([]*HookHandlerRegistration, 0),
-		routeRegistrars:   make([]*RouteHandlerRegistration, 0),
-		jobRegistrars:     make([]*JobHandlerRegistration, 0),
-		menuFilters:       make([]*MenuFilterHandlerRegistration, 0),
-		permissionFilters: make([]*PermissionFilterHandlerRegistration, 0),
+		id:                          id,
+		capabilities:                make([]capregistry.Descriptor, 0),
+		hookHandlers:                make([]*HookHandlerRegistration, 0),
+		routeRegistrars:             make([]*RouteHandlerRegistration, 0),
+		jobRegistrars:               make([]*JobHandlerRegistration, 0),
+		menuFilters:                 make([]*MenuFilterHandlerRegistration, 0),
+		permissionFilters:           make([]*PermissionFilterHandlerRegistration, 0),
+		businessExtensionValidators: make(map[string]BusinessExtensionProviderValidator),
 	}
 	plugin.assets = &sourcePluginAssets{plugin: plugin}
 	plugin.lifecycle = &sourcePluginLifecycle{plugin: plugin}
@@ -85,6 +118,7 @@ func NewDeclarations(id string) Declarations {
 	plugin.jobs = &sourcePluginJobs{plugin: plugin}
 	plugin.providers = &sourcePluginProviders{plugin: plugin}
 	plugin.access = &sourcePluginAccess{plugin: plugin}
+	plugin.businessExtensions = &sourcePluginBusinessExtensions{plugin: plugin}
 	return plugin
 }
 
@@ -182,10 +216,27 @@ func (p *sourcePlugin) GetCapabilityDescriptors() []capregistry.Descriptor {
 	return items
 }
 
+// GetBusinessExtensionMethodHandler returns the source provider method dispatcher.
+func (p *sourcePlugin) GetBusinessExtensionMethodHandler() SourcePluginBusinessExtensionMethodHandler {
+	if p == nil || p.businessExtensionMethods == nil {
+		return nil
+	}
+	handler, pluginID := p.businessExtensionMethods, p.id
+	return func(ctx context.Context, input *capmodel.BusinessExtensionMethodInvocation) (result *capmodel.BusinessExtensionMethodResult, err error) {
+		defer func() {
+			if recover() != nil {
+				result = nil
+				err = gerror.New("pluginhost: source business extension method failed")
+			}
+		}()
+		return handler(context.WithValue(ctx, sourceBusinessExtensionCallerKey{}, pluginID), input)
+	}
+}
+
 // GetExternalIdentityProviderFactory returns the declared external-identity
 // provider engine factory. It is distinct from GetExternalIdentityProviderIDs:
 // the factory supplies the resolve/provision engine (declared by
-// linapro-extlogin-core), while the ID list stamps ownership for calling plugins.
+// extlogin-core), while the ID list stamps ownership for calling plugins.
 func (p *sourcePlugin) GetExternalIdentityProviderFactory() extidspi.ProviderFactory {
 	if p == nil {
 		return nil

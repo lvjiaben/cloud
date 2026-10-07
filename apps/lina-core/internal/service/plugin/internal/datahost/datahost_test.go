@@ -9,8 +9,10 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gtime"
 
 	"lina-core/internal/dao"
 	"lina-core/internal/model/do"
@@ -19,6 +21,19 @@ import (
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 )
+
+// TestNormalizeResourceValuePreservesGoFrameTimeZone verifies timestamps sent
+// to dynamic plugins retain their database offset instead of being interpreted
+// as UTC and displayed eight hours late in Asia/Shanghai.
+func TestNormalizeResourceValuePreservesGoFrameTimeZone(t *testing.T) {
+	location := time.FixedZone("CST", 8*60*60)
+	want := "2026-09-02T20:29:59.072528+08:00"
+	value := gtime.NewFromTime(time.Date(2026, 9, 2, 20, 29, 59, 72_528_000, location))
+
+	if got := normalizeResourceValue(value); got != want {
+		t.Fatalf("normalized GoFrame time = %q, want %q", got, want)
+	}
+}
 
 // TestExecuteCRUDLifecycle verifies governed create, list, get, update, and delete flows.
 func TestExecuteCRUDLifecycle(t *testing.T) {

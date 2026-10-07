@@ -115,6 +115,7 @@ func newHostServiceDispatchRegistry() (*hostServiceDispatchRegistry, error) {
 		registerRuntimeHostService,
 		registerStorageHostService,
 		registerNetworkHostService,
+		registerConfidentialOutboundHostService,
 		registerDataHostService,
 		registerCacheHostService,
 		registerLockHostService,
@@ -243,6 +244,17 @@ func registerNetworkHostService(registry *hostServiceDispatchRegistry) error {
 		func(ctx context.Context, hcc *hostCallContext, input hostServiceDispatchContext) *bridgehostcall.HostCallResponseEnvelope {
 			return dispatchNetworkHostService(ctx, hcc, input.resourceRef, input.method, input.payload)
 		})
+}
+
+func registerConfidentialOutboundHostService(registry *hostServiceDispatchRegistry) error {
+	return registerHostServiceMethod(
+		registry,
+		bridgehostservice.HostServiceConfidentialOutbound,
+		bridgehostservice.HostServiceMethodConfidentialOutboundExecute,
+		func(ctx context.Context, hcc *hostCallContext, input hostServiceDispatchContext) *bridgehostcall.HostCallResponseEnvelope {
+			return dispatchConfidentialoutboundHostService(ctx, hcc, input.resourceRef, input.method, input.payload)
+		},
+	)
 }
 
 func registerDataHostService(registry *hostServiceDispatchRegistry) error {
@@ -437,6 +449,9 @@ func registerPluginsHostService(registry *hostServiceDispatchRegistry) error {
 		bridgehostservice.HostServiceMethodPluginsBatchGet,
 		bridgehostservice.HostServiceMethodPluginsList,
 		bridgehostservice.HostServiceMethodPluginsListTenant,
+		bridgehostservice.HostServiceMethodPluginsBusinessExtensionsList,
+		bridgehostservice.HostServiceMethodPluginsBusinessExtensionsExact,
+		bridgehostservice.HostServiceMethodPluginsBusinessExtensionsExactBatch,
 		bridgehostservice.HostServiceMethodPluginsConfigGet,
 		bridgehostservice.HostServiceMethodPluginsStateIsEnabled,
 		bridgehostservice.HostServiceMethodPluginsStateIsProviderEnabled,

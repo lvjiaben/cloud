@@ -12,6 +12,7 @@ import (
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/cachecap"
 	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
 	"lina-core/pkg/plugin/capability/dictcap"
 	"lina-core/pkg/plugin/capability/filecap"
 	"lina-core/pkg/plugin/capability/hostconfigcap"
@@ -50,6 +51,11 @@ func (directory) Storage() storagecap.Service { return storageCapability() }
 
 // Network returns the outbound network host service guest client.
 func (directory) Network() NetworkHostService { return networkCapability() }
+
+// ConfidentialOutbound returns the host-managed supplier-call guest client.
+func (directory) ConfidentialOutbound() confidentialoutboundcap.Service {
+	return confidentialOutboundCapability()
+}
 
 // RecordStore returns the governed record store facade for the current dynamic plugin.
 func (directory) RecordStore() *recordstore.DB {

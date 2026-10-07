@@ -13,6 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 )
 
@@ -32,6 +33,13 @@ func validateRuntimeBuildManifest(manifest *pluginManifest, manifestPath string)
 	manifest.Type = strings.ToLower(strings.TrimSpace(manifest.Type))
 	if manifest.Type != pluginTypeDynamic {
 		return fmt.Errorf("dynamic sample manifest type must be dynamic: %s", manifestPath)
+	}
+	manifest.Distribution = strings.ToLower(strings.TrimSpace(manifest.Distribution))
+	if manifest.Distribution == "" {
+		manifest.Distribution = "managed"
+	}
+	if manifest.Distribution != "managed" {
+		return fmt.Errorf("dynamic plugin distribution must be managed: %s", manifestPath)
 	}
 	manifest.ScopeNature = strings.ToLower(strings.TrimSpace(manifest.ScopeNature))
 	if manifest.ScopeNature == "" {
@@ -65,6 +73,15 @@ func validateRuntimeBuildManifest(manifest *pluginManifest, manifestPath string)
 	if err := validateDependencySpec(manifest.ID, manifest.Dependencies); err != nil {
 		return fmt.Errorf("dynamic plugin dependencies invalid: %w", err)
 	}
+	if err := validateBuildBusinessExtensions(manifest); err != nil {
+		return fmt.Errorf("dynamic plugin business extensions invalid: %w", err)
+	}
+	if err := validateBuildFrontendSurfaces("admin", manifest.AdminSurfaces); err != nil {
+		return fmt.Errorf("dynamic plugin admin surfaces invalid: %w", err)
+	}
+	if err := validateBuildFrontendSurfaces("customer", manifest.CustomerSurfaces); err != nil {
+		return fmt.Errorf("dynamic plugin customer surfaces invalid: %w", err)
+	}
 	if err := protocol.ValidateHostServiceSpecsForPlugin(manifest.ID, manifest.HostServices); err != nil {
 		return fmt.Errorf("dynamic plugin hostServices invalid: %w", err)
 	}
@@ -74,6 +91,122 @@ func validateRuntimeBuildManifest(manifest *pluginManifest, manifestPath string)
 	}
 	manifest.HostServices = hostServices
 	return nil
+}
+
+var buildContractVersionPattern = regexp.MustCompile(`^v[1-9][0-9]*$`)
+var buildBusinessMethodPattern = regexp.MustCompile(`^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$`)
+
+func validateBuildBusinessExtensions(manifest *pluginManifest) error {
+	dependencies := make(map[string]string)
+	if manifest.Dependencies != nil {
+		for _, dependency := range manifest.Dependencies.Plugins {
+			if dependency != nil {
+				dependencies[strings.TrimSpace(dependency.ID)] = strings.TrimSpace(dependency.Version)
+			}
+		}
+	}
+	seen := make(map[string]struct{}, len(manifest.BusinessExtensions))
+	for index, declaration := range manifest.BusinessExtensions {
+		if declaration == nil {
+			return fmt.Errorf("declaration %d cannot be nil", index+1)
+		}
+		declaration.Point = strings.TrimSpace(declaration.Point)
+		declaration.Version = strings.TrimSpace(declaration.Version)
+		declaration.Role = strings.ToLower(strings.TrimSpace(declaration.Role))
+		declaration.Owner = strings.TrimSpace(declaration.Owner)
+		if !pluginManifestIDPattern.MatchString(declaration.Point) || !buildContractVersionPattern.MatchString(declaration.Version) {
+			return fmt.Errorf("point/version is invalid: %s@%s", declaration.Point, declaration.Version)
+		}
+		if !pluginManifestIDPattern.MatchString(declaration.Owner) {
+			return fmt.Errorf("owner is invalid: %s", declaration.Owner)
+		}
+		if declaration.Role != capmodel.BusinessExtensionRoleOwner && declaration.Role != capmodel.BusinessExtensionRoleProvider {
+			return fmt.Errorf("role only supports owner/provider: %s", declaration.Point)
+		}
+		if declaration.Role == capmodel.BusinessExtensionRoleOwner && declaration.Owner != manifest.ID {
+			return fmt.Errorf("owner declaration must use current plugin id: %s", declaration.Point)
+		}
+		if declaration.Role == capmodel.BusinessExtensionRoleProvider && strings.TrimSpace(dependencies[declaration.Owner]) == "" {
+			return fmt.Errorf("provider %s requires versioned owner dependency %s", declaration.Point, declaration.Owner)
+		}
+		methodSeen := make(map[string]struct{}, len(declaration.Methods))
+		for _, method := range declaration.Methods {
+			method = strings.ToLower(strings.TrimSpace(method))
+			if !buildBusinessMethodPattern.MatchString(method) {
+				return fmt.Errorf("business extension method is invalid: %s", method)
+			}
+			if _, ok := methodSeen[method]; ok {
+				return fmt.Errorf("duplicate business extension method: %s", method)
+			}
+			methodSeen[method] = struct{}{}
+		}
+		key := declaration.Owner + ":" + declaration.Point + ":" + declaration.Version + ":" + declaration.Role
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("duplicate declaration: %s", key)
+		}
+		seen[key] = struct{}{}
+	}
+	return nil
+}
+
+func validateBuildFrontendSurfaces(host string, surfaces []*capmodel.FrontendSurfaceDeclaration) error {
+	seen := make(map[string]struct{}, len(surfaces))
+	for index, surface := range surfaces {
+		if surface == nil {
+			return fmt.Errorf("%s declaration %d cannot be nil", host, index+1)
+		}
+		surface.Key = strings.TrimSpace(surface.Key)
+		surface.Version = strings.TrimSpace(surface.Version)
+		if !pluginManifestIDPattern.MatchString(surface.Key) || !buildContractVersionPattern.MatchString(surface.Version) {
+			return fmt.Errorf("%s surface key/version is invalid: %s@%s", host, surface.Key, surface.Version)
+		}
+		if strings.TrimSpace(surface.Title) == "" || strings.TrimSpace(surface.Slot) == "" ||
+			strings.TrimSpace(surface.Route) == "" || strings.TrimSpace(surface.Entry) == "" {
+			return fmt.Errorf("%s surface %s requires title, slot, route, and entry", host, surface.Key)
+		}
+		if _, ok := seen[surface.Key]; ok {
+			return fmt.Errorf("duplicate %s surface: %s", host, surface.Key)
+		}
+		seen[surface.Key] = struct{}{}
+		capabilitySeen := make(map[string]struct{}, len(surface.BridgeCapabilities))
+		for _, capability := range surface.BridgeCapabilities {
+			capability = strings.ToLower(strings.TrimSpace(capability))
+			if !buildBusinessMethodPattern.MatchString(capability) {
+				return fmt.Errorf("%s surface bridge capability is invalid: %s", host, capability)
+			}
+			if _, ok := capabilitySeen[capability]; ok {
+				return fmt.Errorf("duplicate %s surface bridge capability: %s", host, capability)
+			}
+			capabilitySeen[capability] = struct{}{}
+		}
+	}
+	return nil
+}
+
+func cloneBuildBusinessExtensions(items []*capmodel.BusinessExtensionDeclaration) []*capmodel.BusinessExtensionDeclaration {
+	result := make([]*capmodel.BusinessExtensionDeclaration, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		next := *item
+		next.Methods = append([]string(nil), item.Methods...)
+		result = append(result, &next)
+	}
+	return result
+}
+
+func cloneBuildFrontendSurfaces(items []*capmodel.FrontendSurfaceDeclaration) []*capmodel.FrontendSurfaceDeclaration {
+	result := make([]*capmodel.FrontendSurfaceDeclaration, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		next := *item
+		next.BridgeCapabilities = append([]string(nil), item.BridgeCapabilities...)
+		result = append(result, &next)
+	}
+	return result
 }
 
 var buildDependencyVersionConstraintPattern = regexp.MustCompile(`^(>=|<=|>|<|=)?v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$`)

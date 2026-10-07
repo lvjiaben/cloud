@@ -7,6 +7,7 @@ package pluginbridge
 
 import (
 	"lina-core/pkg/plugin/capability/cachecap"
+	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
 	"lina-core/pkg/plugin/capability/hostconfigcap"
 	"lina-core/pkg/plugin/capability/lockcap"
 	"lina-core/pkg/plugin/capability/manifestcap"
@@ -24,6 +25,10 @@ func storageCapability() storagecap.Service {
 
 func networkCapability() NetworkHostService {
 	return domainhostcall.Network(invokeGuestHostService)
+}
+
+func confidentialOutboundCapability() confidentialoutboundcap.Service {
+	return domainhostcall.ConfidentialOutbound(invokeGuestHostService)
 }
 
 func cacheCapability() cachecap.Service {

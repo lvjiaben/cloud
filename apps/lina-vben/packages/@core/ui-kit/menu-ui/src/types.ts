@@ -9,6 +9,11 @@ interface MenuProps {
    */
   accordion?: boolean;
   /**
+   * @zh_CN 垂直菜单始终展开，目录标题不可折叠
+   * @default false
+   */
+  lockedOpen?: boolean;
+  /**
    * @zh_CN 菜单是否折叠
    * @default false
    */

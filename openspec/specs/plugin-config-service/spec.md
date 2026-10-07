@@ -59,7 +59,7 @@
 
 #### Scenario:监控服务插件加载监控配置
 
-- **WHEN** `linapro-monitor-server`源码插件需要读取监控采集间隔和保留倍数
+- **WHEN** `monitor-server`源码插件需要读取监控采集间隔和保留倍数
 - **THEN** 插件通过通用配置服务读取自身`manifest/config/config.yaml`或生产部署配置中的监控配置键
 - **AND** 插件在内部维护监控配置结构、默认值和验证逻辑
 - **AND** 宿主通用配置服务不暴露`MonitorConfig`或`GetMonitor()`

@@ -1,0 +1,10 @@
+{
+  "error.shared.challenge.conflict": "验证已过期、发生变化或已经使用",
+  "error.shared.challenge.invalid": "验证请求填写有误",
+  "error.shared.challenge.rejected": "验证没有通过",
+  "error.shared.challenge.unavailable": "人机验证暂时不可用",
+  "error.shared.inbox.conflict": "同一个消息幂等号已经用于不同内容",
+  "error.shared.inbox.invalid": "站内信请求填写有误",
+  "error.shared.inbox.unavailable": "站内信暂时不可用",
+  "error.shared.source.not.authorized": "当前插件无权使用这项共享能力"
+}

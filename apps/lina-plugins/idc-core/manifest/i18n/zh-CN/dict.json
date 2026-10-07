@@ -1,0 +1,2341 @@
+{
+  "dict": {
+    "idc_async_task_status": {
+      "dead_letter": {
+        "label": "死信"
+      },
+      "failed": {
+        "label": "失败"
+      },
+      "manual_takeover": {
+        "label": "人工接管"
+      },
+      "name": "IDC 异步任务状态",
+      "pending": {
+        "label": "待处理"
+      },
+      "remark": "异步业务任务生命周期",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "retry_wait": {
+        "label": "等待重试"
+      },
+      "running": {
+        "label": "执行中"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_audit_actor_type": {
+      "external": {
+        "label": "外部调用方"
+      },
+      "name": "IDC 审计操作者类型",
+      "remark": "业务审计操作者类型",
+      "system": {
+        "label": "系统"
+      },
+      "user": {
+        "label": "用户"
+      }
+    },
+    "idc_audit_result": {
+      "denied": {
+        "label": "已拒绝"
+      },
+      "failed": {
+        "label": "失败"
+      },
+      "name": "IDC 审计结果",
+      "remark": "业务审计操作结果",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_audit_risk": {
+      "critical": {
+        "label": "严重"
+      },
+      "high": {
+        "label": "高"
+      },
+      "low": {
+        "label": "低"
+      },
+      "medium": {
+        "label": "中"
+      },
+      "name": "IDC 审计风险",
+      "remark": "业务审计风险等级"
+    },
+    "idc_binding_source": {
+      "admin_invitation": {
+        "label": "管理员邀请"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 绑定来源",
+      "onboarding": {
+        "label": "门户开户"
+      },
+      "remark": "客户身份绑定来源"
+    },
+    "idc_binding_status": {
+      "active": {
+        "label": "生效"
+      },
+      "name": "IDC 绑定状态",
+      "remark": "身份与客户绑定生命周期",
+      "revoked": {
+        "label": "已撤销"
+      }
+    },
+    "idc_contact_channel": {
+      "email": {
+        "label": "电子邮箱"
+      },
+      "name": "IDC 联系渠道",
+      "phone": {
+        "label": "手机"
+      },
+      "remark": "开户时已验证的联系渠道"
+    },
+    "idc_customer_status": {
+      "active": {
+        "label": "正常"
+      },
+      "anonymized": {
+        "label": "已匿名化"
+      },
+      "disabled": {
+        "label": "停用"
+      },
+      "name": "IDC 客户状态",
+      "pending_activation": {
+        "label": "待激活"
+      },
+      "remark": "客户主体生命周期",
+      "restricted": {
+        "label": "受限"
+      }
+    },
+    "idc_customer_type": {
+      "enterprise": {
+        "label": "企业"
+      },
+      "individual": {
+        "label": "个人"
+      },
+      "name": "IDC 客户类型",
+      "remark": "个人与企业客户类型"
+    },
+    "idc_idempotency_status": {
+      "failed": {
+        "label": "失败"
+      },
+      "in_progress": {
+        "label": "处理中"
+      },
+      "name": "IDC 幂等状态",
+      "remark": "请求幂等生命周期",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_onboarding_status": {
+      "cancelled": {
+        "label": "已取消"
+      },
+      "consumed": {
+        "label": "已使用"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "name": "IDC 开户状态",
+      "pending": {
+        "label": "待处理"
+      },
+      "remark": "客户开户意图生命周期",
+      "verified": {
+        "label": "已验证"
+      }
+    },
+    "idc_outbox_status": {
+      "dead_letter": {
+        "label": "死信"
+      },
+      "name": "IDC 事务发件箱状态",
+      "pending": {
+        "label": "待处理"
+      },
+      "processing": {
+        "label": "处理中"
+      },
+      "published": {
+        "label": "已发布"
+      },
+      "remark": "事务发件箱生命周期",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "retry_wait": {
+        "label": "等待重试"
+      }
+    },
+    "idc_principal_audience": {
+      "customer": {
+        "label": "客户"
+      },
+      "name": "IDC 身份受众",
+      "remark": "互斥的客户与员工身份受众",
+      "staff": {
+        "label": "员工"
+      }
+    },
+    "idc_task_attempt_status": {
+      "failed": {
+        "label": "失败"
+      },
+      "name": "IDC 任务尝试状态",
+      "remark": "异步任务执行结果",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "running": {
+        "label": "执行中"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_address_type": {
+      "billing": {
+        "label": "账单地址"
+      },
+      "contact": {
+        "label": "联系地址"
+      },
+      "name": "IDC 客户地址类型",
+      "registered": {
+        "label": "注册地址"
+      },
+      "remark": "客户地址用途类型",
+      "service": {
+        "label": "服务地址"
+      }
+    },
+    "idc_assignment_source": {
+      "manual": {
+        "label": "手工分配"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 客户关系分配来源",
+      "remark": "客户等级、分组和标签等关系的分配来源",
+      "rule": {
+        "label": "规则分配"
+      }
+    },
+    "idc_assignment_status": {
+      "active": {
+        "label": "生效"
+      },
+      "name": "IDC 客户关系分配状态",
+      "remark": "客户联系人角色、等级、分组、标签和字段值关系生命周期",
+      "revoked": {
+        "label": "已撤销"
+      }
+    },
+    "idc_attachment_scan_status": {
+      "clean": {
+        "label": "安全"
+      },
+      "failed": {
+        "label": "扫描失败"
+      },
+      "infected": {
+        "label": "检出威胁"
+      },
+      "name": "IDC 附件扫描状态",
+      "pending": {
+        "label": "待扫描"
+      },
+      "remark": "私有客户附件安全扫描生命周期"
+    },
+    "idc_attachment_status": {
+      "available": {
+        "label": "可用"
+      },
+      "name": "IDC 附件状态",
+      "pending": {
+        "label": "待处理"
+      },
+      "quarantined": {
+        "label": "已隔离"
+      },
+      "remark": "私有客户附件可用性生命周期",
+      "removed": {
+        "label": "已移除"
+      }
+    },
+    "idc_blacklist_scope": {
+      "all_business": {
+        "label": "全部业务"
+      },
+      "name": "IDC 黑名单限制范围",
+      "purchase": {
+        "label": "购买"
+      },
+      "refund": {
+        "label": "退款"
+      },
+      "registration": {
+        "label": "注册"
+      },
+      "remark": "客户黑名单业务限制范围",
+      "resource_operation": {
+        "label": "资源操作"
+      }
+    },
+    "idc_blacklist_risk_level": {
+      "critical": {
+        "label": "严重"
+      },
+      "high": {
+        "label": "高"
+      },
+      "low": {
+        "label": "低"
+      },
+      "medium": {
+        "label": "中"
+      },
+      "name": "IDC 黑名单风险等级",
+      "remark": "客户黑名单限制的风险严重程度"
+    },
+    "idc_blacklist_status": {
+      "active": {
+        "label": "生效"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "name": "IDC 黑名单状态",
+      "pending": {
+        "label": "待审核"
+      },
+      "rejected": {
+        "label": "已驳回"
+      },
+      "remark": "客户黑名单审核与生效生命周期",
+      "revoked": {
+        "label": "已撤销"
+      }
+    },
+    "idc_consent_action": {
+      "granted": {
+        "label": "已同意"
+      },
+      "name": "IDC 同意动作",
+      "remark": "客户同意的授予与撤回动作",
+      "withdrawn": {
+        "label": "已撤回"
+      }
+    },
+    "idc_consent_source": {
+      "admin": {
+        "label": "管理后台"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 同意来源",
+      "portal": {
+        "label": "客户门户"
+      },
+      "remark": "客户同意证据的采集来源",
+      "system": {
+        "label": "系统"
+      }
+    },
+    "idc_consent_type": {
+      "account_closure": {
+        "label": "账户注销"
+      },
+      "data_export": {
+        "label": "数据导出"
+      },
+      "marketing": {
+        "label": "营销"
+      },
+      "name": "IDC 同意类型",
+      "privacy": {
+        "label": "隐私政策"
+      },
+      "remark": "客户条款、隐私与敏感信息等同意类型",
+      "sensitive_personal_information": {
+        "label": "敏感个人信息"
+      },
+      "terms": {
+        "label": "服务条款"
+      }
+    },
+    "idc_contact_role": {
+      "billing": {
+        "label": "账务联系人"
+      },
+      "name": "IDC 联系人角色",
+      "operations": {
+        "label": "运维联系人"
+      },
+      "primary": {
+        "label": "主要联系人"
+      },
+      "remark": "客户主体内的通知联系人角色",
+      "technical": {
+        "label": "技术联系人"
+      }
+    },
+    "idc_custom_field_customer_scope": {
+      "all": {
+        "label": "全部客户"
+      },
+      "enterprise": {
+        "label": "企业客户"
+      },
+      "individual": {
+        "label": "个人客户"
+      },
+      "name": "IDC 自定义字段客户范围",
+      "remark": "客户自定义字段适用的客户类型范围"
+    },
+    "idc_custom_field_data_type": {
+      "boolean": {
+        "label": "布尔值"
+      },
+      "date": {
+        "label": "日期"
+      },
+      "datetime": {
+        "label": "日期时间"
+      },
+      "decimal": {
+        "label": "小数"
+      },
+      "integer": {
+        "label": "整数"
+      },
+      "multi_select": {
+        "label": "多选"
+      },
+      "name": "IDC 自定义字段数据类型",
+      "remark": "客户自定义字段的稳定数据类型",
+      "single_select": {
+        "label": "单选"
+      },
+      "text": {
+        "label": "文本"
+      }
+    },
+    "idc_custom_field_visibility": {
+      "admin_only": {
+        "label": "仅后台"
+      },
+      "customer_edit": {
+        "label": "客户可编辑"
+      },
+      "customer_read": {
+        "label": "客户只读"
+      },
+      "name": "IDC 自定义字段可见性",
+      "remark": "客户自定义字段的后台与客户侧可见性"
+    },
+    "idc_customer_attachment_category": {
+      "customer_provided": {
+        "label": "客户提供"
+      },
+      "general": {
+        "label": "常规"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 客户附件分类",
+      "remark": "客户附件业务分类",
+      "risk": {
+        "label": "风险"
+      },
+      "sales": {
+        "label": "销售"
+      },
+      "support": {
+        "label": "支持"
+      }
+    },
+    "idc_customer_attachment_visibility": {
+      "admin_only": {
+        "label": "仅后台"
+      },
+      "customer_visible": {
+        "label": "客户可见"
+      },
+      "name": "IDC 客户附件可见性",
+      "remark": "客户附件的后台与客户侧可见性"
+    },
+    "idc_customer_note_category": {
+      "billing": {
+        "label": "财务"
+      },
+      "compliance": {
+        "label": "合规"
+      },
+      "general": {
+        "label": "常规"
+      },
+      "name": "IDC 客户备注分类",
+      "remark": "客户内部备注业务分类",
+      "risk": {
+        "label": "风险"
+      },
+      "sales": {
+        "label": "销售"
+      },
+      "service": {
+        "label": "服务"
+      }
+    },
+    "idc_customer_note_status": {
+      "active": {
+        "label": "生效"
+      },
+      "name": "IDC 客户备注状态",
+      "remark": "客户内部备注生命周期",
+      "withdrawn": {
+        "label": "已撤回"
+      }
+    },
+    "idc_customer_risk_category": {
+      "abuse": {
+        "label": "滥用"
+      },
+      "compliance": {
+        "label": "合规"
+      },
+      "identity": {
+        "label": "身份"
+      },
+      "name": "IDC 客户风险分类",
+      "other": {
+        "label": "其他"
+      },
+      "payment": {
+        "label": "支付"
+      },
+      "refund": {
+        "label": "退款"
+      },
+      "remark": "客户风险信号业务分类",
+      "resource": {
+        "label": "资源"
+      },
+      "security": {
+        "label": "安全"
+      }
+    },
+    "idc_customer_risk_level": {
+      "critical": {
+        "label": "严重"
+      },
+      "high": {
+        "label": "高"
+      },
+      "info": {
+        "label": "提示"
+      },
+      "low": {
+        "label": "低"
+      },
+      "medium": {
+        "label": "中"
+      },
+      "name": "IDC 客户风险等级",
+      "remark": "包含提示级别的客户风险严重程度"
+    },
+    "idc_customer_risk_source": {
+      "compliance": {
+        "label": "合规"
+      },
+      "manual": {
+        "label": "人工"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 客户风险来源",
+      "payment": {
+        "label": "支付"
+      },
+      "provider": {
+        "label": "供应商"
+      },
+      "remark": "客户风险信号来源",
+      "rule": {
+        "label": "规则"
+      }
+    },
+    "idc_customer_risk_status": {
+      "acknowledged": {
+        "label": "已确认"
+      },
+      "dismissed": {
+        "label": "已忽略"
+      },
+      "name": "IDC 客户风险状态",
+      "open": {
+        "label": "待处理"
+      },
+      "remark": "客户风险复核与处置生命周期",
+      "resolved": {
+        "label": "已解决"
+      }
+    },
+    "idc_customer_account_status_reason": {
+      "account_reactivated": {
+        "label": "账户已恢复"
+      },
+      "activation_completed": {
+        "label": "完成激活"
+      },
+      "approved_closure": {
+        "label": "批准注销"
+      },
+      "manual_disable": {
+        "label": "人工停用"
+      },
+      "name": "IDC 客户账户状态原因",
+      "remark": "客户账户生命周期转换的稳定原因",
+      "restriction_resolved": {
+        "label": "限制已解除"
+      },
+      "risk_restriction": {
+        "label": "风险限制"
+      },
+      "verification_required": {
+        "label": "需要认证"
+      }
+    },
+    "idc_customer_account_transition_source": {
+      "closure": {
+        "label": "注销流程"
+      },
+      "name": "IDC 客户账户转换来源",
+      "remark": "客户账户生命周期转换的可信来源",
+      "staff": {
+        "label": "授权员工"
+      }
+    },
+    "idc_customer_closure_finding": {
+      "active_contracts": {
+        "label": "存在进行中合同"
+      },
+      "active_services": {
+        "label": "存在有效服务"
+      },
+      "in_progress_operations": {
+        "label": "存在进行中业务操作"
+      },
+      "legal_retention": {
+        "label": "存在法定留存义务"
+      },
+      "name": "IDC 客户注销检查项",
+      "remark": "注销前置检查返回的有界聚合结果",
+      "unsettled_funds": {
+        "label": "存在未结资金"
+      },
+      "unsettled_invoices": {
+        "label": "存在未结账单"
+      }
+    },
+    "idc_customer_closure_status": {
+      "anonymizing": {
+        "label": "匿名化处理中"
+      },
+      "approved": {
+        "label": "已批准"
+      },
+      "blocked": {
+        "label": "前置检查未通过"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "completed": {
+        "label": "已完成"
+      },
+      "name": "IDC 客户注销状态",
+      "pending_review": {
+        "label": "待复核"
+      },
+      "rejected": {
+        "label": "已驳回"
+      },
+      "remark": "受控客户注销申请生命周期"
+    },
+    "idc_customer_data_export_format": {
+      "json_zip": {
+        "label": "JSON 压缩包"
+      },
+      "name": "IDC 客户数据导出格式",
+      "remark": "客户自有数据的私有导出容器格式"
+    },
+    "idc_customer_data_export_scope": {
+      "name": "IDC 客户数据导出范围",
+      "own_deliverable_data": {
+        "label": "本人可交付数据"
+      },
+      "remark": "允许客户私有导出的自有数据范围"
+    },
+    "idc_customer_legal_change_reason": {
+      "enterprise_registration_change": {
+        "label": "企业登记变更"
+      },
+      "identifier_correction": {
+        "label": "标识信息更正"
+      },
+      "legal_name_change": {
+        "label": "法定名称变更"
+      },
+      "name": "IDC 法定资料变更原因",
+      "other": {
+        "label": "其他"
+      },
+      "remark": "已认证法定资料变更的复核原因"
+    },
+    "idc_customer_legal_change_status": {
+      "approved": {
+        "label": "已批准"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "name": "IDC 法定资料变更状态",
+      "rejected": {
+        "label": "已驳回"
+      },
+      "remark": "法定资料变更复核生命周期",
+      "submitted": {
+        "label": "已提交"
+      },
+      "under_review": {
+        "label": "复核中"
+      }
+    },
+    "idc_data_sensitivity": {
+      "name": "IDC 数据敏感级别",
+      "ordinary": {
+        "label": "普通"
+      },
+      "personal": {
+        "label": "个人信息"
+      },
+      "remark": "客户自定义字段的数据敏感级别",
+      "sensitive": {
+        "label": "敏感信息"
+      }
+    },
+    "idc_follow_up_channel": {
+      "email": {
+        "label": "电子邮箱"
+      },
+      "meeting": {
+        "label": "会议"
+      },
+      "name": "IDC 客户跟进渠道",
+      "other": {
+        "label": "其他"
+      },
+      "phone": {
+        "label": "电话"
+      },
+      "remark": "客户跟进活动使用的联系渠道",
+      "sms": {
+        "label": "短信"
+      },
+      "ticket": {
+        "label": "工单"
+      },
+      "wechat": {
+        "label": "微信"
+      }
+    },
+    "idc_follow_up_kind": {
+      "activity": {
+        "label": "跟进记录"
+      },
+      "name": "IDC 客户跟进类型",
+      "plan": {
+        "label": "计划"
+      },
+      "remark": "客户跟进计划与活动类型"
+    },
+    "idc_follow_up_status": {
+      "cancelled": {
+        "label": "已取消"
+      },
+      "completed": {
+        "label": "已完成"
+      },
+      "name": "IDC 客户跟进状态",
+      "planned": {
+        "label": "计划中"
+      },
+      "remark": "客户跟进计划生命周期"
+    },
+    "idc_invoice_title_type": {
+      "enterprise": {
+        "label": "企业"
+      },
+      "individual": {
+        "label": "个人"
+      },
+      "name": "IDC 发票抬头类型",
+      "remark": "客户开票资料的抬头主体类型"
+    },
+    "idc_notification_channel": {
+      "email": {
+        "label": "电子邮箱"
+      },
+      "in_app": {
+        "label": "站内信"
+      },
+      "name": "IDC 通知渠道",
+      "remark": "客户通知偏好支持的渠道",
+      "sms": {
+        "label": "短信"
+      },
+      "wechat_official": {
+        "label": "微信公众号"
+      },
+      "wechat_work": {
+        "label": "企业微信"
+      }
+    },
+    "idc_notification_topic": {
+      "account": {
+        "label": "账户"
+      },
+      "billing": {
+        "label": "财务"
+      },
+      "marketing": {
+        "label": "营销"
+      },
+      "name": "IDC 通知主题",
+      "remark": "客户通知偏好的业务主题",
+      "security": {
+        "label": "安全"
+      },
+      "service": {
+        "label": "服务"
+      },
+      "support": {
+        "label": "支持"
+      }
+    },
+    "idc_record_status": {
+      "active": {
+        "label": "生效"
+      },
+      "archived": {
+        "label": "已归档"
+      },
+      "name": "IDC 通用归档状态",
+      "remark": "可归档客户配置与资料记录的生命周期"
+    },
+    "idc_catalog_activation_status": {
+      "active": {
+        "label": "启用"
+      },
+      "inactive": {
+        "label": "停用"
+      },
+      "name": "IDC 商品配置状态",
+      "remark": "商品配置记录启停状态"
+    },
+    "idc_catalog_charge_type": {
+      "name": "IDC 计费类型",
+      "one_time": {
+        "label": "一次性"
+      },
+      "recurring": {
+        "label": "周期"
+      },
+      "remark": "商品一次性、周期、阶梯、按量和试用计费",
+      "tiered": {
+        "label": "阶梯"
+      },
+      "trial": {
+        "label": "试用"
+      },
+      "usage": {
+        "label": "按量"
+      }
+    },
+    "idc_catalog_compatibility_type": {
+      "allows": {
+        "label": "允许组合"
+      },
+      "excludes": {
+        "label": "不能同时选择"
+      },
+      "name": "IDC 配置兼容规则类型",
+      "remark": "配置项之间的兼容关系",
+      "requires": {
+        "label": "需要同时选择"
+      }
+    },
+    "idc_catalog_period_unit": {
+      "day": {
+        "label": "天"
+      },
+      "hour": {
+        "label": "小时"
+      },
+      "month": {
+        "label": "月"
+      },
+      "name": "IDC 计费周期单位",
+      "once": {
+        "label": "一次"
+      },
+      "remark": "商品计费周期单位",
+      "year": {
+        "label": "年"
+      }
+    },
+    "idc_catalog_price_phase": {
+      "both": {
+        "label": "新购与续费"
+      },
+      "name": "IDC 价格阶段",
+      "new_purchase": {
+        "label": "仅新购"
+      },
+      "remark": "新购与续费价格适用阶段",
+      "renewal": {
+        "label": "仅续费"
+      }
+    },
+    "idc_catalog_product_status": {
+      "active": {
+        "label": "销售中"
+      },
+      "draft": {
+        "label": "草稿"
+      },
+      "name": "IDC 商品状态",
+      "remark": "商品生命周期",
+      "retired": {
+        "label": "已退市"
+      },
+      "suspended": {
+        "label": "已暂停"
+      }
+    },
+    "idc_catalog_quantity_mode": {
+      "fixed": {
+        "label": "固定金额"
+      },
+      "name": "IDC 计费数量模式",
+      "per_unit": {
+        "label": "按数量"
+      },
+      "remark": "固定、按数量、阶梯和按量计费方式",
+      "tiered": {
+        "label": "阶梯"
+      },
+      "usage": {
+        "label": "按量"
+      }
+    },
+    "idc_catalog_selection_mode": {
+      "multiple": {
+        "label": "多选"
+      },
+      "name": "IDC 配置选择模式",
+      "quantity": {
+        "label": "数量"
+      },
+      "remark": "服务器配置组选取方式",
+      "single": {
+        "label": "单选"
+      }
+    },
+    "idc_catalog_tier_mode": {
+      "graduated": {
+        "label": "分段累进"
+      },
+      "name": "IDC 阶梯计价模式",
+      "remark": "用量跨越多个价格区间时的计价方式"
+    },
+    "idc_catalog_usage_collection_unit": {
+      "day": {
+        "label": "天"
+      },
+      "hour": {
+        "label": "小时"
+      },
+      "month": {
+        "label": "月"
+      },
+      "name": "IDC 用量采集周期单位",
+      "remark": "权威计量数据的采集周期单位"
+    },
+    "idc_catalog_usage_missing_policy": {
+      "estimate_previous_period": {
+        "label": "按上一完整周期暂估"
+      },
+      "name": "IDC 用量缺失策略",
+      "pending_recalculation": {
+        "label": "等待补算"
+      },
+      "remark": "权威用量缺失时的失败关闭或明确暂估策略"
+    },
+    "idc_catalog_usage_rounding_mode": {
+      "down": {
+        "label": "向下舍入"
+      },
+      "name": "IDC 用量舍入模式",
+      "nearest": {
+        "label": "四舍五入"
+      },
+      "remark": "按量计费数量的整数舍入方式",
+      "up": {
+        "label": "向上舍入"
+      }
+    },
+    "idc_catalog_version_source": {
+      "copy": {
+        "label": "复制商品"
+      },
+      "manual": {
+        "label": "人工创建"
+      },
+      "migration": {
+        "label": "数据迁移"
+      },
+      "name": "IDC 商品版本来源",
+      "remark": "商品草稿与版本来源"
+    },
+    "idc_catalog_version_status": {
+      "draft": {
+        "label": "草稿"
+      },
+      "name": "IDC 商品版本状态",
+      "published": {
+        "label": "已发布"
+      },
+      "remark": "商品发布版本生命周期",
+      "retired": {
+        "label": "已退役"
+      },
+      "superseded": {
+        "label": "已被新版本替代"
+      }
+    },
+    "idc_commerce_cart_status": {
+      "abandoned": {
+        "label": "已放弃"
+      },
+      "active": {
+        "label": "使用中"
+      },
+      "checked_out": {
+        "label": "已结算"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "merged": {
+        "label": "已合并"
+      },
+      "name": "IDC 购物车状态",
+      "remark": "购物车生命周期"
+    },
+    "idc_commerce_cart_item_status": {
+      "active": {
+        "label": "有效"
+      },
+      "name": "IDC 购物车项目状态",
+      "remark": "购物车项目生命周期",
+      "removed": {
+        "label": "已移除"
+      },
+      "needs_reprice": {
+        "label": "需要重新报价"
+      },
+      "unavailable": {
+        "label": "暂不可用"
+      }
+    },
+    "idc_commerce_quote_purpose": {
+      "addon": {
+        "label": "增值服务"
+      },
+      "change": {
+        "label": "配置变更"
+      },
+      "ip_change": {
+        "label": "IP 变更"
+      },
+      "name": "IDC 报价用途",
+      "new_purchase": {
+        "label": "新购"
+      },
+      "remark": "不可变报价对应的业务用途",
+      "renewal": {
+        "label": "续费"
+      }
+    },
+    "idc_commerce_quote_source": {
+      "channel": {
+        "label": "下游渠道"
+      },
+      "customer": {
+        "label": "客户"
+      },
+      "guest": {
+        "label": "游客"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 报价来源",
+      "remark": "发起不可变报价的来源",
+      "staff": {
+        "label": "工作人员"
+      },
+      "system": {
+        "label": "系统"
+      }
+    },
+    "idc_commerce_inventory_decision": {
+      "available": {
+        "label": "可售"
+      },
+      "name": "IDC 库存决策",
+      "remark": "报价项目锁定的库存决策"
+    },
+    "idc_commerce_fulfillment_mode": {
+      "automatic": {
+        "label": "自动履约"
+      },
+      "manual_review": {
+        "label": "人工审核"
+      },
+      "name": "IDC 履约模式",
+      "remark": "报价项目锁定的履约模式"
+    },
+    "idc_commerce_risk_decision": {
+      "approved": {
+        "label": "已通过"
+      },
+      "manual_review": {
+        "label": "人工审核"
+      },
+      "name": "IDC 风控决策",
+      "remark": "报价锁定的风控门禁决策"
+    },
+    "idc_commerce_order_status": {
+      "cancelled": {
+        "label": "已取消"
+      },
+      "fulfilled": {
+        "label": "已全部履约"
+      },
+      "fulfilling": {
+        "label": "履约中"
+      },
+      "manual_review": {
+        "label": "人工审核"
+      },
+      "name": "IDC 订单状态",
+      "paid": {
+        "label": "已支付"
+      },
+      "partially_fulfilled": {
+        "label": "部分履约"
+      },
+      "partially_refunded": {
+        "label": "部分退款"
+      },
+      "payment_processing": {
+        "label": "支付处理中"
+      },
+      "pending_payment": {
+        "label": "待支付"
+      },
+      "refunded": {
+        "label": "已退款"
+      },
+      "remark": "客户订单生命周期"
+    },
+    "idc_commerce_order_source": {
+      "admin": {
+        "label": "管理后台"
+      },
+      "channel": {
+        "label": "下游渠道"
+      },
+      "portal": {
+        "label": "用户中心"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 订单来源",
+      "remark": "提交客户订单的来源"
+    },
+    "idc_commerce_reservation_status": {
+      "committed": {
+        "label": "已确认"
+      },
+      "consumed": {
+        "label": "已消耗"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "held": {
+        "label": "已占用"
+      },
+      "name": "IDC 库存预留状态",
+      "partial": {
+        "label": "部分结算"
+      },
+      "released": {
+        "label": "已释放"
+      },
+      "remark": "库存预留生命周期"
+    },
+    "idc_commerce_inventory_release_reason": {
+      "fulfillment_failed": {
+        "label": "履约失败"
+      },
+      "manual_release": {
+        "label": "人工释放"
+      },
+      "name": "IDC 库存释放原因",
+      "order_cancelled": {
+        "label": "订单取消"
+      },
+      "payment_expired": {
+        "label": "支付超时"
+      },
+      "remark": "释放库存预留的原因",
+      "rerouted": {
+        "label": "已改路由"
+      }
+    },
+    "idc_commerce_fulfillment_status": {
+      "cancelled": {
+        "label": "已取消"
+      },
+      "executing": {
+        "label": "执行中"
+      },
+      "failed": {
+        "label": "失败"
+      },
+      "manual_review": {
+        "label": "人工审核"
+      },
+      "name": "IDC 单台履约状态",
+      "pending_payment": {
+        "label": "待支付"
+      },
+      "ready": {
+        "label": "待执行"
+      },
+      "remark": "每台服务器独立履约生命周期",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_commerce_quote_charge_kind": {
+      "base": {
+        "label": "基础商品"
+      },
+      "name": "IDC 报价费用类型",
+      "option": {
+        "label": "配置选项"
+      },
+      "remark": "不可变报价中的标准化费用组成"
+    },
+    "idc_commerce_quote_adjustment_type": {
+      "agent_price": {
+        "label": "代理价格"
+      },
+      "campaign_discount": {
+        "label": "营销活动优惠"
+      },
+      "coupon": {
+        "label": "优惠码"
+      },
+      "customer_price": {
+        "label": "客户专享价"
+      },
+      "manual_discount": {
+        "label": "人工优惠"
+      },
+      "name": "IDC 报价调价类型",
+      "remark": "不可变报价锁定的优惠与调价依据",
+      "voucher": {
+        "label": "代金券"
+      }
+    },
+    "idc_billing_invoice_status": {
+      "bad_debt": {
+        "label": "坏账"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "draft": {
+        "label": "草稿"
+      },
+      "name": "IDC 账单状态",
+      "overdue": {
+        "label": "已逾期"
+      },
+      "paid": {
+        "label": "已支付"
+      },
+      "partially_paid": {
+        "label": "部分支付"
+      },
+      "partially_refunded": {
+        "label": "部分退款"
+      },
+      "pending_payment": {
+        "label": "待支付"
+      },
+      "refunded": {
+        "label": "已退款"
+      },
+      "remark": "应收账单生命周期"
+    },
+    "idc_billing_invoice_source": {
+      "change": {
+        "label": "服务变更"
+      },
+      "consolidation": {
+        "label": "合并"
+      },
+      "manual": {
+        "label": "人工"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 账单来源",
+      "order": {
+        "label": "订单"
+      },
+      "remark": "应收账单业务来源",
+      "renewal": {
+        "label": "续费"
+      }
+    },
+    "idc_billing_account_type": {
+      "accounts_receivable": {
+        "label": "应收账款"
+      },
+      "adjustment_clearing": {
+        "label": "调账清算"
+      },
+      "bad_debt_expense": {
+        "label": "坏账费用"
+      },
+      "customer_balance": {
+        "label": "客户余额"
+      },
+      "customer_commission": {
+        "label": "客户佣金"
+      },
+      "customer_credit": {
+        "label": "客户信用"
+      },
+      "customer_gift": {
+        "label": "客户赠送"
+      },
+      "merchant_cash": {
+        "label": "商家现金"
+      },
+      "name": "IDC 账本账户类型",
+      "payment_clearing": {
+        "label": "支付清算"
+      },
+      "refund_clearing": {
+        "label": "退款清算"
+      },
+      "remark": "余额、信用、赠送、佣金及系统账户隔离",
+      "revenue": {
+        "label": "收入"
+      },
+      "tax_payable": {
+        "label": "应付税款"
+      },
+      "waiver_expense": {
+        "label": "减免费用"
+      }
+    },
+    "idc_billing_account_status": {
+      "active": {
+        "label": "活动"
+      },
+      "closed": {
+        "label": "关闭"
+      },
+      "frozen": {
+        "label": "冻结"
+      },
+      "name": "IDC 账本账户状态",
+      "remark": "逐币种账本账户生命周期"
+    },
+    "idc_billing_normal_balance": {
+      "credit": {
+        "label": "贷方"
+      },
+      "debit": {
+        "label": "借方"
+      },
+      "name": "IDC 正常余额方向",
+      "remark": "双式记账账户借贷方向"
+    },
+    "idc_billing_transaction_type": {
+      "adjustment": {
+        "label": "调账"
+      },
+      "balance_payment": {
+        "label": "余额支付"
+      },
+      "commission": {
+        "label": "佣金"
+      },
+      "credit": {
+        "label": "信用"
+      },
+      "gift": {
+        "label": "赠送"
+      },
+      "invoice_issuance": {
+        "label": "账单开立"
+      },
+      "manual_receipt": {
+        "label": "人工收款"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 账本交易类型",
+      "payment": {
+        "label": "支付"
+      },
+      "recharge": {
+        "label": "充值"
+      },
+      "refund": {
+        "label": "退款"
+      },
+      "remark": "不可变资金事件类型",
+      "reversal": {
+        "label": "冲销"
+      },
+      "writeoff": {
+        "label": "坏账核销"
+      }
+    },
+    "idc_billing_entry_direction": {
+      "credit": {
+        "label": "贷方"
+      },
+      "debit": {
+        "label": "借方"
+      },
+      "name": "IDC 账本分录方向",
+      "remark": "借方或贷方分录"
+    },
+    "idc_billing_hold_status": {
+      "active": {
+        "label": "活动"
+      },
+      "consumed": {
+        "label": "已消费"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "name": "IDC 资金锁定状态",
+      "partially_consumed": {
+        "label": "部分消费"
+      },
+      "released": {
+        "label": "已释放"
+      },
+      "remark": "同币种客户余额锁定生命周期"
+    },
+    "idc_billing_payment_source": {
+      "balance": {
+        "label": "客户余额"
+      },
+      "channel_payment": {
+        "label": "在线渠道"
+      },
+      "credit": {
+        "label": "客户信用"
+      },
+      "manual_receipt": {
+        "label": "人工收款"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 支付分配来源",
+      "remark": "账单有效入账来源"
+    },
+    "idc_billing_refund_source": {
+      "balance_credit": {
+        "label": "退入余额"
+      },
+      "channel_refund": {
+        "label": "渠道退款"
+      },
+      "credit_release": {
+        "label": "释放信用"
+      },
+      "manual": {
+        "label": "人工退款"
+      },
+      "migration": {
+        "label": "迁移"
+      },
+      "name": "IDC 退款分配来源",
+      "remark": "账单退款结果来源"
+    },
+    "idc_billing_adjustment_type": {
+      "balance_credit": {
+        "label": "余额补款"
+      },
+      "balance_debit": {
+        "label": "余额扣款"
+      },
+      "invoice_waiver": {
+        "label": "账单减免"
+      },
+      "manual_receipt": {
+        "label": "人工收款"
+      },
+      "name": "IDC 调账类型",
+      "remark": "后台财务调账意图类型",
+      "writeoff": {
+        "label": "坏账核销"
+      }
+    },
+    "idc_billing_adjustment_status": {
+      "approved": {
+        "label": "已批准"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "name": "IDC 调账状态",
+      "pending_review": {
+        "label": "待复核"
+      },
+      "posted": {
+        "label": "已入账"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      },
+      "remark": "调账申请审核与入账生命周期"
+    },
+    "idc_billing_approval_decision": {
+      "approved": {
+        "label": "批准"
+      },
+      "name": "IDC 调账审批决定",
+      "rejected": {
+        "label": "拒绝"
+      },
+      "remark": "第二位财务人员审批决定"
+    },
+    "idc_commerce_cancellation_source": {
+      "admin": {
+        "label": "管理员"
+      },
+      "customer": {
+        "label": "客户"
+      },
+      "name": "IDC 订单取消来源",
+      "payment": {
+        "label": "支付系统"
+      },
+      "remark": "订单取消意图的可信来源",
+      "system": {
+        "label": "系统"
+      }
+    },
+    "idc_commerce_cancellation_reason": {
+      "customer_requested": {
+        "label": "客户主动取消"
+      },
+      "manual_rejected": {
+        "label": "人工审核拒绝"
+      },
+      "name": "IDC 订单取消原因",
+      "payment_expired": {
+        "label": "付款超时"
+      },
+      "remark": "订单取消的稳定业务原因",
+      "risk_rejected": {
+        "label": "风险审核拒绝"
+      }
+    },
+    "idc_commerce_cancellation_status": {
+      "completed": {
+        "label": "已完成"
+      },
+      "manual_review": {
+        "label": "需要人工核对"
+      },
+      "name": "IDC 订单取消状态",
+      "pending_payment_closure": {
+        "label": "等待支付关单"
+      },
+      "remark": "订单取消与支付关单协同生命周期"
+    },
+    "idc_commerce_order_review_type": {
+      "name": "IDC 订单审核类型",
+      "remark": "互不替代的订单审核门禁",
+      "risk": {
+        "label": "风险审核"
+      }
+    },
+    "idc_commerce_order_review_status": {
+      "approved": {
+        "label": "已批准"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "name": "IDC 订单审核状态",
+      "pending": {
+        "label": "待审核"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      },
+      "remark": "订单人工审核生命周期"
+    },
+    "idc_commerce_order_review_reason": {
+      "name": "IDC 订单审核原因",
+      "order_cancelled": {
+        "label": "订单已取消"
+      },
+      "payment_expired": {
+        "label": "付款已超时"
+      },
+      "remark": "订单审核的稳定决定原因",
+      "risk_approved": {
+        "label": "风险审核通过"
+      },
+      "risk_rejected": {
+        "label": "风险审核拒绝"
+      }
+    },
+    "idc_commerce_payment_context_status": {
+      "awaiting_identity": {
+        "label": "等待实名认证"
+      },
+      "awaiting_order_review": {
+        "label": "等待订单审核"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "closed": {
+        "label": "已关闭"
+      },
+      "expired": {
+        "label": "已过期"
+      },
+      "name": "IDC 付款准备上下文状态",
+      "ready": {
+        "label": "可以付款"
+      },
+      "remark": "订单付款准备与实名恢复上下文状态"
+    },
+    "idc_commerce_payment_context_reason": {
+      "identity_expired": {
+        "label": "实名认证已过期"
+      },
+      "identity_pending": {
+        "label": "实名认证处理中"
+      },
+      "identity_rejected": {
+        "label": "实名认证未通过"
+      },
+      "identity_revoked": {
+        "label": "实名认证已撤销"
+      },
+      "identity_unverified": {
+        "label": "尚未实名认证"
+      },
+      "name": "IDC 付款准备阻断原因",
+      "order_cancelled": {
+        "label": "订单已取消"
+      },
+      "order_not_payable": {
+        "label": "订单当前不可付款"
+      },
+      "order_review_required": {
+        "label": "订单仍需独立审核"
+      },
+      "payment_expired": {
+        "label": "付款期限已过"
+      },
+      "payment_ready": {
+        "label": "订单可以付款"
+      },
+      "remark": "付款准备的稳定阻断或放行原因"
+    },
+    "idc_commerce_assisted_quote_status": {
+      "approved": {
+        "label": "已批准"
+      },
+      "name": "IDC 协助报价状态",
+      "ordered": {
+        "label": "已下单"
+      },
+      "pending_approval": {
+        "label": "待审批"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      },
+      "remark": "后台协助报价的独立审批与下单生命周期"
+    },
+    "idc_commerce_assisted_payment_term": {
+      "extended_prepay": {
+        "label": "延期预付款"
+      },
+      "name": "IDC 协助报价付款条件",
+      "remark": "只允许标准预付款或经审批延长付款截止时间",
+      "standard_prepay": {
+        "label": "标准预付款"
+      }
+    },
+    "idc_commerce_assisted_quote_decision": {
+      "approved": {
+        "label": "批准"
+      },
+      "name": "IDC 协助报价审批决定",
+      "rejected": {
+        "label": "拒绝"
+      },
+      "remark": "协助报价的独立员工审批决定"
+    },
+    "idc_service_entitlement_status": {
+      "active": {
+        "label": "有效"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "expired": {
+        "label": "已到期"
+      },
+      "grace": {
+        "label": "宽限期"
+      },
+      "name": "IDC 服务权益状态",
+      "pending_activation": {
+        "label": "待生效"
+      },
+      "remark": "客户服务权益生命周期",
+      "terminated": {
+        "label": "已终止"
+      },
+      "terminating": {
+        "label": "终止中"
+      }
+    },
+    "idc_service_runtime_status": {
+      "changing": {
+        "label": "变更中"
+      },
+      "name": "IDC 服务运行状态",
+      "pending_provision": {
+        "label": "待开通"
+      },
+      "provisioning": {
+        "label": "开通中"
+      },
+      "remark": "服务器本地运行状态投影",
+      "resuming": {
+        "label": "恢复中"
+      },
+      "running": {
+        "label": "运行中"
+      },
+      "stopped": {
+        "label": "已关机"
+      },
+      "suspended": {
+        "label": "已暂停"
+      },
+      "terminated": {
+        "label": "已终止"
+      },
+      "terminating": {
+        "label": "终止中"
+      },
+      "unknown": {
+        "label": "未知"
+      }
+    },
+    "idc_service_provider_task_status": {
+      "executing": {
+        "label": "执行中"
+      },
+      "failed": {
+        "label": "已失败"
+      },
+      "manual_review": {
+        "label": "人工处理"
+      },
+      "name": "IDC Provider 任务状态",
+      "none": {
+        "label": "无任务"
+      },
+      "pending": {
+        "label": "等待执行"
+      },
+      "remark": "服务关联 Provider 任务的脱敏状态投影",
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "succeeded": {
+        "label": "已成功"
+      }
+    },
+    "idc_service_renewal_mode": {
+      "local_entitlement": {
+        "label": "本地权益"
+      },
+      "name": "IDC 续费履约模式",
+      "provider_confirmed": {
+        "label": "Provider 确认"
+      },
+      "remark": "等待 Provider 确认或只推进本地权益",
+      "unresolved": {
+        "label": "尚未确定"
+      }
+    },
+    "idc_business_operation_type": {
+      "addon": {
+        "label": "附属能力"
+      },
+      "change": {
+        "label": "变配"
+      },
+      "ip_change": {
+        "label": "更换 IP"
+      },
+      "name": "IDC 业务操作类型",
+      "new_purchase": {
+        "label": "新购"
+      },
+      "console": {
+        "label": "控制台"
+      },
+      "reboot": {
+        "label": "重启"
+      },
+      "reinstall": {
+        "label": "重装系统"
+      },
+      "reset_password": {
+        "label": "重置密码"
+      },
+      "resize": {
+        "label": "调整配置"
+      },
+      "refund": {
+        "label": "退款"
+      },
+      "remark": "统一服务业务操作类型",
+      "renewal": {
+        "label": "续费"
+      },
+      "resume": {
+        "label": "恢复"
+      },
+      "start": {
+        "label": "开机"
+      },
+      "stop": {
+        "label": "关机"
+      },
+      "suspend": {
+        "label": "暂停"
+      },
+      "terminate": {
+        "label": "终止"
+      }
+    },
+    "idc_business_operation_status": {
+      "awaiting_financial_settlement": {
+        "label": "等待财务结算"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "compensating": {
+        "label": "补偿中"
+      },
+      "executing": {
+        "label": "执行中"
+      },
+      "failed": {
+        "label": "失败"
+      },
+      "financially_settled": {
+        "label": "财务已结算"
+      },
+      "manual_review": {
+        "label": "人工处理"
+      },
+      "name": "IDC 业务操作状态",
+      "quoted": {
+        "label": "已报价"
+      },
+      "ready": {
+        "label": "就绪"
+      },
+      "remark": "统一业务操作 Saga 生命周期",
+      "refunding": {
+        "label": "退款中"
+      },
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_service_price_phase": {
+      "addon": {
+        "label": "附属能力"
+      },
+      "name": "IDC 服务价格快照阶段",
+      "new_purchase": {
+        "label": "新购"
+      },
+      "remark": "新购、续费或附属能力不可变价格快照",
+      "renewal": {
+        "label": "续费"
+      }
+    },
+    "idc_service_renewal_attempt_outcome": {
+      "balance_settled": {
+        "label": "余额结算成功"
+      },
+      "exhausted": {
+        "label": "尝试已耗尽"
+      },
+      "insufficient_balance": {
+        "label": "余额不足"
+      },
+      "name": "IDC 自动续费尝试结果",
+      "remark": "自动续费同币种余额扣款及重试结果",
+      "retryable_failure": {
+        "label": "等待重试"
+      },
+      "zero_settled": {
+        "label": "零金额结算成功"
+      }
+    },
+    "idc_service_lifecycle_action": {
+      "enter_grace": {
+        "label": "进入宽限"
+      },
+      "mark_expired": {
+        "label": "标记到期"
+      },
+      "name": "IDC 服务生命周期任务动作",
+      "reminder": {
+        "label": "到期提醒"
+      },
+      "remark": "到期提醒、宽限、暂停、恢复和终止调度动作",
+      "resume": {
+        "label": "恢复服务"
+      },
+      "suspend": {
+        "label": "暂停服务"
+      },
+      "terminate": {
+        "label": "终止服务"
+      }
+    },
+    "idc_service_lifecycle_task_status": {
+      "cancelled": {
+        "label": "已取消"
+      },
+      "claimed": {
+        "label": "已领取"
+      },
+      "dispatched": {
+        "label": "已派发"
+      },
+      "failed": {
+        "label": "失败"
+      },
+      "manual_review": {
+        "label": "人工处理"
+      },
+      "name": "IDC 服务生命周期任务状态",
+      "pending": {
+        "label": "等待处理"
+      },
+      "remark": "仅创建任务的到期调度与执行生命周期",
+      "succeeded": {
+        "label": "成功"
+      }
+    },
+    "idc_credit_application_status": {
+      "name": "IDC 信用申请状态",
+      "remark": "逐币种信用额度申请及审批状态",
+      "pending_review": {
+        "label": "待审批"
+      },
+      "approved": {
+        "label": "已批准"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "expired": {
+        "label": "已过期"
+      }
+    },
+    "idc_credit_account_status": {
+      "name": "IDC 信用账户状态",
+      "remark": "逐币种信用账户生命周期状态",
+      "pending_activation": {
+        "label": "待激活"
+      },
+      "active": {
+        "label": "正常"
+      },
+      "frozen": {
+        "label": "已冻结"
+      },
+      "expired": {
+        "label": "已到期"
+      },
+      "closed": {
+        "label": "已关闭"
+      },
+      "bad_debt": {
+        "label": "坏账"
+      }
+    },
+    "idc_credit_exposure_status": {
+      "name": "IDC 信用敞口状态",
+      "remark": "额度占用、出账、偿还、释放和坏账状态",
+      "unbilled": {
+        "label": "未出账"
+      },
+      "partially_billed": {
+        "label": "部分出账"
+      },
+      "billed": {
+        "label": "已出账"
+      },
+      "partially_repaid": {
+        "label": "部分偿还"
+      },
+      "settled": {
+        "label": "已结清"
+      },
+      "released": {
+        "label": "已释放"
+      },
+      "written_off": {
+        "label": "已核销"
+      }
+    },
+    "idc_credit_statement_status": {
+      "name": "IDC 信用账单状态",
+      "remark": "信用账单支付、逾期和坏账状态",
+      "open": {
+        "label": "待还款"
+      },
+      "partially_paid": {
+        "label": "部分还款"
+      },
+      "paid": {
+        "label": "已还清"
+      },
+      "overdue": {
+        "label": "已逾期"
+      },
+      "written_off": {
+        "label": "已核销"
+      },
+      "cancelled": {
+        "label": "已取消"
+      },
+      "refunded": {
+        "label": "已退款"
+      }
+    },
+    "idc_credit_repayment_status": {
+      "name": "IDC 信用还款状态",
+      "remark": "信用还款确认、分配、退款及失败状态",
+      "pending": {
+        "label": "待确认"
+      },
+      "confirmed": {
+        "label": "已确认"
+      },
+      "partially_allocated": {
+        "label": "部分分配"
+      },
+      "allocated": {
+        "label": "已分配"
+      },
+      "refunded": {
+        "label": "已退款"
+      },
+      "failed": {
+        "label": "失败"
+      }
+    },
+    "idc_credit_delinquency_status": {
+      "name": "IDC 信用逾期状态",
+      "remark": "信用逾期宽限、冻结、服务处置和结案状态",
+      "grace_period": {
+        "label": "宽限期"
+      },
+      "frozen": {
+        "label": "已冻结"
+      },
+      "service_action_pending": {
+        "label": "等待服务处置"
+      },
+      "written_off": {
+        "label": "已核销"
+      },
+      "resolved": {
+        "label": "已解决"
+      }
+    },
+    "idc_credit_movement_type": {
+      "name": "IDC 信用流水类型",
+      "remark": "不可变信用额度投影变更类型",
+      "limit_granted": {
+        "label": "授予额度"
+      },
+      "limit_adjusted": {
+        "label": "调整额度"
+      },
+      "reserve": {
+        "label": "占用额度"
+      },
+      "release": {
+        "label": "释放额度"
+      },
+      "bill": {
+        "label": "生成账单"
+      },
+      "repayment": {
+        "label": "账单还款"
+      },
+      "prepayment": {
+        "label": "提前还款"
+      },
+      "refund": {
+        "label": "退款释放"
+      },
+      "late_fee": {
+        "label": "逾期费用"
+      },
+      "freeze": {
+        "label": "冻结账户"
+      },
+      "unfreeze": {
+        "label": "解除冻结"
+      },
+      "expire": {
+        "label": "额度到期"
+      },
+      "close": {
+        "label": "关闭账户"
+      },
+      "delinquency": {
+        "label": "标记逾期"
+      },
+      "cure": {
+        "label": "解除逾期"
+      },
+      "writeoff": {
+        "label": "坏账核销"
+      },
+      "recovery": {
+        "label": "坏账收回"
+      },
+      "migration": {
+        "label": "迁移导入"
+      }
+    },
+    "idc_credit_writeoff_type": {
+      "name": "IDC 信用坏账类型",
+      "remark": "信用坏账核销及冲正类型",
+      "writeoff": {
+        "label": "坏账核销"
+      },
+      "reversal": {
+        "label": "核销冲正"
+      }
+    },
+    "idc_content_category_group": {
+      "name": "IDC 内容分类分组",
+      "remark": "跟随当前界面语言显示的固定内容分类分组",
+      "uncategorized": {
+        "label": "未分类"
+      }
+    },
+    "idc_refund_status": {
+      "name": "IDC 退款状态",
+      "remark": "在线退款申请和执行状态",
+      "pending_review": {
+        "label": "等待审核"
+      },
+      "approved": {
+        "label": "已批准"
+      },
+      "awaiting_balance_consent": {
+        "label": "等待余额确认"
+      },
+      "executing": {
+        "label": "退款中"
+      },
+      "succeeded": {
+        "label": "已退款"
+      },
+      "failed": {
+        "label": "退款失败"
+      },
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "manual_confirmation": {
+        "label": "人工确认"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      }
+    },
+    "idc_refund_reason": {
+      "name": "IDC 退款原因",
+      "remark": "客户可选择的固定退款原因",
+      "duplicate_purchase": {
+        "label": "重复购买"
+      },
+      "wrong_configuration": {
+        "label": "配置选错"
+      },
+      "service_issue": {
+        "label": "服务问题"
+      },
+      "no_longer_needed": {
+        "label": "不再需要"
+      },
+      "other": {
+        "label": "其他"
+      }
+    },
+    "idc_refund_approval_mode": {
+      "name": "IDC 退款审核方式",
+      "remark": "自动审核或人工审核",
+      "automatic": {
+        "label": "自动审核"
+      },
+      "manual": {
+        "label": "人工审核"
+      }
+    },
+    "idc_refund_execution_status": {
+      "name": "IDC 退款执行状态",
+      "remark": "退款资金执行命令状态",
+      "pending": {
+        "label": "等待执行"
+      },
+      "claimed": {
+        "label": "已领取"
+      },
+      "succeeded": {
+        "label": "已成功"
+      },
+      "failed": {
+        "label": "已失败"
+      },
+      "result_unknown": {
+        "label": "结果未知"
+      },
+      "manual_confirmation": {
+        "label": "人工确认"
+      }
+    },
+    "idc_verification_status": {
+      "expired": {
+        "label": "已过期"
+      },
+      "name": "IDC 客户认证状态",
+      "pending": {
+        "label": "认证中"
+      },
+      "rejected": {
+        "label": "已拒绝"
+      },
+      "remark": "个人与企业客户认证生命周期",
+      "revoked": {
+        "label": "已撤销"
+      },
+      "unverified": {
+        "label": "未认证"
+      },
+      "verified": {
+        "label": "已通过"
+      }
+    }
+  }
+}

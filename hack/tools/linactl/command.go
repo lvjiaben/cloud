@@ -21,9 +21,11 @@ import (
 
 const (
 	// defaultBackendPort is the standard backend development port.
-	defaultBackendPort = 9120
+	defaultBackendPort = 6030
 	// defaultFrontendPort is the standard frontend development port.
-	defaultFrontendPort = 5666
+	defaultFrontendPort = 6031
+	// defaultCustomerPort is the standard customer frontend development port.
+	defaultCustomerPort = 6032
 	// defaultWaitTimeout bounds development service readiness checks.
 	defaultWaitTimeout = 60 * time.Second
 	// defaultPortReleaseTimeout bounds how long dev waits for managed old
@@ -110,16 +112,16 @@ type targetPlatform struct {
 func commandRegistry() map[string]commandSpec {
 	specs := []commandSpec{
 		{Name: "help", Description: "Show available cross-platform commands.", Usage: "linactl help [command|--all]", Run: runHelp},
-		{Name: "dev", Description: "Restart backend and frontend development services.", Usage: "linactl dev [dir=<path>] [backend_port=9120] [frontend_port=5666] [plugins=0|1] [skip_wasm=true] (ports also accept LINA_CORE_PORT/LINA_VBEN_PORT env)", Run: runDev},
-		{Name: "stop", Description: "Stop backend and frontend development services started by linactl.", Usage: "linactl stop [dir=<path>] [backend_port=9120] [frontend_port=5666]", Run: runStop},
-		{Name: "status", Description: "Show backend and frontend service status.", Usage: "linactl status [dir=<path>] [backend_port=9120] [frontend_port=5666]", Run: runStatus},
+		{Name: "dev", Description: "Restart backend, admin, and customer development services.", Usage: "linactl dev [dir=<path>] [backend_port=6030] [frontend_port=6031] [customer_port=6032] [plugins=0|1] [skip_wasm=true] (ports also accept LINA_CORE_PORT/LINA_VBEN_PORT/LINA_CUSTOMER_PORT env)", Run: runDev},
+		{Name: "stop", Description: "Stop backend, admin, and customer development services started by linactl.", Usage: "linactl stop [dir=<path>] [backend_port=6030] [frontend_port=6031] [customer_port=6032]", Run: runStop},
+		{Name: "status", Description: "Show backend, admin, and customer service status.", Usage: "linactl status [dir=<path>] [backend_port=6030] [frontend_port=6031] [customer_port=6032]", Run: runStatus},
 		{Name: "pack.assets", Description: "Prepare host manifest assets for embedding.", Usage: "linactl pack.assets", Run: runPreparePackedAssets},
 		{Name: "wasm", Description: "Build dynamic Wasm plugin artifacts.", Usage: "linactl wasm [dir=<path>] [out=temp/output] [dry-run=true]", Run: runWasm},
 		{Name: "plugins.init", Description: "Convert apps/lina-plugins from a submodule to a normal plugin directory.", Usage: "linactl plugins.init", Run: runPluginsInit},
 		{Name: "plugins.install", Description: "Install plugins from named Git/marketplace origins into apps/lina-plugins.", Usage: "linactl plugins.install [p=<plugin-id>] [source=<origin>] [v=<version>] [base=<url>] [token=<bearer-token>] [force=1]", Run: runPluginsInstall},
 		{Name: "plugins.update", Description: "Update plugins from named Git/marketplace origins in apps/lina-plugins.", Usage: "linactl plugins.update [p=<plugin-id>] [source=<origin>] [v=<version>] [base=<url>] [token=<bearer-token>] [force=1]", Run: runPluginsUpdate},
 		{Name: "plugins.status", Description: "Show configured source-plugin workspace status.", Usage: "linactl plugins.status [p=<plugin-id>] [source=<name>]", Run: runPluginsStatus},
-		{Name: "build", Description: "Build frontend assets, plugin artifacts, and host binaries.", Usage: "linactl build [dir=<path>] [plugins=0|1] [platforms=linux/amd64] [verbose=1]", Run: runBuild},
+		{Name: "build", Description: "Build the host, both Vben applications, and the website delivery bundle.", Usage: "linactl build [dir=<path>] [plugins=0|1] [platforms=linux/amd64] [verbose=1] (cross-target website runtime: LINAPRO_SITE_NODE_RUNTIME_<OS>_<ARCH> plus matching _VERSION)", Run: runBuild},
 		{Name: "image", Description: "Build the production Docker image.", Usage: "linactl image [tag=v0.6.0] [push=1]", Run: runImage},
 		{Name: "image.build", Description: "Stage image build artifacts without invoking Docker build.", Usage: "linactl image.build [tag=v0.6.0]", Run: runImageBuild},
 		{Name: "version", Description: "Update framework.version metadata and README image cache keys.", Usage: "linactl version to=v0.6.0", Run: runVersion},

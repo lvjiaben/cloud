@@ -1,0 +1,18 @@
+id: vben-adapter
+name: LinaPro Vben Plugin Adapter
+version: v0.1.0
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Reusable frontend-only contract for plugin-owned pages that consume official Vben components without host business changes.
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: false
+
+public_assets:
+  - source: frontend/dist
+    mount: /

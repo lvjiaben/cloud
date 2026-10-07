@@ -209,7 +209,7 @@ INSERT INTO sys_menu ("parent_id", "menu_key", "name", "path", "component", "per
 VALUES (0, 'scheduler', '任务调度', 'scheduler', '', '', 'lucide:calendar-range', 'D', 8, 1, 1, 0, 0, '宿主稳定目录：任务调度', NOW(), NOW())
 ON CONFLICT DO NOTHING;
 -- sort=9 remains free for the Auth Login domain catalog installed by
--- linapro-extlogin-core (between scheduler at sort 8 and extension at sort 10).
+-- extlogin-core (between scheduler at sort 8 and extension at sort 10).
 -- Cloud storage provider settings mount under setting (系统设置), not a top-level storage catalog.
 INSERT INTO sys_menu ("parent_id", "menu_key", "name", "path", "component", "perms", "icon", "type", "sort", "visible", "status", "is_frame", "is_cache", "remark", "created_at", "updated_at")
 VALUES (0, 'extension', '扩展中心', 'extension', '', '', 'lucide:puzzle', 'D', 10, 1, 1, 0, 0, '宿主稳定目录：扩展中心', NOW(), NOW())
@@ -222,12 +222,8 @@ ON CONFLICT DO NOTHING;
 -- Workbench menus
 -- 工作台菜单
 -- ============================================================
-INSERT INTO sys_menu ("parent_id", "menu_key", "name", "path", "component", "perms", "icon", "type", "sort", "visible", "status", "is_frame", "is_cache", "created_at", "updated_at")
-VALUES ((SELECT parent."id" FROM (SELECT "id" FROM sys_menu WHERE "menu_key" = 'dashboard') AS parent), 'dashboard:analytics:list', '分析页', 'analytics', 'dashboard/analytics/index', 'dashboard:analytics:list', 'lucide:area-chart', 'M', 1, 1, 1, 0, 1, NOW(), NOW())
-ON CONFLICT DO NOTHING;
-INSERT INTO sys_menu ("parent_id", "menu_key", "name", "path", "component", "perms", "icon", "type", "sort", "visible", "status", "is_frame", "is_cache", "created_at", "updated_at")
-VALUES ((SELECT parent."id" FROM (SELECT "id" FROM sys_menu WHERE "menu_key" = 'dashboard') AS parent), 'dashboard:workspace:list', '工作台', 'workspace', 'dashboard/workspace/index', 'dashboard:workspace:list', 'carbon:workspace', 'M', 2, 1, 1, 0, 1, NOW(), NOW())
-ON CONFLICT DO NOTHING;
+-- Host workbench pages were removed; the workbench directory now hosts the
+-- idc-core operations analytics page (see plugin menu declarations).
 
 -- ============================================================
 -- Access-control menus

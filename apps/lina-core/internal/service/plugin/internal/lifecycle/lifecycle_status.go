@@ -48,6 +48,16 @@ func (s *serviceImpl) UpdateStatus(
 			return err
 		}
 	}
+	// Disable safety must inspect the release that is serving customers before
+	// discovery synchronization can stage newer mutable artifact metadata.
+	if status == statusflag.Disabled.Int() {
+		if err = s.ensurePluginStoppedNewBusiness(ctx, pluginID); err != nil {
+			return err
+		}
+		if err = s.ensurePluginBusinessDrained(ctx, pluginID); err != nil {
+			return err
+		}
+	}
 	if err = s.syncDiscoveredManifestsForStatus(ctx); err != nil {
 		return err
 	}

@@ -1,0 +1,106 @@
+{
+  "menu": {
+    "plugin:idc-compliance:center": {
+      "title": "合规中心"
+    },
+    "plugin:idc-compliance:electronic-contract": {
+      "title": "电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:onboard": {
+      "title": "开通电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:template:query": {
+      "title": "查看电子合同模板"
+    },
+    "plugin:idc-compliance:electronic-contract:template:manage": {
+      "title": "管理电子合同模板"
+    },
+    "plugin:idc-compliance:electronic-contract:create": {
+      "title": "发起电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:query": {
+      "title": "查看电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:reissue": {
+      "title": "重新发起电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:terminate": {
+      "title": "解除电子合同"
+    },
+    "plugin:idc-compliance:electronic-contract:cancel-order": {
+      "title": "取消合同失败订单"
+    },
+    "plugin:idc-compliance:electronic-contract:failure-policy": {
+      "title": "配置合同失败处理期限"
+    },
+    "plugin:idc-compliance:electronic-contract:auto-sign:manage": {
+      "title": "管理企业自动签授权"
+    },
+    "plugin:idc-compliance:provider": {
+      "title": "实名认证服务商"
+    },
+    "plugin:idc-compliance:provider:validate": {
+      "title": "验证实名认证服务商"
+    },
+    "plugin:idc-compliance:provider:write": {
+      "title": "配置实名认证服务商"
+    },
+    "plugin:idc-compliance:suppliers": {
+      "title": "合同与开票服务商"
+    },
+    "plugin:idc-compliance:supplier:query": {
+      "title": "查看本地供应商配置"
+    },
+    "plugin:idc-compliance:supplier:credential:write": {
+      "title": "更新本地供应商凭据"
+    },
+    "plugin:idc-compliance:supplier:subject:bind": {
+      "title": "绑定本地供应商主体"
+    },
+    "plugin:idc-compliance:supplier:subject:revoke": {
+      "title": "撤销本地供应商主体"
+    },
+    "plugin:idc-compliance:supplier:subject:reopen": {
+      "title": "重新开通本地供应商主体"
+    },
+    "plugin:idc-compliance:enterprise-verification": {
+      "title": "企业实名认证审核"
+    },
+    "plugin:idc-compliance:enterprise-verification:query": {
+      "title": "查看企业认证"
+    },
+    "plugin:idc-compliance:enterprise-verification:review": {
+      "title": "开始企业认证审核"
+    },
+    "plugin:idc-compliance:enterprise-verification:approve": {
+      "title": "批准企业认证"
+    },
+    "plugin:idc-compliance:enterprise-verification:reject": {
+      "title": "驳回企业认证"
+    },
+    "plugin:idc-compliance:enterprise-material:access": {
+      "title": "查看企业认证原件"
+    },
+    "plugin:idc-compliance:tax-invoice:query": {
+      "title": "查看开票申请"
+    },
+    "plugin:idc-compliance:tax-invoice:review": {
+      "title": "审核开票申请"
+    },
+    "plugin:idc-compliance:tax-invoice:submit": {
+      "title": "提交开票申请"
+    },
+    "plugin:idc-compliance:tax-invoice:cancel": {
+      "title": "取消开票申请"
+    },
+    "plugin:idc-compliance:red-letter:query": {
+      "title": "查看红字任务"
+    },
+    "plugin:idc-compliance:red-letter:handle": {
+      "title": "处理红字任务"
+    },
+    "plugin:idc-compliance:privacy:query": { "title": "隐私治理" },
+    "plugin:idc-compliance:privacy:configure": { "title": "配置隐私规则" },
+    "plugin:idc-compliance:privacy:incident": { "title": "处理泄露事件" }
+  }
+}

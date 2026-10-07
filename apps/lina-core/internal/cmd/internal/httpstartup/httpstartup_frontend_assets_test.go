@@ -597,24 +597,24 @@ func TestParsePluginAssetRequestPath(t *testing.T) {
 	}{
 		{
 			name:          "hosted asset file",
-			path:          "x-assets/linapro-demo-dynamic/v0.1.0/standalone.html",
-			wantPluginID:  "linapro-demo-dynamic",
+			path:          "x-assets/demo-dynamic/v0.1.0/standalone.html",
+			wantPluginID:  "demo-dynamic",
 			wantVersion:   "v0.1.0",
 			wantAssetPath: "standalone.html",
 			wantOK:        true,
 		},
 		{
 			name:          "embedded mount entry",
-			path:          "/x-assets/linapro-demo-dynamic/v0.1.0/mount.js",
-			wantPluginID:  "linapro-demo-dynamic",
+			path:          "/x-assets/demo-dynamic/v0.1.0/mount.js",
+			wantPluginID:  "demo-dynamic",
 			wantVersion:   "v0.1.0",
 			wantAssetPath: "mount.js",
 			wantOK:        true,
 		},
 		{
 			name:          "version root path",
-			path:          "/x-assets/linapro-demo-dynamic/v0.1.0/",
-			wantPluginID:  "linapro-demo-dynamic",
+			path:          "/x-assets/demo-dynamic/v0.1.0/",
+			wantPluginID:  "demo-dynamic",
 			wantVersion:   "v0.1.0",
 			wantAssetPath: "",
 			wantOK:        true,
@@ -626,7 +626,7 @@ func TestParsePluginAssetRequestPath(t *testing.T) {
 		},
 		{
 			name:   "missing version",
-			path:   "/x-assets/linapro-demo-dynamic",
+			path:   "/x-assets/demo-dynamic",
 			wantOK: false,
 		},
 	}
@@ -647,5 +647,13 @@ func TestParsePluginAssetRequestPath(t *testing.T) {
 				t.Fatalf("expected assetPath=%q, got %q", tt.wantAssetPath, gotAssetPath)
 			}
 		})
+	}
+}
+
+func TestRuntimePluginAssetHeadersAllowSandboxedIframeAssets(t *testing.T) {
+	header := make(http.Header)
+	applyRuntimePluginAssetHeaders(header)
+	if got := header.Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("expected anonymous CORS for sandboxed plugin assets, got %q", got)
 	}
 }

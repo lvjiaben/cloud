@@ -4,7 +4,7 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router';
 
 import type { MenuRecordRaw } from '@vben/types';
 
-import { computed, onMounted, useSlots, watch } from 'vue';
+import { computed, onMounted, ref, useSlots, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { useRefresh } from '@vben/hooks';
@@ -36,6 +36,16 @@ import { LayoutTabbar } from './tabbar';
 
 defineOptions({ name: 'BasicLayout' });
 
+const layoutProps = withDefaults(
+  defineProps<{
+    /** Close the temporary mobile drawer after selecting any menu entry. */
+    closeMobileSidebarOnSelect?: boolean;
+    /** Keep every vertical sidebar group expanded and non-collapsible. */
+    lockSidebarMenuOpen?: boolean;
+  }>(),
+  { closeMobileSidebarOnSelect: false, lockSidebarMenuOpen: false },
+);
+
 const emit = defineEmits<{ clearPreferencesAndLogout: []; clickLogo: [] }>();
 
 const {
@@ -54,6 +64,25 @@ const {
 const accessStore = useAccessStore();
 const timezoneStore = useTimezoneStore();
 const { refresh } = useRefresh();
+const mobileSidebarCollapsed = ref(true);
+const effectiveSidebarCollapsed = computed(() =>
+  isMobile.value ? mobileSidebarCollapsed.value : sidebarCollapsed.value,
+);
+
+function updateSidebarCollapse(value: boolean) {
+  if (isMobile.value) {
+    mobileSidebarCollapsed.value = value;
+    return;
+  }
+  updatePreferences({ sidebar: { collapsed: value } });
+}
+
+function handleSidebarMenuSelect(key: string, mode?: string) {
+  handleMenuSelect(key, mode);
+  if (isMobile.value && layoutProps.closeMobileSidebarOnSelect) {
+    mobileSidebarCollapsed.value = true;
+  }
+}
 
 const sidebarTheme = computed(() => {
   const dark = isDark.value || preferences.theme.semiDarkSidebar;
@@ -74,7 +103,7 @@ const logoClass = computed(() => {
   const { collapsedShowTitle } = preferences.sidebar;
   const classes: string[] = [];
 
-  if (collapsedShowTitle && sidebarCollapsed.value && !isMixedNav.value) {
+  if (collapsedShowTitle && effectiveSidebarCollapsed.value && !isMixedNav.value) {
     classes.push('mx-auto');
   }
 
@@ -90,14 +119,14 @@ const isMenuRounded = computed(() => {
 });
 
 const logoCollapsed = computed(() => {
-  if (isMobile.value && sidebarCollapsed.value) {
+  if (isMobile.value && effectiveSidebarCollapsed.value) {
     return true;
   }
   if (isHeaderNav.value || isMixedNav.value || isHeaderSidebarNav.value) {
     return false;
   }
   return (
-    sidebarCollapsed.value || isSideMixedNav.value || isHeaderMixedNav.value
+    effectiveSidebarCollapsed.value || isSideMixedNav.value || isHeaderMixedNav.value
   );
 });
 
@@ -242,7 +271,7 @@ const headerSlots = computed(() => {
     :is-mobile="preferences.app.isMobile"
     :layout="layout"
     :sidebar-draggable="preferences.sidebar.draggable"
-    :sidebar-collapse="preferences.sidebar.collapsed"
+    :sidebar-collapse="effectiveSidebarCollapsed"
     :sidebar-collapse-show-title="preferences.sidebar.collapsedShowTitle"
     :sidebar-enable="sidebarVisible"
     :sidebar-collapsed-button="preferences.sidebar.collapsedButton"
@@ -261,9 +290,7 @@ const headerSlots = computed(() => {
     :z-index="preferences.app.zIndex"
     @side-mouse-leave="handleSideMouseLeave"
     @toggle-sidebar="toggleSidebar"
-    @update:sidebar-collapse="
-      (value: boolean) => updatePreferences({ sidebar: { collapsed: value } })
-    "
+    @update:sidebar-collapse="updateSidebarCollapse"
     @update:sidebar-enable="
       (value: boolean) => updatePreferences({ sidebar: { enable: value } })
     "
@@ -322,7 +349,7 @@ const headerSlots = computed(() => {
             :theme="headerTheme"
             class="w-full"
             mode="horizontal"
-            @select="handleMenuSelect"
+            @select="handleSidebarMenuSelect"
           />
         </template>
         <template #user-dropdown>
@@ -346,12 +373,13 @@ const headerSlots = computed(() => {
         :collapse="preferences.sidebar.collapsed"
         :collapse-show-title="preferences.sidebar.collapsedShowTitle"
         :default-active="sidebarActive"
+        :locked-open="layoutProps.lockSidebarMenuOpen"
         :menus="wrapperMenus(sidebarMenus)"
         :rounded="isMenuRounded"
         :theme="sidebarTheme"
         mode="vertical"
         @open="handleMenuOpen"
-        @select="handleMenuSelect"
+        @select="handleSidebarMenuSelect"
       />
     </template>
     <template #mixed-menu>

@@ -14,41 +14,41 @@ import (
 // plugin IDs are trimmed and de-duplicated before list projection uses them.
 func TestBuildAutoEnableManagedSetNormalizesPluginIDs(t *testing.T) {
 	managedSet := buildAutoEnableManagedSet([]string{
-		" linapro-demo-source ",
-		"linapro-demo-source",
+		" demo-source ",
+		"demo-source",
 		"",
-		"linapro-monitor-server",
+		"monitor-server",
 	})
 
 	if len(managedSet) != 2 {
 		t.Fatalf("expected 2 unique managed plugin IDs, got %d", len(managedSet))
 	}
-	if !managedSet["linapro-demo-source"] {
-		t.Fatal("expected linapro-demo-source to be marked as managed")
+	if !managedSet["demo-source"] {
+		t.Fatal("expected demo-source to be marked as managed")
 	}
-	if !managedSet["linapro-monitor-server"] {
-		t.Fatal("expected linapro-monitor-server to be marked as managed")
+	if !managedSet["monitor-server"] {
+		t.Fatal("expected monitor-server to be marked as managed")
 	}
 	if managedSet[""] {
 		t.Fatal("expected blank plugin ID to be ignored")
 	}
 }
 
-// TestBuildPluginListItemResponseIncludesDistribution verifies API projection
-// exposes plugin distribution governance metadata.
-func TestBuildPluginListItemResponseIncludesDistribution(t *testing.T) {
+// TestBuildPluginListItemResponseIncludesManagedDistribution verifies API
+// projection exposes governance metadata for a managed list row.
+func TestBuildPluginListItemResponseIncludesManagedDistribution(t *testing.T) {
 	controller := &ControllerV1{}
 	pluginItem := &pluginsvc.PluginItem{}
-	pluginItem.Id = "plugin-dev-controller-builtin"
-	pluginItem.Name = "Controller Builtin"
+	pluginItem.Id = "plugin-dev-controller-managed"
+	pluginItem.Name = "Controller Managed"
 	pluginItem.Type = string(v1.PluginTypeSource)
-	pluginItem.Distribution = string(v1.PluginDistributionBuiltin)
+	pluginItem.Distribution = string(v1.PluginDistributionManaged)
 
 	item := controller.buildPluginListItemResponse(pluginItem, false)
 	if item == nil {
 		t.Fatal("expected plugin list item response")
 	}
-	if item.Distribution != v1.PluginDistributionBuiltin {
-		t.Fatalf("expected builtin distribution in API projection, got %q", item.Distribution)
+	if item.Distribution != v1.PluginDistributionManaged {
+		t.Fatalf("expected managed distribution in API projection, got %q", item.Distribution)
 	}
 }

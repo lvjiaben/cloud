@@ -1,0 +1,73 @@
+import { expect,test } from "../../../../../../hack/tests/fixtures/auth";
+import { MigrationConflictPage } from "../pages/MigrationConflictPage";
+import { MigrationStandalonePage } from "../pages/MigrationStandalonePage";
+import { openMigrationStandalone } from "../support/migration-standalone";
+
+test.describe("TC-3 迁移冲突数字分页",()=>{
+  test("TC-3a: 系统配置内已安装动态页同批次准确总数与末页，切换页规模回第一页",async({adminPage,mainLayout})=>{
+    await mainLayout.switchLanguage("简体中文");
+    const root="**/x/idc-zjmfmigrate/api/v1/admin/migration";
+    const envelope=(data:unknown)=>({code:0,data,message:"OK"});
+    await adminPage.route(`${root}/preflight`,route=>route.fulfill({json:envelope({sourceSystem:"zjmf-finance",sourceVersion:"v10",supported:true,blockers:[],warnings:[],capabilities:["identity"]})}));
+    await adminPage.route(`${root}/batches`,route=>route.fulfill({json:envelope({id:42,batchNo:"MIG-PAGE-42",status:"preflight"})}));
+    await adminPage.route(`${root}/batches/42/run`,route=>route.fulfill({json:envelope({id:42,status:"blocked",mapped:0,blockers:[]})}));
+    await adminPage.route(`${root}/batches/42/report`,route=>route.fulfill({json:envelope({id:42,status:"blocked",byType:{},blockers:[],warnings:[]})}));
+    const rows=Array.from({length:25},(_,index)=>({id:index+1,objectType:"identity",sourceId:`source-${index+1}`,summary:`待复核冲突 ${index+1}`,decision:"pending"}));
+    const requests:URLSearchParams[]=[];
+    await adminPage.route(`${root}/batches/42/conflicts?**`,route=>{
+      const query=new URL(route.request().url()).searchParams;
+      requests.push(query);
+      const number=Number(query.get("page")); const size=Number(query.get("pageSize"));
+      return route.fulfill({json:envelope({list:rows.slice((number-1)*size,number*size),total:rows.length})});
+    });
+    const view=new MigrationConflictPage(adminPage);
+    await view.goto();
+    await expect(view.rows()).toHaveCount(10);
+    await expect(view.pager()).toContainText("25");
+    await view.selectPage(3);
+    await expect(view.rows()).toHaveCount(5);
+    await expect(view.grid()).toContainText("待复核冲突 21");
+    await expect(view.pager()).toContainText("25");
+    await view.selectSize(20);
+    await expect(view.rows()).toHaveCount(20);
+    await expect.poll(()=>requests.at(-1)?.get("page")).toBe("1");
+    await expect.poll(()=>requests.at(-1)?.get("pageSize")).toBe("20");
+    await view.assertTableSurface();
+    await view.screenshot("migration-conflict-numbered-pagination");
+  });
+  test("TC-3b: v0.2.1 隔离产物使用真实 Vben 分页，拒绝后清空且可恢复",async({adminPage})=>{
+    const root="**/x/idc-zjmfmigrate/api/v1/admin/migration";
+    const envelope=(data:unknown)=>({code:0,data,message:"OK"});
+    await adminPage.route(`${root}/preflight`,route=>route.fulfill({json:envelope({supported:true,blockers:[],warnings:[],capabilities:[]})}));
+    await adminPage.route(`${root}/batches`,route=>route.fulfill({json:envelope({id:42,batchNo:"MIG-PAGE-42",status:"preflight"})}));
+    await adminPage.route(`${root}/batches/42/run`,route=>route.fulfill({json:envelope({id:42,status:"blocked",mapped:0})}));
+    const rows=Array.from({length:25},(_,index)=>({id:index+1,objectType:"identity",sourceId:`source-${index+1}`,summary:`待复核冲突 ${index+1}`,decision:"pending"}));
+    let rejected=false;
+    const requests:URLSearchParams[]=[];
+    await adminPage.route(`${root}/batches/42/conflicts?**`,route=>{
+      const query=new URL(route.request().url()).searchParams; requests.push(query);
+      if(rejected)return route.fulfill({status:403,json:envelope(null)});
+      const page=Number(query.get("page")); const size=Number(query.get("pageSize"));
+      return route.fulfill({json:envelope({list:rows.slice((page-1)*size,page*size),total:rows.length})});
+    });
+    await openMigrationStandalone(adminPage);
+    const view=new MigrationStandalonePage(adminPage);
+    await view.createBatch();
+    await expect(view.rows()).toHaveCount(10);
+    await expect(view.grid()).toContainText("问题说明");
+    await expect(view.pager().locator(".vxe-pager--total")).toContainText("25");
+    await view.selectPage(3); await expect(view.rows()).toHaveCount(5);
+    await expect(view.grid()).toContainText("待复核冲突 21");
+    await view.selectSize(20); await expect(view.rows()).toHaveCount(20);
+    await expect.poll(()=>requests.at(-1)?.get("page")).toBe("1");
+    await expect.poll(()=>requests.at(-1)?.get("pageSize")).toBe("20");
+    rejected=true; await view.selectPage(2);
+    await expect(view.rows()).toHaveCount(0);
+    await expect(view.pager().locator(".vxe-pager--total")).toContainText("0");
+    await expect(view.frame().locator("#execution-result")).toContainText("操作失败");
+    rejected=false; await view.frame().locator('[data-action="conflicts"]').click();
+    await expect(view.rows()).toHaveCount(20);
+    await view.assertTableSurface();
+    await new MigrationConflictPage(adminPage).screenshot("migration-isolated-numbered-pagination");
+  });
+});

@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	configsvc "lina-core/internal/service/config"
+	"lina-core/pkg/plugin/capability/capmodel"
 )
 
 // manifestReader covers manifest discovery, loading, parsing, and validation.
@@ -21,6 +22,12 @@ type manifestReader interface {
 	// ScanManifestsByID returns the latest discovered manifests keyed by plugin ID
 	// for list and projection paths that need to reuse one discovery result.
 	ScanManifestsByID() (map[string]*Manifest, error)
+	// DiscoverBusinessExtensions scans manifests once and returns the effective
+	// owner-authorized business extension provider index.
+	DiscoverBusinessExtensions() (*BusinessExtensionDiscovery, error)
+	// AuthorizeManifestBusinessExtensions verifies one candidate against a
+	// single complete manifest batch and returns only effective declarations.
+	AuthorizeManifestBusinessExtensions(manifest *Manifest) ([]*capmodel.BusinessExtensionDeclaration, error)
 	// ReadSourcePluginManifestContent reads the raw manifest content from an embedded or
 	// filesystem-backed source plugin.
 	ReadSourcePluginManifestContent(manifest *Manifest) ([]byte, error)

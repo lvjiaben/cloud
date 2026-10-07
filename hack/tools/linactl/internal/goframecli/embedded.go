@@ -14,6 +14,8 @@ import (
 	"github.com/gogf/gf/v2/os/gcfg"
 )
 
+const daoDatabaseLinkEnvironment = "LINA_CODEGEN_DATABASE_LINK"
+
 // RunEmbedded executes a whitelisted GoFrame code generation command in the
 // current process. Callers should use it only from linactl's hidden child
 // command so GoFrame CLI exits cannot terminate the parent linactl process.
@@ -88,5 +90,39 @@ func configureGoFrameCLI(configDir string, requireConfig bool) (func(), error) {
 		cleanup()
 		return nil, fmt.Errorf("configure embedded GoFrame CLI: %w", err)
 	}
+	if requireConfig {
+		if err := applyDAODatabaseLinkOverride(adapter); err != nil {
+			cleanup()
+			return nil, err
+		}
+	}
 	return cleanup, nil
+}
+
+// applyDAODatabaseLinkOverride lets developers point code generation at a
+// machine-local initialized database without writing credentials into the
+// repository's shared GoFrame configuration. The override lives only in the
+// child generator process and is applied to every configured DAO group.
+func applyDAODatabaseLinkOverride(adapter *gcfg.AdapterFile) error {
+	link := strings.TrimSpace(os.Getenv(daoDatabaseLinkEnvironment))
+	if link == "" {
+		return nil
+	}
+	value, err := adapter.Get(context.Background(), "gfcli.gen.dao")
+	if err != nil {
+		return fmt.Errorf("read embedded GoFrame DAO configuration: %w", err)
+	}
+	groups, ok := value.([]any)
+	if !ok {
+		if value == nil {
+			return nil
+		}
+		return fmt.Errorf("embedded GoFrame DAO configuration must be a list")
+	}
+	for index := range groups {
+		if err := adapter.Set(fmt.Sprintf("gfcli.gen.dao.%d.link", index), link); err != nil {
+			return fmt.Errorf("apply embedded GoFrame DAO database override: %w", err)
+		}
+	}
+	return nil
 }

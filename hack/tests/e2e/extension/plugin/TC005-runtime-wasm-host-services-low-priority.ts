@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 
 import type { APIRequestContext, APIResponse } from "@playwright/test";
@@ -44,7 +50,12 @@ function linactlDir() {
 }
 
 function runtimeStorageDir() {
-  return path.join(repoRoot(), "temp", "output");
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  return configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(repoRoot(), "temp", "output");
 }
 
 function sourcePluginDir(pluginID: string) {
@@ -123,11 +134,15 @@ async function expectApiFailure(
     expect(text, `${message}, body=${text}`).toContain(expectedText);
     return;
   }
-  expect(text, `${message}, status=${response.status()}`).toContain(expectedText);
+  expect(text, `${message}, status=${response.status()}`).toContain(
+    expectedText,
+  );
 }
 
 async function createAdminApiContext(): Promise<APIRequestContext> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: {
       username: config.adminUser,
@@ -141,7 +156,10 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
   );
   await anonymousApi.dispose();
 
-  expect(loginPayload?.accessToken, "管理员登录后应返回 accessToken").toBeTruthy();
+  expect(
+    loginPayload?.accessToken,
+    "管理员登录后应返回 accessToken",
+  ).toBeTruthy();
   return playwrightRequest.newContext({
     baseURL: apiBaseURL,
     extraHTTPHeaders: {
@@ -151,7 +169,9 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
 }
 
 async function apiLogin(username: string, password: string): Promise<string> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   try {
     const loginResponse = await anonymousApi.post("auth/login", {
       data: {
@@ -263,6 +283,12 @@ async function setPluginEnabled(
   pluginID: string,
   enabled: boolean,
 ) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      `停止动态插件新业务失败: ${pluginID}`,
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
@@ -270,6 +296,12 @@ async function setPluginEnabled(
     response,
     `切换动态插件状态失败: ${pluginID} enabled=${enabled}`,
   );
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      `恢复动态插件新业务失败: ${pluginID}`,
+    );
+  }
 }
 
 async function resetPlugin(adminApi: APIRequestContext, pluginID: string) {
@@ -531,13 +563,19 @@ function buildSuccessPluginSource() {
   const moduleName = "lina-plugin-dev-lp-host-e2e";
   rmSync(pluginDir, { force: true, recursive: true });
 
+  writeTestFile(path.join(pluginDir, "go.mod"), pluginGoModContent(moduleName));
   writeTestFile(
-    path.join(pluginDir, "go.mod"),
-    pluginGoModContent(moduleName),
+    path.join(pluginDir, "main.go"),
+    buildPluginRuntimeMain(moduleName),
   );
-  writeTestFile(path.join(pluginDir, "main.go"), buildPluginRuntimeMain(moduleName));
-  writeTestFile(path.join(pluginDir, "plugin_embed.go"), buildPluginEmbedFile());
-  writeTestFile(path.join(pluginDir, "backend", "plugin.go"), buildBackendPluginFile(moduleName));
+  writeTestFile(
+    path.join(pluginDir, "plugin_embed.go"),
+    buildPluginEmbedFile(),
+  );
+  writeTestFile(
+    path.join(pluginDir, "backend", "plugin.go"),
+    buildBackendPluginFile(moduleName),
+  );
   writeTestFile(
     path.join(pluginDir, "backend", "plugin_wasip1.go"),
     buildBackendWasmDispatcherFile(moduleName, successPluginID),
@@ -586,7 +624,14 @@ hostServices:
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "api", "dynamic", "v1", "low_priority_host_services.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "api",
+      "dynamic",
+      "v1",
+      "low_priority_host_services.go",
+    ),
     `package v1
 
 import "github.com/gogf/gf/v2/frame/g"
@@ -597,7 +642,14 @@ type LowPriorityHostServicesReq struct {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "dynamic.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "dynamic.go",
+    ),
     `package dynamic
 
 type Controller struct{}
@@ -608,7 +660,14 @@ func New() *Controller {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "low_priority_host_services.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "low_priority_host_services.go",
+    ),
     `package dynamic
 
 import (
@@ -739,13 +798,19 @@ function buildDeniedPluginSource() {
   const moduleName = "lina-plugin-dev-lp-host-denied-e2e";
   rmSync(pluginDir, { force: true, recursive: true });
 
+  writeTestFile(path.join(pluginDir, "go.mod"), pluginGoModContent(moduleName));
   writeTestFile(
-    path.join(pluginDir, "go.mod"),
-    pluginGoModContent(moduleName),
+    path.join(pluginDir, "main.go"),
+    buildPluginRuntimeMain(moduleName),
   );
-  writeTestFile(path.join(pluginDir, "main.go"), buildPluginRuntimeMain(moduleName));
-  writeTestFile(path.join(pluginDir, "plugin_embed.go"), buildPluginEmbedFile());
-  writeTestFile(path.join(pluginDir, "backend", "plugin.go"), buildBackendPluginFile(moduleName));
+  writeTestFile(
+    path.join(pluginDir, "plugin_embed.go"),
+    buildPluginEmbedFile(),
+  );
+  writeTestFile(
+    path.join(pluginDir, "backend", "plugin.go"),
+    buildBackendPluginFile(moduleName),
+  );
   writeTestFile(
     path.join(pluginDir, "backend", "plugin_wasip1.go"),
     buildBackendWasmDispatcherFile(moduleName, deniedPluginID),
@@ -807,7 +872,14 @@ type NotifyDeniedReq struct {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "dynamic.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "dynamic.go",
+    ),
     `package dynamic
 
 type Controller struct{}
@@ -818,7 +890,14 @@ func New() *Controller {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "denied_routes.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "denied_routes.go",
+    ),
     `package dynamic
 
 import (
@@ -879,7 +958,13 @@ func (c *Controller) NotifyDenied(request *protocol.BridgeRequestEnvelopeV1) (*p
 
 function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
   mkdirSync(buildOutputDir(), { recursive: true });
-  const goWorkPath = path.join(pluginDir, ".e2e-low-priority-host-services.go.work");
+  const goWorkPath = path.join(
+    pluginDir,
+    ".e2e-low-priority-host-services.go.work",
+  );
+  const coreModulePath = path
+    .join(repoRoot(), "apps", "lina-core")
+    .replaceAll("\\", "/");
   writeFileSync(
     goWorkPath,
     [
@@ -890,6 +975,8 @@ function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
       `\t${linactlDir()}`,
       `\t${pluginDir}`,
       ")",
+      "",
+      `replace lina-core v0.0.0 => ${coreModulePath}`,
       "",
     ].join("\n"),
   );
@@ -904,13 +991,7 @@ function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
     });
     execFileSync(
       "go",
-      [
-        "run",
-        ".",
-        "wasm",
-        `dir=${pluginDir}`,
-        `out=${buildOutputDir()}`,
-      ],
+      ["run", ".", "wasm", `dir=${pluginDir}`, `out=${buildOutputDir()}`],
       {
         cwd: linactlDir(),
         env: {
@@ -1028,7 +1109,9 @@ test.describe("TC-1 Runtime Wasm Low Priority Host Services", () => {
     expect(payload.lock.expireAt).toBeTruthy();
     expect(payload.lock.renewExpireAt).toBeTruthy();
 
-    expect(Number.parseInt(String(payload.notify.messageId), 10)).toBeGreaterThan(0);
+    expect(
+      Number.parseInt(String(payload.notify.messageId), 10),
+    ).toBeGreaterThan(0);
     expect(payload.notify.deliveryCount).toBe(1);
 
     const unreadAfter = await apiUnreadCount(adminToken);

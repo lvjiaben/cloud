@@ -1,0 +1,106 @@
+{
+  "menu": {
+    "plugin:idc-compliance:center": {
+      "title": "Compliance Center"
+    },
+    "plugin:idc-compliance:electronic-contract": {
+      "title": "Electronic Contract"
+    },
+    "plugin:idc-compliance:electronic-contract:onboard": {
+      "title": "Onboard Electronic Contract"
+    },
+    "plugin:idc-compliance:electronic-contract:template:query": {
+      "title": "View Electronic Contract Templates"
+    },
+    "plugin:idc-compliance:electronic-contract:template:manage": {
+      "title": "Manage Electronic Contract Templates"
+    },
+    "plugin:idc-compliance:electronic-contract:create": {
+      "title": "Create Electronic Contract"
+    },
+    "plugin:idc-compliance:electronic-contract:query": {
+      "title": "View Electronic Contracts"
+    },
+    "plugin:idc-compliance:electronic-contract:reissue": {
+      "title": "Reissue Electronic Contract"
+    },
+    "plugin:idc-compliance:electronic-contract:terminate": {
+      "title": "Terminate Electronic Contract"
+    },
+    "plugin:idc-compliance:electronic-contract:cancel-order": {
+      "title": "Cancel Failed Contract Order"
+    },
+    "plugin:idc-compliance:electronic-contract:failure-policy": {
+      "title": "Configure Contract Failure Period"
+    },
+    "plugin:idc-compliance:electronic-contract:auto-sign:manage": {
+      "title": "Manage Enterprise Auto-sign Authorization"
+    },
+    "plugin:idc-compliance:provider": {
+      "title": "Identity Provider"
+    },
+    "plugin:idc-compliance:provider:validate": {
+      "title": "Validate Identity Provider"
+    },
+    "plugin:idc-compliance:provider:write": {
+      "title": "Configure Identity Provider"
+    },
+    "plugin:idc-compliance:suppliers": {
+      "title": "Contract and Invoice Providers"
+    },
+    "plugin:idc-compliance:supplier:query": {
+      "title": "View Local Supplier Configuration"
+    },
+    "plugin:idc-compliance:supplier:credential:write": {
+      "title": "Update Local Supplier Credential"
+    },
+    "plugin:idc-compliance:supplier:subject:bind": {
+      "title": "Bind Local Supplier Subject"
+    },
+    "plugin:idc-compliance:supplier:subject:revoke": {
+      "title": "Revoke Local Supplier Subject"
+    },
+    "plugin:idc-compliance:supplier:subject:reopen": {
+      "title": "Reopen Local Supplier Subject"
+    },
+    "plugin:idc-compliance:enterprise-verification": {
+      "title": "Enterprise Verification"
+    },
+    "plugin:idc-compliance:enterprise-verification:query": {
+      "title": "View Enterprise Verification"
+    },
+    "plugin:idc-compliance:enterprise-verification:review": {
+      "title": "Start Enterprise Verification Review"
+    },
+    "plugin:idc-compliance:enterprise-verification:approve": {
+      "title": "Approve Enterprise Verification"
+    },
+    "plugin:idc-compliance:enterprise-verification:reject": {
+      "title": "Reject Enterprise Verification"
+    },
+    "plugin:idc-compliance:enterprise-material:access": {
+      "title": "Access Enterprise Verification Originals"
+    },
+    "plugin:idc-compliance:tax-invoice:query": {
+      "title": "View Tax Invoice Requests"
+    },
+    "plugin:idc-compliance:tax-invoice:review": {
+      "title": "Review Tax Invoice Requests"
+    },
+    "plugin:idc-compliance:tax-invoice:submit": {
+      "title": "Submit Tax Invoice Requests"
+    },
+    "plugin:idc-compliance:tax-invoice:cancel": {
+      "title": "Cancel Tax Invoice Requests"
+    },
+    "plugin:idc-compliance:red-letter:query": {
+      "title": "View Red-letter Tasks"
+    },
+    "plugin:idc-compliance:red-letter:handle": {
+      "title": "Handle Red-letter Tasks"
+    },
+    "plugin:idc-compliance:privacy:query": { "title": "Privacy Governance" },
+    "plugin:idc-compliance:privacy:configure": { "title": "Configure Privacy Rules" },
+    "plugin:idc-compliance:privacy:incident": { "title": "Handle Privacy Incidents" }
+  }
+}

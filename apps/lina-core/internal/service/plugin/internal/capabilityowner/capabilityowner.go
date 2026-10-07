@@ -15,6 +15,7 @@ import (
 	"lina-core/internal/model/entity"
 	"lina-core/internal/service/cachecoord"
 	"lina-core/internal/service/datascope"
+	"lina-core/internal/service/plugin/internal/businessdiscovery"
 	"lina-core/internal/service/plugin/internal/pluginconfig"
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability"
@@ -102,6 +103,42 @@ func (a *pluginCapabilityAdapter) ForPlugin(pluginID string) capabilityplugincap
 	clone := *a
 	clone.pluginID = strings.TrimSpace(pluginID)
 	return &clone
+}
+
+// ListBusinessExtensionProviders returns only provider releases authorized by
+// the current caller plugin as business owner.
+func (a *pluginCapabilityAdapter) ListBusinessExtensionProviders(
+	ctx context.Context,
+	input capabilityplugincap.BusinessExtensionProviderListInput,
+) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	if a == nil {
+		return nil, bizerr.NewCode(capmodel.CodeCapabilityDenied)
+	}
+	return businessdiscovery.ListNewBindingProviders(ctx, a.pluginID, input)
+}
+
+// GetBusinessExtensionProviderExact verifies retained historical evidence for
+// a provider declaration owned by the current caller plugin.
+func (a *pluginCapabilityAdapter) GetBusinessExtensionProviderExact(
+	ctx context.Context,
+	input capabilityplugincap.BusinessExtensionProviderExactInput,
+) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	if a == nil {
+		return nil, bizerr.NewCode(capmodel.CodeCapabilityDenied)
+	}
+	return businessdiscovery.GetExactProvider(ctx, a.pluginID, input)
+}
+
+// GetBusinessExtensionProvidersExact verifies a bounded collection of retained
+// historical declarations owned by the current caller plugin.
+func (a *pluginCapabilityAdapter) GetBusinessExtensionProvidersExact(
+	ctx context.Context,
+	inputs []capabilityplugincap.BusinessExtensionProviderExactInput,
+) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	if a == nil {
+		return nil, bizerr.NewCode(capmodel.CodeCapabilityDenied)
+	}
+	return businessdiscovery.GetExactProviders(ctx, a.pluginID, inputs)
 }
 
 // ServicesForPlugin returns a plugin-bound capability service set when the

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gogf/gf/v2/os/gcfg"
+
 	"linactl/internal/toolrun"
 )
 
@@ -253,5 +255,42 @@ func TestConfigureGoFrameCLIAllowsCtrlWithoutHackConfig(t *testing.T) {
 	_, err = configureGoFrameCLI(configDir, true)
 	if err == nil || !strings.Contains(err.Error(), "missing config.yaml") {
 		t.Fatalf("expected dao config error, got %v", err)
+	}
+}
+
+func TestApplyDAODatabaseLinkOverrideIsProcessLocal(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "config.yaml")
+	const originalLink = "pgsql:postgres:shared@tcp(127.0.0.1:5432)/shared"
+	const localLink = "pgsql:postgres:local@tcp(127.0.0.1:5432)/local"
+	config := "gfcli:\n  gen:\n    dao:\n      - link: \"" + originalLink + "\"\n        path: internal\n        tables: demo\n"
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatalf("write GoFrame config: %v", err)
+	}
+	t.Setenv(daoDatabaseLinkEnvironment, localLink)
+
+	adapter, err := gcfg.NewAdapterFile()
+	if err != nil {
+		t.Fatalf("create GoFrame config adapter: %v", err)
+	}
+	if err := adapter.SetPath(configDir); err != nil {
+		t.Fatalf("set GoFrame config path: %v", err)
+	}
+	if err := applyDAODatabaseLinkOverride(adapter); err != nil {
+		t.Fatalf("apply DAO database link override: %v", err)
+	}
+	value, err := adapter.Get(context.Background(), "gfcli.gen.dao.0.link")
+	if err != nil {
+		t.Fatalf("read overridden DAO database link: %v", err)
+	}
+	if value != localLink {
+		t.Fatalf("DAO database link = %v, want local override", value)
+	}
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read GoFrame config after override: %v", err)
+	}
+	if !strings.Contains(string(content), originalLink) || strings.Contains(string(content), localLink) {
+		t.Fatalf("repository config was modified by process-local override")
 	}
 }

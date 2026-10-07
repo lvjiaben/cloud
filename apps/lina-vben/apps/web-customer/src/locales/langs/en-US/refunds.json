@@ -1,0 +1,93 @@
+{
+  "actions": {
+    "cancel": "Cancel",
+    "chooseOrder": "Choose an order to refund",
+    "next": "Next",
+    "preview": "Review refund impact",
+    "previous": "Previous",
+    "submit": "Submit refund"
+  },
+  "application": {
+    "amountHelp": "Choose the order item and refund quantity first, then enter the amount in minor units, for example 1299 for CNY 12.99. A specific entitlement is available only for ongoing services. The server rechecks every limit.",
+    "amountMinor": "Refund amount (minor units)",
+    "entitlement": "Refund this ongoing entitlement only",
+    "lineTotal": "Original invoice line amount",
+    "order": "Order: {orderNo}",
+    "quantity": "Refund quantity",
+    "refundable": "Maximum refundable now",
+    "title": "New refund request",
+    "wholeItem": "Select this order item"
+  },
+  "approval": {
+    "automatic": "Automatic when all rules remain clear",
+    "manual": "Manual staff review required"
+  },
+  "destination": {
+    "mixed": "Original sources plus same-currency balance",
+    "original_channel": "Original payment source",
+    "same_currency_balance": "Same-currency customer balance"
+  },
+  "balance": {
+    "accept": "Send unsupported portions to my balance",
+    "acceptDetail": "The total refund is {amount}. Portions that cannot return to their original source will go to your same-currency balance; all other portions stay original-source. Every portion starts together only after confirmation.",
+    "acceptTitle": "Confirm the whole refund destination",
+    "declineDetail": "If you keep waiting, none of the refund will execute and no portion will be returned early. You can still accept later.",
+    "declineTitle": "Keep the whole refund pending",
+    "failed": "The refund choice could not be saved. Refresh and try again.",
+    "keepPending": "Do not accept; keep all pending",
+    "saved": "Your refund choice was saved",
+    "wholeHeld": "One portion cannot return to its original source. The whole refund is paused and no portion has executed early."
+  },
+  "eyebrow": "ONLINE REFUNDS",
+  "history": {
+    "destination": "Destination",
+    "empty": "No refund requests yet",
+    "lead": "Track review, execution, and any balance-refund choice that needs you.",
+    "reason": "Reason",
+    "submittedAt": "Submitted",
+    "title": "My refunds"
+  },
+  "lead": "Choose the order item, refund quantity, and amount first. For ongoing services, also review the selected entitlement impact. Amounts, status, and destination are always rechecked.",
+  "menu": "My refunds",
+  "messages": {
+    "confirmRequired": "Choose a reason and confirm that you understand the service impact",
+    "historyFailed": "Refund history is temporarily unavailable",
+    "orderFailed": "A refund request cannot be prepared for this order right now. Return to Orders and choose it again.",
+    "otherDetailRequired": "Describe the reason when Other is selected",
+    "previewFailed": "The refund preview failed. Amounts, service state, or refundable limits may have changed.",
+    "selectionRequired": "Select at least one item and enter a positive refund amount",
+    "submitFailed": "The refund could not be submitted. Create a fresh preview and try again.",
+    "submitted": "Your refund request was submitted"
+  },
+  "preview": {
+    "amount": "Expected refund",
+    "approval": "Review path",
+    "confirmImpact": "I understand and confirm the refund, ongoing-entitlement termination, and review impact shown above",
+    "dangerousWarning": "A selected service has an unfinished or unknown-result risky operation. The refund will wait for resource verification.",
+    "reason": "Refund reason",
+    "reasonDetail": "Details",
+    "entitlementImpact": "Ongoing service “{productName}” will be handled as shown in this preview",
+    "entitlementTermination": "Ongoing service “{productName}” will be terminated",
+    "terminationWarning": "This refund terminates the selected ongoing entitlement and may interrupt service or affect data. Protect important data first.",
+    "title": "Confirm refund amount and service impact"
+  },
+  "reason": {
+    "duplicate_purchase": "Duplicate purchase",
+    "no_longer_needed": "No longer needed",
+    "other": "Other",
+    "service_issue": "Service issue",
+    "wrong_configuration": "Wrong configuration"
+  },
+  "status": {
+    "approved": "Approved",
+    "awaiting_balance_consent": "Waiting for refund destination choice",
+    "executing": "Refunding",
+    "failed": "Refund failed",
+    "manual_confirmation": "Waiting for manual verification",
+    "pending_review": "Waiting for review",
+    "rejected": "Rejected",
+    "result_unknown": "Refund result needs verification",
+    "succeeded": "Refunded"
+  },
+  "title": "Refunds and service impact"
+}

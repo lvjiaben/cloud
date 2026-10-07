@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-core/backend/channel_commerce.go",
+      "maxCalls": 15,
+      "reason": "IDC core channel-commerce composition boundary; wires the plugin-owned commerce services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/commerce/commerce_order_lifecycle.go",
+      "maxCalls": 2,
+      "reason": "Commerce order lifecycle composition boundary; constructs component-owned lifecycle collaborators."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/commerce/commerce_risk_review.go",
+      "maxCalls": 2,
+      "reason": "Commerce risk-review composition boundary; constructs component-owned review collaborators."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/commerce/commerce.go",
+      "maxCalls": 4,
+      "reason": "Commerce service composition boundary; wires plugin-owned commerce sub-services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/managementruntime/managementruntime.go",
+      "maxCalls": 7,
+      "reason": "IDC core management-runtime composition boundary; wires the management service graph once."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/managementruntime/staff_renewal.go",
+      "maxCalls": 2,
+      "reason": "Management renewal composition boundary; constructs staff renewal collaborators."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/productautomation/productautomation.go",
+      "maxCalls": 1,
+      "reason": "Product automation composition boundary; constructs the plugin-owned automation service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/renewal/renewal_payment.go",
+      "maxCalls": 1,
+      "reason": "Renewal payment composition boundary; constructs the plugin-owned payment collaborator."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/renewal/renewal.go",
+      "maxCalls": 3,
+      "reason": "Renewal service composition boundary; wires plugin-owned renewal collaborators."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/supportdesk/supportdesk.go",
+      "maxCalls": 1,
+      "reason": "Support-desk composition boundary; constructs the plugin-owned support service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/internal/service/versioncache/versioncache.go",
+      "maxCalls": 1,
+      "reason": "Version-cache composition boundary; constructs the plugin-owned cache service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-core/backend/plugin.go",
+      "maxCalls": 220,
+      "reason": "IDC core plugin composition boundary; wires its private service graph and controllers once."
+    }
+  ]
+}

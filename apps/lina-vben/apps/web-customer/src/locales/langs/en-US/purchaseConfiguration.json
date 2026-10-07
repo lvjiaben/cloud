@@ -1,0 +1,42 @@
+{
+  "actions": {
+    "back": "Back",
+    "freeze": "Confirm and return to cart",
+    "quote": "Validate and view price"
+  },
+  "catalog": {
+    "configure": "Choose configuration",
+    "empty": "No products are currently available",
+    "loadFailed": "Products could not be loaded. Please try again.",
+    "loadMore": "Load more",
+    "loadMoreFailed": "More products could not be loaded. Products already shown remain available.",
+    "menu": "Browse products",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "title": "Browse products",
+    "unavailable": "Unavailable"
+  },
+  "file": {
+    "drag": "Click or drag files here to upload",
+    "policy": "Up to {count} files, {size} MB each; accepted: {extensions}",
+    "remove": "Remove",
+    "removeFailed": "The file could not be removed. Please try again.",
+    "revoked": "File removed",
+    "uploaded": "File passed inspection",
+    "uploadFailed": "The file could not be uploaded. Check it and try again."
+  },
+  "messages": {
+    "frozen": "Purchase configuration saved for this item",
+    "evaluateFailed": "Configuration validation is temporarily unavailable. Please try again.",
+    "fieldInvalid": "Check the value entered for this field",
+    "changedDuringSubmit": "The configuration changed while submitting. Review it and try again.",
+    "freezeFailed": "The purchase configuration could not be saved. Please try again.",
+    "invalid": "Check the required fields and entered values",
+    "loadFailed": "Purchase configuration could not be loaded. Please try again.",
+    "navigationFailed": "The configuration was saved. Return to the cart to continue.",
+    "previewOnly": "No cart item is linked. You can validate the configuration and view pricing; enter from a product purchase action to save it to the cart.",
+    "quoteFailed": "Pricing could not be calculated. Please try again.",
+    "quoted": "Configuration validated and pricing refreshed"
+  },
+  "title": "Product purchase configuration"
+}

@@ -1,0 +1,19 @@
+{
+  "menu": {
+    "plugin:idc-notify:wecom-self-binding": {
+      "title": "My WeCom Binding"
+    },
+    "plugin:idc-notify:channels": {
+      "title": "Notification Channels"
+    },
+    "plugin:idc-notify:templates": {
+      "title": "Notification Templates"
+    },
+    "plugin:idc-notify:deliveries": {
+      "title": "Notification Deliveries"
+    },
+    "plugin:idc-notify:manage": {
+      "title": "Manage Notification Channels"
+    }
+  }
+}

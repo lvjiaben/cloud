@@ -75,14 +75,14 @@
 系统 SHALL 保持动态插件升级在运行时模型上。动态插件新 artifact 被上传或文件覆盖后，若发现版本高于数据库有效版本，系统必须将插件标记为待升级，并通过同一插件管理页升级流程完成有效 release 切换和治理资源同步。
 
 #### Scenario: 动态插件发现更高版本
-- **WHEN** 动态插件 `linapro-demo-dynamic` 有效运行 `v0.1.0`
+- **WHEN** 动态插件 `demo-dynamic` 有效运行 `v0.1.0`
 - **AND** 本地发现或上传的动态插件 artifact 版本为 `v0.2.0`
 - **THEN** 系统将插件标记为待升级
 - **AND** 有效 release 仍保持 `v0.1.0`
 - **AND** 管理员必须通过插件管理页显式确认升级
 
 #### Scenario: 动态插件文件版本低于有效版本
-- **WHEN** 动态插件 `linapro-demo-dynamic` 有效运行 `v0.2.0`
+- **WHEN** 动态插件 `demo-dynamic` 有效运行 `v0.2.0`
 - **AND** 本地发现或上传的 artifact 版本为 `v0.1.0`
 - **THEN** 系统将插件标记为异常
 - **AND** 系统不得自动降级有效 release
@@ -205,8 +205,8 @@
 
 #### Scenario: Provider 升级后不满足下游插件依赖版本
 
-- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`linapro-org-core`版本范围`>=1.0.0 <2.0.0`
-- **AND** 管理员尝试将`linapro-org-core`升级为不满足该范围的新版本
+- **WHEN** 已安装插件`consumer`在`dependencies.plugins`中硬依赖`org-core`版本范围`>=1.0.0 <2.0.0`
+- **AND** 管理员尝试将`org-core`升级为不满足该范围的新版本
 - **THEN** 升级请求失败或要求先处理下游依赖
 - **AND** 错误包含下游插件 ID、provider 插件 ID 和所需版本范围
 - **AND** 即使`consumer`当前已禁用，升级仍 MUST 被阻断

@@ -1,0 +1,14 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.meta.tags": "IDC 商品目录管理",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.meta.summary": "修改商品版本库存",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.meta.dc": "修改一个草稿商品版本的简单库存设置。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.schema.dc": "修改一个草稿商品版本的简单库存设置。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.fields.versionNo.dc": "商品版本编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.fields.trackingEnabled.dc": "是否按设置的数量限制销售",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.fields.sellableQuantity.dc": "跟踪库存时的可售数量",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateReq.fields.expectedVersion.dc": "页面最后读取的库存版本",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventoryUpdateRes.fields.inventory.dc": "修改后的商品库存设置",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventory.fields.trackingEnabled.dc": "是否按库存限制销售",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventory.fields.sellableQuantity.dc": "设置的可售数量",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionInventory.fields.version.dc": "库存并发版本"
+}

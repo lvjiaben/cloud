@@ -1,0 +1,5 @@
+{
+  "menu": {
+    "plugin:staff-access:management": { "title": "Staff Permissions" }
+  }
+}

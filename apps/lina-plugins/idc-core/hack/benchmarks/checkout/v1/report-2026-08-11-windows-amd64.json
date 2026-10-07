@@ -1,0 +1,61 @@
+{
+  "benchmarkId": "idc-checkout-v1",
+  "manifestSha256": "5a78813451b1841eb15fcf0e890bf63d1f502af7c6f633e064980ce64fd48920",
+  "generatedAt": "2026-08-10T19:29:03Z",
+  "goVersion": "go1.26.5",
+  "goos": "windows",
+  "goarch": "amd64",
+  "logicalCpus": 8,
+  "memoryGiB": 30.9,
+  "storageClass": "local-ssd",
+  "databaseNetwork": "loopback",
+  "postgreSqlVersion": "18.4",
+  "fixturePreparationMs": 5514,
+  "warmupMs": 146,
+  "externalNetworkCalls": 0,
+  "dataset": {
+    "totalCustomerCount": 76,
+    "benchmarkCustomerCount": 73,
+    "catalogProductCount": 1,
+    "inventorySellableUnits": 10000,
+    "cartItemsPerOrder": 8,
+    "configurationSelectionsPerItem": 1,
+    "quantityPerItem": 1,
+    "currencyCode": "CNY",
+    "datasetScript": "dataset.sql"
+  },
+  "queryShape": {
+    "baselineCartItems": 1,
+    "baselineQueries": 37,
+    "targetCartItems": 8,
+    "targetQueries": 37,
+    "queryGrowth": 0
+  },
+  "stages": [
+    {
+      "name": "application_cold",
+      "samples": 1,
+      "concurrency": 1,
+      "elapsedMs": 98,
+      "p50Ms": 98.117,
+      "p95Ms": 98.117,
+      "p99Ms": 98.117,
+      "maximumMs": 98.117,
+      "maximumQueries": 47,
+      "errorRate": 0
+    },
+    {
+      "name": "application_warm",
+      "samples": 64,
+      "concurrency": 8,
+      "elapsedMs": 982,
+      "p50Ms": 108.68,
+      "p95Ms": 189.159,
+      "p99Ms": 241.093,
+      "maximumMs": 241.093,
+      "maximumQueries": 37,
+      "errorRate": 0
+    }
+  ],
+  "passed": true
+}

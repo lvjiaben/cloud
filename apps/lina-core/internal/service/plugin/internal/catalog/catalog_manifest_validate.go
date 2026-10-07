@@ -96,6 +96,15 @@ func (s *serviceImpl) ValidateManifest(manifest *Manifest, filePath string) erro
 	if err := plugintypes.ValidateDependencySpec(manifest.ID, manifest.Dependencies); err != nil {
 		return gerror.Wrapf(err, "plugin dependency metadata is invalid: %s", fileLabel)
 	}
+	if err := ValidateBusinessExtensions(manifest); err != nil {
+		return gerror.Wrapf(err, "plugin business extension metadata is invalid: %s", fileLabel)
+	}
+	if err := ValidateFrontendSurfaces(manifest); err != nil {
+		return gerror.Wrapf(err, "plugin frontend surface metadata is invalid: %s", fileLabel)
+	}
+	if _, err := BuildManifestFrontendSurfaceDiscovery(manifest); err != nil {
+		return gerror.Wrapf(err, "plugin frontend surface governance is invalid: %s", fileLabel)
+	}
 	if err := normalizeManifestHostServices(manifest); err != nil {
 		return gerror.Wrapf(err, "plugin host service metadata is invalid: %s", fileLabel)
 	}
@@ -195,6 +204,15 @@ func (s *serviceImpl) ValidateUploadedRuntimeManifest(manifest *Manifest) error 
 		return err
 	}
 	if err := plugintypes.ValidateDependencySpec(manifest.ID, manifest.Dependencies); err != nil {
+		return err
+	}
+	if err := ValidateBusinessExtensions(manifest); err != nil {
+		return err
+	}
+	if err := ValidateFrontendSurfaces(manifest); err != nil {
+		return err
+	}
+	if _, err := BuildManifestFrontendSurfaceDiscovery(manifest); err != nil {
 		return err
 	}
 	if err := normalizeManifestHostServices(manifest); err != nil {
@@ -308,7 +326,7 @@ func normalizePublicAssetRelativePath(value string, allowRoot bool) (string, err
 	if parsed, err := url.Parse(trimmed); err == nil && parsed != nil && parsed.Scheme != "" {
 		return "", gerror.Newf("path cannot be a URL: %s", value)
 	}
-	if filepath.IsAbs(trimmed) || strings.HasPrefix(trimmed, "/") {
+	if filepath.IsAbs(trimmed) || strings.HasPrefix(trimmed, "/") || strings.HasPrefix(trimmed, "\\") {
 		if allowRoot && trimmed == "/" {
 			return "", nil
 		}

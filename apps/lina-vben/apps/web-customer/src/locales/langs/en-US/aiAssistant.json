@@ -1,0 +1,11 @@
+{
+  "menu": "AI assistant",
+  "title": "Customer AI assistant",
+  "description": "The assistant reads only data visible to your account and links to ordinary billing, server, and ticket pages.",
+  "placeholder": "For example: show my recent bills or unresolved tickets",
+  "ask": "Ask",
+  "openRelated": "Open related page",
+  "dataAsOf": "Data as of: {value}",
+  "disabled": "The AI assistant is not enabled yet. Contact an operator.",
+  "error": "The AI assistant is temporarily unavailable. Please try again later."
+}

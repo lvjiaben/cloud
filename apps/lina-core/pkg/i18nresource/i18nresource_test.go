@@ -226,10 +226,10 @@ func TestRestrictedPluginScopeDropsForeignKeys(t *testing.T) {
 	loader := ResourceLoader{
 		SourcePlugins: func() []SourcePlugin {
 			return []SourcePlugin{
-				fakeSourcePlugin{id: "linapro-demo-dynamic", filesystem: fstest.MapFS{
+				fakeSourcePlugin{id: "demo-dynamic", filesystem: fstest.MapFS{
 					"manifest/i18n/zh-CN/apidoc/plugin-api-main.json": &fstest.MapFile{Data: []byte(`{
   "plugins": {
-    "linapro_demo_dynamic": {
+    "demo_dynamic": {
       "name": "Allowed Plugin Name",
       "internal": {
         "model": {
@@ -256,16 +256,16 @@ func TestRestrictedPluginScopeDropsForeignKeys(t *testing.T) {
 		Recursive:    true,
 		ValueMode:    ValueModeStringOnly,
 		KeyFilter: func(key string) bool {
-			return key != "plugins.linapro_demo_dynamic.internal.model.entity.User.name"
+			return key != "plugins.demo_dynamic.internal.model.entity.User.name"
 		},
 	}
 
 	actual := loader.LoadSourcePluginBundles(context.Background(), "zh-CN")
 	expected := map[string]string{
-		"plugins.linapro_demo_dynamic.name": "Allowed Plugin Name",
+		"plugins.demo_dynamic.name": "Allowed Plugin Name",
 	}
-	if !reflect.DeepEqual(actual["linapro-demo-dynamic"], expected) {
-		t.Fatalf("unexpected restricted plugin bundle: expected=%v actual=%v", expected, actual["linapro-demo-dynamic"])
+	if !reflect.DeepEqual(actual["demo-dynamic"], expected) {
+		t.Fatalf("unexpected restricted plugin bundle: expected=%v actual=%v", expected, actual["demo-dynamic"])
 	}
 }
 
@@ -280,13 +280,13 @@ func TestLoadDynamicPluginBundlesConsumesExtractedAssets(t *testing.T) {
 	}
 	releases := []ReleaseRef{
 		{
-			PluginID: "linapro-demo-dynamic",
+			PluginID: "demo-dynamic",
 			Assets: []LocaleAsset{
 				{
 					Locale: "zh-CN",
 					Content: `{
   "plugins": {
-    "linapro_demo_dynamic": {
+    "demo_dynamic": {
       "name": "动态插件"
     }
   },
@@ -295,7 +295,7 @@ func TestLoadDynamicPluginBundlesConsumesExtractedAssets(t *testing.T) {
 				},
 				{
 					Locale:  "en-US",
-					Content: `{"plugins.linapro_demo_dynamic.name":"Dynamic Plugin"}`,
+					Content: `{"plugins.demo_dynamic.name":"Dynamic Plugin"}`,
 				},
 			},
 		},
@@ -303,9 +303,9 @@ func TestLoadDynamicPluginBundlesConsumesExtractedAssets(t *testing.T) {
 
 	actual := loader.LoadDynamicPluginBundles(context.Background(), "zh-CN", releases)
 	expected := map[string]string{
-		"plugins.linapro_demo_dynamic.name": "动态插件",
+		"plugins.demo_dynamic.name": "动态插件",
 	}
-	if !reflect.DeepEqual(actual["linapro-demo-dynamic"], expected) {
-		t.Fatalf("unexpected dynamic plugin bundle: expected=%v actual=%v", expected, actual["linapro-demo-dynamic"])
+	if !reflect.DeepEqual(actual["demo-dynamic"], expected) {
+		t.Fatalf("unexpected dynamic plugin bundle: expected=%v actual=%v", expected, actual["demo-dynamic"])
 	}
 }

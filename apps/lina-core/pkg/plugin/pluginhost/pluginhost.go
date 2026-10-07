@@ -7,6 +7,7 @@ import (
 	"io/fs"
 
 	"lina-core/pkg/plugin/capability/authcap/extlogin/extidspi"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/capregistry"
 	"lina-core/pkg/plugin/capability/orgcap/orgspi"
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
@@ -27,6 +28,33 @@ const (
 	DynamicEmbeddedSourceQueryKey = "embeddedSrc"
 	// DynamicAccessModeQueryKey is the menu query key controlling dynamic plugin page access mode.
 	DynamicAccessModeQueryKey = "pluginAccessMode"
+	// GovernedSurfaceSourceQueryKey carries a version-frozen isolated page URL
+	// while the menu path remains inside the host-owned plugin namespace.
+	GovernedSurfaceSourceQueryKey = "pluginSurfaceSrc"
+	// GovernedSurfacePluginQueryKey identifies the source plugin that owns a
+	// compiled surface entry.
+	GovernedSurfacePluginQueryKey = "pluginSurfacePlugin"
+	// GovernedSurfaceEntryQueryKey identifies a compiled source page inside its
+	// owning plugin without resolving by the host route suffix.
+	GovernedSurfaceEntryQueryKey = "pluginSurfaceEntry"
+	// GovernedSurfaceKeyQueryKey identifies the exact frontend surface contract.
+	GovernedSurfaceKeyQueryKey = "pluginSurfaceKey"
+	// GovernedSurfaceVersionQueryKey carries the versioned page bridge contract.
+	GovernedSurfaceVersionQueryKey = "pluginSurfaceVersion"
+	// GovernedSurfaceCapabilitiesQueryKey carries the comma-separated, validated
+	// page bridge capabilities granted to this exact surface.
+	GovernedSurfaceCapabilitiesQueryKey = "pluginSurfaceCapabilities"
+	// GovernedSurfaceHostQueryKey distinguishes staff and customer identities.
+	GovernedSurfaceHostQueryKey = "pluginSurfaceHost"
+	// PageBridgeGrantHeaderName carries a short-lived server-signed page grant.
+	// Browser-provided binding fields are never trusted directly.
+	PageBridgeGrantHeaderName = "X-Lina-Plugin-Page-Grant"
+	// RouteMetaPageBridgeCapability binds one exact dynamic route contract to a
+	// capability declared by a governed frontend surface.
+	RouteMetaPageBridgeCapability = "pageBridgeCapability"
+	// RouteMetaPageBridgeHost binds an owner route to exactly one governed
+	// administration or customer surface audience.
+	RouteMetaPageBridgeHost = "pageBridgeHost"
 	// DynamicAccessModeEmbeddedMount is the access mode for ESM-mounted dynamic plugin pages.
 	DynamicAccessModeEmbeddedMount = "embedded-mount"
 )
@@ -50,6 +78,21 @@ type Declarations interface {
 	Providers() ProviderDeclarations
 	// Access returns the menu and permission access-control registration facade.
 	Access() AccessDeclarations
+	// BusinessExtensions returns owner-defined provider declaration validation.
+	BusinessExtensions() BusinessExtensionDeclarations
+}
+
+// BusinessExtensionProviderValidator validates one provider release's complete
+// normalized declaration group for an owner-defined extension point. The input
+// is an isolated clone and must be treated as immutable.
+type BusinessExtensionProviderValidator func([]*capmodel.BusinessExtensionDeclaration) error
+
+// BusinessExtensionDeclarations registers typed validation owned by the source
+// plugin that publishes a business extension contract.
+type BusinessExtensionDeclarations interface {
+	// RegisterProviderValidator binds exactly one validator to a point and
+	// contract version. Duplicate registration fails closed.
+	RegisterProviderValidator(point, contractVersion string, validator BusinessExtensionProviderValidator) error
 }
 
 // AssetDeclarations exposes plugin-owned asset declarations grouped under one
@@ -62,6 +105,9 @@ type AssetDeclarations interface {
 // LifecycleDeclarations exposes lifecycle callback registrations grouped under
 // one dedicated facade.
 type LifecycleDeclarations interface {
+	// RegisterBusinessImpactHandler registers one stable business owner's
+	// bounded impact projection for managed plugin lifecycle checks.
+	RegisterBusinessImpactHandler(handler SourcePluginBusinessImpactHandler) error
 	// RegisterBeforeInstallHandler registers a pre-install lifecycle callback
 	// for the source plugin. The host invokes this callback before it applies
 	// install SQL, synchronizes plugin governance resources, or marks the plugin
@@ -256,6 +302,8 @@ type ProviderDeclarations interface {
 	ProvideOrg(factory orgspi.ProviderFactory) error
 	// ProvideCapability declares one plugin-owned capability descriptor published by this source plugin.
 	ProvideCapability(descriptor capregistry.Descriptor) error
+	// ProvideBusinessExtensionMethods registers the source provider's governed method dispatcher.
+	ProvideBusinessExtensionMethods(handler SourcePluginBusinessExtensionMethodHandler) error
 	// ProvideExternalIdentity declares one external-identity provider ID owned
 	// by this source plugin. The host uses the declared ownership set to reject
 	// external-login requests that claim a provider the calling plugin did not
@@ -266,7 +314,7 @@ type ProviderDeclarations interface {
 	// ProvideExternalIdentityProvider declares this source plugin's
 	// external-identity provider engine factory (resolve/provision/link). It is
 	// orthogonal to ProvideExternalIdentity ownership stamping: the engine
-	// plugin (linapro-extlogin-core) supplies resolution and provisioning, while
+	// plugin (extlogin-core) supplies resolution and provisioning, while
 	// calling plugins (google/discord) still declare provider-ID ownership. Only
 	// one engine factory may be declared per plugin.
 	ProvideExternalIdentityProvider(factory extidspi.ProviderFactory) error
@@ -294,6 +342,10 @@ type SourcePluginDefinition interface {
 	GetOrgProviderFactory() orgspi.ProviderFactory
 	// GetCapabilityDescriptors returns plugin-owned capability descriptors declared by this source plugin.
 	GetCapabilityDescriptors() []capregistry.Descriptor
+	// GetBusinessExtensionMethodHandler returns the source provider method dispatcher.
+	GetBusinessExtensionMethodHandler() SourcePluginBusinessExtensionMethodHandler
+	// GetBusinessExtensionProviderValidator returns the owner-registered validator.
+	GetBusinessExtensionProviderValidator(point, contractVersion string) (BusinessExtensionProviderValidator, bool)
 	// GetExternalIdentityProviderIDs returns the external-identity provider IDs
 	// declared by this source plugin. The host consults this ownership set to
 	// authorize external-login requests.
@@ -301,6 +353,8 @@ type SourcePluginDefinition interface {
 	// GetExternalIdentityProviderFactory returns the declared external-identity
 	// provider engine factory, or nil when this plugin declares none.
 	GetExternalIdentityProviderFactory() extidspi.ProviderFactory
+	// GetBusinessImpactHandler returns the registered business-impact provider.
+	GetBusinessImpactHandler() SourcePluginBusinessImpactHandler
 	// GetBeforeInstallHandler returns the registered pre-install veto callback.
 	GetBeforeInstallHandler() SourcePluginBeforeLifecycleHandler
 	// GetAfterInstallHandler returns the registered post-install callback.

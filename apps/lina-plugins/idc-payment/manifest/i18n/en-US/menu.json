@@ -1,0 +1,15 @@
+{
+  "menu": {
+    "plugin:idc-payment:channels": { "title": "Payment Methods" },
+    "plugin:idc-payment:channels:manage": { "title": "Manage Payment Methods" },
+    "plugin:idc-payment:reconciliation": { "title": "Payment Reconciliation" },
+    "plugin:idc-payment:reconciliation:view": { "title": "View Payment Reconciliation" },
+    "plugin:idc-payment:reconciliation:supplement-submit": { "title": "Submit Payment Supplement" },
+    "plugin:idc-payment:reconciliation:supplement-review": { "title": "Review Payment Supplement" },
+    "plugin:idc-payment:exception-funds": { "title": "Unassigned Payment Funds" },
+    "plugin:idc-payment:exception-funds:view": { "title": "View Unassigned Payment Funds" },
+    "plugin:idc-payment:exception-funds:allocate": { "title": "Allocate Unassigned Payment Funds" },
+    "plugin:idc-payment:exception-funds:refund": { "title": "Request Original-source Refund" },
+    "plugin:idc-payment:exception-funds:refund-confirm": { "title": "Confirm Manual Original-source Refund" }
+  }
+}

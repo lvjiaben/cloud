@@ -54,6 +54,9 @@ func captureFunctionRouteBinding(
 		routePath    = normalizeRoutePattern(explicitPattern)
 		methods      = expandRouteMethods(explicitMethod)
 		documentable = isDocumentableHandler(handler)
+		capability   string
+		host         string
+		permission   string
 	)
 	if documentable {
 		if reqMetaPath, ok := readHandlerMetaPath(handler); ok {
@@ -62,6 +65,7 @@ func captureFunctionRouteBinding(
 		if reqMetaMethods, ok := readHandlerMetaMethods(handler); ok {
 			methods = reqMetaMethods
 		}
+		capability, host, permission = readHandlerPageBridgeMetadata(handler)
 	}
 	if len(methods) == 0 {
 		methods = []string{routeMethodAll}
@@ -71,14 +75,27 @@ func captureFunctionRouteBinding(
 	bindings := make([]pluginhost.SourceRouteBinding, 0, len(methods))
 	for _, method := range methods {
 		bindings = append(bindings, pluginhost.SourceRouteBinding{
-			PluginID:     strings.TrimSpace(pluginID),
-			Method:       normalizeRouteMethod(method),
-			Path:         finalPath,
-			Handler:      handler,
-			Documentable: documentable,
+			PluginID:             strings.TrimSpace(pluginID),
+			Method:               normalizeRouteMethod(method),
+			Path:                 finalPath,
+			Handler:              handler,
+			Documentable:         documentable,
+			PageBridgeCapability: capability,
+			PageBridgeHost:       host,
+			Permission:           permission,
 		})
 	}
 	return bindings
+}
+
+func readHandlerPageBridgeMetadata(handler interface{}) (string, string, string) {
+	reqObject, ok := newHandlerReqObject(handler)
+	if !ok {
+		return "", "", ""
+	}
+	return strings.TrimSpace(gmeta.Get(reqObject, pluginhost.RouteMetaPageBridgeCapability).String()),
+		strings.TrimSpace(gmeta.Get(reqObject, pluginhost.RouteMetaPageBridgeHost).String()),
+		strings.TrimSpace(gmeta.Get(reqObject, "permission").String())
 }
 
 // captureObjectRouteBindings expands one controller object into per-method

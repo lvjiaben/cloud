@@ -1,0 +1,19 @@
+schema_version: v1
+component_id: idc-compliance-local-gateway
+source_module: central-gateway
+release_command: go run ./central-gateway/hack/tools/release
+product_package_required: true
+local_installation_only: true
+same_program_for_all_installations: true
+contents:
+  - binary
+  - configuration_template
+  - database_migrations
+  - bilingual_lifecycle_runbook
+forbidden_dependencies:
+  - software_vendor_business_gateway
+  - platform_sales_registration
+  - platform_operator_authority
+  - software_vendor_settlement
+  - commercial_license_business_identity
+supplier_clients_default: disabled

@@ -1,0 +1,420 @@
+import type { Recordable } from '@vben/types';
+
+import type { AppUserInfo } from '#/api/core/user';
+import type { LoginTenant } from '#/api/tenant/model';
+
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
+import { LOGIN_PATH } from '@vben/constants';
+import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
+
+import { notification } from 'ant-design-vue';
+import { defineStore } from 'pinia';
+
+import { getUserInfoApi, loginApi, logoutApi } from '#/api';
+import { exchangeExternalLoginHandoffApi } from '#/api/extlogin';
+import { getInitialPasswordStatus } from '#/api/idc/customer-activation';
+import { authSelectTenant } from '#/api/tenant';
+import { $t } from '#/locales';
+import { resolvePostLoginLandingPath } from '#/router/post-login-landing';
+import { useTenantStore } from '#/store/tenant';
+
+type UserMenuNode = {
+  children?: UserMenuNode[];
+  name?: string;
+  path?: string;
+};
+
+export interface CustomerAssistanceSession {
+  customerName: string;
+  expiresAt: number;
+  sessionNo: string;
+}
+
+const CUSTOMER_ASSISTANCE_SESSION_KEY = 'linapro-customer-assistance-session';
+
+function readCustomerAssistanceSession(): CustomerAssistanceSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const value = JSON.parse(
+      window.sessionStorage.getItem(CUSTOMER_ASSISTANCE_SESSION_KEY) || 'null',
+    ) as Partial<CustomerAssistanceSession> | null;
+    if (
+      !value ||
+      typeof value.sessionNo !== 'string' ||
+      typeof value.expiresAt !== 'number' ||
+      value.expiresAt <= Date.now()
+    ) {
+      window.sessionStorage.removeItem(CUSTOMER_ASSISTANCE_SESSION_KEY);
+      return null;
+    }
+    return {
+      customerName:
+        typeof value.customerName === 'string' ? value.customerName : '',
+      expiresAt: value.expiresAt,
+      sessionNo: value.sessionNo,
+    };
+  } catch {
+    window.sessionStorage.removeItem(CUSTOMER_ASSISTANCE_SESSION_KEY);
+    return null;
+  }
+}
+
+function normalizeMenuPath(path: string) {
+  return path.replace(/^\/+/u, '').replace(/\/+$/u, '');
+}
+
+function isMultiTenantMenuNode(item: UserMenuNode): boolean {
+  const path = normalizeMenuPath(item.path || '');
+  const name = item.name || '';
+
+  // The host platform group is always present; only concrete tenant pages
+  // should enable tenant-aware frontend behavior.
+  return (
+    path === 'platform/tenants' ||
+    path.startsWith('platform/tenants/') ||
+    path === 'tenant' ||
+    path.startsWith('tenant/') ||
+    name.startsWith('PlatformTenant') ||
+    name.startsWith('Tenant')
+  );
+}
+
+function hasMultiTenantMenu(items: UserMenuNode[] = []): boolean {
+  return items.some((item) => {
+    return (
+      isMultiTenantMenuNode(item) ||
+      hasMultiTenantMenu(item.children)
+    );
+  });
+}
+
+function resolveTenantEnabled(
+  tenants: LoginTenant[],
+  userInfo: AppUserInfo | null,
+  currentTenant: LoginTenant | null,
+) {
+  return (
+    tenants.length > 0 ||
+    !!currentTenant ||
+    hasMultiTenantMenu((userInfo?.menus ?? []) as UserMenuNode[])
+  );
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const accessStore = useAccessStore();
+  const userStore = useUserStore();
+  const router = useRouter();
+  const tenantStore = useTenantStore();
+
+  const loginLoading = ref(false);
+  const pendingPreToken = ref('');
+  const tenantLoginTransitioning = ref(false);
+  const customerAssistanceSession = ref<CustomerAssistanceSession | null>(
+    readCustomerAssistanceSession(),
+  );
+
+  function clearCustomerAssistanceSession() {
+    customerAssistanceSession.value = null;
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(CUSTOMER_ASSISTANCE_SESSION_KEY);
+    }
+  }
+
+  /**
+   * 异步处理登录操作
+   * Asynchronously handle the login process
+   * @param params 登录表单数据
+   */
+  async function authLogin(
+    params: Recordable<any>,
+    onSuccess?: () => Promise<void> | void,
+  ) {
+    // 异步处理用户登录操作并获取 accessToken
+    let userInfo: AppUserInfo | null = null;
+    try {
+      loginLoading.value = true;
+      clearCustomerAssistanceSession();
+      const loginResult = await loginApi(params);
+      const { accessToken, preToken, refreshToken } = loginResult;
+      const tenants = Array.isArray(loginResult.tenants)
+        ? loginResult.tenants
+        : [];
+
+      if (preToken && tenants.length > 1 && !accessToken) {
+        pendingPreToken.value = preToken;
+        tenantStore.setTenantContext({
+          currentTenant: null,
+          enabled: true,
+          tenants,
+        });
+        return { requiresTenantSelection: true, tenants, userInfo };
+      }
+
+      // 如果成功获取到 accessToken
+      if (accessToken) {
+        accessStore.setAccessToken(accessToken);
+        accessStore.setRefreshToken(refreshToken ?? null);
+
+        // 获取用户信息并存储到 accessStore 中
+        userInfo = await fetchUserInfo();
+        userStore.setUserInfo(userInfo);
+        tenantStore.setTenantContext({
+          currentTenant: tenants.length === 1 ? tenants[0] : null,
+          enabled: resolveTenantEnabled(tenants, userInfo, tenants[0] ?? null),
+          tenants,
+        });
+
+        if (accessStore.loginExpired) {
+          accessStore.setLoginExpired(false);
+        } else {
+          let initialPasswordChangeRequired = false;
+          try {
+            initialPasswordChangeRequired = (
+              await getInitialPasswordStatus()
+            ).required;
+          } catch {
+            // Unbound registration and activation logins keep their explicit
+            // redirect. Ordinary account APIs still enforce the server gate.
+          }
+          if (initialPasswordChangeRequired) {
+            await router.replace('/auth/initial-password');
+          } else if (onSuccess) {
+            await onSuccess();
+          } else {
+            await router.push(
+              tenantStore.resolveFallbackPath(
+                resolvePostLoginLandingPath({
+                  preferredPaths: [userInfo.homePath],
+                }),
+              ),
+            );
+          }
+        }
+
+        if (userInfo?.realName) {
+          notification.success({
+            description: `${$t('authentication.loginSuccessDesc')}: ${userInfo.realName}`,
+            duration: 3,
+            message: $t('authentication.loginSuccess'),
+          });
+        }
+      }
+    } finally {
+      loginLoading.value = false;
+    }
+
+    return {
+      requiresTenantSelection: false,
+      userInfo,
+    };
+  }
+
+  async function selectTenant(tenantId: number) {
+    if (!pendingPreToken.value) {
+      return;
+    }
+    try {
+      loginLoading.value = true;
+      tenantLoginTransitioning.value = true;
+      const { accessToken, refreshToken } = await authSelectTenant(
+        pendingPreToken.value,
+        tenantId,
+      );
+      pendingPreToken.value = '';
+      accessStore.setAccessToken(accessToken);
+      accessStore.setRefreshToken(refreshToken ?? null);
+      const selectedTenant =
+        tenantStore.tenants.find((item) => item.id === tenantId) ?? null;
+      tenantStore.setTenantContext({
+        currentTenant: selectedTenant,
+        enabled: true,
+      });
+      const userInfo = await fetchUserInfo();
+      userStore.setUserInfo(userInfo);
+      await router.push(
+        tenantStore.resolveFallbackPath(
+          resolvePostLoginLandingPath({
+            preferredPaths: [userInfo.homePath],
+          }),
+        ),
+      );
+      notification.success({
+        description: selectedTenant?.name || '',
+        duration: 3,
+        message: $t('pages.multiTenant.messages.tenantSelected'),
+      });
+    } finally {
+      tenantLoginTransitioning.value = false;
+      loginLoading.value = false;
+    }
+  }
+
+  async function clearSession(redirect: boolean = true) {
+    clearCustomerAssistanceSession();
+    resetAllStores();
+    tenantStore.$reset();
+    accessStore.setLoginExpired(false);
+
+    // 回登录页带上当前路由地址
+    await router.replace({
+      path: LOGIN_PATH,
+      query: redirect
+        ? {
+            redirect: encodeURIComponent(router.currentRoute.value.fullPath),
+          }
+        : {},
+    });
+  }
+
+  async function logout(redirect: boolean = true) {
+    try {
+      await logoutApi();
+    } catch {
+      // 不做任何处理
+    }
+    await clearSession(redirect);
+  }
+
+  /**
+   * 消费插件外部登录（OIDC 等）回跳到登录页的登录结果。
+   * Consume an external-login (plugin OIDC) outcome delivered to the login
+   * page through query parameters. Mirrors the post-verification branches of
+   * authLogin: a token pair signs the user in immediately, while a pre-login
+   * token plus tenant candidates switches the login page into the existing
+   * two-stage tenant selection flow.
+   */
+  /**
+   * Completes third-party login after the SPA receives a one-time handoff code.
+   * Tokens never travel in the browser redirect URL.
+   */
+  async function completeExternalLoginFromHandoff(
+    handoff: string,
+    redirectPath?: string,
+  ) {
+    const code = (handoff ?? '').trim();
+    if (!code) {
+      return { requiresTenantSelection: false };
+    }
+    try {
+      loginLoading.value = true;
+      clearCustomerAssistanceSession();
+      const loginResult = await exchangeExternalLoginHandoffApi(code);
+      const { accessToken, preToken, refreshToken } = loginResult;
+      const tenants = Array.isArray(loginResult.tenants)
+        ? loginResult.tenants
+        : [];
+
+      if (preToken && tenants.length > 1 && !accessToken) {
+        pendingPreToken.value = preToken;
+        tenantStore.setTenantContext({
+          currentTenant: null,
+          enabled: true,
+          tenants,
+        });
+        return { requiresTenantSelection: true, tenants };
+      }
+
+      if (!accessToken) {
+        return { requiresTenantSelection: false };
+      }
+
+      accessStore.setAccessToken(accessToken);
+      accessStore.setRefreshToken(refreshToken ?? null);
+      const userInfo = await fetchUserInfo();
+      userStore.setUserInfo(userInfo);
+      tenantStore.setTenantContext({
+        currentTenant: tenants.length === 1 ? (tenants[0] ?? null) : null,
+        enabled: resolveTenantEnabled(tenants, userInfo, tenants[0] ?? null),
+        tenants,
+      });
+      accessStore.setLoginExpired(false);
+      await router.push(
+        tenantStore.resolveFallbackPath(
+          resolvePostLoginLandingPath({
+            preferredPaths: [redirectPath, userInfo.homePath],
+          }),
+        ),
+      );
+      if (userInfo?.realName) {
+        notification.success({
+          description: `${$t('authentication.loginSuccessDesc')}: ${userInfo.realName}`,
+          duration: 3,
+          message: $t('authentication.loginSuccess'),
+        });
+      }
+      return { requiresTenantSelection: false, userInfo };
+    } finally {
+      loginLoading.value = false;
+    }
+  }
+
+  async function completeCustomerAssistance(
+    accessToken: string,
+    session: Pick<CustomerAssistanceSession, 'expiresAt' | 'sessionNo'>,
+    redirectPath = '/account',
+  ) {
+    accessStore.setAccessToken(accessToken);
+    accessStore.setRefreshToken(null);
+    accessStore.setLoginExpired(false);
+    const userInfo = await fetchUserInfo();
+    tenantStore.setTenantContext({
+      currentTenant: null,
+      enabled: false,
+      tenants: [],
+    });
+    customerAssistanceSession.value = {
+      customerName: userInfo.realName || userInfo.username || '',
+      expiresAt: session.expiresAt,
+      sessionNo: session.sessionNo,
+    };
+    window.sessionStorage.setItem(
+      CUSTOMER_ASSISTANCE_SESSION_KEY,
+      JSON.stringify(customerAssistanceSession.value),
+    );
+    await router.replace(redirectPath || userInfo.homePath || '/account');
+    return userInfo;
+  }
+
+  async function fetchUserInfo() {
+    const userInfo = await getUserInfoApi();
+    userStore.setUserInfo(userInfo);
+
+    // Set access codes (permissions) for button-level access control
+    if (userInfo.permissions) {
+      accessStore.setAccessCodes(userInfo.permissions);
+    }
+    tenantStore.setTenantContext({
+      enabled: resolveTenantEnabled(
+        tenantStore.tenants,
+        userInfo,
+        tenantStore.currentTenant,
+      ),
+    });
+
+    return userInfo;
+  }
+
+  function $reset() {
+    clearCustomerAssistanceSession();
+    loginLoading.value = false;
+    pendingPreToken.value = '';
+    tenantLoginTransitioning.value = false;
+  }
+
+  return {
+    $reset,
+    authLogin,
+    clearSession,
+    customerAssistanceSession,
+    completeCustomerAssistance,
+    completeExternalLoginFromHandoff,
+    fetchUserInfo,
+    loginLoading,
+    logout,
+    pendingPreToken,
+    selectTenant,
+    tenantLoginTransitioning,
+  };
+});

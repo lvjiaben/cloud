@@ -29,7 +29,7 @@ const (
 	// ManagedRootRelativePath is the fixed source-plugin workspace path.
 	ManagedRootRelativePath = "apps/lina-plugins"
 	// pluginLockFileName stores tool-generated source-plugin state.
-	pluginLockFileName = ".linapro-plugins.lock.yaml"
+	pluginLockFileName = ".plugins.lock.yaml"
 	// pluginSourceCacheDirName stores reusable Git checkouts for configured sources.
 	pluginSourceCacheDirName = "plugin-sources"
 	// pluginWildcardItem expands to every plugin directory under the source root.

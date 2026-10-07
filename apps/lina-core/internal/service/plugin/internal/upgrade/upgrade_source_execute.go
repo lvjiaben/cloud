@@ -156,6 +156,10 @@ func (s *serviceImpl) ExecuteSourcePluginUpgrade(ctx context.Context, pluginID s
 	if err = s.validateUpgradeCandidateDependencies(ctx, candidate.manifest); err != nil {
 		return nil, err
 	}
+	if _, err = s.storeSvc.PersistReleaseBusinessExtensionAuthorization(ctx, candidate.manifest); err != nil {
+		s.markSourcePluginUpgradeFailed(ctx, candidate.manifest, targetRelease, "business-extension-authorization", err)
+		return nil, err
+	}
 
 	currentRelease, err := s.storeSvc.GetRegistryRelease(ctx, candidate.registry)
 	if err != nil {

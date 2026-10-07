@@ -1,0 +1,22 @@
+{
+  "claim": {
+    "button": "兑换",
+    "code": "优惠码",
+    "invalid": "优惠码无效",
+    "lead": "输入 8～24 位字母或数字。字母不区分大小写。",
+    "placeholder": "请输入优惠码",
+    "succeeded": "优惠已经加入你的账户",
+    "title": "兑换优惠码"
+  },
+  "empty": "还没有可用优惠",
+  "loadFailed": "优惠暂时加载失败，请稍后重试",
+  "menu": "我的优惠",
+  "mine": "已经领取的优惠",
+  "status": {
+    "active": "可使用",
+    "exhausted": "已用完",
+    "expired": "已过期",
+    "revoked": "已撤销"
+  },
+  "title": "我的优惠"
+}

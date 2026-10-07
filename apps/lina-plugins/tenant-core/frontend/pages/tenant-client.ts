@@ -1,0 +1,73 @@
+import { pluginApiPath, requestClient } from "#/api/request";
+
+const pluginID = "tenant-core";
+
+export type TenantStatus = "active" | "deleted" | "suspended";
+
+export interface PlatformTenant {
+  id: number;
+  code: string;
+  name: string;
+  status: TenantStatus;
+  remark?: string;
+  createdAt?: number | null;
+  updatedAt?: number | null;
+}
+
+export interface PlatformTenantListParams {
+  pageNum?: number;
+  pageSize?: number;
+  code?: string;
+  name?: string;
+  status?: TenantStatus | "";
+}
+
+export interface PlatformTenantPayload {
+  code: string;
+  name: string;
+  remark?: string;
+}
+
+export interface TenantImpersonationResult {
+  accessToken?: string;
+  tenant?: PlatformTenant;
+  token?: string;
+}
+
+export async function platformTenantList(params?: PlatformTenantListParams) {
+  const res = await requestClient.get<{
+    list: PlatformTenant[];
+    total: number;
+  }>(pluginApiPath(pluginID, "platform/tenants"), { params });
+  return { items: res.list, total: res.total };
+}
+
+export function platformTenantCreate(payload: PlatformTenantPayload) {
+  return requestClient.post<PlatformTenant>(
+    pluginApiPath(pluginID, "platform/tenants"),
+    payload,
+  );
+}
+
+export function platformTenantUpdate(
+  id: number,
+  payload: Omit<PlatformTenantPayload, "code">,
+) {
+  return requestClient.put<PlatformTenant>(
+    pluginApiPath(pluginID, `platform/tenants/${id}`),
+    payload,
+  );
+}
+
+export function platformTenantChangeStatus(id: number, status: TenantStatus) {
+  return requestClient.put<PlatformTenant>(
+    pluginApiPath(pluginID, `platform/tenants/${id}/status`),
+    { status },
+  );
+}
+
+export function platformTenantDelete(id: number) {
+  return requestClient.delete(
+    pluginApiPath(pluginID, `platform/tenants/${id}`),
+  );
+}

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": false, "outDir": "dist/customer/servers", "rootDir": "src/customer/servers", "types": [] },
+  "exclude": ["src/**/*.test.ts"],
+  "include": ["src/customer/servers/entry.ts", "src/customer/servers/model.ts", "src/customer/servers/page.ts"]
+}

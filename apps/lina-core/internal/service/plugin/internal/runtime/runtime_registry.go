@@ -20,6 +20,7 @@ import (
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/internal/service/plugin/internal/store"
 	"lina-core/pkg/logger"
+	"lina-core/pkg/plugin/capability/capmodel"
 	bridgecontract "lina-core/pkg/plugin/pluginbridge/contract"
 	bridgehostservice "lina-core/pkg/plugin/pluginbridge/protocol"
 	"lina-core/pkg/statusflag"
@@ -86,6 +87,11 @@ type PluginItem struct {
 	InstalledAt *int64
 	// Enabled reports whether the plugin is currently enabled.
 	Enabled int
+	// NewBusinessState is independent from runtime enablement. A stopped plugin
+	// remains enabled for existing-service operations but cannot accept new work.
+	NewBusinessState plugintypes.NewBusinessState
+	// NewBusinessStoppedAt records the most recent stop-new-business time.
+	NewBusinessStoppedAt *int64
 	// AutoEnableForNewTenants reports the platform-owned new-tenant provisioning policy.
 	AutoEnableForNewTenants bool
 	// SupportsMultiTenant reports whether the manifest supports tenant-level plugin governance.
@@ -109,6 +115,13 @@ type PluginItem struct {
 	// DeclaredRoutes is the current release route-declaration snapshot used by
 	// install and enable review UIs for dynamic plugins.
 	DeclaredRoutes []*bridgecontract.RouteContract
+	// BusinessExtensions is the current manifest-declared business capability set.
+	BusinessExtensions []*capmodel.BusinessExtensionDeclaration
+	// AuthorizedBusinessExtensions is the release-frozen set accepted by host governance.
+	AuthorizedBusinessExtensions []*capmodel.BusinessExtensionDeclaration
+	// AdminSurfaces and CustomerSurfaces remain separate governed frontend sets.
+	AdminSurfaces    []*capmodel.FrontendSurfaceDeclaration
+	CustomerSurfaces []*capmodel.FrontendSurfaceDeclaration
 	// HasMockData reports whether the plugin ships any mock-data SQL files
 	// under manifest/sql/mock-data/. Used by the management UI to decide
 	// whether to render the optional Install mock data checkbox.
@@ -231,6 +244,8 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 		installed               int
 		enabled                 int
 		installedAt             *int64
+		newBusinessState        = plugintypes.NewBusinessStateAccepting
+		newBusinessStoppedAt    *int64
 		updatedAt               *int64
 		scopeNature             string
 		installMode             string
@@ -268,6 +283,7 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 		}
 		installed = registry.Installed
 		enabled = registry.Status
+		newBusinessState = plugintypes.NormalizeNewBusinessState(registry.NewBusinessState)
 		scopeNature = registry.ScopeNature
 		installMode = registry.InstallMode
 		autoEnableForNewTenants = registry.AutoEnableForNewTenants
@@ -278,6 +294,10 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 		if registry.UpdatedAt != nil {
 			millis := registry.UpdatedAt.UnixMilli()
 			updatedAt = &millis
+		}
+		if registry.NewBusinessStoppedAt != nil {
+			millis := registry.NewBusinessStoppedAt.UnixMilli()
+			newBusinessStoppedAt = &millis
 		}
 		if ctx != nil {
 			release, err = s.storeSvc.GetRegistryRelease(ctx, registry)
@@ -321,11 +341,15 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 	}
 
 	var (
-		requestedHostServices  = []*bridgehostservice.HostServiceSpec{}
-		authorizedHostServices = []*bridgehostservice.HostServiceSpec{}
-		authorizationRequired  bool
-		authorizationStatus    = pluginv1.AuthorizationStatusNotRequired
-		declaredRoutes         []*bridgecontract.RouteContract
+		requestedHostServices        = []*bridgehostservice.HostServiceSpec{}
+		authorizedHostServices       = []*bridgehostservice.HostServiceSpec{}
+		authorizationRequired        bool
+		authorizationStatus          = pluginv1.AuthorizationStatusNotRequired
+		declaredRoutes               []*bridgecontract.RouteContract
+		businessExtensions           []*capmodel.BusinessExtensionDeclaration
+		authorizedBusinessExtensions []*capmodel.BusinessExtensionDeclaration
+		adminSurfaces                []*capmodel.FrontendSurfaceDeclaration
+		customerSurfaces             []*capmodel.FrontendSurfaceDeclaration
 	)
 
 	if snapshot != nil {
@@ -351,8 +375,18 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 	}
 	if manifest != nil && options.includeGovernanceDetails {
 		declaredRoutes = cloneRouteContracts(manifest.Routes)
+		businessExtensions = catalog.CloneBusinessExtensionDeclarations(manifest.BusinessExtensions)
+		adminSurfaces = catalog.CloneFrontendSurfaceDeclarations(manifest.AdminSurfaces)
+		customerSurfaces = catalog.CloneFrontendSurfaceDeclarations(manifest.CustomerSurfaces)
+		if snapshot != nil {
+			authorizedBusinessExtensions = catalog.CloneBusinessExtensionDeclarations(snapshot.AuthorizedBusinessExtensions)
+		}
 	} else if snapshot != nil && options.includeGovernanceDetails {
 		declaredRoutes = cloneRouteContracts(snapshot.Routes)
+		businessExtensions = catalog.CloneBusinessExtensionDeclarations(snapshot.BusinessExtensions)
+		authorizedBusinessExtensions = catalog.CloneBusinessExtensionDeclarations(snapshot.AuthorizedBusinessExtensions)
+		adminSurfaces = catalog.CloneFrontendSurfaceDeclarations(snapshot.AdminSurfaces)
+		customerSurfaces = catalog.CloneFrontendSurfaceDeclarations(snapshot.CustomerSurfaces)
 	}
 	name, description = s.localizePluginMetadata(ctx, id, pluginType, name, description)
 
@@ -373,33 +407,39 @@ func (s *serviceImpl) buildPluginItemWithOptions(
 	}
 
 	return &PluginItem{
-		Id:                      id,
-		Name:                    name,
-		Version:                 version,
-		RuntimeState:            upgradeProjection.State,
-		EffectiveVersion:        upgradeProjection.EffectiveVersion,
-		DiscoveredVersion:       upgradeProjection.DiscoveredVersion,
-		UpgradeAvailable:        upgradeProjection.UpgradeAvailable,
-		AbnormalReason:          upgradeProjection.AbnormalReason,
-		LastUpgradeFailure:      upgradeProjection.LastFailure,
-		Type:                    pluginType,
-		Distribution:            distribution,
-		Description:             description,
-		Installed:               installed,
-		InstalledAt:             installedAt,
-		Enabled:                 enabled,
-		AutoEnableForNewTenants: autoEnableForNewTenants,
-		SupportsMultiTenant:     supportsMultiTenant,
-		ScopeNature:             scopeNature,
-		InstallMode:             installMode,
-		StatusKey:               s.storeSvc.BuildPluginStatusKey(id),
-		UpdatedAt:               updatedAt,
-		AuthorizationRequired:   authorizationRequired,
-		AuthorizationStatus:     authorizationStatus,
-		RequestedHostServices:   requestedHostServices,
-		AuthorizedHostServices:  authorizedHostServices,
-		DeclaredRoutes:          declaredRoutes,
-		HasMockData:             hasMockData,
+		Id:                           id,
+		Name:                         name,
+		Version:                      version,
+		RuntimeState:                 upgradeProjection.State,
+		EffectiveVersion:             upgradeProjection.EffectiveVersion,
+		DiscoveredVersion:            upgradeProjection.DiscoveredVersion,
+		UpgradeAvailable:             upgradeProjection.UpgradeAvailable,
+		AbnormalReason:               upgradeProjection.AbnormalReason,
+		LastUpgradeFailure:           upgradeProjection.LastFailure,
+		Type:                         pluginType,
+		Distribution:                 distribution,
+		Description:                  description,
+		Installed:                    installed,
+		InstalledAt:                  installedAt,
+		Enabled:                      enabled,
+		NewBusinessState:             newBusinessState,
+		NewBusinessStoppedAt:         newBusinessStoppedAt,
+		AutoEnableForNewTenants:      autoEnableForNewTenants,
+		SupportsMultiTenant:          supportsMultiTenant,
+		ScopeNature:                  scopeNature,
+		InstallMode:                  installMode,
+		StatusKey:                    s.storeSvc.BuildPluginStatusKey(id),
+		UpdatedAt:                    updatedAt,
+		AuthorizationRequired:        authorizationRequired,
+		AuthorizationStatus:          authorizationStatus,
+		RequestedHostServices:        requestedHostServices,
+		AuthorizedHostServices:       authorizedHostServices,
+		DeclaredRoutes:               declaredRoutes,
+		BusinessExtensions:           businessExtensions,
+		AuthorizedBusinessExtensions: authorizedBusinessExtensions,
+		AdminSurfaces:                adminSurfaces,
+		CustomerSurfaces:             customerSurfaces,
+		HasMockData:                  hasMockData,
 	}
 }
 
@@ -454,6 +494,8 @@ func (s *serviceImpl) reconcileRegistryArtifactState(ctx context.Context, regist
 	}
 	if manifest, loadErr := s.loadActiveManifest(ctx, registry); loadErr == nil && manifest != nil {
 		return registry, nil
+	} else if loadErr != nil {
+		logger.Warningf(ctx, "load active dynamic manifest while reconciling missing staging artifact failed plugin=%s releaseID=%d err=%v", registry.PluginId, registry.ReleaseId, loadErr)
 	}
 
 	data := do.SysPlugin{

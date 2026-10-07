@@ -66,161 +66,6 @@
       "clearAllConfirm": "确认清空所有消息通知？"
     }
   },
-  "dashboard": {
-    "analytics": {
-      "overview": {
-        "users": {
-          "title": "用户量",
-          "total": "总用户量"
-        },
-        "visits": {
-          "title": "访问量",
-          "total": "总访问量"
-        },
-        "downloads": {
-          "title": "下载量",
-          "total": "总下载量"
-        },
-        "usage": {
-          "title": "使用量",
-          "total": "总使用量"
-        }
-      },
-      "tabs": {
-        "trends": "流量趋势",
-        "visits": "月访问量"
-      },
-      "cards": {
-        "channels": "访问数量",
-        "sources": "访问来源"
-      },
-      "sources": {
-        "search": "搜索引擎",
-        "direct": "直接访问",
-        "email": "邮件营销",
-        "ads": "联盟广告"
-      },
-      "channels": {
-        "visits": "访问",
-        "trend": "趋势",
-        "web": "网页",
-        "mobile": "移动端",
-        "client": "客户端",
-        "thirdParty": "第三方",
-        "other": "其它"
-      },
-      "sales": {
-        "title": "商业占比",
-        "outsourcing": "外包",
-        "customDevelopment": "定制",
-        "technicalSupport": "技术支持",
-        "remote": "远程"
-      }
-    },
-    "workspace": {
-      "greeting": "早安, {name}, 开始您一天的工作吧！",
-      "defaultName": "管理员",
-      "weather": "今日晴，20℃ - 32℃！",
-      "sections": {
-        "projects": "项目",
-        "trends": "最新动态",
-        "quickNav": "快捷导航",
-        "todos": "待办事项",
-        "trafficSources": "访问来源"
-      },
-      "stats": {
-        "todos": "待办",
-        "projects": "项目",
-        "team": "团队"
-      },
-      "quickNav": {
-        "userManagement": "用户管理",
-        "menuManagement": "菜单管理",
-        "systemParameters": "系统参数",
-        "extensionCenter": "扩展中心",
-        "apiDocs": "接口文档",
-        "scheduledJobs": "定时任务"
-      },
-      "projects": {
-        "linapro": {
-          "group": "全栈框架",
-          "content": "把复杂留给框架，把时间留给创造。"
-        },
-        "goframe": {
-          "group": "后端框架",
-          "content": "稳扎稳打，才能跑得更远。"
-        },
-        "vue": {
-          "group": "前端框架",
-          "content": "看见变化，也拥抱变化。"
-        },
-        "vben": {
-          "group": "管理工作台",
-          "content": "把细节做顺，效率自然提升。"
-        },
-        "antDesign": {
-          "group": "设计体系",
-          "content": "好的秩序，让体验更轻松。"
-        },
-        "typescript": {
-          "group": "类型系统",
-          "content": "清晰的边界，带来从容的交付。"
-        }
-      },
-      "todos": {
-        "reviewShortcuts": {
-          "title": "检查工作台快捷入口",
-          "content": "确认用户、菜单、参数、插件、接口文档和定时任务入口都能正确到达。"
-        },
-        "verifyI18n": {
-          "title": "验证工作台多语言资源",
-          "content": "检查简体中文和英文工作台文案是否保持一致。"
-        },
-        "preparePluginDemo": {
-          "title": "准备插件扩展示例",
-          "content": "整理动态插件安装、启用和页面刷新演示数据。"
-        },
-        "inspectJobLogs": {
-          "title": "回看定时任务日志",
-          "content": "确认内置任务和插件任务的触发结果可追踪。"
-        },
-        "syncApiDocs": {
-          "title": "同步接口文档示例",
-          "content": "更新核心宿主接口和插件接口的调试说明。"
-        }
-      },
-      "trends": {
-        "justNow": "刚刚",
-        "oneHourAgo": "1个小时前",
-        "oneDayAgo": "1天前",
-        "twoDaysAgo": "2天前",
-        "threeDaysAgo": "3天前",
-        "oneWeekAgo": "1周前",
-        "people": {
-          "platformTeam": "平台团队",
-          "accessTeam": "权限团队",
-          "extensionCenter": "扩展中心",
-          "apiDocs": "接口文档",
-          "scheduler": "任务调度",
-          "configCenter": "参数中心",
-          "aiWorkflow": "AI 工作流",
-          "testSuite": "测试套件",
-          "releasePipeline": "发布管道"
-        },
-        "items": {
-          "releasedWorkspaceNav": "发布了 <a>工作台快捷导航</a> 演示入口",
-          "alignedAccessMenus": "同步了 <a>用户管理</a> 与 <a>菜单管理</a> 页面权限",
-          "publishedPluginDemo": "上架了 <a>动态插件安装</a> 示例包",
-          "refreshedApiDocs": "刷新了 <a>OpenAPI 调试文档</a>",
-          "checkedSchedulerLogs": "完成了 <a>定时任务执行日志</a> 巡检",
-          "updatedPublicConfig": "更新了 <a>登录页展示参数</a>",
-          "draftedOpenSpec": "生成了 <a>OpenSpec 变更提案</a>",
-          "passedPlaywright": "通过了 <a>Playwright 回归验证</a>",
-          "archivedDemoIteration": "归档了 <a>LinaPro 示例迭代</a>"
-        }
-      }
-    }
-  },
   "system": {
     "user": {
       "tableTitle": "用户列表",
@@ -887,6 +732,7 @@
         "pluginScope": "插件作用域",
         "runtimeState": "运行时状态",
         "pluginStatus": "插件状态",
+        "newBusinessState": "新业务",
         "effectiveVersion": "有效版本",
         "discoveredVersion": "发现版本"
       },
@@ -899,6 +745,17 @@
         "disabled": "已停用",
         "enabled": "已启用"
       },
+      "newBusiness": {
+        "accepting": "销售中",
+        "stoppedLabel": "已停售",
+        "acceptingHint": "允许新接口绑定、新商品版本绑定、购买和履约任务。",
+        "stoppedHint": "停止新销售，但已有客户服务、查询、续期、售后和下载仍可继续使用。",
+        "stop": "确认停止新销售",
+        "stopConfirmTitle": "停止这个插件的新销售？",
+        "stopConfirmContent": "确认后不再允许新增接口绑定、商品版本绑定、购买或自动履约任务；已有服务不会被隐藏或停用。",
+        "stopped": "已停止新销售，已有服务继续可用",
+        "resumed": "已恢复接受新业务"
+      },
       "pluginScope": {
         "platformOnly": "仅平台",
         "global": "全局",
@@ -909,6 +766,7 @@
         "notInstalled": "未安装"
       },
       "actions": {
+        "developerGuide": "开发指南",
         "syncPlugins": "同步插件",
         "uploadPlugin": "上传插件",
         "install": "安装",
@@ -922,6 +780,92 @@
         "installMockDataLabel": "是否安装示例数据",
         "installMockDataTooltip": "勾选后，宿主会在该插件安装 SQL 全部成功后将 manifest/sql/mock-data 目录的 SQL 文件以单一数据库事务执行；任一文件失败将整体回滚 mock 数据，但插件本身仍处于已安装状态。示例数据仅用于演示和功能验证，不建议在生产环境使用。",
         "installMockDataHelpHint": "了解详情"
+      },
+      "guide": {
+        "title": "插件开发指南",
+        "summary": "在同一套 LinaPro 插件体系中开发、测试和交付插件",
+        "boundary": "LinaPro 源码插件面向开发者组合平台；成品平台把稳定业务拥有方作为隐藏的内置地基，商家只在这里管理受治理的动态 WASM 扩展。业务配置仍回到对应业务页面。",
+        "quickTitle": "从零开始",
+        "quickSteps": {
+          "step1": "确定插件 ID，使用安全的 kebab-case，安装后保持不变。",
+          "step2": "选择源码或动态 WASM 运行类型，并选择内置或托管分发方式。",
+          "step3": "只声明业务真正需要的扩展点、宿主服务和前端表面。",
+          "step4": "按结构化清单实现接口配置、商品配置和客户配置，不接受任意代码。",
+          "step5": "补齐中文、英文、单元测试、集成测试和真实浏览器测试。",
+          "step6": "构建插件包，依次验证安装、升级、停止新业务、停用和卸载。"
+        },
+        "sections": {
+          "start": {
+            "title": "1. 选择插件形态",
+            "body": "分清两个使用层次：LinaPro 让框架开发者用源码插件组合系统，不污染宿主；交付给商家的成品平台把稳定业务拥有方作为隐藏的内置地基。商家只在这里管理受治理的动态 WASM 扩展，具体业务配置仍回到对应业务页面。"
+          },
+          "dimensions": {
+            "title": "2. 分开清单四个维度",
+            "body": "运行类型（源码或动态）、分发方式（内置或托管）、业务扩展点和前端表面必须分别声明。前端表面再分为后台与登录后客户中心。不能根据插件 ID、目录名或菜单名称猜测任何一个维度。"
+          },
+          "manifest": {
+            "title": "3. 编写 plugin.yaml",
+            "body": "清单至少声明稳定 ID、版本、运行类型、分发方式、依赖、业务扩展点、后台页面、客户中心页面、双语和所需宿主服务。不要根据插件名字猜业务能力。",
+            "example": "id: example-ssl\nversion: v0.1.0\ntype: dynamic\ndistribution: managed\nbusiness_extensions:\n  - point: product-fulfillment\n    owner: idc-core\n    version: v1\n    interface_configuration_cardinality: multiple"
+          },
+          "extensions": {
+            "title": "4. 声明业务扩展点",
+            "body": "商品自动化使用 product-fulfillment，服务器连接器另外使用 idc-resource 发布的 resource-provider；短信、支付和官网模板只能进入各自拥有方发布的扩展点。一个插件可以声明多个扩展点，但每一项都要单独授权和校验。"
+          },
+          "source": {
+            "title": "5. 开发源码插件",
+            "body": "业务代码完整放在 apps/lina-plugins/<plugin-id>/。只依赖其他插件 backend/cap 下的公开契约，不导入 internal，不跨插件查表，不使用站内 HTTP 回环。插件根目录存在 AGENTS.md 时必须先遵守该文件。"
+          },
+          "dynamic": {
+            "title": "6. 开发动态 WASM 插件",
+            "body": "动态插件不能取得宿主原始令牌、供应商秘密、宿主全局对象或其他插件状态。网络访问通过宿主管理的保密出站通道，页面数据通过版本化页面桥。宿主会校验插件、发布版本、能力、方法、身份和数据范围。"
+          },
+          "surfaces": {
+            "title": "7. 后台与客户中心页面",
+            "body": "后台和客户中心表面分别声明菜单、标题、图标、权限、宿主插槽、路由和入口。页面继承宿主主题、语言、字体和间距，不覆盖保留路由，不污染全局样式，不出现双页头、双滚动条或白屏闪烁。"
+          },
+          "pageBridge": {
+            "title": "8. 使用安全页面桥",
+            "body": "隔离的动态页面不会拿到宿主访问令牌或任意请求头。每个表面只声明真正需要的桥能力。宿主会把每次请求绑定到插件、发布版本、表面、能力、方法、路由、当前员工权限和数据范围，或当前客户本人的数据归属。使用宿主提供的加载、高度、路由、标题、语言和主题同步，不要再启动一套应用外壳。"
+          },
+          "interfaces": {
+            "title": "9. 正确设计接口实例",
+            "body": "接口必须使用结构化字段。商家可能维护多条命名供应商、短信或支付接口时使用 multiple；只有真正的单条全局设置才使用 singleton。数量只限制配置记录，不限制插件自有的新闻、订单、证书或其他增删改查数据。秘密字段只能放在接口配置中。"
+          },
+          "fulfillment": {
+            "title": "10. 实现通用商品履约",
+            "body": "商品提供方分别声明后台商品配置和客户购买配置。商品配置选择一条兼容的连接器实例，每个已发布版本最多冻结一条精确接口和契约版本。完全人工处理不需要插件。插件任务只能在后台审核通过或付款确认后持久异步执行。使用幂等、查询优先、有界重试、结果未知、历史证据和人工接管，防止重复开通、交付或扣费。"
+          },
+          "secrets": {
+            "title": "11. 把秘密留在保密出站通道中",
+            "body": "禁止把 API Key、密码、供应商令牌、私钥或宿主原始令牌放进 WASM 输入、页面、日志、状态或普通响应。业务拥有方只为一次已授权操作签发短时不透明运行上下文。宿主解析已选接口和凭据，执行精确同源的保密出站请求，限制时间和字节数，只返回允许的字段。"
+          },
+          "testing": {
+            "title": "12. 验证完整行为",
+            "body": "至少执行 Go 单元测试、PostgreSQL 集成测试、前端类型检查、独立构建、双语检查、插件治理检查和 Playwright 真实浏览器测试。动态页面还要覆盖首次和再次进入、明暗主题、中文英文、窄屏、慢资源、刷新和权限变化。",
+            "example": "go test ./...\nmake.cmd i18n.check plugins=1\nmake.cmd plugins.check\npnpm run check:type\npnpm run build"
+          },
+          "package": {
+            "title": "13. 构建 WASM 插件包",
+            "body": "从插件根目录构建，一起检查打包后的清单、WASM 模块、公开资源、SQL 和语言资源。产物声明必须与 plugin.yaml 一致。生成结果放在源码目录之外，再通过当前这套插件管理安装。",
+            "example": "go run ./hack/tools/linactl wasm dir=apps/lina-plugins/<plugin-id> out=temp/output/<plugin-id>"
+          },
+          "lifecycle": {
+            "title": "14. 验证完整生命周期",
+            "body": "先验证上传和安装，再验证升级。停止新业务只阻止新接口、新绑定、新购买和新履约，已有服务页面与必要操作继续可用。仍有在售商品、在途任务、活动服务或历史动作时禁止停用和卸载。历史订单、快照和证据不能删除。"
+          }
+        },
+        "rulesTitle": "必须遵守的边界",
+        "rules": {
+          "rule1": "一个插件只访问自己数据或宿主明确授权的能力。",
+          "rule2": "供应商秘密不进入 WASM、页面、日志或普通响应。",
+          "rule3": "用户界面不展示原始枚举、内部编号或技术错误。",
+          "rule4": "所有用户可见内容同时提供中文和英文。",
+          "rule5": "列表和批量发现使用集合查询，禁止 N+1。",
+          "rule6": "后台权限、数据范围和客户所有权在服务端重验。",
+          "rule7": "第三方动作使用幂等、查询优先和人工接管。",
+          "rule8": "测试和审查通过后才能标记任务完成。"
+        }
       },
       "auth": {
         "installTitle": "安装插件",
@@ -1027,6 +971,7 @@
           "auth": "认证授权",
           "bizctx": "业务上下文",
           "cache": "缓存",
+          "confidentialoutbound": "安全外部接口访问",
           "data": "数据",
           "dict": "字典",
           "files": "文件",

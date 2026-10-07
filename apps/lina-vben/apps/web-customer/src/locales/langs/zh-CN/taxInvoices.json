@@ -1,0 +1,95 @@
+{
+  "menu": "我的发票",
+  "title": "我的发票",
+  "eyebrow": "电子发票",
+  "heading": "申请开票并查看处理进度",
+  "subtitle": "选择常用抬头和已付款账单，逐张填写本次开票金额。提交后由后台确认票种并审核。",
+  "refresh": "刷新",
+  "noticeTitle": "票种由后台确认",
+  "noticeDescription": "你不需要选择发票类型。提交后申请先进入待后台审核，并立即占用所选账单的可开票额度。",
+  "steps": {
+    "profile": "1. 选择发票抬头",
+    "invoices": "2. 选择账单并填写金额",
+    "submit": "3. 提交申请"
+  },
+  "profile": {
+    "placeholder": "请选择一个有效抬头",
+    "default": "默认",
+    "individual": "个人",
+    "enterprise": "企业",
+    "empty": "还没有可用抬头，请先到“发票抬头”新增或启用一个抬头。",
+    "manage": "管理发票抬头"
+  },
+  "invoice": {
+    "empty": "当前没有仍有可开票余额的已付款账单。",
+    "billNo": "账单编号",
+    "orderNo": "订单编号",
+    "settledAt": "付款时间",
+    "paid": "账单已付金额",
+    "allocated": "已申请或已开金额",
+    "remaining": "剩余可开金额",
+    "amount": "本次开票金额",
+    "amountPlaceholder": "请输入金额",
+    "differentCurrency": "一份申请只能合并同一币种的账单",
+    "selectionLimit": "一份申请最多选择 20 张账单",
+    "amountRequired": "请填写本次开票金额",
+    "amountInvalid": "请输入大于 0 且小数位正确的金额",
+    "amountTooLarge": "不能超过这张账单的剩余可开金额"
+  },
+  "selectionSummary": "已选择 {count} 张账单，申请总额 {amount}",
+  "submit": "提交开票申请",
+  "submitting": "正在提交",
+  "submitHint": "提交后本次抬头和账单分配会冻结，之后修改常用抬头不会改变这份申请。",
+  "messages": {
+    "created": "开票申请已提交，等待后台审核。",
+    "reused": "已恢复之前成功提交的同一份申请。",
+    "createFailed": "提交失败，请检查金额并刷新后重试。"
+  },
+  "history": {
+    "title": "申请记录",
+    "description": "这里只显示你自己的开票申请和后台可公开的处理原因。",
+    "empty": "还没有开票申请。",
+    "loadFailed": "申请记录暂时无法加载。",
+    "loadMore": "加载更多",
+    "requestNo": "申请编号",
+    "amount": "申请金额",
+    "submittedAt": "提交时间",
+    "invoiceType": "票种",
+    "invoiceNo": "发票号码",
+    "issuedAt": "开具时间",
+    "deliveredAt": "交付时间",
+    "reason": "处理原因"
+  },
+  "status": {
+    "draft": "草稿",
+    "pending_review": "待后台审核",
+    "approved_pending_submission": "待提交开票",
+    "rejected": "已驳回",
+    "queued": "等待提交",
+    "submitting": "正在开票",
+    "issued": "已开票",
+    "delivered": "已交付",
+    "failed": "开票失败",
+    "result_unknown": "结果确认中",
+    "red_letter_pending": "红字处理中",
+    "red_lettered": "已红冲",
+    "canceled": "已取消"
+  },
+  "invoiceType": {
+    "pending_confirmation": "待后台确认票种",
+    "vat_electronic_normal": "增值税电子普通发票",
+    "vat_electronic_special": "增值税电子专用发票",
+    "digital_electronic_normal": "数电普通发票",
+    "digital_electronic_special": "数电专用发票"
+  },
+  "reason": {
+    "buyer_or_tax_information_incorrect": "发票抬头或税务信息需要修改",
+    "amount_or_billing_invoice_adjustment_required": "申请金额或所选账单需要调整",
+    "duplicate_request": "这份申请与已有申请重复",
+    "business_not_invoiceable": "当前业务暂时不能开具发票",
+    "customer_requested_cancellation": "已按你的要求取消",
+    "order_or_refund_changed": "订单或退款情况发生变化",
+    "other": "申请未能继续处理，请联系商家了解详情"
+  },
+  "loadFailed": "可开票信息暂时无法加载，请稍后重试。"
+}

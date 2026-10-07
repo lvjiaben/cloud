@@ -1,0 +1,8 @@
+stop_new: true
+drain_active: true
+preserve_history: true
+resume_after_validation: true
+switch_kinds:
+  - downstream_api
+  - compatibility_adapter
+  - webhook_delivery

@@ -6,22 +6,39 @@ package integration
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/net/ghttp"
 
+	pluginruntime "lina-core/internal/service/plugin/internal/runtime"
 	"lina-core/pkg/plugin/capability"
 	"lina-core/pkg/plugin/pluginhost"
 )
 
+var sourcePageBridgeCapabilityPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]{0,127}$`)
+
 // sourceHTTPRegistrar is the host-owned HTTP registrar for one source-plugin
 // registration session.
 type sourceHTTPRegistrar struct {
-	routes            *sourceRouteRegistrar
-	globalMiddlewares *sourceGlobalMiddlewareRegistrar
-	services          capability.Services
+	routes             *sourceRouteRegistrar
+	globalMiddlewares  *sourceGlobalMiddlewareRegistrar
+	services           capability.Services
+	businessExtensions pluginhost.BusinessExtensionRegistrar
+}
+
+type sourceRouteMiddlewares struct {
+	pluginhost.RouteMiddlewares
+	runtime pluginruntime.Service
+}
+
+func (m *sourceRouteMiddlewares) PageBridge() pluginhost.RouteMiddleware {
+	if m == nil || m.runtime == nil {
+		return func(request *ghttp.Request) { request.Response.WriteStatus(503); request.ExitAll() }
+	}
+	return m.runtime.AuthorizeSourcePageBridgeRouteMiddleware
 }
 
 // sourceGlobalMiddlewareRegistrar registers guarded global HTTP middleware.
@@ -74,6 +91,13 @@ func newSourceHTTPRegistrar(
 	if service != nil {
 		services = service.sourceServicesForPlugin(normalizedPluginID)
 	}
+	if middlewares != nil {
+		var runtimeService pluginruntime.Service
+		if service != nil {
+			runtimeService = service.runtimeSvc
+		}
+		middlewares = &sourceRouteMiddlewares{RouteMiddlewares: middlewares, runtime: runtimeService}
+	}
 	return &sourceHTTPRegistrar{
 		routes: newSourceRouteRegistrar(
 			pluginGroup,
@@ -86,8 +110,16 @@ func newSourceHTTPRegistrar(
 			pluginID: normalizedPluginID,
 			service:  service,
 		},
-		services: services,
+		services:           services,
+		businessExtensions: businessExtensionsForOwner(service, normalizedPluginID),
 	}
+}
+
+func businessExtensionsForOwner(service *serviceImpl, pluginID string) pluginhost.BusinessExtensionRegistrar {
+	if service == nil || service.businessExtensionHost == nil {
+		return nil
+	}
+	return service.businessExtensionHost.ForBusinessExtensionOwner(pluginID)
 }
 
 // newSourceRouteRegistrar creates one guarded route registrar for a source plugin.
@@ -127,6 +159,14 @@ func (r *sourceHTTPRegistrar) Services() capability.Services {
 		return nil
 	}
 	return r.services
+}
+
+// BusinessExtensions returns the source-owner-only provider admission facade.
+func (r *sourceHTTPRegistrar) BusinessExtensions() pluginhost.BusinessExtensionRegistrar {
+	if r == nil {
+		return nil
+	}
+	return r.businessExtensions
 }
 
 // Bind registers one guarded global middleware on the supplied GoFrame route pattern.
@@ -304,18 +344,49 @@ func (g *sourceRouteGroup) Middleware(handlers ...pluginhost.RouteMiddleware) {
 
 // Bind registers one or more handlers or controller objects.
 func (g *sourceRouteGroup) Bind(handlerOrObject ...interface{}) {
+	g.bindHandlers(nil, handlerOrObject...)
+}
+
+// BindCustomerPageBridge captures an authoritative owner callback only for
+// explicitly published customer DTO routes, never as an HTTP handler itself.
+func (g *sourceRouteGroup) BindCustomerPageBridge(authorize func(context.Context) (int, error), handlerOrObject ...interface{}) {
+	if authorize == nil || len(handlerOrObject) == 0 {
+		g.setRegistrationError(gerror.New("customer page bridge registration requires an authorizer and handlers"))
+		return
+	}
+	g.bindHandlers(authorize, handlerOrObject...)
+}
+
+// bindHandlers validates the complete batch before capturing or binding it.
+func (g *sourceRouteGroup) bindHandlers(authorize func(context.Context) (int, error), handlerOrObject ...interface{}) {
 	if g == nil || g.group == nil {
 		return
 	}
+	var captured []pluginhost.SourceRouteBinding
 	for _, item := range handlerOrObject {
 		bindings := captureRouteBindings(g.pluginID, g.prefix, "/", routeMethodAll, item)
 		if err := validateSourceRouteBindings(g.pluginID, bindings); err != nil {
 			g.setRegistrationError(err)
 			return
 		}
-		if g.bindRoute != nil && len(bindings) > 0 {
-			g.bindRoute(bindings...)
+		if authorize != nil {
+			if len(bindings) == 0 {
+				g.setRegistrationError(gerror.New("customer page bridge requires documentable routes"))
+				return
+			}
+			for index := range bindings {
+				binding := &bindings[index]
+				if !binding.Documentable || binding.PageBridgeHost != "customer" || binding.PageBridgeCapability == "" {
+					g.setRegistrationError(gerror.New("customer page bridge requires explicit customer capability metadata"))
+					return
+				}
+				binding.AuthorizePageBridgeCustomer = authorize
+			}
 		}
+		captured = append(captured, bindings...)
+	}
+	if g.bindRoute != nil && len(captured) > 0 {
+		g.bindRoute(captured...)
 	}
 	g.group.Bind(handlerOrObject...)
 }
@@ -513,6 +584,15 @@ func validateSourceRouteBindings(pluginID string, bindings []pluginhost.SourceRo
 	for _, binding := range bindings {
 		if err := validateSourceRoutePath(pluginID, binding.Path); err != nil {
 			return err
+		}
+		capability := strings.TrimSpace(binding.PageBridgeCapability)
+		host := strings.TrimSpace(binding.PageBridgeHost)
+		if capability == "" && host == "" {
+			continue
+		}
+		if !sourcePageBridgeCapabilityPattern.MatchString(capability) || host != "admin" && host != "customer" ||
+			host == "admin" && strings.TrimSpace(binding.Permission) == "" {
+			return gerror.Newf("source plugin page bridge metadata is invalid: plugin=%s route=%s", pluginID, binding.Path)
 		}
 	}
 	return nil

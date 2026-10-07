@@ -33,7 +33,6 @@ assets/
 # =============================================================================
 # Agent / AI tooling local config
 # =============================================================================
-/localdocs/
 .codex/config.toml
 .github/codex/*
 !.github/codex/
@@ -58,6 +57,8 @@ apps/lina-core/internal/packed/manifest/**
 # Frontend
 # =============================================================================
 **/node_modules/
+/.pnpm-store/
+/.site-runtime/
 **/dist/
 **/dist.zip
 **/.turbo/
@@ -78,7 +79,7 @@ test-results/
 *.test
 *.out
 apps/lina-plugins/*/temp/
-apps/lina-plugins/.linapro-plugins.lock.yaml
+apps/lina-plugins/.plugins.lock.yaml
 
 # =============================================================================
 # Runtime configs that may contain secrets (tokens, credentials)

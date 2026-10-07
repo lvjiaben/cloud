@@ -373,9 +373,9 @@ func TestExternalLoginAdapterFailsClosedWhenUnbound(t *testing.T) {
 // through a provider it did not declare.
 func TestExternalLoginAdapterRejectsUnownedProvider(t *testing.T) {
 	ctx := context.Background()
-	registerExternalLoginTestPlugin(t, "linapro-oidc-google", "google")
+	registerExternalLoginTestPlugin(t, "oidc-google", "google")
 	adapter := newExternalLoginAdapter(&fakeAuthService{}, fakeExternalLoginPluginState{enabled: true})
-	scoped := adapter.forPlugin("linapro-oidc-google")
+	scoped := adapter.forPlugin("oidc-google")
 
 	_, err := scoped.LoginByVerifiedIdentity(ctx, extlogin.LoginInput{Provider: "discord", Subject: "sub"})
 	if !bizerr.Is(err, CodePluginHostExternalLoginProviderForbidden) {
@@ -387,9 +387,9 @@ func TestExternalLoginAdapterRejectsUnownedProvider(t *testing.T) {
 // cannot issue external-login sessions even for an owned provider.
 func TestExternalLoginAdapterRejectsDisabledPlugin(t *testing.T) {
 	ctx := context.Background()
-	registerExternalLoginTestPlugin(t, "linapro-oidc-google", "google")
+	registerExternalLoginTestPlugin(t, "oidc-google", "google")
 	adapter := newExternalLoginAdapter(&fakeAuthService{}, fakeExternalLoginPluginState{enabled: false})
-	scoped := adapter.forPlugin("linapro-oidc-google")
+	scoped := adapter.forPlugin("oidc-google")
 
 	_, err := scoped.LoginByVerifiedIdentity(ctx, extlogin.LoginInput{Provider: "google", Subject: "sub"})
 	if !bizerr.Is(err, CodePluginHostExternalLoginPluginDisabled) {
@@ -401,10 +401,10 @@ func TestExternalLoginAdapterRejectsDisabledPlugin(t *testing.T) {
 // stamps the host-controlled plugin ID and delegates to the auth service.
 func TestExternalLoginAdapterStampsPluginIDAndDelegates(t *testing.T) {
 	ctx := context.Background()
-	registerExternalLoginTestPlugin(t, "linapro-oidc-google", "google")
+	registerExternalLoginTestPlugin(t, "oidc-google", "google")
 	issuer := &fakeAuthService{}
 	adapter := newExternalLoginAdapter(issuer, fakeExternalLoginPluginState{enabled: true})
-	scoped := adapter.forPlugin("linapro-oidc-google")
+	scoped := adapter.forPlugin("oidc-google")
 
 	out, err := scoped.LoginByVerifiedIdentity(ctx, extlogin.LoginInput{
 		Provider:    "google",
@@ -418,7 +418,7 @@ func TestExternalLoginAdapterStampsPluginIDAndDelegates(t *testing.T) {
 	if out.AccessToken != "external-token" || out.RefreshToken != "external-refresh-token" {
 		t.Fatalf("unexpected external login output: %#v", out)
 	}
-	if issuer.externalLoginInput.PluginID != "linapro-oidc-google" {
+	if issuer.externalLoginInput.PluginID != "oidc-google" {
 		t.Fatalf("expected host-stamped plugin id, got %q", issuer.externalLoginInput.PluginID)
 	}
 	if issuer.externalLoginInput.Provider != "google" || issuer.externalLoginInput.Subject != "subject-123" {

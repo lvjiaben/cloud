@@ -22,6 +22,9 @@ package main
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -39,6 +42,22 @@ func newTestApp(t *testing.T) (*app, *bytes.Buffer) {
 		root:   t.TempDir(),
 	}
 	return a, stdout
+}
+
+func requireAgentSymlinkSupport(t *testing.T) {
+	t.Helper()
+	root := t.TempDir()
+	source := filepath.Join(root, "source")
+	link := filepath.Join(root, "link")
+	if err := os.Mkdir(source, 0o755); err != nil {
+		t.Fatalf("create symlink probe source: %v", err)
+	}
+	if err := os.Symlink(source, link); err != nil {
+		if runtime.GOOS == "windows" {
+			t.Skipf("skip: symlink unsupported on this Windows host: %v", err)
+		}
+		t.Fatalf("probe symlink support: %v", err)
+	}
 }
 
 func TestCollectAgentUniverseIncludesNativeOnly(t *testing.T) {
@@ -243,6 +262,7 @@ func TestValidateSingleAgentName(t *testing.T) {
 }
 
 func TestRunAgentsNormalizesOneShotAgentName(t *testing.T) {
+	requireAgentSymlinkSupport(t)
 	a, stdout := newTestApp(t)
 	if err := runAgents(context.Background(), a, commandInput{Params: map[string]string{"agent": "ClaudeCode"}}); err != nil {
 		t.Fatalf("runAgents normalized: %v", err)
@@ -497,6 +517,7 @@ func TestRunAgentsRejectsBadAction(t *testing.T) {
 // dispatcher prints one compact resource-level table instead of the
 // verbose per-resource tables used by agents.skills/prompts/md commands.
 func TestDispatchAgentSetupSkipsUnregisteredResources(t *testing.T) {
+	requireAgentSymlinkSupport(t)
 	a, stdout := newTestApp(t)
 	universe := collectAgentUniverse(a.root)
 	// Pick the first agent that is link-class in skills only, or fall

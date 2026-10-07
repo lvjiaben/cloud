@@ -7,6 +7,8 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	"time"
 
 	"github.com/gogf/gf/v2/container/gvar"
@@ -289,14 +291,14 @@ func TestHandleHostServiceInvokePluginStateGovernanceMethods(t *testing.T) {
 		pluginGovernanceHostCallContext(protocol.HostServiceMethodPluginsStateIsEnabled),
 		protocol.HostServicePlugins,
 		protocol.HostServiceMethodPluginsStateIsEnabled,
-		marshalCapabilityJSONRequest(t, pluginIDRequest{PluginID: "linapro-tenant-core"}),
+		marshalCapabilityJSONRequest(t, pluginIDRequest{PluginID: "tenant-core"}),
 	)
 	if response.Status != protocol.HostCallStatusSuccess {
 		t.Fatalf("expected plugin capability success, got status=%d payload=%s", response.Status, string(response.Payload))
 	}
 	var enabled bool
 	decodeCapabilityJSONResponse(t, response.Payload, &enabled)
-	if !enabled || stateSvc.lastPluginID != "linapro-tenant-core" {
+	if !enabled || stateSvc.lastPluginID != "tenant-core" {
 		t.Fatalf("unexpected plugin capability result enabled=%v plugin=%q", enabled, stateSvc.lastPluginID)
 	}
 }
@@ -315,12 +317,12 @@ func TestHandleHostServiceInvokePluginLifecycleGovernanceMethods(t *testing.T) {
 		pluginGovernanceHostCallContext(protocol.HostServiceMethodPluginsLifecycleEnsureTenantPluginDisableAllowed),
 		protocol.HostServicePlugins,
 		protocol.HostServiceMethodPluginsLifecycleEnsureTenantPluginDisableAllowed,
-		marshalCapabilityJSONRequest(t, tenantPluginLifecycleRequest{PluginID: "linapro-demo-dynamic", TenantID: 9}),
+		marshalCapabilityJSONRequest(t, tenantPluginLifecycleRequest{PluginID: "demo-dynamic", TenantID: 9}),
 	)
 	if ensureResponse.Status != protocol.HostCallStatusSuccess {
 		t.Fatalf("expected plugin lifecycle ensure success, got status=%d payload=%s", ensureResponse.Status, string(ensureResponse.Payload))
 	}
-	if lifecycleSvc.disablePluginID != "linapro-demo-dynamic" || lifecycleSvc.disableTenantID != 9 {
+	if lifecycleSvc.disablePluginID != "demo-dynamic" || lifecycleSvc.disableTenantID != 9 {
 		t.Fatalf("unexpected disable lifecycle call plugin=%q tenant=%d", lifecycleSvc.disablePluginID, lifecycleSvc.disableTenantID)
 	}
 
@@ -392,6 +394,7 @@ func TestConfigurePluginConfigFactoryRejectsNil(t *testing.T) {
 		nil,
 		noopTestHostConfigService{},
 		noopTestManifestFactory{},
+		confidentialoutbound.New(),
 	); err == nil {
 		t.Fatal("expected nil plugin config service factory to return an error")
 	}

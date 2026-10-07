@@ -59,7 +59,7 @@ func TestUninstallMapsPurgeStorageData(t *testing.T) {
 		force       bool
 		expectPurge bool
 	}{
-		{name: "default purges storage data", expectPurge: true},
+		{name: "default preserves storage data", expectPurge: false},
 		{name: "query yes purges storage data", purge: &yes, expectPurge: true},
 		{name: "query no preserves storage data", purge: &no, expectPurge: false},
 		{name: "force preserves requested purge policy", purge: &yes, force: true, expectPurge: true},
@@ -75,7 +75,7 @@ func TestUninstallMapsPurgeStorageData(t *testing.T) {
 			}
 
 			res, err := controller.Uninstall(context.Background(), &v1.UninstallReq{
-				Id:               "linapro-tenant-core",
+				Id:               "tenant-core",
 				PurgeStorageData: tc.purge,
 				Force:            tc.force,
 			})
@@ -83,7 +83,7 @@ func TestUninstallMapsPurgeStorageData(t *testing.T) {
 				t.Fatalf("expected uninstall request to succeed, got error: %v", err)
 			}
 			if res == nil ||
-				res.Id != "linapro-tenant-core" ||
+				res.Id != "tenant-core" ||
 				res.Installed != statusflag.Uninstalled ||
 				res.Enabled != statusflag.Disabled {
 				t.Fatalf("unexpected uninstall response: %#v", res)
@@ -91,8 +91,8 @@ func TestUninstallMapsPurgeStorageData(t *testing.T) {
 			if pluginSvc.calls != 1 {
 				t.Fatalf("expected one uninstall service call, got %d", pluginSvc.calls)
 			}
-			if pluginSvc.pluginID != "linapro-tenant-core" {
-				t.Fatalf("expected plugin id linapro-tenant-core, got %s", pluginSvc.pluginID)
+			if pluginSvc.pluginID != "tenant-core" {
+				t.Fatalf("expected plugin id tenant-core, got %s", pluginSvc.pluginID)
 			}
 			if pluginSvc.options.PurgeStorageData != tc.expectPurge {
 				t.Fatalf(

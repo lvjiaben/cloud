@@ -137,8 +137,10 @@ func (s *authAdapter) IssueImpersonationToken(
 		return nil, bizerr.NewCode(CodePluginHostAuthTokenStateUnavailable)
 	}
 	out, err := s.authSvc.IssueImpersonationToken(ctx, auth.ImpersonationTokenIssueInput{
-		ActingUserID: in.ActingUserID,
-		TenantID:     in.TenantID,
+		ActingUserID:     in.ActingUserID,
+		TenantID:         in.TenantID,
+		SubjectUserID:    in.SubjectUserID,
+		ExpiresInSeconds: in.ExpiresInSeconds,
 	})
 	if err != nil {
 		return nil, err
@@ -147,10 +149,12 @@ func (s *authAdapter) IssueImpersonationToken(
 		return nil, bizerr.NewCode(CodePluginHostAuthTokenStateUnavailable)
 	}
 	return &token.ImpersonationTokenOutput{
-		AccessToken:  out.AccessToken,
-		TokenID:      out.TokenID,
-		TenantID:     out.TenantID,
-		ActingUserID: out.ActingUserID,
+		AccessToken:   out.AccessToken,
+		TokenID:       out.TokenID,
+		TenantID:      out.TenantID,
+		ActingUserID:  out.ActingUserID,
+		SubjectUserID: out.SubjectUserID,
+		ExpiresAt:     out.ExpiresAt,
 	}, nil
 }
 

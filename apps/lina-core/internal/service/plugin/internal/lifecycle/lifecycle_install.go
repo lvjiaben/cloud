@@ -74,19 +74,28 @@ func (s *serviceImpl) Install(
 	if err != nil {
 		return result, err
 	}
+	if len(manifest.BusinessExtensions) > 0 {
+		if _, err = s.catalogSvc.AuthorizeManifestBusinessExtensions(manifest); err != nil {
+			return result, err
+		}
+	}
 
 	if plugintypes.NormalizeType(manifest.Type) == pluginv1.PluginTypeSource {
-		if err = s.installSourcePlugin(ctx, manifest, SourceInstallOptions{
+		installErr := s.installSourcePlugin(ctx, manifest, SourceInstallOptions{
 			StartupAutoEnable: options.StartupAutoEnable,
 			InstallMockData:   options.InstallMockData,
-		}); err != nil {
-			if !isMockDataLoadError(err) {
-				return result, err
-			}
+		})
+		if installErr != nil && !isMockDataLoadError(installErr) {
+			return result, installErr
+		}
+		if _, err = s.storeSvc.PersistReleaseBusinessExtensionAuthorization(ctx, manifest); err != nil {
+			return result, err
+		}
+		if installErr != nil {
 			if syncErr := s.syncEnabledSnapshotAndPublishRuntimeChange(ctx, pluginID, "source_plugin_installed"); syncErr != nil {
 				return result, syncErr
 			}
-			return result, err
+			return result, installErr
 		}
 		if err = s.syncEnabledSnapshotAndPublishRuntimeChange(ctx, pluginID, "source_plugin_installed"); err != nil {
 			return result, err

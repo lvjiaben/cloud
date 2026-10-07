@@ -228,10 +228,9 @@ func TestManagementListCacheIsLocaleScoped(t *testing.T) {
 	}
 }
 
-// TestListIncludesBuiltinByDefault verifies ordinary management list reads
-// return builtin plugins with distribution projection and reuse the cached
-// read model across repeated queries.
-func TestListIncludesBuiltinByDefault(t *testing.T) {
+// TestListOnlyReturnsManagedPlugins verifies builtin capabilities remain in
+// the runtime projection but never enter the paginated management list.
+func TestListOnlyReturnsManagedPlugins(t *testing.T) {
 	var (
 		service   = newTestService()
 		ctx       = startupstats.WithCollector(context.Background(), startupstats.New())
@@ -256,24 +255,11 @@ func TestListIncludesBuiltinByDefault(t *testing.T) {
 	if findPluginItem(defaultOut, managedID) == nil {
 		t.Fatalf("expected managed plugin in default list")
 	}
-	builtin := findPluginItem(defaultOut, builtinID)
-	if builtin == nil {
-		t.Fatalf("expected builtin plugin in default list")
+	if findPluginItem(defaultOut, builtinID) != nil {
+		t.Fatalf("expected builtin plugin to stay hidden from management list")
 	}
-	if builtin.Distribution != pluginv1.PluginDistributionBuiltin.String() {
-		t.Fatalf("expected builtin distribution, got %#v", builtin)
-	}
-
-	// Compatibility flag must not hide builtin plugins or force a rebuild.
-	compatOut, err := service.List(ctx, ListInput{
-		ID:             "plugin-dev-list-",
-		IncludeBuiltin: false,
-	})
-	if err != nil {
-		t.Fatalf("expected compatibility list to succeed, got error: %v", err)
-	}
-	if findPluginItem(compatOut, builtinID) == nil {
-		t.Fatalf("expected builtin plugin even when includeBuiltin=false")
+	if defaultOut.Total != 1 {
+		t.Fatalf("expected total to count only managed plugins, got %d", defaultOut.Total)
 	}
 
 	snapshot := startupstats.FromContext(ctx).Snapshot()
@@ -1274,6 +1260,9 @@ func TestSyncAndListDoesNotRestoreUninstalledDynamicGovernanceProjection(t *test
 	}
 	if _, err = service.Install(ctx, pluginID, InstallOptions{}); err != nil {
 		t.Fatalf("expected dynamic plugin install to succeed, got error: %v", err)
+	}
+	if err = service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
 	}
 	if err = service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true}); err != nil {
 		t.Fatalf("expected dynamic plugin uninstall to succeed, got error: %v", err)

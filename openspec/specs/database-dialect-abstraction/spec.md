@@ -36,7 +36,7 @@
 
 #### Scenario: 数据库版本查询由 dialect 公共包提供
 
-- **当** 宿主系统信息或 `linapro-monitor-server` 服务监控需要展示数据库版本时
+- **当** 宿主系统信息或 `monitor-server` 服务监控需要展示数据库版本时
 - **则** 调用方通过 `dialect.DatabaseVersion(ctx, db)` 或等价 `Dialect` 方法查询
 - **且** PostgreSQL 方言使用 `SELECT version()` 或等价语句，返回包含 `PostgreSQL` 引擎名与版本号的字符串
 - **且** 返回给页面的版本文本必须包含数据库引擎名称与非空版本号

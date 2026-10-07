@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS plugin_idc_payment_exception_fund_action;
+DROP TABLE IF EXISTS plugin_idc_payment_closure_operation;
+DROP INDEX IF EXISTS idx_idc_payment_exception_fund_queue;

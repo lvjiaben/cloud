@@ -11,6 +11,7 @@ import (
 	"lina-core/internal/service/bizctx"
 	configsvc "lina-core/internal/service/config"
 	notifysvc "lina-core/internal/service/notify"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	"lina-core/internal/service/plugin/internal/manifestresource"
 	"lina-core/pkg/dialect"
 	"lina-core/pkg/plugin/capability"
@@ -66,6 +67,8 @@ type wasmHostServiceTestDeps struct {
 	hostConfigSvc hostconfigcap.Service
 	// manifestFactory creates plugin-scoped manifest service views.
 	manifestFactory manifestresource.Factory
+	// confidentialOutbound owns one-use supplier contexts for this runtime.
+	confidentialOutbound *confidentialoutbound.Registry
 }
 
 // TestNewWasmHostServiceRuntimeRequiresExplicitDependencies verifies the root
@@ -79,6 +82,7 @@ func TestNewWasmHostServiceRuntimeRequiresExplicitDependencies(t *testing.T) {
 		validDeps.configFactory,
 		validDeps.hostConfigSvc,
 		validDeps.manifestFactory,
+		validDeps.confidentialOutbound,
 	); err != nil {
 		t.Fatalf("expected complete wasm host service runtime construction to succeed, got error: %v", err)
 	}
@@ -113,6 +117,11 @@ func TestNewWasmHostServiceRuntimeRequiresExplicitDependencies(t *testing.T) {
 			mutate:  func(deps *wasmHostServiceTestDeps) { deps.manifestFactory = nil },
 			message: "create wasm host service runtime failed",
 		},
+		{
+			name:    "confidential-outbound",
+			mutate:  func(deps *wasmHostServiceTestDeps) { deps.confidentialOutbound = nil },
+			message: "create wasm host service runtime failed",
+		},
 	}
 
 	for _, tc := range cases {
@@ -125,6 +134,7 @@ func TestNewWasmHostServiceRuntimeRequiresExplicitDependencies(t *testing.T) {
 				deps.configFactory,
 				deps.hostConfigSvc,
 				deps.manifestFactory,
+				deps.confidentialOutbound,
 			)
 			if err == nil {
 				t.Fatalf("expected missing %s dependency to fail", tc.name)
@@ -142,6 +152,7 @@ func TestNewWasmHostServiceRuntimeRequiresExplicitDependencies(t *testing.T) {
 		recoveredDeps.configFactory,
 		recoveredDeps.hostConfigSvc,
 		recoveredDeps.manifestFactory,
+		recoveredDeps.confidentialOutbound,
 	); err != nil {
 		t.Fatalf("expected complete wasm host service runtime construction after nil cases, got error: %v", err)
 	}
@@ -155,12 +166,13 @@ func newWasmHostServiceTestDeps(t *testing.T) *wasmHostServiceTestDeps {
 	configSvc := configsvc.New()
 	bizCtxSvc := bizctx.New()
 	return &wasmHostServiceTestDeps{
-		notifySvc:         notifysvc.New(tenantspi.New(nil, nil, nil, bizCtxSvc)),
-		hostServices:      newRootTestCapabilities(bizCtxSvc, nil),
-		ownerCapabilities: capregistry.NewRegistry(),
-		configFactory:     NewPluginConfigFactory("", ""),
-		hostConfigSvc:     NewHostConfigService(configSvc),
-		manifestFactory:   manifestresource.NewFactory(""),
+		notifySvc:            notifysvc.New(tenantspi.New(nil, nil, nil, bizCtxSvc)),
+		hostServices:         newRootTestCapabilities(bizCtxSvc, nil),
+		ownerCapabilities:    capregistry.NewRegistry(),
+		configFactory:        NewPluginConfigFactory("", ""),
+		hostConfigSvc:        NewHostConfigService(configSvc),
+		manifestFactory:      manifestresource.NewFactory(""),
+		confidentialOutbound: confidentialoutbound.New(),
 	}
 }
 
@@ -207,13 +219,13 @@ func TestBuildSourceCapabilityRegistryIndexesDeclaredOwnerDescriptors(t *testing
 // descriptor validation rejects descriptors not owned by their declaring plugin.
 func TestValidateSourceCapabilityDescriptorOwnerRejectsMismatch(t *testing.T) {
 	descriptor := capregistry.Descriptor{
-		OwnerPluginID: "linapro-ai-core",
+		OwnerPluginID: "ai-core",
 		Service:       "ai",
 		Version:       "v1",
 		Methods: []capregistry.MethodDescriptor{
 			{
 				Method:       "text.generate",
-				Capability:   "plugin.linapro-ai-core.ai.v1",
+				Capability:   "plugin.ai-core.ai.v1",
 				Risk:         capregistry.RiskLevelExecute,
 				ResourceKind: capregistry.ResourceKindNone,
 			},
@@ -224,7 +236,7 @@ func TestValidateSourceCapabilityDescriptorOwnerRejectsMismatch(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected mismatched source descriptor owner to fail")
 	}
-	for _, want := range []string{"plugin-dev-source-owner-mismatch", "linapro-ai-core", "ai", "v1"} {
+	for _, want := range []string{"plugin-dev-source-owner-mismatch", "ai-core", "ai", "v1"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("expected error to contain %q, got %v", want, err)
 		}

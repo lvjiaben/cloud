@@ -1,0 +1,22 @@
+{
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.meta.tags": "IDC 客户服务器",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.meta.summary": "申请转移我的服务器",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.meta.dc": "接收一个注册邮箱，但不暴露该账号是否存在；符合条件的接收方须在 24 小时内到客户中心确认。",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.schema.dc": "接收一个注册邮箱，但不暴露该账号是否存在；符合条件的接收方须在 24 小时内到客户中心确认。",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.fields.serviceNo.dc": "归当前客户所有的服务器服务编号",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.fields.recipientEmail.dc": "接收方已经注册的邮箱",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestReq.fields.idempotencyKey.dc": "客户生成的安全重试编号",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestRes.fields.accepted.dc": "申请是否已按防探测规则受理",
+  "plugins.idc_core.api.account.v1.ServerTransferRequestRes.fields.reused.dc": "本次是否复用了相同申请",
+  "plugins.idc_core.api.account.v1.IncomingServerTransfer.fields.transferNo.dc": "稳定的转移申请编号",
+  "plugins.idc_core.api.account.v1.IncomingServerTransfer.fields.serviceNo.dc": "等待接收的服务器服务编号",
+  "plugins.idc_core.api.account.v1.IncomingServerTransfer.fields.expiresAt.dc": "确认截止时间（Unix 毫秒时间戳）",
+  "plugins.idc_core.api.account.v1.ServerTransferIncomingListReq.meta.tags": "IDC 客户服务器",
+  "plugins.idc_core.api.account.v1.ServerTransferIncomingListReq.meta.summary": "查看等待我确认的服务器转移",
+  "plugins.idc_core.api.account.v1.ServerTransferIncomingListReq.meta.dc": "最多返回 50 条发给当前已实名客户且仍未过期的转移申请。",
+  "plugins.idc_core.api.account.v1.ServerTransferIncomingListReq.schema.dc": "最多返回 50 条发给当前已实名客户且仍未过期的转移申请。",
+  "plugins.idc_core.api.account.v1.ServerTransferConfirmationCreateReq.meta.tags": "IDC 客户服务器",
+  "plugins.idc_core.api.account.v1.ServerTransferConfirmationCreateReq.meta.summary": "确认接收服务器转移",
+  "plugins.idc_core.api.account.v1.ServerTransferConfirmationCreateReq.meta.dc": "再次检查开关、归属、账单、退款、操作和截止时间后，原子变更服务器未来归属。",
+  "plugins.idc_core.api.account.v1.ServerTransferConfirmationCreateReq.schema.dc": "再次检查开关、归属、账单、退款、操作和截止时间后，原子变更服务器未来归属。"
+}

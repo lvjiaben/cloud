@@ -29,12 +29,16 @@ func stopServices(a *app, input commandInput) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
+	customerPort, err := input.Int("customer_port", portFromEnv("LINA_CUSTOMER_PORT", defaultCustomerPort))
+	if err != nil {
+		return nil, err
+	}
 
 	if _, err = fmt.Fprintln(a.stdout, "Stopping services..."); err != nil {
 		return nil, fmt.Errorf("write stop output: %w", err)
 	}
-	stoppedPorts := make([]int, 0, 2)
-	for _, service := range devservice.Services(a.root, backendPort, frontendPort) {
+	stoppedPorts := make([]int, 0, 3)
+	for _, service := range devservice.Services(a.root, backendPort, frontendPort, customerPort) {
 		stopped, stopErr := devservice.StopService(a.stdout, service)
 		if stopErr != nil {
 			return stoppedPorts, stopErr

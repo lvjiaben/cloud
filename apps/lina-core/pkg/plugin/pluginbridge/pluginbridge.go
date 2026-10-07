@@ -12,6 +12,7 @@ import (
 	"lina-core/pkg/plugin/capability/authcap"
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/cachecap"
+	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
 	"lina-core/pkg/plugin/capability/dictcap"
 	"lina-core/pkg/plugin/capability/filecap"
 	"lina-core/pkg/plugin/capability/hostconfigcap"
@@ -47,6 +48,9 @@ type Services interface {
 	// Network returns the governed outbound network host service guest client. Calls
 	// are constrained by host-side dynamic-plugin host service authorization.
 	Network() NetworkHostService
+	// ConfidentialOutbound returns the host-managed supplier-call client used
+	// only inside an exact business-extension invocation.
+	ConfidentialOutbound() confidentialoutboundcap.Service
 	// RecordStore returns the governed record store facade for authorized dynamic-plugin table
 	// reads and mutations.
 	RecordStore() *recordstore.DB

@@ -1,0 +1,4 @@
+{
+  "owner": "idc-zjmfmigrate",
+  "installSql": ["001-migration-core.sql"]
+}

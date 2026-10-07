@@ -1,0 +1,13 @@
+{
+  "error.idc.notify.channel.unavailable": "通知渠道当前不可用",
+  "error.idc.notify.conflict": "通知资源已经发生变化，请刷新后重试",
+  "error.idc.notify.human.verification.unavailable": "共享人机验证服务尚未安装或不可用，短信验证码暂不可用",
+  "error.idc.notify.invalid": "通知请求填写有误",
+  "error.idc.notify.not.accessible": "无法访问该通知资源",
+  "error.idc.notify.recent.auth.required": "请重新完整登录后再继续",
+  "error.idc.notify.unavailable": "通知服务暂时不可用",
+  "error.idc.notify.verification.expired": "验证码已过期，请重新获取",
+  "error.idc.notify.verification.invalid": "验证码或人机验证凭证无效",
+  "error.idc.notify.verification.rate.limited": "验证码请求过于频繁，请稍后再试",
+  "error.idc.notify.verification.result.unknown": "本次发送结果未知，请等页面显示的时间到了再重新获取"
+}

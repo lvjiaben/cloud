@@ -6,6 +6,8 @@
 package catalog
 
 import (
+	"crypto/sha256"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -19,6 +21,7 @@ import (
 	hostconfig "lina-core/internal/service/config"
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/internal/service/plugin/internal/resourcefs"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 )
 
@@ -34,10 +37,11 @@ type sourceManifestCacheEntry struct {
 // runtimeArtifactCacheEntry stores one parsed runtime artifact manifest and the
 // filesystem identity used to decide whether it can be reused.
 type runtimeArtifactCacheEntry struct {
-	fileInfo os.FileInfo
-	size     int64
-	modTime  time.Time
-	manifest *Manifest
+	fileInfo    os.FileInfo
+	size        int64
+	modTime     time.Time
+	fingerprint [sha256.Size]byte
+	manifest    *Manifest
 }
 
 // InvalidateManifestCache removes cached manifest projections for one plugin
@@ -140,9 +144,14 @@ func (s *serviceImpl) loadRuntimeManifestFromArtifactCache(artifactPath string) 
 	if err != nil {
 		return nil, false, err
 	}
+	fingerprint, err := runtimeArtifactFingerprint(key)
+	if err != nil {
+		return nil, false, err
+	}
 	s.cacheMu.RLock()
 	entry := s.runtimeArtifactCache[key]
-	if entry != nil && entry.size == info.Size() && entry.modTime.Equal(info.ModTime()) && sameRuntimeArtifactFile(entry.fileInfo, info) {
+	if entry != nil && entry.size == info.Size() && entry.modTime.Equal(info.ModTime()) &&
+		entry.fingerprint == fingerprint && sameRuntimeArtifactFile(entry.fileInfo, info) {
 		manifest := CloneManifest(entry.manifest)
 		s.cacheMu.RUnlock()
 		return manifest, true, nil
@@ -161,19 +170,43 @@ func (s *serviceImpl) storeRuntimeManifestArtifactCache(artifactPath string, man
 	if err != nil {
 		return err
 	}
+	fingerprint, err := runtimeArtifactFingerprint(key)
+	if err != nil {
+		return err
+	}
 	cachedManifest := CloneManifest(manifest)
 	s.cacheMu.Lock()
 	s.runtimeArtifactCache[key] = &runtimeArtifactCacheEntry{
-		fileInfo: info,
-		size:     info.Size(),
-		modTime:  info.ModTime(),
-		manifest: cachedManifest,
+		fileInfo:    info,
+		size:        info.Size(),
+		modTime:     info.ModTime(),
+		fingerprint: fingerprint,
+		manifest:    cachedManifest,
 	}
 	if cachedManifest != nil && strings.TrimSpace(cachedManifest.ID) != "" {
 		s.runtimePluginArtifactIndex[cachedManifest.ID] = key
 	}
 	s.cacheMu.Unlock()
 	return nil
+}
+
+// runtimeArtifactFingerprint hashes the complete package so an in-place middle
+// mutation cannot reuse a stale manifest when size and mtime are restored.
+func runtimeArtifactFingerprint(artifactPath string) ([sha256.Size]byte, error) {
+	var empty [sha256.Size]byte
+	file, err := os.Open(artifactPath)
+	if err != nil {
+		return empty, gerror.Wrapf(err, "open dynamic plugin artifact failed: %s", artifactPath)
+	}
+	defer func() { _ = file.Close() }()
+
+	hasher := sha256.New()
+	if _, err = io.Copy(hasher, file); err != nil {
+		return empty, gerror.Wrapf(err, "fingerprint complete dynamic plugin artifact failed: %s", artifactPath)
+	}
+	var fingerprint [sha256.Size]byte
+	copy(fingerprint[:], hasher.Sum(nil))
+	return fingerprint, nil
 }
 
 // sameRuntimeArtifactFile reports whether two stat results still point to the
@@ -184,7 +217,42 @@ func sameRuntimeArtifactFile(cached os.FileInfo, current os.FileInfo) bool {
 	if cached == nil || current == nil {
 		return false
 	}
-	return os.SameFile(cached, current)
+	if !os.SameFile(cached, current) {
+		return false
+	}
+	cachedGeneration, cachedOK := runtimeArtifactGeneration(cached)
+	currentGeneration, currentOK := runtimeArtifactGeneration(current)
+	if cachedOK && currentOK {
+		return reflect.DeepEqual(cachedGeneration, currentGeneration)
+	}
+	return true
+}
+
+// runtimeArtifactGeneration returns the platform stat field that changes when
+// a path is atomically replaced even if its size and modification time are
+// deliberately preserved. Windows exposes CreationTime while Unix platforms
+// expose a change-time field.
+func runtimeArtifactGeneration(info os.FileInfo) (any, bool) {
+	if info == nil || info.Sys() == nil {
+		return nil, false
+	}
+	value := reflect.ValueOf(info.Sys())
+	for value.Kind() == reflect.Pointer {
+		if value.IsNil() {
+			return nil, false
+		}
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return nil, false
+	}
+	for _, fieldName := range []string{"Ctim", "Ctimespec", "Birthtimespec", "CreationTime"} {
+		field := value.FieldByName(fieldName)
+		if field.IsValid() && field.CanInterface() {
+			return field.Interface(), true
+		}
+	}
+	return nil, false
 }
 
 // recordRuntimeArtifactParse increments a package-private counter used by
@@ -241,6 +309,9 @@ func CloneManifest(manifest *Manifest) *Manifest {
 	out.SupportsMultiTenant = cloneBoolPtr(manifest.SupportsMultiTenant)
 	out.I18N = cloneI18NConfig(manifest.I18N)
 	out.Dependencies = plugintypes.CloneDependencySpec(manifest.Dependencies)
+	out.BusinessExtensions = cloneBusinessExtensionDeclarations(manifest.BusinessExtensions)
+	out.AdminSurfaces = cloneFrontendSurfaceDeclarations(manifest.AdminSurfaces)
+	out.CustomerSurfaces = cloneFrontendSurfaceDeclarations(manifest.CustomerSurfaces)
 	out.Menus = cloneMenuSpecs(manifest.Menus)
 	out.PublicAssets = ClonePublicAssetSpecs(manifest.PublicAssets)
 	out.Hooks = CloneHookSpecs(manifest.Hooks)
@@ -446,9 +517,183 @@ func cloneArtifactManifest(item *ArtifactManifest) *ArtifactManifest {
 	out := *item
 	out.SupportsMultiTenant = cloneBoolPtr(item.SupportsMultiTenant)
 	out.Dependencies = plugintypes.CloneDependencySpec(item.Dependencies)
+	out.BusinessExtensions = cloneBusinessExtensionDeclarations(item.BusinessExtensions)
+	out.AdminSurfaces = cloneFrontendSurfaceDeclarations(item.AdminSurfaces)
+	out.CustomerSurfaces = cloneFrontendSurfaceDeclarations(item.CustomerSurfaces)
 	out.Menus = cloneMenuSpecs(item.Menus)
 	out.PublicAssets = ClonePublicAssetSpecs(item.PublicAssets)
 	return &out
+}
+
+func cloneBusinessExtensionDeclaration(item *capmodel.BusinessExtensionDeclaration) *capmodel.BusinessExtensionDeclaration {
+	if item == nil {
+		return nil
+	}
+	out := *item
+	out.Methods = append([]string(nil), item.Methods...)
+	out.InterfaceConfiguration = cloneConfigurationSchemaDeclaration(item.InterfaceConfiguration)
+	out.ProductConfiguration = cloneConfigurationSchemaDeclaration(item.ProductConfiguration)
+	out.CustomerConfiguration = cloneConfigurationSchemaDeclaration(item.CustomerConfiguration)
+	out.ProviderMetadata = cloneBusinessExtensionProviderMetadata(item.ProviderMetadata)
+	return &out
+}
+
+func cloneBusinessExtensionProviderMetadata(item *capmodel.BusinessExtensionProviderMetadata) *capmodel.BusinessExtensionProviderMetadata {
+	if item == nil {
+		return nil
+	}
+	out := *item
+	out.Values = cloneOpaqueValues(item.Values)
+	return &out
+}
+
+func cloneOpaqueValues(values map[string]any) map[string]any {
+	if values == nil {
+		return nil
+	}
+	out := make(map[string]any, len(values))
+	for key, value := range values {
+		out[key] = cloneOpaqueValue(value)
+	}
+	return out
+}
+
+func cloneOpaqueValue(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		return cloneOpaqueValues(typed)
+	case []any:
+		out := make([]any, len(typed))
+		for index := range typed {
+			out[index] = cloneOpaqueValue(typed[index])
+		}
+		return out
+	default:
+		return typed
+	}
+}
+
+func cloneConfigurationSchemaDeclaration(item *capmodel.ConfigurationSchemaDeclaration) *capmodel.ConfigurationSchemaDeclaration {
+	if item == nil {
+		return nil
+	}
+	out := *item
+	out.Fields = make([]*capmodel.ConfigurationFieldDeclaration, 0, len(item.Fields))
+	for _, field := range item.Fields {
+		if field == nil {
+			out.Fields = append(out.Fields, nil)
+			continue
+		}
+		next := *field
+		next.Label = cloneLocalizedText(field.Label)
+		next.Description = cloneLocalizedText(field.Description)
+		next.StaticCandidates = make([]*capmodel.ConfigurationCandidate, 0, len(field.StaticCandidates))
+		for _, candidate := range field.StaticCandidates {
+			if candidate == nil {
+				next.StaticCandidates = append(next.StaticCandidates, nil)
+				continue
+			}
+			clonedCandidate := *candidate
+			clonedCandidate.Label = cloneLocalizedText(candidate.Label)
+			next.StaticCandidates = append(next.StaticCandidates, &clonedCandidate)
+		}
+		if field.DynamicCandidates != nil {
+			clonedDynamic := *field.DynamicCandidates
+			next.DynamicCandidates = &clonedDynamic
+		}
+		out.Fields = append(out.Fields, &next)
+	}
+	out.Conditions = make([]*capmodel.ConfigurationRuleDeclaration, 0, len(item.Conditions))
+	for _, rule := range item.Conditions {
+		if rule == nil {
+			out.Conditions = append(out.Conditions, nil)
+			continue
+		}
+		next := *rule
+		next.When = cloneConfigurationConditionDeclaration(rule.When)
+		next.Actions = make([]*capmodel.ConfigurationActionDeclaration, 0, len(rule.Actions))
+		for _, action := range rule.Actions {
+			if action == nil {
+				next.Actions = append(next.Actions, nil)
+				continue
+			}
+			clonedAction := *action
+			clonedAction.Values = append([]string(nil), action.Values...)
+			next.Actions = append(next.Actions, &clonedAction)
+		}
+		out.Conditions = append(out.Conditions, &next)
+	}
+	out.UploadPolicies = make([]*capmodel.ConfigurationUploadPolicyDeclaration, 0, len(item.UploadPolicies))
+	for _, policy := range item.UploadPolicies {
+		if policy == nil {
+			out.UploadPolicies = append(out.UploadPolicies, nil)
+			continue
+		}
+		next := *policy
+		next.AllowedMIMETypes = append([]string(nil), policy.AllowedMIMETypes...)
+		next.AllowedExtensions = append([]string(nil), policy.AllowedExtensions...)
+		out.UploadPolicies = append(out.UploadPolicies, &next)
+	}
+	return &out
+}
+
+func cloneConfigurationConditionDeclaration(item *capmodel.ConfigurationConditionDeclaration) *capmodel.ConfigurationConditionDeclaration {
+	if item == nil {
+		return nil
+	}
+	out := *item
+	out.Children = make([]*capmodel.ConfigurationConditionDeclaration, 0, len(item.Children))
+	for _, child := range item.Children {
+		out.Children = append(out.Children, cloneConfigurationConditionDeclaration(child))
+	}
+	return &out
+}
+
+func cloneLocalizedText(item *capmodel.LocalizedText) *capmodel.LocalizedText {
+	if item == nil {
+		return nil
+	}
+	out := *item
+	return &out
+}
+
+func cloneBusinessExtensionDeclarations(items []*capmodel.BusinessExtensionDeclaration) []*capmodel.BusinessExtensionDeclaration {
+	if len(items) == 0 {
+		return []*capmodel.BusinessExtensionDeclaration{}
+	}
+	out := make([]*capmodel.BusinessExtensionDeclaration, 0, len(items))
+	for _, item := range items {
+		if cloned := cloneBusinessExtensionDeclaration(item); cloned != nil {
+			out = append(out, cloned)
+		}
+	}
+	return out
+}
+
+// CloneBusinessExtensionDeclarations returns detached business extension declarations.
+func CloneBusinessExtensionDeclarations(items []*capmodel.BusinessExtensionDeclaration) []*capmodel.BusinessExtensionDeclaration {
+	return cloneBusinessExtensionDeclarations(items)
+}
+
+func cloneFrontendSurfaceDeclarations(items []*capmodel.FrontendSurfaceDeclaration) []*capmodel.FrontendSurfaceDeclaration {
+	if len(items) == 0 {
+		return []*capmodel.FrontendSurfaceDeclaration{}
+	}
+	out := make([]*capmodel.FrontendSurfaceDeclaration, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		next := *item
+		next.BridgeCapabilities = append([]string(nil), item.BridgeCapabilities...)
+		out = append(out, &next)
+	}
+	return out
+}
+
+// CloneFrontendSurfaceDeclarations returns detached governed frontend surfaces.
+func CloneFrontendSurfaceDeclarations(items []*capmodel.FrontendSurfaceDeclaration) []*capmodel.FrontendSurfaceDeclaration {
+	return cloneFrontendSurfaceDeclarations(items)
 }
 
 // cloneArtifactFrontendAssets returns detached frontend asset payloads.

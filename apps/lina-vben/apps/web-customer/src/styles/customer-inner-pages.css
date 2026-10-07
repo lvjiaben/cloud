@@ -1,0 +1,257 @@
+/* Customer content only. Never target the shell, sidebar, header or tab bar. */
+.customer-inner-page {
+  min-width: 0;
+  color: hsl(var(--foreground));
+}
+
+.customer-inner-page > .customer-inner-heading {
+  min-width: 0;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.customer-inner-heading > .flex-auto {
+  min-width: 0;
+}
+
+.customer-inner-heading .text-lg {
+  margin-bottom: 0;
+  font-size: 18px;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.customer-inner-heading p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.customer-inner-page > .customer-inner-content {
+  min-width: 0;
+  padding: 16px 20px 24px;
+}
+
+.customer-inner-content .ant-card {
+  min-width: 0;
+}
+
+.customer-inner-content .ant-card .ant-card-head {
+  min-height: 46px;
+  padding-inline: 20px;
+}
+
+.customer-inner-content .ant-card-head-title {
+  padding-block: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: normal;
+  line-height: 22px;
+}
+
+.customer-inner-content .ant-card-head-wrapper {
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+
+.customer-inner-content .ant-card-extra {
+  max-width: 100%;
+}
+
+.customer-inner-content .ant-card-extra .ant-space {
+  flex-wrap: wrap;
+}
+
+.customer-inner-content .ant-card-extra {
+  padding-block: 8px;
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) {
+  background: hsl(var(--card));
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) > .ant-card-body,
+.customer-inner-content :is(.page-toolbar-content, .intro-content) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  min-width: 0;
+  margin: 0;
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) > .ant-card-body {
+  padding: 16px 20px;
+}
+
+/* Ant Card's clearfix pseudo-elements must not become flex spacing items. */
+.customer-inner-content
+  :is(.page-toolbar, .sales-toolbar)
+  > .ant-card-body::before,
+.customer-inner-content
+  :is(.page-toolbar, .sales-toolbar)
+  > .ant-card-body::after {
+  display: none;
+}
+
+.customer-inner-content :is(.page-toolbar-content, .intro-content) {
+  width: 100%;
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) strong {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) p {
+  margin: 0;
+  max-width: 72ch;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 21px;
+}
+
+.customer-inner-content :is(.page-toolbar, .sales-toolbar) .ant-space {
+  flex-wrap: wrap;
+}
+
+.customer-inner-content .page-toolbar > .ant-card-body:has(> strong) {
+  display: block;
+}
+
+.customer-inner-content .page-toolbar > .ant-card-body > strong {
+  display: block;
+}
+
+.customer-inner-content .customer-support-form > .ant-card-body {
+  max-width: 960px;
+}
+
+/* Definition lists are information rows, not additional oversized cards. */
+.customer-inner-content :is(.facts, .order-facts, .amounts, .fact-grid) {
+  font-variant-numeric: tabular-nums;
+}
+
+.customer-inner-content :is(.facts, .order-facts, .amounts) > div {
+  min-width: 0;
+  padding-block: 5px;
+  border-bottom: 1px solid hsl(var(--border) / 55%);
+}
+
+.customer-inner-content :is(.facts, .order-facts, .amounts) > div:last-child {
+  border-bottom: 0;
+}
+
+.customer-inner-content
+  :is(.facts, .order-facts, .amounts)
+  :is(dt, dd, strong) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.customer-inner-content :is(.facts, .order-facts, .amounts) dt {
+  color: hsl(var(--muted-foreground));
+}
+
+.customer-inner-content .ant-descriptions-item-label {
+  color: hsl(var(--muted-foreground));
+}
+
+.customer-inner-content .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.customer-inner-content :is(.row-heading, .section-heading) h2 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.customer-inner-content :is(.metric-grid, .metrics) strong,
+.customer-inner-content .large-amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Existing tab groups keep their current routes and state. */
+.customer-inner-content > .ant-tabs > .ant-tabs-nav,
+.customer-inner-content
+  :is(.verification-tabs, .contract-tabs)
+  > .ant-tabs-nav {
+  margin-bottom: 0;
+  padding-inline: 20px;
+  background: hsl(var(--card));
+}
+
+.customer-inner-content > .ant-tabs > .ant-tabs-content-holder {
+  padding-top: 16px;
+}
+
+.customer-inner-content :is(.verification-tabs, .contract-tabs) {
+  padding-inline: 0;
+}
+
+.customer-inner-content .ant-tabs-tab {
+  padding-block: 13px;
+}
+
+.customer-inner-content .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.customer-inner-content .ant-form-item-extra {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.customer-inner-content .ant-empty {
+  padding-block: 24px;
+}
+
+/* Preserve the table adapter's height, header, row and pager contracts. */
+.customer-inner-content .vxe-grid {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .customer-inner-page > .customer-inner-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 12px;
+  }
+
+  .customer-inner-page > .customer-inner-content {
+    padding: 12px;
+  }
+
+  .customer-inner-content .ant-card .ant-card-head {
+    padding-inline: 16px;
+  }
+
+  .customer-inner-content .ant-card-head-title {
+    flex-basis: 100%;
+    overflow: visible;
+  }
+
+  .customer-inner-content .ant-card-extra {
+    margin-inline-start: 0;
+    padding-top: 0;
+  }
+
+  .customer-inner-content :is(.page-toolbar, .sales-toolbar) > .ant-card-body {
+    padding: 14px 16px;
+  }
+
+  .customer-inner-content :is(.page-toolbar-content, .intro-content) {
+    align-items: flex-start;
+  }
+
+  .customer-inner-content :is(.facts, .order-facts, .amounts) > div {
+    gap: 12px;
+  }
+}

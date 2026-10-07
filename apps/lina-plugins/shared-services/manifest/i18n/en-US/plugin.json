@@ -1,0 +1,4 @@
+{
+  "plugin.shared-services.description": "Reusable human verification and idempotent in-app messages for plugins.",
+  "plugin.shared-services.name": "LinaPro Shared Services"
+}

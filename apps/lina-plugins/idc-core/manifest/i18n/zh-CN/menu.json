@@ -1,0 +1,262 @@
+{
+  "menu": {
+    "plugin:idc-core:customer-sales": { "title": "客户与销售" },
+    "plugin:idc-core:catalog-products": { "title": "商品与定价" },
+    "plugin:idc-core:resource-operations": { "title": "服务器与资源" },
+    "plugin:idc-core:orders-finance": { "title": "订单与财务" },
+    "plugin:idc-core:support-content": { "title": "工单与内容" },
+    "plugin:idc-core:notification-marketing": { "title": "通知与营销" },
+    "plugin:idc-core:compliance-governance": { "title": "合规与治理" },
+    "plugin:idc-core:operations-workbench": { "title": "运营工作台" },
+    "plugin:idc-core:operations-workbench:view": { "title": "查看运营工作台" },
+    "plugin:idc-core:sales-channel": { "title": "代理与销售运营" },
+    "plugin:idc-core:sales-channel:overview": { "title": "查看代理与销售汇总" },
+    "plugin:idc-core:sales-channel:qualification": { "title": "管理代理资格" },
+    "plugin:idc-core:sales-channel:commission:review": { "title": "审核佣金结算" },
+    "plugin:idc-core:sales-channel:commission:payout": { "title": "处理佣金打款" },
+    "plugin:idc-core:server-batches": { "title": "服务器批量控制" },
+    "plugin:idc-core:server-batches:safe": {
+      "title": "执行安全服务器批量操作"
+    },
+    "plugin:idc-core:server-batches:dangerous": {
+      "title": "执行危险服务器批量操作"
+    },
+    "plugin:idc-core:operations:contract-template-list": {
+      "title": "查看合同模板"
+    },
+    "plugin:idc-core:customers:contract-policy-write": {
+      "title": "设置客户合同规则"
+    },
+    "plugin:idc-core:catalog:contract-policy-write": {
+      "title": "设置商品合同规则"
+    },
+    "plugin:idc-core:commerce:contract-policy-write": {
+      "title": "设置订单合同规则"
+    },
+    "plugin:idc-core:operations": {
+      "title": "IDC 运营"
+    },
+    "plugin:idc-core:customers": {
+      "title": "客户管理"
+    },
+    "plugin:idc-core:customers:query": {
+      "title": "客户详情"
+    },
+    "plugin:idc-core:customers:assist": {
+      "title": "发起只读客户协助"
+    },
+    "plugin:idc-core:customers:create": {
+      "title": "创建客户并发送激活邀请"
+    },
+    "plugin:idc-core:catalog": {
+      "title": "商品管理"
+    },
+    "plugin:idc-core:catalog-automation-interfaces": {
+      "title": "自动化接口"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:view": {
+      "title": "查看自动化接口"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:manage": {
+      "title": "管理自动化接口"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:binding-write": {
+      "title": "设置商品版本履约绑定"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:configuration-write": {
+      "title": "配置商品自动化"
+    },
+    "plugin:idc-core:catalog-categories": {
+      "title": "商品分类"
+    },
+    "plugin:idc-core:catalog:category-list": {
+      "title": "查看商品分类"
+    },
+    "plugin:idc-core:catalog:category-create": {
+      "title": "新建商品分类"
+    },
+    "plugin:idc-core:catalog:category-update": {
+      "title": "编辑商品分类"
+    },
+    "plugin:idc-core:catalog:category-delete": {
+      "title": "删除商品分类"
+    },
+    "plugin:idc-core:catalog:category-restore": {
+      "title": "恢复商品分类"
+    },
+    "plugin:idc-core:catalog:product-create": {
+      "title": "新建商品"
+    },
+    "plugin:idc-core:catalog:tax-write": {
+      "title": "编辑商品税务政策"
+    },
+    "plugin:idc-core:marketing": {
+      "title": "营销运营"
+    },
+    "plugin:idc-core:commerce-orders": {
+      "title": "订单管理"
+    },
+    "plugin:idc-core:product-fulfillment-tasks": {
+      "title": "商品履约任务"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:list": {
+      "title": "查看履约任务"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:query": {
+      "title": "查看履约任务详情"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:review-approve": {
+      "title": "批准并开始履约"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:review-reject": {
+      "title": "拒绝并转人工处理"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:takeover": {
+      "title": "人工接管履约"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:manual-conclude": {
+      "title": "记录人工履约结果"
+    },
+    "plugin:idc-core:commerce:risk-review-approve": {
+      "title": "批准订单风险审核"
+    },
+    "plugin:idc-core:commerce:risk-review-reject": {
+      "title": "拒绝订单风险审核"
+    },
+    "plugin:idc-core:commerce:order-list": {
+      "title": "查看订单"
+    },
+    "plugin:idc-core:commerce:order-query": {
+      "title": "查看订单详情"
+    },
+    "plugin:idc-core:assisted-quotes": {
+      "title": "协助报价"
+    },
+    "plugin:idc-core:assisted-quotes:list": {
+      "title": "查看协助报价"
+    },
+    "plugin:idc-core:assisted-quotes:query": {
+      "title": "查看协助报价详情"
+    },
+    "plugin:idc-core:assisted-quotes:create": {
+      "title": "发起协助报价"
+    },
+    "plugin:idc-core:assisted-quotes:approve": {
+      "title": "批准协助报价"
+    },
+    "plugin:idc-core:assisted-quotes:reject": {
+      "title": "驳回协助报价"
+    },
+    "plugin:idc-core:assisted-quotes:checkout": {
+      "title": "协助报价下单"
+    },
+    "plugin:idc-core:financial-management": {
+      "title": "财务工作台"
+    },
+    "plugin:idc-core:financial-management:invoice-list": {
+      "title": "查看账单列表"
+    },
+    "plugin:idc-core:financial-management:invoice-query": {
+      "title": "查看账单详情"
+    },
+    "plugin:idc-core:financial-management:transaction-list": {
+      "title": "查看交易流水"
+    },
+    "plugin:idc-core:financial-management:transaction-query": {
+      "title": "查看交易详情"
+    },
+    "plugin:idc-core:financial-management:adjustment-list": {
+      "title": "查看调账申请"
+    },
+    "plugin:idc-core:financial-management:adjustment-query": {
+      "title": "查看调账详情"
+    },
+    "plugin:idc-core:financial-management:manual-receipt-create": {
+      "title": "发起人工入账"
+    },
+    "plugin:idc-core:financial-management:invoice-waiver-create": {
+      "title": "发起账单减免"
+    },
+    "plugin:idc-core:financial-management:adjustment-review": {
+      "title": "复核财务调账"
+    },
+    "plugin:idc-core:financial-management:adjustment-policy-write": {
+      "title": "配置调账复核策略"
+    },
+    "plugin:idc-core:financial-management:credit-application-list": {
+      "title": "查看信用额度申请"
+    },
+    "plugin:idc-core:financial-management:credit-application-query": {
+      "title": "查看信用额度申请详情"
+    },
+    "plugin:idc-core:financial-management:credit-application-review": {
+      "title": "复核信用额度申请"
+    },
+    "plugin:idc-core:financial-management:credit-account-list": {
+      "title": "查看信用账户"
+    },
+    "plugin:idc-core:financial-management:credit-account-query": {
+      "title": "查看信用账户详情"
+    },
+    "plugin:idc-core:financial-management:credit-statement-list": {
+      "title": "查看信用账单"
+    },
+    "plugin:idc-core:financial-management:credit-statement-query": {
+      "title": "查看信用账单详情"
+    },
+    "plugin:idc-core:financial-management:credit-policy-write": {
+      "title": "配置信用额度策略"
+    },
+    "plugin:idc-core:financial-management:invoice-resend": {
+      "title": "重发账单"
+    },
+    "plugin:idc-core:financial-management:note-list": {
+      "title": "查看财务内部备注"
+    },
+    "plugin:idc-core:financial-management:note-create": {
+      "title": "追加财务内部备注"
+    },
+    "plugin:idc-core:financial-management:personal-filter": {
+      "title": "管理个人财务筛选"
+    },
+    "plugin:idc-core:financial-management:export": {
+      "title": "导出财务 XLSX"
+    },
+    "plugin:idc-core:financial-management:refund-list": {
+      "title": "查看退款申请列表"
+    },
+    "plugin:idc-core:financial-management:refund-query": {
+      "title": "查看退款证据"
+    },
+    "plugin:idc-core:financial-management:refund-review": {
+      "title": "审核退款申请"
+    },
+    "plugin:idc-core:financial-management:refund-policy-write": {
+      "title": "配置退款政策"
+    },
+    "plugin:idc-core:support": {
+      "title": "工单工作台"
+    },
+    "plugin:idc-core:support-settings": {
+      "title": "工单设置"
+    },
+    "plugin:idc-core:server-operation-security": {
+      "title": "服务器操作安全"
+    },
+    "plugin:idc-core:ip-change-policy": {
+      "title": "服务器 IP 变更规则"
+    },
+    "plugin:idc-core:server-operation-security:write": {
+      "title": "修改服务器操作安全设置"
+    },
+    "plugin:idc-core:accessory-price:read": {
+      "title": "查看服务器附属能力价格"
+    },
+    "plugin:idc-core:accessory-price:write": {
+      "title": "发布服务器附属能力价格"
+    },
+    "plugin:idc-core:content": {
+      "title": "内容管理"
+    }
+  }
+}

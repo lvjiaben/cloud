@@ -256,9 +256,9 @@ TBD - created by archiving change refactor-plugin-package-boundaries. Update Pur
 
 #### Scenario: 生产代码 import owner internal
 
-- **WHEN** 插件生产代码 import `lina-plugin-linapro-ai-core/backend/internal/service/ai`
+- **WHEN** 插件生产代码 import `lina-plugin-ai-core/backend/internal/service/ai`
 - **THEN** 治理扫描 MUST 失败
-- **AND** 调用方必须改为依赖`lina-plugin-linapro-ai-core/backend/cap/aicap/...`
+- **AND** 调用方必须改为依赖`lina-plugin-ai-core/backend/cap/aicap/...`
 
 #### Scenario: 测试例外受限
 

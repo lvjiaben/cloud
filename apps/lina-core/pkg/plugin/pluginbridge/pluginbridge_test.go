@@ -28,6 +28,7 @@ func TestDefaultDirectoryReturnsCapabilityClients(t *testing.T) {
 	assertClientAvailable(t, services.Runtime(), "runtime")
 	assertClientAvailable(t, services.Storage(), "storage")
 	assertClientAvailable(t, services.Network(), "network")
+	assertClientAvailable(t, services.ConfidentialOutbound(), "confidential outbound")
 	if services.RecordStore() == nil {
 		t.Fatal("expected record store facade to come from pluginbridge guest directory")
 	}
@@ -150,7 +151,7 @@ func TestGuestRuntimeRoundTrip(t *testing.T) {
 	})
 
 	requestContent, err := protocol.EncodeRequestEnvelope(&protocol.BridgeRequestEnvelopeV1{
-		PluginID: "linapro-demo-dynamic",
+		PluginID: "demo-dynamic",
 	})
 	if err != nil {
 		t.Fatalf("expected request encode to succeed, got error: %v", err)

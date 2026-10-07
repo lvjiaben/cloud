@@ -13,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/internal/service/plugin/internal/capabilityowner"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	"lina-core/internal/service/plugin/internal/manifestresource"
 	"lina-core/internal/service/plugin/internal/pluginconfig"
 	"lina-core/pkg/plugin/capability"
@@ -26,12 +27,13 @@ import (
 // hostServiceRuntime carries the startup-owned services used by dynamic-plugin
 // host calls for one WASM runtime instance.
 type hostServiceRuntime struct {
-	domainServices      capability.Services
-	ownerCapabilities   *capregistry.Registry
-	pluginConfigFactory pluginconfig.Factory
-	hostConfigService   hostconfigcap.Service
-	manifestFactory     manifestresource.Factory
-	storageUploads      *storageUploadSessions
+	domainServices       capability.Services
+	ownerCapabilities    *capregistry.Registry
+	pluginConfigFactory  pluginconfig.Factory
+	hostConfigService    hostconfigcap.Service
+	manifestFactory      manifestresource.Factory
+	storageUploads       *storageUploadSessions
+	confidentialOutbound *confidentialoutbound.Registry
 }
 
 // NewRuntime creates a dynamic-plugin WASM runtime from startup-owned shared
@@ -42,6 +44,7 @@ func NewRuntime(
 	pluginConfigFactory pluginconfig.Factory,
 	hostConfigService hostconfigcap.Service,
 	manifestFactory manifestresource.Factory,
+	confidentialOutboundRegistry *confidentialoutbound.Registry,
 ) (Runtime, error) {
 	if domainServices == nil {
 		return nil, gerror.New("domain host services directory is nil")
@@ -58,14 +61,18 @@ func NewRuntime(
 	if manifestFactory == nil {
 		return nil, gerror.New("wasm manifest host service requires a non-nil manifest factory")
 	}
+	if confidentialOutboundRegistry == nil {
+		return nil, gerror.New("wasm confidential outbound service requires a non-nil registry")
+	}
 	return &runtimeImpl{
 		hostServices: &hostServiceRuntime{
-			domainServices:      domainServices,
-			ownerCapabilities:   ownerCapabilities,
-			pluginConfigFactory: pluginConfigFactory,
-			hostConfigService:   hostConfigService,
-			manifestFactory:     manifestFactory,
-			storageUploads:      newStorageUploadSessions(),
+			domainServices:       domainServices,
+			ownerCapabilities:    ownerCapabilities,
+			pluginConfigFactory:  pluginConfigFactory,
+			hostConfigService:    hostConfigService,
+			manifestFactory:      manifestFactory,
+			storageUploads:       newStorageUploadSessions(),
+			confidentialOutbound: confidentialOutboundRegistry,
 		},
 		cache:    make(map[string]*wasmCacheEntry),
 		inflight: make(map[string]*wasmCompileInflight),

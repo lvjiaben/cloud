@@ -1,0 +1,79 @@
+{
+  "error": {
+    "idc": {
+      "resource": {
+        "catalog": {
+          "invalid": "The upstream product query is invalid",
+          "not": { "accessible": "You cannot view upstream products for this interface" },
+          "unavailable": "Upstream products could not be read; verify the interface and connector support"
+        },
+        "configuration": {
+          "invalid": "The Provider channel or resource pool configuration is invalid",
+          "not": {
+            "accessible": "The Provider configuration is not accessible"
+          },
+          "conflict": "The configuration changed, or both credentials are required before enabling the channel",
+          "unavailable": "The Provider configuration service is temporarily unavailable"
+        },
+        "provider": {
+          "verification": {
+            "not": {
+              "accessible": "The Provider connection verification target is not accessible"
+            },
+            "unavailable": "The Provider connection verification service is temporarily unavailable"
+          },
+          "capacity": {
+            "invalid": "The Provider capacity observation request is invalid",
+            "not": {
+              "accessible": "The Provider capacity observation target is not accessible"
+            },
+            "conflict": "The channel and observation kind already have an active collection",
+            "unavailable": "The Provider capacity observation service is temporarily unavailable"
+          }
+        },
+        "overview": {
+          "invalid": "The resource overview request is invalid",
+          "not": {
+            "accessible": "The resource operations overview is not accessible"
+          },
+          "unavailable": "The resource operations overview is temporarily unavailable"
+        },
+        "health": {
+          "management": {
+            "invalid": "The Provider health request is invalid",
+            "not": {
+              "accessible": "The Provider health target is not accessible"
+            },
+            "conflict": "The health policy version or current sample window changed; refresh and retry",
+            "unavailable": "The Provider health service is temporarily unavailable"
+          }
+        },
+        "task": {
+          "management": {
+            "invalid": "The Provider task request is invalid",
+            "not": {
+              "accessible": "The Provider task target is not accessible"
+            },
+            "conflict": "The task, version, status, evidence, or existing takeover changed; refresh and verify the evidence again",
+            "unavailable": "The Provider task management service is temporarily unavailable"
+          }
+        },
+        "channel": {
+          "secret": {
+            "invalid": "The channel secret request is invalid",
+            "not": {
+              "accessible": "The channel secret target is not accessible"
+            },
+            "recent": {
+              "authentication": {
+                "required": "Sign in again before changing channel secrets"
+              }
+            },
+            "conflict": "The channel secret changed; refresh and try again",
+            "unavailable": "The channel secret service is temporarily unavailable"
+          }
+        }
+      }
+    }
+  }
+}

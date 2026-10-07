@@ -3,7 +3,10 @@
 
 package pluginhost
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 // sourceRouteMethodAll is the normalized wildcard method marker used by route
 // binding keys.
@@ -23,6 +26,17 @@ type SourceRouteBinding struct {
 	// Documentable reports whether the handler uses GoFrame standard DTO routing
 	// and can therefore be projected into the host OpenAPI document.
 	Documentable bool
+	// PageBridgeCapability is the exact isolated-page capability published by
+	// the request DTO. Empty means the route is not callable through a page bridge.
+	PageBridgeCapability string
+	// PageBridgeHost is the exact governed surface audience (admin or customer).
+	PageBridgeHost string
+	// Permission is the owner route's normal host permission, if any.
+	Permission string
+	// AuthorizePageBridgeCustomer proves the current customer at grant issuance.
+	// It returns the authenticated customer's host user ID, or an error. The
+	// host requires an exact identity match and never caches this result.
+	AuthorizePageBridgeCustomer func(context.Context) (int, error)
 }
 
 // Key returns the normalized uniqueness key of the binding.

@@ -12,7 +12,7 @@ type HostServiceAuthorizationReq struct {
 // HostServiceAuthorizationServiceReq describes one service-level authorization decision.
 type HostServiceAuthorizationServiceReq struct {
 	// Owner is the plugin ID that owns this host service when authorizing a plugin-owned capability.
-	Owner string `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"linapro-ai-core"`
+	Owner string `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"ai-core"`
 	// Service is the logical host service identifier.
 	Service string `json:"service" dc:"Host service identifier, such as storage, network, data, hostConfig, manifest, or ai" eg:"network"`
 	// Version is the owner capability protocol version for plugin-owned host services.
@@ -26,13 +26,13 @@ type HostServiceAuthorizationServiceReq struct {
 	// ResourceRefs lists the confirmed resource refs; an empty array rejects all resource refs under this service.
 	ResourceRefs []string `json:"resourceRefs,omitempty" dc:"The collection of governance targets after host confirmation; network uses URL mode, low-priority services continue to use logical resourceRef, and an empty array means rejecting all resource applications under the service." eg:"[\"https://*.example.com/api\"]"`
 	// Tables lists the confirmed data tables; an empty array rejects all tables under this service.
-	Tables []string `json:"tables,omitempty" dc:"The collection of data tables after confirmation by the host. It is only used by the data service. An empty array means rejecting all table applications under the service." eg:"[\"plugin_linapro_demo_dynamic_record\"]"`
+	Tables []string `json:"tables,omitempty" dc:"The collection of data tables after confirmation by the host. It is only used by the data service. An empty array means rejecting all table applications under the service." eg:"[\"plugin_demo_dynamic_record\"]"`
 }
 
 // HostServicePermissionItem describes one requested or authorized host service block.
 type HostServicePermissionItem struct {
 	// Owner is the plugin ID that owns this host service when it is plugin-owned.
-	Owner string `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"linapro-ai-core"`
+	Owner string `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"ai-core"`
 	// Service is the logical host service identifier.
 	Service string `json:"service" dc:"Host service identifier, such as runtime, storage, network, data, hostConfig, manifest, plugins, notifications, or ai" eg:"storage"`
 	// Version is the owner capability protocol version for plugin-owned host services.
@@ -44,7 +44,7 @@ type HostServicePermissionItem struct {
 	// Keys lists the governed public host config keys under this service.
 	Keys []string `json:"keys,omitempty" dc:"The public host config keys allowed to be accessed under this host service, only used by hostConfig service" eg:"[\"workspace.basePath\"]"`
 	// Tables lists the governed data tables under this service.
-	Tables []string `json:"tables,omitempty" dc:"The collection of data tables allowed to be accessed under this host service, only used by data service" eg:"[\"plugin_linapro_demo_dynamic_record\"]"`
+	Tables []string `json:"tables,omitempty" dc:"The collection of data tables allowed to be accessed under this host service, only used by data service" eg:"[\"plugin_demo_dynamic_record\"]"`
 	// TableItems lists the governed data tables together with host-resolved display comments.
 	TableItems []*HostServicePermissionTableItem `json:"tableItems,omitempty" dc:"The data table display items under the host service are only used by the data service; when the host can parse the table-level description, comment will be returned at the same time." eg:"[]"`
 	// Resources lists the governed resource refs under this service.
@@ -54,7 +54,7 @@ type HostServicePermissionItem struct {
 // HostServicePermissionTableItem describes one governed data table descriptor.
 type HostServicePermissionTableItem struct {
 	// Name is the governed table name.
-	Name string `json:"name" dc:"Data table name" eg:"plugin_linapro_demo_dynamic_record"`
+	Name string `json:"name" dc:"Data table name" eg:"plugin_demo_dynamic_record"`
 	// Comment is the host-resolved table comment when available.
 	Comment string `json:"comment,omitempty" dc:"Table description parsed by the host; if it cannot be parsed, an empty string is returned." eg:"Plugin node status table"`
 }

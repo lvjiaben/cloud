@@ -1,0 +1,8 @@
+{
+  "extends": "../../../../../hack/tests/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["../../../../../hack/tests/node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["e2e/**/*.ts", "pages/**/*.ts", "support/**/*.ts"]
+}

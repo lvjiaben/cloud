@@ -4,6 +4,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -35,7 +36,7 @@ type tenancyTestTenantService struct {
 	resolveCalls  int
 }
 
-// Enabled returns the configured linapro-tenant-core enablement state.
+// Enabled returns the configured tenant-core enablement state.
 func (s *tenancyTestTenantService) Available(context.Context) bool {
 	return s.enabled
 }
@@ -173,7 +174,7 @@ func runTenancyMiddlewareRequest(t *testing.T, tenantSvc tenantspi.Service) (int
 	})
 	time.Sleep(100 * time.Millisecond)
 
-	response, err := http.Get("http://" + server.GetListenedAddress() + "/tenancy")
+	response, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/tenancy", server.GetListenedPort()))
 	if err != nil {
 		t.Fatalf("send tenancy middleware request: %v", err)
 	}

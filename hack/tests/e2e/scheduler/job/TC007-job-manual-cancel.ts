@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
+import { test, expect } from "../../../fixtures/auth";
 
 import {
   buildShellJobPayload,
@@ -14,9 +14,13 @@ import {
   getLog,
   setCronShellEnabled,
   triggerJob,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-7 长任务手动终止', () => {
+test.describe("TC-7 长任务手动终止", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_cancel_job_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -24,11 +28,13 @@ test.describe('TC-7 长任务手动终止', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
     await expect
-      .poll(async () => (await getConfigByKey(api, 'sys.cron.shell.enabled')).value)
-      .toBe('true');
+      .poll(
+        async () => (await getConfigByKey(api, "sys.cron.shell.enabled")).value,
+      )
+      .toBe("true");
   });
 
   test.afterAll(async () => {
@@ -42,14 +48,17 @@ test.describe('TC-7 长任务手动终止', () => {
     await api.dispose();
   });
 
-  test('TC-7a~d: 手动终止运行中的 Shell 任务后，日志状态应为 cancelled', async () => {
+  test("TC-7a~d: 手动终止运行中的 Shell 任务后，日志状态应为 cancelled", async () => {
     const defaultGroup = await getDefaultGroup(api);
-    const created = await createJob(api, buildShellJobPayload({
-      groupId: defaultGroup.id,
-      name: jobName,
-      shellCmd: 'sleep 30',
-      timeoutSeconds: 60,
-    }));
+    const created = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId: defaultGroup.id,
+        name: jobName,
+        shellCmd: "sleep 30",
+        timeoutSeconds: 60,
+      }),
+    );
     jobId = created.id;
 
     const triggered = await triggerJob(api, jobId);
@@ -58,21 +67,21 @@ test.describe('TC-7 长任务手动终止', () => {
     await expect
       .poll(async () => (await getLog(api, triggered.logId)).status, {
         timeout: 5000,
-        message: '长任务在取消前应先进入 running 状态',
+        message: "长任务在取消前应先进入 running 状态",
       })
-      .toBe('running');
+      .toBe("running");
 
     await cancelLog(api, triggered.logId);
 
     await expect
       .poll(async () => (await getLog(api, triggered.logId)).status, {
         timeout: 10000,
-        message: '终止后日志状态应变为 cancelled',
+        message: "终止后日志状态应变为 cancelled",
       })
-      .toBe('cancelled');
+      .toBe("cancelled");
 
     const logDetail = await getLog(api, triggered.logId);
-    expect(logDetail.errMsg ?? '').toContain('context canceled');
-    expect(logDetail.resultJson ?? '').toContain('"cancelled":true');
+    expect(logDetail.errMsg ?? "").toContain("context canceled");
+    expect(logDetail.resultJson ?? "").toContain('"cancelled":true');
   });
 });

@@ -9,9 +9,9 @@
 宿主 SHALL 在 `apps/lina-core/manifest/config/config.yaml` 中提供 `plugin.autoEnable` 作为结构化条目列表。每个条目必须是包含必填 `id` 和可选 `withMockData` 字段的对象。`withMockData` 默认为 `false`；仅 `withMockData=true` 的条目在首次启动安装时加载插件模拟数据。裸字符串条目必须被拒绝。
 
 #### Scenario:解析有效的结构化自动启用列表
-- **当** `plugin.autoEnable` 包含 `{id: "linapro-ops-demo-guard", withMockData: false}`、`{id: "linapro-demo-source", withMockData: true}` 和 `{id: "linapro-demo-dynamic"}` 时
-- **则** 宿主将这些条目解析为 `[(linapro-ops-demo-guard, false), (linapro-demo-source, true), (linapro-demo-dynamic, false)]`
-- **且** 启动时仅为 `linapro-demo-source` 加载模拟数据
+- **当** `plugin.autoEnable` 包含 `{id: "ops-demo-guard", withMockData: false}`、`{id: "demo-source", withMockData: true}` 和 `{id: "demo-dynamic"}` 时
+- **则** 宿主将这些条目解析为 `[(ops-demo-guard, false), (demo-source, true), (demo-dynamic, false)]`
+- **且** 启动时仅为 `demo-source` 加载模拟数据
 
 #### Scenario:拒绝无效的自动启用配置
 - **当** 配置包含 `{id: ""}`、`{withMockData: true}`、`{id: "x", withMockData: "yes"}` 或裸字符串条目时
@@ -39,14 +39,14 @@
 对于每个 `plugin.autoEnable` 条目，`BootstrapAutoEnable(ctx)` SHALL 执行隐式的"按需安装 + 启用"语义。如果 `withMockData=true`，首次安装必须复用手动安装路径的事务性模拟 SQL 执行。如果 `withMockData=false`，启动不得扫描或执行模拟数据目录。已安装的插件即使其条目有 `withMockData=true` 也不得重新加载模拟数据；该选项仅适用于首次安装。
 
 #### Scenario:自动启用新发现的插件（无模拟数据）
-- **当** `plugin.autoEnable` 包含 `{id: "linapro-demo-source"}` 且插件未安装
+- **当** `plugin.autoEnable` 包含 `{id: "demo-source"}` 且插件未安装
 - **且** 宿主执行 `BootstrapAutoEnable`
 - **则** 宿主执行安装 SQL、注册、菜单同步和启用
 - **且** 不扫描 `manifest/sql/mock-data/`
 - **且** 不创建该插件的模拟数据行
 
 #### Scenario:自动启用新发现的插件（选择模拟数据）
-- **当** `plugin.autoEnable` 包含 `{id: "linapro-demo-source", withMockData: true}` 且插件未安装
+- **当** `plugin.autoEnable` 包含 `{id: "demo-source", withMockData: true}` 且插件未安装
 - **且** 宿主执行 `BootstrapAutoEnable`
 - **则** 安装 SQL 成功后宿主事务性执行所有插件 `manifest/sql/mock-data/*.sql` 文件
 - **且** 模拟阶段成功后插件被启用

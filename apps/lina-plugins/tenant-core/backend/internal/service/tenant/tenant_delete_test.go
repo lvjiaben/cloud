@@ -1,0 +1,223 @@
+// This file verifies tenant deletion precondition behavior.
+
+package tenant
+
+import (
+	"context"
+	"errors"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/frame/g"
+
+	"lina-core/pkg/bizerr"
+	_ "lina-core/pkg/dbdriver"
+	"lina-core/pkg/plugin/capability/bizctxcap"
+	"lina-core/pkg/plugin/capability/plugincap"
+	"lina-plugin-tenant-core/backend/internal/service/resolverconfig"
+	"lina-plugin-tenant-core/backend/internal/service/shared"
+	"lina-plugin-tenant-core/backend/internal/service/tenantplugin"
+)
+
+const tenantCoreTestDSNEnv = "LINAPRO_TENANT_CORE_TEST_DSN"
+
+// fakePluginLifecycleService records host lifecycle calls made by tenant delete tests.
+type fakePluginLifecycleService struct {
+	deleteErr             error
+	ensureDeleteTenantID  int
+	notifyDeleteTenantID  int
+	ensureDeleteCallCount int
+	notifyDeleteCallCount int
+}
+
+// EnsureTenantPluginDisableAllowed is unused by tenant delete tests.
+func (s *fakePluginLifecycleService) EnsureTenantPluginDisableAllowed(ctx context.Context, pluginID string, tenantID int) error {
+	return nil
+}
+
+// NotifyTenantPluginDisabled is unused by tenant delete tests.
+func (s *fakePluginLifecycleService) NotifyTenantPluginDisabled(ctx context.Context, pluginID string, tenantID int) {
+}
+
+// EnsureTenantDeleteAllowed records tenant delete preconditions.
+func (s *fakePluginLifecycleService) EnsureTenantDeleteAllowed(ctx context.Context, tenantID int) error {
+	s.ensureDeleteCallCount++
+	s.ensureDeleteTenantID = tenantID
+	return s.deleteErr
+}
+
+// NotifyTenantDeleted records tenant delete notifications.
+func (s *fakePluginLifecycleService) NotifyTenantDeleted(ctx context.Context, tenantID int) {
+	s.notifyDeleteCallCount++
+	s.notifyDeleteTenantID = tenantID
+}
+
+// fakeTenantDeletePlugins exposes plugin lifecycle callbacks through plugincap.Service.
+type fakeTenantDeletePlugins struct {
+	plugincap.Service
+	lifecycle plugincap.LifecycleService
+}
+
+// Lifecycle returns the configured fake lifecycle service.
+func (s fakeTenantDeletePlugins) Lifecycle() plugincap.LifecycleService {
+	return s.lifecycle
+}
+
+// tenantDeleteTestInsertData is the typed insert payload for tenant deletion tests.
+type tenantDeleteTestInsertData struct {
+	Code   string `orm:"code"`
+	Name   string `orm:"name"`
+	Status string `orm:"status"`
+}
+
+// TestDeleteRunsLifecyclePreconditionBeforeSoftDelete verifies precondition
+// vetoes stop tenant deletion.
+func TestDeleteRunsLifecyclePreconditionBeforeSoftDelete(t *testing.T) {
+	ctx := context.Background()
+	configureTenantDeleteTestDB(t, ctx)
+
+	tenantID, err := shared.Model(ctx, shared.TableTenant).Data(tenantDeleteTestInsertData{
+		Code:   "tenant-delete-precondition-test",
+		Name:   "Tenant Delete Precondition Test",
+		Status: string(shared.TenantStatusActive),
+	}).InsertAndGetId()
+	if err != nil {
+		t.Fatalf("insert tenant failed: %v", err)
+	}
+	t.Cleanup(func() {
+		if _, err := shared.Model(ctx, shared.TableTenant).Unscoped().Where("id", tenantID).Delete(); err != nil {
+			t.Errorf("cleanup tenant failed: %v", err)
+		}
+	})
+
+	lifecycleSvc := &fakePluginLifecycleService{deleteErr: errors.New("tenant delete vetoed")}
+	err = New(
+		tenantDeletePlatformBizCtx{},
+		resolverconfig.New(),
+		tenantplugin.New(tenantDeletePlatformBizCtx{}, nil, nil),
+		fakeTenantDeletePlugins{lifecycle: lifecycleSvc},
+	).Delete(ctx, tenantID)
+	if !bizerr.Is(err, CodeTenantDeletePreconditionVetoed) {
+		t.Fatalf("expected lifecycle precondition veto error, got %v", err)
+	}
+	if lifecycleSvc.ensureDeleteCallCount != 1 ||
+		lifecycleSvc.ensureDeleteTenantID != int(tenantID) ||
+		lifecycleSvc.notifyDeleteCallCount != 0 {
+		t.Fatalf("expected veto to run delete precondition only, got %#v", lifecycleSvc)
+	}
+
+	count, err := shared.Model(ctx, shared.TableTenant).Where("id", tenantID).Count()
+	if err != nil {
+		t.Fatalf("count tenant after veto failed: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected tenant to remain after precondition veto, got count=%d", count)
+	}
+}
+
+// TestDeleteNotifiesLifecycleAfterSoftDelete verifies successful tenant
+// deletion notifies the host lifecycle service after the row is deleted.
+func TestDeleteNotifiesLifecycleAfterSoftDelete(t *testing.T) {
+	ctx := context.Background()
+	configureTenantDeleteTestDB(t, ctx)
+
+	tenantID, err := shared.Model(ctx, shared.TableTenant).Data(tenantDeleteTestInsertData{
+		Code:   "tenant-delete-notify-test",
+		Name:   "Tenant Delete Notify Test",
+		Status: string(shared.TenantStatusActive),
+	}).InsertAndGetId()
+	if err != nil {
+		t.Fatalf("insert tenant failed: %v", err)
+	}
+	t.Cleanup(func() {
+		if _, err := shared.Model(ctx, shared.TableTenant).Unscoped().Where("id", tenantID).Delete(); err != nil {
+			t.Errorf("cleanup tenant failed: %v", err)
+		}
+	})
+
+	lifecycleSvc := &fakePluginLifecycleService{}
+	err = New(
+		tenantDeletePlatformBizCtx{},
+		resolverconfig.New(),
+		tenantplugin.New(tenantDeletePlatformBizCtx{}, nil, nil),
+		fakeTenantDeletePlugins{lifecycle: lifecycleSvc},
+	).Delete(ctx, tenantID)
+	if err != nil {
+		t.Fatalf("expected tenant delete to succeed, got %v", err)
+	}
+	if lifecycleSvc.ensureDeleteCallCount != 1 ||
+		lifecycleSvc.ensureDeleteTenantID != int(tenantID) ||
+		lifecycleSvc.notifyDeleteCallCount != 1 ||
+		lifecycleSvc.notifyDeleteTenantID != int(tenantID) {
+		t.Fatalf("expected lifecycle precondition and notification around tenant delete, got %#v", lifecycleSvc)
+	}
+
+	count, err := shared.Model(ctx, shared.TableTenant).Where("id", tenantID).Count()
+	if err != nil {
+		t.Fatalf("count tenant after delete failed: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected tenant to be soft-deleted, got count=%d", count)
+	}
+}
+
+// tenantDeletePlatformBizCtx provides strict platform context for lifecycle
+// delete tests that focus on precondition and notification behavior.
+type tenantDeletePlatformBizCtx struct{}
+
+// Current returns a platform all-data plugin-visible business context.
+func (tenantDeletePlatformBizCtx) Current(context.Context) bizctxcap.CurrentContext {
+	return bizctxcap.CurrentContext{UserID: 1, TenantID: 0, PlatformBypass: true}
+}
+
+// configureTenantDeleteTestDB points the package test at the local PostgreSQL
+// database initialized by the repository test workflow.
+func configureTenantDeleteTestDB(t *testing.T, ctx context.Context) {
+	t.Helper()
+
+	originalConfig := gdb.GetAllConfig()
+	dsn := strings.TrimSpace(os.Getenv(tenantCoreTestDSNEnv))
+	if dsn == "" {
+		t.Skipf("set %s to run the PostgreSQL integration test", tenantCoreTestDSNEnv)
+	}
+	if err := gdb.SetConfig(gdb.Config{
+		gdb.DefaultGroupName: gdb.ConfigGroup{{Link: dsn}},
+	}); err != nil {
+		t.Fatalf("configure tenant delete test database failed: %v", err)
+	}
+	db := g.DB()
+	ensureTenantDeleteTestTables(t, ctx)
+	t.Cleanup(func() {
+		if err := db.Close(ctx); err != nil {
+			t.Errorf("close tenant delete test database failed: %v", err)
+		}
+		if err := gdb.SetConfig(originalConfig); err != nil {
+			t.Errorf("restore tenant delete test database config failed: %v", err)
+		}
+	})
+}
+
+// ensureTenantDeleteTestTables creates the minimal tenant table required by
+// tenant deletion tests when the local database has not installed the plugin.
+func ensureTenantDeleteTestTables(t *testing.T, ctx context.Context) {
+	t.Helper()
+
+	statement := `CREATE TABLE IF NOT EXISTS plugin_tenant_core_tenant (
+		"id" BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+		"code" VARCHAR(64) NOT NULL,
+		"name" VARCHAR(128) NOT NULL,
+		"status" VARCHAR(32) NOT NULL DEFAULT 'active',
+		"remark" VARCHAR(512) NOT NULL DEFAULT '',
+		"created_by" BIGINT NOT NULL DEFAULT 0,
+		"updated_by" BIGINT NOT NULL DEFAULT 0,
+		"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		"deleted_at" TIMESTAMP,
+		CONSTRAINT uk_plugin_tenant_core_tenant_code UNIQUE ("code")
+	)`
+	if _, err := g.DB().Exec(ctx, statement); err != nil {
+		t.Fatalf("ensure tenant delete test table failed: %v", err)
+	}
+}

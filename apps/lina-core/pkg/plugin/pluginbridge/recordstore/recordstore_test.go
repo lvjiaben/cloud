@@ -57,6 +57,26 @@ func TestQueryBuilderBuildsTypedPlan(t *testing.T) {
 	}
 }
 
+// TestQueryBuilderPreservesNullEquality verifies dynamic plugins can express
+// soft-delete visibility with an equality-to-null filter.
+func TestQueryBuilderPreservesNullEquality(t *testing.T) {
+	query := Open().
+		Table("plugin_content_notice").
+		WhereEq("deletedAt", nil).
+		Page(1, 20)
+
+	if query.err != nil {
+		t.Fatalf("expected null equality filter to succeed, got %v", query.err)
+	}
+	if len(query.plan.Filters) != 1 || string(query.plan.Filters[0].ValueJSON) != "null" {
+		t.Fatalf("expected explicit JSON null filter, got %#v", query.plan.Filters)
+	}
+	query.plan.Action = dataplan.PlanActionList
+	if _, err := dataplan.MarshalQueryPlanJSON(query.plan); err != nil {
+		t.Fatalf("expected null equality query plan to validate, got %v", err)
+	}
+}
+
 // TestWasip1GuestBuildDoesNotImportHostDatabaseDependencies verifies dynamic
 // plugin guest builds keep host-side SQL drivers out of the wasm dependency set.
 func TestWasip1GuestBuildDoesNotImportHostDatabaseDependencies(t *testing.T) {

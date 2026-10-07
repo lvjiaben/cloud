@@ -15,7 +15,7 @@ const confirmText = ref('');
 
 const canForce = computed(() => confirmText.value.trim() === pluginId.value);
 const reasonDisplayKeys: Record<string, string> = {
-  'plugin.linapro-tenant-core.uninstall_blocked.tenants_exist':
+  'plugin.tenant-core.uninstall_blocked.tenants_exist':
     'pages.multiTenant.plugin.lifecyclePrecondition.reasons.multiTenantUninstallBlocked',
 };
 const localizedReasons = computed(() =>

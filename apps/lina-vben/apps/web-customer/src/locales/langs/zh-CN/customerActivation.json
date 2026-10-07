@@ -1,0 +1,14 @@
+{
+  "enter": "进入客户中心",
+  "failedDescription": "链接可能已过期、已使用或已被重新发送替换。如果当前登录的是员工账号，请退出并使用单独的客户账号。",
+  "failedTitle": "无法领取这条邀请",
+  "login": "登录后继续",
+  "readyDescription": "请先使用收到邀请的本人账号登录；没有账号可以先注册。管理员不会知道或设置您的密码。",
+  "readyTitle": "领取客户账号邀请",
+  "redeemingDescription": "正在核对邀请和当前登录账号，请不要重复操作。",
+  "redeemingTitle": "正在激活客户账号",
+  "register": "注册新账号",
+  "successDescription": "邀请已经领取，当前登录账号已安全绑定到客户资料。",
+  "successTitle": "客户账号已激活",
+  "useAnotherAccount": "使用其他账号登录"
+}

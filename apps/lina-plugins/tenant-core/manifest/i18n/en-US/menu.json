@@ -1,0 +1,31 @@
+{
+  "menu": {
+    "plugin:tenant-core:platform:tenants": {
+      "title": "Tenants"
+    },
+    "plugin:tenant-core:platform:tenants:add": {
+      "title": "Create"
+    },
+    "plugin:tenant-core:platform:tenants:edit": {
+      "title": "Update"
+    },
+    "plugin:tenant-core:platform:tenants:impersonate": {
+      "title": "Impersonate"
+    },
+    "plugin:tenant-core:platform:tenants:query": {
+      "title": "Query"
+    },
+    "plugin:tenant-core:platform:tenants:remove": {
+      "title": "Delete"
+    },
+    "plugin:tenant-core:tenant:plugin:disable": {
+      "title": "Disable"
+    },
+    "plugin:tenant-core:tenant:plugin:enable": {
+      "title": "Enable"
+    },
+    "plugin:tenant-core:tenant:plugin:list": {
+      "title": "List"
+    }
+  }
+}

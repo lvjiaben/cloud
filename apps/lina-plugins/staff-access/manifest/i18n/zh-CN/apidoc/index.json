@@ -1,0 +1,23 @@
+{
+  "plugins.staff_access.api.admin.v1.GrantListReq.meta.tags": "员工权限",
+  "plugins.staff_access.api.admin.v1.GrantListReq.meta.summary": "查看员工业务资格",
+  "plugins.staff_access.api.admin.v1.GrantListReq.meta.dc": "返回当前员工可见的目标员工业务资格，并使用有界分页。",
+  "plugins.staff_access.api.admin.v1.GrantListReq.schema.dc": "返回当前员工可见的目标员工业务资格，并使用有界分页。",
+  "plugins.staff_access.api.admin.v1.GrantListReq.fields.keyword.dc": "资格、员工、能力或范围关键词",
+  "plugins.staff_access.api.admin.v1.GrantListReq.fields.capabilityCode.dc": "精确的能力编码",
+  "plugins.staff_access.api.admin.v1.GrantListReq.fields.status.dc": "-1 表示全部，0 表示停用，1 表示启用",
+  "plugins.staff_access.api.admin.v1.GrantItem.fields.createdAt.dc": "创建时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.GrantItem.fields.updatedAt.dc": "最后更新时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.GrantItem.fields.validFrom.dc": "可选的生效时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.GrantItem.fields.validUntil.dc": "可选的失效时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.meta.tags": "员工权限",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.meta.summary": "新增或修改员工业务资格",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.meta.dc": "要求具备准确的管理权限、使用直接登录会话、近期完成完整登录，并提交当前可见且启用的目标员工、变更原因和版本依据。",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.schema.dc": "要求具备准确的管理权限、使用直接登录会话、近期完成完整登录，并提交当前可见且启用的目标员工、变更原因和版本依据。",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.fields.validFrom.dc": "可选的生效时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.GrantSaveReq.fields.validUntil.dc": "可选的失效时间，Unix 毫秒时间戳",
+  "plugins.staff_access.api.admin.v1.UserCandidateListReq.meta.tags": "员工权限",
+  "plugins.staff_access.api.admin.v1.UserCandidateListReq.meta.summary": "查看可见且启用的员工候选",
+  "plugins.staff_access.api.admin.v1.UserCandidateListReq.meta.dc": "通过宿主治理的有界分页返回当前可见且启用的员工候选，不暴露宿主用户存储。",
+  "plugins.staff_access.api.admin.v1.UserCandidateListReq.schema.dc": "通过宿主治理的有界分页返回当前可见且启用的员工候选，不暴露宿主用户存储。"
+}

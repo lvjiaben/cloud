@@ -52,7 +52,7 @@ func TestResolveRouteTextUsesApidocCatalog(t *testing.T) {
 func TestFindRouteTitleOperationKeys(t *testing.T) {
 	restoreCatalog := registerOpenAPITestCatalog("zh-CN", map[string]string{
 		"core.api.user.v1.ListReq.meta.tags":                                      "用户管理",
-		"plugins.linapro_demo_dynamic.paths.get.api.v1.backend_summary.meta.tags": "动态插件示例",
+		"plugins.demo_dynamic.paths.get.api.v1.backend_summary.meta.tags": "动态插件示例",
 	})
 	defer restoreCatalog()
 
@@ -60,7 +60,7 @@ func TestFindRouteTitleOperationKeys(t *testing.T) {
 		service     = New(&testConfigProvider{}, bizctx.New(), i18nsvc.New(bizctx.New(), configsvc.New(), cachecoord.Default(nil)), &testPluginRouteProvider{}).(*serviceImpl)
 		ctx         = context.WithValue(context.Background(), gctx.StrKey("BizCtx"), &model.Context{Locale: "zh-CN"})
 		keys        = service.FindRouteTitleOperationKeys(ctx, "动态")
-		expectedKey = "plugins.linapro_demo_dynamic.paths.get.api.v1.backend_summary"
+		expectedKey = "plugins.demo_dynamic.paths.get.api.v1.backend_summary"
 	)
 	for _, key := range keys {
 		if key == expectedKey {
@@ -73,8 +73,8 @@ func TestFindRouteTitleOperationKeys(t *testing.T) {
 // TestRouteOperationKeyFromPathNormalizesMethod verifies persisted route
 // methods can be uppercase while apidoc path keys remain lowercase.
 func TestRouteOperationKeyFromPathNormalizesMethod(t *testing.T) {
-	key := buildRouteOperationKeyFromPath("/x/linapro-demo-dynamic/api/v1/backend-summary", "GET")
-	if key != "plugins.linapro_demo_dynamic.paths.get.api.v1.backend_summary" {
+	key := buildRouteOperationKeyFromPath("/x/demo-dynamic/api/v1/backend-summary", "GET")
+	if key != "plugins.demo_dynamic.paths.get.api.v1.backend_summary" {
 		t.Fatalf("expected lower-case dynamic path key, got %s", key)
 	}
 }
@@ -83,10 +83,10 @@ func TestRouteOperationKeyFromPathNormalizesMethod(t *testing.T) {
 // operations derive their apidoc key from public path and method.
 func TestOperationBaseKeyIgnoresDynamicOperationID(t *testing.T) {
 	localizer := &openAPILocalizer{}
-	key := localizer.operationBaseKey("/x/linapro-demo-dynamic/api/v1/backend-summary", "get", &goai.Operation{
-		OperationID: "linapro_demo_dynamic_backendSummary",
+	key := localizer.operationBaseKey("/x/demo-dynamic/api/v1/backend-summary", "get", &goai.Operation{
+		OperationID: "demo_dynamic_backendSummary",
 	})
-	if key != "plugins.linapro_demo_dynamic.paths.get.api.v1.backend_summary" {
+	if key != "plugins.demo_dynamic.paths.get.api.v1.backend_summary" {
 		t.Fatalf("expected path-derived key, got %s", key)
 	}
 }
@@ -95,13 +95,13 @@ func TestOperationBaseKeyIgnoresDynamicOperationID(t *testing.T) {
 // plugin routes mounted below /x still use their DTO key when the host has one.
 func TestOperationBaseKeyPrefersStaticMarkerForPluginNamespace(t *testing.T) {
 	localizer := &openAPILocalizer{}
-	key := localizer.operationBaseKey("/x/linapro-org-core/api/v1/dept", "get", &goai.Operation{
+	key := localizer.operationBaseKey("/x/org-core/api/v1/dept", "get", &goai.Operation{
 		XExtensions: goai.XExtensions{
-			openAPIOperationKeyExtension: "plugins.linapro_org_core.api.dept.v1.ListReq",
+			openAPIOperationKeyExtension: "plugins.org_core.api.dept.v1.ListReq",
 		},
-		OperationID: "linapro_org_core_dept_list",
+		OperationID: "org_core_dept_list",
 	})
-	if key != "plugins.linapro_org_core.api.dept.v1.ListReq" {
+	if key != "plugins.org_core.api.dept.v1.ListReq" {
 		t.Fatalf("expected source-plugin DTO key to win below /x namespace, got %s", key)
 	}
 }

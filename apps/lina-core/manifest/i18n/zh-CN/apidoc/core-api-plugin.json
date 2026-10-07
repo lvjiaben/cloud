@@ -48,6 +48,85 @@
               }
             }
           },
+          "BusinessImpactItem": {
+            "fields": {
+              "ownerPluginId": {
+                "dc": "提供该聚合结果的内置业务拥有方插件标识"
+              },
+              "category": {
+                "dc": "影响类别：selling_product_versions=仍在销售的商品版本，in_flight_tasks=在途任务，active_services=活动服务，pending_historical_actions=仍需插件处理的历史动作"
+              },
+              "totalCount": {
+                "dc": "该类别中的历史对象与活动对象总数"
+              },
+              "blockingCount": {
+                "dc": "该类别中尚未排空、迁移或转为人工接管的阻断对象数"
+              }
+            }
+          },
+          "BusinessImpactReq": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              }
+            },
+            "meta": {
+              "dc": "返回受信任内置业务拥有方提供的有界聚合数量，不暴露对象详情、秘密或插件私有状态。",
+              "summary": "检查插件业务影响",
+              "tags": "插件管理"
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application_json": {
+                    "fields": {
+                      "data": {
+                        "fields": {
+                          "id": {
+                            "dc": "托管插件唯一标识"
+                          },
+                          "blockingCount": {
+                            "dc": "仍然阻止停用或卸载的对象总数"
+                          },
+                          "canDisable": {
+                            "dc": "当前权威影响快照是否允许停用插件"
+                          },
+                          "canUninstall": {
+                            "dc": "在继续检查依赖关系和插件自有门禁前，当前权威影响快照是否允许卸载插件"
+                          },
+                          "items": {
+                            "dc": "有界的业务影响聚合项"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "schema": {
+              "dc": "返回受信任内置业务拥有方提供的有界聚合数量，不暴露对象详情、秘密或插件私有状态。"
+            }
+          },
+          "BusinessImpactRes": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              },
+              "blockingCount": {
+                "dc": "仍然阻止停用或卸载的对象总数"
+              },
+              "canDisable": {
+                "dc": "当前权威影响快照是否允许停用插件"
+              },
+              "canUninstall": {
+                "dc": "在继续检查依赖关系和插件自有门禁前，当前权威影响快照是否允许卸载插件"
+              },
+              "items": {
+                "dc": "有界的业务影响聚合项"
+              }
+            }
+          },
           "DetailReq": {
             "fields": {
               "id": {
@@ -115,6 +194,32 @@
               "lastUpgradeFailure": {
                 "dc": "最近一次可观测的运行时升级失败详情"
               }
+            }
+          },
+          "PageBridgeGrantReq": {
+            "fields": {
+              "pluginId": { "dc": "隔离页面所属的动态插件" },
+              "host": { "dc": "后台或客户中心宿主身份" },
+              "surfaceKey": { "dc": "受治理前端表面标识" },
+              "surfaceVersion": { "dc": "受治理前端表面契约版本" },
+              "capability": { "dc": "表面声明的页面桥能力" },
+              "method": { "dc": "准确的插件接口 HTTP 方法" },
+              "path": { "dc": "不包含宿主命名空间的插件相对接口路径" }
+            },
+            "meta": {
+              "dc": "校验当前登录身份、活动动态插件发布、受治理前端表面、准确能力、请求方法和路由后，签发一张短期且不透明的单次请求授权票据。",
+              "summary": "签发隔离插件页面接口授权",
+              "tags": "插件管理"
+            },
+            "schema": {
+              "dc": "校验当前登录身份、活动动态插件发布、受治理前端表面、准确能力、请求方法和路由后，签发一张短期且不透明的单次请求授权票据。"
+            }
+          },
+          "PageBridgeGrantRes": {
+            "fields": {
+              "grant": { "dc": "短期有效且不可篡改的页面桥授权票据" },
+              "expiresAt": { "dc": "授权票据到期 Unix 毫秒时间戳" },
+              "ownerPluginId": { "dc": "提供该页面接口能力的内置业务插件" }
             }
           },
           "DynamicListReq": {
@@ -411,9 +516,6 @@
               "installed": {
                 "dc": "按安装状态筛选：1=已安装 0=未安装，不传则查询全部"
               },
-              "includeBuiltin": {
-                "dc": "兼容旧客户端保留的字段；普通插件管理列表始终包含内建插件，该字段不再过滤结果"
-              },
               "name": {
                 "dc": "按插件名称筛选，模糊匹配，不传则查询全部"
               },
@@ -425,8 +527,8 @@
               }
             },
             "meta": {
-              "dc": "返回分页插件管理摘要列表，首屏字段有明确上限，并以只读方式返回插件状态",
-              "summary": "查询插件列表",
+              "dc": "只返回管理员可以管理的 distribution=managed 插件。内置能力由所属业务页面管理，绝不出现在插件管理中。",
+              "summary": "查询托管插件列表",
               "tags": "插件管理"
             },
             "responses": {
@@ -510,6 +612,12 @@
               "name": {
                 "dc": "插件名称"
               },
+              "newBusinessState": {
+                "dc": "新业务接入状态：accepting=允许新销售和新履约，stopped=仅停止新增业务但保留已有服务"
+              },
+              "newBusinessStoppedAt": {
+                "dc": "最近一次停止新业务的时间，Unix 毫秒时间戳；从未停止时为空"
+              },
               "statusKey": {
                 "dc": "插件状态在系统插件注册表中的定位键名，前端注册表监听会使用该键判断是否需要刷新插件状态"
               },
@@ -564,7 +672,53 @@
               },
               "runtimeState": {
                 "dc": "插件运行时升级状态；前端业务入口仅在该值为 normal 或旧服务端返回空值时可以执行"
+              },
+              "type": {
+                "dc": "插件运行类型，用于选择受治理的源码页面或隔离动态页面宿主"
+              },
+              "customerSurfaces": {
+                "dc": "登录后可见并经过宿主插槽与路由治理的客户中心页面表面"
               }
+            }
+          },
+          "PluginRuntimeFrontendSurfaceItem": {
+            "fields": {
+              "pluginId": { "dc": "拥有该前端表面的插件标识" },
+              "pluginType": { "dc": "表面所属插件的运行类型" },
+              "key": { "dc": "当前宿主范围内稳定的表面键" },
+              "version": { "dc": "表面契约版本" },
+              "title": { "dc": "插件声明的菜单和页面标题" },
+              "icon": { "dc": "宿主支持的图标标识" },
+              "permission": { "dc": "宿主装配该表面所需的权限" },
+              "slot": { "dc": "插件选择的已发布宿主插槽" },
+              "routePath": { "dc": "宿主在插件命名空间内生成的路由" },
+              "entry": { "dc": "规范化后的插件相对页面入口" },
+              "entryUrl": { "dc": "动态插件当前生效版本冻结的宿主资源地址" },
+              "status": { "dc": "插件声明的业务可用状态" },
+              "bridgeCapabilities": { "dc": "页面申请的版本化宿主桥能力" }
+            }
+          },
+          "PluginBusinessExtensionItem": {
+            "fields": {
+              "point": { "dc": "业务扩展点标识" },
+              "version": { "dc": "扩展契约版本" },
+              "role": { "dc": "声明角色：拥有方或提供方" },
+              "owner": { "dc": "发布扩展契约的插件标识" },
+              "methods": { "dc": "受限的契约方法集合" }
+            }
+          },
+          "PluginFrontendSurfaceItem": {
+            "fields": {
+              "key": { "dc": "稳定的前端表面标识" },
+              "version": { "dc": "页面桥表面契约版本" },
+              "title": { "dc": "页面或菜单标题" },
+              "icon": { "dc": "宿主支持的图标标识" },
+              "permission": { "dc": "宿主访问该表面所需权限" },
+              "slot": { "dc": "宿主发布的挂载插槽" },
+              "route": { "dc": "受治理的插件路由片段" },
+              "entry": { "dc": "插件相对前端入口资源" },
+              "status": { "dc": "表面声明的业务可用状态" },
+              "bridgeCapabilities": { "dc": "申请的版本化页面桥能力" }
             }
           },
           "PluginItem": {
@@ -581,6 +735,10 @@
               "authorizedHostServices": {
                 "dc": "宿主对当前 release 最终确认后的 hostServices 授权快照"
               },
+              "businessExtensions": { "dc": "插件申请的版本化业务扩展声明" },
+              "authorizedBusinessExtensions": { "dc": "宿主治理接受并冻结到发布版本的业务扩展声明" },
+              "adminSurfaces": { "dc": "受治理的后台前端表面" },
+              "customerSurfaces": { "dc": "受治理的登录后客户中心前端表面" },
               "autoEnableManaged": {
                 "dc": "是否被宿主主配置文件中的 plugin.autoEnable 命中：1=是 0=否；命中后表示宿主启动时会确保该插件处于启用状态"
               },
@@ -619,6 +777,12 @@
               },
               "name": {
                 "dc": "插件名称"
+              },
+              "newBusinessState": {
+                "dc": "新业务接入状态：accepting=允许新销售和新履约，stopped=仅停止新增业务但保留已有服务"
+              },
+              "newBusinessStoppedAt": {
+                "dc": "最近一次停止新业务的时间，Unix 毫秒时间戳；从未停止时为空"
               },
               "requestedHostServices": {
                 "dc": "插件当前版本声明的 hostServices 申请清单"
@@ -790,20 +954,110 @@
               }
             }
           },
+          "StopNewBusinessReq": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              }
+            },
+            "meta": {
+              "dc": "停止新的接口实例绑定、商品版本绑定、购买和履约任务，但不禁用已有服务的菜单或操作。",
+              "summary": "停止插件新业务",
+              "tags": "插件管理"
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application_json": {
+                    "fields": {
+                      "data": {
+                        "fields": {
+                          "id": {
+                            "dc": "托管插件唯一标识"
+                          },
+                          "newBusinessState": {
+                            "dc": "当前新业务准入状态：accepting=允许新绑定和新购买，stopped=保留已有服务但停止接受新业务"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "schema": {
+              "dc": "停止新的接口实例绑定、商品版本绑定、购买和履约任务，但不禁用已有服务的菜单或操作。"
+            }
+          },
+          "StopNewBusinessRes": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              },
+              "newBusinessState": {
+                "dc": "当前新业务准入状态：accepting=允许新绑定和新购买，stopped=保留已有服务但停止接受新业务"
+              }
+            }
+          },
+          "ResumeNewBusinessReq": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              }
+            },
+            "meta": {
+              "dc": "只有已安装且已启用的生效版本及其依赖通过服务端就绪检查后，才恢复新的接口实例绑定、商品版本绑定、购买和履约任务。",
+              "summary": "恢复插件新业务",
+              "tags": "插件管理"
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application_json": {
+                    "fields": {
+                      "data": {
+                        "fields": {
+                          "id": {
+                            "dc": "托管插件唯一标识"
+                          },
+                          "newBusinessState": {
+                            "dc": "当前新业务准入状态：accepting=允许新绑定和新购买，stopped=保留已有服务但停止接受新业务"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "schema": {
+              "dc": "只有已安装且已启用的生效版本及其依赖通过服务端就绪检查后，才恢复新的接口实例绑定、商品版本绑定、购买和履约任务。"
+            }
+          },
+          "ResumeNewBusinessRes": {
+            "fields": {
+              "id": {
+                "dc": "托管插件唯一标识"
+              },
+              "newBusinessState": {
+                "dc": "当前新业务准入状态：accepting=允许新绑定和新购买，stopped=保留已有服务但停止接受新业务"
+              }
+            }
+          },
           "UninstallReq": {
             "fields": {
               "id": {
                 "dc": "插件唯一标识"
               },
               "purgeStorageData": {
-                "dc": "是否在卸载插件时同时清除插件自有存储数据：1=清除数据表数据与关联文件 0=保留；不传时默认清除"
+                "dc": "卸载时是否清理插件自有技术存储：1=只清理明确允许的插件私有数据和文件，0=保留；默认保留，业务证据在任何情况下都不能清理"
               },
               "force": {
-                "dc": "是否在生命周期守卫否决后强制卸载；需要 plugin.allowForceUninstall=true"
+                "dc": "宿主策略允许时，是否仅绕过插件自有生命周期回调的否决；不能绕过停止新业务、受信任业务影响、依赖关系和历史证据门禁"
               }
             },
             "meta": {
-              "dc": "执行插件的卸载生命周期。源码插件与动态插件都会在此阶段先停用插件，并可按确认选项决定是否同时清理插件自有存储数据；勾选后宿主会执行 manifest/sql/uninstall 下的卸载 SQL，动态插件还会按已授权 storage paths 清理插件自有存储文件",
+              "dc": "执行插件卸载生命周期。卸载前必须先停止新业务，并通过受信任业务影响、依赖关系和历史证据门禁；force 只能在宿主策略允许时绕过插件自有生命周期回调否决，不能绕过上述门禁。插件自有技术存储默认保留，明确选择清理时也只能清理获准的插件私有数据和文件，不能清理业务证据。",
               "summary": "卸载插件",
               "tags": "插件管理"
             },
@@ -831,7 +1085,7 @@
               }
             },
             "schema": {
-              "dc": "执行插件的卸载生命周期。源码插件与动态插件都会在此阶段先停用插件，并可按确认选项决定是否同时清理插件自有存储数据；勾选后宿主会执行 manifest/sql/uninstall 下的卸载 SQL，动态插件还会按已授权 storage paths 清理插件自有存储文件"
+              "dc": "执行插件卸载生命周期。卸载前必须先停止新业务，并通过受信任业务影响、依赖关系和历史证据门禁；force 只能在宿主策略允许时绕过插件自有生命周期回调否决，不能绕过上述门禁。插件自有技术存储默认保留，明确选择清理时也只能清理获准的插件私有数据和文件，不能清理业务证据。"
             }
           },
           "UninstallRes": {
@@ -1376,6 +1630,10 @@
           },
           "PluginManifestSnapshotItem": {
             "fields": {
+              "businessExtensions": { "dc": "当前清单快照中的版本化业务扩展声明" },
+              "authorizedBusinessExtensions": { "dc": "当前发布快照中宿主接受的业务扩展声明" },
+              "adminSurfaces": { "dc": "当前快照中的受治理后台表面" },
+              "customerSurfaces": { "dc": "当前快照中的受治理客户中心表面" },
               "id": {
                 "dc": "插件唯一标识"
               },
@@ -1387,6 +1645,9 @@
               },
               "type": {
                 "dc": "插件类型：source=源码插件 dynamic=动态插件"
+              },
+              "distribution": {
+                "dc": "插件分发治理方式：managed=托管插件 builtin=内置源码插件"
               },
               "scopeNature": {
                 "dc": "插件作用域性质：platform_only=仅平台 tenant_aware=租户感知"

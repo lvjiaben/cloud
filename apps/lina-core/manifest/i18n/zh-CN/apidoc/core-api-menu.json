@@ -434,6 +434,24 @@
               "openInNewWindow": {
                 "dc": "是否在新窗口或新标签页中打开当前菜单"
               },
+              "pluginSandboxSrc": {
+                "dc": "只能由插件隔离沙箱渲染的版本冻结插件页面地址"
+              },
+              "pluginSurfaceCapabilities": {
+                "dc": "授予当前隔离页面的逐项页面桥能力"
+              },
+              "pluginSurfaceHost": {
+                "dc": "当前隔离页面使用的后台或客户身份宿主"
+              },
+              "pluginSurfaceId": {
+                "dc": "获准使用当前隔离页面的插件 ID"
+              },
+              "pluginSurfaceKey": {
+                "dc": "当前隔离页面的稳定表面键"
+              },
+              "pluginSurfaceVersion": {
+                "dc": "当前页面桥契约版本"
+              },
               "order": {
                 "dc": "排序号，0表示最高优先级，数值越小越靠前"
               },

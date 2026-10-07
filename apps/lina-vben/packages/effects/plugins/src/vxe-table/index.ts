@@ -1,4 +1,5 @@
 export { setupVbenVxeTable } from './init';
+export { normalizeVbenGridUsage } from './table-governance';
 export type { VxeTableGridOptions } from './types';
 export * from './use-vxe-grid';
 

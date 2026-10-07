@@ -1,0 +1,4 @@
+{
+  "plugin.shared-services.description": "为插件提供可复用的人机验证和幂等站内信能力。",
+  "plugin.shared-services.name": "LinaPro 共享服务"
+}

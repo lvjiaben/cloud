@@ -23,6 +23,7 @@ import (
 	"lina-core/internal/service/locker"
 	"lina-core/internal/service/plugin/internal/capabilityowner"
 	"lina-core/internal/service/plugin/internal/catalog"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	plugindep "lina-core/internal/service/plugin/internal/dependency"
 	"lina-core/internal/service/plugin/internal/frontend"
 	hostconfigadapter "lina-core/internal/service/plugin/internal/hostconfig"
@@ -202,6 +203,7 @@ func newServicesWithInjected(
 		pluginconfig.NewFactory("", ""),
 		hostconfigadapter.NewStaticCapabilityAdapter(configProvider),
 		manifestresource.NewFactory(""),
+		confidentialoutbound.New(),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("create test wasm runtime: %v", err))
@@ -392,6 +394,13 @@ func (p *testIntegrationDelegateProvider) FilterPermissionMenus(ctx context.Cont
 // CanExposeBusinessEntries delegates business entry visibility checks.
 func (p *testIntegrationDelegateProvider) CanExposeBusinessEntries(ctx context.Context, pluginID string) bool {
 	return p == nil || p.service == nil || p.service.CanExposeBusinessEntries(ctx, pluginID)
+}
+
+func (p *testIntegrationDelegateProvider) ListSourceRouteBindings() []pluginhost.SourceRouteBinding {
+	if p == nil || p.service == nil {
+		return []pluginhost.SourceRouteBinding{}
+	}
+	return p.service.ListSourceRouteBindings()
 }
 
 // orgServiceForTestCapabilities returns the organization service used by plugin
@@ -1185,6 +1194,18 @@ func (testPluginsService) List(context.Context, capabilityplugincap.ListInput) (
 // ListTenantPlugins returns an empty page for registration-only tests.
 func (testPluginsService) ListTenantPlugins(context.Context, capabilityplugincap.TenantListInput) (*capmodel.PageResult[*capabilityplugincap.TenantPluginInfo], error) {
 	return &capmodel.PageResult[*capabilityplugincap.TenantPluginInfo]{Items: []*capabilityplugincap.TenantPluginInfo{}}, nil
+}
+
+func (testPluginsService) ListBusinessExtensionProviders(context.Context, capabilityplugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{}}, nil
+}
+
+func (testPluginsService) GetBusinessExtensionProviderExact(context.Context, capabilityplugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	return nil, nil
+}
+
+func (testPluginsService) GetBusinessExtensionProvidersExact(context.Context, []capabilityplugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	return []*capmodel.BusinessExtensionProviderEvidence{}, nil
 }
 
 // IsEnabled reports disabled plugin state for registration-only tests.

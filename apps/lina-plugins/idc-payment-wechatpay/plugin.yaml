@@ -1,0 +1,72 @@
+id: idc-payment-wechatpay
+name: 微信支付
+version: v0.1.0
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 微信 Native、H5 与可选 JSAPI 支付配置，由 IDC Payment 统一管理支付事实。
+author: linapro
+license: Proprietary
+dependencies:
+  plugins:
+    - id: idc-payment
+      version: ">=0.1.7 <1.0.0"
+business_extensions:
+  - point: payment-method
+    version: v1
+    role: provider
+    owner: idc-payment
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: merchantId
+          type: single_line
+          label: { en-US: Merchant ID, zh-CN: 微信支付商户号 }
+          required: true
+          maximum_length: 256
+        - key: appId
+          type: single_line
+          label: { en-US: Application ID, zh-CN: 应用 AppID }
+          required: true
+          maximum_length: 256
+        - key: certificateSerialNo
+          type: single_line
+          label: { en-US: Merchant certificate serial, zh-CN: 商户证书序列号 }
+          required: true
+          maximum_length: 256
+        - key: privateKey
+          type: secret
+          label: { en-US: Merchant private key, zh-CN: 商户私钥 }
+          required: true
+          maximum_length: 32768
+        - key: wechatPayPublicKeyId
+          type: single_line
+          label: { en-US: WeChat Pay public key ID, zh-CN: 微信支付公钥 ID }
+          required: true
+          maximum_length: 256
+        - key: publicKey
+          type: secret
+          label: { en-US: WeChat Pay public key, zh-CN: 微信支付平台公钥 }
+          required: true
+          maximum_length: 32768
+        - key: apiV3Key
+          type: secret
+          label: { en-US: APIv3 key, zh-CN: APIv3 密钥 }
+          required: true
+          minimum_length: 32
+          maximum_length: 32
+        - key: jsapiAuthorized
+          type: boolean
+          label: { en-US: JSAPI product authorized, zh-CN: 已开通公众号 JSAPI 支付 }
+    methods: [capabilities.describe]
+    provider_metadata:
+      type: payment-method-contract
+      version: v1
+      values:
+        providerCode: wechatpay
+        endpointOrigin: https://api.mch.weixin.qq.com
+        modes: [wechat_native, wechat_h5, wechat_jsapi]
+        currencies: [CNY]

@@ -2,7 +2,7 @@
 // linked local accounts through the bound provider seam, stays fail-closed
 // without a provider, reuses the shared login policy, and delegates
 // auto-provisioning through the provider. Linkage storage is provider-owned
-// (linapro-extlogin-core), so these tests bind a mock extidspi.Provider; only
+// (extlogin-core), so these tests bind a mock extidspi.Provider; only
 // sys_user fixtures touch the database. Assertions use stable bizerr codes
 // rather than localized text so they do not depend on i18n resource loading.
 
@@ -265,7 +265,7 @@ func TestExternalLoginProviderPolicyErrorPassesThrough(t *testing.T) {
 	subject := fmt.Sprintf("conflict-%d", time.Now().UnixNano())
 	email := "conflict@example.com"
 	_, err := svc.LoginByExternalIdentity(ctx, ExternalLoginInput{
-		PluginID:           "linapro-oidc-google",
+		PluginID:           "oidc-google",
 		Provider:           "google",
 		Subject:            subject,
 		Email:              email,
@@ -282,7 +282,7 @@ func TestExternalLoginProviderPolicyErrorPassesThrough(t *testing.T) {
 	if call.Provider != "google" || call.Subject != subject || call.Email != email {
 		t.Fatalf("provider received unexpected provisioning input: %#v", call)
 	}
-	if call.PluginID != "linapro-oidc-google" {
+	if call.PluginID != "oidc-google" {
 		t.Fatalf("expected host-stamped plugin ID, got %q", call.PluginID)
 	}
 	if !call.AllowAutoProvision {

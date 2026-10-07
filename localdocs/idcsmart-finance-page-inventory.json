@@ -1,0 +1,1206 @@
+{
+  "source": "https://docs.idcsmart.com/docs/财务系统使用文档",
+  "retrievedAt": "2026-09-04T06:57:06.825Z",
+  "scope": "该财务使用文档根页面及可发现子页面；不含其他产品整站或外部链接",
+  "discovered": 133,
+  "discoveryComplete": true,
+  "pages": [
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档",
+      "title": "财务系统使用文档",
+      "httpStatus": 200,
+      "articleCharacters": 2396,
+      "articleSha256": "68e7200ed076211cf8cab7070a08f0308ee958d32e960d05d0232ffa33bc038d",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移",
+      "title": "安装+升级+迁移",
+      "httpStatus": 200,
+      "articleCharacters": 131,
+      "articleSha256": "05b8aa95bac5472e636d7461c801643e3a780caa92a070d66f7b07feaa9942c2",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问",
+      "title": "常见疑问",
+      "httpStatus": 200,
+      "articleCharacters": 305,
+      "articleSha256": "387f232260fa049dd1ee4595420e5d4db482fe40b7d191e8d074607f6681879f",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/安装包在哪里下载？",
+      "title": "安装包在哪里下载？",
+      "httpStatus": 200,
+      "articleCharacters": 54,
+      "articleSha256": "bbbbdcdff7d26b4102dcea7d20b6e4227a00bde886b9b1cc35ede9c7db473705",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/更改工单说明",
+      "title": "更改工单说明",
+      "httpStatus": 200,
+      "articleCharacters": 146,
+      "articleSha256": "16c331996b0de3bb71cfa723a513a88bcaa06167da17566a31dbe5496cd5fa43",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/更换授权失败如何处理",
+      "title": "更换授权失败如何处理",
+      "httpStatus": 200,
+      "articleCharacters": 360,
+      "articleSha256": "d1a2686c52caaa67b127cdb86ec91cfbab55f1e1d37481a7e500bc05356dbef0",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/更换主控",
+      "title": "更换主控",
+      "httpStatus": 200,
+      "articleCharacters": 200,
+      "articleSha256": "d3e442ae704ea85be80ad08423604ee5aad3ec52d52ea59a8771dfbc0871dc60",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/管理员重置密码工具",
+      "title": "管理员重置密码工具",
+      "httpStatus": 200,
+      "articleCharacters": 399,
+      "articleSha256": "06f4273c1e7f38beebff29c21f2cea7ca232a707802c9ae62f4f7c3ba96f34d2",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/魔方财务如何开启调试",
+      "title": "魔方财务如何开启调试",
+      "httpStatus": 200,
+      "articleCharacters": 245,
+      "articleSha256": "567ff36e05f86dd23879baf5ab40558008dd44a25ec8c09c10180cfb026475de",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/如何将免费版升级到专业版",
+      "title": "如何将免费版升级到专业版",
+      "httpStatus": 200,
+      "articleCharacters": 313,
+      "articleSha256": "6b54f51d1e7af0072dd4b69a51f743dfa32c01c0b4c1cbc90e4e6af38ae2949b",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/重置授权",
+      "title": "重置授权",
+      "httpStatus": 200,
+      "articleCharacters": 286,
+      "articleSha256": "98bad565b041bc0ae31759aa83421b4246e81d7493c917606f73fee7acf09a4c",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/常见疑问/自定义admin路径",
+      "title": "自定义admin路径",
+      "httpStatus": 200,
+      "articleCharacters": 374,
+      "articleSha256": "a9b450330017d70ebbe9cd5c1e746c980841d04a13e80b5022ae56f7d3360355",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/如何安装魔方财务",
+      "title": "如何安装魔方财务",
+      "httpStatus": 200,
+      "articleCharacters": 1540,
+      "articleSha256": "7c60ae375c99acd3e1974367a4fd152cdeac3712e21439a834e7846a52d6ebde",
+      "imageCount": 12,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/如何升级魔方财务",
+      "title": "如何升级魔方财务",
+      "httpStatus": 200,
+      "articleCharacters": 569,
+      "articleSha256": "a896e07a462198e6efb5832e7b126e3d44da58c9686ff76880c0efe076db32e4",
+      "imageCount": 9,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/系统牵移",
+      "title": "系统牵移",
+      "httpStatus": 200,
+      "articleCharacters": 116,
+      "articleSha256": "ca9ab24ebfa9283ceb29329fb5ee4736795e896c2114bb0e21ae3ee3a7ee9cd1",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/系统牵移/仅数据库牵移",
+      "title": "仅数据库牵移",
+      "httpStatus": 200,
+      "articleCharacters": 324,
+      "articleSha256": "9ba11d60904c3678fb519c7ba9a91955e1893e6d00ea6262b1aad63e1aec4b1b",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/系统牵移/跨平台主控牵移",
+      "title": "跨平台主控牵移",
+      "httpStatus": 200,
+      "articleCharacters": 1012,
+      "articleSha256": "830860744bb317c4a25f2bb8e4ef26ec95e99d934ad9173eb998d6f5e2fb5203",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/安装+升级+迁移/系统牵移/同平台牵移",
+      "title": "同平台牵移",
+      "httpStatus": 200,
+      "articleCharacters": 387,
+      "articleSha256": "b9248afde4ae13f3d4c4e0b271904365810bfede4436c10792c81bc1ae9aa128",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置",
+      "title": "财务设置",
+      "httpStatus": 200,
+      "articleCharacters": 396,
+      "articleSha256": "ca35ecbabe7ebe003f65318d7d3a0e4899b6ddda33e2ecd323eaa74b636925df",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 325,
+      "articleSha256": "26b0417736596a99c23bcf361676e777e922ebd429a14369044ffba5a6c0178b",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/常见问题/充值设置",
+      "title": "充值设置",
+      "httpStatus": 200,
+      "articleCharacters": 285,
+      "articleSha256": "c1c3c5010ef0a6fe52e505d7b0712b3c723f0070688b8a24c9a888c01a69da73",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/常见问题/帐单起始ID设置",
+      "title": "帐单起始ID设置",
+      "httpStatus": 200,
+      "articleCharacters": 412,
+      "articleSha256": "aac4d7f9d790eff2b05858b80cc80bb73110df7f751e3839f1dc181fed4afd5b",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/电子合同设置",
+      "title": "电子合同设置",
+      "httpStatus": 200,
+      "articleCharacters": 1069,
+      "articleSha256": "bdbdeb687abafd43d00c97de51284c24a2d52328c660e4a5ca338c96e2596d3e",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/订单管理",
+      "title": "订单管理",
+      "httpStatus": 200,
+      "articleCharacters": 1382,
+      "articleSha256": "9a7b956af4bbbb9fdefc28ba5c7f05b59b49fabb60d9350853de9177a3b17512",
+      "imageCount": 9,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/发票设置",
+      "title": "发票设置",
+      "httpStatus": 200,
+      "articleCharacters": 1202,
+      "articleSha256": "f48109a8ed6b296778bfe201ca2fcc029cabfabc3f39e187382ea8a126c39edb",
+      "imageCount": 9,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/货币设置",
+      "title": "货币设置",
+      "httpStatus": 200,
+      "articleCharacters": 327,
+      "articleSha256": "479318c9517fb57fb3b88ec84340d7fded3e3508617f3c06c15329a488161f76",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/财务设置/优惠码功能",
+      "title": "优惠码功能",
+      "httpStatus": 200,
+      "articleCharacters": 1525,
+      "articleSha256": "82baf0546baa5665dbbe56f50d378f526ca16e5f79fe61cd4e7c475f76f76dd0",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接",
+      "title": "第三方平台对接",
+      "httpStatus": 200,
+      "articleCharacters": 504,
+      "articleSha256": "2bdef2af3548759b09fc15b586fbea65ae0dfa62f16183e1477382d22a722564",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 464,
+      "articleSha256": "bc6b1ef1d8eff9bf57eb874a5aa9cd9ddedc57e37ade7afdca8c2e2e47bd9c79",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/常见问题/短信及邮件自动发送失败",
+      "title": "短信及邮件自动发送失败",
+      "httpStatus": 200,
+      "articleCharacters": 501,
+      "articleSha256": "34506f0ac3c3cf923f19c022c6dc55f96225c12b08a3e2b1137d4109499693a2",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/常见问题/支付宝付款时提示订单信息有错误",
+      "title": "支付宝付款时提示订单信息有错误",
+      "httpStatus": 200,
+      "articleCharacters": 465,
+      "articleSha256": "3d17d67e7396340fa74ee093f944cd1457768964cc81f7fb6f4600ef46fde4e7",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/常见问题/NOKVM机器打不开VNC如何处理",
+      "title": "NOKVM机器打不开VNC如何处理",
+      "httpStatus": 200,
+      "articleCharacters": 414,
+      "articleSha256": "ee7c267f73e102ce92016973b556b0a305c66577aba63ed220f8771b48b7c72f",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大短信接口",
+      "title": "对接各大短信接口",
+      "httpStatus": 200,
+      "articleCharacters": 425,
+      "articleSha256": "2fa25cff1f474efa479810c3fd5db5b482c0d9db6e2327bf1f4c6abf1903a036",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大短信接口/对接阿里云短信接口",
+      "title": "对接阿里云短信接口",
+      "httpStatus": 200,
+      "articleCharacters": 983,
+      "articleSha256": "4517162a00fe183902bdf49c869e698ebcdc5b889525f135f1c6c96b12fd61a7",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大短信接口/对接短信宝短信接口",
+      "title": "对接短信宝短信接口",
+      "httpStatus": 200,
+      "articleCharacters": 992,
+      "articleSha256": "bdf13a656054616dd7ab28003b2319f6231b43891cadf2c06ffc720d6b539f79",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大短信接口/对接塞邮短信接口",
+      "title": "对接塞邮短信接口",
+      "httpStatus": 200,
+      "articleCharacters": 932,
+      "articleSha256": "aa8d8e120ac9ac7462b39868cd923c413c49f5b23de12e5ba78629b6c6043139",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大短信接口/对接智简魔方短信接口",
+      "title": "对接智简魔方短信接口",
+      "httpStatus": 200,
+      "articleCharacters": 1353,
+      "articleSha256": "7d50d5a10421b88c5aea071bcb2fa9f3b8ee90bc392eeddf34819b051b12391a",
+      "imageCount": 13,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台",
+      "title": "对接各大实名平台",
+      "httpStatus": 200,
+      "articleCharacters": 492,
+      "articleSha256": "c1944c0eede3d0258d896d80a0908d926e2002c7d7b99c08037f3c91a51e6c01",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台/阿里云三、四要素",
+      "title": "阿里云三、四要素",
+      "httpStatus": 200,
+      "articleCharacters": 1390,
+      "articleSha256": "ab32a627cf6dbd78c304d9737b03dc431b9ef6277de7cc4f916f00581aa8753d",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台/阿里云身份证二要素",
+      "title": "阿里云身份证二要素",
+      "httpStatus": 200,
+      "articleCharacters": 1347,
+      "articleSha256": "4fb2ad99bc00e5c8bccbb650823e3455a51e18e79d16212b6d4786a2ad58b7d9",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台/手机三要素",
+      "title": "手机三要素",
+      "httpStatus": 200,
+      "articleCharacters": 1409,
+      "articleSha256": "bcc6f774f9a7a841af2b68f902ad1b827701dd708180b17b7df91e16227deb03",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台/芝麻信用",
+      "title": "芝麻信用",
+      "httpStatus": 200,
+      "articleCharacters": 1799,
+      "articleSha256": "8df6562da61b4f208dddfd1f3b9ecadc6f1cedd8cd35ca774148519a624ea8a6",
+      "imageCount": 13,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大实名平台/智简魔方芝麻信用",
+      "title": "智简魔方芝麻信用",
+      "httpStatus": 200,
+      "articleCharacters": 1518,
+      "articleSha256": "da57276f6ef517d084729ab2e1ae93064dc2236435857dd1422c585ae06476f2",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口",
+      "title": "对接各大支付接口",
+      "httpStatus": 200,
+      "articleCharacters": 3440,
+      "articleSha256": "0f8e9f640ebee94418896c8818e3e8aad3ed96389beab249e39feb75f7c8093b",
+      "imageCount": 22,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接线下转账",
+      "title": "对接线下转账",
+      "httpStatus": 200,
+      "articleCharacters": 819,
+      "articleSha256": "6398089baf147a795f99a096c041f26449ab3ab167fe7b7d4e866fe5373d35c6",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接支付宝当面付插件",
+      "title": "对接支付宝当面付插件",
+      "httpStatus": 200,
+      "articleCharacters": 1760,
+      "articleSha256": "9ba8e1b0426f52a65df880970d3b4e565426a784714c37bea454d751d1916717",
+      "imageCount": 14,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接支付宝网页支付",
+      "title": "对接支付宝网页支付",
+      "httpStatus": 200,
+      "articleCharacters": 1151,
+      "articleSha256": "279cfa06517ae695ee628afa8e75b543db19bff549cea4a4075374db838fef45",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接支付宝支付插件",
+      "title": "对接支付宝支付插件",
+      "httpStatus": 200,
+      "articleCharacters": 1806,
+      "articleSha256": "525eed62165acb73d07e471959fe2752d452236d394b1e68ae8a89aa5c289c12",
+      "imageCount": 14,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接支付接口",
+      "title": "对接支付接口",
+      "httpStatus": 200,
+      "articleCharacters": 2494,
+      "articleSha256": "ec3368bb456e5c6c7390029a9eefc46a6b12eee84484c64df747294f9452b114",
+      "imageCount": 17,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/对接Stripe",
+      "title": "对接Stripe",
+      "httpStatus": 200,
+      "articleCharacters": 899,
+      "articleSha256": "6ed8e6128b427f4e80d502eaa1ac146a96bc7b3269b3c3ac5665add3aa329cb3",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/微信支付",
+      "title": "微信支付",
+      "httpStatus": 200,
+      "articleCharacters": 1631,
+      "articleSha256": "b24bf5028113d6237768dbc4d544c84eecef0c0fdf74ae02dffae8c3a3837511",
+      "imageCount": 14,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接各大支付接口/支付宝网页支付常见问题排查",
+      "title": "支付宝网页支付常见问题排查",
+      "httpStatus": 200,
+      "articleCharacters": 784,
+      "articleSha256": "07ebe41aacda54fc618b19249ea689efcf792c1a835c478ae6bb463325d11090",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接魔方云平台",
+      "title": "对接魔方云平台",
+      "httpStatus": 200,
+      "articleCharacters": 4972,
+      "articleSha256": "8affdf2e777f012b12a129d6b6b84dfe97b257f8f932a9bf9e0c25e4270f708c",
+      "imageCount": 14,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接魔方DCIM管理平台-服务器",
+      "title": "对接魔方DCIM管理平台-服务器",
+      "httpStatus": 200,
+      "articleCharacters": 2670,
+      "articleSha256": "76c695aa71028aa67569a6619afd24f30af4493095fd83ba9b8de2b74b24372d",
+      "imageCount": 16,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接魔方DCIM管理平台-机柜整租",
+      "title": "对接魔方DCIM管理平台-机柜整租",
+      "httpStatus": 200,
+      "articleCharacters": 1560,
+      "articleSha256": "de764dae82d59139a15fdb5f4afe684bbac93ae139e70d3a3831dd9679a49214",
+      "imageCount": 13,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/对接NOKVM云平台",
+      "title": "对接NOKVM云平台",
+      "httpStatus": 200,
+      "articleCharacters": 2297,
+      "articleSha256": "b5db1cb6acccae42151557fdf8117dec797dbc4dc494cb00358d5bae8f9d0de7",
+      "imageCount": 10,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/第三方平台对接/魔方财务对接DCIM客户端",
+      "title": "魔方财务对接DCIM客户端",
+      "httpStatus": 200,
+      "articleCharacters": 967,
+      "articleSha256": "562a2b0c6e0247a2d99feb9444615b3818f9423456bc3a20d1d066821166487b",
+      "imageCount": 9,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/工单设置",
+      "title": "工单设置",
+      "httpStatus": 200,
+      "articleCharacters": 351,
+      "articleSha256": "b24052c4070a8dc00f6f0d58a919bd1bdc8e723383972868d4c94f030470281e",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/工单设置/工单部门设置",
+      "title": "工单部门设置",
+      "httpStatus": 200,
+      "articleCharacters": 786,
+      "articleSha256": "11e627813d1eb2ae0c912de62ace1eb5fb06fd65100b761a2967ca693e456c43",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/工单设置/工单查询、统计与管理",
+      "title": "工单查询、统计与管理",
+      "httpStatus": 200,
+      "articleCharacters": 1041,
+      "articleSha256": "337d24a33dd7eb5718d26578c9fd2b88250713da58753ef6a7a7eb3b64f36d5b",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/工单设置/工单传递设置",
+      "title": "工单传递设置",
+      "httpStatus": 200,
+      "articleCharacters": 670,
+      "articleSha256": "7ca829826c979833378e477812735e7913a063f2cc943b21ca870811b1ef86fc",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/工单设置/工单状态设置",
+      "title": "工单状态设置",
+      "httpStatus": 200,
+      "articleCharacters": 557,
+      "articleSha256": "430f48dedd30c38e7075e558bb785596a6431d299704e2157ed2e1973d588916",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/基础使用教程",
+      "title": "基础使用教程",
+      "httpStatus": 200,
+      "articleCharacters": 733,
+      "articleSha256": "e32a4a04ee44606406e995f056ce2ed59b7ef7bfe23b2c99acb069d32670f712",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/可扩展设置说明",
+      "title": "可扩展设置说明",
+      "httpStatus": 200,
+      "articleCharacters": 748,
+      "articleSha256": "51d528a4272e223f42d3c5ffd22c78b12f804fb197693cba5728d5f5636e0ed0",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/可扩展设置说明/魔方财务自定义系统语言文件",
+      "title": "魔方财务自定义系统语言文件",
+      "httpStatus": 200,
+      "articleCharacters": 1110,
+      "articleSha256": "7e263bf6fd6dcb6ee19a5e6f73808e2f860b2d5c7a1b17a05552766de2c4172e",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/可扩展设置说明/系统主题能力",
+      "title": "系统主题能力",
+      "httpStatus": 200,
+      "articleCharacters": 603,
+      "articleSha256": "a83c6ad0ce71dc413b825fae3fcb7ad68a223c123155474e4802b0564c1670ed",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/可扩展设置说明/系统API",
+      "title": "系统API",
+      "httpStatus": 200,
+      "articleCharacters": 1792,
+      "articleSha256": "9ce6d2bebfd3ee39e3d7d857b5713d7294b5e98f1a9cbddc2a1974cb2be57d60",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置",
+      "title": "客户设置",
+      "httpStatus": 200,
+      "articleCharacters": 362,
+      "articleSha256": "62baf433d96449ab55d4bc7e44cf657790214237bcf82d4509e8b4cfcc2e62a6",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 354,
+      "articleSha256": "05792dde40362e5dae8b9818ba9d3f194e89c2d7012bc58b253d9b13c65c34b5",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/常见问题/快速打开客户详情",
+      "title": "快速打开客户详情",
+      "httpStatus": 200,
+      "articleCharacters": 455,
+      "articleSha256": "bb1559c31c54d961878abd25f3183171d6e2e9868fc84f34c0a04cd6fc487972",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/常见问题/手机绑定",
+      "title": "手机绑定",
+      "httpStatus": 200,
+      "articleCharacters": 453,
+      "articleSha256": "cf94db0bfb26a5651a449bb0bff4b4b5ea39afe28f2b0abe339cb77d39a18e20",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/常见问题/帐户注销",
+      "title": "帐户注销",
+      "httpStatus": 200,
+      "articleCharacters": 367,
+      "articleSha256": "ae366d2368e4fdf937c439ec0667f1127c61af67891a37038e69079953f65ef2",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户等级设置",
+      "title": "客户等级设置",
+      "httpStatus": 200,
+      "articleCharacters": 648,
+      "articleSha256": "3b143edba1951ff71eada82d8097ba7b6890dfa8cf7df26975240a9389aff10b",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户分组设置",
+      "title": "客户分组设置",
+      "httpStatus": 200,
+      "articleCharacters": 757,
+      "articleSha256": "cec666b7e0654265e556c2d9f302ad3a544b7fbafd0e60eb9f2db9ee861798c9",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理",
+      "title": "客户管理",
+      "httpStatus": 200,
+      "articleCharacters": 3719,
+      "articleSha256": "f09d062738216ee20c2cfb837d2d2a2679b2843f608d4248ed09d01624343df0",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/产品／服务",
+      "title": "产品/服务",
+      "httpStatus": 200,
+      "articleCharacters": 851,
+      "articleSha256": "b77d6aaca30f1150a2c021e8d7559e5e93b1eb646a1acdf05f6b3e71886cc2f5",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/附件",
+      "title": "附件",
+      "httpStatus": 200,
+      "articleCharacters": 347,
+      "articleSha256": "d067cea110e4f29a1de7e9a5339bf59c14e17a9576efef09deb390f84f3d6790",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/个人资料",
+      "title": "个人资料",
+      "httpStatus": 200,
+      "articleCharacters": 801,
+      "articleSha256": "93fd9614efb51c85e29ee381c8abf37ede398bb59ed086ca57960ed4e18cd76f",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/跟进状态",
+      "title": "跟进状态",
+      "httpStatus": 200,
+      "articleCharacters": 454,
+      "articleSha256": "d5035a49963c14086d639f8f91d25b7a395c78e204642f6e06b5dde205f1a153",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/工单",
+      "title": "工单",
+      "httpStatus": 200,
+      "articleCharacters": 578,
+      "articleSha256": "f783c784fff73d8d0173a73ffa893f1082bad1a9e3767f3100a83b4bc633cea5",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/交易记录",
+      "title": "交易记录",
+      "httpStatus": 200,
+      "articleCharacters": 662,
+      "articleSha256": "10d62e4c1abb234160197caba2ddb6735899c004b26f595687618e393be10c00",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/客户摘要",
+      "title": "客户摘要",
+      "httpStatus": 200,
+      "articleCharacters": 989,
+      "articleSha256": "503f7e8bde6685ce1c8138eeef3aa0128832edb5557406c60daaff8f1214ff15",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/日志",
+      "title": "日志",
+      "httpStatus": 200,
+      "articleCharacters": 399,
+      "articleSha256": "1569d3dca3bd775f34c168059c832e420cd75d0d03894d79365b9ce548e5a827",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/通知日志",
+      "title": "通知日志",
+      "httpStatus": 200,
+      "articleCharacters": 433,
+      "articleSha256": "ebfaf1c8ead7c010db252a3d06ecf31a4315d39ea536af732c884b66b82d7cf7",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/客户管理/账单",
+      "title": "账单",
+      "httpStatus": 200,
+      "articleCharacters": 819,
+      "articleSha256": "b736bb7a0a903b3d46ed89794e800dbe6f27eba74cee2b87914e43901d3723aa",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/客户设置/实名设置",
+      "title": "实名设置",
+      "httpStatus": 200,
+      "articleCharacters": 1088,
+      "articleSha256": "1b9032087233c28d09379b927d70c1877f06b848bd034e72033002e9a975d766",
+      "imageCount": 9,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他",
+      "title": "其他",
+      "httpStatus": 200,
+      "articleCharacters": 701,
+      "articleSha256": "cacf4703435aff610da34edb6a600502eb1c51114efa19dc9a51ba5faafd7304",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/财务更新后-前台用户无法登录",
+      "title": "财务更新后-前台用户无法登录",
+      "httpStatus": 200,
+      "articleCharacters": 468,
+      "articleSha256": "d9f6d52490984882b99426eb8ce93b91a31042a56285ff5c92e33e12a0a4c0fe",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/带入URL参数访问，实现指定商品／销售／推荐等",
+      "title": "带入URL参数访问，实现指定商品/销售/推荐等",
+      "httpStatus": 200,
+      "articleCharacters": 1739,
+      "articleSha256": "fe2ecb1989de6793747dc6a195e9aa420b7e54f2fe50500133e909f46b7f4aa2",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/短信支付接口",
+      "title": "短信支付接口",
+      "httpStatus": 200,
+      "articleCharacters": 992,
+      "articleSha256": "cd4f170b8e005df60b53dd49dad684cb791ee6084a60970a0ec400c79a786c12",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/可配置选项名称规范",
+      "title": "可配置选项名称规范",
+      "httpStatus": 200,
+      "articleCharacters": 709,
+      "articleSha256": "d28e0aa16ca50cc4fc8a9ef3e23c42282de142357f4aac3ab87051dfd9bf3881",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/魔方财务对接裸金属",
+      "title": "魔方财务对接裸金属",
+      "httpStatus": 200,
+      "articleCharacters": 2120,
+      "articleSha256": "5be8b4282f74a74bef428f0605928dab39303d1deade93593cf630bf4dc1fae2",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/魔方财务添加产品描述HTML格式",
+      "title": "魔方财务添加产品描述HTML格式",
+      "httpStatus": 200,
+      "articleCharacters": 656,
+      "articleSha256": "3b8aa3e5b332b074decdcc3a869940f2706d2b0d0a4860c75162d660c64ccd7f",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/如何开发自己的支付接口",
+      "title": "如何开发自己的支付接口",
+      "httpStatus": 200,
+      "articleCharacters": 4872,
+      "articleSha256": "765b66ca37d9e0638a9547f681358960ef75f43f2d6647d17ca5ca96914ba7f1",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/如何手动分配机器给客户",
+      "title": "如何手动分配机器给客户",
+      "httpStatus": 200,
+      "articleCharacters": 405,
+      "articleSha256": "f2204c7090f286b30d704c6422f48e56bb81f159f3b54fa1a793509ef7656eb5",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/如何修改后台路径",
+      "title": "如何修改后台路径",
+      "httpStatus": 200,
+      "articleCharacters": 467,
+      "articleSha256": "e4aadec2a85d5e9d5d649c5da32e24f85c68595b4b98e5742b278f7fb0454535",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/数据库表说明",
+      "title": "数据库表说明",
+      "httpStatus": 200,
+      "articleCharacters": 1881,
+      "articleSha256": "4fcb58d3e342a331b0d57a00366084ac7aed969e8855094718fb40c795139e51",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/智简魔方官方邮件接口配置教程",
+      "title": "智简魔方官方邮件接口配置教程",
+      "httpStatus": 200,
+      "articleCharacters": 610,
+      "articleSha256": "e01dc39087becaf43db4118218b9bbcfb5d8056eb63189a9a5cb9ea283a63829",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/SSL 上下游对接",
+      "title": "SSL 上下游对接",
+      "httpStatus": 200,
+      "articleCharacters": 587,
+      "articleSha256": "33660c9bef200df154d37189fc7ae5d2c7cf597f707b5bd2a73ee4004865beb1",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/其他/whmcs数据迁移工具",
+      "title": "whmcs数据迁移工具",
+      "httpStatus": 200,
+      "articleCharacters": 753,
+      "articleSha256": "105a0ee82cda88f7cbc1adc7d1a1bcc3cddb4b3b3e387687b641390fb0bc5480",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/商品设置",
+      "title": "商品设置",
+      "httpStatus": 200,
+      "articleCharacters": 327,
+      "articleSha256": "53de4bfdec5d0a54aef771798e1692021b10c3e00eb6ca34b2886d6638d189c2",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/商品设置/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 326,
+      "articleSha256": "71d530cda31c862f0be9e3955644e117f973b8711837ad4996924b03d6ecb332",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/商品设置/常见问题/阶段收费",
+      "title": "阶段收费",
+      "httpStatus": 200,
+      "articleCharacters": 420,
+      "articleSha256": "a933a8640ee417abfbe6ecaeff30c7125fd03e5842ee6469db06de81b43bf496",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/商品设置/商品管理（含产品转移）",
+      "title": "商品管理（含产品转移）",
+      "httpStatus": 200,
+      "articleCharacters": 1342,
+      "articleSha256": "d5394297eb379d52e75c9f94ce17104109a8879d9cda0dbe96768520a346940e",
+      "imageCount": 11,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/商品设置/上游资源（手动录入）管理",
+      "title": "上游资源（手动录入）管理",
+      "httpStatus": 200,
+      "articleCharacters": 973,
+      "articleSha256": "66c209a590c8da48aa703b201c96ad70dc4ef87c59e1ac835c209565320ea7d0",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接",
+      "title": "上下游API对接",
+      "httpStatus": 200,
+      "articleCharacters": 1330,
+      "articleSha256": "a91f933cace84237f4acec2b5e8b439d90b90820338a643a071052bc8cda9165",
+      "imageCount": 12,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 349,
+      "articleSha256": "274ab9b6b436073e523557f34c58a866edfebd4044a1274e8b95478a9b05a775",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接/常见问题/上下游API对接超时",
+      "title": "上下游API对接超时",
+      "httpStatus": 200,
+      "articleCharacters": 417,
+      "articleSha256": "107a0c3a06bc8c941f55d3eccfc92346f8b72c97050fc4cc9dbd3c22fa67a4aa",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接/常见问题/下游如何手动分配对接上游的服务器",
+      "title": "下游如何手动分配对接上游的服务器",
+      "httpStatus": 200,
+      "articleCharacters": 684,
+      "articleSha256": "ffbfdbfd01a1a388b59df0439a407bbc569029e6de6e107a13848e3696a4a9ec",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接/对接上游财务",
+      "title": "对接上游财务",
+      "httpStatus": 200,
+      "articleCharacters": 1318,
+      "articleSha256": "d7e35d22b99b9bffc5f50c37104484f30a3abbd09d2de2208b0b7ec261d1f4ad",
+      "imageCount": 12,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/上下游API对接/对接上游v10",
+      "title": "对接上游v10",
+      "httpStatus": 200,
+      "articleCharacters": 510,
+      "articleSha256": "2b841c0643b10c3d81d44c29229269e5ddfcb8db4fdff379b4325b42f4d17f9b",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/系统设置",
+      "title": "系统设置",
+      "httpStatus": 200,
+      "articleCharacters": 385,
+      "articleSha256": "7c2c298e29877d5e54654bd52675fe3a8a3b785d24eaee27c8b2ca27f53a428d",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/系统设置/第三方登录设置",
+      "title": "第三方登录设置",
+      "httpStatus": 200,
+      "articleCharacters": 855,
+      "articleSha256": "caa63a367f0f62403c0335d8b8dea1c64dde930547f4e366c2a154921c87b44d",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/系统设置/定时任务设置",
+      "title": "定时任务设置",
+      "httpStatus": 200,
+      "articleCharacters": 819,
+      "articleSha256": "5158f6f82b64644c2e9fb1fc4fa0a5f3abf45edeeb0db861e810d2dc620d76d6",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/系统设置/基础设置",
+      "title": "基础设置",
+      "httpStatus": 200,
+      "articleCharacters": 903,
+      "articleSha256": "a5ed031d3acf09f12ed8358606f31b66f1afa47cd67850631add4d9d955a1896",
+      "imageCount": 6,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/销售管理",
+      "title": "销售管理",
+      "httpStatus": 200,
+      "articleCharacters": 589,
+      "articleSha256": "3fe47da3597692fed722c32f2b5ccd5f73325c719b61c4f7f7cac6ee76462db7",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/销售管理/客户分配设置",
+      "title": "客户分配设置",
+      "httpStatus": 200,
+      "articleCharacters": 465,
+      "articleSha256": "8f6abd948d641e71fb967c3998af260a2113611328a725472e78d762accf3654",
+      "imageCount": 3,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/销售管理/销售报表查看",
+      "title": "销售报表查看",
+      "httpStatus": 200,
+      "articleCharacters": 916,
+      "articleSha256": "3231d701a5110ac86cccaa6efa334c0e1cec70a0c4e8fae554b02c15a97e0831",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/销售管理/销售人员权限设置",
+      "title": "销售人员权限设置",
+      "httpStatus": 200,
+      "articleCharacters": 487,
+      "articleSha256": "b4107f83536b1e1fc47f896a93d11cc13e734f6a85042be1b6b7fb618f1fc838",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/销售管理/销售提成设置",
+      "title": "销售提成设置",
+      "httpStatus": 200,
+      "articleCharacters": 594,
+      "articleSha256": "6df23db5eaa67edd076c5cfce7eefcad173350a7a3fb094cca57dbd7feceff7b",
+      "imageCount": 2,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/运营设置",
+      "title": "运营设置",
+      "httpStatus": 200,
+      "articleCharacters": 313,
+      "articleSha256": "cbbbc30e897b79358ca16a42aabfaba341a58802e55ad4055d1a821fb940ffdf",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/运营设置/推介计划",
+      "title": "推介计划",
+      "httpStatus": 200,
+      "articleCharacters": 2016,
+      "articleSha256": "ed118811ac11d4f337cd2f72656d571dc6e130c16fcf812bb9848d8118c9b622",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/运营设置/营销推送设置",
+      "title": "营销推送设置",
+      "httpStatus": 200,
+      "articleCharacters": 1150,
+      "articleSha256": "791907b1fa09d861f23e11a4046d37012f94dca2a5fb105b02a315a2cf118953",
+      "imageCount": 8,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置",
+      "title": "站务设置",
+      "httpStatus": 200,
+      "articleCharacters": 367,
+      "articleSha256": "cb901c79775b919077a4851415ad526885f0b1c4f50015fda22edf2340a09637",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置/常见问题",
+      "title": "常见问题",
+      "httpStatus": 200,
+      "articleCharacters": 380,
+      "articleSha256": "926b2d024b50ae64eb56e97ce2eb7cad5a04c923179557720ae6a38b19be2e99",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置/常见问题/立即订购没有商品",
+      "title": "立即订购没有商品",
+      "httpStatus": 200,
+      "articleCharacters": 398,
+      "articleSha256": "e71824b201680a6ab2c719c060a2e94b2697bb5c5c6e354982ea7df2eecfc358",
+      "imageCount": 0,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置/会员中心导航管理",
+      "title": "会员中心导航管理",
+      "httpStatus": 200,
+      "articleCharacters": 1174,
+      "articleSha256": "3005270148d2a03ea1a780e14a39f82a021e7ee2bd9ed69ca443ae76e04fc347",
+      "imageCount": 7,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置/魔方财务logo修改",
+      "title": "魔方财务logo修改",
+      "httpStatus": 200,
+      "articleCharacters": 599,
+      "articleSha256": "ed1ca306264f0ad7f75a2a5744f32c7d599f0a10bfb5574b6f29699767878062",
+      "imageCount": 4,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/站务设置/主题模板设置",
+      "title": "主题模板设置",
+      "httpStatus": 200,
+      "articleCharacters": 298,
+      "articleSha256": "fedd16301c66281eda079256fb846dde04434a46ee89f413e5cd2a5023d60b1e",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/账单系统",
+      "title": "账单系统",
+      "httpStatus": 200,
+      "articleCharacters": 3326,
+      "articleSha256": "7cbaf2e858e60537760186fe11fb79dda1b6379b0875a1315aeca8f7ffa51aec",
+      "imageCount": 19,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/账单系统/交易流水",
+      "title": "交易流水",
+      "httpStatus": 200,
+      "articleCharacters": 490,
+      "articleSha256": "2eb0753955ba0dd81d5d4a87d7a44fb47577462c5f4dcbb6ecc334f598cd47a8",
+      "imageCount": 1,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/账单系统/账单",
+      "title": "账单",
+      "httpStatus": 200,
+      "articleCharacters": 1020,
+      "articleSha256": "17d7c65b8803e81018bc5fef07f420298ee0404d7d73cc0dff6c479b884a25e7",
+      "imageCount": 5,
+      "error": null
+    },
+    {
+      "url": "https://docs.idcsmart.com/docs/财务系统使用文档/账单系统/账单逻辑",
+      "title": "账单逻辑",
+      "httpStatus": 200,
+      "articleCharacters": 762,
+      "articleSha256": "3df8c3caa643d1ab37cdb73fe9f558181047e0de399224d95c32731ce7548a09",
+      "imageCount": 1,
+      "error": null
+    }
+  ]
+}

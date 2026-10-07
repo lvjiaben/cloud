@@ -73,20 +73,20 @@ plugin:
   dynamic:
     storagePath: "/app/data/wasm"
   autoEnable:
-    - id: "linapro-tenant-core"
+    - id: "tenant-core"
       withMockData: true
-    - id: "linapro-org-core"
+    - id: "org-core"
       withMockData: true
-    - id: "linapro-content-notice"
+    - id: "content-notice"
       withMockData: true
-    - id: "linapro-monitor-loginlog"
+    - id: "monitor-loginlog"
       withMockData: true
-    - id: "linapro-monitor-online"
+    - id: "monitor-online"
       withMockData: true
-    - id: "linapro-monitor-operlog"
+    - id: "monitor-operlog"
       withMockData: true
-    - id: "linapro-monitor-server"
+    - id: "monitor-server"
       withMockData: true
-    # linapro-ops-demo-guard protects risky actions in public demo environments.
-    - id: "linapro-ops-demo-guard"
+    # ops-demo-guard protects risky actions in public demo environments.
+    - id: "ops-demo-guard"
       withMockData: false

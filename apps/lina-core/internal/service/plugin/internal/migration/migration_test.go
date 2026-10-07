@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -14,6 +15,107 @@ import (
 	"lina-core/internal/service/plugin/internal/plugintypes"
 	"lina-core/internal/service/plugin/internal/testutil"
 )
+
+// TestExecuteManifestSQLFilesUpgradeInheritsCommittedAssets verifies source
+// upgrades execute only new or changed assets, while stable unchanged assets
+// are inherited from the previous release. Concurrent retries share the same
+// per-plugin database fence and cannot execute a new asset twice.
+func TestExecuteManifestSQLFilesUpgradeInheritsCommittedAssets(t *testing.T) {
+	var (
+		services  = testutil.NewServices()
+		ctx       = context.Background()
+		pluginID  = "plugin-dev-migration-inheritance"
+		tableName = "plugin_migration_inheritance_log"
+		assetOne  = &catalog.ArtifactSQLAsset{
+			Key:     "001-create-and-seed.sql",
+			Content: fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (marker VARCHAR(32) PRIMARY KEY); INSERT INTO %s (marker) VALUES ('base');", tableName, tableName),
+		}
+		assetTwo = &catalog.ArtifactSQLAsset{
+			Key:     "002-new-upgrade.sql",
+			Content: fmt.Sprintf("INSERT INTO %s (marker) VALUES ('new');", tableName),
+		}
+	)
+	artifactPath := testutil.CreateTestRuntimeStorageArtifact(
+		t,
+		pluginID,
+		"Migration Inheritance Plugin",
+		"v1.0.0",
+		[]*catalog.ArtifactSQLAsset{assetOne},
+		nil,
+	)
+	manifest, err := services.Catalog.LoadManifestFromArtifactPath(artifactPath)
+	if err != nil {
+		t.Fatalf("load migration inheritance manifest: %v", err)
+	}
+
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	dropTestTableIfExists(t, ctx, tableName)
+	t.Cleanup(func() {
+		dropTestTableIfExists(t, ctx, tableName)
+		testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	})
+
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync initial migration release: %v", err)
+	}
+	if err = services.Migration.ExecuteManifestSQLFiles(ctx, manifest, plugintypes.MigrationDirectionInstall); err != nil {
+		t.Fatalf("execute fresh install migrations: %v", err)
+	}
+	assertTestTableRowCount(t, ctx, tableName, 1)
+	if _, err = g.DB().Exec(ctx, `UPDATE sys_plugin_migration
+SET migration_key='install-step-001'
+WHERE plugin_id=? AND phase=?`, pluginID, plugintypes.MigrationDirectionInstall.String()); err != nil {
+		t.Fatalf("convert initial ledger row to legacy positional identity: %v", err)
+	}
+
+	manifest.Version = "v1.0.1"
+	manifest.RuntimeArtifact.Manifest.Version = manifest.Version
+	manifest.RuntimeArtifact.InstallSQLAssets = []*catalog.ArtifactSQLAsset{assetOne, assetTwo}
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync upgraded migration release: %v", err)
+	}
+
+	start := make(chan struct{})
+	errorsByWorker := make(chan error, 2)
+	var workers sync.WaitGroup
+	for range 2 {
+		workers.Add(1)
+		go func() {
+			defer workers.Done()
+			<-start
+			errorsByWorker <- services.Migration.ExecuteManifestSQLFiles(
+				ctx,
+				manifest,
+				plugintypes.MigrationDirectionUpgrade,
+			)
+		}()
+	}
+	close(start)
+	workers.Wait()
+	close(errorsByWorker)
+	for workerErr := range errorsByWorker {
+		if workerErr != nil {
+			t.Fatalf("concurrent upgrade migration failed: %v", workerErr)
+		}
+	}
+	assertTestTableRowCount(t, ctx, tableName, 2)
+	assertMigrationRowCount(t, ctx, pluginID, plugintypes.MigrationDirectionUpgrade, 2)
+
+	assetOneChanged := &catalog.ArtifactSQLAsset{
+		Key:     assetOne.Key,
+		Content: fmt.Sprintf("INSERT INTO %s (marker) VALUES ('changed');", tableName),
+	}
+	manifest.Version = "v1.0.2"
+	manifest.RuntimeArtifact.Manifest.Version = manifest.Version
+	manifest.RuntimeArtifact.InstallSQLAssets = []*catalog.ArtifactSQLAsset{assetOneChanged, assetTwo}
+	if _, err = services.Store.SyncManifest(ctx, manifest); err != nil {
+		t.Fatalf("sync changed-asset release: %v", err)
+	}
+	if err = services.Migration.ExecuteManifestSQLFiles(ctx, manifest, plugintypes.MigrationDirectionUpgrade); err != nil {
+		t.Fatalf("execute changed-asset upgrade: %v", err)
+	}
+	assertTestTableRowCount(t, ctx, tableName, 3)
+}
 
 // TestExecuteManifestSQLFilesReplaysInstallSQL verifies that install SQL can be
 // replayed after uninstall and still records a clean migration sequence.

@@ -300,17 +300,17 @@
 系统 SHALL 要求插件菜单落入语义对应的宿主目录，而非统一归入插件管理目录。
 
 #### Scenario:组织插件挂载菜单
-- **当** `linapro-org-core` 将其菜单同步到宿主时
+- **当** `org-core` 将其菜单同步到宿主时
 - **则** 其菜单挂载到 `组织管理`
 - **且** 不挂载到 `扩展中心`
 
 #### Scenario:内容插件挂载菜单
-- **当** `linapro-content-notice` 将其菜单同步到宿主时
+- **当** `content-notice` 将其菜单同步到宿主时
 - **则** 其菜单挂载到 `内容管理`
 - **且** 不挂载到 `扩展中心`
 
 #### Scenario:监控插件挂载菜单
-- **当** `linapro-monitor-online`、`linapro-monitor-server`、`linapro-monitor-operlog` 或 `linapro-monitor-loginlog` 将菜单同步到宿主时
+- **当** `monitor-online`、`monitor-server`、`monitor-operlog` 或 `monitor-loginlog` 将菜单同步到宿主时
 - **则** 这些菜单挂载到 `系统监控`
 - **且** `扩展中心/插件管理` 仍负责安装和启停管理
 
@@ -319,7 +319,7 @@
 系统 SHALL 在某级目录下没有可见子菜单时自动隐藏该目录，避免默认后台出现空壳导航。
 
 #### Scenario:内容管理无可见菜单
-- **当** `linapro-content-notice` 未安装、未启用或当前用户无权访问其菜单时
+- **当** `content-notice` 未安装、未启用或当前用户无权访问其菜单时
 - **则** `内容管理` 不出现在左侧导航中
 
 #### Scenario:部分系统监控插件缺失
@@ -373,14 +373,14 @@
 从动态插件路由声明生成的按钮权限菜单 SHALL 挂载在所属动态插件页面菜单或插件根菜单下。不得在菜单管理中显示为与业务入口断开的浮动按钮集合。
 
 #### Scenario:动态插件路由按钮是插件菜单的子节点
-- **当** `linapro-demo-dynamic` 已启用且动态路由权限已同步时
+- **当** `demo-dynamic` 已启用且动态路由权限已同步时
 - **则** 对应的按钮权限作为该插件页面菜单或插件根菜单的子节点出现
-- **且** 菜单管理不显示大量以 `Dynamic Route Permission:linapro-demo-dynamic:` 为前缀的顶层或错误挂载的按钮
+- **且** 菜单管理不显示大量以 `Dynamic Route Permission:demo-dynamic:` 为前缀的顶层或错误挂载的按钮
 
 #### Scenario:动态插件路由按钮显示可读的英文名称
-- **当** 管理员在 `en-US` 下的菜单管理中查看 `linapro-demo-dynamic` 子按钮时
+- **当** 管理员在 `en-US` 下的菜单管理中查看 `demo-dynamic` 子按钮时
 - **则** 动态路由按钮名称显示可读的英文资源和动作名称
-- **且** 不显示原始的 `Dynamic Route Permission:linapro-demo-dynamic:*` 占位文本
+- **且** 不显示原始的 `Dynamic Route Permission:demo-dynamic:*` 占位文本
 
 #### Scenario:动态插件按钮保持可分配
 - **当** 管理员在角色授权树中查看动态插件权限时

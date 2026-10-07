@@ -148,6 +148,9 @@ func (s *serviceImpl) loadRuntimeManifestFromArtifact(artifactPath string) (*Man
 		DefaultInstallMode:  strings.TrimSpace(artifact.Manifest.DefaultInstallMode),
 		Description:         strings.TrimSpace(artifact.Manifest.Description),
 		Dependencies:        plugintypes.CloneDependencySpec(artifact.Manifest.Dependencies),
+		BusinessExtensions:  cloneBusinessExtensionDeclarations(artifact.Manifest.BusinessExtensions),
+		AdminSurfaces:       cloneFrontendSurfaceDeclarations(artifact.Manifest.AdminSurfaces),
+		CustomerSurfaces:    cloneFrontendSurfaceDeclarations(artifact.Manifest.CustomerSurfaces),
 		Menus:               artifact.Manifest.Menus,
 		PublicAssets:        ClonePublicAssetSpecs(artifact.Manifest.PublicAssets),
 		ManifestPath:        "",
@@ -180,6 +183,9 @@ func (s *serviceImpl) LoadManifestFromYAML(filePath string, manifest *Manifest) 
 	}
 	if err := validateManifestDependencySchema(content, filePath); err != nil {
 		return err
+	}
+	if err := validateYAMLBusinessExtensionSchema(content); err != nil {
+		return gerror.Wrapf(err, "plugin business extension schema contains unsupported fields: %s", filePath)
 	}
 	return yaml.Unmarshal(content, manifest)
 }

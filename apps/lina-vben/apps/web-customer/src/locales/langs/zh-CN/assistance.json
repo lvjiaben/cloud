@@ -1,0 +1,9 @@
+{
+  "title": "客户模拟登录",
+  "loading": "正在安全进入客户中心…",
+  "banner": "正在模拟登录 {customer}，剩余 {minutes} 分钟；操作按该客户正常规则执行并全程留痕",
+  "bannerMobile": "模拟登录 · {minutes} 分钟",
+  "close": "关闭页面",
+  "unavailableTitle": "本次协助已经失效",
+  "unavailableDescription": "协助链接不存在、已使用、已到期、已被新会话替代或已由后台结束。请由有权限的员工重新发起。"
+}

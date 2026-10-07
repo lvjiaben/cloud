@@ -559,7 +559,7 @@ function resolveRuntimeErrorMessage(error: unknown) {
         <PluginSectionTitle test-id="plugin-upgrade-risk-section-title">
           {{ $t('pages.system.plugin.upgrade.riskSection') }}
         </PluginSectionTitle>
-        <div v-if="preview.riskHints.length > 0" class="flex flex-col gap-2">
+        <div v-if="(preview.riskHints?.length ?? 0) > 0" class="flex flex-col gap-2">
           <Alert
             v-for="hint in preview.riskHints"
             :key="hint"

@@ -35,11 +35,15 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	if err != nil {
 		return err
 	}
+	customerPort, err := input.Int("customer_port", portFromEnv("LINA_CUSTOMER_PORT", defaultCustomerPort))
+	if err != nil {
+		return err
+	}
 	// Runtime ports are applied via process env (LINAPRO_SERVER_ADDRESS and
 	// LINAPRO_BACKEND_PROXY_TARGET) when services start, so file-level port
 	// alignment against config.yaml / vite proxy literals is not required for
 	// make dev. Operators can keep default files and still override ports with
-	// LINA_CORE_PORT / LINA_VBEN_PORT environment variables.
+	// LINA_CORE_PORT / LINA_VBEN_PORT / LINA_CUSTOMER_PORT environment variables.
 	// 运行时端口在启动子进程时通过环境变量注入，make dev 不再要求改配置文件。
 	if err = ensureFrontendDeps(ctx, a); err != nil {
 		return err
@@ -56,8 +60,9 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	stopInput := commandInput{Params: map[string]string{
 		"backend_port":  strconv.Itoa(backendPort),
 		"frontend_port": strconv.Itoa(frontendPort),
+		"customer_port": strconv.Itoa(customerPort),
 	}}
-	services := devservice.Services(a.root, backendPort, frontendPort)
+	services := devservice.Services(a.root, backendPort, frontendPort, customerPort)
 	stoppedPorts, err := stopServices(a, stopInput)
 	if err != nil {
 		return err
@@ -77,7 +82,7 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	// If something else is still bound, fail fast with an actionable hint
 	// instead of letting the backend silently die with "address already in use".
 	// 停掉自身服务后再校验端口空闲，杜绝外部进程占用导致的"假成功"。
-	if err = devservice.EnsurePortsAvailable(a.portInUse, backendPort, frontendPort); err != nil {
+	if err = devservice.EnsurePortsAvailable(a.portInUse, backendPort, frontendPort, customerPort); err != nil {
 		return err
 	}
 
@@ -108,8 +113,10 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	}
 
 	services[0].StartName = backendBinary
-	services[1].StartName = "node"
-	services[1].StartArgs = append([]string{toolutil.ViteCommand(a.root)}, services[1].StartArgs...)
+	for index := 1; index < len(services); index++ {
+		services[index].StartName = "node"
+		services[index].StartArgs = append([]string{toolutil.ViteCommand(a.root)}, services[index].StartArgs...)
+	}
 	previousEnv := a.env
 	a.env = env
 	defer func() {

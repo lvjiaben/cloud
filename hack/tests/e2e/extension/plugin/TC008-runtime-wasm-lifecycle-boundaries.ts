@@ -92,7 +92,9 @@ async function expectApiFailure(
     expect(text, `${message}, body=${text}`).toContain(expectedText);
     return;
   }
-  expect(text, `${message}, status=${response.status()}`).toContain(expectedText);
+  expect(text, `${message}, status=${response.status()}`).toContain(
+    expectedText,
+  );
 }
 
 function repoRoot() {
@@ -108,7 +110,13 @@ function artifactPath(pluginID: string, version: string) {
 }
 
 function runtimeStorageArtifactPath(pluginID: string) {
-  return path.join(tempDir(), "output", `${pluginID}.wasm`);
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  const storageDir = configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
+  return path.join(storageDir, `${pluginID}.wasm`);
 }
 
 function queryPgInt(sql: string) {
@@ -224,7 +232,8 @@ function buildRuntimeArtifact(options: {
     "lina.plugin.manifest",
     Buffer.from(
       JSON.stringify({
-        description: "Runtime plugin used to verify lifecycle boundary scenarios.",
+        description:
+          "Runtime plugin used to verify lifecycle boundary scenarios.",
         id: options.id,
         menus,
         name: `${options.id}-${options.version}`,
@@ -271,7 +280,7 @@ function buildRuntimeArtifact(options: {
             resources:
               item.service === "data"
                 ? { tables: item.tables ?? [] }
-                : item.resources ?? [],
+                : (item.resources ?? []),
             service: item.service,
           })),
         ),
@@ -290,7 +299,9 @@ function writeArtifact(pluginID: string, version: string, content: Buffer) {
 }
 
 async function createAdminApiContext(): Promise<APIRequestContext> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: {
       username: config.adminUser,
@@ -304,7 +315,10 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
   );
   await anonymousApi.dispose();
 
-  expect(loginPayload?.accessToken, "管理员登录后应返回 accessToken").toBeTruthy();
+  expect(
+    loginPayload?.accessToken,
+    "管理员登录后应返回 accessToken",
+  ).toBeTruthy();
   return playwrightRequest.newContext({
     baseURL: apiBaseURL,
     extraHTTPHeaders: {
@@ -385,6 +399,10 @@ async function installPluginWithAuthorization(
 }
 
 async function uninstallPlugin(adminApi: APIRequestContext, pluginID: string) {
+  await expectApiSuccess(
+    await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+    `停止动态插件新业务失败: ${pluginID}`,
+  );
   const response = await adminApi.delete(`plugins/${pluginID}`);
   await expectApiSuccess(response, `卸载动态插件失败: ${pluginID}`);
 }
@@ -394,6 +412,12 @@ async function setPluginEnabled(
   pluginID: string,
   enabled: boolean,
 ) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      `停止动态插件新业务失败: ${pluginID}`,
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
@@ -401,6 +425,12 @@ async function setPluginEnabled(
     response,
     `切换插件状态失败: ${pluginID} enabled=${enabled}`,
   );
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      `恢复动态插件新业务失败: ${pluginID}`,
+    );
+  }
 }
 
 async function setPluginEnabledWithAuthorization(
@@ -409,6 +439,12 @@ async function setPluginEnabledWithAuthorization(
   enabled: boolean,
   authorization: HostServiceAuthorizationReq,
 ) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      `停止动态插件新业务失败: ${pluginID}`,
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
     enabled ? { data: { authorization } } : undefined,
@@ -417,6 +453,12 @@ async function setPluginEnabledWithAuthorization(
     response,
     `切换插件状态失败: ${pluginID} enabled=${enabled}`,
   );
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      `恢复动态插件新业务失败: ${pluginID}`,
+    );
+  }
 }
 
 function buildAuthorizationPayload(
@@ -498,7 +540,11 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
     const authorization = buildAuthorizationPayload(requestedHostServices);
 
     await uploadDynamicPlugin(adminApi, baseArtifactPath);
-    await installPluginWithAuthorization(adminApi, primaryPluginID, authorization);
+    await installPluginWithAuthorization(
+      adminApi,
+      primaryPluginID,
+      authorization,
+    );
     await setPluginEnabledWithAuthorization(
       adminApi,
       primaryPluginID,
@@ -507,7 +553,9 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
     );
 
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.enabled ?? 0)
+      .poll(
+        async () => (await findPlugin(adminApi, primaryPluginID))?.enabled ?? 0,
+      )
       .toBe(1);
 
     const menuKeys = [pageMenuKey, buttonMenuKey];
@@ -540,10 +588,15 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
 
     await uninstallPlugin(adminApi, primaryPluginID);
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.installed ?? 1)
+      .poll(
+        async () =>
+          (await findPlugin(adminApi, primaryPluginID))?.installed ?? 1,
+      )
       .toBe(0);
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.enabled ?? 1)
+      .poll(
+        async () => (await findPlugin(adminApi, primaryPluginID))?.enabled ?? 1,
+      )
       .toBe(0);
 
     const menuCountAfterUninstall = queryPgInt(
@@ -594,7 +647,10 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
     await uploadDynamicPlugin(adminApi, baseArtifactPath);
     await installPlugin(adminApi, primaryPluginID);
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.installed ?? 0)
+      .poll(
+        async () =>
+          (await findPlugin(adminApi, primaryPluginID))?.installed ?? 0,
+      )
       .toBe(1);
 
     const sameVersionResponse = await adminApi.post("plugins/dynamic/package", {
@@ -657,7 +713,10 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
     await uploadDynamicPlugin(adminApi, higherArtifactPath);
     await installPlugin(adminApi, primaryPluginID);
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.version ?? "")
+      .poll(
+        async () =>
+          (await findPlugin(adminApi, primaryPluginID))?.version ?? "",
+      )
       .toBe(higherVersion);
 
     writeFileSync(
@@ -675,7 +734,10 @@ test.describe("TC-4 Runtime Wasm Lifecycle Boundaries", () => {
     );
 
     await expect
-      .poll(async () => (await findPlugin(adminApi, primaryPluginID))?.version ?? "")
+      .poll(
+        async () =>
+          (await findPlugin(adminApi, primaryPluginID))?.version ?? "",
+      )
       .toBe(higherVersion);
   });
 });

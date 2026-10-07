@@ -45,12 +45,8 @@ plugin:
 	})
 
 	svc := New()
-	if path := svc.GetUploadPath(context.Background()); path != filepath.Join(expectedRepoRoot, "temp", "upload") {
-		t.Fatalf("expected upload path under repo temp, got %q", path)
-	}
-	if path := svc.GetPluginDynamicStoragePath(context.Background()); path != filepath.Join(expectedRepoRoot, "temp", "output") {
-		t.Fatalf("expected plugin storage path under repo temp, got %q", path)
-	}
+	assertSameTestPath(t, svc.GetUploadPath(context.Background()), filepath.Join(expectedRepoRoot, "temp", "upload"))
+	assertSameTestPath(t, svc.GetPluginDynamicStoragePath(context.Background()), filepath.Join(expectedRepoRoot, "temp", "output"))
 }
 
 // newTestRepoRoot creates a minimal LinaPro-like repository layout for path
@@ -83,6 +79,30 @@ func realTestPath(t *testing.T, targetPath string) string {
 		t.Fatalf("resolve real test path %s: %v", targetPath, err)
 	}
 	return realPath
+}
+
+// assertSameTestPath compares filesystem identity instead of raw Windows path
+// spelling because os.Getwd may return the same temporary directory through
+// its legacy 8.3 alias.
+func assertSameTestPath(t *testing.T, actualPath string, expectedPath string) {
+	t.Helper()
+
+	for _, path := range []string{actualPath, expectedPath} {
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatalf("create path %s for identity comparison: %v", path, err)
+		}
+	}
+	actualInfo, err := os.Stat(actualPath)
+	if err != nil {
+		t.Fatalf("stat actual path %s: %v", actualPath, err)
+	}
+	expectedInfo, err := os.Stat(expectedPath)
+	if err != nil {
+		t.Fatalf("stat expected path %s: %v", expectedPath, err)
+	}
+	if !os.SameFile(actualInfo, expectedInfo) {
+		t.Fatalf("expected path %q, got %q", expectedPath, actualPath)
+	}
 }
 
 // withWorkingDir changes the process working directory for one test and

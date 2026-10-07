@@ -1,6 +1,6 @@
 // This file defines the optional email delivery bridge used by the host notify
 // domain when channel_type=email. The concrete implementation is provided by
-// linapro-mail-core (or tests); the host must not depend on SMTP plugins.
+// mail-core (or tests); the host must not depend on SMTP plugins.
 
 package notifycap
 

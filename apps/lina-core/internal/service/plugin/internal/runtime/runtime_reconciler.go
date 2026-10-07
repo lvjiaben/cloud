@@ -189,7 +189,12 @@ func (s *serviceImpl) refreshInstalledRuntimePluginRelease(
 		return nil
 	}
 	if !s.shouldRefreshInstalledRelease(ctx, registry, desiredManifest) {
-		return nil
+		// The artifact can already be current while its host-owned menu
+		// projection is stale. This happens, for example, when an installed
+		// source plugin is converted to a dynamic surface without changing the
+		// business menu keys. Reconcile menus on every startup refresh pass so
+		// old host routes cannot keep shadowing the isolated dynamic page.
+		return s.syncPluginMenusAndPermissions(ctx, desiredManifest)
 	}
 	desiredState := strings.TrimSpace(registry.DesiredState)
 	if desiredState == "" {

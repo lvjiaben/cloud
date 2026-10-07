@@ -2,7 +2,11 @@
 
 package apidoc
 
-import "lina-core/pkg/i18nresource"
+import (
+	// Register the host-supported PostgreSQL driver for dynamic apidoc bundle tests.
+	_ "lina-core/pkg/dbdriver"
+	"lina-core/pkg/i18nresource"
+)
 
 // parseOpenAPIMessageCatalogJSON parses one apidoc bundle for focused tests.
 func parseOpenAPIMessageCatalogJSON(content []byte) (map[string]string, error) {

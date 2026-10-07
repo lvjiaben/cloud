@@ -151,6 +151,13 @@ var catalog = []ServiceDescriptor{
 		},
 	},
 	{
+		Service:      HostServiceConfidentialOutbound,
+		ResourceKind: ResourceKindNone,
+		Methods: []MethodDescriptor{
+			hostMethod(HostServiceMethodConfidentialOutboundExecute, "HostServiceMethodConfidentialOutboundExecute", "host:confidential-outbound", "HostServiceJSONRequest", "HostServiceJSONResponse"),
+		},
+	},
+	{
 		Service:      HostServiceData,
 		ResourceKind: ResourceKindTable,
 		Methods: []MethodDescriptor{
@@ -333,6 +340,9 @@ var catalog = []ServiceDescriptor{
 			hostMethod(HostServiceMethodPluginsBatchGet, "HostServiceMethodPluginsBatchGet", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
 			hostMethod(HostServiceMethodPluginsList, "HostServiceMethodPluginsList", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
 			hostMethod(HostServiceMethodPluginsListTenant, "HostServiceMethodPluginsListTenant", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
+			hostMethod(HostServiceMethodPluginsBusinessExtensionsList, "HostServiceMethodPluginsBusinessExtensionsList", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
+			hostMethod(HostServiceMethodPluginsBusinessExtensionsExact, "HostServiceMethodPluginsBusinessExtensionsExact", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
+			hostMethod(HostServiceMethodPluginsBusinessExtensionsExactBatch, "HostServiceMethodPluginsBusinessExtensionsExactBatch", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
 			hostMethod(HostServiceMethodPluginsConfigGet, "HostServiceMethodPluginsConfigGet", "host:plugins", "HostServiceConfigKeyRequest", "HostServiceConfigValueResponse"),
 			hostMethod(HostServiceMethodPluginsStateIsEnabled, "HostServiceMethodPluginsStateIsEnabled", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),
 			hostMethod(HostServiceMethodPluginsStateIsProviderEnabled, "HostServiceMethodPluginsStateIsProviderEnabled", "host:plugins", "HostServiceJSONRequest", "HostServiceJSONResponse"),

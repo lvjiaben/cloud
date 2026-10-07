@@ -39,7 +39,7 @@ var (
 		"Please select roles to delete",
 		gcode.CodeInvalidParameter,
 	)
-	// CodeRoleDataScopeDeptUnavailable reports that department data scope requires linapro-org-core.
+	// CodeRoleDataScopeDeptUnavailable reports that department data scope requires org-core.
 	CodeRoleDataScopeDeptUnavailable = bizerr.MustDefine(
 		"ROLE_DATA_SCOPE_DEPT_UNAVAILABLE",
 		"Department data scope requires the organization management plugin to be enabled",

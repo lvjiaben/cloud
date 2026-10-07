@@ -94,7 +94,12 @@ function tempArtifactPath(version: string) {
 }
 
 function runtimeStorageDir() {
-  return path.join(tempDir(), "output");
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  return configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
 }
 
 function runtimeStorageArtifactPath() {

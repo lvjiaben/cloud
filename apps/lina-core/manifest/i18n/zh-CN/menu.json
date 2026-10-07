@@ -15,12 +15,6 @@
     "dashboard": {
       "title": "工作台"
     },
-    "dashboard:analytics:list": {
-      "title": "分析页"
-    },
-    "dashboard:workspace:list": {
-      "title": "工作台"
-    },
     "developer": {
       "title": "开发中心"
     },
@@ -44,6 +38,15 @@
     },
     "extension:plugin:query": {
       "title": "插件查询"
+    },
+    "extension:plugin:business-impact": {
+      "title": "插件影响检查"
+    },
+    "extension:plugin:stop-new-business": {
+      "title": "插件停止新销售"
+    },
+    "extension:plugin:resume-new-business": {
+      "title": "插件恢复新销售"
     },
     "extension:plugin:uninstall": {
       "title": "插件卸载"

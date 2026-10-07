@@ -1,0 +1,117 @@
+{
+  "account": "Business customer account",
+  "change": {
+    "create": "Start a business profile change",
+    "created": "The change request is ready. Accept the notice again and submit the new evidence.",
+    "lead": "Select only the categories that will change here. New identity details are entered later. The current verified profile stays effective until the new review passes.",
+    "legalIdentifier": "Registration identifier",
+    "legalName": "Legal business name",
+    "reason": "Select the reason",
+    "reasonCorrection": "Identifier correction",
+    "reasonLegalName": "Legal name change",
+    "reasonOther": "Other",
+    "reasonRegistration": "Business registration change",
+    "title": "Update the verified business profile"
+  },
+  "draft": {
+    "description": "Uploaded evidence status is restored from the server. Sensitive legal and identity values are never stored in the browser and must be entered again after leaving this page.",
+    "title": "Draft restored from the server"
+  },
+  "enterpriseOnly": "This account is not a business customer and cannot use business verification.",
+  "evidence": {
+    "agent_id": "Authorized agent identity evidence",
+    "authorization_letter": "Authorization letter",
+    "business_license": "Business license",
+    "choose": "Click or drop a file",
+    "hint": "{required} · PDF/JPG/PNG · up to 5 MiB",
+    "invalid": "Choose a PDF, JPG, or PNG file no larger than 5 MiB.",
+    "lead": "The business license and legal representative identity evidence are required. An authorized agent also requires agent identity evidence and an authorization letter. Up to eight files are accepted.",
+    "legal_representative_id": "Legal representative identity evidence",
+    "notUploaded": "Not uploaded",
+    "optional": "Optional",
+    "organization_certificate": "Organization certificate",
+    "other": "Other supporting evidence",
+    "ready": "Encrypted and ready",
+    "required": "Required",
+    "title": "Upload verification evidence",
+    "uploaded": "Evidence encrypted and saved",
+    "uploading": "Encrypting and uploading"
+  },
+  "failed": "Business verification is temporarily unavailable. Please try again.",
+  "form": {
+    "agentId": "Agent identity number",
+    "agentName": "Agent name",
+    "agentRole": "Authorized agent",
+    "applicantRole": "Applicant role",
+    "industry": "Industry code (optional)",
+    "invalid": "Complete the valid business details and upload all evidence required for the selected applicant role.",
+    "lead": "These values go only to this installation's local compliance service and are encrypted. They are never written to browser storage.",
+    "legalName": "Legal business name",
+    "registrationHint": "The first release accepts an 18-character mainland China unified social credit code",
+    "registrationId": "Unified social credit code",
+    "representative": "Legal representative name",
+    "representativeId": "Legal representative identity number",
+    "representativeRole": "Legal representative",
+    "submit": "Submit for manual review",
+    "submitHint": "Submission starts a local manual review. Only the server state decides the result; browser parameters cannot forge approval.",
+    "submitted": "Business verification submitted for manual review",
+    "title": "Enter business details"
+  },
+  "lead": "Verify business details and evidence. Initial verification, corrected resubmission, and post-verification changes are handled here.",
+  "menu": "Business verification",
+  "notice": {
+    "accept": "I have read and accept this business verification information notice",
+    "begin": "Accept and create a verification draft",
+    "data": "Data: legal business name, registration identifier, legal representative and agent identity details, and evidence files you choose to upload.",
+    "policy": "Notice version",
+    "purpose": "Purpose: confirm the contracting, payment, invoicing, and service-use entity and meet this installation's local compliance requirements.",
+    "recipient": "Scope: data stays in this installation's local compliance service and is available only to authorized reviewers. It is not sent to the software provider.",
+    "retention": "Storage: evidence is encrypted in private server storage. The page and browser storage keep no raw identity values, filenames, or file contents.",
+    "rights": "Your choices: stop before submission, or correct and resubmit after rejection. During a post-verification change, the current verified profile stays effective.",
+    "started": "Verification draft created",
+    "title": "Business verification information notice"
+  },
+  "personal": "View personal identity verification",
+  "profile": {
+    "title": "Current effective business profile",
+    "verifiedAt": "Verified at"
+  },
+  "reason": {
+    "identifier_invalid": "The registration identifier is invalid. Check it and submit again.",
+    "materials_incomplete": "Evidence is incomplete. Add the missing evidence and submit again.",
+    "materials_unreadable": "Evidence is not readable. Replace it with a clear file and submit again.",
+    "other": "This review did not pass. Correct the information according to the review result and submit again."
+  },
+  "rejected": {
+    "title": "This verification was returned and can be corrected and resubmitted"
+  },
+  "reload": "Refresh server status",
+  "review": {
+    "changeDescription": "The new profile is under review. The current verified profile stays effective and is replaced only after approval.",
+    "description": "Evidence has been submitted. This page will show the new server state after a local reviewer processes it.",
+    "title": "Business verification is under manual review"
+  },
+  "security": {
+    "description": "The browser stores only random retry keys. Raw identity values, filenames, file contents, material numbers, and storage locations are never written to browser storage.",
+    "title": "Sensitive business data stays in the local encrypted compliance service"
+  },
+  "status": {
+    "canceled": "Canceled",
+    "draft": "Draft",
+    "expired": "Expired",
+    "hint": "This is the authoritative verification state returned by the current installation.",
+    "pending": "Pending review",
+    "rejected": "Returned",
+    "review_required": "Further review required",
+    "title": "Current business verification status",
+    "unverified": "Not verified",
+    "verified": "Verified",
+    "verifying": "Under review"
+  },
+  "steps": {
+    "consent": "Read and accept",
+    "materials": "Enter details and upload evidence",
+    "review": "Local manual review"
+  },
+  "title": "Business verification center"
+}

@@ -1,0 +1,22 @@
+{
+  "claim": {
+    "button": "Redeem",
+    "code": "Promotion code",
+    "invalid": "The promotion code is invalid",
+    "lead": "Enter 8–24 letters or digits. Letters are not case-sensitive.",
+    "placeholder": "Enter promotion code",
+    "succeeded": "The promotion has been added to your account",
+    "title": "Redeem a promotion code"
+  },
+  "empty": "You do not have any promotions yet",
+  "loadFailed": "Promotions could not be loaded. Try again later.",
+  "menu": "My promotions",
+  "mine": "Claimed promotions",
+  "status": {
+    "active": "Available",
+    "exhausted": "Used",
+    "expired": "Expired",
+    "revoked": "Revoked"
+  },
+  "title": "My promotions"
+}

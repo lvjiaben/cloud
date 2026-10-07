@@ -36,6 +36,7 @@ describe('formatServiceLabel', () => {
     expect(formatServiceLabel('auth')).toBe('认证授权');
     expect(formatServiceLabel('ai')).toBe('AI');
     expect(formatServiceLabel('cache')).toBe('缓存');
+    expect(formatServiceLabel('confidentialoutbound')).toBe('安全外部接口访问');
     expect(formatServiceLabel('hostconfig')).toBe('宿主配置');
   });
 
@@ -49,6 +50,9 @@ describe('formatServiceLabel', () => {
     expect(formatServiceLabel('auth')).toBe('Auth');
     expect(formatServiceLabel('ai')).toBe('AI');
     expect(formatServiceLabel('cache')).toBe('Cache');
+    expect(formatServiceLabel('confidentialoutbound')).toBe(
+      'Secure External API Access',
+    );
     expect(formatServiceLabel('hostconfig')).toBe('Host Config');
   });
 

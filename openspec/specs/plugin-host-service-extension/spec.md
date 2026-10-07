@@ -190,7 +190,7 @@
 
 #### Scenario:组织 provider 构造
 
-- **WHEN** `linapro-org-core`或其他组织 provider 插件声明 provider factory
+- **WHEN** `org-core`或其他组织 provider 插件声明 provider factory
 - **THEN** factory 接收`orgcap.ProviderEnv`等强类型环境
 - **AND** 环境只包含组织 provider adapter 需要的宿主能力，例如租户过滤、i18n 或其他明确字段
 - **AND** factory 不再对`env.Services`执行运行时类型断言
@@ -198,7 +198,7 @@
 
 #### Scenario:租户 provider 构造
 
-- **WHEN** `linapro-tenant-core`或其他租户 provider 插件声明 provider factory
+- **WHEN** `tenant-core`或其他租户 provider 插件声明 provider factory
 - **THEN** factory 接收`tenantcap.ProviderEnv`等强类型环境
 - **AND** 环境只包含租户 provider adapter 需要的宿主能力，例如业务上下文和插件生命周期服务
 - **AND** factory 不得获得完整`capability.Services`后自行扩张依赖
@@ -876,7 +876,7 @@
 
 ### Requirement: AI host service 调用必须受 service、method 和 DTO 能力边界约束
 
-系统 SHALL 对每一次`ai`host service 调用校验`service: ai`、声明的`method`、调用来源和请求 DTO 边界。`ai`host service MUST NOT 使用`resources`、`resourceRef`或`purpose:<name>`作为运行时授权条件；`purpose`、`tier`、`maxOutputTokens`、资产引用和其他方法参数 MUST 由请求 DTO 承载，并由对应`AI`子能力服务或`linapro-ai-core`治理。
+系统 SHALL 对每一次`ai`host service 调用校验`service: ai`、声明的`method`、调用来源和请求 DTO 边界。`ai`host service MUST NOT 使用`resources`、`resourceRef`或`purpose:<name>`作为运行时授权条件；`purpose`、`tier`、`maxOutputTokens`、资产引用和其他方法参数 MUST 由请求 DTO 承载，并由对应`AI`子能力服务或`ai-core`治理。
 
 #### Scenario: 方法授权后调用文本能力
 
@@ -1044,7 +1044,7 @@
 
 #### Scenario: 补齐已注册但示例未声明的方法
 
-- **WHEN** 某个领域方法已经存在于动态`host service registry`和 catalog，但`linapro-demo-dynamic`未在`plugin.yaml hostServices`中声明
+- **WHEN** 某个领域方法已经存在于动态`host service registry`和 catalog，但`demo-dynamic`未在`plugin.yaml hostServices`中声明
 - **THEN** 可以只补充示例插件声明、示例调用和 smoke 验证
 - **AND** 不得新增平行 wire method、绕过授权快照或改变领域 owner 实现
 
@@ -1122,8 +1122,8 @@
 
 #### Scenario: 声明 owner AI 服务
 
-- **WHEN** 动态插件需要调用`linapro-ai-core`发布的`AI`文本生成方法
-- **THEN** `plugin.yaml hostServices` MUST 声明`service: ai`、`owner: linapro-ai-core`、`version: v1`和`methods: [text.generate]`
+- **WHEN** 动态插件需要调用`ai-core`发布的`AI`文本生成方法
+- **THEN** `plugin.yaml hostServices` MUST 声明`service: ai`、`owner: ai-core`、`version: v1`和`methods: [text.generate]`
 - **AND** 宿主 MUST 将该声明归一化到授权快照中，保留 owner、service、version、method 和资源范围
 
 #### Scenario: core-owned 服务保持现有声明
@@ -1134,7 +1134,7 @@
 
 #### Scenario: 拼接型 owner service key 被拒绝
 
-- **WHEN** 动态插件使用`service: plugin:linapro-ai-core:ai:v1`或等价拼接 service key 声明 owner 能力
+- **WHEN** 动态插件使用`service: plugin:ai-core:ai:v1`或等价拼接 service key 声明 owner 能力
 - **THEN** 清单校验 MUST 失败
 - **AND** 错误必须提示使用结构化`owner`和`version`字段
 
@@ -1144,7 +1144,7 @@
 
 #### Scenario: owner descriptor 发布 AI 方法
 
-- **WHEN** `linapro-ai-core`发布`ai.v1` descriptor
+- **WHEN** `ai-core`发布`ai.v1` descriptor
 - **THEN** descriptor MUST 至少包含`text.generate`、`text.method_status.get`、`ai.methods.status.batch_get`以及已发布的多模态方法
 - **AND** core 不得在`pluginbridge/protocol/hostservices/catalog.go`中继续硬编码这些 AI 方法作为生产 owner
 
@@ -1160,10 +1160,10 @@
 
 #### Scenario: 调用 AI 文本生成
 
-- **WHEN** 动态插件调用`owner=linapro-ai-core service=ai version=v1 method=text.generate`
-- **THEN** dispatcher MUST 校验调用插件已声明并满足`linapro-ai-core`依赖
+- **WHEN** 动态插件调用`owner=ai-core service=ai version=v1 method=text.generate`
+- **THEN** dispatcher MUST 校验调用插件已声明并满足`ai-core`依赖
 - **AND** dispatcher MUST 校验该 method 已授权并由 owner descriptor 注册
-- **AND** dispatcher MUST 将 payload 转发给`linapro-ai-core`注册的 handler
+- **AND** dispatcher MUST 将 payload 转发给`ai-core`注册的 handler
 - **AND** dispatcher 不得进入 core 内置`dispatchAITextGenerate`分支
 
 #### Scenario: 未授权 owner 方法
@@ -1184,7 +1184,7 @@
 
 #### Scenario: provider 失败脱敏
 
-- **WHEN** `linapro-ai-core`调用外部 provider 失败
+- **WHEN** `ai-core`调用外部 provider 失败
 - **THEN** owner handler MUST 返回脱敏后的结构化业务错误
 - **AND** host call envelope MUST 保留稳定错误码和可本地化消息键
 

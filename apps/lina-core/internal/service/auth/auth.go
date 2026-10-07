@@ -106,7 +106,7 @@ type Service interface {
 	// any OAuth or token exchange. An empty provider or subject returns
 	// CodeAuthExternalIdentityInvalid.
 	// SPA delivery of the minted session (one-time handoff codes) is owned by
-	// linapro-extlogin-core, not this host service.
+	// extlogin-core, not this host service.
 	LoginByExternalIdentity(ctx context.Context, in ExternalLoginInput) (*ExternalLoginOutput, error)
 	// Refresh validates a host refresh token, confirms the online session and
 	// tenant membership are still valid, primes role access cache, and returns a
@@ -244,6 +244,7 @@ type Claims struct {
 	Status          int        `json:"status"`          // Status
 	TenantId        int        `json:"tenantId"`        // Tenant ID, where 0 means platform
 	IsImpersonation bool       `json:"isImpersonation"` // Whether the token represents impersonation
+	ActingAsTenant  bool       `json:"actingAsTenant"`  // Whether the actor is entering a tenant as themself
 	ActingUserId    int        `json:"actingUserId"`    // Real user ID during impersonation
 	jwt.RegisteredClaims
 }
@@ -268,7 +269,7 @@ type ExternalLoginInput struct {
 	ClientType  ClientType // User-session client type
 	// AllowAutoProvision declares that the calling plugin permits
 	// auto-provisioning for unlinked identities. The provisioning policy is
-	// provider-owned (linapro-extlogin-core): a same-email account conflict is
+	// provider-owned (extlogin-core): a same-email account conflict is
 	// rejected instead of silently linking, and account creation is delegated
 	// back to the host user owner's least-privilege provisioning path.
 	AllowAutoProvision bool
@@ -340,14 +341,18 @@ type TenantTokenOutput struct {
 
 // ImpersonationTokenIssueInput defines host-owned impersonation token issue fields.
 type ImpersonationTokenIssueInput struct {
-	ActingUserID int // Platform administrator user ID
-	TenantID     int // Target tenant ID
+	ActingUserID     int // Platform administrator user ID
+	TenantID         int // Target tenant ID
+	SubjectUserID    int // Represented user ID; zero represents ActingUserID
+	ExpiresInSeconds int // Optional bounded short access-token lifetime
 }
 
 // ImpersonationTokenOutput defines a host-owned impersonation token response.
 type ImpersonationTokenOutput struct {
-	AccessToken  string // JWT access token
-	TokenID      string // Host token/session identifier
-	TenantID     int    // Target tenant ID
-	ActingUserID int    // Platform administrator user ID
+	AccessToken   string    // JWT access token
+	TokenID       string    // Host token/session identifier
+	TenantID      int       // Target tenant ID
+	ActingUserID  int       // Platform administrator user ID
+	SubjectUserID int       // Represented user ID
+	ExpiresAt     time.Time // Access-token expiry
 }

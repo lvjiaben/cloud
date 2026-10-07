@@ -65,7 +65,7 @@ func TestTenantRoleUpdateRejectsPlatformOnlyMenuAssignment(t *testing.T) {
 	roleID := insertRoleTenantBoundaryRole(t, ctx, "tenant-update-deny", 62102)
 	allowedMenuID := insertRoleAssignableMenu(t, ctx, roleAssignableMenuSeed{
 		Label:   "tenant-allowed-plugin-list",
-		MenuKey: uniqueRoleAssignablePluginMenuKey("linapro-tenant-core", "tenant-plugin-list"),
+		MenuKey: uniqueRoleAssignablePluginMenuKey("tenant-core", "tenant-plugin-list"),
 		Perms:   "system:tenant:plugin:list",
 		Type:    menutype.Button.String(),
 	})
@@ -118,13 +118,13 @@ func TestTenantAssignableMenusFiltersPlatformOnlyNodes(t *testing.T) {
 	insertRoleAssignablePlugin(t, ctx, pluginID, rolePluginScopePlatformOnly)
 	tenantPlatformID := insertRoleAssignableMenu(t, ctx, roleAssignableMenuSeed{
 		Label:   "tenant-platform",
-		MenuKey: uniqueRoleAssignablePluginMenuKey("linapro-tenant-core", "platform-tenants"),
+		MenuKey: uniqueRoleAssignablePluginMenuKey("tenant-core", "platform-tenants"),
 		Perms:   "system:tenant:list",
 		Type:    menutype.Menu.String(),
 	})
 	tenantSelfServiceID := insertRoleAssignableMenu(t, ctx, roleAssignableMenuSeed{
 		Label:   "tenant-self-service",
-		MenuKey: uniqueRoleAssignablePluginMenuKey("linapro-tenant-core", "tenant-plugin-list"),
+		MenuKey: uniqueRoleAssignablePluginMenuKey("tenant-core", "tenant-plugin-list"),
 		Perms:   "system:tenant:plugin:list",
 		Type:    menutype.Button.String(),
 	})

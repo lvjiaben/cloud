@@ -44,7 +44,7 @@ TBD - created by archiving change tenant-permission-boundary-hardening. Update P
 
 #### Scenario: 租户管理员访问用户管理
 
-- **WHEN** `linapro-tenant-core` 已启用
+- **WHEN** `tenant-core` 已启用
 - **AND** 用户处于具体租户上下文
 - **AND** 当前权限快照不包含 `system:tenant:list` 和 `system:tenant:auth:login-tenants`
 - **AND** 用户打开用户管理页面
@@ -54,7 +54,7 @@ TBD - created by archiving change tenant-permission-boundary-hardening. Update P
 
 #### Scenario: 租户管理员访问角色管理
 
-- **WHEN** `linapro-tenant-core` 已启用
+- **WHEN** `tenant-core` 已启用
 - **AND** 用户处于具体租户上下文
 - **AND** 当前权限快照不包含 `system:tenant:list` 和 `system:tenant:auth:login-tenants`
 - **AND** 用户打开角色管理页面

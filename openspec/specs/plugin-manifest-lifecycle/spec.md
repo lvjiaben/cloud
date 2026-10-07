@@ -141,7 +141,7 @@
 系统 SHALL 在执行插件 `manifest/sql/` 安装资产、`manifest/sql/uninstall/` 卸载资产、`manifest/sql/mock-data/` mock 资产中的任一 SQL 文件之前，先调用当前方言的 `TranslateDDL(ctx, sourceName, ddl)` 入口处理单一 PostgreSQL 14+ 方言来源的 SQL 内容。`sourceName` SHALL 使用插件标识、资产类型与 SQL 文件路径组合出的稳定诊断名。该规则同时适用于源码插件与动态插件、安装阶段与卸载阶段、运行时嵌入式 SQL 与开发时本地 SQL。插件源码侧 SHALL 仅维护单一 PostgreSQL 方言来源的 SQL 文件，不得为不同数据库引擎维护多份 SQL 文件。
 
 #### Scenario:源码插件安装时 SQL 走方言转译
-- **当** 源码插件 `linapro-monitor-loginlog` 在 PostgreSQL 模式下首次启用并执行 `manifest/sql/001-linapro-monitor-loginlog-schema.sql` 时
+- **当** 源码插件 `monitor-loginlog` 在 PostgreSQL 模式下首次启用并执行 `manifest/sql/001-monitor-loginlog-schema.sql` 时
 - **则** 插件安装管线先调用当前 PostgreSQL 方言实例的 `TranslateDDL(ctx, sourceName, ddl)`
 - **且** 返回的 PostgreSQL SQL 语句逐一成功执行
 - **且** 插件源码 `manifest/sql/` 目录下保持单一 PostgreSQL 方言 SQL 文件

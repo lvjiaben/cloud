@@ -14,18 +14,18 @@
 
 - 插件在`manifest/sql/`中新增或维护的**插件自有业务表**，表名必须使用**完整插件 ID** 作为前缀，不得使用截断或臆造的短前缀。
 - 命名格式：`plugin_<plugin_id_snake>_<entity>`
-  - `<plugin_id_snake>`：将`plugin.yaml`中的`id`（kebab-case）中的`-`全部替换为`_`，**保留完整 ID 段**（例如`linapro-mail-core` → `linapro_mail_core`，不得写成`linapro_mail`）。
+  - `<plugin_id_snake>`：将`plugin.yaml`中的`id`（kebab-case）中的`-`全部替换为`_`，**保留完整 ID 段**（例如`mail-core` → `mail_core`，不得写成`mail`）。
   - `<entity>`：表业务实体名，小写 snake_case（例如`connection`、`account`、`dept`）。
 - 索引、唯一约束等对象名称应与表前缀保持一致，便于按插件识别与卸载。
 - 正确示例：
-  - 插件`linapro-org-core` → `plugin_linapro_org_core_dept`
-  - 插件`linapro-tenant-core` → `plugin_linapro_tenant_core_tenant`
-  - 插件`linapro-mail-core` → `plugin_linapro_mail_core_connection`
-  - 插件`linapro-demo-source` → `plugin_linapro_demo_source_record`
+  - 插件`org-core` → `plugin_org_core_dept`
+  - 插件`tenant-core` → `plugin_tenant_core_tenant`
+  - 插件`mail-core` → `plugin_mail_core_connection`
+  - 插件`demo-source` → `plugin_demo_source_record`
 - 错误示例：
-  - 插件`linapro-mail-core`却使用`plugin_linapro_mail_connection`（缺少 ID 中的`core`段）
+  - 插件`mail-core`却使用`plugin_mail_connection`（缺少 ID 中的`core`段）
 - 宿主自有表继续使用既有`sys_*`等宿主命名约定，不适用本条插件前缀规则。
-- 插件`make dao`的`tables`与`removePrefix`必须与上述完整前缀一致（例如`removePrefix: "plugin_linapro_mail_core_"`）。
+- 插件`make dao`的`tables`与`removePrefix`必须与上述完整前缀一致（例如`removePrefix: "plugin_mail_core_"`）。
 
 ## Go 代码生成流程
 

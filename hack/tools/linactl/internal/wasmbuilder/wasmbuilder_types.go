@@ -6,6 +6,7 @@ package wasmbuilder
 import (
 	"regexp"
 
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 )
 
@@ -51,32 +52,40 @@ type RuntimeBuildOutput struct {
 }
 
 type pluginManifest struct {
-	ID                  string                      `yaml:"id"`
-	Name                string                      `yaml:"name"`
-	Version             string                      `yaml:"version"`
-	Type                string                      `yaml:"type"`
-	ScopeNature         string                      `yaml:"scope_nature"`
-	SupportsMultiTenant *bool                       `yaml:"supports_multi_tenant"`
-	DefaultInstallMode  string                      `yaml:"default_install_mode"`
-	Description         string                      `yaml:"description"`
-	Dependencies        *dependencySpec             `yaml:"dependencies"`
-	Menus               []*menuSpec                 `yaml:"menus"`
-	PublicAssets        []*publicAssetSpec          `yaml:"public_assets"`
-	HostServices        []*protocol.HostServiceSpec `yaml:"hostServices"`
+	ID                  string                                   `yaml:"id"`
+	Name                string                                   `yaml:"name"`
+	Version             string                                   `yaml:"version"`
+	Type                string                                   `yaml:"type"`
+	Distribution        string                                   `yaml:"distribution"`
+	ScopeNature         string                                   `yaml:"scope_nature"`
+	SupportsMultiTenant *bool                                    `yaml:"supports_multi_tenant"`
+	DefaultInstallMode  string                                   `yaml:"default_install_mode"`
+	Description         string                                   `yaml:"description"`
+	Dependencies        *dependencySpec                          `yaml:"dependencies"`
+	BusinessExtensions  []*capmodel.BusinessExtensionDeclaration `yaml:"business_extensions"`
+	AdminSurfaces       []*capmodel.FrontendSurfaceDeclaration   `yaml:"admin_surfaces"`
+	CustomerSurfaces    []*capmodel.FrontendSurfaceDeclaration   `yaml:"customer_surfaces"`
+	Menus               []*menuSpec                              `yaml:"menus"`
+	PublicAssets        []*publicAssetSpec                       `yaml:"public_assets"`
+	HostServices        []*protocol.HostServiceSpec              `yaml:"hostServices"`
 }
 
 type dynamicArtifactManifest struct {
-	ID                  string             `json:"id" yaml:"id"`
-	Name                string             `json:"name" yaml:"name"`
-	Version             string             `json:"version" yaml:"version"`
-	Type                string             `json:"type" yaml:"type"`
-	ScopeNature         string             `json:"scopeNature,omitempty" yaml:"scopeNature,omitempty"`
-	SupportsMultiTenant *bool              `json:"supportsMultiTenant,omitempty" yaml:"supportsMultiTenant,omitempty"`
-	DefaultInstallMode  string             `json:"defaultInstallMode,omitempty" yaml:"defaultInstallMode,omitempty"`
-	Description         string             `json:"description,omitempty" yaml:"description,omitempty"`
-	Dependencies        *dependencySpec    `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
-	Menus               []*menuSpec        `json:"menus,omitempty" yaml:"menus,omitempty"`
-	PublicAssets        []*publicAssetSpec `json:"public_assets,omitempty" yaml:"public_assets,omitempty"`
+	ID                  string                                   `json:"id" yaml:"id"`
+	Name                string                                   `json:"name" yaml:"name"`
+	Version             string                                   `json:"version" yaml:"version"`
+	Type                string                                   `json:"type" yaml:"type"`
+	Distribution        string                                   `json:"distribution" yaml:"distribution"`
+	ScopeNature         string                                   `json:"scopeNature,omitempty" yaml:"scopeNature,omitempty"`
+	SupportsMultiTenant *bool                                    `json:"supportsMultiTenant,omitempty" yaml:"supportsMultiTenant,omitempty"`
+	DefaultInstallMode  string                                   `json:"defaultInstallMode,omitempty" yaml:"defaultInstallMode,omitempty"`
+	Description         string                                   `json:"description,omitempty" yaml:"description,omitempty"`
+	Dependencies        *dependencySpec                          `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
+	BusinessExtensions  []*capmodel.BusinessExtensionDeclaration `json:"business_extensions,omitempty" yaml:"business_extensions,omitempty"`
+	AdminSurfaces       []*capmodel.FrontendSurfaceDeclaration   `json:"admin_surfaces,omitempty" yaml:"admin_surfaces,omitempty"`
+	CustomerSurfaces    []*capmodel.FrontendSurfaceDeclaration   `json:"customer_surfaces,omitempty" yaml:"customer_surfaces,omitempty"`
+	Menus               []*menuSpec                              `json:"menus,omitempty" yaml:"menus,omitempty"`
+	PublicAssets        []*publicAssetSpec                       `json:"public_assets,omitempty" yaml:"public_assets,omitempty"`
 }
 
 type dependencySpec struct {

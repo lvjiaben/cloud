@@ -1,77 +1,40 @@
-import { test, expect } from '../../fixtures/auth';
-import { DashboardPage } from '../../pages/DashboardPage';
+import { expect, test } from "../../fixtures/auth";
+import { DashboardPage } from "../../pages/DashboardPage";
 
-test.describe('TC002 默认工作台', () => {
-  test('TC002a: 工作台展示管理后台技术栈项目卡片、快捷导航和 LinaPro 示例内容', async ({
-    adminPage,
-  }) => {
+test.describe("TC002 默认工作台", () => {
+  test("TC002a: 工作台展示真实待办、任务和经营数据", async ({ adminPage }) => {
     const dashboardPage = new DashboardPage(adminPage);
-
     await dashboardPage.gotoWorkspace();
 
-    await expect(dashboardPage.workspaceDescription).toContainText('今日晴');
     await expect(
-      dashboardPage.workspaceProjects.getByText('LinaPro', { exact: true }),
-    ).toBeVisible();
+      dashboardPage.workspacePage.getByTestId("dashboard-workspace-error"),
+    ).toHaveCount(0);
     await expect(
-      dashboardPage.workspaceProjects.locator('img[alt="LinaPro"]'),
-    ).toHaveAttribute('src', /\/logo\.webp$/);
-    await expect(
-      dashboardPage.workspaceProjects.getByText('GoFrame', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceProjects.locator('img[alt="GoFrame"]'),
-    ).toHaveAttribute('src', /\/goframe-logo\.webp$/);
-    await expect(
-      dashboardPage.workspaceProjects.getByText('Vue', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceProjects.getByText('Vben', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceProjects.locator('img[alt="Vben"]'),
-    ).toHaveAttribute('src', /\/vben-logo\.webp$/);
-    await expect(
-      dashboardPage.workspaceProjects.getByText('Ant Design', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceProjects.getByText('TypeScript', { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceProjects.getByText('2026-05-01', { exact: true }),
-    ).toHaveCount(6);
-    await expect(dashboardPage.workspaceQuickNavItem('用户管理')).toBeVisible();
-    await expect(dashboardPage.workspaceQuickNavItem('菜单管理')).toBeVisible();
-    await expect(dashboardPage.workspaceQuickNavItem('系统参数')).toBeVisible();
-    await expect(dashboardPage.workspaceQuickNavItem('扩展中心')).toBeVisible();
-    await expect(dashboardPage.workspaceQuickNavItem('接口文档')).toBeVisible();
-    await expect(dashboardPage.workspaceQuickNavItem('定时任务')).toBeVisible();
-    await expect(
-      dashboardPage.workspaceTodos.getByText('检查工作台快捷入口', {
-        exact: true,
-      }),
-    ).toBeVisible();
-    await expect(
-      dashboardPage.workspaceTrends.getByText('工作台快捷导航', {
-        exact: true,
-      }),
-    ).toBeVisible();
+      dashboardPage.workspacePage.getByTestId("operations-workbench"),
+    ).toHaveCount(0);
+    await expect(dashboardPage.workspaceProjects).toContainText("今日业务重点");
+    await expect(dashboardPage.workspaceQuickNav).toContainText("快捷入口");
+    await expect(dashboardPage.workspaceTodos).toContainText("待办事项");
+    await expect(dashboardPage.workspaceTrends).toContainText("最近异步任务");
+    await expect(dashboardPage.workspacePage).not.toContainText("GoFrame");
+    await expect(dashboardPage.workspacePage).not.toContainText("TypeScript");
+    await expect(dashboardPage.workspacePage).not.toContainText("今日晴");
   });
 
-  test('TC002b: 工作台快捷导航跳转到当前项目的可达页面', async ({ adminPage }) => {
+  test("TC002b: 工作台快捷入口跳转到真实业务页面", async ({ adminPage }) => {
     const dashboardPage = new DashboardPage(adminPage);
     const quickNavCases: Array<[string, RegExp]> = [
-      ['用户管理', /\/system\/user/],
-      ['菜单管理', /\/system\/menu/],
-      ['系统参数', /\/system\/config/],
-      ['扩展中心', /\/system\/plugin/],
-      ['接口文档', /\/about\/api-docs/],
-      ['定时任务', /\/system\/job/],
+      ["客户管理", /\/idc\/customers/u],
+      ["商品管理", /\/idc\/catalog/u],
+      ["订单管理", /\/idc\/orders/u],
+      ["服务器与服务", /\/idc\/resource\/overview/u],
+      ["工单中心", /\/idc\/support/u],
+      ["财务管理", /\/idc\/finance/u],
     ];
 
     for (const [label, expectedUrl] of quickNavCases) {
       await dashboardPage.gotoWorkspace();
-      await dashboardPage.clickWorkspaceQuickNav(label);
+      await dashboardPage.workspaceQuickNavItem(label).click();
       await expect(adminPage).toHaveURL(expectedUrl);
     }
   });

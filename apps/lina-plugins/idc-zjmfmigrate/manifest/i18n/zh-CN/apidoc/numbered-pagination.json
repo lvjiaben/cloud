@@ -1,0 +1,8 @@
+{
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.fields.page.dc": "请求页码",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.fields.pageSize.dc": "每页最多返回条数",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.meta.dc": "通过受治理记录存储返回所选批次的一页有界冲突及授权范围内的准确总数。",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.fields.id.dc": "所选迁移批次编号",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsRes.fields.list.dc": "当前有界页中的冲突记录",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsRes.fields.total.dc": "所选批次在授权范围内的准确冲突总数"
+}

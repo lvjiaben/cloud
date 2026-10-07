@@ -1,0 +1,9 @@
+{
+  "title": "Customer simulation login",
+  "loading": "Entering the customer center securely…",
+  "banner": "Simulating {customer} · {minutes} min remaining · all actions are audited",
+  "bannerMobile": "Simulation · {minutes} min",
+  "close": "Close page",
+  "unavailableTitle": "This assistance session is no longer available",
+  "unavailableDescription": "The link is missing, already used, expired, replaced, or ended by staff. Authorized staff can start a new session."
+}

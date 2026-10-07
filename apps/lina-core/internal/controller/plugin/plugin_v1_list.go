@@ -8,6 +8,7 @@ import (
 
 	v1 "lina-core/api/plugin/v1"
 	pluginsvc "lina-core/internal/service/plugin"
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 	"lina-core/pkg/statusflag"
 )
@@ -15,14 +16,13 @@ import (
 // List scans plugins and returns current synchronized status list.
 func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (res *v1.ListRes, err error) {
 	out, err := c.pluginSvc.List(ctx, pluginsvc.ListInput{
-		PageNum:        req.PageNum,
-		PageSize:       req.PageSize,
-		ID:             req.Id,
-		Name:           req.Name,
-		Type:           string(req.Type),
-		Status:         enabledPtrToInt(req.Status),
-		Installed:      installationPtrToInt(req.Installed),
-		IncludeBuiltin: req.IncludeBuiltin,
+		PageNum:   req.PageNum,
+		PageSize:  req.PageSize,
+		ID:        req.Id,
+		Name:      req.Name,
+		Type:      string(req.Type),
+		Status:    enabledPtrToInt(req.Status),
+		Installed: installationPtrToInt(req.Installed),
 	})
 	if err != nil {
 		return nil, err
@@ -66,6 +66,8 @@ func (c *ControllerV1) buildPluginListItemResponse(
 		Installed:               statusflag.Installation(item.Installed),
 		InstalledAt:             item.InstalledAt,
 		Enabled:                 statusflag.Enabled(item.Enabled),
+		NewBusinessState:        v1.NewBusinessState(item.NewBusinessState.String()),
+		NewBusinessStoppedAt:    item.NewBusinessStoppedAt,
 		AutoEnableManaged:       boolToYesNo(autoEnableManaged),
 		AutoEnableForNewTenants: item.AutoEnableForNewTenants,
 		SupportsMultiTenant:     item.SupportsMultiTenant,
@@ -105,6 +107,8 @@ func (c *ControllerV1) buildPluginItemResponse(
 		Installed:               statusflag.Installation(item.Installed),
 		InstalledAt:             item.InstalledAt,
 		Enabled:                 statusflag.Enabled(item.Enabled),
+		NewBusinessState:        v1.NewBusinessState(item.NewBusinessState.String()),
+		NewBusinessStoppedAt:    item.NewBusinessStoppedAt,
 		AutoEnableManaged:       boolToYesNo(autoEnableManaged),
 		AutoEnableForNewTenants: item.AutoEnableForNewTenants,
 		SupportsMultiTenant:     item.SupportsMultiTenant,
@@ -127,8 +131,41 @@ func (c *ControllerV1) buildPluginItemResponse(
 			item.Id,
 			item.DeclaredRoutes,
 		),
-		HasMockData: boolToYesNo(item.HasMockData),
+		BusinessExtensions:           buildPluginBusinessExtensionItems(item.BusinessExtensions),
+		AuthorizedBusinessExtensions: buildPluginBusinessExtensionItems(item.AuthorizedBusinessExtensions),
+		AdminSurfaces:                buildPluginFrontendSurfaceItems(item.AdminSurfaces),
+		CustomerSurfaces:             buildPluginFrontendSurfaceItems(item.CustomerSurfaces),
+		HasMockData:                  boolToYesNo(item.HasMockData),
 	}
+}
+
+func buildPluginBusinessExtensionItems(items []*capmodel.BusinessExtensionDeclaration) []*v1.PluginBusinessExtensionItem {
+	result := make([]*v1.PluginBusinessExtensionItem, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		result = append(result, &v1.PluginBusinessExtensionItem{
+			Point: item.Point, Version: item.Version, Role: item.Role, Owner: item.Owner,
+			Methods: append([]string(nil), item.Methods...),
+		})
+	}
+	return result
+}
+
+func buildPluginFrontendSurfaceItems(items []*capmodel.FrontendSurfaceDeclaration) []*v1.PluginFrontendSurfaceItem {
+	result := make([]*v1.PluginFrontendSurfaceItem, 0, len(items))
+	for _, item := range items {
+		if item == nil {
+			continue
+		}
+		result = append(result, &v1.PluginFrontendSurfaceItem{
+			Key: item.Key, Version: item.Version, Title: item.Title, Icon: item.Icon,
+			Permission: item.Permission, Slot: item.Slot, Route: item.Route, Entry: item.Entry,
+			Status: item.Status, BridgeCapabilities: append([]string(nil), item.BridgeCapabilities...),
+		})
+	}
+	return result
 }
 
 // buildAutoEnableManagedSet converts the normalized plugin.autoEnable list into

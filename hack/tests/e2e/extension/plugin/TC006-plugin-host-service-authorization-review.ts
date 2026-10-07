@@ -140,7 +140,13 @@ function artifactPath() {
 }
 
 function runtimeStorageArtifactPath() {
-  return path.join(tempDir(), "output", `${pluginID}.wasm`);
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  const storageDir = configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
+  return path.join(storageDir, `${pluginID}.wasm`);
 }
 
 function cleanupPluginRows() {

@@ -1,0 +1,117 @@
+{
+  "account": "企业客户账户",
+  "change": {
+    "create": "发起企业资料变更",
+    "created": "变更申请已建立，请重新同意并提交新材料",
+    "lead": "这里只选择要变更的资料类别，不在这一步填写新证件信息。旧的已认证资料在新审核通过前继续有效。",
+    "legalIdentifier": "统一社会信用代码",
+    "legalName": "企业名称",
+    "reason": "选择变更原因",
+    "reasonCorrection": "证件号码更正",
+    "reasonLegalName": "企业名称变更",
+    "reasonOther": "其他原因",
+    "reasonRegistration": "企业登记信息变更",
+    "title": "更新已认证企业资料"
+  },
+  "draft": {
+    "description": "已上传的材料状态会从服务端恢复；企业名称、证件号码等敏感内容不会保存在浏览器中，离开页面后需要重新填写。",
+    "title": "草稿已从服务端恢复"
+  },
+  "enterpriseOnly": "当前账户不是企业客户，不能进入企业认证流程。",
+  "evidence": {
+    "agent_id": "经办人身份证明",
+    "authorization_letter": "授权委托书",
+    "business_license": "营业执照",
+    "choose": "点击或拖入文件",
+    "hint": "{required} · PDF/JPG/PNG · 不超过 5 MiB",
+    "invalid": "请选择不超过 5 MiB 的 PDF、JPG 或 PNG 文件。",
+    "lead": "营业执照和法定代表人身份证明必传；选择授权经办人时，还要上传经办人身份证明和授权委托书。最多八份。",
+    "legal_representative_id": "法定代表人身份证明",
+    "notUploaded": "尚未上传",
+    "optional": "选传",
+    "organization_certificate": "组织机构证明",
+    "other": "其他补充材料",
+    "ready": "已加密保存",
+    "required": "必传",
+    "title": "上传认证材料",
+    "uploaded": "材料已加密保存",
+    "uploading": "正在加密上传"
+  },
+  "failed": "企业认证服务暂时不可用，请稍后重试。",
+  "form": {
+    "agentId": "经办人证件号码",
+    "agentName": "经办人姓名",
+    "agentRole": "授权经办人",
+    "applicantRole": "申请人身份",
+    "industry": "行业代码（选填）",
+    "invalid": "请填写完整且有效的企业资料，并上传当前申请人身份所需的材料。",
+    "lead": "这些内容只会提交到本套安装的本地合规服务，并加密保存；不会写进浏览器存储。",
+    "legalName": "企业法定名称",
+    "registrationHint": "首期支持中国大陆 18 位统一社会信用代码",
+    "registrationId": "统一社会信用代码",
+    "representative": "法定代表人姓名",
+    "representativeId": "法定代表人证件号码",
+    "representativeRole": "法定代表人",
+    "submit": "提交人工审核",
+    "submitHint": "提交后进入本地人工审核。审核结果只由服务端状态决定，不能通过浏览器参数伪造。",
+    "submitted": "企业认证已提交人工审核",
+    "title": "填写企业资料"
+  },
+  "lead": "完成企业资料和证明材料认证；首次认证、退回重提与认证后变更都在这里办理。",
+  "menu": "企业认证",
+  "notice": {
+    "accept": "我已阅读并同意本次企业认证信息处理说明",
+    "begin": "同意并建立认证草稿",
+    "data": "处理内容：企业名称、统一社会信用代码、法定代表人与经办人身份资料，以及你主动上传的证明文件。",
+    "policy": "说明版本",
+    "purpose": "处理目的：确认签约、付款、开票及服务使用主体，满足本套安装的本地合规要求。",
+    "recipient": "处理范围：仅进入当前安装实例的本地合规服务和获授权的审核人员，不发送给软件提供方。",
+    "retention": "保存方式：材料在服务端加密私有保存；页面和浏览器存储不保留证件原文、文件名或文件内容。",
+    "rights": "你的权利：可在提交前停止；被退回后可按原因修正并重新提交。认证后变更期间，旧的已认证资料继续有效。",
+    "started": "认证草稿已建立",
+    "title": "企业认证信息处理说明"
+  },
+  "personal": "查看个人实名认证",
+  "profile": {
+    "title": "当前有效的企业资料",
+    "verifiedAt": "认证时间"
+  },
+  "reason": {
+    "identifier_invalid": "统一社会信用代码无效，请核对后重新提交。",
+    "materials_incomplete": "证明材料不完整，请补齐后重新提交。",
+    "materials_unreadable": "证明材料无法清晰辨认，请更换清晰文件后重新提交。",
+    "other": "本次审核未通过，请按审核意见修正后重新提交。"
+  },
+  "rejected": {
+    "title": "本次认证已退回，可以修正后重提"
+  },
+  "reload": "刷新服务端状态",
+  "review": {
+    "changeDescription": "新资料正在审核，当前已认证资料继续有效；审核通过后才会替换。",
+    "description": "材料已经提交，本地审核人员处理后，页面会显示新的服务端状态。",
+    "title": "企业认证正在人工审核"
+  },
+  "security": {
+    "description": "浏览器只保存随机的防重复操作码。企业证件内容、文件名、文件内容、材料编号和存储位置都不会写入浏览器存储。",
+    "title": "敏感企业资料只进入本地加密合规服务"
+  },
+  "status": {
+    "canceled": "已取消",
+    "draft": "草稿",
+    "expired": "已过期",
+    "hint": "这里显示的是当前安装实例返回的真实认证状态。",
+    "pending": "待审核",
+    "rejected": "已退回",
+    "review_required": "需要进一步审核",
+    "title": "当前企业认证状态",
+    "unverified": "未认证",
+    "verified": "已认证",
+    "verifying": "审核中"
+  },
+  "steps": {
+    "consent": "阅读并同意",
+    "materials": "填写资料并上传材料",
+    "review": "本地人工审核"
+  },
+  "title": "企业认证中心"
+}

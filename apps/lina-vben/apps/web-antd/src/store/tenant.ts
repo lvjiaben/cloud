@@ -323,15 +323,18 @@ export const useTenantStore = defineStore('tenant', () => {
       // default (which 404s when that menu is disabled).
       return candidate || '/profile';
     }
-    if (isPlatform.value) {
-      return '/platform/tenants';
-    }
     if (
       candidate &&
       !candidate.startsWith('/platform') &&
       !candidate.startsWith('/tenant')
     ) {
       return candidate;
+    }
+    if (isPlatform.value) {
+      // Tenant rows are framework-owned plumbing and intentionally hidden in
+      // the delivered operations console. Platform users should enter the
+      // business workbench instead of being forced onto that hidden page.
+      return '/idc/operations/workbench';
     }
     return '/system/user';
   }

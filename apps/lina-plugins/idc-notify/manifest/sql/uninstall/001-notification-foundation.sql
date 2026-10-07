@@ -1,0 +1,19 @@
+DROP TABLE IF EXISTS plugin_idc_notify_delivery_audit;
+DROP TABLE IF EXISTS plugin_idc_notify_manual_resend;
+DROP TABLE IF EXISTS plugin_idc_notify_manual_closure;
+DROP TABLE IF EXISTS plugin_idc_notify_delivery_query;
+DROP TABLE IF EXISTS plugin_idc_notify_wechat_callback_event;
+DROP TABLE IF EXISTS plugin_idc_notify_channel_test_operation;
+DROP TABLE IF EXISTS plugin_idc_notify_delivery_attempt;
+ALTER TABLE IF EXISTS plugin_idc_notify_delivery_chain
+    DROP CONSTRAINT IF EXISTS plugin_idc_notify_delivery_chain_root_fk;
+ALTER TABLE IF EXISTS plugin_idc_notify_delivery_chain
+    DROP CONSTRAINT IF EXISTS plugin_idc_notify_delivery_chain_tail_fk;
+DROP TABLE IF EXISTS plugin_idc_notify_delivery_task;
+DROP TABLE IF EXISTS plugin_idc_notify_delivery_chain;
+DROP TABLE IF EXISTS plugin_idc_notify_unsubscribe_evidence;
+DROP TABLE IF EXISTS plugin_idc_notify_template_version;
+DROP TABLE IF EXISTS plugin_idc_notify_channel_intent;
+DROP TABLE IF EXISTS plugin_idc_notify_channel_operation;
+DROP TABLE IF EXISTS plugin_idc_notify_channel;
+DROP TABLE IF EXISTS plugin_idc_notify_event_catalog;

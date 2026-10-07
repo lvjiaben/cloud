@@ -76,6 +76,27 @@ func (s pluginRegistryService) ListTenantPlugins(_ context.Context, input plugin
 	return out, err
 }
 
+// ListBusinessExtensionProviders returns owner-authorized new-binding candidates.
+func (s pluginRegistryService) ListBusinessExtensionProviders(_ context.Context, input plugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	out := &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{}}
+	err := s.callJSONRequest(protocol.HostServicePlugins, protocol.HostServiceMethodPluginsBusinessExtensionsList, input, out)
+	return out, err
+}
+
+// GetBusinessExtensionProviderExact verifies historical frozen evidence.
+func (s pluginRegistryService) GetBusinessExtensionProviderExact(_ context.Context, input plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	out := &capmodel.BusinessExtensionProviderEvidence{}
+	err := s.callJSONRequest(protocol.HostServicePlugins, protocol.HostServiceMethodPluginsBusinessExtensionsExact, input, out)
+	return out, err
+}
+
+// GetBusinessExtensionProvidersExact verifies a bounded historical evidence collection.
+func (s pluginRegistryService) GetBusinessExtensionProvidersExact(_ context.Context, inputs []plugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
+	out := make([]*capmodel.BusinessExtensionProviderEvidence, 0, len(inputs))
+	err := s.callJSONRequest(protocol.HostServicePlugins, protocol.HostServiceMethodPluginsBusinessExtensionsExactBatch, inputs, &out)
+	return out, err
+}
+
 // IsEnabled reports whether the target plugin is enabled in the current scope.
 func (s pluginStateService) IsEnabled(_ context.Context, pluginID plugincap.PluginID) (bool, error) {
 	var out bool

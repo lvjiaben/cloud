@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
+import { test, expect } from "../../../fixtures/auth";
 
 import {
   buildShellJobPayload,
@@ -13,9 +13,13 @@ import {
   getDefaultGroup,
   getJob,
   setCronShellEnabled,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-11 删除分组自动迁移任务', () => {
+test.describe("TC-11 删除分组自动迁移任务", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const groupCode = `e2e_migrate_group_${Date.now()}`;
   const groupName = `E2E迁移分组_${Date.now()}`;
   const jobName = `e2e_migrate_job_${Date.now()}`;
@@ -26,7 +30,7 @@ test.describe('TC-11 删除分组自动迁移任务', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
   });
 
@@ -43,21 +47,24 @@ test.describe('TC-11 删除分组自动迁移任务', () => {
     await api.dispose();
   });
 
-  test('TC-11a~c: 删除非默认分组后，分组下任务迁移到默认分组', async () => {
+  test("TC-11a~c: 删除非默认分组后，分组下任务迁移到默认分组", async () => {
     const defaultGroup = await getDefaultGroup(api);
     const createdGroup = await createGroup(api, {
       code: groupCode,
       name: groupName,
-      remark: 'migration target',
+      remark: "migration target",
       sortOrder: 30,
     });
     groupId = createdGroup.id;
 
-    const createdJob = await createJob(api, buildShellJobPayload({
-      groupId,
-      name: jobName,
-      status: 'disabled',
-    }));
+    const createdJob = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId,
+        name: jobName,
+        status: "disabled",
+      }),
+    );
     jobId = createdJob.id;
 
     await deleteGroup(api, groupId);

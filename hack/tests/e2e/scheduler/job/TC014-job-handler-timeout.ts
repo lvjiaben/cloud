@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
+import { test, expect } from "../../../fixtures/auth";
 
 import {
   buildShellJobPayload,
@@ -13,9 +13,13 @@ import {
   getLog,
   setCronShellEnabled,
   triggerJob,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-14 定时任务超时', () => {
+test.describe("TC-14 定时任务超时", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_job_timeout_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -23,7 +27,7 @@ test.describe('TC-14 定时任务超时', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
   });
 
@@ -38,16 +42,19 @@ test.describe('TC-14 定时任务超时', () => {
     await api.dispose();
   });
 
-  test('TC-14a~c: 任务超时后应记录 timeout 状态和超时时长', async () => {
+  test("TC-14a~c: 任务超时后应记录 timeout 状态和超时时长", async () => {
     const defaultGroup = await getDefaultGroup(api);
-    const created = await createJob(api, buildShellJobPayload({
-      groupId: defaultGroup.id,
-      name: jobName,
-      shellCmd: 'sleep 2',
-      timeoutSeconds: 1,
-      status: 'enabled',
-      cronExpr: '0 0 1 1 *',
-    }));
+    const created = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId: defaultGroup.id,
+        name: jobName,
+        shellCmd: "sleep 2",
+        timeoutSeconds: 1,
+        status: "enabled",
+        cronExpr: "0 0 1 1 *",
+      }),
+    );
     jobId = created.id;
 
     const triggered = await triggerJob(api, jobId);
@@ -56,12 +63,12 @@ test.describe('TC-14 定时任务超时', () => {
     await expect
       .poll(async () => (await getLog(api, triggered.logId)).status, {
         timeout: 10000,
-        message: '超时任务应生成 timeout 日志',
+        message: "超时任务应生成 timeout 日志",
       })
-      .toBe('timeout');
+      .toBe("timeout");
 
     const logDetail = await getLog(api, triggered.logId);
-    expect(logDetail.errMsg ?? '').toContain('1s');
-    expect(logDetail.errMsg ?? '').toContain('timed out');
+    expect(logDetail.errMsg ?? "").toContain("1s");
+    expect(logDetail.errMsg ?? "").toContain("timed out");
   });
 });

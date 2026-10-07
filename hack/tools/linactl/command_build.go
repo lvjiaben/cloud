@@ -62,27 +62,61 @@ func runBuild(ctx context.Context, a *app, input commandInput) error {
 		return err
 	}
 
-	if err = os.RemoveAll(options.OutputDir); err != nil {
+	if err = cleanBuildOutputDir(a.root, options.OutputDir); err != nil {
 		return fmt.Errorf("clean build output directory: %w", err)
 	}
 	if err = os.MkdirAll(options.OutputDir, 0o755); err != nil {
 		return fmt.Errorf("create build output directory: %w", err)
-	}
-	if err = runHostFrontendBuild(ctx, a, env, options.Verbose); err != nil {
-		return err
-	}
-	if err = runPreparePackedAssets(ctx, a, commandInput{}); err != nil {
-		return err
 	}
 	if pluginsEnabled {
 		if err = runPluginBuilds(ctx, a, env, options); err != nil {
 			return err
 		}
 	} else {
-		fmt.Fprintln(a.stdout, "Skipping official plugin wasm build in host-only mode")
+		fmt.Fprintln(a.stdout, "Skipping official plugin build in host-only mode")
+	}
+	if err = runHostFrontendBuild(ctx, a, env, options.Verbose); err != nil {
+		return err
+	}
+	if err = runDefaultWebsiteBuild(ctx, a, env, options.Verbose); err != nil {
+		return err
+	}
+	if err = runPreparePackedAssets(ctx, a, commandInput{}); err != nil {
+		return err
 	}
 
 	return runHostBackendBuild(ctx, a, env, options)
+}
+
+// cleanBuildOutputDir removes generated delivery files without deleting the
+// runtime package store. The default build directory is also the default
+// dynamic-plugin storage directory, so a normal rebuild must not turn an
+// installed local plugin into an orphan merely because its host binary was
+// rebuilt.
+func cleanBuildOutputDir(root string, outputDir string) error {
+	if !sameBuildPath(outputDir, filepath.Join(root, "temp", "output")) {
+		return os.RemoveAll(outputDir)
+	}
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, entry := range entries {
+		if isPersistentPluginArtifact(entry.Name()) {
+			continue
+		}
+		if err = os.RemoveAll(filepath.Join(outputDir, entry.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func isPersistentPluginArtifact(name string) bool {
+	return name == ".capability-storage" || name == ".runtime" || name == "releases" || strings.EqualFold(filepath.Ext(name), ".wasm")
 }
 
 func resolveBuildOptions(root string, input commandInput) (buildOptions, error) {
@@ -159,6 +193,9 @@ func runBuildDir(ctx context.Context, a *app, input commandInput, options buildO
 			return fmt.Errorf("create build output directory: %w", err)
 		}
 		if err = runHostFrontendBuild(ctx, a, env, options.Verbose); err != nil {
+			return err
+		}
+		if err = runDefaultWebsiteBuild(ctx, a, env, options.Verbose); err != nil {
 			return err
 		}
 		if err = runPreparePackedAssets(ctx, a, commandInput{}); err != nil {
@@ -298,7 +335,6 @@ func runHostFrontendBuild(ctx context.Context, a *app, env []string, verbose boo
 	if err := a.runCommand(ctx, commandOptions{Dir: filepath.Join(a.root, "apps", "lina-vben"), Env: env, Quiet: !verbose}, "pnpm", "run", "build"); err != nil {
 		return err
 	}
-
 	embedDir := filepath.Join(a.root, "apps", "lina-core", "internal", "packed", "public")
 	if err := os.RemoveAll(embedDir); err != nil {
 		return fmt.Errorf("clean frontend embed directory: %w", err)
@@ -316,13 +352,19 @@ func runHostFrontendBuild(ctx context.Context, a *app, env []string, verbose boo
 	return nil
 }
 
+func runDefaultWebsiteBuild(ctx context.Context, a *app, env []string, verbose bool) error {
+	fmt.Fprintln(a.stdout, "Building default website...")
+	if err := a.runCommand(ctx, commandOptions{Dir: filepath.Join(a.root, "apps", "lina-websites"), Env: env, Quiet: !verbose}, "pnpm", "run", "build"); err != nil {
+		return err
+	}
+	return nil
+}
+
 func runHostBackendBuild(ctx context.Context, a *app, env []string, options buildOptions) error {
 	multiPlatform := len(options.Targets) > 1
 	for _, target := range options.Targets {
-		targetBinary := filepath.Join(options.OutputDir, toolutil.ExecutableName(options.BinaryName))
-		if multiPlatform {
-			targetBinary = filepath.Join(options.OutputDir, target.OS+"_"+target.Arch, toolutil.ExecutableName(options.BinaryName))
-		}
+		packageRoot := deliveryPackageRoot(options.OutputDir, target, multiPlatform)
+		targetBinary := filepath.Join(packageRoot, targetExecutableName(options.BinaryName, target.OS))
 		if err := os.MkdirAll(filepath.Dir(targetBinary), 0o755); err != nil {
 			return fmt.Errorf("create backend output directory: %w", err)
 		}
@@ -332,13 +374,16 @@ func runHostBackendBuild(ctx context.Context, a *app, env []string, options buil
 		if err != nil {
 			return err
 		}
+		if err = assembleWebDelivery(ctx, a, env, options, target, packageRoot); err != nil {
+			return err
+		}
 		fmt.Fprintf(a.stdout, "Build complete: %s\n", toolutil.RelativePath(a.root, targetBinary))
 	}
 	return nil
 }
 
-// runPluginBuilds runs plugin-owned builds before Go compilation so
-// plugins can generate embeddable files without storing build artifacts in Git.
+// runPluginBuilds runs plugin-owned builds before the host frontend and Go
+// compilation so source pages can consume plugin-owned generated assets.
 func runPluginBuilds(ctx context.Context, a *app, env []string, options buildOptions) error {
 	pluginDirs, err := discoverPluginBuildRoots(a.root)
 	if err != nil {

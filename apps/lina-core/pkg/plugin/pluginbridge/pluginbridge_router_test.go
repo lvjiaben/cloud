@@ -5,6 +5,7 @@ package pluginbridge
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"lina-core/pkg/plugin/pluginbridge/protocol"
@@ -172,7 +173,7 @@ func TestGuestControllerRouteDispatcherBindsTypedRequest(t *testing.T) {
 	}
 
 	response, err := dispatcher.HandleRequest(&protocol.BridgeRequestEnvelopeV1{
-		PluginID:  "linapro-demo-dynamic",
+		PluginID:  "demo-dynamic",
 		RequestID: "req-typed",
 		Route: &protocol.RouteMatchSnapshotV1{
 			Method:      "PUT",
@@ -197,8 +198,26 @@ func TestGuestControllerRouteDispatcherBindsTypedRequest(t *testing.T) {
 	if got := response.Headers["X-Guest-Typed"]; len(got) != 1 || got[0] != "ok" {
 		t.Fatalf("expected custom typed response header, got %#v", response.Headers)
 	}
-	if string(response.Body) != `{"id":"demo-1","pageNum":7,"skipNetwork":true,"title":"updated title","pluginId":"linapro-demo-dynamic","requestId":"req-typed"}` {
+	if string(response.Body) != `{"id":"demo-1","pageNum":7,"skipNetwork":true,"title":"updated title","pluginId":"demo-dynamic","requestId":"req-typed"}` {
 		t.Fatalf("unexpected typed response payload: %q", string(response.Body))
+	}
+}
+
+// TestApplyGuestRouteValuesBindsBracketedSlices verifies query arrays emitted
+// by the frontend's brackets serializer reach typed dynamic-plugin DTOs.
+func TestApplyGuestRouteValuesBindsBracketedSlices(t *testing.T) {
+	target := struct {
+		Ids []int64 `json:"ids"`
+	}{}
+	request := &protocol.BridgeRequestEnvelopeV1{
+		Route: &protocol.RouteMatchSnapshotV1{
+			QueryValues: map[string][]string{"ids[]": {"7", "11"}},
+		},
+	}
+
+	applyGuestRouteValues(reflect.ValueOf(&target).Elem(), request)
+	if len(target.Ids) != 2 || target.Ids[0] != 7 || target.Ids[1] != 11 {
+		t.Fatalf("expected bracketed query IDs to bind, got %#v", target.Ids)
 	}
 }
 

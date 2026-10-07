@@ -29,10 +29,10 @@ func TestConvertToRouteItemsBuildsIframeRouteForHostedXAssets(t *testing.T) {
 	}
 
 	route := routes[0]
-	if route.Component != "IFrameView" {
-		t.Fatalf("expected iframe route component, got %s", route.Component)
+	if route.Component != "PluginSandboxView" {
+		t.Fatalf("expected isolated plugin route component, got %s", route.Component)
 	}
-	if route.Meta == nil || route.Meta.IframeSrc != "/x-assets/plugin-runtime-demo/v0.1.0/index.html" {
+	if route.Meta == nil || route.Meta.PluginSandboxSrc != "/x-assets/plugin-runtime-demo/v0.1.0/index.html" || route.Meta.IframeSrc != "" {
 		t.Fatalf("expected iframe src to be preserved, got %#v", route.Meta)
 	}
 	if route.Path == "/x-assets/plugin-runtime-demo/v0.1.0/index.html" {
@@ -40,9 +40,32 @@ func TestConvertToRouteItemsBuildsIframeRouteForHostedXAssets(t *testing.T) {
 	}
 }
 
-// TestConvertToRouteItemsBuildsNewWindowRouteForHostedXAssets verifies
-// hosted asset menus marked as frames become new-window link routes.
-func TestConvertToRouteItemsBuildsNewWindowRouteForHostedXAssets(t *testing.T) {
+func TestConvertToRouteItemsKeepsGovernedPluginPathForIsolatedSurface(t *testing.T) {
+	routes := convertToRouteItems([]*menusvc.MenuItem{
+		{
+			Id: 105, Name: "SSL certificates", Path: "/plugins/ssl-provider/certificates",
+			Type: menutype.Menu.String(), Visible: 1, Status: 1,
+			QueryParam: `{"pluginSurfaceSrc":"/x-assets/ssl-provider/v1.0.0/admin/index.html","pluginSurfacePlugin":"ssl-provider","pluginSurfaceKey":"certificates","pluginSurfaceVersion":"v1","pluginSurfaceCapabilities":"certificates.query,certificates.download","pluginSurfaceHost":"admin"}`,
+		},
+	})
+	if len(routes) != 1 {
+		t.Fatalf("expected one governed surface route, got %d", len(routes))
+	}
+	route := routes[0]
+	if route.Path != "/plugins/ssl-provider/certificates" {
+		t.Fatalf("expected the host-governed route path to remain stable, got %s", route.Path)
+	}
+	if route.Component != "PluginSandboxView" || route.Meta == nil || route.Meta.PluginSandboxSrc != "/x-assets/ssl-provider/v1.0.0/admin/index.html" || route.Meta.IframeSrc != "" {
+		t.Fatalf("expected an isolated hosted surface, got %#v", route)
+	}
+	if route.Meta.PluginSurfaceId != "ssl-provider" || route.Meta.PluginSurfaceKey != "certificates" || route.Meta.PluginSurfaceVer != "v1" || route.Meta.PluginSurfaceHost != "admin" || len(route.Meta.PluginSurfaceCapabilities) != 2 {
+		t.Fatalf("expected exact page bridge authorization metadata, got %#v", route.Meta)
+	}
+}
+
+// TestConvertToRouteItemsKeepsHostedXAssetsIsolatedWhenMarkedAsFrame verifies
+// legacy frame flags cannot bypass the hosted plugin sandbox.
+func TestConvertToRouteItemsKeepsHostedXAssetsIsolatedWhenMarkedAsFrame(t *testing.T) {
 	routes := convertToRouteItems([]*menusvc.MenuItem{
 		{
 			Id:      102,
@@ -60,20 +83,31 @@ func TestConvertToRouteItemsBuildsNewWindowRouteForHostedXAssets(t *testing.T) {
 	}
 
 	route := routes[0]
-	if route.Component != "BasicLayout" {
-		t.Fatalf("expected new-window route to keep basic layout component, got %s", route.Component)
+	if route.Component != "PluginSandboxView" {
+		t.Fatalf("expected hosted asset to remain isolated, got %s", route.Component)
 	}
-	if route.Meta == nil || route.Meta.Link != "/x-assets/plugin-runtime-demo/v0.1.0/index.html" {
-		t.Fatalf("expected link target to be preserved, got %#v", route.Meta)
+	if route.Meta == nil || route.Meta.PluginSandboxSrc != "/x-assets/plugin-runtime-demo/v0.1.0/index.html" || route.Meta.Link != "" {
+		t.Fatalf("expected sandbox target without a direct link, got %#v", route.Meta)
 	}
-	if !route.Meta.OpenInNewWindow {
-		t.Fatalf("expected route to open in new window")
+	if route.Meta.OpenInNewWindow {
+		t.Fatalf("hosted plugin assets must not open outside the sandbox")
+	}
+}
+
+func TestNormalizeMenuLinkTargetRejectsHostedAssetTraversal(t *testing.T) {
+	for _, target := range []string{
+		"/x-assets/plugin/v1/../secret",
+		"/x-assets/plugin/v1/%2e%2e/secret",
+		"/x-assets/plugin/v1/index.html?token=host",
+	} {
+		if normalized := normalizeMenuLinkTarget(target); normalized != "" {
+			t.Fatalf("expected unsafe hosted target to be rejected, got %s", normalized)
+		}
 	}
 }
 
 // TestConvertToRouteItemsBuildsEmbeddedMountRouteForHostedXAssets verifies
-// embedded-mount runtime menus keep the hosted shell component and forward the
-// target URL through query parameters.
+// embedded-mount runtime menus are forced into the isolated page container.
 func TestConvertToRouteItemsBuildsEmbeddedMountRouteForHostedXAssets(t *testing.T) {
 	routes := convertToRouteItems([]*menusvc.MenuItem{
 		{
@@ -94,17 +128,11 @@ func TestConvertToRouteItemsBuildsEmbeddedMountRouteForHostedXAssets(t *testing.
 	}
 
 	route := routes[0]
-	if route.Component != "#/views/system/plugin/dynamic-page" {
-		t.Fatalf("expected embedded route to keep runtime host component, got %s", route.Component)
+	if route.Component != "PluginSandboxView" {
+		t.Fatalf("expected embedded route to use isolated plugin component, got %s", route.Component)
 	}
-	if route.Meta == nil || route.Meta.Query == nil {
-		t.Fatalf("expected embedded route query to be present, got %#v", route.Meta)
-	}
-	if route.Meta.Query["pluginAccessMode"] != "embedded-mount" {
-		t.Fatalf("expected embedded access mode query, got %#v", route.Meta.Query)
-	}
-	if route.Meta.Query["embeddedSrc"] != "/x-assets/plugin-runtime-demo/v0.1.0/mount.js" {
-		t.Fatalf("expected embedded asset url to be preserved, got %#v", route.Meta.Query)
+	if route.Meta == nil || route.Meta.PluginSandboxSrc != "/x-assets/plugin-runtime-demo/v0.1.0/mount.js" || route.Meta.IframeSrc != "" {
+		t.Fatalf("expected isolated asset url to be preserved, got %#v", route.Meta)
 	}
 	if route.Path == "/x-assets/plugin-runtime-demo/v0.1.0/mount.js" {
 		t.Fatalf("expected virtual host route instead of raw asset path, got %s", route.Path)
@@ -118,7 +146,7 @@ func TestConvertToRouteItemsKeepsRegularViewRouteUnchanged(t *testing.T) {
 		{
 			Id:        104,
 			Name:      "Plugin Demo Source",
-			Path:      "linapro-demo-source-sidebar-entry",
+			Path:      "demo-source-sidebar-entry",
 			Component: "system/plugin/dynamic-page",
 			Type:      menutype.Menu.String(),
 			IsFrame:   0,
@@ -138,7 +166,7 @@ func TestConvertToRouteItemsKeepsRegularViewRouteUnchanged(t *testing.T) {
 	if route.Meta == nil || route.Meta.IframeSrc != "" || route.Meta.Link != "" {
 		t.Fatalf("expected regular route meta to stay without link semantics, got %#v", route.Meta)
 	}
-	if route.Path != "/linapro-demo-source-sidebar-entry" {
+	if route.Path != "/demo-source-sidebar-entry" {
 		t.Fatalf("expected normal menu path, got %s", route.Path)
 	}
 }
@@ -196,7 +224,7 @@ func TestConvertToRouteItemsSkipsDirectoryWithoutVisibleChildren(t *testing.T) {
 					Id:       302,
 					ParentId: 301,
 					Name:     "操作日志查看",
-					Path:     "linapro-monitor-operlog-view",
+					Path:     "monitor-operlog-view",
 					Type:     menutype.Button.String(),
 					Visible:  1,
 					Status:   1,

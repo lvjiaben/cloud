@@ -45,6 +45,8 @@ type SysPluginColumns struct {
 	CreatedAt               string // Creation time
 	UpdatedAt               string // Update time
 	DeletedAt               string // Deletion time
+	NewBusinessState        string // New business admission state: accepting/stopped; it does not control existing-service visibility
+	NewBusinessStoppedAt    string // Time when the plugin most recently stopped accepting new business
 }
 
 // sysPluginColumns holds the columns for the table sys_plugin.
@@ -73,6 +75,8 @@ var sysPluginColumns = SysPluginColumns{
 	CreatedAt:               "created_at",
 	UpdatedAt:               "updated_at",
 	DeletedAt:               "deleted_at",
+	NewBusinessState:        "new_business_state",
+	NewBusinessStoppedAt:    "new_business_stopped_at",
 }
 
 // NewSysPluginDao creates and returns a new DAO object for table data access.

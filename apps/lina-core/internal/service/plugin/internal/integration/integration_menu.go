@@ -38,6 +38,11 @@ func (s *serviceImpl) SyncPluginMenusAndPermissions(ctx context.Context, manifes
 	if manifest == nil {
 		return nil
 	}
+	governedManifest, err := manifestWithGovernedAdminSurfaceMenus(manifest)
+	if err != nil {
+		return err
+	}
+	manifest = governedManifest
 	changed, err := s.pluginMenusAndPermissionsNeedSync(ctx, manifest)
 	if err != nil {
 		return err
@@ -62,6 +67,11 @@ func (s *serviceImpl) SyncPluginMenus(ctx context.Context, manifest *catalog.Man
 	if manifest == nil {
 		return nil
 	}
+	governedManifest, err := manifestWithGovernedAdminSurfaceMenus(manifest)
+	if err != nil {
+		return err
+	}
+	manifest = governedManifest
 	changed, err := s.pluginDeclaredMenusNeedSync(ctx, manifest)
 	if err != nil {
 		return err

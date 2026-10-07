@@ -20,18 +20,18 @@ func TestScanFindsPluginGovernanceViolations(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), `
-id: linapro-demo-dynamic
+id: demo-dynamic
 type: dynamic
 hostServices:
   - service: data
     methods: [list]
     resources:
       tables:
-        - plugin_linapro_demo_dynamic_record
+        - plugin_demo_dynamic_record
         - sys_user
-        - plugin_linapro_other_record
+        - plugin_foreign_record
         - audit_log
   - service: org
     methods:
@@ -42,7 +42,7 @@ gfcli:
   gen:
     dao:
       - tables: >-
-          plugin_linapro_demo_dynamic_record,
+          plugin_demo_dynamic_record,
           sys_user
 `)
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "backend", "internal", "dao", "internal", "sys_user.go"), "package internal\n")
@@ -89,9 +89,9 @@ func TestScanRequiresDependencyForCrossPluginCapImport(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-ai-core")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: linapro-ai-core\n")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-linapro-ai-core\n")
+	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "ai-core")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: ai-core\n")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-ai-core\n")
 
 	consumerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-consumer-source")
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "plugin.yaml"), `
@@ -101,7 +101,7 @@ type: source
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "backend", "internal", "service", "ai.go"), `
 package service
 
-import _ "lina-plugin-linapro-ai-core/backend/cap/aicap/aitext"
+import _ "lina-plugin-ai-core/backend/cap/aicap/aitext"
 `)
 
 	report, err := Scan(root)
@@ -122,9 +122,9 @@ func TestScanRequiresVersionForCrossPluginCapDependency(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-ai-core")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: linapro-ai-core\n")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-linapro-ai-core\n")
+	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "ai-core")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: ai-core\n")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-ai-core\n")
 
 	consumerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-consumer-source")
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "plugin.yaml"), `
@@ -132,12 +132,12 @@ id: linapro-consumer-source
 type: source
 dependencies:
   plugins:
-    - id: linapro-ai-core
+    - id: ai-core
 `)
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "backend", "internal", "service", "ai.go"), `
 package service
 
-import _ "lina-plugin-linapro-ai-core/backend/cap/aicap/aitext"
+import _ "lina-plugin-ai-core/backend/cap/aicap/aitext"
 `)
 
 	report, err := Scan(root)
@@ -159,9 +159,9 @@ func TestScanBlocksCrossPluginPrivateImports(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-ai-core")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: linapro-ai-core\n")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-linapro-ai-core\n")
+	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "ai-core")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: ai-core\n")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-ai-core\n")
 
 	consumerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-consumer-source")
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "plugin.yaml"), `
@@ -169,20 +169,20 @@ id: linapro-consumer-source
 type: source
 dependencies:
   plugins:
-    - id: linapro-ai-core
+    - id: ai-core
       version: ">=0.1.0"
 `)
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "backend", "internal", "service", "ai.go"), `
 package service
 
 import (
-	_ "lina-plugin-linapro-ai-core/backend/internal/controller/provider"
-	_ "lina-plugin-linapro-ai-core/backend/internal/dao"
-	_ "lina-plugin-linapro-ai-core/backend/internal/model/do"
-	_ "lina-plugin-linapro-ai-core/backend/internal/model/entity"
-	_ "lina-plugin-linapro-ai-core/backend/internal/provider/aiadapter"
-	_ "lina-plugin-linapro-ai-core/backend/internal/service/ai"
-	_ "lina-plugin-linapro-ai-core/backend/pkg/aiclient"
+	_ "lina-plugin-ai-core/backend/internal/controller/provider"
+	_ "lina-plugin-ai-core/backend/internal/dao"
+	_ "lina-plugin-ai-core/backend/internal/model/do"
+	_ "lina-plugin-ai-core/backend/internal/model/entity"
+	_ "lina-plugin-ai-core/backend/internal/provider/aiadapter"
+	_ "lina-plugin-ai-core/backend/internal/service/ai"
+	_ "lina-plugin-ai-core/backend/pkg/aiclient"
 )
 `)
 
@@ -208,9 +208,9 @@ func TestScanAllowsCrossPluginPrivateImportsOnlyInTests(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-ai-core")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: linapro-ai-core\n")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-linapro-ai-core\n")
+	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "ai-core")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: ai-core\n")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-ai-core\n")
 
 	consumerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-consumer-source")
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "plugin.yaml"), "id: linapro-consumer-source\n")
@@ -218,14 +218,14 @@ func TestScanAllowsCrossPluginPrivateImportsOnlyInTests(t *testing.T) {
 package service
 
 import (
-	_ "lina-plugin-linapro-ai-core/backend/internal/service/ai"
-	_ "lina-plugin-linapro-ai-core/backend/pkg/aiclient"
+	_ "lina-plugin-ai-core/backend/internal/service/ai"
+	_ "lina-plugin-ai-core/backend/pkg/aiclient"
 )
 `)
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "backend", "internal", "service", "ai.go"), `
 package service
 
-import _ "lina-plugin-linapro-ai-core/backend/pkg/aiclient"
+import _ "lina-plugin-ai-core/backend/pkg/aiclient"
 `)
 
 	report, err := Scan(root)
@@ -248,13 +248,13 @@ func TestScanAllowsDeclaredCrossPluginCapImport(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-ai-core")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: linapro-ai-core\n")
-	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-linapro-ai-core\n")
+	ownerRoot := filepath.Join(root, "apps", "lina-plugins", "ai-core")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "plugin.yaml"), "id: ai-core\n")
+	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "go.mod"), "module lina-plugin-ai-core\n")
 	writePluginGovernanceFile(t, filepath.Join(ownerRoot, "backend", "plugin.go"), `
 package backend
 
-import _ "lina-plugin-linapro-ai-core/backend/cap/aicap/aitext"
+import _ "lina-plugin-ai-core/backend/cap/aicap/aitext"
 `)
 
 	consumerRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-consumer-source")
@@ -263,13 +263,13 @@ id: linapro-consumer-source
 type: source
 dependencies:
   plugins:
-    - id: linapro-ai-core
+    - id: ai-core
       version: ">=0.1.0 <0.2.0"
 `)
 	writePluginGovernanceFile(t, filepath.Join(consumerRoot, "backend", "internal", "service", "ai.go"), `
 package service
 
-import _ "lina-plugin-linapro-ai-core/backend/cap/aicap/aitext"
+import _ "lina-plugin-ai-core/backend/cap/aicap/aitext"
 `)
 
 	report, err := Scan(root)
@@ -287,13 +287,13 @@ func TestScanRejectsLegacyBackendConfig(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
-	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), "id: linapro-demo-dynamic\n")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
+	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), "id: demo-dynamic\n")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "backend", "hack", "config.yaml"), `
 gfcli:
   gen:
     dao:
-      - tables: plugin_linapro_demo_dynamic_record
+      - tables: plugin_demo_dynamic_record
 `)
 
 	report, err := Scan(root)
@@ -314,8 +314,8 @@ func TestScanRejectsGeneratedDAOWithoutRootConfig(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
-	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), "id: linapro-demo-dynamic\n")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
+	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), "id: demo-dynamic\n")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "backend", "internal", "dao", "demo.go"), "package dao\n")
 
 	report, err := Scan(root)
@@ -334,16 +334,16 @@ func TestScanAllowsHostCoreInternalSyntaxAlreadyBlockedByGo(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), `
-id: linapro-demo-dynamic
+id: demo-dynamic
 type: dynamic
 hostServices:
   - service: data
     methods: [list]
     resources:
       tables:
-        - plugin_linapro_demo_dynamic_record
+        - plugin_demo_dynamic_record
 `)
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "backend", "internal", "service", "impossible.go"), `
 package service
@@ -376,22 +376,22 @@ func TestScanAllowsControlledNonProductionExceptions(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), `
-id: linapro-demo-dynamic
+id: demo-dynamic
 type: dynamic
 hostServices:
   - service: data
     methods: [list]
     resources:
       tables:
-        - plugin_linapro_demo_dynamic_record
+        - plugin_demo_dynamic_record
 `)
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "hack", "config.yaml"), `
 gfcli:
   gen:
     dao:
-      - tables: plugin_linapro_demo_dynamic_record
+      - tables: plugin_demo_dynamic_record
 `)
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "backend", "internal", "service", "demo_test.go"), `
 package service
@@ -421,9 +421,9 @@ func TestRunCheckReportsTextAndError(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
-	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginRoot := filepath.Join(root, "apps", "lina-plugins", "demo-dynamic")
 	writePluginGovernanceFile(t, filepath.Join(pluginRoot, "plugin.yaml"), `
-id: linapro-demo-dynamic
+id: demo-dynamic
 hostServices:
   - service: data
     resources:

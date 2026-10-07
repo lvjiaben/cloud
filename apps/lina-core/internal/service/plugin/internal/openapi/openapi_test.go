@@ -20,7 +20,7 @@ import (
 // TestRouteOpenAPIOperationUsesBridgeState verifies that projected
 // responses follow the runtime bridge execution flag.
 func TestRouteOpenAPIOperationUsesBridgeState(t *testing.T) {
-	operation := buildRouteOpenAPIOperation("linapro-demo-dynamic", &protocol.RouteContract{
+	operation := buildRouteOpenAPIOperation("demo-dynamic", &protocol.RouteContract{
 		Path:        "/api/v1/review-summary",
 		Method:      http.MethodGet,
 		Access:      protocol.AccessLogin,
@@ -48,7 +48,7 @@ func TestRouteOpenAPIOperationUsesBridgeState(t *testing.T) {
 		t.Fatalf("expected dynamic OpenAPI operation to omit i18n extensions, got %#v", operation.XExtensions)
 	}
 
-	placeholder := buildRouteOpenAPIOperation("linapro-demo-dynamic", &protocol.RouteContract{
+	placeholder := buildRouteOpenAPIOperation("demo-dynamic", &protocol.RouteContract{
 		Path:        "/api/v1/placeholder",
 		Method:      http.MethodGet,
 		Access:      protocol.AccessPublic,

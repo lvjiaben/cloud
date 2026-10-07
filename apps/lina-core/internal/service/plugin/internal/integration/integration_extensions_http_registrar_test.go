@@ -163,6 +163,72 @@ func TestSourceRouteRegistrarCaptureSourceRouteBindings(t *testing.T) {
 	}
 }
 
+// TestSourceRouteRegistrarCustomerPageBridgeProof verifies explicit owner proof
+// capture and fail-closed registration without turning the proof into a route.
+func TestSourceRouteRegistrarCustomerPageBridgeProof(t *testing.T) {
+	type customerReq struct {
+		g.Meta `path:"/customer-records" method:"get" pageBridgeCapability:"records.customer.v1" pageBridgeHost:"customer"`
+	}
+	type adminReq struct {
+		g.Meta `path:"/admin-records" method:"get" permission:"records:list" pageBridgeCapability:"records.admin.v1" pageBridgeHost:"admin"`
+	}
+	var (
+		customerHandler = func(context.Context, *customerReq) (*testSourceHTTPPingRes, error) {
+			return &testSourceHTTPPingRes{}, nil
+		}
+		adminHandler                  = func(context.Context, *adminReq) (*testSourceHTTPPingRes, error) { return &testSourceHTTPPingRes{}, nil }
+		proofCalls                    int
+		requestContext, cancelRequest = context.WithCancel(context.Background())
+		proof                         = func(ctx context.Context) (int, error) {
+			proofCalls++
+			if ctx != requestContext {
+				t.Fatal("owner proof received a substituted context")
+			}
+			return 51, nil
+		}
+	)
+	_, rootGroup := newSourceHTTPTestServer(t, false)
+	registrar := newSourceRouteRegistrar(rootGroup, "plugin-demo", nil, newSourceHTTPTestService(true))
+	registrar.Group(registrar.APIPrefix()+"/api/v1", func(group pluginhost.RouteGroup) {
+		group.BindCustomerPageBridge(proof, customerHandler)
+		group.Bind(testSourceHTTPPingHandler)
+	})
+	defer cancelRequest()
+	bindings := registrar.RouteBindings()
+	if registrar.Err() != nil || len(bindings) != 2 || proofCalls != 0 {
+		t.Fatalf("unexpected registration: count=%d calls=%d err=%v", len(bindings), proofCalls, registrar.Err())
+	}
+	if bindings[0].AuthorizePageBridgeCustomer == nil || bindings[1].AuthorizePageBridgeCustomer != nil {
+		t.Fatal("proof was lost or leaked to ordinary Bind")
+	}
+	if userID, err := bindings[0].AuthorizePageBridgeCustomer(requestContext); err != nil || userID != 51 || proofCalls != 1 {
+		t.Fatalf("captured owner proof was not invoked: user=%d err=%v", userID, err)
+	}
+	for _, testCase := range []struct {
+		name      string
+		authorize func(context.Context) (int, error)
+		handlers  []interface{}
+	}{
+		{name: "nil proof", handlers: []interface{}{customerHandler}},
+		{name: "no handler", authorize: proof},
+		{name: "no metadata", authorize: proof, handlers: []interface{}{testSourceHTTPPingHandler}},
+		{name: "admin metadata", authorize: proof, handlers: []interface{}{adminHandler}},
+		{name: "raw handler", authorize: proof, handlers: []interface{}{func(*ghttp.Request) {}}},
+		{name: "atomic mixed batch", authorize: proof, handlers: []interface{}{customerHandler, adminHandler}},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			_, testRoot := newSourceHTTPTestServer(t, false)
+			testRegistrar := newSourceRouteRegistrar(testRoot, "plugin-demo", nil, newSourceHTTPTestService(true))
+			testRegistrar.Group(testRegistrar.APIPrefix()+"/api/v1", func(group pluginhost.RouteGroup) {
+				group.BindCustomerPageBridge(testCase.authorize, testCase.handlers...)
+			})
+			if testRegistrar.Err() == nil || len(testRegistrar.RouteBindings()) != 0 {
+				t.Fatal("invalid customer bridge registration was captured")
+			}
+		})
+	}
+}
+
 // TestSourceRouteRegistrarRejectsNonAPIRoutesUnderX verifies `/x` remains
 // reserved for plugin API routes owned by the current plugin.
 func TestSourceRouteRegistrarRejectsNonAPIRoutesUnderX(t *testing.T) {

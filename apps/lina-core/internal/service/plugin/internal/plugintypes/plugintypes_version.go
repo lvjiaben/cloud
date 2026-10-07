@@ -24,39 +24,8 @@ var (
 	manifestSemverPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$`)
 )
 
-// PluginIDParts stores best-effort convention parts parsed from a plugin ID.
-type PluginIDParts struct {
-	// Author is the first single-slug segment of the plugin ID.
-	Author string
-	// Domain is the second single-slug segment when present.
-	Domain string
-	// Capability is the remaining kebab-case capability segment.
-	Capability string
-}
-
-// ParsePluginID validates value and returns best-effort suggested structural
-// parts. The <author>-<domain>-<capability> layout is an authoring convention.
-func ParsePluginID(value string) (*PluginIDParts, error) {
-	pluginID := strings.TrimSpace(value)
-	if err := ValidatePluginID(pluginID); err != nil {
-		return nil, err
-	}
-
-	segments := strings.Split(pluginID, "-")
-	parts := &PluginIDParts{
-		Author: segments[0],
-	}
-	if len(segments) > 1 {
-		parts.Domain = segments[1]
-	}
-	if len(segments) > 2 {
-		parts.Capability = strings.Join(segments[2:], "-")
-	}
-	return parts, nil
-}
-
 // ValidatePluginID validates the runtime-safe plugin ID boundary without
-// enforcing ecosystem naming recommendations.
+// inferring an author, organization, domain, or capability from its segments.
 func ValidatePluginID(value string) error {
 	pluginID := strings.TrimSpace(value)
 	if pluginID == "" {

@@ -24,6 +24,33 @@ const (
 // String returns the serialized plugin distribution value.
 func (value PluginDistribution) String() string { return string(value) }
 
+// NewBusinessState identifies whether a plugin may accept new bindings,
+// purchases, or fulfillment tasks independently of existing-service access.
+type NewBusinessState string
+
+// Supported new-business admission states.
+const (
+	NewBusinessStateAccepting NewBusinessState = "accepting"
+	NewBusinessStateStopped   NewBusinessState = "stopped"
+)
+
+// String returns the serialized new-business state value.
+func (value NewBusinessState) String() string { return string(value) }
+
+// BusinessImpactCategory identifies one bounded lifecycle impact class.
+type BusinessImpactCategory string
+
+// Supported lifecycle impact classes.
+const (
+	BusinessImpactCategorySellingProductVersions   BusinessImpactCategory = "selling_product_versions"
+	BusinessImpactCategoryInFlightTasks            BusinessImpactCategory = "in_flight_tasks"
+	BusinessImpactCategoryActiveServices           BusinessImpactCategory = "active_services"
+	BusinessImpactCategoryPendingHistoricalActions BusinessImpactCategory = "pending_historical_actions"
+)
+
+// String returns the serialized impact category value.
+func (value BusinessImpactCategory) String() string { return string(value) }
+
 // RuntimeState identifies whether discovered plugin files match effective state.
 type RuntimeState string
 

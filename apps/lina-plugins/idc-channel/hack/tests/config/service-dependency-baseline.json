@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-channel/backend/internal/controller/admin/admin_new.go",
+      "maxCalls": 1,
+      "reason": "Channel admin controller composition boundary; creates the controller from plugin-owned services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-channel/backend/plugin.go",
+      "maxCalls": 5,
+      "reason": "IDC channel plugin composition boundary; wires plugin-owned services once during registration."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "menu": {
+    "plugin:idc-notify:wecom-self-binding": {
+      "title": "我的企业微信绑定"
+    },
+    "plugin:idc-notify:channels": {
+      "title": "通知渠道"
+    },
+    "plugin:idc-notify:templates": {
+      "title": "通知模板"
+    },
+    "plugin:idc-notify:deliveries": {
+      "title": "通知投递记录"
+    },
+    "plugin:idc-notify:manage": {
+      "title": "管理通知渠道"
+    }
+  }
+}

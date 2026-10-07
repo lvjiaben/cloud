@@ -46,8 +46,8 @@ func TestMatchDynamicRoutePathSupportsParams(t *testing.T) {
 func TestBuildMetadataMapsRouteGovernance(t *testing.T) {
 	metadata := runtime.BuildMetadata(&runtime.DynamicRouteRuntimeState{
 		Match: &runtime.DynamicRouteMatch{
-			PluginID:   "linapro-demo-dynamic",
-			PublicPath: "/x/linapro-demo-dynamic/api/v1/review",
+			PluginID:   "demo-dynamic",
+			PublicPath: "/x/demo-dynamic/api/v1/review",
 			Route: &protocol.RouteContract{
 				Method:  http.MethodGet,
 				Tags:    []string{"plugin-review", "dynamic"},
@@ -61,13 +61,13 @@ func TestBuildMetadataMapsRouteGovernance(t *testing.T) {
 	if metadata == nil {
 		t.Fatal("expected dynamic route metadata to be built")
 	}
-	if metadata.PluginID != "linapro-demo-dynamic" {
-		t.Fatalf("expected plugin id linapro-demo-dynamic, got %q", metadata.PluginID)
+	if metadata.PluginID != "demo-dynamic" {
+		t.Fatalf("expected plugin id demo-dynamic, got %q", metadata.PluginID)
 	}
 	if metadata.Method != http.MethodGet {
 		t.Fatalf("expected method GET, got %q", metadata.Method)
 	}
-	if metadata.PublicPath != "/x/linapro-demo-dynamic/api/v1/review" {
+	if metadata.PublicPath != "/x/demo-dynamic/api/v1/review" {
 		t.Fatalf("expected public path to be preserved, got %q", metadata.PublicPath)
 	}
 	if len(metadata.Tags) != 2 || metadata.Tags[0] != "plugin-review" || metadata.Tags[1] != "dynamic" {
@@ -487,12 +487,12 @@ func TestExecuteDynamicWasmBridgeReturnsGuestResponse(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), dynamicWasmBridgeTestTimeout)
 	defer cancel()
 	response, err := services.Runtime.ExecuteDynamicRoute(ctx, manifest, &protocol.BridgeRequestEnvelopeV1{
-		PluginID: "linapro-demo-dynamic",
+		PluginID: "demo-dynamic",
 		Route: &protocol.RouteMatchSnapshotV1{
 			InternalPath: "/api/v1/backend-summary",
-			PublicPath:   "/x/linapro-demo-dynamic/api/v1/backend-summary",
+			PublicPath:   "/x/demo-dynamic/api/v1/backend-summary",
 			Access:       protocol.AccessLogin,
-			Permission:   "linapro-demo-dynamic:backend:view",
+			Permission:   "demo-dynamic:backend:view",
 			RequestType:  "BackendSummaryReq",
 		},
 		Identity: &protocol.IdentitySnapshotV1{
@@ -514,7 +514,7 @@ func TestExecuteDynamicWasmBridgeReturnsGuestResponse(t *testing.T) {
 	if string(response.Body) == "" {
 		t.Fatal("expected guest bridge response body to be non-empty")
 	}
-	if got := response.Headers["X-Lina-Plugin-Bridge"]; len(got) != 1 || got[0] != "linapro-demo-dynamic" {
+	if got := response.Headers["X-Lina-Plugin-Bridge"]; len(got) != 1 || got[0] != "demo-dynamic" {
 		t.Fatalf("expected guest bridge header to be preserved, got %#v", response.Headers)
 	}
 	if got := response.Headers["X-Lina-Plugin-Middleware"]; len(got) != 1 || got[0] != "backend-summary" {
@@ -525,7 +525,7 @@ func TestExecuteDynamicWasmBridgeReturnsGuestResponse(t *testing.T) {
 	if err = json.Unmarshal(response.Body, &payload); err != nil {
 		t.Fatalf("expected guest response body to be valid json, got error: %v", err)
 	}
-	if payload["pluginId"] != "linapro-demo-dynamic" {
+	if payload["pluginId"] != "demo-dynamic" {
 		t.Fatalf("expected guest payload pluginId to be preserved, got %#v", payload)
 	}
 	if payload["authenticated"] != true {
@@ -548,13 +548,13 @@ func TestExecuteDynamicWasmBridgeHostCallDemoUsesStructuredHostServices(t *testi
 	ctx, cancel := context.WithTimeout(context.Background(), dynamicWasmBridgeTestTimeout)
 	defer cancel()
 	response, err := services.Runtime.ExecuteDynamicRoute(ctx, manifest, &protocol.BridgeRequestEnvelopeV1{
-		PluginID:  "linapro-demo-dynamic",
+		PluginID:  "demo-dynamic",
 		RequestID: "req-host-call-demo",
 		Route: &protocol.RouteMatchSnapshotV1{
 			InternalPath: "/api/v1/host-call-demo",
-			PublicPath:   "/x/linapro-demo-dynamic/api/v1/host-call-demo",
+			PublicPath:   "/x/demo-dynamic/api/v1/host-call-demo",
 			Access:       protocol.AccessLogin,
-			Permission:   "linapro-demo-dynamic:backend:view",
+			Permission:   "demo-dynamic:backend:view",
 			RequestType:  "HostCallDemoReq",
 			QueryValues: map[string][]string{
 				"skipNetwork": {"1"},
@@ -581,7 +581,7 @@ func TestExecuteDynamicWasmBridgeHostCallDemoUsesStructuredHostServices(t *testi
 	if err = json.Unmarshal(response.Body, &payload); err != nil {
 		t.Fatalf("expected host call demo body to be valid json, got error: %v", err)
 	}
-	if payload["pluginId"] != "linapro-demo-dynamic" {
+	if payload["pluginId"] != "demo-dynamic" {
 		t.Fatalf("expected pluginId to be preserved, got %#v", payload)
 	}
 	if payload["visitCount"] == nil {
@@ -611,8 +611,8 @@ func TestExecuteDynamicWasmBridgeHostCallDemoUsesStructuredHostServices(t *testi
 	if !ok {
 		t.Fatalf("expected data payload object, got %#v", payload["data"])
 	}
-	if dataPayload["table"] != "plugin_linapro_demo_dynamic_record" {
-		t.Fatalf("expected data table plugin_linapro_demo_dynamic_record, got %#v", dataPayload)
+	if dataPayload["table"] != "plugin_demo_dynamic_record" {
+		t.Fatalf("expected data table plugin_demo_dynamic_record, got %#v", dataPayload)
 	}
 	if dataPayload["updated"] != true || dataPayload["deleted"] != true {
 		t.Fatalf("expected data payload to confirm update/delete lifecycle, got %#v", dataPayload)
@@ -668,14 +668,14 @@ func TestExecuteDynamicWasmBridgeCreatesDemoRecord(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), dynamicWasmBridgeTestTimeout)
 	defer cancel()
 	response, err := services.Runtime.ExecuteDynamicRoute(ctx, manifest, &protocol.BridgeRequestEnvelopeV1{
-		PluginID:  "linapro-demo-dynamic",
+		PluginID:  "demo-dynamic",
 		RequestID: "req-demo-record-create",
 		Route: &protocol.RouteMatchSnapshotV1{
 			Method:       http.MethodPost,
 			InternalPath: "/api/v1/demo-records",
-			PublicPath:   "/x/linapro-demo-dynamic/api/v1/demo-records",
+			PublicPath:   "/x/demo-dynamic/api/v1/demo-records",
 			Access:       protocol.AccessLogin,
-			Permission:   "linapro-demo-dynamic:record:create",
+			Permission:   "demo-dynamic:record:create",
 			RequestType:  "CreateDemoRecordReq",
 			RoutePath:    "/api/v1/demo-records",
 		},
@@ -691,7 +691,7 @@ func TestExecuteDynamicWasmBridgeCreatesDemoRecord(t *testing.T) {
 			Body: []byte(`{
 				"title":"Dynamic route create test",
 				"content":"Created through the bundled dynamic WASM bridge",
-				"attachmentName":"linapro-demo-dynamic-note.txt",
+				"attachmentName":"demo-dynamic-note.txt",
 				"attachmentContentBase64":"bGluYXByby1kZW1vLWR5bmFtaWMgYXR0YWNobWVudCBmaXh0dXJl",
 				"attachmentContentType":"text/plain"
 			}`),
@@ -717,7 +717,7 @@ func TestExecuteDynamicWasmBridgeCreatesDemoRecord(t *testing.T) {
 func loadBundledDynamicSampleManifest(t *testing.T, services *testutil.Services) (*catalog.Manifest, error) {
 	t.Helper()
 
-	artifactPath := filepath.Join(testutil.TestDynamicStorageDir(), testutil.RuntimeArtifactFileName("linapro-demo-dynamic"))
+	artifactPath := filepath.Join(testutil.TestDynamicStorageDir(), testutil.RuntimeArtifactFileName("demo-dynamic"))
 	return services.Catalog.LoadManifestFromArtifactPath(artifactPath)
 }
 
@@ -727,7 +727,7 @@ func ensureDynamicDemoRecordTable(t *testing.T) {
 	t.Helper()
 	ctx := context.Background()
 	_, err := g.DB().Exec(ctx, `
-CREATE TABLE IF NOT EXISTS plugin_linapro_demo_dynamic_record (
+CREATE TABLE IF NOT EXISTS plugin_demo_dynamic_record (
     "id"              VARCHAR(64) PRIMARY KEY,
     "tenant_id"       INT NOT NULL DEFAULT 0,
     "title"           VARCHAR(128) NOT NULL DEFAULT '',
@@ -741,7 +741,7 @@ CREATE TABLE IF NOT EXISTS plugin_linapro_demo_dynamic_record (
 		t.Fatalf("failed to create dynamic demo record table: %v", err)
 	}
 	t.Cleanup(func() {
-		if _, cleanupErr := g.DB().Exec(ctx, `DELETE FROM plugin_linapro_demo_dynamic_record WHERE "title" = ?`, "Dynamic route create test"); cleanupErr != nil {
+		if _, cleanupErr := g.DB().Exec(ctx, `DELETE FROM plugin_demo_dynamic_record WHERE "title" = ?`, "Dynamic route create test"); cleanupErr != nil {
 			t.Fatalf("failed to cleanup dynamic demo record table: %v", cleanupErr)
 		}
 	})

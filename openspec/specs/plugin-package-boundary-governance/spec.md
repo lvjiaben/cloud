@@ -15,8 +15,8 @@ TBD - created by archiving change refactor-plugin-package-boundaries. Update Pur
 
 #### Scenario: 开发者定位 plugin-owned 领域契约
 
-- **WHEN** 开发者需要查找`linapro-ai-core`拥有的`AI`领域公开契约
-- **THEN** 系统在`apps/lina-plugins/linapro-ai-core/backend/cap/aicap`下提供对应契约和 SDK
+- **WHEN** 开发者需要查找`ai-core`拥有的`AI`领域公开契约
+- **THEN** 系统在`apps/lina-plugins/ai-core/backend/cap/aicap`下提供对应契约和 SDK
 - **AND** 开发者不得在`lina-core/pkg/plugin/capability/aicap`继续寻找生产 owner 契约
 
 #### Scenario: 新增 core 插件公共组件
@@ -376,9 +376,9 @@ TBD - created by archiving change refactor-plugin-package-boundaries. Update Pur
 
 #### Scenario: 生产代码 import owner internal
 
-- **WHEN** 插件生产代码 import `lina-plugin-linapro-ai-core/backend/internal/service/ai`
+- **WHEN** 插件生产代码 import `lina-plugin-ai-core/backend/internal/service/ai`
 - **THEN** 治理扫描 MUST 失败
-- **AND** 调用方必须改为依赖`lina-plugin-linapro-ai-core/backend/cap/aicap/...`
+- **AND** 调用方必须改为依赖`lina-plugin-ai-core/backend/cap/aicap/...`
 
 #### Scenario: 测试例外受限
 

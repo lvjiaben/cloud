@@ -1,0 +1,4 @@
+{
+  "plugins.idc_core.api.admin.v1.ServerServiceListReq.fields.page.dc": "从1开始的页码，不能同时传入游标",
+  "plugins.idc_core.api.admin.v1.ServerServiceListRes.fields.total.dc": "当前员工可见范围及筛选条件下的准确总条数"
+}

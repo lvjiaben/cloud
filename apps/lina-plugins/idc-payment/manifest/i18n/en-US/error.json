@@ -1,0 +1,8 @@
+{
+  "error.idc.payment.channel.page.invalid": "The payment page request is invalid",
+  "error.idc.payment.channel.page.unavailable": "The payment list is temporarily unavailable",
+  "error.idc.payment.reconciliation.page.invalid": "The payment page request is invalid",
+  "error.idc.payment.reconciliation.page.unavailable": "The payment list is temporarily unavailable",
+  "error.idc.payment.exception.fund.page.invalid": "The payment page request is invalid",
+  "error.idc.payment.exception.fund.page.unavailable": "The payment list is temporarily unavailable"
+}

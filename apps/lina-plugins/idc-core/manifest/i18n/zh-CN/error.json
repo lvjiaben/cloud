@@ -1,0 +1,748 @@
+{
+  "error": {
+    "idc": {
+      "interface": { "usage": {
+        "not": { "accessible": "无权查看该接口使用统计" },
+        "invalid": "接口使用统计请求无效",
+        "unavailable": "接口使用统计暂时不可用，请稍后重试"
+      } },
+	  "ip": {
+		"change": {
+		  "not": { "accessible": "无权访问服务器换 IP 设置或服务" },
+		  "invalid": "换 IP 请求填写内容无效，请检查后重试",
+		  "unavailable": "当前暂时不能更换 IP，请刷新资源后重试",
+		  "conflict": "换 IP 报价或服务器状态已经变化，请刷新后重试",
+		  "frequency": { "exceeded": "这台服务器已达到换 IP 次数上限" }
+		}
+	  },
+      "identity": {
+        "required": "需要先登录"
+      },
+      "service": {
+        "action": {
+          "invalid": "服务操作填写内容无效，请检查后重试",
+          "not": {
+            "accessible": "无权访问或操作该服务",
+            "ready": "该服务内容尚未准备好，请稍后再试"
+          },
+          "conflict": "服务状态已经变化，请刷新后重试",
+          "unavailable": "服务操作暂时不可用，请稍后重试"
+        }
+      },
+      "purchase": {
+        "configuration": {
+          "file": {
+            "invalid": "购买配置文件无效，请检查文件要求后重试",
+            "not": { "accessible": "无权访问该购买配置文件" },
+            "conflict": "购买配置文件状态已经变化，请刷新后重试",
+            "rejected": "文件类型、大小或安全检查结果不符合要求",
+            "unavailable": "购买配置文件服务暂时不可用，请稍后重试"
+          }
+        }
+      },
+      "default": {
+        "tenant": {
+          "required": "IDC 业务只能在默认商家上下文中操作"
+        }
+      },
+      "admin": {
+        "audience": {
+          "required": "需要 IDC 后台管理权限"
+        }
+      },
+      "audience": {
+        "conflict": "当前身份已绑定不兼容的访问受众",
+        "inconsistent": "当前身份的访问受众数据不一致"
+      },
+      "principal": {
+        "unavailable": "IDC 身份服务暂时不可用"
+      },
+      "onboarding": {
+        "unavailable": "无法完成客户开户"
+      },
+      "outbox": {
+        "invalid": "后台事件请求无效",
+        "transaction": {
+          "required": "事件必须与所属业务在同一事务中创建"
+        },
+        "idempotency": {
+          "conflict": "该去重键已关联其他事件内容"
+        },
+        "evidence": {
+          "invalid": "事件载荷或元数据无效",
+          "too": {
+            "large": "事件载荷或元数据超过大小限制"
+          }
+        },
+        "lease": {
+          "lost": "事件处理租约已失效"
+        },
+        "state": {
+          "conflict": "事件当前状态不允许执行此操作"
+        },
+        "unavailable": "后台事件服务暂时不可用"
+      },
+      "async": {
+        "task": {
+          "invalid": "后台任务请求无效",
+          "idempotency": {
+            "conflict": "该幂等键已关联其他任务请求"
+          },
+          "transaction": {
+            "required": "任务必须与所属业务在同一事务中创建"
+          },
+          "lease": {
+            "lost": "任务处理租约已失效"
+          },
+          "state": {
+            "conflict": "任务当前状态不允许执行此操作"
+          },
+          "unavailable": "后台任务服务暂时不可用"
+        }
+      },
+      "secret": {
+        "invalid": "密钥请求无效",
+        "access": {
+          "denied": "无权访问该密钥"
+        },
+        "not": {
+          "configured": "密钥尚未配置"
+        },
+        "idempotency": {
+          "conflict": "该幂等键已关联其他密钥内容"
+        },
+        "version": {
+          "conflict": "操作完成前密钥已发生变化"
+        },
+        "consumer": {
+          "failed": "已授权的密钥操作执行失败"
+        },
+        "unavailable": "密钥服务暂时不可用"
+      },
+      "audit": {
+        "invalid": "审计请求无效",
+        "identity": {
+          "denied": "当前身份不能执行此审计操作"
+        },
+        "permission": {
+          "denied": "无权访问审计记录"
+        },
+        "transaction": {
+          "required": "状态变更审计必须在业务事务中写入"
+        },
+        "idempotency": {
+          "conflict": "该审计幂等键已用于不同的审计证据"
+        },
+        "evidence": {
+          "too": {
+            "large": "审计证据超过安全大小限制"
+          }
+        },
+        "unavailable": "审计服务暂时不可用"
+      },
+      "customer": {
+		"phone": {
+		  "exists": "该手机号已经存在，请直接查找对应客户"
+		},
+		"email": {
+		  "exists": "该邮箱已经存在，请直接查找对应客户"
+		},
+        "profile": {
+          "invalid": "客户资料请求无效"
+        },
+        "not": {
+          "accessible": "无法访问该客户资料"
+        },
+        "state": {
+          "denied": "客户账户当前状态不允许执行此操作"
+        },
+        "initial": {
+          "password": {
+            "change": {
+              "required": "请先修改初始密码再继续使用客户后台"
+            }
+          }
+        },
+        "version": {
+          "conflict": "操作完成前客户资料已发生变化"
+        },
+        "idempotency": {
+          "conflict": "该幂等键已用于不同的客户操作"
+        },
+        "workflow": {
+          "invalid": "客户账户工作流请求无效",
+          "unavailable": "客户账户工作流暂时不可用"
+        },
+        "closure": {
+          "invalid": "客户注销完成请求无效",
+          "not": {
+            "allowed": "当前无法完成该客户注销申请"
+          },
+          "unavailable": "客户注销完成服务暂时不可用"
+        },
+        "contact": {
+          "invalid": "联系人信息无效，请检查姓名、邮箱或手机号",
+          "not": {
+            "accessible": "无法访问该联系人"
+          },
+          "version": {
+            "conflict": "联系人信息已发生变化，请刷新后重试"
+          },
+          "idempotency": {
+            "conflict": "该请求编号已用于另一项联系人操作"
+          },
+          "unavailable": "联系人服务暂时不可用"
+        },
+        "address": {
+          "invalid": "地址信息无效，请检查后重试",
+          "not": {
+            "accessible": "无法访问该地址"
+          },
+          "version": {
+            "conflict": "地址信息已发生变化，请刷新后重试"
+          },
+          "idempotency": {
+            "conflict": "该请求编号已用于另一项地址操作"
+          },
+          "unavailable": "地址服务暂时不可用"
+        },
+        "unavailable": "客户资料服务暂时不可用"
+      },
+      "reauth": {
+        "invalid": "重新认证请求无效",
+        "recent": {
+          "login": {
+            "required": "执行此操作前请重新登录"
+          }
+        },
+        "proof": {
+          "rejected": "重新认证凭证已失效"
+        },
+        "unavailable": "重新认证服务暂时不可用"
+      },
+      "product": {
+        "fulfillment": {
+          "action": {
+            "invalid": "履约操作填写内容无效，请检查后重试",
+            "conflict": "履约状态已经变化，请刷新页面后重试"
+          },
+          "not": {
+            "accessible": "无权查看或操作该履约任务"
+          },
+          "reason": {
+            "invalid": "所选原因已停用，请刷新后重新选择"
+          },
+          "owner": {
+            "gate": {
+              "blocked": "合同、库存或其他必要条件尚未满足"
+            }
+          },
+          "new": {
+            "business": {
+              "stopped": "该履约插件已停止接收新业务"
+            }
+          },
+          "management": {
+            "unavailable": "商品履约管理暂时不可用"
+          }
+        },
+        "automation": {
+          "interface": {
+            "ever": {
+              "referenced": "该自动化接口已被商品版本引用，必须永久保留，不能删除"
+            }
+          },
+          "evidence": {
+            "unavailable": "当前无法验证自动化插件的发布版本、履约扩展点、契约或可用方法，请检查插件状态后重试"
+          }
+        }
+      },
+      "catalog": {
+        "component": {
+          "invalid": "服务器商品组件值无效"
+        },
+        "configuration": {
+          "invalid": "服务器商品配置图无效"
+        },
+        "category": {
+          "parent": {
+            "cycle": "不能把分类移动到自己或下级分类中"
+          }
+        },
+        "product": {
+          "slug": {
+            "occupied": "商品访问地址已被占用，请更换后重试"
+          }
+        },
+        "fulfillment": {
+          "policy": {
+            "binding": {
+              "required": "请先绑定一个可用的自动化接口，再选择插件履约方式"
+            },
+            "contract": {
+              "changed": "自动化接口的履约能力已经变化，请重新绑定接口并重新选择履约方式"
+            },
+            "immutable": "已发布的商品版本不能修改履约方式"
+          }
+        },
+        "management": {
+          "invalid": "商品目录管理请求无效",
+          "not": {
+            "accessible": "无权访问该商品目录管理目标"
+          },
+          "conflict": "商品目录管理请求与当前状态冲突",
+          "contract": {
+            "template": {
+              "unavailable": "该商品选择的全部客户合同模板当前不可用"
+            }
+          },
+          "unavailable": "商品目录管理服务暂时不可用"
+        },
+        "publication": {
+          "invalid": "商品版本发布请求无效",
+          "incomplete": "请先补齐双语文案、配置、价格和履约资源池再发布",
+          "not": {
+            "accessible": "无权访问该商品版本"
+          },
+          "state": {
+            "invalid": "商品版本当前状态不允许发布"
+          },
+          "unavailable": "商品版本发布服务暂时不可用"
+        },
+        "billing": {
+          "invalid": "计费周期、数量模式、用量策略或价格阶梯无效",
+          "amount": {
+            "overflow": "计算后的计费金额超出支持范围"
+          }
+        },
+        "currency": {
+          "pricing": {
+            "invalid": "逐币种显式价格请求无效"
+          }
+        },
+        "inventory": {
+          "routing": {
+            "invalid": "本地库存路由请求无效",
+            "unavailable": "本地库存路由暂时不可用"
+          }
+        }
+      },
+      "public": {
+        "catalog": {
+          "invalid": "商品筛选条件无效",
+          "not": {
+            "found": "该商品当前不可用"
+          },
+          "unavailable": "商品目录暂时无法加载，请稍后重试"
+        },
+        "configuration": {
+          "invalid": "服务器配置选择无效，请重新检查所选规格",
+          "stale": "服务器配置已经更新，请重新加载方案后再选择"
+        },
+        "quote": {
+          "invalid": "服务器价格请求无效",
+          "stale": "服务器方案已经更新，请重新加载后再确认价格",
+          "not": {
+            "available": "当前配置不能使用所选币种购买"
+          },
+          "unavailable": "服务器价格暂时无法获取"
+        }
+      },
+      "contract": {
+        "policy": {
+          "invalid": "合同规则请求无效",
+          "not": {
+            "accessible": "无权访问该合同规则"
+          },
+          "conflict": "合同规则已发生变化，请刷新后重试",
+          "optional": {
+            "contract": {
+              "locked": "该订单已经发起可选合同，必须继续保持无需合同，不能改为必须签合同"
+            }
+          },
+          "template": {
+            "unavailable": "所选合同模板未启用或不适用于当前设置",
+            "conflict": "多个商品要求不同合同模板，请在付款前为订单选择一份模板"
+          },
+          "unavailable": "合同规则管理暂时不可用"
+        }
+      },
+      "commerce": {
+        "contract": {
+          "policy": {
+            "invalid": "订单合同规则无效，请检查客户、商品和订单设置"
+          },
+          "template": {
+            "unavailable": "所选合同模板不可用，请选择已启用且适合当前客户的模板",
+            "conflict": "多个商品要求不同合同模板，请在付款前为订单选择一份模板"
+          }
+        },
+        "assisted": {
+          "quote": {
+            "invalid": "协助报价请求无效",
+            "not": {
+              "accessible": "无权访问该协助报价请求"
+            },
+            "conflict": "协助报价状态已变化，请刷新后重试",
+            "approval": {
+              "required": "该协助报价必须由另一名有权限的员工审批"
+            },
+            "unavailable": "协助报价服务暂时不可用"
+          }
+        },
+        "cart": {
+          "invalid": "购物车请求无效",
+          "not": {
+            "accessible": "无法访问该购物车"
+          },
+          "currency": {
+            "conflict": "购物车已经使用其他币种",
+            "switch": {
+              "blocked": "请先移除购物车项目再切换币种"
+            }
+          },
+          "conflict": "购物车已发生变化，请刷新后重试",
+          "capacity": {
+            "exceeded": "购物车中的配置项目过多"
+          },
+          "unavailable": "购物车服务暂时不可用"
+        },
+        "quote": {
+          "not": {
+            "available": "当前商品、库存、优惠或客户资格无法生成最终报价"
+          }
+        },
+        "order": {
+          "not": {
+            "cancelable": "该订单当前状态不允许取消"
+          },
+          "cancellation": {
+            "pending": "订单取消正在等待支付关单"
+          },
+          "directory": {
+            "invalid": "订单查询条件无效",
+            "not": {
+              "accessible": "无权访问该订单"
+            },
+            "unavailable": "订单查询服务暂时不可用"
+          }
+        },
+        "risk": {
+          "review": {
+            "invalid": "订单风险审核请求无效",
+            "not": {
+              "accessible": "无权访问该订单风险审核"
+            },
+            "conflict": "订单风险审核状态已变化，请刷新后重试",
+            "unavailable": "订单风险审核暂时不可用"
+          }
+        },
+        "payment": {
+          "preparation": {
+            "invalid": "付款准备请求无效",
+            "not": {
+              "accessible": "无权访问该付款准备记录"
+            },
+            "conflict": "订单或账单状态已变化，请刷新后重试",
+            "unavailable": "付款准备服务暂时不可用"
+          }
+        }
+      },
+      "billing": {
+        "directory": {
+          "invalid": "财务查询请求无效",
+          "integrity": "财务查询记录不一致，请联系客服处理",
+          "not": {
+            "accessible": "无权访问所请求的财务数据"
+          },
+          "unavailable": "财务查询服务暂时不可用"
+        },
+        "invoice": {
+          "invalid": "账单操作请求无效",
+          "conflict": "账单操作与当前资金事实冲突",
+          "integrity": "账单资金记录存在异常，请联系客服处理",
+          "not": {
+            "found": "未找到对应账单"
+          },
+          "unavailable": "账单服务暂时不可用"
+        },
+        "ledger": {
+          "invalid": "资金操作请求无效",
+          "conflict": "本次资金操作与已记录的交易不一致",
+          "integrity": "账户记录存在异常，请联系客服处理",
+          "not": {
+            "found": "未找到对应的资金记录"
+          },
+          "unavailable": "账户服务暂时不可用"
+        },
+        "balance": {
+          "insufficient": "可用余额不足"
+        },
+        "financial": {
+          "settlement": {
+            "invalid": "财务结清请求无效",
+            "not": {
+              "eligible": "当前订单不满足财务结清条件"
+            },
+            "integrity": "财务结清证据不一致，请联系客服处理",
+            "unavailable": "财务结清服务暂时不可用"
+          }
+        }
+      },
+      "financial": {
+        "operation": {
+          "invalid": "财务操作请求无效",
+          "not": {
+            "accessible": "无权访问所请求的财务操作"
+          },
+          "conflict": "财务操作状态已变化，请刷新后重试",
+          "unavailable": "财务操作暂时不可用"
+        }
+      },
+      "credit": {
+        "invalid": "信用额度请求无效",
+        "conflict": "信用额度请求与当前信用事实冲突",
+        "not": {
+          "found": "未找到所请求的信用额度资源"
+        },
+        "integrity": "信用额度记录不一致，请联系客服处理",
+        "unavailable": "信用额度服务暂时不可用"
+      },
+      "refund": {
+        "invalid": "退款请求无效",
+        "not": {
+          "accessible": "无权访问该退款记录",
+          "eligible": "所选订单项或服务器当前不能按该金额退款"
+        },
+        "conflict": "资金或服务器状态已变化，请重新预览退款影响",
+        "integrity": "退款记录不一致，请联系客服处理",
+        "unavailable": "退款服务暂时不可用"
+      },
+      "entitlement": {
+        "renewal": {
+          "invalid": "续费请求无效",
+          "not": {
+            "accessible": "无权访问所请求的权益"
+          },
+          "conflict": "权益或续费信息已变化，请刷新后重试",
+          "price": {
+            "unavailable": "该权益和币种当前没有可用的续费价格"
+          },
+          "capability": {
+            "unavailable": "无法验证该权益的续费能力"
+          },
+          "balance": {
+            "insufficient": "同币种余额不足，续费账单已保留为待付款"
+          },
+          "unavailable": "权益续费暂时不可用"
+        }
+      },
+      "marketing": {
+        "public": {
+          "campaign": {
+            "invalid": "公开活动请求无效",
+            "unavailable": "公开活动暂时不可用"
+          }
+        },
+        "coupon": {
+          "invalid": "优惠码无效"
+        },
+        "overview": {
+          "not": {
+            "accessible": "无权访问营销运营概览"
+          },
+          "unavailable": "营销运营概览暂时不可用"
+        },
+        "directory": {
+          "invalid": "营销管理请求无效",
+          "not": {
+            "accessible": "无权访问所请求的营销管理数据",
+            "found": "未找到所请求的营销管理资源"
+          },
+          "unavailable": "营销管理目录暂时不可用"
+        },
+        "action": {
+          "invalid": "营销管理操作无效",
+          "not": {
+            "accessible": "无权执行所请求的营销管理操作"
+          },
+          "conflict": "营销管理操作与当前状态冲突",
+          "unavailable": "营销管理操作暂时不可用"
+        },
+        "engagement": {
+          "invalid": "营销触达请求无效",
+          "conflict": "营销触达请求与当前状态冲突",
+          "unavailable": "营销触达服务暂时不可用"
+        },
+        "insights": {
+          "invalid": "营销效果查询或复核请求无效",
+          "not": {
+            "accessible": "无权访问营销效果或滥用复核数据"
+          },
+          "conflict": "营销滥用案件已发生变化，请刷新后重试",
+          "unavailable": "营销效果与滥用复核服务暂时不可用"
+        },
+        "value": {
+          "grant": {
+            "invalid": "营销赠送权益请求无效",
+            "conflict": "营销赠送权益请求与当前状态冲突",
+            "unavailable": "营销赠送权益服务暂时不可用"
+          }
+        },
+        "points": {
+          "invalid": "积分请求无效",
+          "conflict": "积分请求与当前状态冲突",
+          "unavailable": "积分服务暂时不可用"
+        },
+        "promotion": {
+          "invalid": "优惠请求无效",
+          "conflict": "优惠请求与当前状态冲突",
+          "quota": {
+            "unavailable": "该优惠名额已不可用"
+          },
+          "unavailable": "优惠服务暂时不可用"
+        },
+        "reservation": {
+          "expired": "该优惠预占已过期"
+        }
+      },
+      "content": {
+        "invalid": "内容请求无效",
+        "not": {
+          "accessible": "无权访问该内容",
+          "found": "未找到该内容"
+        },
+        "conflict": "内容已发生变化，请刷新后重试",
+        "upload": {
+          "rejected": "上传的文件不符合要求"
+        },
+        "scanner": {
+          "unavailable": "所需的本地文件扫描器尚不可用"
+        },
+        "unavailable": "内容服务暂时不可用"
+      },
+      "invoice": {
+        "profile": {
+          "invalid": "发票抬头填写内容无效，请检查后重试",
+          "not": {
+            "accessible": "无权访问该发票抬头"
+          },
+          "conflict": "发票抬头已发生变化，请刷新后重试",
+          "unavailable": "发票抬头服务暂时不可用"
+        }
+      },
+      "notification": {
+        "current": {
+          "staff": {
+            "not": {
+              "accessible": "无法确认当前员工身份"
+            }
+          }
+        },
+        "preference": {
+          "invalid": "通知偏好请求无效",
+          "not": {
+            "accessible": "无权访问通知偏好"
+          },
+          "conflict": "通知偏好已发生变化，请刷新后重试",
+          "unavailable": "通知偏好服务暂时不可用"
+        }
+      },
+      "support": {
+        "anonymous": {
+          "link": {
+            "unconfigured": "匿名工单访问尚未配置"
+          }
+        },
+        "attachment": {
+          "rejected": "附件类型或内容不符合要求"
+        },
+        "ticket": {
+          "invalid": "工单请求无效",
+          "not": {
+            "accessible": "无权访问该工单"
+          },
+          "conflict": "工单已发生变化，请刷新后重试",
+          "unavailable": "工单服务暂时不可用"
+        }
+      },
+      "accessory": {
+        "price": {
+          "invalid": "服务器附属能力价格填写内容无效",
+          "not": {
+            "accessible": "无权访问服务器附属能力价格"
+          },
+          "conflict": "服务器附属能力价格已变化，请刷新后重试",
+          "unavailable": "服务器附属能力价格暂时不可用"
+        },
+        "quote": {
+          "unavailable": "当前无法生成服务器附属能力价格预览"
+        }
+      },
+      "ssh": {
+        "public": {
+          "key": {
+            "invalid": "SSH 公钥内容无效，请检查后重试",
+            "not": { "accessible": "无权访问这把 SSH 公钥" },
+            "duplicate": "同名或相同指纹的可用 SSH 公钥已经存在",
+            "version": { "conflict": "SSH 公钥已经发生变化，请刷新后重试" },
+            "idempotency": { "conflict": "本次请求与之前使用相同请求编号的内容不一致" },
+            "unavailable": "SSH 公钥服务暂时不可用"
+          }
+        },
+        "private": { "key": { "rejected": "不能提交或保存 SSH 私钥" } }
+      },
+      "server": {
+		"resize": {
+		  "disk": { "shrink": { "not": { "allowed": "变更配置时不能缩小磁盘容量" } } }
+		},
+		"batch": {
+		  "invalid": "请选择服务器并检查操作内容后重试",
+		  "not": {
+			"accessible": "无权查看或执行这次服务器批量操作"
+		  },
+		  "conflict": "这次批量操作的预览内容已经变化，请重新预览后再继续",
+		  "unavailable": "服务器批量操作暂时不可用，请稍后重试"
+		},
+		"accessory": {
+		  "management": {
+			"invalid": "服务器附属操作填写内容无效，请检查后重试",
+			"not": {
+			  "accessible": "无权查看或操作这台服务器的附属资源"
+			},
+			"unavailable": "服务器附属操作暂时不可用，请刷新后重试"
+		  }
+		},
+        "operation": {
+          "invalid": "服务器操作请求无效，请检查后重试",
+          "unavailable": "服务器操作服务暂时不可用",
+          "action": {
+            "unavailable": "当前服务器状态不能执行这项操作"
+          },
+          "conflict": "已有服务器操作正在进行，或服务器状态已经变化",
+          "output": {
+            "unavailable": "这次操作的保密结果已不可用",
+            "consumed": "这次操作的保密结果已经查看过，不能再次查看"
+          },
+          "policy": {
+            "invalid": "服务器操作安全设置填写内容无效",
+            "not": {
+              "accessible": "无权访问服务器操作安全设置"
+            },
+            "conflict": "服务器操作安全设置已发生变化，请刷新后重试",
+            "unavailable": "服务器操作安全设置暂时不可用"
+          }
+        }
+      },
+      "version": {
+        "cache": {
+          "invalid": "缓存快照请求无效",
+          "unavailable": "快照缓存协调暂时不可用",
+          "authority": {
+            "unavailable": "权威快照暂时不可用"
+          }
+        }
+      }
+    }
+  }
+}

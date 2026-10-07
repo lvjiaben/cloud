@@ -127,6 +127,10 @@ func (runtimeWiringIntegration) CanExposeBusinessEntries(context.Context, string
 	return true
 }
 
+func (runtimeWiringIntegration) ListSourceRouteBindings() []pluginhost.SourceRouteBinding {
+	return []pluginhost.SourceRouteBinding{}
+}
+
 // runtimeWiringCacheNotifier accepts cache change notifications.
 type runtimeWiringCacheNotifier struct{}
 

@@ -1,0 +1,68 @@
+# Stable plugin identity used by delivery, dependency, and asset governance.
+id: idc-portal
+name: IDC Website & Customer Center
+version: v0.1.10
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Website package management, public API assembly, and customer-entry routing for the IDC operations platform
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.20 <1.0.0"
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+menus:
+  - key: plugin:idc-portal:brand
+    parent_key: plugin:idc-core:support-content
+    name: Website Brand
+    path: /idc/portal-brand
+    component: system/plugin/dynamic-page
+    icon: lucide:palette
+    type: M
+    sort: 95
+    perms: idc:admin:portal:brand
+    query:
+      pluginAccessMode: embedded-mount
+      embeddedSrc: /x-assets/idc-portal/v0.1.10/mount.js
+      routePath: /idc/portal-brand
+    remark: Manage published website brand revisions
+  - key: plugin:idc-portal:customer-external-menus
+    parent_key: plugin:idc-core:support-content
+    name: Customer center menus
+    path: /idc/customer-external-menus
+    component: system/plugin/dynamic-page
+    icon: lucide:panel-left
+    type: M
+    sort: 96
+    perms: idc:admin:portal:external-menu:view
+    remark: Manage installation-level external links appended to the customer center menu
+  - key: plugin:idc-portal:customer-external-menus:manage
+    parent_key: plugin:idc-portal:customer-external-menus
+    name: Manage customer center menus
+    type: B
+    visible: 0
+    perms: idc:admin:portal:external-menu:manage
+
+business_extensions:
+  - point: website-template
+    version: v1
+    role: owner
+    owner: idc-portal

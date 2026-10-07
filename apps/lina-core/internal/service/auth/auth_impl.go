@@ -238,33 +238,60 @@ func (s *serviceImpl) ReissueTenantTokenFromBearer(ctx context.Context, tokenStr
 
 // IssueImpersonationToken signs and registers a host-owned impersonation token.
 func (s *serviceImpl) IssueImpersonationToken(ctx context.Context, in ImpersonationTokenIssueInput) (*ImpersonationTokenOutput, error) {
-	if in.ActingUserID <= 0 || in.TenantID <= 0 {
+	if in.ActingUserID <= 0 || in.TenantID < 0 ||
+		(in.SubjectUserID <= 0 && in.TenantID == 0) ||
+		in.ExpiresInSeconds < 0 || in.ExpiresInSeconds > 900 {
 		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
 	}
 
-	var user *entity.SysUser
+	var actingUser *entity.SysUser
 	if err := dao.SysUser.Ctx(ctx).
 		Where(do.SysUser{Id: in.ActingUserID}).
-		Scan(&user); err != nil {
+		Scan(&actingUser); err != nil {
 		return nil, err
 	}
-	if user == nil {
+	if actingUser == nil {
 		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
 	}
-	if user.Status == statusflag.Disabled.Int() {
+	if actingUser.Status == statusflag.Disabled.Int() {
 		return nil, bizerr.NewCode(CodeAuthUserDisabled)
 	}
 	businessCtx, _ := ctx.Value(bizctx.ContextKey).(*model.Context)
 	if businessCtx == nil {
 		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
 	}
+	if businessCtx.UserId > 0 && (businessCtx.UserId != in.ActingUserID ||
+		businessCtx.IsImpersonation || businessCtx.ActingUserId > 0) {
+		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
+	}
 	clientType, err := ParseClientType(businessCtx.ClientType)
 	if err != nil {
 		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
 	}
+	targetUserID := in.SubjectUserID
+	if targetUserID <= 0 {
+		targetUserID = in.ActingUserID
+	}
+	user := actingUser
+	if targetUserID != in.ActingUserID {
+		user = nil
+		if err = dao.SysUser.Ctx(ctx).Where(do.SysUser{Id: targetUserID}).Scan(&user); err != nil {
+			return nil, err
+		}
+		if user == nil {
+			return nil, bizerr.NewCode(CodeAuthTokenInvalid)
+		}
+		if user.Status == statusflag.Disabled.Int() {
+			return nil, bizerr.NewCode(CodeAuthUserDisabled)
+		}
+	}
+	ttl := time.Duration(in.ExpiresInSeconds) * time.Second
+	if in.ExpiresInSeconds > 0 && ttl < time.Minute {
+		return nil, bizerr.NewCode(CodeAuthTokenInvalid)
+	}
 
 	tokenID := guid.S()
-	accessToken, err := s.signToken(ctx, user, in.TenantID, tokenID, tokenKindAccess, clientType, true, in.ActingUserID)
+	accessToken, expiresAt, err := s.signTokenWithTTL(ctx, user, in.TenantID, tokenID, tokenKindAccess, clientType, true, in.ActingUserID, ttl)
 	if err != nil {
 		return nil, err
 	}
@@ -272,10 +299,12 @@ func (s *serviceImpl) IssueImpersonationToken(ctx context.Context, in Impersonat
 		return nil, err
 	}
 	return &ImpersonationTokenOutput{
-		AccessToken:  accessToken,
-		TokenID:      tokenID,
-		TenantID:     in.TenantID,
-		ActingUserID: in.ActingUserID,
+		AccessToken:   accessToken,
+		TokenID:       tokenID,
+		TenantID:      in.TenantID,
+		ActingUserID:  in.ActingUserID,
+		SubjectUserID: targetUserID,
+		ExpiresAt:     expiresAt,
 	}, nil
 }
 
@@ -607,14 +636,34 @@ func (s *serviceImpl) signToken(
 	isImpersonation bool,
 	actingUserID int,
 ) (string, error) {
+	signed, _, err := s.signTokenWithTTL(ctx, user, tenantID, tokenID, kind, clientType, isImpersonation, actingUserID, 0)
+	return signed, err
+}
+
+func (s *serviceImpl) signTokenWithTTL(
+	ctx context.Context,
+	user *entity.SysUser,
+	tenantID int,
+	tokenID string,
+	kind tokenKind,
+	clientType ClientType,
+	isImpersonation bool,
+	actingUserID int,
+	ttlOverride time.Duration,
+) (string, time.Time, error) {
 	clientType, err := ParseClientType(clientType.String())
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
 	jwtTTL, err := s.tokenTTL(ctx, kind)
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
+	if ttlOverride > 0 && ttlOverride < jwtTTL {
+		jwtTTL = ttlOverride
+	}
+	now := time.Now()
+	expiresAt := now.Add(jwtTTL)
 	var (
 		jwtSecret = s.configSvc.GetJwtSecret(ctx)
 		claims    = Claims{
@@ -626,19 +675,20 @@ func (s *serviceImpl) signToken(
 			Status:          user.Status,
 			TenantId:        tenantID,
 			IsImpersonation: isImpersonation,
+			ActingAsTenant:  isImpersonation && user.Id == actingUserID,
 			ActingUserId:    actingUserID,
 			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtTTL)),
-				IssuedAt:  jwt.NewNumericDate(time.Now()),
+				ExpiresAt: jwt.NewNumericDate(expiresAt),
+				IssuedAt:  jwt.NewNumericDate(now),
 			},
 		}
 		token = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	)
 	signed, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
-		return "", err
+		return "", time.Time{}, err
 	}
-	return signed, nil
+	return signed, expiresAt, nil
 }
 
 // tokenTTL returns the effective lifetime for a token kind.
@@ -753,7 +803,7 @@ func (s *serviceImpl) createImpersonationSession(
 		Status:          user.Status,
 		ClientType:      clientType.String(),
 		TenantId:        tenantID,
-		ActingAsTenant:  true,
+		ActingAsTenant:  user.Id == actingUserID,
 		ActingUserId:    actingUserID,
 		IsImpersonation: true,
 	})

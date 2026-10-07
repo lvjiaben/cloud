@@ -41,7 +41,7 @@ func ConfigureDetached(cmd *exec.Cmd) {
 // process on Windows. It opens the process with limited query rights and
 // inspects the exit code: STILL_ACTIVE means the process is still running.
 // Windows 平台下检测进程是否存活：使用最小权限打开进程并通过退出码判断。
-func Alive(pid int) bool {
+func Alive(pid int) (alive bool) {
 	if pid <= 1 {
 		return false
 	}
@@ -49,7 +49,11 @@ func Alive(pid int) bool {
 	if err != nil {
 		return false
 	}
-	defer syscall.CloseHandle(handle)
+	defer func() {
+		if closeErr := syscall.CloseHandle(handle); closeErr != nil {
+			alive = false
+		}
+	}()
 	var code uint32
 	if err = syscall.GetExitCodeProcess(handle, &code); err != nil {
 		return false

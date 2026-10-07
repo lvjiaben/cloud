@@ -62,7 +62,7 @@
 - **后端 API**：新增文件上传、列表、下载、删除、后缀列表、场景列表等 API 端点；新增 direct-upload init/complete/abort 与 part-url；新增 chunked init/part/complete/abort；公开上传、下载和访问路径保持稳定。
 - **后端代码**：`api/file/`、`controller/file/`、`service/file/`；`storagecap` Multipart 可选接口；宿主 `storage.Service` 透传；本地路径生成与统一后端适配；直连/分片会话存储与 complete 校验；`capabilityhost` local storage provider 支持 `files/` 命名空间路由；`httpstartup` DI 为 file 服务注入 storage runtime + local provider，file 自建会话 store。
 - **配置**：`sys.upload.maxSize` 默认 200；`multipartThresholdMB` 默认 100；`multipartPartSizeMB` / `multipartMaxConcurrency` 等运行时校验。
-- **云存储插件**：`linapro-storage-*` 实现 DirectAccess 与 Multipart（或 `SupportsMultipart=false`）；配置页 i18n 增加 CORS/分片提示。
+- **云存储插件**：`storage-*` 实现 DirectAccess 与 Multipart（或 `SupportsMultipart=false`）；配置页 i18n 增加 CORS/分片提示。
 - **前端**：系统管理“文件管理”子菜单与通用 FileUpload / ImageUpload；`uploadApi` 四策略自动执行；通知公告编辑器与用户头像接入统一上传。
 - **动态插件**：WASM storage upload 会话公共 API 不变；底层 commit 走 Provider Multipart 可作为后续优化。
 - **兼容性**：历史 `t/<tenantId>/...` 路径与新路径可并存；启用唯一云插件后历史本地对象云未命中回退本地；≤ 默认阈值时行为与整包/单次直传一致。

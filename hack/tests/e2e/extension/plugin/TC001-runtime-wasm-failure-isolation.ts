@@ -121,7 +121,12 @@ function tempArtifactPath(pluginID: string) {
 }
 
 function runtimeStorageDir() {
-  return path.join(tempDir(), "output");
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  return configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(tempDir(), "output");
 }
 
 function runtimeStorageArtifactPath(pluginID: string) {
@@ -268,7 +273,10 @@ function cleanupRuntimeWorkspace() {
     // plugin workspace, so the E2E fixture must remove both the mutable staged
     // artifact and the archived release directory to stay self-contained.
     rmSync(runtimeStorageArtifactPath(pluginID), { force: true });
-    rmSync(runtimeReleaseArchiveDir(pluginID), { force: true, recursive: true });
+    rmSync(runtimeReleaseArchiveDir(pluginID), {
+      force: true,
+      recursive: true,
+    });
   }
 }
 
@@ -296,7 +304,9 @@ async function loginByPassword(
   username: string,
   password: string,
 ): Promise<string> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: { username, password, clientType: "web" },
   });
@@ -359,10 +369,7 @@ async function uploadDynamicPlugin(
       },
     },
   });
-  await expectApiSuccess(
-    response,
-    `上传 runtime wasm 失败: ${artifactPath}`,
-  );
+  await expectApiSuccess(response, `上传 runtime wasm 失败: ${artifactPath}`);
 }
 
 async function installPlugin(adminApi: APIRequestContext, pluginID: string) {
@@ -375,10 +382,22 @@ async function setPluginEnabled(
   pluginID: string,
   enabled: boolean,
 ) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      `停止插件新业务失败: ${pluginID}`,
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
   await expectApiSuccess(response, `切换插件启停失败: ${pluginID}`);
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      `恢复插件新业务失败: ${pluginID}`,
+    );
+  }
 }
 
 async function queryPluginResource(
@@ -478,8 +497,14 @@ function buildBadRuntimeArtifact() {
 }
 
 async function prepareEnabledRuntimePlugins(adminApi: APIRequestContext) {
-  const goodArtifactPath = writeRuntimeArtifact(goodPluginID, buildGoodRuntimeArtifact());
-  const badArtifactPath = writeRuntimeArtifact(badPluginID, buildBadRuntimeArtifact());
+  const goodArtifactPath = writeRuntimeArtifact(
+    goodPluginID,
+    buildGoodRuntimeArtifact(),
+  );
+  const badArtifactPath = writeRuntimeArtifact(
+    badPluginID,
+    buildBadRuntimeArtifact(),
+  );
 
   await uploadDynamicPlugin(adminApi, goodArtifactPath);
   await uploadDynamicPlugin(adminApi, badArtifactPath);
@@ -519,15 +544,23 @@ test.describe("TC-1 运行时 wasm 失败隔离与回收", () => {
   test("TC-1a: runtime hook 超时和报错不会阻断宿主登录，也不会影响其他 runtime hook 执行", async () => {
     await prepareEnabledRuntimePlugins(adminApi!);
 
-    const accessToken = await loginByPassword(config.adminUser, config.adminPass);
-    expect(accessToken, "即使存在失败的 runtime hook，宿主登录仍应成功").toBeTruthy();
+    const accessToken = await loginByPassword(
+      config.adminUser,
+      config.adminPass,
+    );
+    expect(
+      accessToken,
+      "即使存在失败的 runtime hook，宿主登录仍应成功",
+    ).toBeTruthy();
 
     const resourceData = await queryPluginResource(
       adminApi!,
       goodPluginID,
       "login-audit",
     );
-    expect(resourceData.total, "成功的 runtime hook 应写入登录审计记录").toBe(1);
+    expect(resourceData.total, "成功的 runtime hook 应写入登录审计记录").toBe(
+      1,
+    );
     expect(resourceData.list?.[0]?.userName).toBe(config.adminUser);
     expect(resourceData.list?.[0]?.eventName).toBe("Login successful");
 
@@ -545,10 +578,15 @@ test.describe("TC-1 运行时 wasm 失败隔离与回收", () => {
 
     await setPluginEnabled(adminApi!, goodPluginID, false);
     await loginByPassword(config.adminUser, config.adminPass);
-    expect(queryGoodHookRowCount(), "禁用后 runtime hook 不应继续参与宿主登录链路").toBe(1);
+    expect(
+      queryGoodHookRowCount(),
+      "禁用后 runtime hook 不应继续参与宿主登录链路",
+    ).toBe(1);
 
     await setPluginEnabled(adminApi!, goodPluginID, true);
     await loginByPassword(config.adminUser, config.adminPass);
-    expect(queryGoodHookRowCount(), "重新启用后 runtime hook 应恢复执行").toBe(2);
+    expect(queryGoodHookRowCount(), "重新启用后 runtime hook 应恢复执行").toBe(
+      2,
+    );
   });
 });

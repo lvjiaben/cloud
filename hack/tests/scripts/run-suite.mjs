@@ -1,4 +1,5 @@
 import os from 'node:os';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import {
@@ -25,6 +26,7 @@ import {
 import { resolveHostOnlyPluginsEnv } from './host-only-env.mjs';
 
 const manifest = loadManifest();
+const windowsCommandLineBudget = 7000;
 
 const mode = process.argv[2] ?? 'full';
 const extraArgs = normalizePassthroughArgs(process.argv.slice(3));
@@ -41,21 +43,77 @@ function runPlaywright(files, workers, label) {
   }
 
   const runnableFiles = files.map(playwrightFileArg);
-  const args = ['exec', 'playwright', 'test', ...runnableFiles, `--workers=${workers}`, ...extraArgs];
-  console.log(`\n[${label}] playwright test ${files.length} file(s), workers=${workers}`);
+  const fixedArgs = ['exec', 'playwright', 'test'];
+  const trailingArgs = [`--workers=${workers}`, ...extraArgs];
+  const batches = splitCommandLineBatches(runnableFiles, fixedArgs, trailingArgs);
+  const batchSummary = batches.length > 1 ? `, batches=${batches.length}` : '';
+  console.log(
+    `\n[${label}] playwright test ${files.length} file(s), workers=${workers}${batchSummary}`,
+  );
+  const hostOnlyPlugins = resolveHostOnlyPluginsEnv(
+    label,
+    process.env.E2E_HOST_ONLY_PLUGINS,
+  );
   const env = {
     ...process.env,
-    E2E_HOST_ONLY_PLUGINS: resolveHostOnlyPluginsEnv(
-      label,
-      process.env.E2E_HOST_ONLY_PLUGINS,
-    ),
+    E2E_HOST_ONLY_PLUGINS: hostOnlyPlugins,
+    E2E_PLUGIN_STORAGE_PATH:
+      process.env.E2E_PLUGIN_STORAGE_PATH ??
+      (hostOnlyPlugins === '1' ? 'temp/hostonly-output' : 'temp/output'),
+    NODE_PATH: [path.join(testsDir, 'node_modules'), process.env.NODE_PATH]
+      .filter(Boolean)
+      .join(path.delimiter),
   };
-  const result = spawnSync('pnpm', args, {
-    cwd: testsDir,
-    stdio: 'inherit',
-    env,
-  });
-  return result.status ?? 1;
+  const isWindows = process.platform === 'win32';
+  const command = isWindows ? (process.env.ComSpec ?? 'cmd.exe') : 'pnpm';
+  for (const [batchIndex, batchFiles] of batches.entries()) {
+    if (batches.length > 1) {
+      console.log(
+        `[${label}] batch ${batchIndex + 1}/${batches.length}, files=${batchFiles.length}`,
+      );
+    }
+    const args = [...fixedArgs, ...batchFiles, ...trailingArgs];
+    const commandArgs = isWindows ? ['/d', '/s', '/c', 'pnpm', ...args] : args;
+    const result = spawnSync(command, commandArgs, {
+      cwd: testsDir,
+      stdio: 'inherit',
+      env,
+    });
+    const status = result.status ?? 1;
+    if (status !== 0) {
+      return status;
+    }
+  }
+  return 0;
+}
+
+function splitCommandLineBatches(fileArgs, fixedArgs, trailingArgs) {
+  if (process.platform !== 'win32') {
+    return [fileArgs];
+  }
+
+  const fixedLength = ['pnpm', ...fixedArgs, ...trailingArgs].reduce(
+    (length, argument) => length + argument.length + 3,
+    0,
+  );
+  const batches = [];
+  let batch = [];
+  let batchLength = fixedLength;
+
+  for (const fileArg of fileArgs) {
+    const argumentLength = fileArg.length + 3;
+    if (batch.length > 0 && batchLength + argumentLength > windowsCommandLineBudget) {
+      batches.push(batch);
+      batch = [];
+      batchLength = fixedLength;
+    }
+    batch.push(fileArg);
+    batchLength += argumentLength;
+  }
+  if (batch.length > 0) {
+    batches.push(batch);
+  }
+  return batches;
 }
 
 function normalizePassthroughArgs(args) {

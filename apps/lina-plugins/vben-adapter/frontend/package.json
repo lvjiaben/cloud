@@ -1,0 +1,33 @@
+{
+  "name": "@linapro/vben-plugin-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./isolated": { "types": "./src/isolated/index.d.ts", "import": "./dist/isolated/index.js" },
+    "./isolated.css": "./dist/isolated/vben-plugin-adapter.css"
+  },
+  "files": [
+    "dist", "src/isolated/index.d.ts", "src/isolated/types.ts"
+  ],
+  "scripts": {
+    "test": "node --experimental-strip-types --experimental-vm-modules --test src/isolated/form-schema.test.ts src/isolated/loader.test.mjs src/isolated/runtime.test.mjs",
+    "build": "tsc -p tsconfig.json && vite build && vite build --config vite.isolated.config.ts && node scripts/verify-build.mjs",
+    "build:isolated": "vite build --config vite.isolated.config.ts"
+  },
+  "devDependencies": {
+    "ant-design-vue": "4.2.6",
+    "@tailwindcss/vite": "4.2.1",
+    "@vitejs/plugin-vue": "6.0.4",
+    "sass": "1.97.3",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vue": "3.5.29"
+  },
+  "packageManager": "pnpm@11.18.0"
+}

@@ -1,0 +1,16 @@
+{
+  "customerGroups": {
+    "products": "Products & Services",
+    "finance": "Finance",
+    "account": "Account",
+    "salesChannel": "Referrals & commissions",
+    "security": "Security",
+    "compliance": "Compliance",
+    "support": "Support",
+    "external": "More services"
+  },
+  "platform": {
+    "title": "Platform",
+    "tenants": "Tenants"
+  }
+}

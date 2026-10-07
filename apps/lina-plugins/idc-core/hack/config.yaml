@@ -1,0 +1,773 @@
+build:
+  commands:
+    - pnpm --dir "$(BUILD_DIR)/frontend" install --frozen-lockfile --prefer-offline
+    - pnpm --dir "$(BUILD_DIR)/frontend" run build
+
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+        path: "internal"
+        tables: >-
+          plugin_idc_core_merchant_profile,
+          plugin_idc_core_principal_audience,
+          plugin_idc_core_customer_subject,
+          plugin_idc_core_customer_onboarding_intent,
+          plugin_idc_core_customer_identity_binding,
+          plugin_idc_core_business_number,
+          plugin_idc_core_outbox_event,
+          plugin_idc_core_async_task,
+          plugin_idc_core_async_task_attempt,
+          plugin_idc_core_idempotency_record,
+          plugin_idc_core_business_audit_event,
+          plugin_idc_core_business_audit_customer_link,
+          plugin_idc_core_secret,
+          plugin_idc_core_secret_version,
+          plugin_idc_core_secret_key_wrap,
+          plugin_idc_core_secret_rotation_state,
+          plugin_idc_core_customer_individual_profile,
+          plugin_idc_core_customer_enterprise_profile,
+          plugin_idc_core_customer_contact,
+          plugin_idc_core_customer_contact_role,
+          plugin_idc_core_customer_contact_preference,
+          plugin_idc_core_customer_address,
+          plugin_idc_core_customer_invoice_profile,
+          plugin_idc_core_customer_level,
+          plugin_idc_core_customer_level_assignment,
+          plugin_idc_core_customer_group,
+          plugin_idc_core_customer_group_assignment,
+          plugin_idc_core_customer_tag,
+          plugin_idc_core_customer_tag_assignment,
+          plugin_idc_core_customer_custom_field,
+          plugin_idc_core_customer_custom_field_option,
+          plugin_idc_core_customer_custom_field_value,
+          plugin_idc_core_customer_custom_field_value_option,
+          plugin_idc_core_customer_consent,
+          plugin_idc_core_customer_note,
+          plugin_idc_core_customer_follow_up,
+          plugin_idc_core_customer_attachment,
+          plugin_idc_core_customer_blacklist_entry,
+          plugin_idc_core_customer_risk_record,
+          plugin_idc_core_recent_auth_consumption,
+          plugin_idc_core_customer_legal_change_request,
+          plugin_idc_core_customer_account_state_history,
+          plugin_idc_core_customer_closure_request,
+          plugin_idc_core_customer_data_export_request,
+          plugin_idc_core_catalog_category,
+          plugin_idc_core_catalog_product,
+          plugin_idc_core_catalog_product_import,
+          plugin_idc_core_catalog_product_version,
+          plugin_idc_core_catalog_product_version_inventory,
+          plugin_idc_core_catalog_product_version_cost,
+          plugin_idc_core_catalog_configuration_group,
+          plugin_idc_core_catalog_configuration_option,
+          plugin_idc_core_catalog_compatibility_rule,
+          plugin_idc_core_catalog_billing_rule,
+          plugin_idc_core_catalog_price,
+          plugin_idc_core_catalog_tax_policy,
+          plugin_idc_core_catalog_resource_pool_binding,
+          plugin_idc_core_catalog_inventory_snapshot,
+          plugin_idc_core_catalog_cost_snapshot,
+          plugin_idc_core_marketing_segment,
+          plugin_idc_core_marketing_segment_condition,
+          plugin_idc_core_marketing_condition_value,
+          plugin_idc_core_marketing_segment_member,
+          plugin_idc_core_marketing_segment_snapshot,
+          plugin_idc_core_marketing_snapshot_member,
+          plugin_idc_core_marketing_campaign,
+          plugin_idc_core_marketing_campaign_scope,
+          plugin_idc_core_marketing_public_exposure_state,
+          plugin_idc_core_marketing_benefit_rule,
+          plugin_idc_core_marketing_customer_quota,
+          plugin_idc_core_marketing_campaign_reservation,
+          plugin_idc_core_marketing_promotion_asset,
+          plugin_idc_core_marketing_asset_reservation,
+          plugin_idc_core_marketing_points_account,
+          plugin_idc_core_marketing_points_lot,
+          plugin_idc_core_marketing_points_entry,
+          plugin_idc_core_marketing_value_grant,
+          plugin_idc_core_marketing_value_entry,
+          plugin_idc_core_marketing_channel_consent_event,
+          plugin_idc_core_marketing_channel_consent,
+          plugin_idc_core_marketing_quiet_hours,
+          plugin_idc_core_commerce_cart,
+          plugin_idc_core_commerce_configuration_snapshot,
+          plugin_idc_core_commerce_configuration_snapshot_item,
+          plugin_idc_core_commerce_cart_item,
+          plugin_idc_core_commerce_quote_snapshot,
+          plugin_idc_core_commerce_quote_item_snapshot,
+          plugin_idc_core_commerce_quote_item_inventory_snapshot,
+          plugin_idc_core_commerce_quote_charge_snapshot,
+          plugin_idc_core_commerce_quote_adjustment_snapshot,
+          plugin_idc_core_commerce_order,
+          plugin_idc_core_commerce_order_item,
+          plugin_idc_core_commerce_order_item_inventory_snapshot,
+          plugin_idc_core_commerce_inventory_reservation,
+          plugin_idc_core_commerce_fulfillment_unit,
+          plugin_idc_core_service_instance,
+          plugin_idc_core_service_price_snapshot,
+          plugin_idc_core_service_price_component_snapshot,
+          plugin_idc_core_service_renewal_policy,
+          plugin_idc_core_service_renewal_quote_request,
+          plugin_idc_core_service_renewal_attempt,
+          plugin_idc_core_service_lifecycle_policy,
+          plugin_idc_core_service_lifecycle_reminder_rule,
+          plugin_idc_core_service_lifecycle_task,
+          plugin_idc_core_service_lifecycle_task_event,
+          plugin_idc_core_business_operation,
+          plugin_idc_core_business_operation_event,
+          plugin_idc_core_service_traffic_suspension,
+          plugin_idc_core_server_accessory_price_policy,
+          plugin_idc_core_server_accessory_price_policy_version,
+          plugin_idc_core_traffic_package_product,
+          plugin_idc_core_server_accessory_quote,
+          plugin_idc_core_billing_invoice,
+          plugin_idc_core_billing_invoice_item,
+          plugin_idc_core_billing_ledger_account,
+          plugin_idc_core_billing_ledger_transaction,
+          plugin_idc_core_billing_ledger_entry,
+          plugin_idc_core_billing_balance_snapshot,
+          plugin_idc_core_billing_fund_hold,
+          plugin_idc_core_billing_payment_allocation,
+          plugin_idc_core_billing_refund_allocation,
+          plugin_idc_core_billing_adjustment_request,
+          plugin_idc_core_billing_adjustment_approval,
+          plugin_idc_core_billing_invoice_transform,
+          plugin_idc_core_billing_invoice_transform_source,
+          plugin_idc_core_billing_invoice_transform_destination,
+          plugin_idc_core_billing_invoice_item_derivation,
+          plugin_idc_core_billing_adjustment_policy,
+          plugin_idc_core_billing_invoice_waiver_allocation,
+          plugin_idc_core_credit_policy_revision,
+          plugin_idc_core_credit_application,
+          plugin_idc_core_credit_application_review,
+          plugin_idc_core_credit_account,
+          plugin_idc_core_credit_account_terms,
+          plugin_idc_core_credit_exposure,
+          plugin_idc_core_credit_statement,
+          plugin_idc_core_credit_statement_line,
+          plugin_idc_core_credit_repayment,
+          plugin_idc_core_credit_repayment_allocation,
+          plugin_idc_core_credit_delinquency_case,
+          plugin_idc_core_credit_writeoff,
+          plugin_idc_core_credit_account_movement,
+          plugin_idc_core_financial_settlement,
+          plugin_idc_core_financial_settlement_source,
+          plugin_idc_core_financial_settlement_delivery,
+          plugin_idc_core_financial_delivery_intent,
+          plugin_idc_core_financial_internal_note,
+          plugin_idc_core_financial_saved_filter,
+          plugin_idc_core_financial_export_request,
+          plugin_idc_core_financial_export_artifact,
+          plugin_idc_core_financial_export_ticket,
+          plugin_idc_core_sales_agent_level,
+          plugin_idc_core_sales_agent_application,
+          plugin_idc_core_sales_agent_qualification,
+          plugin_idc_core_sales_agent_qualification_event,
+          plugin_idc_core_sales_agent_credit_limit,
+          plugin_idc_core_sales_agent_product_rule,
+          plugin_idc_core_sales_agent_price_rule,
+          plugin_idc_core_sales_affiliate_link,
+          plugin_idc_core_sales_affiliate_touch,
+          plugin_idc_core_sales_affiliate_attribution,
+          plugin_idc_core_sales_group,
+          plugin_idc_core_sales_group_member,
+          plugin_idc_core_sales_customer_assignment,
+          plugin_idc_core_sales_customer_collaborator,
+          plugin_idc_core_sales_transfer_batch,
+          plugin_idc_core_sales_transfer_item,
+          plugin_idc_core_sales_commission_rule,
+          plugin_idc_core_sales_commission_tier,
+          plugin_idc_core_sales_commission_account,
+          plugin_idc_core_sales_commission_account_entry,
+          plugin_idc_core_sales_commission_maturity,
+          plugin_idc_core_sales_commission_payee_profile,
+          plugin_idc_core_sales_commission_settlement,
+          plugin_idc_core_sales_commission_settlement_item,
+          plugin_idc_core_sales_commission_settlement_review,
+          plugin_idc_core_sales_commission_payout_batch,
+          plugin_idc_core_sales_commission_payout_item,
+          plugin_idc_core_sales_commission_payout_evidence,
+          plugin_idc_core_sales_commission_payout_recovery,
+          plugin_idc_core_service_provision_execution,
+          plugin_idc_core_server_operation_execution,
+          plugin_idc_core_trial_qualification_scope,
+          plugin_idc_core_trial_entitlement,
+          plugin_idc_core_trial_qualification_movement,
+          plugin_idc_core_commerce_checkout_policy,
+          plugin_idc_core_commerce_order_cancellation,
+          plugin_idc_core_commerce_order_review,
+          plugin_idc_core_commerce_payment_context,
+          plugin_idc_core_commerce_assisted_quote_request,
+          plugin_idc_core_commerce_assisted_quote_request_item,
+          plugin_idc_core_support_department,
+          plugin_idc_core_support_department_member,
+          plugin_idc_core_support_issue_category,
+          plugin_idc_core_support_custom_status,
+          plugin_idc_core_support_custom_field_definition,
+          plugin_idc_core_support_custom_field_option,
+          plugin_idc_core_support_sla_calendar,
+          plugin_idc_core_support_sla_holiday,
+          plugin_idc_core_support_sla_rule,
+          plugin_idc_core_support_ticket,
+          plugin_idc_core_support_ticket_custom_field_value,
+          plugin_idc_core_support_ticket_custom_field_value_option,
+          plugin_idc_core_support_ticket_follower,
+          plugin_idc_core_support_ticket_assignment_history,
+          plugin_idc_core_support_ticket_status_history,
+          plugin_idc_core_support_ticket_sla_round,
+          plugin_idc_core_support_ticket_sla_pause,
+          plugin_idc_core_support_ticket_sla_reminder,
+          plugin_idc_core_support_ticket_message,
+          plugin_idc_core_support_ticket_attachment_upload,
+          plugin_idc_core_support_ticket_attachment,
+          plugin_idc_core_support_ticket_access_link,
+          plugin_idc_core_support_ticket_rating,
+          plugin_idc_core_support_ticket_relation,
+          plugin_idc_core_support_ticket_escalation,
+          plugin_idc_core_support_ticket_upstream_forward,
+          plugin_idc_core_support_ticket_upstream_item,
+          plugin_idc_core_support_reply_preset,
+          plugin_idc_core_support_automation_policy,
+          plugin_idc_core_content_category,
+          plugin_idc_core_content_item,
+          plugin_idc_core_content_customer_scope,
+          plugin_idc_core_content_group_scope,
+          plugin_idc_core_content_service_scope,
+          plugin_idc_core_content_action_history,
+          plugin_idc_core_content_upload_session,
+          plugin_idc_core_content_upload_part,
+          plugin_idc_core_content_file,
+          plugin_idc_core_content_scan_attempt,
+          plugin_idc_core_content_download_authorization,
+          plugin_idc_core_content_download_ticket,
+          plugin_idc_core_notification_preference_profile,
+          plugin_idc_core_notification_preference_command,
+          plugin_idc_core_customer_ssh_public_key,
+          plugin_idc_core_product_automation_interface_instance,
+          plugin_idc_core_product_automation_interface_configuration_revision,
+          plugin_idc_core_product_automation_interface_secret_reference,
+          plugin_idc_core_catalog_product_version_configuration
+        removePrefix: "plugin_idc_core_"
+        importPrefix: "lina-plugin-idc-core/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+            import: time
+          "timestamp without time zone":
+            type: "*time.Time"
+            import: time
+          timestamptz:
+            type: "*time.Time"
+            import: time
+          "timestamp with time zone":
+            type: "*time.Time"
+            import: time
+          numeric:
+            type: string
+        fieldMapping:
+          plugin_idc_core_catalog_product_import.product_no:
+            type: "*string"
+          plugin_idc_core_catalog_product_import.version_no:
+            type: "*string"
+          plugin_idc_core_server_accessory_price_policy.stock_quantity:
+            type: "*int64"
+          plugin_idc_core_server_operation_execution.provider_task_no:
+            type: "*string"
+          plugin_idc_core_server_operation_execution.capability_evidence_no:
+            type: "*string"
+          plugin_idc_core_server_operation_execution.capability_evidence_digest:
+            type: "*string"
+          plugin_idc_core_server_operation_execution.task_evidence_digest:
+            type: "*string"
+          plugin_idc_core_sales_agent_application.reviewed_by:
+            type: "*int"
+          plugin_idc_core_sales_agent_application.review_reason_code:
+            type: "*string"
+          plugin_idc_core_sales_agent_application.reviewed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_qualification.source_application_no:
+            type: "*string"
+          plugin_idc_core_sales_agent_qualification.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_credit_limit.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_product_rule.effective_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_product_rule.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_price_rule.fixed_price_minor:
+            type: "*int64"
+          plugin_idc_core_sales_agent_price_rule.discount_basis_points:
+            type: "*int"
+          plugin_idc_core_sales_agent_price_rule.effective_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_agent_price_rule.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_affiliate_link.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_affiliate_touch.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_affiliate_attribution.risk_reason_code:
+            type: "*string"
+          plugin_idc_core_sales_affiliate_attribution.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_customer_assignment.protection_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_customer_assignment.ended_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_customer_collaborator.ended_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_transfer_item.failure_reason_code:
+            type: "*string"
+          plugin_idc_core_sales_transfer_item.processed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_rule.product_no:
+            type: "*string"
+          plugin_idc_core_sales_commission_rule.fixed_amount_minor:
+            type: "*int64"
+          plugin_idc_core_sales_commission_rule.rate_basis_points:
+            type: "*int"
+          plugin_idc_core_sales_commission_rule.cap_amount_minor:
+            type: "*int64"
+          plugin_idc_core_sales_commission_rule.effective_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_rule.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_tier.upper_bound_minor:
+            type: "*int64"
+          plugin_idc_core_sales_commission_maturity.processed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_payee_profile.verified_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_settlement.paid_amount_minor:
+            type: "*int64"
+          plugin_idc_core_sales_commission_settlement.returned_amount_minor:
+            type: "*int64"
+          plugin_idc_core_sales_commission_settlement.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_payout_batch.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_payout_item.failure_reason_code:
+            type: "*string"
+          plugin_idc_core_sales_commission_payout_item.processed_at:
+            type: "*time.Time"
+          plugin_idc_core_sales_commission_payout_evidence.protected_object_reference:
+            type: "*string"
+          plugin_idc_core_sales_commission_payout_evidence.provider_reference_digest:
+            type: "*string"
+          plugin_idc_core_sales_commission_payout_recovery.next_attempt_at:
+            type: "*time.Time"
+          plugin_idc_core_customer_custom_field.minimum_length:
+            type: "*int"
+          plugin_idc_core_customer_custom_field.maximum_length:
+            type: "*int"
+          plugin_idc_core_customer_custom_field.minimum_number:
+            type: "*string"
+          plugin_idc_core_customer_custom_field.maximum_number:
+            type: "*string"
+          plugin_idc_core_customer_custom_field_value.text_value:
+            type: "*string"
+          plugin_idc_core_customer_custom_field_value.integer_value:
+            type: "*int64"
+          plugin_idc_core_customer_custom_field_value.decimal_value:
+            type: "*string"
+          plugin_idc_core_customer_custom_field_value.boolean_value:
+            type: "*bool"
+          plugin_idc_core_customer_custom_field_value.date_value:
+            type: "*time.Time"
+          plugin_idc_core_customer_risk_record.score_basis_points:
+            type: "*int"
+          plugin_idc_core_catalog_category.parent_category_no:
+            type: "*string"
+          plugin_idc_core_catalog_product.current_version_no:
+            type: "*string"
+          plugin_idc_core_catalog_compatibility_rule.maximum_target_quantity:
+            type: "*int"
+          plugin_idc_core_catalog_price.option_no:
+            type: "*string"
+          plugin_idc_core_catalog_price.renewal_amount_minor:
+            type: "*int64"
+          plugin_idc_core_catalog_price.maximum_quantity:
+            type: "*int64"
+          plugin_idc_core_catalog_tax_policy.tax_rate_basis_points:
+            type: "*int"
+          plugin_idc_core_catalog_billing_rule.maximum_renewal_cycles:
+            type: "*int"
+          plugin_idc_core_catalog_billing_rule.meter_unit_code:
+            type: "*string"
+          plugin_idc_core_catalog_billing_rule.tier_mode_code:
+            type: "*string"
+          plugin_idc_core_catalog_billing_rule.usage_collection_unit_code:
+            type: "*string"
+          plugin_idc_core_catalog_billing_rule.usage_collection_count:
+            type: "*int"
+          plugin_idc_core_catalog_billing_rule.usage_rounding_mode_code:
+            type: "*string"
+          plugin_idc_core_catalog_billing_rule.usage_rounding_quantity:
+            type: "*int64"
+          plugin_idc_core_catalog_billing_rule.usage_minimum_quantity:
+            type: "*int64"
+          plugin_idc_core_catalog_billing_rule.usage_maximum_quantity:
+            type: "*int64"
+          plugin_idc_core_catalog_billing_rule.usage_missing_policy_code:
+            type: "*string"
+          plugin_idc_core_catalog_inventory_snapshot.available_quantity:
+            type: "*int64"
+          plugin_idc_core_catalog_inventory_snapshot.sellable_quantity:
+            type: "*int64"
+          plugin_idc_core_marketing_segment.refresh_interval_minutes:
+            type: "*int"
+          plugin_idc_core_marketing_segment_condition.value_text:
+            type: "*string"
+          plugin_idc_core_marketing_segment_condition.value_integer_lower:
+            type: "*int64"
+          plugin_idc_core_marketing_segment_condition.value_integer_upper:
+            type: "*int64"
+          plugin_idc_core_marketing_segment_condition.value_boolean:
+            type: "*bool"
+          plugin_idc_core_marketing_segment_condition.currency_code:
+            type: "*string"
+          plugin_idc_core_marketing_condition_value.value_text:
+            type: "*string"
+          plugin_idc_core_marketing_condition_value.value_integer:
+            type: "*int64"
+          plugin_idc_core_marketing_segment_member.revoked_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_segment_snapshot.content_digest:
+            type: "*string"
+          plugin_idc_core_marketing_segment_snapshot.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_campaign.target_segment_no:
+            type: "*string"
+          plugin_idc_core_marketing_campaign.target_snapshot_no:
+            type: "*string"
+          plugin_idc_core_marketing_campaign.global_quota_limit:
+            type: "*int64"
+          plugin_idc_core_marketing_campaign.per_customer_quota_limit:
+            type: "*int"
+          plugin_idc_core_marketing_benefit_rule.currency_code:
+            type: "*string"
+          plugin_idc_core_marketing_benefit_rule.amount_minor:
+            type: "*int64"
+          plugin_idc_core_marketing_benefit_rule.rate_basis_points:
+            type: "*int"
+          plugin_idc_core_marketing_benefit_rule.maximum_discount_minor:
+            type: "*int64"
+          plugin_idc_core_marketing_benefit_rule.minimum_spend_minor:
+            type: "*int64"
+          plugin_idc_core_marketing_benefit_rule.points_quantity:
+            type: "*int64"
+          plugin_idc_core_marketing_benefit_rule.cycle_count:
+            type: "*int"
+          plugin_idc_core_marketing_promotion_asset.customer_no:
+            type: "*string"
+          plugin_idc_core_marketing_promotion_asset.claim_code_digest:
+            type: "[]byte"
+          plugin_idc_core_marketing_promotion_asset.face_amount_minor:
+            type: "*int64"
+          plugin_idc_core_marketing_promotion_asset.rate_basis_points:
+            type: "*int"
+          plugin_idc_core_marketing_promotion_asset.claimed_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_asset_reservation.consumed_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_asset_reservation.released_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_asset_reservation.reversed_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_campaign_reservation.reversed_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_points_lot.campaign_no:
+            type: "*string"
+          plugin_idc_core_marketing_points_lot.campaign_type_code:
+            type: "*string"
+          plugin_idc_core_marketing_points_lot.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_points_entry.lot_no:
+            type: "*string"
+          plugin_idc_core_marketing_points_entry.reversal_of_entry_no:
+            type: "*string"
+          plugin_idc_core_marketing_value_grant.expires_at:
+            type: "*time.Time"
+          plugin_idc_core_marketing_value_grant.financial_posting_reference:
+            type: "*string"
+          plugin_idc_core_marketing_value_entry.reversal_of_entry_no:
+            type: "*string"
+          plugin_idc_core_commerce_cart.customer_no:
+            type: "*string"
+          plugin_idc_core_commerce_cart.guest_owner_digest:
+            type: "*string"
+          plugin_idc_core_commerce_cart.latest_quote_no:
+            type: "*string"
+          plugin_idc_core_commerce_cart.merged_into_cart_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_snapshot.cart_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_snapshot.customer_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_snapshot.customer_subject_version:
+            type: "*int64"
+          plugin_idc_core_commerce_quote_item_snapshot.cart_item_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_item_snapshot.cart_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_item_snapshot.inventory_snapshot_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_item_snapshot.tax_rate_basis_points:
+            type: "*int"
+          plugin_idc_core_commerce_quote_charge_snapshot.option_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_charge_snapshot.configuration_snapshot_no:
+            type: "*string"
+          plugin_idc_core_commerce_quote_adjustment_snapshot.reservation_reference:
+            type: "*string"
+          plugin_idc_core_commerce_order_item.inventory_snapshot_no:
+            type: "*string"
+          plugin_idc_core_commerce_order_item.tax_rate_basis_points:
+            type: "*int"
+          plugin_idc_core_commerce_fulfillment_unit.reservation_no:
+            type: "*string"
+          plugin_idc_core_commerce_fulfillment_unit.business_operation_no:
+            type: "*string"
+          plugin_idc_core_commerce_fulfillment_unit.service_no:
+            type: "*string"
+          plugin_idc_core_commerce_fulfillment_unit.last_evidence_digest:
+            type: "*string"
+          plugin_idc_core_service_instance.source_fulfillment_no:
+            type: "*string"
+          plugin_idc_core_service_instance.order_no:
+            type: "*string"
+          plugin_idc_core_service_instance.order_item_no:
+            type: "*string"
+          plugin_idc_core_service_instance.channel_no:
+            type: "*string"
+          plugin_idc_core_service_instance.renewal_capability_evidence_no:
+            type: "*string"
+          plugin_idc_core_service_instance.renewal_capability_digest:
+            type: "*string"
+          plugin_idc_core_service_instance.renewal_capability_observed_at:
+            type: "*time.Time"
+          plugin_idc_core_service_instance.renewal_capability_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_service_instance.entitlement_started_at:
+            type: "*time.Time"
+          plugin_idc_core_service_instance.entitlement_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_service_instance.current_price_snapshot_no:
+            type: "*string"
+          plugin_idc_core_service_instance.current_renewal_policy_no:
+            type: "*string"
+          plugin_idc_core_service_instance.current_renewal_policy_version:
+            type: "*int64"
+          plugin_idc_core_service_instance.current_lifecycle_policy_no:
+            type: "*string"
+          plugin_idc_core_service_instance.current_lifecycle_policy_version:
+            type: "*int64"
+          plugin_idc_core_service_instance.last_business_operation_no:
+            type: "*string"
+          plugin_idc_core_service_price_snapshot.source_quote_no:
+            type: "*string"
+          plugin_idc_core_service_price_snapshot.source_quote_item_no:
+            type: "*string"
+          plugin_idc_core_service_price_snapshot.capability_evidence_no:
+            type: "*string"
+          plugin_idc_core_service_price_snapshot.capability_evidence_digest:
+            type: "*string"
+          plugin_idc_core_service_price_snapshot.capability_evidence_observed_at:
+            type: "*time.Time"
+          plugin_idc_core_service_price_snapshot.capability_evidence_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_service_price_snapshot.original_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_service_price_snapshot.projected_expires_at:
+            type: "*time.Time"
+          plugin_idc_core_service_price_snapshot.tax_rate_basis_points:
+            type: "*int"
+          plugin_idc_core_service_price_component_snapshot.option_no:
+            type: "*string"
+          plugin_idc_core_business_operation.price_snapshot_no:
+            type: "*string"
+          plugin_idc_core_business_operation.quote_no:
+            type: "*string"
+          plugin_idc_core_business_operation.order_no:
+            type: "*string"
+          plugin_idc_core_business_operation.invoice_no:
+            type: "*string"
+          plugin_idc_core_business_operation.source_fulfillment_no:
+            type: "*string"
+          plugin_idc_core_business_operation.settlement_no:
+            type: "*string"
+          plugin_idc_core_business_operation.channel_no:
+            type: "*string"
+          plugin_idc_core_business_operation.provider_task_no:
+            type: "*string"
+          plugin_idc_core_business_operation.capability_evidence_no:
+            type: "*string"
+          plugin_idc_core_business_operation.capability_evidence_digest:
+            type: "*string"
+          plugin_idc_core_business_operation.financially_settled_at:
+            type: "*time.Time"
+          plugin_idc_core_business_operation.execution_started_at:
+            type: "*time.Time"
+          plugin_idc_core_business_operation.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_business_operation_event.from_status_code:
+            type: "*string"
+          plugin_idc_core_service_renewal_attempt.ledger_transaction_no:
+            type: "*string"
+          plugin_idc_core_service_renewal_attempt.ledger_transaction_type_code:
+            type: "*string"
+          plugin_idc_core_service_renewal_attempt.next_attempt_at:
+            type: "*time.Time"
+          plugin_idc_core_service_lifecycle_policy.suspend_after_seconds:
+            type: "*int64"
+          plugin_idc_core_service_lifecycle_policy.terminate_after_seconds:
+            type: "*int64"
+          plugin_idc_core_service_lifecycle_task.reminder_sequence:
+            type: "*int"
+          plugin_idc_core_service_lifecycle_task.business_operation_no:
+            type: "*string"
+          plugin_idc_core_service_lifecycle_task.previous_runtime_status_code:
+            type: "*string"
+          plugin_idc_core_service_lifecycle_task.claimed_at:
+            type: "*time.Time"
+          plugin_idc_core_service_lifecycle_task.dispatched_at:
+            type: "*time.Time"
+          plugin_idc_core_service_lifecycle_task.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_service_lifecycle_task_event.from_status_code:
+            type: "*string"
+          plugin_idc_core_billing_invoice.order_no:
+            type: "*string"
+          plugin_idc_core_billing_invoice_item.order_no:
+            type: "*string"
+          plugin_idc_core_billing_invoice_item.order_item_no:
+            type: "*string"
+          plugin_idc_core_billing_ledger_account.customer_no:
+            type: "*string"
+          plugin_idc_core_billing_ledger_transaction.original_transaction_no:
+            type: "*string"
+          plugin_idc_core_billing_ledger_entry.invoice_no:
+            type: "*string"
+          plugin_idc_core_billing_ledger_entry.invoice_item_no:
+            type: "*string"
+          plugin_idc_core_billing_balance_snapshot.previous_snapshot_no:
+            type: "*string"
+          plugin_idc_core_billing_balance_snapshot.previous_sequence_no:
+            type: "*int64"
+          plugin_idc_core_billing_payment_allocation.invoice_item_no:
+            type: "*string"
+          plugin_idc_core_billing_payment_allocation.original_allocation_no:
+            type: "*string"
+          plugin_idc_core_billing_refund_allocation.original_refund_allocation_no:
+            type: "*string"
+          plugin_idc_core_billing_adjustment_request.invoice_no:
+            type: "*string"
+          plugin_idc_core_billing_adjustment_request.account_no:
+            type: "*string"
+          plugin_idc_core_billing_adjustment_request.account_type_code:
+            type: "*string"
+          plugin_idc_core_billing_adjustment_request.ledger_transaction_no:
+            type: "*string"
+          plugin_idc_core_billing_adjustment_request.ledger_transaction_type_code:
+            type: "*string"
+          plugin_idc_core_credit_application.decided_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_application.cancelled_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_account.freeze_reason_code:
+            type: "*string"
+          plugin_idc_core_credit_account.frozen_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_account.closed_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_exposure.order_no:
+            type: "*string"
+          plugin_idc_core_credit_exposure.invoice_no:
+            type: "*string"
+          plugin_idc_core_financial_settlement_source.payment_allocation_no:
+            type: "*string"
+          plugin_idc_core_financial_settlement_source.credit_exposure_no:
+            type: "*string"
+          plugin_idc_core_trial_entitlement.identity_evidence_digest:
+            type: "*string"
+          plugin_idc_core_credit_statement.overdue_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_statement.settled_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_statement.cancelled_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_statement.written_off_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_repayment.ledger_transaction_no:
+            type: "*string"
+          plugin_idc_core_credit_repayment.confirmation_evidence_digest:
+            type: "*string"
+          plugin_idc_core_credit_repayment.confirmed_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_repayment.failed_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_repayment.refunded_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_repayment_allocation.statement_no:
+            type: "*string"
+          plugin_idc_core_credit_repayment_allocation.exposure_no:
+            type: "*string"
+          plugin_idc_core_credit_repayment_allocation.original_allocation_no:
+            type: "*string"
+          plugin_idc_core_credit_delinquency_case.frozen_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_delinquency_case.service_action_requested_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_delinquency_case.written_off_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_delinquency_case.resolved_at:
+            type: "*time.Time"
+          plugin_idc_core_credit_writeoff.original_writeoff_no:
+            type: "*string"
+          plugin_idc_core_credit_account_movement.exposure_no:
+            type: "*string"
+          plugin_idc_core_credit_account_movement.statement_no:
+            type: "*string"
+          plugin_idc_core_credit_account_movement.repayment_no:
+            type: "*string"
+          plugin_idc_core_credit_account_movement.status_before_code:
+            type: "*string"
+          plugin_idc_core_commerce_order_cancellation.payment_closure_reference:
+            type: "*string"
+          plugin_idc_core_commerce_order_cancellation.payment_closure_outcome_code:
+            type: "*string"
+          plugin_idc_core_commerce_order_cancellation.payment_closure_digest:
+            type: "*string"
+          plugin_idc_core_commerce_order_cancellation.completed_at:
+            type: "*time.Time"
+          plugin_idc_core_commerce_order_review.request_digest:
+            type: "*string"
+          plugin_idc_core_commerce_order_review.evidence_digest:
+            type: "*string"
+          plugin_idc_core_commerce_order_review.reviewed_by:
+            type: "*int"
+          plugin_idc_core_commerce_order_review.reviewed_at:
+            type: "*time.Time"
+          plugin_idc_core_commerce_order.assisted_request_no:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.decision_code:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.decision_by:
+            type: "*int"
+          plugin_idc_core_commerce_assisted_quote_request.decision_at:
+            type: "*time.Time"
+          plugin_idc_core_commerce_assisted_quote_request.decision_reason:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.decision_request_digest:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.decision_evidence_digest:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.quote_no:
+            type: "*string"
+          plugin_idc_core_commerce_assisted_quote_request.order_no:
+            type: "*string"

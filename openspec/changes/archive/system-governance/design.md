@@ -46,7 +46,7 @@
 
 缓存一致性：新增参数复用 protected runtime parameters 的本地快照与共享修订号；源码插件每次定时任务执行时读取 host config 发布契约，不持久缓存参数值，因此无需新增插件侧失效机制。集群模式下该参数最大陈旧窗口沿用 runtime-config 域的 `10s` freshness 预算。
 
-接口性能：所有自动清理均使用数据库侧时间范围删除，并依赖既有时间索引或新增必要索引。`sys_job_log.start_at`、`plugin_linapro_ai_invocation.created_at` 已具备索引；登录日志已有 `(tenant_id, login_time)` 索引，自动清理不按租户过滤时仍需要 `login_time` 单列索引支撑过期数据扫描。
+接口性能：所有自动清理均使用数据库侧时间范围删除，并依赖既有时间索引或新增必要索引。`sys_job_log.start_at`、`plugin_ai_core_invocation.created_at` 已具备索引；登录日志已有 `(tenant_id, login_time)` 索引，自动清理不按租户过滤时仍需要 `login_time` 单列索引支撑过期数据扫描。
 
 ## 宿主健康检查移除
 
@@ -93,5 +93,5 @@
 - `cron-job-management`承载用户创建任务、内置任务和任务日志当前契约；本分组只保留任务数据权限接入影响和执行日志全局保留上限，历史 owner 为`archive/scheduled-jobs`。
 - `config-management`承载参数设置、运行时配置和 fallback 元数据当前契约；本分组只保留系统治理最初引入参数设置以及 `sys.log.retentionDays` 受保护运行时参数的历史影响，历史 owner 为`archive/system-config`。
 - `user-message`承载消息通知当前契约；本分组只保留数据权限不得扩大当前用户自隔离边界的影响，历史 owner 为`archive/notification`。
-- `linapro-monitor-operlog`和`linapro-monitor-loginlog`源码插件承载操作日志和登录日志页面及清理任务；本分组保留前端范围删除交互改进和插件内建清理定时任务的影响摘要。
-- `linapro-ai-core`源码插件承载智能中心调用日志清理任务；本分组只保留插件内建清理定时任务按全局保留天数执行的影响摘要。
+- `monitor-operlog`和`monitor-loginlog`源码插件承载操作日志和登录日志页面及清理任务；本分组保留前端范围删除交互改进和插件内建清理定时任务的影响摘要。
+- `ai-core`源码插件承载智能中心调用日志清理任务；本分组只保留插件内建清理定时任务按全局保留天数执行的影响摘要。

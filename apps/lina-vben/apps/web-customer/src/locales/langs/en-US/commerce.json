@@ -1,0 +1,142 @@
+{
+  "eyebrow": "Secure commerce",
+  "cart": {
+    "browse": "Back to account home",
+    "empty": "Your cart is empty",
+    "lead": "Products, pricing, promotions, and inventory are checked again before checkout. Cached amounts never create an order.",
+    "menu": "Cart",
+    "title": "Review product configurations"
+  },
+  "orders": {
+    "empty": "No orders yet",
+    "lead": "Payment, review, provisioning, and cancellation always follow the latest server facts.",
+    "menu": "My orders",
+    "title": "My orders"
+  },
+  "order": {
+    "contractOptional": "Ordinary individual orders do not require a contract. Only orders explicitly marked by staff follow contract gating.",
+    "created": "Created",
+    "delivery": "Product delivery",
+    "services": "Ongoing services",
+    "detailTitle": "Order {orderNo}",
+    "due": "Payment due",
+    "invoice": "Invoice",
+    "requestRefund": "Request refund",
+    "items": "Product items",
+    "label": "Order"
+  },
+  "quote": {
+    "changed": "The price changed. Review the new amount before placing the order.",
+    "expires": "Quote expires",
+    "title": "Checkout quote"
+  },
+  "configuration": {
+    "configure": "Complete purchase configuration",
+    "reconfigure": "Reconfigure",
+    "ready": "Configuration complete",
+    "required": "Complete the purchase configuration for every product before placing the order."
+  },
+  "amount": {
+    "discount": "Discount",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Amount due"
+  },
+  "payment": {
+    "identityDescription": "Identity verification is required before the first payment. Return here to continue the same order without creating another one.",
+    "ready": "Identity and order checks passed. You can continue to payment methods.",
+    "readyDescription": "The order is never shown as paid before funds are received."
+  },
+  "cancel": {
+    "confirm": "Cancel order",
+    "description": "Payment, funds, and resources are checked again. Unsafe closure moves to manual handling and never releases resources prematurely.",
+    "title": "Cancel this order?"
+  },
+  "actions": {
+    "back": "Back",
+    "backToOrders": "Back to orders",
+    "cancel": "Cancel unpaid order",
+    "checkout": "Confirm and place order",
+    "detail": "View details",
+    "next": "Next",
+    "preparePayment": "Continue to payment",
+    "previous": "Previous",
+    "quote": "Refresh final quote",
+    "quoteAgain": "Refresh again",
+    "recheck": "I have finished — check again",
+    "remove": "Remove",
+    "retry": "Reload",
+    "verify": "Verify identity"
+  },
+  "messages": {
+    "actionFailed": "The action did not finish. Retry from the latest page state.",
+    "cancelled": "The cancellation request was accepted and the page was refreshed.",
+    "checkoutFailed": "The order was not submitted. Keep this page open and try again.",
+    "loadFailed": "This page is temporarily unavailable. Try again shortly.",
+    "mergeFailed": "The website cart was not merged. Keep your browser data and try again shortly.",
+    "orderCreated": "Order created",
+    "quoteFailed": "Pricing did not finish. The cart has been reloaded."
+  },
+  "status": {
+    "active": "Ready",
+    "all": "All statuses",
+    "awaiting_identity": "Identity required",
+    "awaiting_payment": "Awaiting payment",
+    "awaiting_review": "Awaiting merchant review",
+    "awaiting_order_review": "Order review",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "consumed": "Consumed",
+    "fulfilled": "Fulfilled",
+    "fulfilling": "Fulfilling",
+    "held": "Held",
+    "manual_review": "Manual review",
+    "not_completed": "Not completed",
+    "partially_fulfilled": "Partially fulfilled",
+    "partially_refunded": "Partially refunded",
+    "pending": "Pending",
+    "pending_payment": "Awaiting payment",
+    "payment_processing": "Payment processing",
+    "processing": "Processing",
+    "provisioning": "Provisioning",
+    "ready": "Ready to pay",
+    "refunded": "Refunded",
+    "released": "Released",
+    "rejected": "Rejected",
+    "succeeded": "Completed",
+    "suspended": "Suspended",
+    "expired": "Expired",
+    "terminated": "Terminated",
+    "unavailable": "Status unavailable",
+    "unknown": "Status unavailable",
+    "waiting_payment": "Waiting for payment"
+  },
+  "fulfillment": {
+    "ongoing": "Ongoing service included",
+    "once": "One-time delivery",
+    "serviceStarted": "Started",
+    "serviceExpires": "Expires",
+    "noExpiry": "No expiry",
+    "serviceStatusUnavailable": "Service status is temporarily unavailable",
+    "serviceStatus": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "terminated": "Terminated"
+    },
+    "statusUnavailable": "Fulfillment status is temporarily unavailable",
+    "status": {
+      "awaiting_payment": "Awaiting payment",
+      "awaiting_review": "Awaiting merchant review",
+      "processing": "Processing",
+      "completed": "Completed",
+      "not_completed": "Not completed",
+      "cancelled": "Cancelled"
+    }
+  },
+  "units": {
+    "cycles": "billing cycles",
+    "items": "items",
+    "servers": "servers"
+  }
+}

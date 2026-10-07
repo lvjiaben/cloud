@@ -1,0 +1,11 @@
+{
+  "menu": {
+    "plugin:idc-zjmfmigrate:migration": { "title": "Migration Checks" },
+    "plugin:idc-zjmfmigrate:preflight": { "title": "Run Migration Preflight" },
+    "plugin:idc-zjmfmigrate:write": { "title": "Write Migration Batch" },
+    "plugin:idc-zjmfmigrate:decide": { "title": "Decide Migration Conflict" },
+    "plugin:idc-zjmfmigrate:reconcile": { "title": "Reconcile Migration" },
+    "plugin:idc-zjmfmigrate:cutover": { "title": "Check Migration Cutover" },
+    "plugin:idc-zjmfmigrate:rollback": { "title": "Roll Back Migration" }
+  }
+}

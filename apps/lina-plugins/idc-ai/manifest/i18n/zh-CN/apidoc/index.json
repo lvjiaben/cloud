@@ -1,0 +1,18 @@
+{
+  "plugins.idc_ai.api.admin.v1.AIConfigGetReq.meta.summary": "获取 AI 配置",
+  "plugins.idc_ai.api.admin.v1.AIConfigGetReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.admin.v1.AIConfigUpdateReq.meta.summary": "更新 AI 配置",
+  "plugins.idc_ai.api.admin.v1.AIConfigUpdateReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.admin.v1.AIConfigTestReq.meta.summary": "测试 AI 配置",
+  "plugins.idc_ai.api.admin.v1.AIConfigTestReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.admin.v1.AIChatReq.meta.summary": "询问只读 AI 助手",
+  "plugins.idc_ai.api.admin.v1.AIChatReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.admin.v1.AIFeedbackReq.meta.summary": "提交 AI 反馈",
+  "plugins.idc_ai.api.admin.v1.AIFeedbackReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.admin.v1.AIAuditListReq.meta.summary": "查看 AI 安全审计",
+  "plugins.idc_ai.api.admin.v1.AIAuditListReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.customer.v1.AssistantStatusReq.meta.summary": "获取客户助手状态",
+  "plugins.idc_ai.api.customer.v1.AssistantStatusReq.meta.tags": "IDC AI",
+  "plugins.idc_ai.api.customer.v1.AssistantChatReq.meta.summary": "询问客户只读助手",
+  "plugins.idc_ai.api.customer.v1.AssistantChatReq.meta.tags": "IDC AI"
+}

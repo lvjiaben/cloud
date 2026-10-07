@@ -1,0 +1,140 @@
+.provider-configuration-workspace,
+.provider-configuration-workspace * {
+  box-sizing: border-box;
+}
+.provider-configuration-workspace {
+  --resource-line: #e2e8f0;
+  --resource-muted: #64748b;
+  --resource-primary: #2563eb;
+  --resource-danger: #dc2626;
+  padding: 16px;
+  color: #172033;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.provider-configuration-workspace .card {
+  border: 1px solid var(--resource-line);
+  border-radius: 0;
+  background: #fff;
+}
+.provider-configuration-workspace .toolbar,
+.provider-configuration-workspace .panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+.provider-configuration-workspace .toolbar {
+  margin-bottom: 12px;
+}
+.provider-configuration-workspace .toolbar h2,
+.provider-configuration-workspace .panel h3,
+.provider-configuration-workspace .modal h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.provider-configuration-workspace .toolbar p,
+.provider-configuration-workspace .panel header p {
+  margin: 4px 0 0;
+  color: var(--resource-muted);
+}
+.provider-configuration-workspace button,
+.provider-configuration-workspace input,
+.provider-configuration-workspace select,
+.provider-configuration-workspace textarea {
+  font: inherit;
+}
+.provider-configuration-workspace button:not(:where(.vxe-grid *)),
+.provider-configuration-workspace .vxe-grid .button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--resource-line);
+  border-radius: 0;
+  background: #fff;
+  cursor: pointer;
+}
+.provider-configuration-workspace .button.primary {
+  border-color: var(--resource-primary);
+  background: var(--resource-primary);
+  color: #fff;
+}
+.provider-configuration-workspace button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.provider-configuration-workspace .tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 5px;
+}
+.provider-configuration-workspace .tabs button {
+  border-color: transparent;
+}
+.provider-configuration-workspace .tabs button.active {
+  background: #eaf2ff;
+  color: var(--resource-primary);
+}
+.provider-configuration-workspace .panel {
+  overflow: hidden;
+}
+.provider-configuration-workspace .panel > header {
+  border-bottom: 1px solid var(--resource-line);
+}
+.provider-configuration-workspace .actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  white-space: nowrap;
+}
+.provider-configuration-workspace .actions button {
+  min-height: 28px;
+  padding: 3px 8px;
+}
+.provider-configuration-workspace .actions .danger {
+  color: var(--resource-danger);
+}
+.provider-configuration-workspace .empty {
+  padding: 50px;
+  text-align: center;
+  color: var(--resource-muted);
+}
+.provider-configuration-workspace .wrap {
+  max-width: 360px;
+  overflow-wrap: anywhere;
+}
+.provider-configuration-workspace .notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 0;
+}
+.provider-configuration-workspace .notice.error {
+  background: #fff1f2;
+  color: #be123c;
+}
+.provider-configuration-workspace .notice.success {
+  background: #ecfdf5;
+  color: #047857;
+}
+@media (max-width: 700px) {
+  .provider-configuration-workspace .toolbar,
+  .provider-configuration-workspace .panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .provider-configuration-workspace .grid {
+    grid-template-columns: 1fr;
+  }
+  .provider-configuration-workspace .backdrop {
+    align-items: end;
+    padding: 0;
+  }
+  .provider-configuration-workspace .modal {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 0;
+  }
+}
+.provider-configuration-workspace .standalone-vben-table { min-width: 0; width: 100%; }

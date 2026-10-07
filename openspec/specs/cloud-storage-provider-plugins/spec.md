@@ -7,52 +7,52 @@ TBD - created by archiving change cloud-storage-providers. Update Purpose after 
 
 系统 SHALL 交付以下官方 source 插件，并分别通过 `storagecap.Provide(pluginID, factory)` 注册 `storagecap.Provider` 实现：
 
-- `linapro-storage-cos`：腾讯云 COS（厂商 SDK）
-- `linapro-storage-oss`：阿里云 OSS（厂商 SDK）
-- `linapro-storage-obs`：华为云 OBS（厂商 SDK）
-- `linapro-storage-qiniu`：七牛云 Kodo（厂商 SDK；region 可选，留空时 MUST 根据 AccessKey 与 bucket 自动探测；endpoint 可选下载域名）
-- `linapro-storage-aws`：AWS S3（厂商插件；配置面向 AWS，region 必填，默认由 SDK 解析官方 endpoint，MUST NOT 将自定义 endpoint / path-style 作为主配置项）
-- `linapro-storage-azure`：Azure Blob Storage（厂商插件；配置面向 Azure account/container/shared key，MUST NOT 将 Azure 并入 S3 协议插件）
-- `linapro-storage-s3`：S3 兼容协议插件（MinIO、R2、Ceph RGW 等；MUST 要求自定义 endpoint，MUST 支持 path-style；region 可选，缺省时使用签名占位默认值）
+- `storage-cos`：腾讯云 COS（厂商 SDK）
+- `storage-oss`：阿里云 OSS（厂商 SDK）
+- `storage-obs`：华为云 OBS（厂商 SDK）
+- `storage-qiniu`：七牛云 Kodo（厂商 SDK；region 可选，留空时 MUST 根据 AccessKey 与 bucket 自动探测；endpoint 可选下载域名）
+- `storage-aws`：AWS S3（厂商插件；配置面向 AWS，region 必填，默认由 SDK 解析官方 endpoint，MUST NOT 将自定义 endpoint / path-style 作为主配置项）
+- `storage-azure`：Azure Blob Storage（厂商插件；配置面向 Azure account/container/shared key，MUST NOT 将 Azure 并入 S3 协议插件）
+- `storage-s3`：S3 兼容协议插件（MinIO、R2、Ceph RGW 等；MUST 要求自定义 endpoint，MUST 支持 path-style；region 可选，缺省时使用签名占位默认值）
 
 上述插件 MUST 为 `type: source`、`scope_nature: platform_only`、平台级全局安装模式，MUST NOT 将云 SDK 依赖引入 `lina-core` 宿主模块路径。
 
 #### Scenario: 通用 S3 协议插件要求 endpoint
 
-- **WHEN** 管理员配置 `linapro-storage-s3`
+- **WHEN** 管理员配置 `storage-s3`
 - **THEN** 设置 MUST 包含 endpoint 与 bucket 等协议字段
 - **AND** region 可为可选；留空时运行时 MUST 使用默认签名 region（如 `us-east-1`）
 - **AND** MUST NOT 将菜单与展示名绑定为「AWS S3」
 
 #### Scenario: AWS 厂商插件使用 AWS 心智配置
 
-- **WHEN** 管理员配置 `linapro-storage-aws`
+- **WHEN** 管理员配置 `storage-aws`
 - **THEN** 设置 MUST 包含 access key、secret、region、bucket
 - **AND** 管理面 MUST NOT 以主表单暴露自定义 endpoint / force path-style（第一期）
 
 #### Scenario: 华为云 OBS 厂商插件配置
 
-- **WHEN** 管理员配置 `linapro-storage-obs`
+- **WHEN** 管理员配置 `storage-obs`
 - **THEN** 设置 MUST 包含 access key、secret、region、bucket
 - **AND** endpoint 可选；留空时运行时 MUST 使用华为云默认 OBS endpoint 规则
 
 #### Scenario: 七牛云 Kodo 厂商插件配置
 
-- **WHEN** 管理员配置 `linapro-storage-qiniu`
+- **WHEN** 管理员配置 `storage-qiniu`
 - **THEN** 设置 MUST 包含 access key、secret、bucket
 - **AND** region 可为可选；留空时运行时 MUST 根据 AccessKey 与 bucket 自动探测机房
 - **AND** endpoint 可为可选自定义下载域名
 
 #### Scenario: Azure Blob 厂商插件配置
 
-- **WHEN** 管理员配置 `linapro-storage-azure`
+- **WHEN** 管理员配置 `storage-azure`
 - **THEN** 设置 MUST 包含 account name、account key、container
 - **AND** endpoint 可选；留空时运行时 MUST 使用 `https://{account}.blob.core.windows.net/`
 - **AND** MUST NOT 要求 S3 语义字段（region 作为主必填项、force path-style）
 
 #### Scenario: 仅启用 COS 插件时使用 COS 后端
 
-- **WHEN** `linapro-storage-cos` 已安装且为唯一可服务 storage provider 插件
+- **WHEN** `storage-cos` 已安装且为唯一可服务 storage provider 插件
 - **AND** 业务插件调用 `storagecap.Service.Put` 写入对象
 - **THEN** 对象内容 MUST 写入 COS 配置中的目标桶
 - **AND** 调用方 MUST 仍只使用 logical path，不得感知 bucket 或云侧 object key 拼接细节
@@ -154,11 +154,11 @@ TBD - created by archiving change cloud-storage-providers. Update Purpose after 
 
 ### Requirement: 官方云 storage provider 必须实现客户端直连访问
 
-下列官方云 storage provider 插件 MUST 实现客户端直连访问能力（至少覆盖 put 与 get 之一的可生产路径，推荐两者均支持）：`linapro-storage-cos`、`linapro-storage-oss`、`linapro-storage-obs`、`linapro-storage-qiniu`、`linapro-storage-aws`、`linapro-storage-azure`、`linapro-storage-s3`。实现 MUST 输出 `storagecap` 中立 DirectAccess 描述，MUST NOT 要求宿主或业务前端依赖该插件私有 HTTP API 才能完成直传。
+下列官方云 storage provider 插件 MUST 实现客户端直连访问能力（至少覆盖 put 与 get 之一的可生产路径，推荐两者均支持）：`storage-cos`、`storage-oss`、`storage-obs`、`storage-qiniu`、`storage-aws`、`storage-azure`、`storage-s3`。实现 MUST 输出 `storagecap` 中立 DirectAccess 描述，MUST NOT 要求宿主或业务前端依赖该插件私有 HTTP API 才能完成直传。
 
 #### Scenario: S3 协议插件签发 presigned put
 
-- **WHEN** `linapro-storage-s3` 为唯一可服务 provider 且配置完整
+- **WHEN** `storage-s3` 为唯一可服务 provider 且配置完整
 - **AND** 宿主请求对某 scoped key 创建 put 直连访问
 - **THEN** 插件 MUST 返回可用的 `presigned_url`（或文档化的等价 mode）描述
 - **AND** 使用该描述在过期前 MUST 能将对象写入目标 key
@@ -183,17 +183,17 @@ TBD - created by archiving change cloud-storage-providers. Update Purpose after 
 
 下列官方云 storage provider 插件在可生产配置下 MUST 实现 `storagecap` 可选 Multipart 接口（含 SupportsMultipart、CreateMultipart、UploadPart、CompleteMultipart、AbortMultipart，以及供直传使用的 part 级访问签发能力，若该插件已实现 DirectAccess）：
 
-- `linapro-storage-s3`
-- `linapro-storage-aws`
-- `linapro-storage-cos`
-- `linapro-storage-oss`
-- `linapro-storage-obs`
+- `storage-s3`
+- `storage-aws`
+- `storage-cos`
+- `storage-oss`
+- `storage-obs`
 
 实现 MUST 只接收 scoped object key 与 Multipart 会话参数，MUST NOT 解析插件 hostServices 授权快照。无法在合理成本内对齐的插件（如部分 Azure/七牛路径）MAY 在未实现时使 SupportsMultipart 返回 false，但 MUST NOT 抛出未说明的 panic 或静默写错对象。
 
 #### Scenario: S3 兼容 provider 创建并完成 Multipart
 
-- **WHEN** `linapro-storage-s3` 或 `linapro-storage-aws` 为唯一可服务 provider
+- **WHEN** `storage-s3` 或 `storage-aws` 为唯一可服务 provider
 - **AND** 调用方 CreateMultipart 后上传至少一个 part 并 Complete
 - **THEN** provider MUST 在桶中生成完整对象
 - **AND** Stat/Get 可观察到与单次 Put 等价的对象内容

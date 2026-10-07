@@ -2,7 +2,7 @@ import type { LoginTenant, TenantTokenResult } from './model';
 
 import { pluginApiPath, requestClient } from '#/api/request';
 
-const pluginID = 'linapro-tenant-core';
+const pluginID = 'tenant-core';
 
 export async function authLoginTenants(userId: number) {
   const res = await requestClient.get<{ list: LoginTenant[] }>(

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-portal/backend/plugin.go",
+      "maxCalls": 4,
+      "reason": "IDC portal plugin composition boundary; wires and shares the private brand and customer external-menu services once."
+    }
+  ]
+}

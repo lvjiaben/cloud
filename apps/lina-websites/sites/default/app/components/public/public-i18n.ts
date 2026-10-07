@@ -1,0 +1,34 @@
+export type Locale = 'en-US' | 'zh-CN';
+
+export const publicCopy = {
+  'en-US': {
+    announcements: 'Announcements',
+    brand: 'LinaPro Services',
+    customerCenter: 'Customer center',
+    downloads: 'Downloads',
+    footer: 'Products, updates, guides, and downloads in one public website.',
+    help: 'Help',
+    home: 'Home',
+    knowledge: 'Knowledge base',
+    language: '切换到中文',
+    navigation: 'Public website navigation',
+    news: 'News',
+    products: 'Products',
+    signIn: 'Sign in',
+  },
+  'zh-CN': {
+    announcements: '公告',
+    brand: 'LinaPro 服务',
+    customerCenter: '客户中心',
+    downloads: '下载',
+    footer: '在一个公开官网查看商品、动态、使用指南和下载资料。',
+    help: '帮助',
+    home: '首页',
+    knowledge: '知识库',
+    language: 'Switch to English',
+    navigation: '官网导航',
+    news: '新闻',
+    products: '商品',
+    signIn: '登录',
+  },
+} as const;

@@ -1,0 +1,14 @@
+.vben-isolated-table {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  border-radius: 0;
+  --vxe-ui-font-color: hsl(var(--foreground));
+  --vxe-ui-layout-background-color: hsl(var(--card));
+  --vxe-ui-table-header-background-color: hsl(var(--muted));
+  --vxe-ui-table-row-striped-background-color: hsl(var(--card));
+  --vxe-ui-table-row-hover-background-color: hsl(var(--accent));
+  --vxe-ui-table-row-current-background-color: hsl(var(--primary) / 12%);
+}
+.vben-isolated-table :is(.vxe-toolbar, .vxe-table--body-wrapper, .vxe-table--footer-wrapper, .vxe-grid--form-wrapper, .vxe-grid--toolbar-wrapper) { background: hsl(var(--card)) !important; color: hsl(var(--foreground)); }
+.vben-isolated-table :is(.vxe-table--header-wrapper, .vxe-table--header, .vxe-header--column) { background: hsl(var(--muted)) !important; color: hsl(var(--foreground)); }
+.vben-isolated-cell { min-width: 0; overflow-wrap: anywhere; }

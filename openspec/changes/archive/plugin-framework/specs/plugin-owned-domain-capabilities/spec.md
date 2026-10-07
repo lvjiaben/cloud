@@ -27,9 +27,9 @@
 
 #### Scenario: 源码消费插件 import owner 契约
 
-- **WHEN** 源码消费插件需要调用`linapro-ai-core`发布的`AI`能力
-- **THEN** 它只能 import `lina-plugin-linapro-ai-core/backend/cap/aicap/...`
-- **AND** 它 MUST NOT import `lina-plugin-linapro-ai-core/backend/internal/...`、`backend/internal/dao`、`backend/internal/model`或 provider 实现包
+- **WHEN** 源码消费插件需要调用`ai-core`发布的`AI`能力
+- **THEN** 它只能 import `lina-plugin-ai-core/backend/cap/aicap/...`
+- **AND** 它 MUST NOT import `lina-plugin-ai-core/backend/internal/...`、`backend/internal/dao`、`backend/internal/model`或 provider 实现包
 
 #### Scenario: backend/pkg 不作为领域能力入口
 
@@ -43,9 +43,9 @@
 
 #### Scenario: owner 插件注册源码 provider
 
-- **WHEN** `linapro-ai-core`声明`AI`文本 provider
+- **WHEN** `ai-core`声明`AI`文本 provider
 - **THEN** 它通过 owner helper 生成通用 capability descriptor 并注册到 core 能力注册表
-- **AND** `pluginhost`不得 import `linapro-ai-core/backend/cap/aicap`来定义`ProvideAIText`专属方法
+- **AND** `pluginhost`不得 import `ai-core/backend/cap/aicap`来定义`ProvideAIText`专属方法
 
 #### Scenario: descriptor 方法重复注册
 
@@ -59,8 +59,8 @@
 
 #### Scenario: 动态插件申请 AI 文本生成
 
-- **WHEN** 动态插件声明`service: ai`、`owner: linapro-ai-core`、`version: v1`和`methods: [text.generate]`
-- **THEN** 该插件 MUST 同时声明`dependencies.plugins`依赖`linapro-ai-core`
+- **WHEN** 动态插件声明`service: ai`、`owner: ai-core`、`version: v1`和`methods: [text.generate]`
+- **THEN** 该插件 MUST 同时声明`dependencies.plugins`依赖`ai-core`
 - **AND** 宿主仅在 owner 已安装、已启用、版本满足且方法授权确认后允许运行时调用
 
 #### Scenario: 未声明 owner 依赖
@@ -83,7 +83,7 @@
 
 - **WHEN** 消费插件调用`AI`生成能力
 - **THEN** 该插件不得通过能力响应读取 provider 密钥、模型路由内部配置或其他插件调用日志
-- **AND** 管理调用日志只能通过`linapro-ai-core`自身管理 API 和权限边界读取
+- **AND** 管理调用日志只能通过`ai-core`自身管理 API 和权限边界读取
 
 ### Requirement: owner 能力运行时缓存必须满足关键数据一致性
 

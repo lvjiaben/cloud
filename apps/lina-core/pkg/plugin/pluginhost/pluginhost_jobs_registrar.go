@@ -23,4 +23,7 @@ type JobsRegistrar interface {
 	IsPrimaryNode() bool
 	// Services returns the host-published runtime services for source-plugin construction.
 	Services() capability.Services
+	// BusinessExtensions returns the source-owner-only provider admission and
+	// invocation facade. A missing host binding returns nil and must fail closed.
+	BusinessExtensions() BusinessExtensionRegistrar
 }

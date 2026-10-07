@@ -97,7 +97,7 @@ func TestRunBundledDynamicSampleBeforeInstallLifecycleAllowsRuntimeLog(t *testin
 	testutil.EnsureBundledRuntimeSampleArtifactForTests(t)
 
 	services := testutil.NewServices()
-	artifactPath := filepath.Join(testutil.TestDynamicStorageDir(), testutil.RuntimeArtifactFileName("linapro-demo-dynamic"))
+	artifactPath := filepath.Join(testutil.TestDynamicStorageDir(), testutil.RuntimeArtifactFileName("demo-dynamic"))
 	manifest, err := services.Catalog.LoadManifestFromArtifactPath(artifactPath)
 	if err != nil {
 		t.Fatalf("expected bundled dynamic manifest to load, got error: %v", err)
@@ -198,12 +198,12 @@ func TestBundledDynamicSampleDeclaresBeforeAndAfterLifecycleCallbacks(t *testing
 	if err != nil {
 		t.Fatalf("expected repo root to resolve, got error: %v", err)
 	}
-	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "demo-dynamic")
 	if _, statErr := os.Stat(filepath.Join(pluginDir, "plugin.yaml")); statErr != nil {
 		if os.IsNotExist(statErr) {
 			t.Skip("official plugin workspace is not initialized")
 		}
-		t.Fatalf("expected linapro-demo-dynamic plugin.yaml to stat, got error: %v", statErr)
+		t.Fatalf("expected demo-dynamic plugin.yaml to stat, got error: %v", statErr)
 	}
 
 	buildOut := testutil.BuildRuntimeArtifactWithHackTool(t, pluginDir)

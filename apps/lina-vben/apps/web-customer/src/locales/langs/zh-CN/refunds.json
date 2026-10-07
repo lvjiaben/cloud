@@ -1,0 +1,93 @@
+{
+  "actions": {
+    "cancel": "取消",
+    "chooseOrder": "选择要退款的订单",
+    "next": "下一页",
+    "preview": "查看退款影响",
+    "previous": "上一页",
+    "submit": "确认提交退款"
+  },
+  "application": {
+    "amountHelp": "先选择订单项和退款数量，再填写最小货币单位金额，例如人民币 12.99 元填写 1299。只有存在长期服务权益时才能继续选择具体权益，系统会重新核对可退上限。",
+    "amountMinor": "退款金额（最小单位）",
+    "entitlement": "只退这项长期服务权益",
+    "lineTotal": "原账单行金额",
+    "order": "订单：{orderNo}",
+    "quantity": "退款数量",
+    "refundable": "本次最多可退",
+    "title": "新建退款申请",
+    "wholeItem": "选择这个订单项"
+  },
+  "approval": {
+    "automatic": "符合规则后自动审核",
+    "manual": "需要后台人工审核"
+  },
+  "destination": {
+    "mixed": "部分原路退回，部分进入同币种余额",
+    "original_channel": "原付款来源",
+    "same_currency_balance": "同币种客户余额"
+  },
+  "balance": {
+    "accept": "同意不能原路退的部分进入余额",
+    "acceptDetail": "整笔退款金额为 {amount}。不能原路退的部分会进入同币种客户余额，其他部分仍原路退回；确认后所有部分才会一起开始执行。",
+    "acceptTitle": "确认整笔退款的去向",
+    "declineDetail": "选择继续等待后，整笔退款不会执行，也不会提前退回任何一部分。以后仍可回来同意。",
+    "declineTitle": "整笔退款继续等待",
+    "failed": "退款去向保存失败，请刷新后重试",
+    "keepPending": "暂不同意，整笔继续等待",
+    "saved": "退款去向已经保存",
+    "wholeHeld": "有一部分无法原路退，整笔退款目前全部暂停，任何部分都没有提前执行。"
+  },
+  "eyebrow": "在线退款",
+  "history": {
+    "destination": "退款去向",
+    "empty": "还没有退款申请",
+    "lead": "查看审核、退款执行和需要你确认余额退款的状态。",
+    "reason": "退款原因",
+    "submittedAt": "申请时间",
+    "title": "我的退款"
+  },
+  "lead": "先选择订单项、退款数量和金额；存在长期服务权益时再确认具体权益影响。金额、状态和退款去向始终由后台重新核对。",
+  "menu": "我的退款",
+  "messages": {
+    "confirmRequired": "请选择退款原因，并确认已经看懂服务影响",
+    "historyFailed": "退款记录暂时加载失败",
+    "orderFailed": "这个订单暂时不能建立退款申请，请返回订单页重新选择",
+    "otherDetailRequired": "选择“其他”时，请填写具体原因",
+    "previewFailed": "退款预览失败，金额、服务状态或可退额度可能已经变化",
+    "selectionRequired": "请至少选择一项，并填写大于零的退款金额",
+    "submitFailed": "退款提交失败，请重新预览后再试",
+    "submitted": "退款申请已经提交"
+  },
+  "preview": {
+    "amount": "预计退款金额",
+    "approval": "审核方式",
+    "confirmImpact": "我已经看懂并确认以上退款、长期权益终止和审核影响",
+    "dangerousWarning": "相关服务还有未完成或结果不明的危险操作，退款会等待资源核对。",
+    "reason": "退款原因",
+    "reasonDetail": "具体说明",
+    "entitlementImpact": "长期服务“{productName}”将按预览结果处理",
+    "entitlementTermination": "长期服务“{productName}”将被终止",
+    "terminationWarning": "退款会终止选中的长期服务权益，并可能造成服务中断或数据影响。请先处理重要数据。",
+    "title": "确认退款金额和服务影响"
+  },
+  "reason": {
+    "duplicate_purchase": "重复购买",
+    "no_longer_needed": "不再需要",
+    "other": "其他",
+    "service_issue": "服务问题",
+    "wrong_configuration": "配置选错"
+  },
+  "status": {
+    "approved": "已批准",
+    "awaiting_balance_consent": "等待确认退款去向",
+    "executing": "退款中",
+    "failed": "退款失败",
+    "manual_confirmation": "等待人工核对",
+    "pending_review": "等待审核",
+    "rejected": "已拒绝",
+    "result_unknown": "退款结果待核对",
+    "succeeded": "已退款"
+  },
+  "title": "退款与服务影响"
+}

@@ -30,6 +30,10 @@ func (s *serviceImpl) RegisterHTTPRoutes(
 	if err != nil {
 		return err
 	}
+	manifests, err = orderSourceManifestsDependencyFirst(manifests)
+	if err != nil {
+		return err
+	}
 	if err = s.RefreshEnabledSnapshot(ctx); err != nil {
 		return err
 	}
@@ -65,6 +69,10 @@ func (s *serviceImpl) RegisterHTTPRoutes(
 // RegisterJobs registers callback-contributed scheduled jobs for source plugins.
 func (s *serviceImpl) RegisterJobs(ctx context.Context) error {
 	manifests, err := s.catalogSvc.ScanManifests()
+	if err != nil {
+		return err
+	}
+	manifests, err = orderSourceManifestsDependencyFirst(manifests)
 	if err != nil {
 		return err
 	}

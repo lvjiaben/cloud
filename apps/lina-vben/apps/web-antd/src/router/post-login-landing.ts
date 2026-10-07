@@ -23,8 +23,23 @@ type RouteLike = {
   path?: string;
 };
 
-/** Aligns with backend resolveHomePath empty-tree fallback. */
-const SAFE_FALLBACK_HOME_PATH = '/profile';
+/** Admin delivery fallback: the real operations workbench is always visible. */
+const SAFE_FALLBACK_HOME_PATH = '/idc/operations/workbench';
+
+/** Host/developer pages intentionally hidden from the delivered admin menu. */
+const NON_NAVIGABLE_ADMIN_PATHS = new Set([
+  '/about/api-docs',
+  '/about/system-info',
+  '/developer',
+  '/platform',
+  '/platform/tenants',
+  '/scheduler',
+  '/system/config',
+  '/system/dict',
+  '/system/job',
+  '/system/job-group',
+  '/system/job-log',
+]);
 
 function normalizeLandingPath(path?: null | string): string {
   if (typeof path !== 'string') {
@@ -101,6 +116,9 @@ function isPathAccessible(
 ): boolean {
   const normalized = normalizeLandingPath(path);
   if (!normalized) {
+    return false;
+  }
+  if (NON_NAVIGABLE_ADMIN_PATHS.has(normalized)) {
     return false;
   }
   if (!accessiblePathKeys) {

@@ -1,0 +1,4 @@
+{
+  "owner": "idc-payment",
+  "installSql": ["001-payment-foundation.sql", "002-reconciliation-operations.sql", "003-exception-fund-operations.sql"]
+}

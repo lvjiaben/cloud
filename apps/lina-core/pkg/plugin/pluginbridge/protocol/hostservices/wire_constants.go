@@ -15,6 +15,9 @@ const (
 	HostServiceBizCtx = "bizctx"
 	// HostServiceCache is the catalog wire value for service "cache".
 	HostServiceCache = "cache"
+	// HostServiceConfidentialOutbound is the catalog wire value for the
+	// host-managed supplier-call service.
+	HostServiceConfidentialOutbound = "confidentialoutbound"
 	// HostServiceData is the catalog wire value for service "data".
 	HostServiceData = "data"
 	// HostServiceDict is the catalog wire value for service "dict".
@@ -88,6 +91,10 @@ const (
 	HostServiceMethodCacheDeleteMany = "delete_many"
 	// HostServiceMethodCacheExpire is the catalog wire value for method "expire".
 	HostServiceMethodCacheExpire = "expire"
+	// HostServiceMethodCacheGet is the catalog wire value for method "get".
+	// HostServiceMethodConfidentialOutboundExecute executes one one-use,
+	// host-bound supplier operation without exposing its credentials or raw response.
+	HostServiceMethodConfidentialOutboundExecute = "execute"
 	// HostServiceMethodCacheGet is the catalog wire value for method "get".
 	HostServiceMethodCacheGet = "get"
 	// HostServiceMethodCacheGetMany is the catalog wire value for method "get_many".
@@ -278,6 +285,11 @@ const (
 	HostServiceMethodPluginsList = "plugins.registry.list"
 	// HostServiceMethodPluginsListTenant is the catalog wire value for method "plugins.tenant.list".
 	HostServiceMethodPluginsListTenant = "plugins.tenant.list"
+	// HostServiceMethodPluginsBusinessExtensionsList discovers governed new-binding providers.
+	HostServiceMethodPluginsBusinessExtensionsList = "plugins.business_extensions.list"
+	// HostServiceMethodPluginsBusinessExtensionsExact verifies frozen historical provider evidence.
+	HostServiceMethodPluginsBusinessExtensionsExact      = "plugins.business_extensions.exact.get"
+	HostServiceMethodPluginsBusinessExtensionsExactBatch = "plugins.business_extensions.exact.batch_get"
 	// HostServiceMethodPluginsStateIsEnabled is the catalog wire value for method "plugins.state.enabled.check".
 	HostServiceMethodPluginsStateIsEnabled = "plugins.state.enabled.check"
 	// HostServiceMethodPluginsStateIsEnabledAuthoritative is the catalog wire value for method "plugins.state.enabled_authoritative.check".

@@ -1,0 +1,58 @@
+{
+  "customer": {
+    "menu": "推荐与佣金",
+    "lead": "推荐关系和佣金始终按当前登录客户主体展示，结算申请会先冻结可用金额并进入审核。",
+    "refresh": "刷新",
+    "loadFailed": "推荐或佣金数据暂时无法加载，请稍后重试。",
+    "status": {
+      "first_touch": "首次归因",
+      "last_touch": "末次归因",
+      "pending": "待成熟",
+      "matured": "已成熟",
+      "reversed": "已冲回",
+      "pending_review": "待审核",
+      "approved": "已审核",
+      "paid": "已打款",
+      "failed": "失败"
+    },
+    "referral": {
+      "tab": "我的推荐",
+      "menu": "我的推荐",
+      "title": "我的推荐关系",
+      "linkTitle": "分享你的推荐链接",
+      "linkLead": "新客户通过此链接注册并完成符合条件的订单后，系统会按归因规则记录关系。",
+      "copy": "复制链接",
+      "copied": "推荐链接已复制。",
+      "copyFailed": "复制失败，请手动选择链接。",
+      "code": "推荐码",
+      "policy": "归因策略",
+      "expires": "有效期至",
+      "referred": "已推荐客户",
+      "attributed": "已归因订单",
+      "qualified": "符合条件订单",
+      "rejected": "被拒归因"
+    },
+    "commission": {
+      "tab": "我的佣金",
+      "menu": "我的佣金",
+      "title": "我的佣金",
+      "available": "可结算佣金",
+      "pending": "待成熟",
+      "matured": "已成熟累计",
+      "frozen": "结算冻结",
+      "requestTitle": "申请结算",
+      "requestLead": "只能申请当前币种的可用佣金，提交后金额会立即冻结，审核通过后再进入打款。",
+      "currency": "选择币种",
+      "amount": "申请金额（主币种）",
+      "request": "提交结算申请",
+      "invalidAmount": "请输入有效的正数金额。",
+      "insufficient": "申请金额超过当前可用佣金。",
+      "requested": "结算申请已提交，可在下方查看状态。",
+      "requestFailed": "结算申请未完成，佣金余额保持不变。",
+      "settlementsTitle": "结算申请记录",
+      "entriesTitle": "佣金流水",
+      "emptySettlements": "暂无结算申请。",
+      "emptyEntries": "暂无佣金流水。"
+    }
+  }
+}

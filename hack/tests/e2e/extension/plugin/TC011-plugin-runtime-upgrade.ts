@@ -1,4 +1,6 @@
 import type { Page, Route } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 import { test, expect } from "../../../fixtures/auth";
 import { PluginPage } from "../../../pages/PluginPage";
@@ -158,7 +160,10 @@ function upgradePreview() {
   };
 }
 
-async function mockPluginRuntimeUpgradeApis(page: Page) {
+async function mockPluginRuntimeUpgradeApis(
+  page: Page,
+  riskHints: string[] | null = upgradePreview().riskHints,
+) {
   let upgraded = false;
   const buildRows = () => [
     upgraded
@@ -210,7 +215,7 @@ async function mockPluginRuntimeUpgradeApis(page: Page) {
       request.method() === "GET" &&
       path.endsWith(`/plugins/${upgradePluginID}/upgrade/preview`)
     ) {
-      await route.fulfill({ json: apiEnvelope(upgradePreview()) });
+      await route.fulfill({ json: apiEnvelope({ ...upgradePreview(), riskHints }) });
       return;
     }
 
@@ -309,5 +314,39 @@ test.describe("TC-7 插件运行时升级", () => {
     await expect(pluginPage.pluginVersionValue(abnormalPluginID)).toContainText(
       /v0\.2\.0\s*->\s*v0\.1\.0/u,
     );
+  });
+
+  test("TC-7c: 空风险与正常风险列表均可重复预览并走原确认升级流程", async ({ adminPage }) => {
+    const pluginPage = new PluginPage(adminPage);
+    const errors: string[] = [];
+    adminPage.on('pageerror', error => errors.push(error.message));
+    for (const [index, hints] of [null, [], upgradePreview().riskHints].entries()) {
+      await mockPluginRuntimeUpgradeApis(adminPage, hints);
+      await pluginPage.gotoManage();
+      await pluginPage.searchByPluginId(upgradePluginID);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await pluginPage.openRuntimeUpgradeDialog(upgradePluginID);
+        const dialog = adminPage.getByRole('dialog');
+        if ((hints?.length ?? 0) === 0) {
+          await expect(dialog).toContainText('暂无额外风险提示');
+        } else {
+          await expect(dialog.locator('.ant-alert-warning')).toHaveCount(3);
+          await expect(dialog).not.toContainText('暂无额外风险提示');
+        }
+        await expect(dialog.getByRole('button', { name: '确认升级', exact: true })).toBeEnabled();
+        const stamp = new Date().toISOString();
+        const directory = new URL(`../../../../../temp/${stamp.slice(0, 10).replaceAll('-', '')}/`, import.meta.url);
+        await mkdir(directory, { recursive: true });
+        await adminPage.screenshot({animations: 'disabled', path: fileURLToPath(new URL(`${stamp.slice(11, 19).replaceAll(':', '')}-plugin-upgrade-empty-risks-${index}-${attempt}.png`, directory))});
+        if (attempt === 0) {
+          await dialog.getByRole('button', { name: /取\s*消/u }).click();
+          await expect(dialog).toBeHidden();
+        } else {
+          await pluginPage.confirmRuntimeUpgrade();
+          await expect(pluginPage.pluginVersionValue(upgradePluginID)).toHaveText('v0.2.0');
+        }
+      }
+    }
+    expect(errors).toEqual([]);
   });
 });

@@ -2,17 +2,19 @@
 
 package v1
 
-import "github.com/gogf/gf/v2/frame/g"
+import (
+	"github.com/gogf/gf/v2/frame/g"
+)
 
 // UpgradePreviewReq is the request for previewing one plugin runtime upgrade.
 type UpgradePreviewReq struct {
 	g.Meta `path:"/plugins/{id}/upgrade/preview" method:"get" tags:"Plugin Management" summary:"Preview plugin runtime upgrade" permission:"plugin:query" dc:"Return a side-effect-free runtime upgrade preview for a pending-upgrade or failed-upgrade plugin, including effective and target manifest snapshots, dependency checks, SQL summary, hostServices changes, and risk hints. This endpoint does not execute SQL, switch releases, update state, or invoke plugin callbacks."`
-	Id     string `json:"id" v:"required|length:1,64" dc:"Plugin unique identifier" eg:"linapro-demo-source"`
+	Id     string `json:"id" v:"required|length:1,64" dc:"Plugin unique identifier" eg:"demo-source"`
 }
 
 // UpgradePreviewRes is the response for previewing one plugin runtime upgrade.
 type UpgradePreviewRes struct {
-	PluginId          string                        `json:"pluginId" dc:"Plugin unique identifier" eg:"linapro-demo-source"`
+	PluginId          string                        `json:"pluginId" dc:"Plugin unique identifier" eg:"demo-source"`
 	RuntimeState      RuntimeState                  `json:"runtimeState" dc:"Current plugin runtime upgrade state, expected to be pending_upgrade or upgrade_failed for preview" eg:"pending_upgrade"`
 	EffectiveVersion  string                        `json:"effectiveVersion" dc:"Database-effective plugin version before upgrade" eg:"v0.1.0"`
 	DiscoveredVersion string                        `json:"discoveredVersion" dc:"Target plugin version discovered from source plugin.yaml or dynamic artifact metadata" eg:"v0.2.0"`
@@ -26,35 +28,40 @@ type UpgradePreviewRes struct {
 
 // PluginManifestSnapshotItem stores review-friendly manifest metadata for upgrade preview.
 type PluginManifestSnapshotItem struct {
-	Id                        string                       `json:"id" dc:"Plugin unique identifier" eg:"linapro-demo-source"`
-	Name                      string                       `json:"name" dc:"Plugin display name" eg:"Source Plugin Demo"`
-	Version                   string                       `json:"version" dc:"Manifest version" eg:"v0.2.0"`
-	Type                      PluginType                   `json:"type" dc:"Plugin type: source or dynamic" eg:"source"`
-	ScopeNature               ScopeNature                  `json:"scopeNature,omitempty" dc:"Plugin scope nature: platform_only or tenant_aware" eg:"tenant_aware"`
-	SupportsMultiTenant       bool                         `json:"supportsMultiTenant" dc:"Whether the manifest supports tenant-level plugin governance" eg:"true"`
-	DefaultInstallMode        InstallMode                  `json:"defaultInstallMode,omitempty" dc:"Default plugin install mode: global or tenant_scoped" eg:"tenant_scoped"`
-	Description               string                       `json:"description,omitempty" dc:"Plugin description" eg:"Source plugin that provides examples"`
-	RuntimeKind               string                       `json:"runtimeKind,omitempty" dc:"Dynamic runtime kind when present" eg:"wasm"`
-	RuntimeAbiVersion         string                       `json:"runtimeAbiVersion,omitempty" dc:"Dynamic runtime ABI version when present" eg:"v1"`
-	ManifestDeclared          bool                         `json:"manifestDeclared" dc:"Whether the manifest is backed by plugin.yaml or embedded artifact metadata" eg:"true"`
-	InstallSQLCount           int                          `json:"installSqlCount" dc:"Number of install/upgrade SQL assets visible in the manifest" eg:"1"`
-	UninstallSQLCount         int                          `json:"uninstallSqlCount" dc:"Number of uninstall SQL assets visible in the manifest" eg:"1"`
-	MockSQLCount              int                          `json:"mockSqlCount" dc:"Number of mock SQL assets visible in the manifest; runtime upgrade excludes mock data" eg:"0"`
-	FrontendPageCount         int                          `json:"frontendPageCount" dc:"Number of source frontend page entries" eg:"1"`
-	FrontendSlotCount         int                          `json:"frontendSlotCount" dc:"Number of source frontend slot entries" eg:"0"`
-	MenuCount                 int                          `json:"menuCount" dc:"Number of manifest menu entries" eg:"2"`
-	BackendHookCount          int                          `json:"backendHookCount" dc:"Number of backend hook declarations" eg:"1"`
-	ResourceSpecCount         int                          `json:"resourceSpecCount" dc:"Number of backend resource declarations" eg:"1"`
-	RouteCount                int                          `json:"routeCount" dc:"Number of dynamic route declarations" eg:"1"`
-	RouteExecutionEnabled     bool                         `json:"routeExecutionEnabled" dc:"Whether dynamic route execution is enabled in the bridge metadata" eg:"true"`
-	RouteRequestCodec         string                       `json:"routeRequestCodec,omitempty" dc:"Dynamic route request codec" eg:"protobuf"`
-	RouteResponseCodec        string                       `json:"routeResponseCodec,omitempty" dc:"Dynamic route response codec" eg:"protobuf"`
-	RuntimeFrontendAssetCount int                          `json:"runtimeFrontendAssetCount" dc:"Number of frontend assets embedded in a dynamic artifact" eg:"2"`
-	RuntimeSQLAssetCount      int                          `json:"runtimeSqlAssetCount" dc:"Number of SQL assets embedded in a dynamic artifact" eg:"1"`
-	HostServiceAuthRequired   bool                         `json:"hostServiceAuthRequired" dc:"Whether the manifest requests resource-scoped hostServices authorization" eg:"true"`
-	HostServiceAuthConfirmed  bool                         `json:"hostServiceAuthConfirmed" dc:"Whether the snapshot already carries host-confirmed authorization" eg:"false"`
-	RequestedHostServices     []*HostServicePermissionItem `json:"requestedHostServices,omitempty" dc:"HostServices requested by this manifest snapshot" eg:"[]"`
-	AuthorizedHostServices    []*HostServicePermissionItem `json:"authorizedHostServices,omitempty" dc:"Host-confirmed hostServices stored on this manifest snapshot" eg:"[]"`
+	Id                           string                         `json:"id" dc:"Plugin unique identifier" eg:"demo-source"`
+	Name                         string                         `json:"name" dc:"Plugin display name" eg:"Source Plugin Demo"`
+	Version                      string                         `json:"version" dc:"Manifest version" eg:"v0.2.0"`
+	Type                         PluginType                     `json:"type" dc:"Plugin type: source or dynamic" eg:"source"`
+	Distribution                 PluginDistribution             `json:"distribution" dc:"Plugin distribution governance: managed or builtin" eg:"managed"`
+	ScopeNature                  ScopeNature                    `json:"scopeNature,omitempty" dc:"Plugin scope nature: platform_only or tenant_aware" eg:"tenant_aware"`
+	SupportsMultiTenant          bool                           `json:"supportsMultiTenant" dc:"Whether the manifest supports tenant-level plugin governance" eg:"true"`
+	DefaultInstallMode           InstallMode                    `json:"defaultInstallMode,omitempty" dc:"Default plugin install mode: global or tenant_scoped" eg:"tenant_scoped"`
+	Description                  string                         `json:"description,omitempty" dc:"Plugin description" eg:"Source plugin that provides examples"`
+	RuntimeKind                  string                         `json:"runtimeKind,omitempty" dc:"Dynamic runtime kind when present" eg:"wasm"`
+	RuntimeAbiVersion            string                         `json:"runtimeAbiVersion,omitempty" dc:"Dynamic runtime ABI version when present" eg:"v1"`
+	ManifestDeclared             bool                           `json:"manifestDeclared" dc:"Whether the manifest is backed by plugin.yaml or embedded artifact metadata" eg:"true"`
+	InstallSQLCount              int                            `json:"installSqlCount" dc:"Number of install/upgrade SQL assets visible in the manifest" eg:"1"`
+	UninstallSQLCount            int                            `json:"uninstallSqlCount" dc:"Number of uninstall SQL assets visible in the manifest" eg:"1"`
+	MockSQLCount                 int                            `json:"mockSqlCount" dc:"Number of mock SQL assets visible in the manifest; runtime upgrade excludes mock data" eg:"0"`
+	FrontendPageCount            int                            `json:"frontendPageCount" dc:"Number of source frontend page entries" eg:"1"`
+	FrontendSlotCount            int                            `json:"frontendSlotCount" dc:"Number of source frontend slot entries" eg:"0"`
+	MenuCount                    int                            `json:"menuCount" dc:"Number of manifest menu entries" eg:"2"`
+	BackendHookCount             int                            `json:"backendHookCount" dc:"Number of backend hook declarations" eg:"1"`
+	ResourceSpecCount            int                            `json:"resourceSpecCount" dc:"Number of backend resource declarations" eg:"1"`
+	RouteCount                   int                            `json:"routeCount" dc:"Number of dynamic route declarations" eg:"1"`
+	RouteExecutionEnabled        bool                           `json:"routeExecutionEnabled" dc:"Whether dynamic route execution is enabled in the bridge metadata" eg:"true"`
+	RouteRequestCodec            string                         `json:"routeRequestCodec,omitempty" dc:"Dynamic route request codec" eg:"protobuf"`
+	RouteResponseCodec           string                         `json:"routeResponseCodec,omitempty" dc:"Dynamic route response codec" eg:"protobuf"`
+	RuntimeFrontendAssetCount    int                            `json:"runtimeFrontendAssetCount" dc:"Number of frontend assets embedded in a dynamic artifact" eg:"2"`
+	RuntimeSQLAssetCount         int                            `json:"runtimeSqlAssetCount" dc:"Number of SQL assets embedded in a dynamic artifact" eg:"1"`
+	HostServiceAuthRequired      bool                           `json:"hostServiceAuthRequired" dc:"Whether the manifest requests resource-scoped hostServices authorization" eg:"true"`
+	HostServiceAuthConfirmed     bool                           `json:"hostServiceAuthConfirmed" dc:"Whether the snapshot already carries host-confirmed authorization" eg:"false"`
+	RequestedHostServices        []*HostServicePermissionItem   `json:"requestedHostServices,omitempty" dc:"HostServices requested by this manifest snapshot" eg:"[]"`
+	AuthorizedHostServices       []*HostServicePermissionItem   `json:"authorizedHostServices,omitempty" dc:"Host-confirmed hostServices stored on this manifest snapshot" eg:"[]"`
+	BusinessExtensions           []*PluginBusinessExtensionItem `json:"businessExtensions,omitempty" dc:"Versioned business extension declarations in this manifest snapshot" eg:"[]"`
+	AuthorizedBusinessExtensions []*PluginBusinessExtensionItem `json:"authorizedBusinessExtensions,omitempty" dc:"Business extensions accepted into this release snapshot" eg:"[]"`
+	AdminSurfaces                []*PluginFrontendSurfaceItem   `json:"adminSurfaces,omitempty" dc:"Governed administration-console surfaces in this snapshot" eg:"[]"`
+	CustomerSurfaces             []*PluginFrontendSurfaceItem   `json:"customerSurfaces,omitempty" dc:"Governed customer-center surfaces in this snapshot" eg:"[]"`
 }
 
 // PluginUpgradeSQLSummary summarizes target manifest SQL assets.
@@ -76,7 +83,7 @@ type PluginUpgradeHostServicesDiff struct {
 
 // PluginUpgradeHostServiceChange summarizes one changed host service.
 type PluginUpgradeHostServiceChange struct {
-	Owner             string   `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"linapro-ai-core"`
+	Owner             string   `json:"owner,omitempty" dc:"Owner plugin ID for plugin-owned host services. Core-owned host services leave this field empty." eg:"ai-core"`
 	Service           string   `json:"service" dc:"Host service identifier" eg:"storage"`
 	Version           string   `json:"version,omitempty" dc:"Owner capability protocol version for plugin-owned host services. Core-owned host services leave this field empty." eg:"v1"`
 	FromMethods       []string `json:"fromMethods,omitempty" dc:"Effective method set before upgrade" eg:"[\"get\"]"`

@@ -1,0 +1,340 @@
+id: yunsu-ssl
+name: Yunsu SSL Certificate Connector
+version: v0.3.5
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed Yunsu SSL certificate issuance connector using the idc-core confidential supplier proxy.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods:
+      - configuration.candidates
+      - configuration.validate
+      - provision
+      - query
+      - service.detail
+      - service.sync
+      - service.validation.update
+      - service.revalidate
+      - service.cancel
+      - service.download
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: endpoint
+          type: single_line
+          label:
+            en-US: API endpoint
+            zh-CN: 接口地址
+          required: true
+          text_format: url
+          maximum_length: 2048
+        - key: api_key
+          type: secret
+          label:
+            en-US: API key
+            zh-CN: API Key
+          required: true
+        - key: api_secret
+          type: secret
+          label:
+            en-US: API secret
+            zh-CN: API Secret
+          required: true
+    product_configuration:
+      version: v1
+      fields:
+        - key: plan_id
+          type: single_select
+          label:
+            en-US: Supplier certificate product
+            zh-CN: 供应商证书产品
+          required: true
+          dynamic_candidates:
+            version: v1
+            method: configuration.candidates
+        - key: certificate_scope
+          type: single_select
+          label:
+            en-US: Certificate identifier scope
+            zh-CN: 证书域名类型
+          required: true
+          static_candidates:
+            - value: ordinary
+              label:
+                en-US: Single domain
+                zh-CN: 普通单域名
+            - value: multi_domain
+              label:
+                en-US: Multiple domains
+                zh-CN: 多域名
+            - value: wildcard
+              label:
+                en-US: Wildcard domain
+                zh-CN: 通配符域名
+            - value: ip
+              label:
+                en-US: IP address
+                zh-CN: IP 地址
+    customer_configuration:
+      version: v1
+      fields:
+        - key: primary_domain
+          type: single_line
+          label:
+            en-US: Primary domain or IP
+            zh-CN: 主域名或 IP
+          required: true
+          maximum_length: 255
+        - key: additional_domains
+          type: multi_line
+          label:
+            en-US: Additional domains
+            zh-CN: 附加域名
+          maximum_length: 8192
+        - key: validation_method
+          type: single_select
+          label:
+            en-US: Domain validation method
+            zh-CN: 域名验证方式
+          required: true
+          static_candidates:
+            - value: dns
+              label:
+                en-US: DNS validation
+                zh-CN: DNS 验证
+            - value: file
+              label:
+                en-US: File validation
+                zh-CN: 文件验证
+        - key: email
+          type: single_line
+          label:
+            en-US: Contact email
+            zh-CN: 联系邮箱
+          required: true
+          text_format: email
+          maximum_length: 255
+        - key: phone
+          type: single_line
+          label:
+            en-US: Contact phone
+            zh-CN: 联系电话
+          required: true
+          text_format: phone
+          maximum_length: 64
+        - key: csr
+          type: multi_line
+          label:
+            en-US: Certificate signing request (CSR)
+            zh-CN: 证书签名请求（CSR）
+          required: true
+          maximum_length: 8192
+        - key: contact_first_name
+          type: single_line
+          label:
+            en-US: Contact first name
+            zh-CN: 联系人名字
+          maximum_length: 128
+        - key: contact_last_name
+          type: single_line
+          label:
+            en-US: Contact last name
+            zh-CN: 联系人姓氏
+          maximum_length: 128
+        - key: contact_title
+          type: single_line
+          label:
+            en-US: Contact title
+            zh-CN: 联系人职位
+          maximum_length: 128
+        - key: organization_name
+          type: single_line
+          label:
+            en-US: Organization name
+            zh-CN: 组织名称
+          maximum_length: 255
+        - key: organization_phone
+          type: single_line
+          label:
+            en-US: Organization phone
+            zh-CN: 组织电话
+          text_format: phone
+          maximum_length: 64
+        - key: organization_address
+          type: single_line
+          label:
+            en-US: Organization address
+            zh-CN: 组织地址
+          maximum_length: 512
+        - key: organization_city
+          type: single_line
+          label:
+            en-US: Organization city
+            zh-CN: 城市
+          maximum_length: 128
+        - key: organization_state
+          type: single_line
+          label:
+            en-US: Organization state or province
+            zh-CN: 省份
+          maximum_length: 128
+        - key: organization_country
+          type: single_line
+          label:
+            en-US: Organization country code
+            zh-CN: 国家代码
+          maximum_length: 2
+        - key: organization_postcode
+          type: single_line
+          label:
+            en-US: Organization postcode
+            zh-CN: 邮政编码
+          maximum_length: 32
+        - key: organization_registration_number
+          type: single_line
+          label:
+            en-US: Organization registration number
+            zh-CN: 组织登记号码
+          maximum_length: 128
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability:
+          enUS: Yunsu SSL certificate issuance
+          zhCN: 云速 SSL 证书签发
+        granularity: per_order_item
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: provider
+        entitlementOwnerId: idc-core
+        methodRoles:
+          provision: provision
+          query: query
+        serviceActions:
+          - key: detail
+            title:
+              enUS: Certificate detail
+              zhCN: 证书详情
+            method: service.detail
+            execution: synchronous_projection
+            availability: always
+            audiences: [customer, admin]
+          - key: sync
+            title:
+              enUS: Refresh certificate status
+              zhCN: 刷新证书状态
+            method: service.sync
+            execution: synchronous_projection
+            availability: always
+            audiences: [customer, admin]
+          - key: update-validation
+            title:
+              enUS: Change validation method
+              zhCN: 切换验证方式
+            method: service.validation.update
+            queryMethod: service.sync
+            execution: persistent_async
+            availability: before_final
+            audiences: [customer, admin]
+          - key: revalidate
+            title:
+              enUS: Revalidate certificate
+              zhCN: 重新验证
+            method: service.revalidate
+            queryMethod: service.sync
+            execution: persistent_async
+            availability: before_final
+            audiences: [customer, admin]
+          - key: cancel
+            title:
+              enUS: Cancel certificate application
+              zhCN: 取消证书申请
+            method: service.cancel
+            queryMethod: service.sync
+            execution: persistent_async
+            availability: before_final
+            confirmedEntitlement: cancelled
+            audiences: [customer, admin]
+        serviceDownloads:
+          - key: certificate
+            title:
+              enUS: Download certificate
+              zhCN: 下载证书
+            path: /order/download-cert
+            method: service.download
+            endpointField: endpoint
+            externalReferenceField: order_id
+            fixedBody:
+              format: all
+            secretHeaders:
+              X-API-Key: api_key
+              X-API-Secret: api_secret
+            audiences: [customer, admin]
+        serviceProjection:
+          primaryReferenceCustomerField: primary_domain
+          validationMethodCustomerField: validation_method
+          statusField: upstreamStatus
+          issuedAtField: issuedAt
+          expiresAtField: expiresAt
+          validationField: validation
+
+admin_surfaces:
+  - key: certificates
+    version: v1
+    title: plugin.yunsu-ssl.certificates.title
+    icon: lucide:badge-check
+    permission: idc:admin:service-entitlement:list
+    slot: admin.resource-operations
+    route: ssl-certificates
+    entry: admin/certificates/index.html
+    bridge_capabilities:
+      - service-entitlements.admin.v1
+    status: active
+
+customer_surfaces:
+  - key: certificates
+    version: v1
+    title: plugin.yunsu-ssl.certificates.title
+    icon: lucide:badge-check
+    slot: customer.products
+    route: ssl-certificates
+    entry: customer/certificates/index.html
+    bridge_capabilities:
+      - service-entitlements.customer.v1
+    status: active
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+hostServices:
+  - owner: idc-core
+    service: supplier-interface-runtime
+    version: v1
+    methods:
+      - outbound.http.execute

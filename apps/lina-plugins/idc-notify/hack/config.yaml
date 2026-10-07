@@ -1,0 +1,151 @@
+build:
+  commands:
+    - pnpm --dir "$(BUILD_DIR)/frontend" install --frozen-lockfile --prefer-offline
+    - pnpm --dir "$(BUILD_DIR)/frontend" run build
+
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+        path: "internal"
+        tables: >-
+          plugin_idc_notify_event_catalog,
+          plugin_idc_notify_event_policy,
+          plugin_idc_notify_event_materialization,
+          plugin_idc_notify_wecom_oauth_intent,
+          plugin_idc_notify_wecom_employee_binding,
+          plugin_idc_notify_wecom_binding_audit,
+          plugin_idc_notify_channel,
+          plugin_idc_notify_channel_operation,
+          plugin_idc_notify_channel_intent,
+          plugin_idc_notify_channel_test_operation,
+          plugin_idc_notify_template_version,
+          plugin_idc_notify_unsubscribe_evidence,
+          plugin_idc_notify_delivery_chain,
+          plugin_idc_notify_delivery_task,
+          plugin_idc_notify_delivery_attempt,
+          plugin_idc_notify_delivery_query,
+          plugin_idc_notify_wechat_callback_event,
+          plugin_idc_notify_manual_closure,
+          plugin_idc_notify_manual_resend,
+          plugin_idc_notify_delivery_audit,
+          plugin_idc_notify_contact_verification,
+          plugin_idc_notify_rate_window,
+          plugin_idc_notify_presales_operation,
+          plugin_idc_notify_security_code_purpose,
+          plugin_idc_notify_security_code_verification
+        removePrefix: "plugin_idc_notify_"
+        importPrefix: "lina-plugin-idc-notify/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+            import: time
+          "timestamp without time zone":
+            type: "*time.Time"
+            import: time
+          timestamptz:
+            type: "*time.Time"
+            import: time
+          "timestamp with time zone":
+            type: "*time.Time"
+            import: time
+        fieldMapping:
+          plugin_idc_notify_channel.provider_code:
+            type: any
+          plugin_idc_notify_channel.credential_secret_ref:
+            type: any
+          plugin_idc_notify_channel.credential_updated_at:
+            type: any
+          plugin_idc_notify_channel.disabled_at:
+            type: any
+          plugin_idc_notify_channel.callback_verified_at:
+            type: any
+          plugin_idc_notify_channel_intent.desired_provider_code:
+            type: any
+          plugin_idc_notify_channel_intent.credential_secret_ref:
+            type: any
+          plugin_idc_notify_channel_intent.secret_expected_updated_at:
+            type: any
+          plugin_idc_notify_channel_intent.secret_result_updated_at:
+            type: any
+          plugin_idc_notify_channel_intent.available_at:
+            type: any
+          plugin_idc_notify_channel_intent.lease_token:
+            type: any
+          plugin_idc_notify_channel_intent.lease_expires_at:
+            type: any
+          plugin_idc_notify_channel_intent.completed_at:
+            type: any
+          plugin_idc_notify_channel_test_operation.provider_reference:
+            type: any
+          plugin_idc_notify_channel_test_operation.completed_at:
+            type: any
+          plugin_idc_notify_delivery_attempt.provider_reference:
+            type: any
+          plugin_idc_notify_delivery_attempt.started_at:
+            type: any
+          plugin_idc_notify_delivery_attempt.finished_at:
+            type: any
+          plugin_idc_notify_delivery_audit.actor_user_id:
+            type: any
+          plugin_idc_notify_delivery_chain.last_manual_resend_at:
+            type: any
+          plugin_idc_notify_delivery_task.previous_task_no:
+            type: any
+          plugin_idc_notify_delivery_task.template_no:
+            type: any
+          plugin_idc_notify_delivery_task.template_version:
+            type: any
+          plugin_idc_notify_delivery_task.owner_user_id:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_decision_digest:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_consent_event_no:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_consent_version:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_preference_version:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_quiet_hours_version:
+            type: any
+          plugin_idc_notify_delivery_task.marketing_evaluated_at:
+            type: any
+          plugin_idc_notify_delivery_task.provider_message_ref:
+            type: any
+          plugin_idc_notify_delivery_task.provider_query_deadline:
+            type: any
+          plugin_idc_notify_delivery_task.next_attempt_at:
+            type: any
+          plugin_idc_notify_delivery_task.attempt_lease:
+            type: any
+          plugin_idc_notify_delivery_task.attempt_lease_until:
+            type: any
+          plugin_idc_notify_delivery_task.completed_at:
+            type: any
+          plugin_idc_notify_wechat_callback_event.applied_task_no:
+            type: any
+          plugin_idc_notify_wecom_oauth_intent.lease_token:
+            type: any
+          plugin_idc_notify_wecom_oauth_intent.lease_expires_at:
+            type: any
+          plugin_idc_notify_wecom_oauth_intent.completed_at:
+            type: any
+          plugin_idc_notify_wecom_oauth_intent.expires_at:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.identity_secret_ref:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.identity_secret_updated_at:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.available_at:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.lease_token:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.lease_expires_at:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.bound_at:
+            type: any
+          plugin_idc_notify_wecom_employee_binding.terminal_at:
+            type: any

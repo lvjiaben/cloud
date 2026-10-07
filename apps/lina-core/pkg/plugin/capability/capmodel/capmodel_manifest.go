@@ -22,12 +22,18 @@ type ManifestSnapshot struct {
 	Distribution pluginv1.PluginDistribution `json:"distribution"`
 	// ScopeNature is the plugin tenant-scope nature recorded in the manifest snapshot.
 	ScopeNature pluginv1.ScopeNature `json:"scopeNature"`
-	// SupportsMultiTenant reports whether the plugin declares linapro-tenant-core support.
+	// SupportsMultiTenant reports whether the plugin declares tenant-core support.
 	SupportsMultiTenant bool `json:"supportsMultiTenant"`
 	// DefaultInstallMode is the plugin default installation mode.
 	DefaultInstallMode pluginv1.InstallMode `json:"defaultInstallMode"`
 	// Description is the plugin description recorded in the manifest snapshot.
 	Description string `json:"description"`
+	// BusinessExtensions is the effective owner-authorized business extension set.
+	BusinessExtensions []*BusinessExtensionDeclaration `json:"businessExtensions,omitempty"`
+	// AdminSurfaces is the governed administration-console surface set.
+	AdminSurfaces []*FrontendSurfaceDeclaration `json:"adminSurfaces,omitempty"`
+	// CustomerSurfaces is the governed customer-center surface set.
+	CustomerSurfaces []*FrontendSurfaceDeclaration `json:"customerSurfaces,omitempty"`
 	// InstallSQLCount is the number of install SQL assets recorded in the snapshot.
 	InstallSQLCount int `json:"installSqlCount"`
 	// UninstallSQLCount is the number of uninstall SQL assets recorded in the snapshot.

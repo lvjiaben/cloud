@@ -25,7 +25,7 @@ func TestPluginDemoDynamicRuntimeArtifactEmbedsReviewedAssets(t *testing.T) {
 		t.Fatal("expected builder test to resolve repo root")
 	}
 
-	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "demo-dynamic")
 	requireOfficialPluginDemoDynamic(t, pluginDir)
 	prepareIgnoredPluginDemoDynamicRuntimeConfigForTest(t, pluginDir)
 	prepareTemporaryPluginGoWorkForTest(t, repoRoot)
@@ -52,7 +52,7 @@ func TestPluginDemoDynamicRuntimeArtifactEmbedsReviewedAssets(t *testing.T) {
 	if err = json.Unmarshal(sections[pluginDynamicWasmSectionManifest], manifest); err != nil {
 		t.Fatalf("expected manifest section json to unmarshal, got error: %v", err)
 	}
-	if manifest.ID != "linapro-demo-dynamic" {
+	if manifest.ID != "demo-dynamic" {
 		t.Fatalf("expected dynamic demo plugin id, got %s", manifest.ID)
 	}
 	if manifest.Type != pluginTypeDynamic {
@@ -120,19 +120,19 @@ func TestPluginDemoDynamicGeneratedDispatcherIsZeroReflection(t *testing.T) {
 		t.Fatal("expected builder test to resolve repo root")
 	}
 
-	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "linapro-demo-dynamic")
+	pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "demo-dynamic")
 	requireOfficialPluginDemoDynamic(t, pluginDir)
 	prepareTemporaryPluginGoWorkForTest(t, repoRoot)
 
-	routeSources, _, err := collectRouteContracts(pluginDir, "linapro-demo-dynamic")
+	routeSources, _, err := collectRouteContracts(pluginDir, "demo-dynamic")
 	if err != nil {
 		t.Fatalf("expected route contracts to collect, got error: %v", err)
 	}
-	lifecycleSpecs, err := collectLifecycleSpecs(pluginDir, "linapro-demo-dynamic")
+	lifecycleSpecs, err := collectLifecycleSpecs(pluginDir, "demo-dynamic")
 	if err != nil {
 		t.Fatalf("expected lifecycle specs to collect, got error: %v", err)
 	}
-	cleanup, err := prepareGeneratedWasmDispatcher(pluginDir, "linapro-demo-dynamic", routeSources, lifecycleSpecs)
+	cleanup, err := prepareGeneratedWasmDispatcher(pluginDir, "demo-dynamic", routeSources, lifecycleSpecs)
 	if err != nil {
 		t.Fatalf("expected generated dispatcher to prepare, got error: %v", err)
 	}

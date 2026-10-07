@@ -1,0 +1,7 @@
+stop_new: true
+drain_active: false
+preserve_history: true
+resume_after_validation: true
+switch_kinds:
+  - human_verification
+  - inbox_message

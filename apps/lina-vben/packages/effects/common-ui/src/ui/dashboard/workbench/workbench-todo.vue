@@ -11,6 +11,7 @@ import {
 
 interface Props {
   items?: WorkbenchTodoItem[];
+  readonly?: boolean;
   title: string;
 }
 
@@ -20,6 +21,7 @@ defineOptions({
 
 withDefaults(defineProps<Props>(), {
   items: () => [],
+  readonly: false,
 });
 </script>
 
@@ -36,10 +38,14 @@ withDefaults(defineProps<Props>(), {
           :class="{
             'line-through opacity-60 select-none': item.completed,
           }"
-          class="flex cursor-pointer justify-between gap-x-6 py-5"
+          class="flex justify-between gap-x-6 py-5"
         >
           <div class="flex min-w-0 items-center gap-x-4">
-            <VbenCheckbox v-model="item.completed" name="completed" />
+            <VbenCheckbox
+              v-model="item.completed"
+              :disabled="readonly"
+              name="completed"
+            />
             <div class="min-w-0 flex-auto">
               <p class="text-sm/6 font-semibold text-foreground">
                 {{ item.title }}

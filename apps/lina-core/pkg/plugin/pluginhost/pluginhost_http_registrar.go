@@ -30,4 +30,6 @@ type HTTPRegistrar interface {
 	GlobalMiddlewares() GlobalMiddlewareRegistrar
 	// Services returns the host-published runtime services for source-plugin construction.
 	Services() capability.Services
+	// BusinessExtensions returns the source-owner-only provider admission facade.
+	BusinessExtensions() BusinessExtensionRegistrar
 }

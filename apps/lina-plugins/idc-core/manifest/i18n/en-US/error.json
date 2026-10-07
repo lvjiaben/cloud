@@ -1,0 +1,748 @@
+{
+  "error": {
+    "idc": {
+      "interface": { "usage": {
+        "not": { "accessible": "The interface usage is not accessible" },
+        "invalid": "The interface usage request is invalid",
+        "unavailable": "The interface usage is temporarily unavailable"
+      } },
+	  "ip": {
+		"change": {
+		  "not": { "accessible": "The server IP-change policy or service is not accessible" },
+		  "invalid": "The IP-change request is invalid. Check it and try again.",
+		  "unavailable": "IP change is temporarily unavailable. Refresh the resource inventory and try again.",
+		  "conflict": "The IP-change quote or server state changed. Reload it and try again.",
+		  "frequency": { "exceeded": "This server has reached its IP-change limit" }
+		}
+	  },
+      "identity": {
+        "required": "An authenticated identity is required"
+      },
+      "service": {
+        "action": {
+          "invalid": "The service operation details are invalid. Check them and try again.",
+          "not": {
+            "accessible": "You cannot view or operate this service",
+            "ready": "This service content is not ready yet. Try again later."
+          },
+          "conflict": "The service state changed. Reload it and try again.",
+          "unavailable": "Service operations are temporarily unavailable. Try again later."
+        }
+      },
+      "purchase": {
+        "configuration": {
+          "file": {
+            "invalid": "The purchase configuration file is invalid",
+            "not": { "accessible": "The purchase configuration file is not accessible" },
+            "conflict": "The purchase configuration file changed; reload and try again",
+            "rejected": "The file type, size, or safety result is not allowed",
+            "unavailable": "Purchase configuration file upload is temporarily unavailable"
+          }
+        }
+      },
+      "default": {
+        "tenant": {
+          "required": "IDC business operations require the default merchant context"
+        }
+      },
+      "admin": {
+        "audience": {
+          "required": "IDC management permission is required"
+        }
+      },
+      "audience": {
+        "conflict": "The identity is already bound to an incompatible audience",
+        "inconsistent": "The identity audience is inconsistent"
+      },
+      "principal": {
+        "unavailable": "IDC identity service is temporarily unavailable"
+      },
+      "onboarding": {
+        "unavailable": "Customer onboarding cannot be completed"
+      },
+      "outbox": {
+        "invalid": "The background event request is invalid",
+        "transaction": {
+          "required": "The event must be created together with its owning business transaction"
+        },
+        "idempotency": {
+          "conflict": "This deduplication key is already linked to different event content"
+        },
+        "evidence": {
+          "invalid": "The event payload or metadata is invalid",
+          "too": {
+            "large": "The event payload or metadata exceeds the configured size limit"
+          }
+        },
+        "lease": {
+          "lost": "The event processing lease is no longer valid"
+        },
+        "state": {
+          "conflict": "The event cannot perform this state transition"
+        },
+        "unavailable": "The background event service is temporarily unavailable"
+      },
+      "async": {
+        "task": {
+          "invalid": "The background task request is invalid",
+          "idempotency": {
+            "conflict": "This idempotency key is already linked to a different task request"
+          },
+          "transaction": {
+            "required": "The task must be created together with its owning business transaction"
+          },
+          "lease": {
+            "lost": "The task processing lease is no longer valid"
+          },
+          "state": {
+            "conflict": "The task cannot perform this state transition"
+          },
+          "unavailable": "The background task service is temporarily unavailable"
+        }
+      },
+      "secret": {
+        "invalid": "The secret request is invalid",
+        "access": {
+          "denied": "Secret access is not permitted"
+        },
+        "not": {
+          "configured": "The secret is not configured"
+        },
+        "idempotency": {
+          "conflict": "The idempotency key is already linked to different secret content"
+        },
+        "version": {
+          "conflict": "The secret changed before this operation completed"
+        },
+        "consumer": {
+          "failed": "The authorized secret operation failed"
+        },
+        "unavailable": "The secret service is temporarily unavailable"
+      },
+      "audit": {
+        "invalid": "The audit request is invalid",
+        "identity": {
+          "denied": "The current identity cannot perform this audit operation"
+        },
+        "permission": {
+          "denied": "Audit access is not permitted"
+        },
+        "transaction": {
+          "required": "Audit transitions require an active business transaction"
+        },
+        "idempotency": {
+          "conflict": "The audit idempotency key was already used for different evidence"
+        },
+        "evidence": {
+          "too": {
+            "large": "The audit evidence exceeds its configured safety bound"
+          }
+        },
+        "unavailable": "The audit service is temporarily unavailable"
+      },
+      "customer": {
+		"phone": {
+		  "exists": "This phone number already belongs to a customer"
+		},
+		"email": {
+		  "exists": "This email address already belongs to a customer"
+		},
+        "profile": {
+          "invalid": "The customer profile request is invalid"
+        },
+        "not": {
+          "accessible": "The customer profile is not accessible"
+        },
+        "state": {
+          "denied": "The customer account state does not allow this operation"
+        },
+        "initial": {
+          "password": {
+            "change": {
+              "required": "Change the initial password before continuing"
+            }
+          }
+        },
+        "version": {
+          "conflict": "The customer profile changed before this operation completed"
+        },
+        "idempotency": {
+          "conflict": "The idempotency key was already used for a different customer operation"
+        },
+        "workflow": {
+          "invalid": "The customer account workflow request is invalid",
+          "unavailable": "The customer account workflow is temporarily unavailable"
+        },
+        "closure": {
+          "invalid": "The customer closure completion request is invalid",
+          "not": {
+            "allowed": "The customer closure request cannot be completed"
+          },
+          "unavailable": "The customer closure completion service is temporarily unavailable"
+        },
+        "contact": {
+          "invalid": "The contact details are invalid; check the name, email address or phone number",
+          "not": {
+            "accessible": "The contact is not accessible"
+          },
+          "version": {
+            "conflict": "The contact changed; refresh the page and try again"
+          },
+          "idempotency": {
+            "conflict": "This request number was already used for another contact operation"
+          },
+          "unavailable": "The contact service is temporarily unavailable"
+        },
+        "address": {
+          "invalid": "The address details are invalid",
+          "not": {
+            "accessible": "The address is not accessible"
+          },
+          "version": {
+            "conflict": "The address changed; reload it and try again"
+          },
+          "idempotency": {
+            "conflict": "This request number was already used for another address change"
+          },
+          "unavailable": "The address service is temporarily unavailable"
+        },
+        "unavailable": "The customer profile service is temporarily unavailable"
+      },
+      "reauth": {
+        "invalid": "The recent authentication request is invalid",
+        "recent": {
+          "login": {
+            "required": "Please sign in again before performing this operation"
+          }
+        },
+        "proof": {
+          "rejected": "The recent authentication proof is no longer valid"
+        },
+        "unavailable": "Recent authentication is temporarily unavailable"
+      },
+      "product": {
+        "fulfillment": {
+          "action": {
+            "invalid": "Check the fulfillment action and try again",
+            "conflict": "The fulfillment status changed. Refresh the page and try again"
+          },
+          "not": {
+            "accessible": "You do not have permission to view or operate this fulfillment task"
+          },
+          "reason": {
+            "invalid": "The selected reason is no longer available. Refresh and choose again"
+          },
+          "owner": {
+            "gate": {
+              "blocked": "The contract, inventory, or other required checks are not complete yet"
+            }
+          },
+          "new": {
+            "business": {
+              "stopped": "This fulfillment plugin has stopped accepting new business"
+            }
+          },
+          "management": {
+            "unavailable": "Product fulfillment management is temporarily unavailable"
+          }
+        },
+        "automation": {
+          "interface": {
+            "ever": {
+              "referenced": "This automation interface was referenced by a product version and must be retained permanently"
+            }
+          },
+          "evidence": {
+            "unavailable": "The automation plugin release, fulfillment extension, contract, or authorized methods cannot be verified right now"
+          }
+        }
+      },
+      "catalog": {
+        "component": {
+          "invalid": "The server catalog component value is invalid"
+        },
+        "configuration": {
+          "invalid": "The server catalog configuration graph is invalid"
+        },
+        "category": {
+          "parent": {
+            "cycle": "A category cannot be moved below itself or one of its descendants"
+          }
+        },
+        "product": {
+          "slug": {
+            "occupied": "This product URL is already in use. Choose another one"
+          }
+        },
+        "fulfillment": {
+          "policy": {
+            "binding": {
+              "required": "Bind an available automation interface before selecting plugin fulfillment"
+            },
+            "contract": {
+              "changed": "The automation interface capability changed. Bind it again and reselect the fulfillment mode"
+            },
+            "immutable": "A published product version cannot change its fulfillment mode"
+          }
+        },
+        "management": {
+          "invalid": "The catalog management request is invalid",
+          "not": {
+            "accessible": "The catalog management target is not accessible"
+          },
+          "conflict": "The catalog management request conflicts with the current state",
+          "contract": {
+            "template": {
+              "unavailable": "The selected all-customer contract template is unavailable for this product"
+            }
+          },
+          "unavailable": "The catalog management service is temporarily unavailable"
+        },
+        "publication": {
+          "invalid": "The catalog product publication request is invalid",
+          "incomplete": "Complete bilingual copy, configuration, prices, and fulfillment pools before publication",
+          "not": {
+            "accessible": "The catalog product version is not accessible"
+          },
+          "state": {
+            "invalid": "The catalog product version cannot be published from its current state"
+          },
+          "unavailable": "Catalog product publication is temporarily unavailable"
+        },
+        "billing": {
+          "invalid": "The billing period, quantity model, usage policy, or price tiers are invalid",
+          "amount": {
+            "overflow": "The calculated billing amount exceeds the supported range"
+          }
+        },
+        "currency": {
+          "pricing": {
+            "invalid": "The explicit currency pricing request is invalid"
+          }
+        },
+        "inventory": {
+          "routing": {
+            "invalid": "The local inventory routing request is invalid",
+            "unavailable": "Local inventory routing is temporarily unavailable"
+          }
+        }
+      },
+      "public": {
+        "catalog": {
+          "invalid": "The product filters are invalid",
+          "not": {
+            "found": "This product is not currently available"
+          },
+          "unavailable": "The product catalog is temporarily unavailable. Please try again"
+        },
+        "configuration": {
+          "invalid": "This server configuration selection is invalid",
+          "stale": "This server configuration changed. Reload the server plan and choose again"
+        },
+        "quote": {
+          "invalid": "This server price request is invalid",
+          "stale": "This server plan changed. Reload it before checking the price",
+          "not": {
+            "available": "This configuration is not available in the selected currency"
+          },
+          "unavailable": "The server price is temporarily unavailable"
+        }
+      },
+      "contract": {
+        "policy": {
+          "invalid": "The contract rule request is invalid",
+          "not": {
+            "accessible": "The contract rule target is not accessible"
+          },
+          "conflict": "The contract rule changed; reload it and try again",
+          "optional": {
+            "contract": {
+              "locked": "This order already has an optional contract and must remain a no-contract order"
+            }
+          },
+          "template": {
+            "unavailable": "The selected contract template is disabled or does not match this setting",
+            "conflict": "Different product contract templates require one order-level template before payment"
+          },
+          "unavailable": "Contract rule management is temporarily unavailable"
+        }
+      },
+      "commerce": {
+        "contract": {
+          "policy": {
+            "invalid": "The order contract rule is invalid; check the customer, product, and order settings"
+          },
+          "template": {
+            "unavailable": "Select an enabled contract template that matches this customer",
+            "conflict": "Different product contract templates require one order-level template before payment"
+          }
+        },
+        "assisted": {
+          "quote": {
+            "invalid": "The assisted quote request is invalid",
+            "not": {
+              "accessible": "The assisted quote request is not accessible"
+            },
+            "conflict": "The assisted quote changed; reload it and try again",
+            "approval": {
+              "required": "A different authorized staff member must approve this assisted quote"
+            },
+            "unavailable": "The assisted quote service is temporarily unavailable"
+          }
+        },
+        "cart": {
+          "invalid": "The shopping cart request is invalid",
+          "not": {
+            "accessible": "The shopping cart is not accessible"
+          },
+          "currency": {
+            "conflict": "The shopping cart already uses a different currency",
+            "switch": {
+              "blocked": "Remove the shopping cart items before switching currency"
+            }
+          },
+          "conflict": "The shopping cart changed; reload it and try again",
+          "capacity": {
+            "exceeded": "The shopping cart contains too many configuration items"
+          },
+          "unavailable": "The shopping cart is temporarily unavailable"
+        },
+        "quote": {
+          "not": {
+            "available": "A final quote cannot be produced from the current product, inventory, promotion, or customer facts"
+          }
+        },
+        "order": {
+          "not": {
+            "cancelable": "The order cannot be cancelled in its current state"
+          },
+          "cancellation": {
+            "pending": "The order cancellation is waiting for payment closure"
+          },
+          "directory": {
+            "invalid": "The order query is invalid",
+            "not": {
+              "accessible": "The order is not accessible"
+            },
+            "unavailable": "The order directory is temporarily unavailable"
+          }
+        },
+        "risk": {
+          "review": {
+            "invalid": "The order risk review request is invalid",
+            "not": {
+              "accessible": "The order risk review is not accessible"
+            },
+            "conflict": "The order risk review state changed; reload it and try again",
+            "unavailable": "The order risk review is temporarily unavailable"
+          }
+        },
+        "payment": {
+          "preparation": {
+            "invalid": "The payment preparation request is invalid",
+            "not": {
+              "accessible": "The payment preparation is not accessible"
+            },
+            "conflict": "The order or invoice changed; reload it and try again",
+            "unavailable": "Payment preparation is temporarily unavailable"
+          }
+        }
+      },
+      "billing": {
+        "directory": {
+          "invalid": "The financial directory request is invalid",
+          "integrity": "The financial directory records are inconsistent. Please contact support",
+          "not": {
+            "accessible": "The requested financial data is not accessible"
+          },
+          "unavailable": "The financial directory is temporarily unavailable"
+        },
+        "invoice": {
+          "invalid": "The invoice operation is invalid",
+          "conflict": "The invoice operation conflicts with its current financial facts",
+          "integrity": "The invoice financial records are inconsistent. Please contact support",
+          "not": {
+            "found": "The requested invoice was not found"
+          },
+          "unavailable": "The invoice service is temporarily unavailable"
+        },
+        "ledger": {
+          "invalid": "The financial request is invalid",
+          "conflict": "This financial operation conflicts with the recorded transaction",
+          "integrity": "The account records are inconsistent. Please contact support",
+          "not": {
+            "found": "The requested financial record was not found"
+          },
+          "unavailable": "The account service is temporarily unavailable"
+        },
+        "balance": {
+          "insufficient": "The available balance is insufficient"
+        },
+        "financial": {
+          "settlement": {
+            "invalid": "The financial settlement request is invalid",
+            "not": {
+              "eligible": "The order is not eligible for financial settlement"
+            },
+            "integrity": "The financial settlement evidence is inconsistent. Please contact support",
+            "unavailable": "Financial settlement is temporarily unavailable"
+          }
+        }
+      },
+      "financial": {
+        "operation": {
+          "invalid": "The financial operation request is invalid",
+          "not": {
+            "accessible": "The requested financial operation is not accessible"
+          },
+          "conflict": "The financial operation changed; reload it and try again",
+          "unavailable": "The financial operation is temporarily unavailable"
+        }
+      },
+      "credit": {
+        "invalid": "The credit request is invalid",
+        "conflict": "The credit request conflicts with the current credit facts",
+        "not": {
+          "found": "The requested credit resource was not found"
+        },
+        "integrity": "The credit records are inconsistent. Please contact support",
+        "unavailable": "The credit service is temporarily unavailable"
+      },
+      "refund": {
+        "invalid": "The refund request is invalid",
+        "not": {
+          "accessible": "The refund request is not accessible",
+          "eligible": "The selected order items are not eligible for this refund"
+        },
+        "conflict": "The financial or service details changed; preview the refund again",
+        "integrity": "The refund records are inconsistent. Please contact support",
+        "unavailable": "The refund service is temporarily unavailable"
+      },
+      "entitlement": {
+        "renewal": {
+          "invalid": "The renewal request is invalid",
+          "not": {
+            "accessible": "The requested entitlement is not accessible"
+          },
+          "conflict": "The entitlement or renewal facts changed; reload them and try again",
+          "price": {
+            "unavailable": "A valid renewal price is not available for this entitlement and currency"
+          },
+          "capability": {
+            "unavailable": "The entitlement renewal capability cannot be verified"
+          },
+          "balance": {
+            "insufficient": "The same-currency balance is insufficient; the renewal invoice remains pending"
+          },
+          "unavailable": "Entitlement renewal is temporarily unavailable"
+        }
+      },
+      "marketing": {
+        "public": {
+          "campaign": {
+            "invalid": "The public campaign request is invalid",
+            "unavailable": "Public campaigns are temporarily unavailable"
+          }
+        },
+        "coupon": {
+          "invalid": "The promotion code is invalid"
+        },
+        "overview": {
+          "not": {
+            "accessible": "The marketing operations overview is not accessible"
+          },
+          "unavailable": "The marketing operations overview is temporarily unavailable"
+        },
+        "directory": {
+          "invalid": "The marketing management request is invalid",
+          "not": {
+            "accessible": "The requested marketing management data is not accessible",
+            "found": "The requested marketing management resource was not found"
+          },
+          "unavailable": "The marketing management directory is temporarily unavailable"
+        },
+        "action": {
+          "invalid": "The marketing management action is invalid",
+          "not": {
+            "accessible": "The requested marketing management action is not accessible"
+          },
+          "conflict": "The marketing management action conflicts with the current state",
+          "unavailable": "The marketing management action is temporarily unavailable"
+        },
+        "engagement": {
+          "invalid": "The marketing engagement request is invalid",
+          "conflict": "The marketing engagement request conflicts with its current state",
+          "unavailable": "The marketing engagement service is temporarily unavailable"
+        },
+        "insights": {
+          "invalid": "The marketing insights query or review request is invalid",
+          "not": {
+            "accessible": "The marketing insights or abuse review data is not accessible"
+          },
+          "conflict": "The marketing abuse case changed; reload it and try again",
+          "unavailable": "Marketing insights and abuse review are temporarily unavailable"
+        },
+        "value": {
+          "grant": {
+            "invalid": "The marketing value grant request is invalid",
+            "conflict": "The marketing value grant conflicts with its current state",
+            "unavailable": "The marketing value grant service is temporarily unavailable"
+          }
+        },
+        "points": {
+          "invalid": "The points request is invalid",
+          "conflict": "The points request conflicts with its current state",
+          "unavailable": "The points service is temporarily unavailable"
+        },
+        "promotion": {
+          "invalid": "The promotion request is invalid",
+          "conflict": "The promotion request conflicts with its current state",
+          "quota": {
+            "unavailable": "This promotion is no longer available"
+          },
+          "unavailable": "Promotions are temporarily unavailable"
+        },
+        "reservation": {
+          "expired": "This promotion reservation has expired"
+        }
+      },
+      "content": {
+        "invalid": "The content request is invalid",
+        "not": {
+          "accessible": "The content is not accessible",
+          "found": "The content was not found"
+        },
+        "conflict": "The content changed; reload it and try again",
+        "upload": {
+          "rejected": "The uploaded file is not allowed"
+        },
+        "scanner": {
+          "unavailable": "The required local file scanner is not available"
+        },
+        "unavailable": "The content service is temporarily unavailable"
+      },
+      "invoice": {
+        "profile": {
+          "invalid": "The invoice profile details are invalid",
+          "not": {
+            "accessible": "The invoice profile is not accessible"
+          },
+          "conflict": "The invoice profile changed; reload it and try again",
+          "unavailable": "Invoice profile management is temporarily unavailable"
+        }
+      },
+      "notification": {
+        "current": {
+          "staff": {
+            "not": {
+              "accessible": "The current staff identity is not accessible"
+            }
+          }
+        },
+        "preference": {
+          "invalid": "The notification preference request is invalid",
+          "not": {
+            "accessible": "The notification preferences are not accessible"
+          },
+          "conflict": "The notification preferences changed; reload them and try again",
+          "unavailable": "Notification preferences are temporarily unavailable"
+        }
+      },
+      "support": {
+        "anonymous": {
+          "link": {
+            "unconfigured": "Anonymous ticket access is not configured"
+          }
+        },
+        "attachment": {
+          "rejected": "The attachment type or content is not allowed"
+        },
+        "ticket": {
+          "invalid": "The support ticket request is invalid",
+          "not": {
+            "accessible": "The support ticket is not accessible"
+          },
+          "conflict": "The support ticket changed; reload it and try again",
+          "unavailable": "The support ticket service is temporarily unavailable"
+        }
+      },
+      "accessory": {
+        "price": {
+          "invalid": "The server accessory price request is invalid",
+          "not": {
+            "accessible": "The server accessory price is not accessible"
+          },
+          "conflict": "The server accessory price changed; reload it and try again",
+          "unavailable": "The server accessory price is temporarily unavailable"
+        },
+        "quote": {
+          "unavailable": "The server accessory quote is unavailable"
+        }
+      },
+      "ssh": {
+        "public": {
+          "key": {
+            "invalid": "The SSH public key request is invalid",
+            "not": { "accessible": "The SSH public key is not accessible" },
+            "duplicate": "An active SSH public key with the same name or fingerprint already exists",
+            "version": { "conflict": "The SSH public key has changed" },
+            "idempotency": { "conflict": "The SSH public key request conflicts with an earlier request" },
+            "unavailable": "The SSH public key service is temporarily unavailable"
+          }
+        },
+        "private": { "key": { "rejected": "Private keys are not accepted" } }
+      },
+      "server": {
+		"resize": {
+		  "disk": { "shrink": { "not": { "allowed": "Disk capacity cannot be reduced during a configuration change" } } }
+		},
+		"batch": {
+		  "invalid": "Check the selected servers and action, then try again.",
+		  "not": {
+			"accessible": "You do not have permission to view or run this server batch."
+		  },
+		  "conflict": "The server batch preview has changed. Preview it again before continuing.",
+		  "unavailable": "Server batch processing is temporarily unavailable. Try again later."
+		},
+		"accessory": {
+		  "management": {
+			"invalid": "The server accessory operation is invalid. Check the form and try again.",
+			"not": {
+			  "accessible": "You cannot view or operate accessories for this server"
+			},
+			"unavailable": "Server accessory operations are temporarily unavailable. Refresh and try again."
+		  }
+		},
+        "operation": {
+          "invalid": "The server operation request is invalid",
+          "unavailable": "The server operation service is temporarily unavailable",
+          "action": {
+            "unavailable": "This server operation is not available in the current state"
+          },
+          "conflict": "Another server operation is already in progress or the state changed",
+          "output": {
+            "unavailable": "The confidential server operation result is unavailable",
+            "consumed": "The confidential server operation result has already been viewed"
+          },
+          "policy": {
+            "invalid": "The server operation security policy request is invalid",
+            "not": {
+              "accessible": "The server operation security policy is not accessible"
+            },
+            "conflict": "The server operation security policy changed; reload it and try again",
+            "unavailable": "The server operation security policy is temporarily unavailable"
+          }
+        }
+      },
+      "version": {
+        "cache": {
+          "invalid": "The cached snapshot request is invalid",
+          "unavailable": "Snapshot cache coordination is temporarily unavailable",
+          "authority": {
+            "unavailable": "The authoritative snapshot is temporarily unavailable"
+          }
+        }
+      }
+    }
+  }
+}

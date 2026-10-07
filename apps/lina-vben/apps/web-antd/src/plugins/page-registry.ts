@@ -1,10 +1,12 @@
-import type { Component } from 'vue';
 import type { VirtualPluginPageModuleEntry } from 'virtual:lina-plugin-pages';
+
+import type { Component } from 'vue';
 
 import type { PluginCapabilityKey } from './plugin-capabilities';
 
-import { isPluginCapabilityKey } from './plugin-capabilities';
 import { pluginPageModules } from 'virtual:lina-plugin-pages';
+
+import { isPluginCapabilityKey } from './plugin-capabilities';
 
 export interface PluginPageMeta {
   capabilities?: PluginCapabilityKey[];
@@ -45,7 +47,7 @@ function normalizeCapabilities(
       `[plugin-page] skip unpublished capability "${value}" from ${filePath}`,
     );
   }
-  return [...capabilities].sort();
+  return [...capabilities].toSorted();
 }
 
 const pluginPages = pluginPageModules
@@ -78,12 +80,22 @@ const pluginPages = pluginPageModules
     } satisfies RegisteredPluginPage;
   })
   .filter((item): item is RegisteredPluginPage => item !== null)
-  .sort((a, b) => a.routePath.localeCompare(b.routePath));
+  .toSorted((a, b) => a.routePath.localeCompare(b.routePath));
 
 export function getPluginPageByRoute(routePath: string) {
   const normalizedRoutePath = normalizeRoutePath(routePath);
   return (
     pluginPages.find((item) => item.routePath === normalizedRoutePath) ?? null
+  );
+}
+
+export function getPluginPageByOwnerAndEntry(pluginId: string, entry: string) {
+  const normalizedEntry = normalizeRoutePath(entry);
+  return (
+    pluginPages.find(
+      (item) =>
+        item.pluginId === pluginId && item.routePath === normalizedEntry,
+    ) ?? null
   );
 }
 

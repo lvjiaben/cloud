@@ -43,13 +43,13 @@
 
 #### Scenario: 登录日志插件自动清理过期日志
 
-- **WHEN** `linapro-monitor-loginlog` 插件已安装启用且内建清理任务触发
+- **WHEN** `monitor-loginlog` 插件已安装启用且内建清理任务触发
 - **THEN** 插件 MUST 按 `login_time` 删除早于当前时间减去 `sys.log.retentionDays` 的登录日志
 - **AND** 清理 MUST 使用数据库侧范围删除，不得逐行循环删除
 
 #### Scenario: 智能中心调用日志插件自动清理过期日志
 
-- **WHEN** `linapro-ai-core` 插件已安装启用且内建清理任务触发
+- **WHEN** `ai-core` 插件已安装启用且内建清理任务触发
 - **THEN** 插件 MUST 按 `created_at` 删除早于当前时间减去 `sys.log.retentionDays` 的调用日志
 - **AND** 清理 MUST 使用数据库侧范围删除，不得逐行循环删除
 

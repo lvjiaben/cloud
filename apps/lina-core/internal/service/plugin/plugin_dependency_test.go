@@ -127,6 +127,9 @@ func TestUninstallBlocksInstalledReverseHardDependency(t *testing.T) {
 	if _, err := service.Install(ctx, consumerID, InstallOptions{}); err != nil {
 		t.Fatalf("expected consumer install after base install, got error: %v", err)
 	}
+	if err := service.StopNewBusiness(ctx, baseID); err != nil {
+		t.Fatalf("expected base stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.Uninstall(ctx, baseID, UninstallOptions{PurgeStorageData: true})
 	if !bizerr.Is(err, CodePluginReverseDependencyBlocked) {
@@ -196,6 +199,9 @@ func TestDisableBlocksEnabledReverseOwnerHostServiceDependency(t *testing.T) {
 		hostServices[0].Methods[0] != "text.generate" {
 		t.Fatalf("expected owner host service summary for %s, got %#v", ownerID, hostServices)
 	}
+	if err = service.StopNewBusiness(ctx, ownerID); err != nil {
+		t.Fatalf("expected owner stop-new-business to succeed, got error: %v", err)
+	}
 
 	err = service.UpdateStatus(ctx, ownerID, UpdateStatusOptions{Status: statusflag.Disabled.Int()})
 	if !bizerr.Is(err, CodePluginReverseEnabledDependencyBlocked) {
@@ -239,10 +245,16 @@ func TestDisableAllowsInstalledButDisabledReverseDependents(t *testing.T) {
 	if err := service.UpdateStatus(ctx, consumerID, UpdateStatusOptions{Status: statusflag.EnabledValue.Int()}); err != nil {
 		t.Fatalf("expected consumer enable to succeed, got error: %v", err)
 	}
+	if err := service.StopNewBusiness(ctx, consumerID); err != nil {
+		t.Fatalf("expected consumer stop-new-business to succeed, got error: %v", err)
+	}
 	if err := service.UpdateStatus(ctx, consumerID, UpdateStatusOptions{Status: statusflag.Disabled.Int()}); err != nil {
 		t.Fatalf("expected consumer disable to succeed, got error: %v", err)
 	}
 
+	if err := service.StopNewBusiness(ctx, ownerID); err != nil {
+		t.Fatalf("expected owner stop-new-business to succeed, got error: %v", err)
+	}
 	if err := service.UpdateStatus(ctx, ownerID, UpdateStatusOptions{Status: statusflag.Disabled.Int()}); err != nil {
 		t.Fatalf("expected owner disable after disabled dependents, got error: %v", err)
 	}

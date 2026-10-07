@@ -3,13 +3,13 @@
 ## Purpose
 TBD - created by archiving change expand-external-identity-domain. Update Purpose after archive.
 ## Requirements
-### Requirement: 协议插件硬依赖 linapro-extlogin-core
+### Requirement: 协议插件硬依赖 extlogin-core
 
-每个第三方登录协议插件（含 `linapro-oidc-google`、`linapro-oidc-discord` 及未来协议插件）SHALL 在 `plugin.yaml` 的 `dependencies.plugins` 中声明对 `linapro-extlogin-core` 的版本约束。未满足依赖时 SHALL 无法成功启用该协议插件。
+每个第三方登录协议插件（含 `oidc-google`、`oidc-discord` 及未来协议插件）SHALL 在 `plugin.yaml` 的 `dependencies.plugins` 中声明对 `extlogin-core` 的版本约束。未满足依赖时 SHALL 无法成功启用该协议插件。
 
 #### Scenario: 缺少 core 时无法启用协议插件
 
-- **WHEN** 用户尝试启用 `linapro-oidc-google` 且 `linapro-extlogin-core` 未安装或未启用
+- **WHEN** 用户尝试启用 `oidc-google` 且 `extlogin-core` 未安装或未启用
 - **THEN** 宿主依赖治理 SHALL 阻止启用并给出依赖提示
 
 ### Requirement: 协议插件只负责验签与 provider 归属
@@ -27,6 +27,6 @@ TBD - created by archiving change expand-external-identity-domain. Update Purpos
 
 #### Scenario: 禁用 google 插件后按钮消失
 
-- **WHEN** `linapro-oidc-google` 被禁用
+- **WHEN** `oidc-google` 被禁用
 - **THEN** 登录页 MUST NOT 继续展示 Google 登录按钮
 

@@ -105,7 +105,7 @@ func TestCreateDirectAccessPresigned(t *testing.T) {
 			ExpiresAt: expires,
 		},
 	}
-	access, err := CreateDirectAccess(context.Background(), "linapro-storage-s3", provider, ProviderDirectAccessInput{
+	access, err := CreateDirectAccess(context.Background(), "storage-s3", provider, ProviderDirectAccessInput{
 		Key:         "files/1/a.bin",
 		Operation:   DirectAccessOpPut,
 		Size:        12,
@@ -119,7 +119,7 @@ func TestCreateDirectAccessPresigned(t *testing.T) {
 	if access.Mode != DirectAccessModePresignedURL || access.URL == "" {
 		t.Fatalf("unexpected access: %+v", access)
 	}
-	if access.ProviderID != "linapro-storage-s3" {
+	if access.ProviderID != "storage-s3" {
 		t.Fatalf("provider id=%q", access.ProviderID)
 	}
 	if provider.lastIn.Key != "files/1/a.bin" || provider.lastIn.Size != 12 {

@@ -8,11 +8,6 @@
     "resetPassword": "重置密码",
     "profile": "个人中心"
   },
-  "dashboard": {
-    "title": "概览",
-    "analytics": "分析页",
-    "workspace": "工作台"
-  },
   "about": {
     "project": {
       "description": "一个基于 GoFrame、Vue 3 和 Vben 5 的面向可持续交付的 AI 原生全栈框架，提供核心宿主服务、默认管理工作台、插件扩展能力与 AI 原生研发工作流。",
@@ -75,6 +70,7 @@
       "menuManagement": "菜单管理",
       "roleUserManagement": "角色授权用户",
       "systemSettings": "系统设置",
+      "configurationCenter": "系统配置",
       "dictManagement": "字典管理",
       "configManagement": "参数设置",
       "fileManagement": "文件管理",

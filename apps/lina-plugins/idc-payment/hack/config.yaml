@@ -1,0 +1,25 @@
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:unused:unused@tcp(127.0.0.1:5432)/unused"
+        path: "internal"
+        tables: "plugin_idc_payment_channel,plugin_idc_payment_reconciliation_channel_health,plugin_idc_payment_reconciliation_batch,plugin_idc_payment_reconciliation_line,plugin_idc_payment_reconciliation_supplement,plugin_idc_payment_attempt,plugin_idc_payment_exception_fund,plugin_idc_payment_exception_fund_action"
+        removePrefix: "plugin_idc_payment_"
+        importPrefix: "lina-plugin-idc-payment/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        clear: false
+        overwriteDao: false
+        genTable: false
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+          "timestamp without time zone":
+            type: "*time.Time"
+          timestamptz:
+            type: "*time.Time"
+          "timestamp with time zone":
+            type: "*time.Time"
+          numeric:
+            type: string

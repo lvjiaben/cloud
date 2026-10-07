@@ -53,7 +53,7 @@ Example:
     }
   },
   "plugin": {
-    "linapro-org-core": {
+    "org-core": {
       "name": "Organization Center"
     }
   }
@@ -70,8 +70,8 @@ Example:
 | Dict option label           | `dict.<dict_type>.<value>.label`                                | `dict.sys_normal_disable.1.label`         |
 | Config metadata             | `config.<config_key>.name`                                      | `config.sys.account.captchaEnabled.name`  |
 | Public frontend copy        | `publicFrontend.<group>.<field>`                                | `publicFrontend.login.title`              |
-| Plugin metadata             | `plugin.<plugin_id>.name`                                       | `plugin.linapro-org-core.name`                  |
-| Plugin description          | `plugin.<plugin_id>.description`                                | `plugin.linapro-org-core.description`           |
+| Plugin metadata             | `plugin.<plugin_id>.name`                                       | `plugin.org-core.name`                  |
+| Plugin description          | `plugin.<plugin_id>.description`                                | `plugin.org-core.description`           |
 | Locale display name         | `locale.<locale>.name`                                          | `locale.en-US.name`                       |
 | Locale native name          | `locale.<locale>.nativeName`                                    | `locale.en-US.nativeName`                 |
 | Validation or error message | `validation.<module>.<field>.<rule>` or `error.<module>.<code>` | `validation.auth.login.username.required` |
@@ -160,7 +160,7 @@ Before delivery, check the following items:
     }
   },
   "plugin": {
-    "linapro-org-core": {
+    "org-core": {
       "name": "Organization Center",
       "description": "Departments, posts, and hierarchy management"
     }

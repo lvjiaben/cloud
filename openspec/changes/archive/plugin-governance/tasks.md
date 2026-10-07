@@ -21,8 +21,8 @@
 ## 演示保护插件安装与启动治理
 
 - [x] 为源码插件 `BeforeInstall` 生命周期暴露可信的启动自动启用安装上下文，且普通插件管理安装与自动依赖预安装不得继承该上下文。
-- [x] 为 `linapro-ops-demo-guard` 注册 `BeforeInstall` 前置校验，只允许 `plugin.autoEnable` 启动自动启用安装，并本地化安装拒绝原因。
-- [x] 保持 `linapro-ops-demo-guard` 的只读写请求拦截、最小会话白名单和插件治理写操作拦截语义不变。
+- [x] 为 `ops-demo-guard` 注册 `BeforeInstall` 前置校验，只允许 `plugin.autoEnable` 启动自动启用安装，并本地化安装拒绝原因。
+- [x] 保持 `ops-demo-guard` 的只读写请求拦截、最小会话白名单和插件治理写操作拦截语义不变。
 
 ## 治理验证与审查
 

@@ -34,4 +34,6 @@ type SysPlugin struct {
 	CreatedAt               *time.Time `json:"createdAt"               orm:"created_at"                  description:"Creation time"`
 	UpdatedAt               *time.Time `json:"updatedAt"               orm:"updated_at"                  description:"Update time"`
 	DeletedAt               *time.Time `json:"deletedAt"               orm:"deleted_at"                  description:"Deletion time"`
+	NewBusinessState        string     `json:"newBusinessState"        orm:"new_business_state"          description:"New business admission state: accepting/stopped; it does not control existing-service visibility"`
+	NewBusinessStoppedAt    *time.Time `json:"newBusinessStoppedAt"    orm:"new_business_stopped_at"     description:"Time when the plugin most recently stopped accepting new business"`
 }

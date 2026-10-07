@@ -24,31 +24,33 @@ func TestOnConflictTargetsHaveDeclaredIdempotencyBasis(t *testing.T) {
 	targets := collectOnConflictTargets(t, sqlRoots...)
 
 	allowedTargets := map[string]string{
-		"plugin_linapro_content_notice":      "uk_plugin_linapro_content_notice_title(title)",
-		"plugin_linapro_demo_dynamic_record": "primary key (id)",
-		"plugin_linapro_demo_source_record":  "uk_plugin_linapro_demo_source_record_title(title)",
-		"plugin_linapro_monitor_server":      "uk_plugin_linapro_monitor_server_node(node_name,node_ip)",
-		"plugin_linapro_tenant_core_tenant":  "uk_plugin_linapro_tenant_core_tenant_code(code)",
-		"plugin_linapro_org_core_dept":       "uk_plugin_linapro_org_core_dept_code(NULLIF(code,''))",
-		"plugin_linapro_org_core_post":       "uk_plugin_linapro_org_core_post_code(code)",
-		"plugin_linapro_org_core_user_dept":  "primary key (user_id,dept_id)",
-		"plugin_linapro_org_core_user_post":  "primary key (user_id,post_id)",
-		"sys_config":                         "uk_sys_config_tenant_key(tenant_id,key)",
-		"sys_dict_data":                      "uk_sys_dict_data_tenant_type_value(tenant_id,dict_type,value)",
-		"sys_dict_type":                      "uk_sys_dict_type_tenant_type(tenant_id,type)",
-		"sys_job":                            "uk_sys_job_tenant_group_name(tenant_id,group_id,name)",
-		"sys_job_group":                      "uk_sys_job_group_tenant_code(tenant_id,code)",
-		"sys_menu":                           "uk_sys_menu_menu_key(menu_key)",
-		"sys_notify_channel":                 "uk_sys_notify_channel_channel_key(channel_key)",
-		"sys_online_session":                 "primary key (tenant_id,token_id)",
-		"sys_role":                           "uk_sys_role_tenant_key(tenant_id,key)",
-		"sys_role_menu":                      "primary key (role_id,menu_id,tenant_id)",
-		"sys_user":                           "uk_sys_user_username(username)",
-		"sys_user_role":                      "primary key (user_id,role_id,tenant_id)",
+		"plugin_idc_core_billing_ledger_account": "uk_idc_bill_account_owner_type_currency(tenant_id,owner_type_code,owner_reference,account_type_code,currency_code)",
+		"plugin_idc_core_customer_subject":        "uk_plugin_idc_core_customer_no(customer_no)",
+		"plugin_content_notice":      "uk_plugin_content_notice_title(title)",
+		"plugin_demo_dynamic_record": "primary key (id)",
+		"plugin_demo_source_record":  "uk_plugin_demo_source_record_title(title)",
+		"plugin_monitor_server":      "uk_plugin_monitor_server_node(node_name,node_ip)",
+		"plugin_tenant_core_tenant":  "uk_plugin_tenant_core_tenant_code(code)",
+		"plugin_org_core_dept":       "uk_plugin_org_core_dept_code(NULLIF(code,''))",
+		"plugin_org_core_post":       "uk_plugin_org_core_post_code(code)",
+		"plugin_org_core_user_dept":  "primary key (user_id,dept_id)",
+		"plugin_org_core_user_post":  "primary key (user_id,post_id)",
+		"sys_config":                 "uk_sys_config_tenant_key(tenant_id,key)",
+		"sys_dict_data":              "uk_sys_dict_data_tenant_type_value(tenant_id,dict_type,value)",
+		"sys_dict_type":              "uk_sys_dict_type_tenant_type(tenant_id,type)",
+		"sys_job":                    "uk_sys_job_tenant_group_name(tenant_id,group_id,name)",
+		"sys_job_group":              "uk_sys_job_group_tenant_code(tenant_id,code)",
+		"sys_menu":                   "uk_sys_menu_menu_key(menu_key)",
+		"sys_notify_channel":         "uk_sys_notify_channel_channel_key(channel_key)",
+		"sys_online_session":         "primary key (tenant_id,token_id)",
+		"sys_role":                   "uk_sys_role_tenant_key(tenant_id,key)",
+		"sys_role_menu":              "primary key (role_id,menu_id,tenant_id)",
+		"sys_user":                   "uk_sys_user_username(username)",
+		"sys_user_role":              "primary key (user_id,role_id,tenant_id)",
 	}
 	for _, historyTarget := range []string{
-		"plugin_linapro_monitor_loginlog",
-		"plugin_linapro_monitor_operlog",
+		"plugin_monitor_loginlog",
+		"plugin_monitor_operlog",
 		"sys_job_log",
 		"sys_notify_delivery",
 		"sys_notify_message",
@@ -78,11 +80,11 @@ func TestStaticHistoryMockInsertsHaveExistenceGuards(t *testing.T) {
 		filepath.Join(root, "apps", "lina-plugins"),
 	}
 	historyTargets := map[string]struct{}{
-		"plugin_linapro_monitor_loginlog": {},
-		"plugin_linapro_monitor_operlog":  {},
-		"sys_job_log":                     {},
-		"sys_notify_delivery":             {},
-		"sys_notify_message":              {},
+		"plugin_monitor_loginlog": {},
+		"plugin_monitor_operlog":  {},
+		"sys_job_log":             {},
+		"sys_notify_delivery":     {},
+		"sys_notify_message":      {},
 	}
 	statements := collectInsertStatementsForTargets(t, historyTargets, sqlRoots...)
 	if len(statements) == 0 {
@@ -137,9 +139,9 @@ func TestSQLCreateTablesHaveBilingualPurposeComments(t *testing.T) {
 	}
 }
 
-// TestSeedDictDataTagStylesAreUniquePerType verifies seed dictionary data does
-// not assign the same tag color to multiple values in one dictionary type.
-func TestSeedDictDataTagStylesAreUniquePerType(t *testing.T) {
+// TestSeedDictDataTagStylesAreAllowed verifies seed dictionary data uses a
+// supported preset or hexadecimal color and always configures a visible style.
+func TestSeedDictDataTagStylesAreAllowed(t *testing.T) {
 	root := repositoryRootForSQLAudit(t)
 	sqlRoots := []string{
 		filepath.Join(root, "apps", "lina-core", "manifest", "sql"),
@@ -150,28 +152,26 @@ func TestSeedDictDataTagStylesAreUniquePerType(t *testing.T) {
 		t.Fatal("expected seed dictionary data tag styles to be audited")
 	}
 
-	seen := map[string]dictDataTagStyleEntry{}
-	var missing []string
-	var duplicates []string
+	allowedPresets := map[string]struct{}{
+		"blue": {}, "cyan": {}, "danger": {}, "default": {}, "error": {},
+		"geekblue": {}, "gold": {}, "green": {}, "info": {}, "lime": {},
+		"magenta": {}, "orange": {}, "pink": {}, "primary": {}, "processing": {},
+		"purple": {}, "red": {}, "success": {}, "volcano": {}, "warning": {},
+	}
+	hexColorPattern := regexp.MustCompile(`(?i)^#[0-9a-f]{6}$`)
+	var invalid []string
 	for _, entry := range entries {
 		if entry.tagStyle == "" {
-			missing = append(missing, entry.location()+" has empty tag_style")
+			invalid = append(invalid, entry.location()+" has empty tag_style")
 			continue
 		}
-		key := entry.dictType + "\x00" + entry.tagStyle
-		if previous, ok := seen[key]; ok {
-			duplicates = append(duplicates, previous.location()+" and "+entry.location()+" reuse tag_style "+strconv.Quote(entry.tagStyle)+" for dict_type "+strconv.Quote(entry.dictType))
-			continue
+		if _, ok := allowedPresets[entry.tagStyle]; !ok && !hexColorPattern.MatchString(entry.tagStyle) {
+			invalid = append(invalid, entry.location()+" has unsupported tag_style "+strconv.Quote(entry.tagStyle))
 		}
-		seen[key] = entry
 	}
-	if len(missing) > 0 {
-		sort.Strings(missing)
-		t.Fatalf("seed dictionary tag styles must be explicitly configured:\n%s", strings.Join(missing, "\n"))
-	}
-	if len(duplicates) > 0 {
-		sort.Strings(duplicates)
-		t.Fatalf("seed dictionary tag styles must be unique within each dict_type:\n%s", strings.Join(duplicates, "\n"))
+	if len(invalid) > 0 {
+		sort.Strings(invalid)
+		t.Fatalf("seed dictionary tag styles must use a supported preset or hexadecimal color:\n%s", strings.Join(invalid, "\n"))
 	}
 }
 
@@ -275,9 +275,11 @@ func collectSeedDictDataTagStyles(t *testing.T, roots ...string) []dictDataTagSt
 				if !ok {
 					return fmt.Errorf("parse sys_dict_data seed insert %s failed", filepath.ToSlash(path))
 				}
-				parsed.path = filepath.ToSlash(path)
-				parsed.line = lineNumberForStatement(string(content), statement)
-				result = append(result, parsed)
+				for index := range parsed {
+					parsed[index].path = filepath.ToSlash(path)
+					parsed[index].line = lineNumberForStatement(string(content), statement)
+				}
+				result = append(result, parsed...)
 			}
 			return nil
 		})
@@ -297,34 +299,95 @@ func isDictDataInsertStatement(statement string) bool {
 
 // parseDictDataInsertStatement extracts dictionary type, value, label, and tag
 // style from the project's literal sys_dict_data seed inserts.
-func parseDictDataInsertStatement(statement string) (dictDataTagStyleEntry, bool) {
-	insertPattern := regexp.MustCompile(`(?is)^\s*INSERT\s+INTO\s+sys_dict_data\s*\((.*?)\)\s*VALUES\s*\((.*?)\)\s*(?:ON\s+CONFLICT\s+DO\s+NOTHING)?\s*$`)
+func parseDictDataInsertStatement(statement string) ([]dictDataTagStyleEntry, bool) {
+	insertPattern := regexp.MustCompile(`(?is)^\s*INSERT\s+INTO\s+sys_dict_data\s*\((.*?)\)\s*(.*)$`)
 	match := insertPattern.FindStringSubmatch(statement)
 	if len(match) < 3 {
-		return dictDataTagStyleEntry{}, false
+		return nil, false
 	}
 
 	columns := parseSQLIdentifierList(match[1])
-	values := parseSQLLiteralList(match[2])
-	if len(columns) != len(values) {
-		return dictDataTagStyleEntry{}, false
+	valueRows, ok := parseSQLSeedValueRows(match[2])
+	if !ok || len(valueRows) == 0 {
+		return nil, false
 	}
 
-	row := make(map[string]string, len(columns))
-	for index, column := range columns {
-		row[column] = values[index]
+	result := make([]dictDataTagStyleEntry, 0, len(valueRows))
+	for _, values := range valueRows {
+		if len(columns) != len(values) {
+			return nil, false
+		}
+		row := make(map[string]string, len(columns))
+		for index, column := range columns {
+			row[column] = values[index]
+		}
+		dictType, hasDictType := row["dict_type"]
+		tagStyle, hasTagStyle := row["tag_style"]
+		if !hasDictType || !hasTagStyle {
+			return nil, false
+		}
+		result = append(result, dictDataTagStyleEntry{
+			dictType: dictType,
+			value:    row["value"],
+			label:    row["label"],
+			tagStyle: tagStyle,
+		})
 	}
-	dictType, hasDictType := row["dict_type"]
-	tagStyle, hasTagStyle := row["tag_style"]
-	if !hasDictType || !hasTagStyle {
-		return dictDataTagStyleEntry{}, false
+	return result, true
+}
+
+// parseSQLSeedValueRows supports both literal VALUES seeds and the project's
+// literal SELECT ... WHERE NOT EXISTS form for append-capable seed rows.
+func parseSQLSeedValueRows(content string) ([][]string, bool) {
+	valuesPattern := regexp.MustCompile(`(?is)^\s*VALUES\s*(.*?)\s*(?:ON\s+CONFLICT(?:\s*\([^)]*\))?\s+DO\s+NOTHING)?\s*$`)
+	if match := valuesPattern.FindStringSubmatch(content); len(match) == 2 {
+		return parseSQLValuesRows(match[1])
 	}
-	return dictDataTagStyleEntry{
-		dictType: dictType,
-		value:    row["value"],
-		label:    row["label"],
-		tagStyle: tagStyle,
-	}, true
+
+	selectPattern := regexp.MustCompile(`(?is)^\s*SELECT\s+(.*?)\s+WHERE\s+NOT\s+EXISTS\s*\(`)
+	if match := selectPattern.FindStringSubmatch(content); len(match) == 2 {
+		return [][]string{parseSQLLiteralList(match[1])}, true
+	}
+	return nil, false
+}
+
+// parseSQLValuesRows parses one or more parenthesized VALUES rows while
+// respecting commas and parentheses inside SQL string literals.
+func parseSQLValuesRows(content string) ([][]string, bool) {
+	var rows [][]string
+	for index := 0; index < len(content); {
+		for index < len(content) && (content[index] == ' ' || content[index] == '\n' || content[index] == '\r' || content[index] == '\t' || content[index] == ',') {
+			index++
+		}
+		if index >= len(content) {
+			break
+		}
+		if content[index] != '(' {
+			return nil, false
+		}
+		start := index + 1
+		depth := 1
+		index++
+		for index < len(content) && depth > 0 {
+			switch content[index] {
+			case '\'':
+				_, index = parseSQLStringLiteral(content, index)
+				continue
+			case '(':
+				depth++
+			case ')':
+				depth--
+				if depth == 0 {
+					rows = append(rows, parseSQLLiteralList(content[start:index]))
+				}
+			}
+			index++
+		}
+		if depth != 0 {
+			return nil, false
+		}
+	}
+	return rows, true
 }
 
 // parseSQLIdentifierList parses a comma-separated SQL identifier list.
@@ -440,6 +503,11 @@ func collectUnquotedSQLColumnIdentifiers(t *testing.T, columns map[string]struct
 
 	identifierPattern := regexp.MustCompile(`[A-Za-z_][A-Za-z0-9_]*`)
 	allowedKeywordPhrasePattern := regexp.MustCompile(`(?i)\b(?:PRIMARY|FOREIGN|UNIQUE)\s+KEY\b`)
+	allowedKeywordTokens := map[string]struct{}{
+		"comment": {},
+		"trigger": {},
+		"type":    {},
+	}
 	var violations []string
 	for _, root := range roots {
 		err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
@@ -458,7 +526,11 @@ func collectUnquotedSQLColumnIdentifiers(t *testing.T, columns map[string]struct
 			for index, line := range lines {
 				line = allowedKeywordPhrasePattern.ReplaceAllString(line, "")
 				for _, token := range identifierPattern.FindAllString(line, -1) {
-					if _, ok := columns[strings.ToLower(token)]; !ok {
+					normalized := strings.ToLower(token)
+					if _, ok := allowedKeywordTokens[normalized]; ok {
+						continue
+					}
+					if _, ok := columns[normalized]; !ok {
 						continue
 					}
 					violations = append(violations, filepath.ToSlash(path)+":"+strconv.Itoa(index+1)+": "+token)

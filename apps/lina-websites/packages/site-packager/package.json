@@ -1,0 +1,10 @@
+{
+  "name": "@lina/site-packager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "lina-site": "./dist/cli.js" },
+  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc -p tsconfig.json --noEmit", "test": "node ./dist/cli.js self-test" },
+  "dependencies": { "@lina/site-contracts": "workspace:*" },
+  "devDependencies": { "@types/node": "^25.3.5", "typescript": "^5.9.3" }
+}

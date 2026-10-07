@@ -34,6 +34,7 @@ function handleMenuOpen(key: string, path: string[]) {
     :collapse="collapse"
     :collapse-show-title="collapseShowTitle"
     :default-active="defaultActive"
+    :locked-open="lockedOpen"
     :menus="menus"
     :mode="mode"
     :rounded="rounded"

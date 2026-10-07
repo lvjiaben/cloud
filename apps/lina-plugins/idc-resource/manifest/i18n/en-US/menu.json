@@ -1,0 +1,82 @@
+{
+  "menu": {
+    "plugin:idc-resource:provider-configuration": {
+      "title": "Server Provider Configuration"
+    },
+    "plugin:idc-resource:provider-configuration:write": {
+      "title": "Manage Provider Channels and Pools"
+    },
+    "plugin:idc-resource:overview": {
+      "title": "Resource Operations Overview"
+    },
+    "plugin:idc-resource:provider-capacity": {
+      "title": "Provider Capacity Observations"
+    },
+    "plugin:idc-resource:provider-capacity:refresh": {
+      "title": "Collect Provider Capacity"
+    },
+    "plugin:idc-resource:health": {
+      "title": "Provider Health"
+    },
+    "plugin:idc-resource:health:policy": {
+      "title": "Update Health Policy"
+    },
+    "plugin:idc-resource:tasks": {
+      "title": "Provider Task Reconciliation"
+    },
+    "plugin:idc-resource:tasks:query": {
+      "title": "View Provider Task Evidence"
+    },
+    "plugin:idc-resource:tasks:manual-takeover": {
+      "title": "Take Over Provider Task"
+    },
+    "plugin:idc-resource:server-accessories": {
+      "title": "Server Management"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-create": {
+      "title": "Create Snapshots"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-delete": {
+      "title": "Delete Snapshots"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-restore": {
+      "title": "Restore Snapshots"
+    },
+    "plugin:idc-resource:server-accessories:backup-create": {
+      "title": "Create Backups"
+    },
+    "plugin:idc-resource:server-accessories:backup-delete": {
+      "title": "Delete Backups"
+    },
+    "plugin:idc-resource:server-accessories:backup-restore": {
+      "title": "Restore Backups"
+    },
+    "plugin:idc-resource:server-accessories:security-group-attach": {
+      "title": "Attach Security Groups"
+    },
+    "plugin:idc-resource:server-accessories:security-group-detach": {
+      "title": "Detach Security Groups"
+    },
+    "plugin:idc-resource:server-accessories:nat-create": {
+      "title": "Create NAT Rules"
+    },
+    "plugin:idc-resource:server-accessories:nat-delete": {
+      "title": "Delete NAT Rules"
+    },
+    "plugin:idc-resource:server-accessories:virtual-media-mount": {
+      "title": "Mount Virtual Media"
+    },
+    "plugin:idc-resource:server-accessories:virtual-media-unmount": {
+      "title": "Unmount Virtual Media"
+    },
+    "plugin:idc-resource:server-accessories:traffic-add": {
+      "title": "Buy Traffic Packages"
+    },
+    "plugin:idc-resource:server-renewals": {
+      "title": "Server Renewals"
+    },
+    "plugin:idc-resource:server-renewals:safe": {
+      "title": "Confirm Server Renewals"
+    }
+  }
+}

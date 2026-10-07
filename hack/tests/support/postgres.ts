@@ -1,8 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const postgresAppPsql = '/Applications/Postgres.app/Contents/Versions/18/bin/psql';
-const defaultPsqlBin = existsSync(postgresAppPsql) ? postgresAppPsql : 'psql';
+const windowsPsqlCandidates = process.env.ProgramFiles
+  ? ['18', '17', '16', '15'].map((version) =>
+      join(process.env.ProgramFiles!, 'PostgreSQL', version, 'bin', 'psql.exe'),
+    )
+  : [];
+const defaultPsqlBin = [postgresAppPsql, ...windowsPsqlCandidates].find(
+  (candidate) => existsSync(candidate),
+) ?? 'psql';
 
 export const psqlBin = process.env.E2E_PSQL_BIN ?? defaultPsqlBin;
 

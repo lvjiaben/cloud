@@ -5,11 +5,11 @@
 ## Requirements
 ### Requirement: 宿主通知域与通知公告内容管理解耦
 
-系统 SHALL 将宿主通知域设计为独立于 `linapro-content-notice` 插件中 `plugin_linapro_content_notice` 公告内容模型的统一通知发送与投递模型；通知公告内容管理继续由该插件负责，消息中心与插件 `notify` 能力统一基于新的通知域表实现，不再继续使用 `sys_user_message`。
+系统 SHALL 将宿主通知域设计为独立于 `content-notice` 插件中 `plugin_content_notice` 公告内容模型的统一通知发送与投递模型；通知公告内容管理继续由该插件负责，消息中心与插件 `notify` 能力统一基于新的通知域表实现，不再继续使用 `sys_user_message`。
 
 #### Scenario: 发布通知公告时走统一通知域
 
-- **WHEN** `linapro-content-notice` 将一条 `plugin_linapro_content_notice` 从草稿发布为生效状态
+- **WHEN** `content-notice` 将一条 `plugin_content_notice` 从草稿发布为生效状态
 - **THEN** 宿主通过统一的 `notify` 服务创建消息主记录与 inbox 投递记录
 - **AND** 宿主不得继续直接写入 `sys_user_message`
 
@@ -59,9 +59,9 @@
 - **THEN** 系统返回结构化拒绝错误
 - **AND** 不暴露该消息是不存在还是不可见
 
-### Requirement: 邮件通知通道必须通过 linapro-mail-core 出站
+### Requirement: 邮件通知通道必须通过 mail-core 出站
 
-系统 SHALL 在宿主通知域处理 `channel_type=email`（或等价邮件通道）发送时，通过 `linapro-mail-core` 发布的邮件能力完成实际出站，MUST NOT 直接依赖或调用 `linapro-mail-smtp` 及其他协议插件实现。通道配置 MUST 能解析到 mail-core 的 Account（例如 `config_json.accountId` 或平台默认 Account）。
+系统 SHALL 在宿主通知域处理 `channel_type=email`（或等价邮件通道）发送时，通过 `mail-core` 发布的邮件能力完成实际出站，MUST NOT 直接依赖或调用 `mail-smtp` 及其他协议插件实现。通道配置 MUST 能解析到 mail-core 的 Account（例如 `config_json.accountId` 或平台默认 Account）。
 
 #### Scenario: 邮件通道成功发送
 
@@ -71,7 +71,7 @@
 
 #### Scenario: mail-core 不可用
 
-- **WHEN** 调用方通过 notify 向 email 通道发送，但 `linapro-mail-core` 未安装、未启用或无法解析可用 Account
+- **WHEN** 调用方通过 notify 向 email 通道发送，但 `mail-core` 未安装、未启用或无法解析可用 Account
 - **THEN** 系统 MUST fail-closed 并返回明确错误
 - **AND** MUST NOT 静默降级为 inbox 或丢弃发送意图
 

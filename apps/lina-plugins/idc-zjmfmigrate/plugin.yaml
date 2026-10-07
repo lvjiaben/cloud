@@ -1,0 +1,109 @@
+id: idc-zjmfmigrate
+name: IDC ZJMF Migration
+version: v0.2.1
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed migration checks with isolated WASM execution and host-governed plugin data.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
+    - id: idc-core
+      version: ">=0.1.0 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.0 <1.0.0"
+
+menus:
+  - key: plugin:idc-zjmfmigrate:migration
+    parent_key: setting
+    name: Migration checks
+    path: /plugins/idc-zjmfmigrate/migration-checks
+    component: system/plugin/dynamic-page
+    perms: idc-zjmfmigrate:migration:query
+    type: M
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:preflight
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Run migration preflight
+    perms: idc-zjmfmigrate:migration:preflight
+    type: B
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:write
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Write migration batch
+    perms: idc-zjmfmigrate:migration:write
+    type: B
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:decide
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Decide migration conflict
+    perms: idc-zjmfmigrate:migration:decide
+    type: B
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:reconcile
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Reconcile migration
+    perms: idc-zjmfmigrate:migration:reconcile
+    type: B
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:cutover
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Check migration cutover
+    perms: idc-zjmfmigrate:migration:cutover
+    type: B
+    visible: 0
+  - key: plugin:idc-zjmfmigrate:rollback
+    parent_key: plugin:idc-zjmfmigrate:migration
+    name: Roll back migration
+    perms: idc-zjmfmigrate:migration:rollback
+    type: B
+    visible: 0
+
+admin_surfaces:
+  - key: migration-checks
+    version: v1
+    title: plugin.idc-zjmfmigrate.migration.title
+    icon: lucide:database-backup
+    permission: idc-zjmfmigrate:migration:query
+    slot: admin.extension-management
+    route: migration-checks
+    entry: admin/migration/index.html
+    bridge_capabilities:
+      - idc-migration.admin.v1
+    status: active
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+hostServices:
+  - service: bizctx
+    methods:
+      - current.get
+  - service: data
+    methods:
+      - list
+      - get
+      - create
+      - update
+    resources:
+      tables:
+        - plugin_idc_zjmfmigrate_batch
+        - plugin_idc_zjmfmigrate_mapping
+        - plugin_idc_zjmfmigrate_conflict
+        - plugin_idc_zjmfmigrate_attachment
+        - plugin_idc_zjmfmigrate_reconciliation
+        - plugin_idc_zjmfmigrate_cutover

@@ -3,6 +3,8 @@ import type { Locator, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 import { workspacePath } from "../fixtures/config";
+import { waitForRouteReady } from "../support/ui";
+import { MainLayout } from "./MainLayout";
 
 export class DashboardPage {
   constructor(private page: Page) {}
@@ -61,7 +63,21 @@ export class DashboardPage {
 
   async gotoAnalytics() {
     await this.page.goto(workspacePath("/dashboard/analytics"));
-    await this.page.waitForLoadState("networkidle");
+    await waitForRouteReady(this.page, 30_000);
+
+    // A platform administrator first lands on tenant management when
+    // multi-tenancy is enabled. Continue through the real sidebar flow so
+    // this page object validates that the dashboard remains reachable rather
+    // than assuming that a cold deep link bypasses the platform landing rule.
+    if (!(await this.analyticsPage.isVisible().catch(() => false))) {
+      const mainLayout = new MainLayout(this.page);
+      await mainLayout.expandSidebarGroup(/Dashboard|工作台/u);
+      const analyticsMenu = mainLayout.sidebarMenuItem(/Analytics|分析页/u);
+      await expect(analyticsMenu).toBeVisible();
+      await analyticsMenu.click();
+      await expect(this.page).toHaveURL(/\/dashboard\/analytics(?:[/?#]|$)/u);
+    }
+
     await this.analyticsPage.waitFor({ state: "visible" });
   }
 
@@ -152,10 +168,16 @@ export class DashboardPage {
   async captureAnalyticsScreenshot(screenshotPath: string) {
     await this.analyticsPage.waitFor({ state: "visible" });
     await expect(this.page.getByText(/加载菜单中/u)).toBeHidden();
-    const overview = this.page.getByTestId("dashboard-analytics-overview");
-    for (const value of ["2,000", "20,000", "8,000", "5,000"]) {
-      await expect(overview.getByText(value, { exact: true })).toBeVisible();
-    }
+    await expect(
+      this.analyticsPage.getByTestId("dashboard-analytics-overview"),
+    ).toBeVisible();
+    await expect(
+      this.analyticsPage.getByTestId("dashboard-analytics-error"),
+    ).toHaveCount(0);
+    await expect(
+      this.analyticsPage.getByTestId("dashboard-analytics-loading"),
+    ).toHaveCount(0);
+    await this.waitForAnalyticsChartInstances(4);
     await this.page.screenshot({
       animations: "disabled",
       fullPage: true,

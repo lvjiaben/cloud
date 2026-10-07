@@ -90,10 +90,12 @@ func (s *serviceImpl) Uninstall(
 	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
 		return err
 	}
-	return s.lifecycleSvc.Uninstall(ctx, pluginID, lifecycle.UninstallOptions{
-		PurgeStorageData:    options.PurgeStorageData,
-		Force:               options.Force,
-		AllowForceUninstall: s.configSvc.GetPlugin(ctx).AllowForceUninstall,
+	return s.withPluginLifecycleLock(ctx, pluginID, "uninstall", func(lockedCtx context.Context) error {
+		return s.lifecycleSvc.Uninstall(lockedCtx, pluginID, lifecycle.UninstallOptions{
+			PurgeStorageData:    options.PurgeStorageData,
+			Force:               options.Force,
+			AllowForceUninstall: s.configSvc.GetPlugin(ctx).AllowForceUninstall,
+		})
 	})
 }
 
@@ -111,7 +113,43 @@ func (s *serviceImpl) UpdateStatus(
 	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
 		return err
 	}
-	return s.updateStatus(ctx, pluginID, options.Status, options.Authorization)
+	return s.withPluginLifecycleLock(ctx, pluginID, "update-status", func(lockedCtx context.Context) error {
+		return s.updateStatus(lockedCtx, pluginID, options.Status, options.Authorization)
+	})
+}
+
+// StopNewBusiness stops only new admission for one managed plugin.
+func (s *serviceImpl) StopNewBusiness(ctx context.Context, pluginID string) error {
+	if err := s.ensurePlatformGovernance(ctx); err != nil {
+		return err
+	}
+	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
+		return err
+	}
+	return s.withPluginLifecycleLock(ctx, pluginID, "stop-new-business", func(lockedCtx context.Context) error {
+		return s.lifecycleSvc.StopNewBusiness(lockedCtx, pluginID)
+	})
+}
+
+// ResumeNewBusiness reopens new admission after authoritative readiness checks.
+func (s *serviceImpl) ResumeNewBusiness(ctx context.Context, pluginID string) error {
+	if err := s.ensurePlatformGovernance(ctx); err != nil {
+		return err
+	}
+	if err := s.ensureBuiltinManagementActionAllowed(ctx, pluginID); err != nil {
+		return err
+	}
+	return s.withPluginLifecycleLock(ctx, pluginID, "resume-new-business", func(lockedCtx context.Context) error {
+		return s.lifecycleSvc.ResumeNewBusiness(lockedCtx, pluginID, s.frameworkVersion(lockedCtx))
+	})
+}
+
+// CheckBusinessImpact returns bounded aggregates from trusted business owners.
+func (s *serviceImpl) CheckBusinessImpact(ctx context.Context, pluginID string) (*BusinessImpactReport, error) {
+	if err := s.ensurePlatformGovernance(ctx); err != nil {
+		return nil, err
+	}
+	return s.lifecycleSvc.CheckBusinessImpact(ctx, pluginID)
 }
 
 // updateStatus centralizes enable/disable validation so source and dynamic
@@ -154,6 +192,16 @@ func (s *serviceImpl) IsEnabledAuthoritative(ctx context.Context, pluginID strin
 	ctx = integration.WithAuthoritativeEnablement(ctx)
 	s.ensureRuntimeCacheFreshBestEffort(ctx, "is_enabled_authoritative")
 	return s.integrationSvc.CanExposeBusinessEntries(ctx, pluginID)
+}
+
+// CanAcceptNewBusiness returns false whenever cache freshness or authoritative
+// runtime admission cannot be confirmed.
+func (s *serviceImpl) CanAcceptNewBusiness(ctx context.Context, pluginID string) bool {
+	if err := s.ensureRuntimeCacheFresh(ctx); err != nil {
+		return false
+	}
+	allowed, err := s.lifecycleSvc.CanAcceptNewBusiness(ctx, pluginID)
+	return err == nil && allowed
 }
 
 // EnsureTenantPluginDisableAllowed runs source and dynamic lifecycle

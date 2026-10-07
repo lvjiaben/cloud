@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS plugin_idc_payment_evidence CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_exception_fund CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_reconciliation_line CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_reconciliation_batch CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_refund_attempt CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_query_observation CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_work_item CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_callback_receipt CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_attempt CASCADE;
+DROP TABLE IF EXISTS plugin_idc_payment_channel CASCADE;
+DROP FUNCTION IF EXISTS plugin_idc_payment_reject_history_mutation();

@@ -6,15 +6,15 @@ package jobmgmt
 import (
 	"context"
 	"fmt"
-	jobv1 "lina-core/api/job/v1"
 	"testing"
 	"time"
 
-
+	jobv1 "lina-core/api/job/v1"
 	"lina-core/internal/dao"
 	"lina-core/internal/model"
 	"lina-core/internal/model/do"
 	"lina-core/internal/model/entity"
+	hostconfig "lina-core/internal/service/config"
 	"lina-core/internal/service/datascope"
 	"lina-core/pkg/bizerr"
 )
@@ -183,6 +183,7 @@ func TestCreateJobWritesCurrentTenant(t *testing.T) {
 
 	svc := newTestService(t)
 	setJobMgmtTestBizCtx(svc, jobmgmtStaticBizCtx{ctx: &model.Context{TenantId: jobGroupTenantA, UserId: 1}})
+	svc.configSvc = jobmgmtShellEnabledConfig{Service: svc.configSvc}
 
 	jobID, err := svc.CreateJob(tenantACtx, SaveJobInput{
 		GroupID:        groupID,
@@ -213,6 +214,17 @@ func TestCreateJobWritesCurrentTenant(t *testing.T) {
 
 // jobGroupTestTimeout keeps tenant job creation fixtures aligned with service validation.
 const jobGroupTestTimeout = 30 * time.Second
+
+// jobmgmtShellEnabledConfig keeps this tenant-persistence test independent of
+// the host operating system and deployment's protected shell-job switch.
+type jobmgmtShellEnabledConfig struct {
+	hostconfig.Service
+}
+
+// IsCronShellEnabled enables the shell fixture used by TestCreateJobWritesCurrentTenant.
+func (jobmgmtShellEnabledConfig) IsCronShellEnabled(context.Context) (bool, error) {
+	return true, nil
+}
 
 // jobGroupTenantContext injects one tenant for service-layer tenant scoping.
 func jobGroupTenantContext(ctx context.Context, tenantID int) context.Context {

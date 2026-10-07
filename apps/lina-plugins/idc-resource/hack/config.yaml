@@ -1,0 +1,50 @@
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+        path: "internal"
+        tables: >-
+          plugin_idc_resource_channel,
+          plugin_idc_resource_channel_secret_binding,
+          plugin_idc_resource_pool,
+          plugin_idc_resource_mapping,
+          plugin_idc_resource_capability_snapshot,
+          plugin_idc_resource_capability_snapshot_item,
+          plugin_idc_resource_task,
+          plugin_idc_resource_task_secret_binding,
+          plugin_idc_resource_task_evidence,
+          plugin_idc_resource_task_manual_takeover,
+          plugin_idc_resource_upstream_task_binding,
+          plugin_idc_resource_provider_capacity_observation,
+          plugin_idc_resource_provider_capacity_observation_item,
+          plugin_idc_resource_financial_snapshot,
+          plugin_idc_resource_health_snapshot,
+          plugin_idc_resource_channel_health_state,
+          plugin_idc_resource_principal_mapping,
+          plugin_idc_resource_principal_task,
+          plugin_idc_resource_provision_credential,
+          plugin_idc_resource_provision_outcome_receipt,
+          plugin_idc_resource_server_entitlement_projection,
+          plugin_idc_resource_accessory_snapshot,
+          plugin_idc_resource_accessory_snapshot_item,
+          plugin_idc_resource_accessory_refresh_state
+        removePrefix: "plugin_idc_resource_"
+        importPrefix: "lina-plugin-idc-resource/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+            import: time
+          "timestamp without time zone":
+            type: "*time.Time"
+            import: time
+          timestamptz:
+            type: "*time.Time"
+            import: time
+          "timestamp with time zone":
+            type: "*time.Time"
+            import: time
+          numeric:
+            type: string

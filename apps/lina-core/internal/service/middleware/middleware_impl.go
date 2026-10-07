@@ -56,6 +56,16 @@ func (s *serviceImpl) CORS(r *ghttp.Request) {
 	r.Middleware.Next()
 }
 
+// OptionalAuth permits an anonymous public projection, but never treats an
+// invalid supplied identity as authenticated or silently replaces its context.
+func (s *serviceImpl) OptionalAuth(r *ghttp.Request) {
+	if r.GetHeader("Authorization") == "" {
+		r.Middleware.Next()
+		return
+	}
+	s.Auth(r)
+}
+
 // Auth validates JWT token and injects user info into context.
 func (s *serviceImpl) Auth(r *ghttp.Request) {
 	tokenHeader := r.GetHeader("Authorization")
@@ -83,7 +93,7 @@ func (s *serviceImpl) Auth(r *ghttp.Request) {
 		r.Context(),
 		claims.ActingUserId,
 		claims.TenantId,
-		claims.IsImpersonation,
+		claims.ActingAsTenant,
 		claims.IsImpersonation,
 	)
 	r.Middleware.Next()

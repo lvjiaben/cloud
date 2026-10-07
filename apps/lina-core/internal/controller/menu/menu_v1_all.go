@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"unicode"
@@ -192,17 +193,23 @@ func convertToRouteItems(items []*menusvc.MenuItem) []*v1.MenuRouteItem {
 
 		// Runtime hosted assets and generic external links must be converted into
 		// router-level iframe/new-window semantics before normal view resolution.
-		if menuLinkTarget := normalizeMenuLinkTarget(item.Path); item.Type == menutype.Menu.String() && menuLinkTarget != "" {
+		if governedSurfaceTarget := normalizeMenuLinkTarget(menuQuery[pluginhost.GovernedSurfaceSourceQueryKey]); item.Type == menutype.Menu.String() && governedSurfaceTarget != "" {
+			route.Component = "PluginSandboxView"
+			route.Meta.PluginSandboxSrc = governedSurfaceTarget
+			route.Meta.PluginSurfaceId = strings.TrimSpace(menuQuery[pluginhost.GovernedSurfacePluginQueryKey])
+			route.Meta.PluginSurfaceKey = strings.TrimSpace(menuQuery[pluginhost.GovernedSurfaceKeyQueryKey])
+			route.Meta.PluginSurfaceVer = strings.TrimSpace(menuQuery[pluginhost.GovernedSurfaceVersionQueryKey])
+			route.Meta.PluginSurfaceHost = strings.TrimSpace(menuQuery[pluginhost.GovernedSurfaceHostQueryKey])
+			route.Meta.PluginSurfaceCapabilities = splitMenuQueryList(menuQuery[pluginhost.GovernedSurfaceCapabilitiesQueryKey])
+		} else if menuLinkTarget := normalizeMenuLinkTarget(item.Path); item.Type == menutype.Menu.String() && menuLinkTarget != "" {
 			route.Name = buildMenuLinkRouteName(item)
 			route.Path = buildMenuLinkRoutePath(item)
-			if isRuntimeEmbeddedMountMenu(item, menuQuery) {
-				// Embedded mount keeps the host runtime shell component while the
-				// actual asset URL is forwarded through route query parameters.
-				route.Component = generateComponentPath(item.Component)
-				route.Meta.Query = mergeMenuQueryParams(menuQuery, map[string]string{
-					pluginhost.DynamicEmbeddedSourceQueryKey: menuLinkTarget,
-					pluginhost.DynamicAccessModeQueryKey:     pluginhost.DynamicAccessModeEmbeddedMount,
-				})
+			if isRuntimeEmbeddedMountMenu(item, menuQuery) || isHostedPluginAssetTarget(menuLinkTarget) {
+				// Legacy embedded declarations are routed through the isolated
+				// page container. All hosted plugin assets stay isolated even when
+				// an old menu row requests new-window behavior.
+				route.Component = "PluginSandboxView"
+				route.Meta.PluginSandboxSrc = menuLinkTarget
 			} else if item.IsFrame == 1 {
 				route.Component = "BasicLayout"
 				route.Meta.Link = menuLinkTarget
@@ -325,8 +332,8 @@ func toPascalCase(s string) string {
 }
 
 // normalizeMenuLinkTarget returns the real target URL for iframe/new-window menus.
-func normalizeMenuLinkTarget(path string) string {
-	trimmedPath := strings.TrimSpace(path)
+func normalizeMenuLinkTarget(targetPath string) string {
+	trimmedPath := strings.TrimSpace(targetPath)
 	if trimmedPath == "" {
 		return ""
 	}
@@ -337,10 +344,18 @@ func normalizeMenuLinkTarget(path string) string {
 	}
 
 	normalizedHostedPath := "/" + strings.TrimLeft(trimmedPath, "/")
+	if strings.ContainsAny(normalizedHostedPath, "%?#") || path.Clean(normalizedHostedPath) != normalizedHostedPath {
+		return ""
+	}
 	if strings.HasPrefix(normalizedHostedPath, pluginhost.HostedAssetURLPrefix) {
 		return normalizedHostedPath
 	}
 	return ""
+}
+
+func isHostedPluginAssetTarget(target string) bool {
+	normalized := "/" + strings.TrimLeft(strings.TrimSpace(target), "/")
+	return strings.HasPrefix(normalized, pluginhost.HostedAssetURLPrefix)
 }
 
 // parseMenuQueryParams decodes the persisted JSON query payload into trimmed
@@ -370,30 +385,22 @@ func parseMenuQueryParams(queryParam string) map[string]string {
 	return query
 }
 
-// mergeMenuQueryParams overlays non-empty query parameters onto an existing map
-// and returns nil when the merged result is empty.
-func mergeMenuQueryParams(base map[string]string, overrides map[string]string) map[string]string {
-	if len(base) == 0 && len(overrides) == 0 {
-		return nil
-	}
-
-	merged := make(map[string]string, len(base)+len(overrides))
-	for key, value := range base {
-		if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+func splitMenuQueryList(value string) []string {
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		normalized := strings.TrimSpace(part)
+		if normalized == "" {
 			continue
 		}
-		merged[key] = value
-	}
-	for key, value := range overrides {
-		if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+		if _, exists := seen[normalized]; exists {
 			continue
 		}
-		merged[key] = value
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
 	}
-	if len(merged) == 0 {
-		return nil
-	}
-	return merged
+	return result
 }
 
 // isRuntimeEmbeddedMountMenu reports whether the menu entry points at the

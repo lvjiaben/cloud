@@ -28,9 +28,17 @@ const (
 // managedJobCollector captures plugin-owned job registrations instead of
 // registering them directly into gcron.
 type managedJobCollector struct {
-	pluginID string
-	services capability.Services
-	items    []ManagedJob
+	pluginID           string
+	services           capability.Services
+	businessExtensions pluginhost.BusinessExtensionRegistrar
+	items              []ManagedJob
+}
+
+func (c *managedJobCollector) BusinessExtensions() pluginhost.BusinessExtensionRegistrar {
+	if c == nil {
+		return nil
+	}
+	return c.businessExtensions
 }
 
 // Ensure managedJobCollector satisfies the published registrar contract.
@@ -205,9 +213,10 @@ func (s *serviceImpl) collectSourceManagedJobs(
 	}
 
 	collector := &managedJobCollector{
-		pluginID: manifest.ID,
-		services: s.sourceServicesForPlugin(manifest.ID),
-		items:    make([]ManagedJob, 0),
+		pluginID:           manifest.ID,
+		services:           s.sourceServicesForPlugin(manifest.ID),
+		businessExtensions: businessExtensionsForOwner(s, manifest.ID),
+		items:              make([]ManagedJob, 0),
 	}
 	for _, registration := range sourcePlugin.GetJobRegistrars() {
 		if registration == nil || registration.Handler == nil {

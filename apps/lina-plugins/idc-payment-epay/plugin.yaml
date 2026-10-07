@@ -1,0 +1,49 @@
+id: idc-payment-epay
+name: 易支付
+version: v0.1.0
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 易支付 submit.php 收银台与 MD5 回调配置，由 IDC Payment 统一管理支付事实。
+author: linapro
+license: Proprietary
+dependencies:
+  plugins:
+    - id: idc-payment
+      version: ">=0.1.7 <1.0.0"
+business_extensions:
+  - point: payment-method
+    version: v1
+    role: provider
+    owner: idc-payment
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: endpointOrigin
+          type: single_line
+          label: { en-US: HTTPS submit.php URL, zh-CN: 易支付 submit.php 地址 }
+          required: true
+          text_format: url
+          maximum_length: 2048
+        - key: merchantId
+          type: single_line
+          label: { en-US: Merchant ID, zh-CN: 商户 ID }
+          required: true
+          maximum_length: 256
+        - key: secret
+          type: secret
+          label: { en-US: Merchant key, zh-CN: 商户密钥 }
+          required: true
+          maximum_length: 8192
+    methods: [capabilities.describe]
+    provider_metadata:
+      type: payment-method-contract
+      version: v1
+      values:
+        providerCode: epay
+        endpointOrigin: https://www.ezfp.cn/submit.php
+        modes: [epay_cashier]
+        currencies: [CNY]

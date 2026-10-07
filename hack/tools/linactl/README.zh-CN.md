@@ -9,7 +9,7 @@ cd hack/tools/linactl
 go run . help
 go run . status
 go run . pack.assets
-go run . wasm dir=apps/lina-plugins/linapro-demo-dynamic
+go run . wasm dir=apps/lina-plugins/demo-dynamic
 go run . wasm dir=/path/to/plugin out=temp/output
 go run . plugins.status
 go run . i18n.check
@@ -88,7 +88,7 @@ make.cmd release.tag.check tag=v0.2.0
 | `v` | `v=v0.5.0`或`v=main` | 指定`upgrade`的升级目标：省略时从官方仓库取最新稳定 tag；可传稳定版本号或分支名（如`main`）。 |
 | `tag` | `tag=v0.2.0` | 指定`release.tag.check`校验的 release tag。 |
 | `print-version` | `print-version=1` | 输出已校验的`framework.version`，供发布自动化使用。 |
-| `p` | `p=linapro-tenant-core` | 为插件工作区管理命令选择单个插件。 |
+| `p` | `p=tenant-core` | 为插件工作区管理命令选择单个插件。 |
 | `out` | `out=temp/output` | 指定动态插件产物输出目录；相对路径按仓库根目录解析。 |
 | `source` | `source=official` | 为插件工作区管理命令选择单个已配置来源。 |
 | `force` | `force=1` | 允许插件安装或更新命令覆盖已存在或存在本地改动的插件目录。`upgrade`不接受该参数（升级始终要求宿主与插件工作区干净，且不会 stash 或覆盖本地改动）。 |
@@ -96,7 +96,7 @@ make.cmd release.tag.check tag=v0.2.0
 
 未传入`plugins`时，构建和开发命令会在`apps/lina-plugins`存在插件清单时启用插件完整模式。插件完整模式会基于宿主专用的根目录`go.work`生成或刷新已忽略的`temp/go.work.plugins`，并通过`GOWORK`解析源码插件`Go`模块。
 
-未传入`dir`时，`linactl build`会构建宿主框架后端、默认管理工作台前端、宿主`manifest`资源和所有已启用官方插件。需要从仓库根目录或通过`make.cmd`跨平台定向构建时，使用`dir=<path>`，例如`dir=apps/lina-vben`、`dir=apps/lina-core`、`dir=apps/lina-plugins/<plugin-id>`，或任意拥有`hack/config.yaml`的目录。
+未传入`dir`时，`linactl build`会先执行所有已启用官方插件的自有构建，再构建默认管理工作台前端、宿主`manifest`资源和宿主框架后端。这样源码插件页面可以在宿主前端编译前生成并使用插件自有资源。需要从仓库根目录或通过`make.cmd`跨平台定向构建时，使用`dir=<path>`，例如`dir=apps/lina-vben`、`dir=apps/lina-core`、`dir=apps/lina-plugins/<plugin-id>`，或任意拥有`hack/config.yaml`的目录。
 
 目标目录可以在自身`hack/config.yaml`的对应命令分段下维护自定义指令。`linactl build dir=<path>`和`linactl dev dir=<path>`执行`build.commands`；`linactl stop dir=<path>`执行`stop.commands`；`linactl status dir=<path>`执行`status.commands`。指令会在所选目录执行。`$(TARGET_DIR)`和`$(BUILD_DIR)`都会展开为所选目录，`$(REPO_ROOT)`展开为仓库根目录：
 
@@ -147,7 +147,7 @@ go run . lint.go plugins=0
 ```bash
 make image tag=v0.2.0 push=0
 make image.build tag=v0.2.0
-make wasm dir=apps/lina-plugins/linapro-demo-dynamic
+make wasm dir=apps/lina-plugins/demo-dynamic
 ```
 
 当测试或本地夹具需要打包`apps/lina-plugins`之外的动态插件目录时，可以使用`dir=<path>`。
@@ -159,11 +159,11 @@ make wasm dir=apps/lina-plugins/linapro-demo-dynamic
 ```bash
 go run . ctrl
 go run . dao
-go run . ctrl dir=apps/lina-plugins/linapro-content-notice/backend
-go run . dao dir=apps/lina-plugins/linapro-content-notice/backend
+go run . ctrl dir=apps/lina-plugins/content-notice/backend
+go run . dao dir=apps/lina-plugins/content-notice/backend
 ```
 
-未传入目标参数时，生成流程使用`apps/lina-core`的`GoFrame`项目布局，并读取`apps/lina-core/hack/config.yaml`。使用`dir=<backend-dir>`可以定向其他后端。标准插件后端目标会保持`GoFrame`工作目录为`apps/lina-plugins/<plugin-id>/backend`，并从插件根`apps/lina-plugins/<plugin-id>/hack/config.yaml`读取代码生成配置；非插件目标继续读取`<backend-dir>/hack/config.yaml`。`dao`生成仍要求配置的数据库可连接且已初始化，因此执行前需要先运行仓库初始化流程或准备等价数据库。
+未传入目标参数时，生成流程使用`apps/lina-core`的`GoFrame`项目布局，并读取`apps/lina-core/hack/config.yaml`。使用`dir=<backend-dir>`可以定向其他后端。标准插件后端目标会保持`GoFrame`工作目录为`apps/lina-plugins/<plugin-id>/backend`，并从插件根`apps/lina-plugins/<plugin-id>/hack/config.yaml`读取代码生成配置；非插件目标继续读取`<backend-dir>/hack/config.yaml`。`dao`生成仍要求数据库可连接且已初始化。新电脑上的本地数据库账号与仓库配置不同时，可以只在当前命令进程设置`LINA_CODEGEN_DATABASE_LINK`；它会覆盖所有非空 DAO 生成组的连接地址，但不会把本机账号或密码写回仓库配置。
 
 ## 运行时 I18n 检查
 
@@ -355,13 +355,13 @@ plugins:
     root: "."
     ref: "main"            # 仓级分支 / tag / commit
     items:
-      - id: linapro-tenant-core
-      - id: linapro-org-core
+      - id: tenant-core
+      - id: org-core
   public-market:
     type: marketplace      # 必填
     url: "https://linapro.ai"
     items:
-      - id: linapro-demo-source
+      - id: demo-source
         version: "v1.0.0"  # 市场 item 必填
 ```
 
@@ -377,15 +377,15 @@ plugins:
 ```bash
 make plugins.init
 make plugins.install
-make plugins.install p=linapro-tenant-core
+make plugins.install p=tenant-core
 make plugins.update source=official
 make plugins.update force=1
 make plugins.status
-make plugins.install source=public-market p=linapro-demo-source v=v1.0.0
-make plugins.install source=public-market base=http://127.0.0.1:9120 p=linapro-demo-source v=v1.0.0 token=...
+make plugins.install source=public-market p=demo-source v=v1.0.0
+make plugins.install source=public-market base=http://127.0.0.1:9120 p=demo-source v=v1.0.0 token=...
 ```
 
-`plugins.init` 会将 `apps/lina-plugins` 从 submodule 转成普通目录并保留文件。`plugins.install` / `update` / `status` 会在需要时自动完成同等初始化。Git 来源复用 `temp/plugin-sources/<origin>` 缓存，安装到 `apps/lina-plugins/<plugin-id>`，并更新 `apps/lina-plugins/.linapro-plugins.lock.yaml`。
+`plugins.init` 会将 `apps/lina-plugins` 从 submodule 转成普通目录并保留文件。`plugins.install` / `update` / `status` 会在需要时自动完成同等初始化。Git 来源复用 `temp/plugin-sources/<origin>` 缓存，安装到 `apps/lina-plugins/<plugin-id>`，并更新 `apps/lina-plugins/.plugins.lock.yaml`。
 
 ## 验证
 

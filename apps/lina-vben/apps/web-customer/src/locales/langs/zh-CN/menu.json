@@ -1,0 +1,16 @@
+{
+  "customerGroups": {
+    "products": "产品与服务",
+    "finance": "财务管理",
+    "account": "账户管理",
+    "salesChannel": "推荐与佣金",
+    "security": "安全管理",
+    "compliance": "认证与合规",
+    "support": "技术支持",
+    "external": "更多服务"
+  },
+  "platform": {
+    "title": "平台管理",
+    "tenants": "租户管理"
+  }
+}

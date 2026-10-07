@@ -1,0 +1,22 @@
+// This file implements the tenant-selection validation endpoint.
+
+package auth
+
+import (
+	"context"
+	"lina-core/pkg/plugin/capability/authcap/token"
+
+	v1 "lina-plugin-tenant-core/backend/api/auth/v1"
+)
+
+// SelectTenant validates tenant selection and requests a host-signed token.
+func (c *ControllerV1) SelectTenant(ctx context.Context, req *v1.SelectTenantReq) (res *v1.SelectTenantRes, err error) {
+	out, err := c.authSvc.SelectTenant(ctx, token.SelectTenantInput{
+		PreToken: req.PreToken,
+		TenantID: int(req.TenantId),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &v1.SelectTenantRes{AccessToken: out.AccessToken, RefreshToken: out.RefreshToken}, nil
+}

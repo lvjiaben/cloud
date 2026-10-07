@@ -13,10 +13,12 @@ const apiBaseURL = config.apiBaseURL;
 const repoRoot = path.resolve(process.cwd(), '../..');
 
 type PluginListItem = {
+  distribution?: 'builtin' | 'managed';
   enabled?: number;
   id: string;
   installMode?: string;
   installed?: number;
+  newBusinessState?: 'accepting' | 'stopped';
   runtimeState?: string;
   scopeNature?: string;
   type?: string;
@@ -43,6 +45,10 @@ async function ensurePluginEnabledState(
   }
   if (plugin?.enabled !== 1) {
     await updatePluginStatus(adminApi, pluginId, true);
+    plugin = await findPlugin(adminApi, pluginId);
+  }
+  if (plugin?.newBusinessState === 'stopped') {
+    await resumePluginNewBusiness(adminApi, pluginId);
   }
   loadSourcePluginMockData(pluginId);
 }
@@ -62,10 +68,27 @@ function unwrapApiData(payload: any) {
   return payload;
 }
 
-function assertOk(response: Awaited<ReturnType<APIRequestContext['get']>>, message: string) {
-  if (!response.ok()) {
-    throw new Error(`${message}, status=${response.status()}`);
+async function assertOk<T = any>(
+  response: Awaited<ReturnType<APIRequestContext['get']>>,
+  message: string,
+): Promise<T> {
+  let payload: any;
+  try {
+    payload = await response.json();
+  } catch {
+    payload = undefined;
   }
+  if (!response.ok()) {
+    throw new Error(
+      `${message}, status=${response.status()}, business message=${payload?.message ?? ''}`,
+    );
+  }
+  if (payload?.code !== undefined && payload.code !== 0) {
+    throw new Error(
+      `${message}, business code=${payload.code}, business message=${payload?.message ?? ''}`,
+    );
+  }
+  return unwrapApiData(payload) as T;
 }
 
 function loadSourcePluginMockData(pluginId: string) {
@@ -95,9 +118,10 @@ export async function createAdminApiContext(): Promise<APIRequestContext> {
       clientType: 'web',
     },
   });
-  assertOk(loginResponse, '管理员登录 API 失败');
-
-  const loginResult = unwrapApiData(await loginResponse.json());
+  const loginResult = await assertOk<{ accessToken?: string }>(
+    loginResponse,
+    '管理员登录 API 失败',
+  );
   const accessToken = loginResult?.accessToken;
   if (!accessToken) {
     throw new Error('未获取到 accessToken');
@@ -127,7 +151,7 @@ export async function prepareSourcePluginsBaseline(pluginIds: readonly string[])
 
 export async function syncPlugins(adminApi: APIRequestContext) {
   const response = await adminApi.post('plugins/sync');
-  assertOk(response, '同步源码插件失败');
+  await assertOk(response, '同步源码插件失败');
 }
 
 export async function listPlugins(
@@ -145,8 +169,10 @@ export async function listPlugins(
       ...(options?.id ? { id: options.id } : {}),
     },
   });
-  assertOk(response, '查询插件列表失败');
-  const payload = unwrapApiData(await response.json());
+  const payload = await assertOk<{ list?: PluginListItem[] }>(
+    response,
+    '查询插件列表失败',
+  );
   return payload?.list ?? [];
 }
 
@@ -154,8 +180,11 @@ export async function findPlugin(
   adminApi: APIRequestContext,
   pluginId: string,
 ) {
-  const items = await listPlugins(adminApi, { id: pluginId });
-  return items.find((item) => item.id === pluginId) ?? null;
+  const response = await adminApi.get(`plugins/${pluginId}`);
+  if (response.status() === 404) {
+    return null;
+  }
+  return await assertOk<PluginListItem>(response, `查询插件详情失败: ${pluginId}`);
 }
 
 export async function installPlugin(
@@ -170,7 +199,7 @@ export async function installPlugin(
         }
       : undefined,
   });
-  assertOk(response, `安装插件失败: ${pluginId}`);
+  await assertOk(response, `安装插件失败: ${pluginId}`);
 }
 
 export async function upgradePlugin(adminApi: APIRequestContext, pluginId: string) {
@@ -179,7 +208,7 @@ export async function upgradePlugin(adminApi: APIRequestContext, pluginId: strin
       confirmed: true,
     },
   });
-  assertOk(response, `升级插件失败: ${pluginId}`);
+  await assertOk(response, `升级插件失败: ${pluginId}`);
 }
 
 export async function uninstallPlugin(
@@ -192,7 +221,7 @@ export async function uninstallPlugin(
       purgeStorageData: purgeStorageData ? 1 : 0,
     },
   });
-  assertOk(response, `卸载插件失败: ${pluginId}`);
+  await assertOk(response, `卸载插件失败: ${pluginId}`);
 }
 
 export async function updatePluginStatus(
@@ -203,7 +232,23 @@ export async function updatePluginStatus(
   const response = await adminApi.put(
     enabled ? `plugins/${pluginId}/enable` : `plugins/${pluginId}/disable`,
   );
-  assertOk(response, `更新插件状态失败: ${pluginId}`);
+  await assertOk(response, `更新插件状态失败: ${pluginId}`);
+}
+
+export async function stopPluginNewBusiness(
+  adminApi: APIRequestContext,
+  pluginId: string,
+) {
+  const response = await adminApi.put(`plugins/${pluginId}/new-business/stop`);
+  await assertOk(response, `停止插件新业务失败: ${pluginId}`);
+}
+
+export async function resumePluginNewBusiness(
+  adminApi: APIRequestContext,
+  pluginId: string,
+) {
+  const response = await adminApi.put(`plugins/${pluginId}/new-business/resume`);
+  await assertOk(response, `恢复插件新业务失败: ${pluginId}`);
 }
 
 export async function refreshPluginProjection(page: Page) {
@@ -285,6 +330,7 @@ export async function ensureSourcePluginDisabled(page: Page, pluginId: string) {
     await syncPlugins(adminApi);
     const plugin = await findPlugin(adminApi, pluginId);
     if (plugin?.installed === 1 && plugin.enabled === 1) {
+      await stopPluginNewBusiness(adminApi, pluginId);
       await updatePluginStatus(adminApi, pluginId, false);
     }
   } finally {
@@ -300,6 +346,7 @@ export async function ensureSourcePluginUninstalled(page: Page, pluginId: string
     await syncPlugins(adminApi);
     const plugin = await findPlugin(adminApi, pluginId);
     if (plugin?.installed === 1) {
+      await stopPluginNewBusiness(adminApi, pluginId);
       await uninstallPlugin(adminApi, pluginId);
     }
   } finally {

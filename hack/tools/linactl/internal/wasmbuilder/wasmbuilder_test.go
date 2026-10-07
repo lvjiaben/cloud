@@ -3,12 +3,12 @@
 package wasmbuilder
 
 import (
+	"bytes"
 	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -136,11 +136,11 @@ func TestBuildRuntimeWasmArtifactFromSourceEmbedsDeclaredAssets(t *testing.T) {
 	mustWriteFile(
 		t,
 		filepath.Join(pluginDir, "plugin.yaml"),
-		"id: plugin-dev-dynamic-builder\nname: Dynamic Builder\nversion: v0.1.0\ntype: dynamic\nscope_nature: tenant_aware\nsupports_multi_tenant: true\ndefault_install_mode: tenant_scoped\ndescription: standalone builder test\ndependencies:\n  framework:\n    version: \">=0.1.0 <1.0.0\"\n  plugins:\n    - id: linapro-ai-core\n      version: \">=0.1.0\"\n    - id: linapro-tenant-core\n      version: \">=0.1.0\"\nhostServices:\n  - service: runtime\n    methods:\n      - log.write\n      - state.get\n      - state.set\n  - service: ai\n    owner: linapro-ai-core\n    version: v1\n    methods:\n      - text.method_status.get\n",
+		"id: plugin-dev-dynamic-builder\nname: Dynamic Builder\nversion: v0.1.0\ntype: dynamic\nscope_nature: tenant_aware\nsupports_multi_tenant: true\ndefault_install_mode: tenant_scoped\ndescription: standalone builder test\ndependencies:\n  framework:\n    version: \">=0.1.0 <1.0.0\"\n  plugins:\n    - id: ai-core\n      version: \">=0.1.0\"\n    - id: tenant-core\n      version: \">=0.1.0\"\npublic_assets:\n  - source: frontend/dist\n    mount: /\nhostServices:\n  - service: runtime\n    methods:\n      - log.write\n      - state.get\n      - state.set\n  - service: ai\n    owner: ai-core\n    version: v1\n    methods:\n      - text.method_status.get\n",
 	)
 	mustWriteFile(
 		t,
-		filepath.Join(pluginDir, "frontend", "pages", "standalone.html"),
+		filepath.Join(pluginDir, "frontend", "dist", "standalone.html"),
 		"<!doctype html><html><body>it works</body></html>",
 	)
 	mustWriteFile(
@@ -301,8 +301,8 @@ func TestBuildRuntimeWasmArtifactFromSourceEmbedsDeclaredAssets(t *testing.T) {
 	for _, dependency := range manifest.Dependencies.Plugins {
 		pluginDependencyVersions[dependency.ID] = dependency.Version
 	}
-	if pluginDependencyVersions["linapro-ai-core"] != ">=0.1.0" ||
-		pluginDependencyVersions["linapro-tenant-core"] != ">=0.1.0" {
+	if pluginDependencyVersions["ai-core"] != ">=0.1.0" ||
+		pluginDependencyVersions["tenant-core"] != ">=0.1.0" {
 		t.Fatalf("unexpected embedded plugin dependencies: %#v", manifest.Dependencies.Plugins)
 	}
 
@@ -322,7 +322,7 @@ func TestBuildRuntimeWasmArtifactFromSourceEmbedsDeclaredAssets(t *testing.T) {
 	if err = json.Unmarshal(sections[pluginDynamicWasmSectionFrontend], &frontend); err != nil {
 		t.Fatalf("expected frontend section json to unmarshal, got error: %v", err)
 	}
-	if len(frontend) != 1 || frontend[0].Path != "frontend/pages/standalone.html" {
+	if len(frontend) != 1 || frontend[0].Path != "frontend/dist/standalone.html" {
 		t.Fatalf("unexpected embedded frontend assets: %#v", frontend)
 	}
 
@@ -428,7 +428,7 @@ func TestBuildRuntimeWasmArtifactFromSourceEmbedsDeclaredAssets(t *testing.T) {
 	}
 	var ownerAIService *protocol.HostServiceSpec
 	for _, item := range hostServices {
-		if item.Owner == "linapro-ai-core" && item.Service == "ai" {
+		if item.Owner == "ai-core" && item.Service == "ai" {
 			ownerAIService = item
 			break
 		}
@@ -445,12 +445,12 @@ func TestBuildRuntimeWasmArtifactFromSourceEmbedsDeclaredAssets(t *testing.T) {
 	if _, err = os.Stat(filepath.Join(pluginDir, "temp", "runtime-plugin.wasm")); !os.IsNotExist(err) {
 		t.Fatalf("expected guest runtime wasm to stop being written into plugin temp/, got err=%v", err)
 	}
-	runtimeStrings, err := readCommandOutput("strings", out.RuntimePath)
+	runtimeBytes, err := os.ReadFile(out.RuntimePath)
 	if err != nil {
-		t.Fatalf("expected runtime wasm strings inspection to succeed, got error: %v", err)
+		t.Fatalf("expected runtime wasm inspection to succeed, got error: %v", err)
 	}
-	if !strings.Contains(runtimeStrings, "_initialize") {
-		t.Fatalf("expected runtime guest wasm to expose _initialize, got output: %s", runtimeStrings)
+	if !bytes.Contains(runtimeBytes, []byte("_initialize")) {
+		t.Fatal("expected runtime guest wasm to expose _initialize")
 	}
 }
 
@@ -790,7 +790,7 @@ func TestBuildRuntimeWasmArtifactFromSourceRejectsDependencyPolicyFields(t *test
 			mustWriteFile(
 				t,
 				filepath.Join(pluginDir, "plugin.yaml"),
-				"id: plugin-dev-dynamic-dependency-policy\nname: Dynamic Dependency Policy\nversion: v0.1.0\ntype: dynamic\nscope_nature: tenant_aware\nsupports_multi_tenant: false\ndefault_install_mode: global\ndependencies:\n  plugins:\n    - id: linapro-tenant-core\n      "+tt.fragment,
+				"id: plugin-dev-dynamic-dependency-policy\nname: Dynamic Dependency Policy\nversion: v0.1.0\ntype: dynamic\nscope_nature: tenant_aware\nsupports_multi_tenant: false\ndefault_install_mode: global\ndependencies:\n  plugins:\n    - id: tenant-core\n      "+tt.fragment,
 			)
 			mustWriteFile(
 				t,
@@ -1064,8 +1064,21 @@ func TestWriteRuntimeWasmArtifactFromSourceSupportsExternalOutputDir(t *testing.
 }
 
 func TestWriteRuntimeWasmArtifactFromSourceSupportsRelativeOutputDir(t *testing.T) {
-	pluginDir := t.TempDir()
-	outputDir := filepath.Join(t.TempDir(), "output")
+	workingDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("expected builder test to resolve current working directory, got error: %v", err)
+	}
+	testRoot, err := os.MkdirTemp(workingDir, ".relative-output-")
+	if err != nil {
+		t.Fatalf("expected builder test to create same-volume temporary root, got error: %v", err)
+	}
+	t.Cleanup(func() {
+		if cleanupErr := os.RemoveAll(testRoot); cleanupErr != nil {
+			t.Errorf("remove same-volume temporary root: %v", cleanupErr)
+		}
+	})
+	pluginDir := filepath.Join(testRoot, "plugin")
+	outputDir := filepath.Join(testRoot, "output")
 	mustWriteFile(
 		t,
 		filepath.Join(pluginDir, "plugin.yaml"),
@@ -1077,10 +1090,6 @@ func TestWriteRuntimeWasmArtifactFromSourceSupportsRelativeOutputDir(t *testing.
 		"package main\n\nfunc main() {}\n",
 	)
 
-	workingDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("expected builder test to resolve current working directory, got error: %v", err)
-	}
 	relativeOutputDir, err := filepath.Rel(workingDir, outputDir)
 	if err != nil {
 		t.Fatalf("expected builder test to compute relative output dir, got error: %v", err)
@@ -1110,7 +1119,7 @@ func TestSelectGuestRuntimeGoWorkUsesPluginWorkspaceOnlyForOfficialPlugins(t *te
 		t.Fatal("expected builder test to resolve repo root")
 	}
 
-	officialPluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "linapro-demo-dynamic")
+	officialPluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "demo-dynamic")
 	if got := selectGuestRuntimeGoWork(officialPluginDir); got != filepath.Join(repoRoot, "temp", "go.work.plugins") {
 		t.Fatalf("expected official plugin dir to use temporary plugin workspace, got %q", got)
 	}
@@ -1173,15 +1182,6 @@ func manifestResourcePaths(resources []*manifestResource) []string {
 	}
 	sort.Strings(paths)
 	return paths
-}
-
-func readCommandOutput(name string, args ...string) (string, error) {
-	cmd := exec.Command(name, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
 }
 
 func parseWasmCustomSections(content []byte) (map[string][]byte, error) {

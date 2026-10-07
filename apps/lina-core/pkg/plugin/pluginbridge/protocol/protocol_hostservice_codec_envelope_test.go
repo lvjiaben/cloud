@@ -8,7 +8,7 @@ import "testing"
 // envelopes preserve owner, service, version, method, table, and payload data.
 func TestHostServiceRequestEnvelopeRoundTrip(t *testing.T) {
 	original := &HostServiceRequestEnvelope{
-		Owner:   "linapro-ai-core",
+		Owner:   "ai-core",
 		Service: HostServiceData,
 		Version: "v1",
 		Method:  HostServiceMethodDataGet,

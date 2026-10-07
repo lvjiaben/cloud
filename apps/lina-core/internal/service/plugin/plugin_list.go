@@ -6,6 +6,7 @@ import (
 	"context"
 	"strings"
 
+	pluginv1 "lina-core/api/plugin/v1"
 	i18nsvc "lina-core/internal/service/i18n"
 	"lina-core/internal/service/plugin/internal/management"
 	"lina-core/internal/service/plugin/internal/plugintypes"
@@ -63,8 +64,9 @@ func (s *serviceImpl) syncAndList(ctx context.Context) (*ListOutput, error) {
 	return out.list, nil
 }
 
-// List returns the paginated read-only plugin summary list with optional
-// in-memory filtering applied to the lightweight summary read model.
+// List returns the paginated read-only managed-plugin summary list. Built-in
+// capabilities are owned by their business modules and are never exposed in
+// plugin management.
 func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, error) {
 	out, err := s.managementSummaryList(ctx)
 	if err != nil {
@@ -73,6 +75,9 @@ func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, erro
 	filtered := make([]*PluginItem, 0, len(out.List))
 	for _, item := range out.List {
 		if item == nil {
+			continue
+		}
+		if plugintypes.NormalizeDistribution(item.Distribution) != pluginv1.PluginDistributionManaged {
 			continue
 		}
 		if in.ID != "" && !strings.Contains(item.Id, in.ID) {
@@ -90,9 +95,6 @@ func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, erro
 		if in.Installed != nil && item.Installed != *in.Installed {
 			continue
 		}
-		// Builtin plugins remain visible in ordinary management lists. Write
-		// operations stay blocked by lifecycle governance. IncludeBuiltin is
-		// retained only for request binding compatibility and is not applied.
 		filtered = append(filtered, item)
 	}
 	page, total := paginatePluginItems(filtered, in.PageNum, in.PageSize)

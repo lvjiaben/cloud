@@ -10,16 +10,14 @@ import (
 
 // ListReq is the request for querying plugin list.
 type ListReq struct {
-	g.Meta    `path:"/plugins" method:"get" tags:"Plugin Management" summary:"Query plugin list" permission:"plugin:query" dc:"Return a paginated plugin management summary list with bounded first-load fields and read-only plugin status"`
+	g.Meta    `path:"/plugins" method:"get" tags:"Plugin Management" summary:"Query managed plugin list" permission:"plugin:query" dc:"Return only administrator-manageable distribution=managed plugins. Built-in capabilities are governed by their owning business pages and never appear in plugin management."`
 	PageNum   int                      `json:"pageNum" d:"1" v:"min:1" dc:"Page number for the plugin management summary list, starting from 1" eg:"1"`
 	PageSize  int                      `json:"pageSize" d:"20" v:"min:1|max:100" dc:"Page size for the plugin management summary list, default 20 and maximum 100" eg:"20"`
-	Id        string                   `json:"id" dc:"Filter by the unique identifier of the plugin, fuzzy matching, query all if not passed" eg:"linapro-demo-source"`
+	Id        string                   `json:"id" dc:"Filter by the unique identifier of the plugin, fuzzy matching, query all if not passed" eg:"demo-source"`
 	Name      string                   `json:"name" dc:"Filter by plugin name, fuzzy match, query all if not passed" eg:"Source Plugin Demo"`
 	Type      PluginType               `json:"type" dc:"Filter by plugin type: source=source plugin dynamic=dynamic plugin, if not passed, all will be queried; the current dynamic plugin implementation only supports WASM" eg:"dynamic"`
 	Status    *statusflag.Enabled      `json:"status" dc:"Filter by enabled status: 1=enabled 0=disabled, if not passed, query all" eg:"1"`
 	Installed *statusflag.Installation `json:"installed" dc:"Filter by installation status: 1=Installed 0=Not installed, if not uploaded, query all" eg:"1"`
-	// IncludeBuiltin is retained for client compatibility. Ordinary plugin management lists always include builtin plugins; this flag no longer filters results.
-	IncludeBuiltin bool `json:"includeBuiltin" dc:"Compatibility field retained for older clients; ordinary plugin management lists always include builtin plugins and this flag no longer filters results" eg:"true"`
 }
 
 // ListRes is the response for querying plugin list.
@@ -30,7 +28,7 @@ type ListRes struct {
 
 // PluginListItem represents lightweight plugin information for the management list.
 type PluginListItem struct {
-	Id                      string                    `json:"id" dc:"Plugin unique identifier" eg:"linapro-demo-source"`
+	Id                      string                    `json:"id" dc:"Plugin unique identifier" eg:"demo-source"`
 	Name                    string                    `json:"name" dc:"Plugin name" eg:"Source Plugin Demo"`
 	Version                 string                    `json:"version" dc:"Plugin current manifest version number" eg:"v0.1.0"`
 	RuntimeState            RuntimeState              `json:"runtimeState" dc:"Plugin runtime upgrade state: normal, pending_upgrade, abnormal, upgrade_running, or upgrade_failed" eg:"pending_upgrade"`
@@ -45,12 +43,14 @@ type PluginListItem struct {
 	Installed               statusflag.Installation   `json:"installed" dc:"Installation status: 1=installed 0=not installed; the source plugin can still be in the uninstalled state by default after being discovered by the host" eg:"1"`
 	InstalledAt             *int64                    `json:"installedAt" dc:"Plugin installation time as Unix timestamp in milliseconds, empty if it is not installed" eg:"1767240000000"`
 	Enabled                 statusflag.Enabled        `json:"enabled" dc:"Enabled status: 1=enabled 0=disabled" eg:"1"`
+	NewBusinessState        NewBusinessState          `json:"newBusinessState" dc:"New-business admission state: accepting=can accept new bindings and purchases, stopped=existing services remain available but no new business is accepted" eg:"stopped"`
+	NewBusinessStoppedAt    *int64                    `json:"newBusinessStoppedAt" dc:"Most recent stop-new-business time as a Unix timestamp in milliseconds" eg:"1767240000000"`
 	AutoEnableManaged       statusflag.YesNo          `json:"autoEnableManaged" dc:"Whether it is hit by plugin.autoEnable in the host's main configuration file: 1=yes 0=no; if hit, it means that the host will ensure that the plugin is enabled when it starts." eg:"1"`
 	AutoEnableForNewTenants bool                      `json:"autoEnableForNewTenants" dc:"Platform policy: whether installed and enabled tenant-scoped plugins are enabled for new tenants automatically" eg:"true"`
 	SupportsMultiTenant     bool                      `json:"supportsMultiTenant" dc:"Whether the plugin manifest declares support for tenant-level plugin governance" eg:"true"`
 	ScopeNature             ScopeNature               `json:"scopeNature" dc:"Plugin scope nature: platform_only or tenant_aware" eg:"tenant_aware"`
 	InstallMode             InstallMode               `json:"installMode" dc:"Plugin install mode: global or tenant_scoped" eg:"tenant_scoped"`
-	StatusKey               string                    `json:"statusKey" dc:"The location key name of the plugin status in the system plugin registry. The frontend registry monitor will use this key to determine whether the plugin status needs to be refreshed." eg:"sys_plugin.status:linapro-demo-source"`
+	StatusKey               string                    `json:"statusKey" dc:"The location key name of the plugin status in the system plugin registry. The frontend registry monitor will use this key to determine whether the plugin status needs to be refreshed." eg:"sys_plugin.status:demo-source"`
 	UpdatedAt               *int64                    `json:"updatedAt" dc:"Plugin registry last updated time as Unix timestamp in milliseconds" eg:"1767240000000"`
 	AuthorizationRequired   statusflag.YesNo          `json:"authorizationRequired" dc:"Whether there is a hostServices resource application that needs to be confirmed during installation/activation: 1=Yes 0=No" eg:"1"`
 	AuthorizationStatus     AuthorizationStatus       `json:"authorizationStatus" dc:"Current authorization status: not_required=no confirmation required pending=to be confirmed confirmed=confirmed" eg:"confirmed"`
@@ -59,35 +59,64 @@ type PluginListItem struct {
 
 // PluginItem represents plugin information.
 type PluginItem struct {
-	Id                      string                       `json:"id" dc:"Plugin unique identifier" eg:"linapro-demo-source"`
-	Name                    string                       `json:"name" dc:"Plugin name" eg:"Source Plugin Demo"`
-	Version                 string                       `json:"version" dc:"Plugin current manifest version number" eg:"v0.1.0"`
-	RuntimeState            RuntimeState                 `json:"runtimeState" dc:"Plugin runtime upgrade state: normal, pending_upgrade, abnormal, upgrade_running, or upgrade_failed" eg:"pending_upgrade"`
-	EffectiveVersion        string                       `json:"effectiveVersion" dc:"Database-effective plugin version currently used by the host" eg:"v0.1.0"`
-	DiscoveredVersion       string                       `json:"discoveredVersion" dc:"Plugin version currently discovered from source plugin.yaml or dynamic artifact metadata" eg:"v0.2.0"`
-	UpgradeAvailable        bool                         `json:"upgradeAvailable" dc:"Whether the plugin has a newer discovered version that can be upgraded by runtime management" eg:"true"`
-	AbnormalReason          RuntimeAbnormalReason        `json:"abnormalReason,omitempty" dc:"Stable diagnostic reason when runtimeState is abnormal" eg:"discovered_version_lower_than_effective"`
-	LastUpgradeFailure      *PluginUpgradeFailureItem    `json:"lastUpgradeFailure,omitempty" dc:"Latest observable runtime upgrade failure details" eg:"{}"`
-	Type                    PluginType                   `json:"type" dc:"Plugin first-level type: source=source plugin dynamic=dynamic plugin" eg:"source"`
-	Distribution            PluginDistribution           `json:"distribution" dc:"Plugin distribution governance type: managed=ordinary managed plugin builtin=project built-in source plugin" eg:"managed"`
-	Description             string                       `json:"description" dc:"Plugin description" eg:"Source plugin that provides left-side menu pages and public/protected routing examples"`
-	Installed               statusflag.Installation      `json:"installed" dc:"Installation status: 1=installed 0=not installed; the source plugin can still be in the uninstalled state by default after being discovered by the host" eg:"1"`
-	InstalledAt             *int64                       `json:"installedAt" dc:"Plugin installation time as Unix timestamp in milliseconds, empty if it is not installed" eg:"1767240000000"`
-	Enabled                 statusflag.Enabled           `json:"enabled" dc:"Enabled status: 1=enabled 0=disabled" eg:"1"`
-	AutoEnableManaged       statusflag.YesNo             `json:"autoEnableManaged" dc:"Whether it is hit by plugin.autoEnable in the host's main configuration file: 1=yes 0=no; if hit, it means that the host will ensure that the plugin is enabled when it starts." eg:"1"`
-	AutoEnableForNewTenants bool                         `json:"autoEnableForNewTenants" dc:"Platform policy: whether installed and enabled tenant-scoped plugins are enabled for new tenants automatically" eg:"true"`
-	SupportsMultiTenant     bool                         `json:"supportsMultiTenant" dc:"Whether the plugin manifest declares support for tenant-level plugin governance" eg:"true"`
-	ScopeNature             ScopeNature                  `json:"scopeNature" dc:"Plugin scope nature: platform_only or tenant_aware" eg:"tenant_aware"`
-	InstallMode             InstallMode                  `json:"installMode" dc:"Plugin install mode: global or tenant_scoped" eg:"tenant_scoped"`
-	StatusKey               string                       `json:"statusKey" dc:"The location key name of the plugin status in the system plugin registry. The frontend registry monitor will use this key to determine whether the plugin status needs to be refreshed." eg:"sys_plugin.status:linapro-demo-source"`
-	UpdatedAt               *int64                       `json:"updatedAt" dc:"Plugin registry last updated time as Unix timestamp in milliseconds" eg:"1767240000000"`
-	AuthorizationRequired   statusflag.YesNo             `json:"authorizationRequired" dc:"Whether there is a hostServices resource application that needs to be confirmed during installation/activation: 1=Yes 0=No" eg:"1"`
-	AuthorizationStatus     AuthorizationStatus          `json:"authorizationStatus" dc:"Current authorization status: not_required=no confirmation required pending=to be confirmed confirmed=confirmed" eg:"confirmed"`
-	HasMockData             statusflag.YesNo             `json:"hasMockData" dc:"Whether the plugin ships any mock-data SQL files under manifest/sql/mock-data/: 1=yes 0=no. The frontend uses this to decide whether to render the optional Install mock data checkbox in the install dialog." eg:"1"`
-	DependencyCheck         *PluginDependencyCheckResult `json:"dependencyCheck,omitempty" dc:"Server-side dependency check result used by management UI for install, upgrade, and uninstall blockers" eg:"{}"`
-	RequestedHostServices   []*HostServicePermissionItem `json:"requestedHostServices,omitempty" dc:"The hostServices application list declared by the current version of the plugin" eg:"[]"`
-	AuthorizedHostServices  []*HostServicePermissionItem `json:"authorizedHostServices,omitempty" dc:"HostServices authorization snapshot after final confirmation of the current release by the host" eg:"[]"`
-	DeclaredRoutes          []*PluginRouteReviewItem     `json:"declaredRoutes,omitempty" dc:"The dynamic route review list declared by the current release, only returned by dynamic plugins; used to display the real public routes that the plugin will expose before installation or activation." eg:"[]"`
+	Id                           string                         `json:"id" dc:"Plugin unique identifier" eg:"demo-source"`
+	Name                         string                         `json:"name" dc:"Plugin name" eg:"Source Plugin Demo"`
+	Version                      string                         `json:"version" dc:"Plugin current manifest version number" eg:"v0.1.0"`
+	RuntimeState                 RuntimeState                   `json:"runtimeState" dc:"Plugin runtime upgrade state: normal, pending_upgrade, abnormal, upgrade_running, or upgrade_failed" eg:"pending_upgrade"`
+	EffectiveVersion             string                         `json:"effectiveVersion" dc:"Database-effective plugin version currently used by the host" eg:"v0.1.0"`
+	DiscoveredVersion            string                         `json:"discoveredVersion" dc:"Plugin version currently discovered from source plugin.yaml or dynamic artifact metadata" eg:"v0.2.0"`
+	UpgradeAvailable             bool                           `json:"upgradeAvailable" dc:"Whether the plugin has a newer discovered version that can be upgraded by runtime management" eg:"true"`
+	AbnormalReason               RuntimeAbnormalReason          `json:"abnormalReason,omitempty" dc:"Stable diagnostic reason when runtimeState is abnormal" eg:"discovered_version_lower_than_effective"`
+	LastUpgradeFailure           *PluginUpgradeFailureItem      `json:"lastUpgradeFailure,omitempty" dc:"Latest observable runtime upgrade failure details" eg:"{}"`
+	Type                         PluginType                     `json:"type" dc:"Plugin first-level type: source=source plugin dynamic=dynamic plugin" eg:"source"`
+	Distribution                 PluginDistribution             `json:"distribution" dc:"Plugin distribution governance type: managed=ordinary managed plugin builtin=project built-in source plugin" eg:"managed"`
+	Description                  string                         `json:"description" dc:"Plugin description" eg:"Source plugin that provides left-side menu pages and public/protected routing examples"`
+	Installed                    statusflag.Installation        `json:"installed" dc:"Installation status: 1=installed 0=not installed; the source plugin can still be in the uninstalled state by default after being discovered by the host" eg:"1"`
+	InstalledAt                  *int64                         `json:"installedAt" dc:"Plugin installation time as Unix timestamp in milliseconds, empty if it is not installed" eg:"1767240000000"`
+	Enabled                      statusflag.Enabled             `json:"enabled" dc:"Enabled status: 1=enabled 0=disabled" eg:"1"`
+	NewBusinessState             NewBusinessState               `json:"newBusinessState" dc:"New-business admission state: accepting or stopped" eg:"stopped"`
+	NewBusinessStoppedAt         *int64                         `json:"newBusinessStoppedAt" dc:"Most recent stop-new-business time as a Unix timestamp in milliseconds" eg:"1767240000000"`
+	AutoEnableManaged            statusflag.YesNo               `json:"autoEnableManaged" dc:"Whether it is hit by plugin.autoEnable in the host's main configuration file: 1=yes 0=no; if hit, it means that the host will ensure that the plugin is enabled when it starts." eg:"1"`
+	AutoEnableForNewTenants      bool                           `json:"autoEnableForNewTenants" dc:"Platform policy: whether installed and enabled tenant-scoped plugins are enabled for new tenants automatically" eg:"true"`
+	SupportsMultiTenant          bool                           `json:"supportsMultiTenant" dc:"Whether the plugin manifest declares support for tenant-level plugin governance" eg:"true"`
+	ScopeNature                  ScopeNature                    `json:"scopeNature" dc:"Plugin scope nature: platform_only or tenant_aware" eg:"tenant_aware"`
+	InstallMode                  InstallMode                    `json:"installMode" dc:"Plugin install mode: global or tenant_scoped" eg:"tenant_scoped"`
+	StatusKey                    string                         `json:"statusKey" dc:"The location key name of the plugin status in the system plugin registry. The frontend registry monitor will use this key to determine whether the plugin status needs to be refreshed." eg:"sys_plugin.status:demo-source"`
+	UpdatedAt                    *int64                         `json:"updatedAt" dc:"Plugin registry last updated time as Unix timestamp in milliseconds" eg:"1767240000000"`
+	AuthorizationRequired        statusflag.YesNo               `json:"authorizationRequired" dc:"Whether there is a hostServices resource application that needs to be confirmed during installation/activation: 1=Yes 0=No" eg:"1"`
+	AuthorizationStatus          AuthorizationStatus            `json:"authorizationStatus" dc:"Current authorization status: not_required=no confirmation required pending=to be confirmed confirmed=confirmed" eg:"confirmed"`
+	HasMockData                  statusflag.YesNo               `json:"hasMockData" dc:"Whether the plugin ships any mock-data SQL files under manifest/sql/mock-data/: 1=yes 0=no. The frontend uses this to decide whether to render the optional Install mock data checkbox in the install dialog." eg:"1"`
+	DependencyCheck              *PluginDependencyCheckResult   `json:"dependencyCheck,omitempty" dc:"Server-side dependency check result used by management UI for install, upgrade, and uninstall blockers" eg:"{}"`
+	RequestedHostServices        []*HostServicePermissionItem   `json:"requestedHostServices,omitempty" dc:"The hostServices application list declared by the current version of the plugin" eg:"[]"`
+	AuthorizedHostServices       []*HostServicePermissionItem   `json:"authorizedHostServices,omitempty" dc:"HostServices authorization snapshot after final confirmation of the current release by the host" eg:"[]"`
+	DeclaredRoutes               []*PluginRouteReviewItem       `json:"declaredRoutes,omitempty" dc:"The dynamic route review list declared by the current release, only returned by dynamic plugins; used to display the real public routes that the plugin will expose before installation or activation." eg:"[]"`
+	BusinessExtensions           []*PluginBusinessExtensionItem `json:"businessExtensions,omitempty" dc:"Versioned business extension declarations requested by this plugin" eg:"[]"`
+	AuthorizedBusinessExtensions []*PluginBusinessExtensionItem `json:"authorizedBusinessExtensions,omitempty" dc:"Release-frozen business extension declarations accepted by host governance" eg:"[]"`
+	AdminSurfaces                []*PluginFrontendSurfaceItem   `json:"adminSurfaces,omitempty" dc:"Governed administration-console frontend surfaces" eg:"[]"`
+	CustomerSurfaces             []*PluginFrontendSurfaceItem   `json:"customerSurfaces,omitempty" dc:"Governed signed-in customer-center frontend surfaces" eg:"[]"`
+}
+
+// PluginBusinessExtensionItem is one public versioned business extension declaration.
+type PluginBusinessExtensionItem struct {
+	Point   string   `json:"point" dc:"Business extension point identifier" eg:"product-fulfillment"`
+	Version string   `json:"version" dc:"Extension contract version" eg:"v1"`
+	Role    string   `json:"role" dc:"Declaration role: owner or provider" eg:"provider"`
+	Owner   string   `json:"owner" dc:"Plugin ID publishing the extension contract" eg:"idc-core"`
+	Methods []string `json:"methods,omitempty" dc:"Bounded contract method set" eg:"[\"provision\",\"query\"]"`
+}
+
+// PluginFrontendSurfaceItem is one public governed frontend surface declaration.
+type PluginFrontendSurfaceItem struct {
+	Key                string   `json:"key" dc:"Stable surface key" eg:"ssl-certificates"`
+	Version            string   `json:"version" dc:"Surface bridge contract version" eg:"v1"`
+	Title              string   `json:"title" dc:"Page or menu title" eg:"SSL certificates"`
+	Icon               string   `json:"icon,omitempty" dc:"Host-supported icon identifier" eg:"lucide:shield-check"`
+	Permission         string   `json:"permission,omitempty" dc:"Host permission required by this surface" eg:"ssl-certificate:query"`
+	Slot               string   `json:"slot" dc:"Host-published mount slot" eg:"customer-services"`
+	Route              string   `json:"route" dc:"Governed plugin route fragment" eg:"ssl-certificates"`
+	Entry              string   `json:"entry" dc:"Plugin-relative frontend entry asset" eg:"frontend/customer/index.html"`
+	Status             string   `json:"status,omitempty" dc:"Declared surface availability state" eg:"active"`
+	BridgeCapabilities []string `json:"bridgeCapabilities,omitempty" dc:"Requested versioned page-bridge capabilities" eg:"[\"identity.v1\"]"`
 }
 
 // PluginUpgradeFailureItem describes the latest observable runtime upgrade failure.
@@ -102,7 +131,7 @@ type PluginUpgradeFailureItem struct {
 
 // PluginDependencyCheckResult describes one server-side plugin dependency decision.
 type PluginDependencyCheckResult struct {
-	TargetId          string                              `json:"targetId" dc:"Checked plugin ID" eg:"linapro-demo-dynamic"`
+	TargetId          string                              `json:"targetId" dc:"Checked plugin ID" eg:"demo-dynamic"`
 	Framework         PluginDependencyFrameworkCheck      `json:"framework" dc:"Framework compatibility check result" eg:"{}"`
 	Dependencies      []*PluginDependencyItem             `json:"dependencies" dc:"Direct and transitive hard plugin dependency checks" eg:"[]"`
 	Blockers          []*PluginDependencyBlocker          `json:"blockers" dc:"Install-side hard dependency blockers that prevent install or upgrade side effects" eg:"[]"`
@@ -120,8 +149,8 @@ type PluginDependencyFrameworkCheck struct {
 
 // PluginDependencyItem describes one plugin dependency edge.
 type PluginDependencyItem struct {
-	OwnerId         string           `json:"ownerId" dc:"Plugin declaring the hard dependency" eg:"linapro-demo-dynamic"`
-	DependencyId    string           `json:"dependencyId" dc:"Depended-on plugin ID" eg:"linapro-demo-source"`
+	OwnerId         string           `json:"ownerId" dc:"Plugin declaring the hard dependency" eg:"demo-dynamic"`
+	DependencyId    string           `json:"dependencyId" dc:"Depended-on plugin ID" eg:"demo-source"`
 	DependencyName  string           `json:"dependencyName" dc:"Depended-on plugin display name" eg:"Source Plugin Demo"`
 	RequiredVersion string           `json:"requiredVersion" dc:"Declared dependency version range" eg:">=0.1.0"`
 	CurrentVersion  string           `json:"currentVersion" dc:"Discovered or installed dependency version" eg:"v0.1.0"`
@@ -135,8 +164,8 @@ type PluginDependencyItem struct {
 // PluginDependencyBlocker describes one hard dependency failure.
 type PluginDependencyBlocker struct {
 	Code            BlockerCode `json:"code" dc:"Blocker category" eg:"dependency_missing"`
-	PluginId        string      `json:"pluginId" dc:"Plugin whose lifecycle is blocked" eg:"linapro-demo-dynamic"`
-	DependencyId    string      `json:"dependencyId" dc:"Dependency plugin when applicable" eg:"linapro-demo-source"`
+	PluginId        string      `json:"pluginId" dc:"Plugin whose lifecycle is blocked" eg:"demo-dynamic"`
+	DependencyId    string      `json:"dependencyId" dc:"Dependency plugin when applicable" eg:"demo-source"`
 	RequiredVersion string      `json:"requiredVersion" dc:"Declared version range when applicable" eg:">=0.1.0"`
 	CurrentVersion  string      `json:"currentVersion" dc:"Observed version when applicable" eg:"v0.1.0"`
 	Chain           []string    `json:"chain,omitempty" dc:"Dependency chain associated with this blocker" eg:"[]"`
@@ -145,7 +174,7 @@ type PluginDependencyBlocker struct {
 
 // PluginDependencyReverseDependent describes one installed downstream dependency.
 type PluginDependencyReverseDependent struct {
-	PluginId          string                              `json:"pluginId" dc:"Downstream plugin ID" eg:"linapro-content-notice"`
+	PluginId          string                              `json:"pluginId" dc:"Downstream plugin ID" eg:"content-notice"`
 	Name              string                              `json:"name" dc:"Downstream plugin display name" eg:"Content Notice"`
 	Version           string                              `json:"version" dc:"Downstream plugin version" eg:"v0.1.0"`
 	RequiredVersion   string                              `json:"requiredVersion" dc:"Version range declared by downstream plugin" eg:">=0.1.0"`
@@ -155,7 +184,7 @@ type PluginDependencyReverseDependent struct {
 
 // PluginDependencyOwnerHostService describes one owner-aware host service declaration summary.
 type PluginDependencyOwnerHostService struct {
-	Owner   string   `json:"owner" dc:"Owner plugin ID for the plugin-owned host service" eg:"linapro-ai-core"`
+	Owner   string   `json:"owner" dc:"Owner plugin ID for the plugin-owned host service" eg:"ai-core"`
 	Service string   `json:"service" dc:"Logical host service identifier declared by the downstream plugin" eg:"ai"`
 	Version string   `json:"version" dc:"Owner capability protocol version declared by the downstream plugin" eg:"v1"`
 	Methods []string `json:"methods" dc:"Owner host service methods declared by the downstream plugin" eg:"[\"text.generate\"]"`
@@ -167,11 +196,11 @@ type PluginRouteReviewItem struct {
 	// Method is the normalized HTTP method declared by the dynamic route.
 	Method string `json:"method" dc:"Dynamic routing HTTP methods" eg:"GET"`
 	// PublicPath is the host-visible public URL served for this dynamic route.
-	PublicPath string `json:"publicPath" dc:"The real public path of the host, always starts with /x/{pluginId}; following segments are plugin-defined route content" eg:"/x/linapro-demo-dynamic/api/v1/review-summary"`
+	PublicPath string `json:"publicPath" dc:"The real public path of the host, always starts with /x/{pluginId}; following segments are plugin-defined route content" eg:"/x/demo-dynamic/api/v1/review-summary"`
 	// Access identifies whether the route is public or requires login context.
 	Access string `json:"access" dc:"Access level: public=public access login=login access" eg:"login"`
 	// Permission is the host permission key enforced for authenticated routes.
-	Permission string `json:"permission,omitempty" dc:"Host permission identifier; public route returns empty string" eg:"linapro-demo-dynamic:review:query"`
+	Permission string `json:"permission,omitempty" dc:"Host permission identifier; public route returns empty string" eg:"demo-dynamic:review:query"`
 	// Summary is the short review-friendly route summary.
 	Summary string `json:"summary,omitempty" dc:"Dynamic routing summary, derived from the summary in the routing contract" eg:"Query plugin review summary"`
 	// Description is the detailed business description declared by the route.

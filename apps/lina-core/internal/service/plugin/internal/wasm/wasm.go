@@ -10,6 +10,7 @@ import (
 
 	"github.com/tetratelabs/wazero"
 
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	bridgecontract "lina-core/pkg/plugin/pluginbridge/contract"
 	bridgehostservice "lina-core/pkg/plugin/pluginbridge/protocol"
 )
@@ -51,6 +52,9 @@ type ExecutionInput struct {
 	Identity *bridgecontract.IdentitySnapshotV1
 	// JobCollector captures dynamic-plugin job declarations during Jobs discovery.
 	JobCollector JobRegistrationCollector
+	// ConfidentialOutboundInvocation carries the exact host-verified provider
+	// binding for internal business-extension executions only.
+	ConfidentialOutboundInvocation *confidentialoutbound.Invocation
 }
 
 // Runtime defines the dynamic-plugin WASM execution runtime owned by a plugin

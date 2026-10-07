@@ -31,7 +31,7 @@
 **Non-Goals:**
 
 - 跨 provider 迁移工具；按租户选择不同云后端
-- 新建 `linapro-storage-core` 或仅为菜单存在的领域壳插件
+- 新建 `storage-core` 或仅为菜单存在的领域壳插件
 - 独立 `storage` 一级宿主稳定目录
 - 动态插件实现 Provider（SDK 与进程内注册要求 source）
 - 重命名 `Storage()` / `Files()` 公开方法名
@@ -43,7 +43,7 @@
 
 ### 1. Storage 与 Files 边界
 
-**决策**：不重命名公开入口。`Storage()` 拥有插件对象内容生命周期（保存、下载、替换、删除、列出、卸载清理、可选直连签发与确认）。`Files()` 仅做宿主文件中心投影与存在性不泄露校验。`Storage()` 不生成 `sys_file` 记录；`Files()` 不新增对象存储方法。`linapro-demo-source` 附件改走 `Storage()`。
+**决策**：不重命名公开入口。`Storage()` 拥有插件对象内容生命周期（保存、下载、替换、删除、列出、卸载清理、可选直连签发与确认）。`Files()` 仅做宿主文件中心投影与存在性不泄露校验。`Storage()` 不生成 `sys_file` 记录；`Files()` 不新增对象存储方法。`demo-source` 附件改走 `Storage()`。
 
 ### 2. 动态插件分片上传
 
@@ -66,7 +66,7 @@
 
 ### 4. 配置入口挂系统设置，不设 storage 一级目录 / storage-core
 
-**决策**：云插件 `parent_key: setting`；不新增 `menu_key=storage` 一级目录，也不引入 `linapro-storage-core`。
+**决策**：云插件 `parent_key: setting`；不新增 `menu_key=storage` 一级目录，也不引入 `storage-core`。
 
 **理由**：云存储配置属于运维设置面，与字典、参数、文件管理等同属「系统设置」语义；避免一级导航膨胀。Storage 领域能力仍是 core-owned，仅配置入口复用既有宿主目录。
 
@@ -76,13 +76,13 @@
 
 | 插件 ID | 后端 |
 |---|---|
-| `linapro-storage-cos` | 腾讯云 COS 官方 SDK（厂商） |
-| `linapro-storage-oss` | 阿里云 OSS 官方 SDK（厂商） |
-| `linapro-storage-obs` | 华为云 OBS 官方 SDK（厂商） |
-| `linapro-storage-qiniu` | 七牛云 Kodo 官方 SDK（厂商：region 可选自动探测；endpoint 语义为可选下载域名） |
-| `linapro-storage-aws` | AWS SDK for Go v2，官方 S3（厂商：region 必填；主表单不暴露 endpoint/path-style） |
-| `linapro-storage-azure` | Azure SDK for Go，Blob Storage（厂商：account + container + shared key；可选自定义 endpoint） |
-| `linapro-storage-s3` | AWS SDK for Go v2 作协议客户端（endpoint 必填、path-style；region 可选默认 `us-east-1`） |
+| `storage-cos` | 腾讯云 COS 官方 SDK（厂商） |
+| `storage-oss` | 阿里云 OSS 官方 SDK（厂商） |
+| `storage-obs` | 华为云 OBS 官方 SDK（厂商） |
+| `storage-qiniu` | 七牛云 Kodo 官方 SDK（厂商：region 可选自动探测；endpoint 语义为可选下载域名） |
+| `storage-aws` | AWS SDK for Go v2，官方 S3（厂商：region 必填；主表单不暴露 endpoint/path-style） |
+| `storage-azure` | Azure SDK for Go，Blob Storage（厂商：account + container + shared key；可选自定义 endpoint） |
+| `storage-s3` | AWS SDK for Go v2 作协议客户端（endpoint 必填、path-style；region 可选默认 `us-east-1`） |
 
 均为 `type: source`、`distribution: managed`、`scope_nature: platform_only`、`default_install_mode: global`。无插件间依赖。AWS 与 S3 兼容可共用 SDK，配置面必须分离。Azure Blob 非 S3 API，不得并入 S3 协议插件。
 
@@ -92,7 +92,7 @@
 
 - 平台级 `sys_config`（`tenant_id=0`），key 前缀 `plugin.<plugin-id>.*`
 - GET 返回投影：密钥掩码 + `*Configured`；PUT 空密钥保持原值
-- 权限：`linapro-storage-*:settings:view` / `settings:update`
+- 权限：`storage-*:settings:view` / `settings:update`
 - 页面：`Card` + `Alert` + 水平 `Form`（label≈180px），无重复 Card 标题
 - 连通性探测：Head/List bucket 一类只读探测；失败以 Modal.error（或等价弹窗）展示完整原因，不单靠页顶常驻 Alert；失败不写脏配置
 - 探测权限第一期复用 `settings:view`，保存用 `settings:update`

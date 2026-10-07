@@ -4,9 +4,9 @@ import { pluginApiPath, requestClient } from '#/api/request';
 
 /**
  * Stable owner plugin id for the external-identity domain (managed plugin).
- * Must match apps/lina-plugins/linapro-extlogin-core/plugin.yaml id.
+ * Must match apps/lina-plugins/extlogin-core/plugin.yaml id.
  */
-export const EXTLOGIN_CORE_PLUGIN_ID = 'linapro-extlogin-core';
+export const EXTLOGIN_CORE_PLUGIN_ID = 'extlogin-core';
 
 /**
  * Public relative path under the plugin API prefix for SPA handoff exchange.
@@ -16,7 +16,7 @@ export const EXTLOGIN_HANDOFF_EXCHANGE_PATH = 'handoff/exchange';
 
 /**
  * Exchange a one-time external-login handoff code for session tokens.
- * Owned by managed plugin linapro-extlogin-core (not host /auth).
+ * Owned by managed plugin extlogin-core (not host /auth).
  */
 export async function exchangeExternalLoginHandoffApi(handoff: string) {
   return requestClient.post<TenantAwareLoginResult>(

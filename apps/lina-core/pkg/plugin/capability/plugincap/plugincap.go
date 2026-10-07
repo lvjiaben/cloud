@@ -60,6 +60,17 @@ type RegistryService interface {
 	List(ctx context.Context, input ListInput) (*capmodel.PageResult[*PluginInfo], error)
 	// ListTenantPlugins returns tenant-controllable plugin info records with tenant enablement.
 	ListTenantPlugins(ctx context.Context, input TenantListInput) (*capmodel.PageResult[*TenantPluginInfo], error)
+	// ListBusinessExtensionProviders returns owner-authorized providers that may
+	// accept a new binding now. This is a UI/discovery read; callers must still
+	// use the source-owner admission guard when committing a binding.
+	ListBusinessExtensionProviders(ctx context.Context, input BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error)
+	// GetBusinessExtensionProviderExact verifies frozen historical release and
+	// declaration evidence. It does not claim that the provider is currently runnable.
+	GetBusinessExtensionProviderExact(ctx context.Context, input BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error)
+	// GetBusinessExtensionProvidersExact verifies a bounded collection of frozen
+	// historical declarations with one authoritative release collection read.
+	// Results preserve input order; a nil item means that exact evidence is absent.
+	GetBusinessExtensionProvidersExact(ctx context.Context, inputs []BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error)
 }
 
 // StateService defines plugin enablement state lookup methods.
@@ -160,7 +171,31 @@ type TenantListInput struct {
 	Page capmodel.PageRequest
 }
 
+// BusinessExtensionProviderListInput describes bounded new-binding discovery.
+// Point is required. ContractVersion may be empty to include every version the
+// calling owner has authorized.
+type BusinessExtensionProviderListInput struct {
+	Point           string               `json:"point"`
+	ContractVersion string               `json:"contractVersion,omitempty"`
+	Page            capmodel.PageRequest `json:"page"`
+}
+
+// BusinessExtensionProviderExactInput identifies one immutable historical
+// provider declaration. Every field is required and must match exactly.
+type BusinessExtensionProviderExactInput struct {
+	PluginID          string `json:"pluginId"`
+	ReleaseVersion    string `json:"releaseVersion"`
+	Point             string `json:"point"`
+	ContractVersion   string `json:"contractVersion"`
+	ReleaseDigest     string `json:"releaseDigest"`
+	DeclarationDigest string `json:"declarationDigest"`
+}
+
+const MaxBusinessExtensionProviderExactBatch = 100
+
 const (
 	// MaxPluginSearchPageSize is the maximum plugin search page size.
 	MaxPluginSearchPageSize = 200
+	// MaxBusinessExtensionProviderScan bounds one authoritative discovery snapshot.
+	MaxBusinessExtensionProviderScan = 500
 )

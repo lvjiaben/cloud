@@ -6,18 +6,18 @@
 ## Requirements
 ### Requirement: 用户名密码登录
 
-系统 SHALL 支持用户名 + 密码登录，登录请求 MUST 携带受控的用户会话客户端类型`clientType`。允许值仅包括`web`、`mobile`、`desktop`、`cli`；系统 MUST 拒绝缺失或未知的客户端类型。验证成功后系统返回 JWT Token。登录过程中（无论成功或失败）SHALL 发出统一的登录生命周期事件，且事件 MUST 包含登录请求中的`clientType`。登录成功后，SHALL 在宿主维护的`sys_online_session`表中创建会话记录；如果`linapro-monitor-loginlog`已启用，插件根据登录事件完成登录日志入库。
+系统 SHALL 支持用户名 + 密码登录，登录请求 MUST 携带受控的用户会话客户端类型`clientType`。允许值仅包括`web`、`mobile`、`desktop`、`cli`；系统 MUST 拒绝缺失或未知的客户端类型。验证成功后系统返回 JWT Token。登录过程中（无论成功或失败）SHALL 发出统一的登录生命周期事件，且事件 MUST 包含登录请求中的`clientType`。登录成功后，SHALL 在宿主维护的`sys_online_session`表中创建会话记录；如果`monitor-loginlog`已启用，插件根据登录事件完成登录日志入库。
 
 #### Scenario: 登录成功
 - **当** 用户向`POST /api/v1/auth/login`提交正确的用户名、密码和`clientType=web`时
 - **则** 系统返回 JWT Token，响应格式为`{code: 0, message: "ok", data: {accessToken: "...", refreshToken: "..."}}`
 - **且** 宿主在`sys_online_session`表中创建会话记录（包含 token_id、用户信息、IP、浏览器、操作系统、client_type 等）
 - **且** 宿主签发的 access token 和 refresh token claims 均包含`clientType=web`
-- **且** 宿主发出登录成功事件，事件`clientType`为`web`；如果`linapro-monitor-loginlog`已启用，插件写入登录成功日志
+- **且** 宿主发出登录成功事件，事件`clientType`为`web`；如果`monitor-loginlog`已启用，插件写入登录成功日志
 
 #### Scenario: 登录失败且日志插件缺失
 - **当** 用户提交错误凭证和合法`clientType=mobile`
-- **且** `linapro-monitor-loginlog`未安装、未启用或初始化失败
+- **且** `monitor-loginlog`未安装、未启用或初始化失败
 - **则** 系统仍返回正确的登录失败结果
 - **且** 宿主发出登录失败事件，事件`clientType`为`mobile`
 - **且** 宿主不因缺少特定登录日志持久化实现而报错
@@ -36,13 +36,13 @@
 - **当** 已登录用户调用`POST /api/v1/auth/logout`时
 - **则** 系统返回成功响应，从`sys_online_session`表中删除该用户的会话记录，前端清除本地存储的 Token
 - **且** 宿主发出退出成功事件，事件`clientType`等于该 token claims 和会话记录中的`clientType`
-- **且** 如果`linapro-monitor-loginlog`已启用，插件写入对应日志
+- **且** 如果`monitor-loginlog`已启用，插件写入对应日志
 
 ### Requirement:认证中间件
-系统 SHALL 提供认证中间件来保护需要登录才能访问的 API。中间件必须同时验证 JWT 签名、token kind、受控`clientType`、revoke 快速状态和宿主维护的会话有效性，不得依赖`linapro-monitor-online`是否安装。完整认证入口 MUST 校验`sys_online_session`中对应 token_id 是否存在、租户是否匹配且 session 未超时；低层 JWT 解析方法不得作为公开`Service`契约暴露，也不得被调用方单独当作完整登录态判断。
+系统 SHALL 提供认证中间件来保护需要登录才能访问的 API。中间件必须同时验证 JWT 签名、token kind、受控`clientType`、revoke 快速状态和宿主维护的会话有效性，不得依赖`monitor-online`是否安装。完整认证入口 MUST 校验`sys_online_session`中对应 token_id 是否存在、租户是否匹配且 session 未超时；低层 JWT 解析方法不得作为公开`Service`契约暴露，也不得被调用方单独当作完整登录态判断。
 
 #### Scenario:在线用户插件未安装时访问受保护接口
-- **WHEN** 请求头携带有效的`Authorization: Bearer <token>`，`sys_online_session`中存在对应的会话记录，且`linapro-monitor-online`未安装或未启用
+- **WHEN** 请求头携带有效的`Authorization: Bearer <token>`，`sys_online_session`中存在对应的会话记录，且`monitor-online`未安装或未启用
 - **THEN** 中间件仍通过 UPDATE 操作将会话的`last_active_time`更新为当前时间
 - **AND** 请求正常处理，用户信息注入请求上下文
 

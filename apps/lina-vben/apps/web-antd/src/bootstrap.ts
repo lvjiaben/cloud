@@ -2,25 +2,37 @@ import { createApp, watch, watchEffect } from 'vue';
 
 import { registerAccessDirective } from '@vben/access';
 import { registerLoadingDirective } from '@vben/common-ui/es/loading';
+import {
+  configurePluginSandboxBridge,
+  resolvePluginSandboxRequestOwner,
+  unwrapPluginSandboxResponseBody,
+} from '@vben/layouts';
 import { preferences } from '@vben/preferences';
 import { initStores } from '@vben/stores';
 import '@vben/styles';
 import '@vben/styles/antd';
 
+import './styles/admin-console.css';
+
 import { useTitle } from '@vueuse/core';
 
+import { pluginApiPath, requestClient } from '#/api/request';
 import { $t, setupI18n } from '#/locales';
 import { useDictStore } from '#/store/dict';
 
 import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
-import { loadPluginSvgIcons } from './plugins/icon-registry';
-import { syncPublicFrontendSettings } from './runtime/public-frontend';
 import App from './app.vue';
 import { setupGlobalComponent } from './components/global';
+import { loadPluginSvgIcons } from './plugins/icon-registry';
 import { router } from './router';
+import { syncPublicFrontendSettings } from './runtime/public-frontend';
+import { downloadBlob } from './utils/download';
 
 async function bootstrap(namespace: string) {
+  document.documentElement.dataset.adminConsole = 'true';
+  document.body.classList.add('admin-console-app');
+
   // Register source-plugin frontend/icons SVGs before the shell renders menus.
   loadPluginSvgIcons();
 
@@ -55,6 +67,65 @@ async function bootstrap(namespace: string) {
 
   // 国际化 i18n 配置
   await setupI18n(app);
+
+  configurePluginSandboxBridge({
+    request: async ({
+      body,
+      capability,
+      downloadFileName,
+      host,
+      method,
+      params,
+      path,
+      pluginId,
+      signal,
+      surfaceKey,
+      surfaceVersion,
+    }) => {
+      const { grant, ownerPluginId } = await requestClient.post<{
+        grant: string;
+        ownerPluginId?: string;
+      }>(
+        '/plugins/page-bridge/grant',
+        {
+          capability,
+          host,
+          method,
+          path,
+          pluginId,
+          surfaceKey,
+          surfaceVersion,
+        },
+        { signal, timeout: 30_000 },
+      );
+      const targetPluginId = resolvePluginSandboxRequestOwner(
+        pluginId,
+        ownerPluginId,
+      );
+      const requestPath = pluginApiPath(targetPluginId, path);
+      const requestOptions = {
+        data: body,
+        headers: { 'X-Lina-Plugin-Page-Grant': grant },
+        method,
+        params,
+        // Runtime-plugin routes deliberately return the guest response body
+        // unchanged instead of the host { code, data } envelope.
+        responseReturn: 'body' as const,
+        signal,
+        timeout: 30_000,
+      };
+      if (downloadFileName) {
+        const blob = await requestClient.download<Blob>(
+          requestPath,
+          requestOptions,
+        );
+        downloadBlob(blob, downloadFileName, blob.type);
+        return { downloaded: true };
+      }
+      const response = await requestClient.request(requestPath, requestOptions);
+      return unwrapPluginSandboxResponseBody(response);
+    },
+  });
 
   // 安装权限指令
   registerAccessDirective(app);

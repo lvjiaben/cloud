@@ -1,0 +1,13 @@
+{
+  "error.idc.notify.channel.unavailable": "The notification channel is unavailable",
+  "error.idc.notify.conflict": "The notification resource has changed",
+  "error.idc.notify.human.verification.unavailable": "SMS verification is unavailable because the shared human-verification service is not installed or unavailable",
+  "error.idc.notify.invalid": "The notification request is invalid",
+  "error.idc.notify.not.accessible": "The notification resource is not accessible",
+  "error.idc.notify.recent.auth.required": "A recent full sign-in is required",
+  "error.idc.notify.unavailable": "The notification service is temporarily unavailable",
+  "error.idc.notify.verification.expired": "The verification code has expired. Please request a new code",
+  "error.idc.notify.verification.invalid": "The verification code or human-verification proof is invalid",
+  "error.idc.notify.verification.rate.limited": "Too many verification requests. Please try again later",
+  "error.idc.notify.verification.result.unknown": "The delivery result is unknown. Please wait until the shown retry time before requesting a new code"
+}

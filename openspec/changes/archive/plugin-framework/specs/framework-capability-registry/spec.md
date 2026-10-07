@@ -34,9 +34,9 @@ TBD - created by archiving change refine-plugin-capability-boundaries. Update Pu
 
 #### Scenario: 源码插件声明组织能力 Provider
 
-- **WHEN** `linapro-org-core`提供`framework.org.v1`实现
+- **WHEN** `org-core`提供`framework.org.v1`实现
 - **THEN** 插件入口通过`orgcap.Provide(...)`声明一个组织能力 provider factory
-- **AND** 消费 service 在调用组织能力时通过`PluginStateService.IsProviderEnabled(ctx, "linapro-org-core")`判断 provider 插件是否平台级可用
+- **AND** 消费 service 在调用组织能力时通过`PluginStateService.IsProviderEnabled(ctx, "org-core")`判断 provider 插件是否平台级可用
 - **AND** provider 插件平台级可用时，`pkg/pluginservice/internal/capabilityregistry`中的 manager 使用该插件声明的 factory 懒加载 provider 实例
 - **AND** 路由注册回调不得直接调用全局`RegisterProvider(provider)`完成激活
 
@@ -72,7 +72,7 @@ TBD - created by archiving change refine-plugin-capability-boundaries. Update Pu
 
 - **WHEN** 源码插件需要读取组织树或批量解析用户组织信息
 - **THEN** 插件通过`pluginservice.Services.Org()`或等价注入的`orgcap.Service`发起调用
-- **AND** 插件不得 import `linapro-org-core/backend/internal/**`
+- **AND** 插件不得 import `org-core/backend/internal/**`
 
 #### Scenario: 动态插件消费组织能力
 
@@ -144,20 +144,20 @@ TBD - created by archiving change refine-plugin-capability-boundaries. Update Pu
 
 #### Scenario: 源码插件声明组织能力 Provider
 
-- **WHEN** `linapro-org-core`提供`framework.org.v1`实现
+- **WHEN** `org-core`提供`framework.org.v1`实现
 - **THEN** 插件入口通过`pluginhost.Declarations`的 provider 声明 facade 声明一个`orgspi.ProviderFactory`
-- **AND** 消费 service 在调用组织能力时通过`PluginStateService.IsProviderEnabled(ctx, "linapro-org-core")`判断 provider 插件是否平台级可用
+- **AND** 消费 service 在调用组织能力时通过`PluginStateService.IsProviderEnabled(ctx, "org-core")`判断 provider 插件是否平台级可用
 - **AND** provider 插件平台级可用时，`pkg/plugin/capability/internal/capabilityregistry`中的 manager 使用该插件声明的 factory 懒加载 provider 实例
 
 #### Scenario: 源码插件声明租户能力 Provider
 
-- **WHEN** `linapro-tenant-core`提供`framework.tenant.v1`实现
+- **WHEN** `tenant-core`提供`framework.tenant.v1`实现
 - **THEN** 插件入口通过`pluginhost.Declarations`的 provider 声明 facade 声明一个`tenantspi.ProviderFactory`
 - **AND** 宿主注册该 factory 时记录声明插件 ID，并在 provider 使用路径继续按插件 enabled snapshot 判断可用性
 
 #### Scenario: 源码插件声明 AI 文本 Provider
 
-- **WHEN** `linapro-ai-core`提供文本`AI`能力实现
+- **WHEN** `ai-core`提供文本`AI`能力实现
 - **THEN** 插件入口通过`pluginhost.Declarations`的 provider 声明 facade 声明一个`aitext.ProviderFactory`
 - **AND** provider 使用路径继续按插件 enabled snapshot 判断可用性
 
@@ -180,7 +180,7 @@ TBD - created by archiving change refine-plugin-capability-boundaries. Update Pu
 
 #### Scenario: descriptor 版本不满足消费声明
 
-- **WHEN** 动态插件声明`owner: linapro-ai-core`、`service: ai`和`version: v1`
+- **WHEN** 动态插件声明`owner: ai-core`、`service: ai`和`version: v1`
 - **AND** owner 插件只发布不兼容版本
 - **THEN** 安装、启用或运行时授权 MUST 被拒绝
 - **AND** 拒绝结果必须进入依赖或 host service 授权诊断

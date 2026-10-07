@@ -803,7 +803,7 @@
       },
       "email": {
         "delivery": {
-          "unavailable": "Email notification delivery is unavailable; install and enable linapro-mail-core",
+          "unavailable": "Email notification delivery is unavailable; install and enable mail-core",
           "failed": "Email notification delivery failed"
         },
         "recipient": {
@@ -827,6 +827,42 @@
       }
     },
     "plugin": {
+      "new": {
+        "business": {
+          "resume": {
+            "not": {
+              "ready": "Plugin {pluginId} is not ready to accept new business"
+            }
+          },
+          "must": {
+            "stop": {
+              "first": "Stop new business for plugin {pluginId} before disabling or uninstalling it"
+            }
+          }
+        }
+      },
+      "business": {
+        "impact": {
+          "check": {
+            "failed": "Plugin {pluginId} impact could not be checked safely"
+          }
+        },
+        "references": {
+          "blocked": "Plugin {pluginId} still has {blockingCount} business objects that require migration or manual takeover"
+        },
+        "data": {
+          "purge": {
+            "denied": "Plugin {pluginId} business history cannot be deleted during uninstall"
+          }
+        }
+      },
+      "page": {
+        "bridge": {
+          "grant": {
+            "denied": "This plugin page request is unavailable or no longer authorized"
+          }
+        }
+      },
       "auto": {
         "enable": {
           "discovery": {
@@ -938,6 +974,12 @@
         "installed": "Plugin is not installed"
       },
       "lifecycle": {
+        "lock": {
+          "unavailable": "Plugin {pluginId} lifecycle protection is temporarily unavailable"
+        },
+        "already": {
+          "running": "Another lifecycle operation is already running for plugin {pluginId}"
+        },
         "precondition": {
           "vetoed": "The requested operation was blocked by a plugin protection policy: {reasons}"
         }

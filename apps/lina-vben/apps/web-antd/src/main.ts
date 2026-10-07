@@ -1,7 +1,7 @@
-import { initPreferences } from '@vben/preferences';
+import { initPreferences, updatePreferences } from '@vben/preferences';
 import { unmountGlobalLoading } from '@vben/utils';
 
-import { overridesPreferences } from './preferences';
+import { enforcedVisualPreferences, overridesPreferences } from './preferences';
 import { syncPublicFrontendSettings } from './runtime/public-frontend';
 
 /**
@@ -18,6 +18,13 @@ async function initApplication() {
   await initPreferences({
     namespace,
     overrides: overridesPreferences,
+  });
+
+  // Product visual rules are authoritative. Re-apply them after cached user
+  // preferences are restored so an old rounded/light-sidebar snapshot cannot
+  // bring back the mixed theme after a restart or upgrade.
+  updatePreferences(enforcedVisualPreferences, {
+    markUserThemePreference: false,
   });
 
   await syncPublicFrontendSettings();

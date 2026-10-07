@@ -21,7 +21,7 @@ import (
 
 // emailChannelConfig is the optional JSON config for email notify channels.
 type emailChannelConfig struct {
-	// AccountID selects a linapro-mail-core Account; zero means default.
+	// AccountID selects a mail-core Account; zero means default.
 	AccountID int64 `json:"accountId"`
 }
 

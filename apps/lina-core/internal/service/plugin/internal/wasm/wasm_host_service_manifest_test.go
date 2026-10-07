@@ -6,6 +6,8 @@ import (
 	"context"
 	"testing"
 
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
+
 	"lina-core/internal/service/plugin/internal/manifestresource"
 	"lina-core/pkg/plugin/capability/capregistry"
 	"lina-core/pkg/plugin/capability/manifestcap"
@@ -284,6 +286,7 @@ func TestConfigureManifestHostServiceRejectsNil(t *testing.T) {
 		noopTestConfigFactory{},
 		noopTestHostConfigService{},
 		nil,
+		confidentialoutbound.New(),
 	); err == nil {
 		t.Fatal("expected nil manifest host service factory to return an error")
 	}

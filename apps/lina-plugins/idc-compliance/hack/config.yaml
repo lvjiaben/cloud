@@ -1,0 +1,250 @@
+build:
+  commands:
+    - pnpm --dir "$(BUILD_DIR)/frontend" install --frozen-lockfile
+    - pnpm --dir "$(BUILD_DIR)/frontend" run build
+
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:idc_compliance_codegen:idc_compliance_codegen@tcp(127.0.0.1:5432)/idc_compliance_codegen?sslmode=disable"
+        path: "internal"
+        tables: >-
+          plugin_idc_compliance_verification_case,
+          plugin_idc_compliance_enterprise_encryption_key,
+          plugin_idc_compliance_enterprise_material_upload,
+          plugin_idc_compliance_enterprise_material,
+          plugin_idc_compliance_contract,
+          plugin_idc_compliance_contract_replacement,
+          plugin_idc_compliance_contract_flow,
+          plugin_idc_compliance_contract_status_event,
+          plugin_idc_compliance_contract_archive_job,
+          plugin_idc_compliance_contract_signer,
+          plugin_idc_compliance_contract_file,
+          plugin_idc_compliance_contract_template,
+          plugin_idc_compliance_contract_template_version,
+          plugin_idc_compliance_contract_template_content,
+          plugin_idc_compliance_contract_template_field_set,
+          plugin_idc_compliance_contract_template_field,
+          plugin_idc_compliance_tax_invoice,
+          plugin_idc_compliance_tax_invoice_action,
+          plugin_idc_compliance_tax_invoice_allocation,
+          plugin_idc_compliance_tax_invoice_item,
+          plugin_idc_compliance_tax_invoice_file,
+          plugin_idc_compliance_red_letter_task,
+          plugin_idc_compliance_red_letter_allocation,
+          plugin_idc_compliance_red_letter_candidate,
+          plugin_idc_compliance_red_letter_action,
+          plugin_idc_compliance_red_letter_intake_cursor,
+          plugin_idc_compliance_external_evidence,
+          plugin_idc_compliance_provider_configuration,
+          plugin_idc_compliance_supplier_configuration,
+          plugin_idc_compliance_personal_verification_attempt,
+          plugin_idc_compliance_contract_signer_profile,
+          plugin_idc_compliance_contract_signer_identity_attempt,
+          plugin_idc_compliance_auto_sign_auth,
+          plugin_idc_compliance_auto_sign_auth_template,
+          plugin_idc_compliance_contract_auto_sign_usage,
+          plugin_idc_compliance_privacy_assessment,
+          plugin_idc_compliance_privacy_ai_field,
+          plugin_idc_compliance_privacy_retention_policy,
+          plugin_idc_compliance_privacy_retention_hold,
+          plugin_idc_compliance_privacy_deletion_task,
+          plugin_idc_compliance_privacy_incident,
+          plugin_idc_compliance_privacy_incident_event,
+          plugin_idc_compliance_privacy_customer_request,
+          plugin_idc_compliance_privacy_support_export,
+          plugin_idc_compliance_privacy_action
+        removePrefix: "plugin_idc_compliance_"
+        importPrefix: "lina-plugin-idc-compliance/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+            import: time
+          "timestamp without time zone":
+            type: "*time.Time"
+            import: time
+          timestamptz:
+            type: "*time.Time"
+            import: time
+          "timestamp with time zone":
+            type: "*time.Time"
+            import: time
+        fieldMapping:
+          plugin_idc_compliance_verification_case.provider_case_ref:
+            type: "*string"
+          plugin_idc_compliance_verification_case.provider_subject_ref:
+            type: "*string"
+          plugin_idc_compliance_verification_case.legal_profile_snapshot_ref:
+            type: "*string"
+          plugin_idc_compliance_verification_case.legal_profile_sha256:
+            type: "*string"
+          plugin_idc_compliance_verification_case.identity_lookup_digest:
+            type: "*string"
+          plugin_idc_compliance_verification_case.encryption_key_no:
+            type: "*string"
+          plugin_idc_compliance_verification_case.decided_by_principal_no:
+            type: "*string"
+          plugin_idc_compliance_enterprise_material.superseded_by_material_no:
+            type: "*string"
+          plugin_idc_compliance_contract.service_no:
+            type: "*string"
+          plugin_idc_compliance_contract_flow.external_flow_ref:
+            type: "*string"
+          plugin_idc_compliance_contract_flow.gateway_route_no:
+            type: "*string"
+          plugin_idc_compliance_contract_flow.provider_status:
+            type: "*string"
+          plugin_idc_compliance_contract_status_event.gateway_delivery_no:
+            type: "*string"
+          plugin_idc_compliance_contract_archive_job.supplier_observed_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_archive_job.completed_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_archive_job.next_attempt_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_archive_job.lease_expires_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_signer.provider_actor_ref:
+            type: "*string"
+          plugin_idc_compliance_contract_file.flow_no:
+            type: "*string"
+          plugin_idc_compliance_contract_file.supplier_observed_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_template.provider_code:
+            type: "*string"
+          plugin_idc_compliance_contract_template.provider_template_ref:
+            type: "*string"
+          plugin_idc_compliance_contract_template.provider_state_code:
+            type: "*string"
+          plugin_idc_compliance_contract_template.provider_last_seen_sync_no:
+            type: "*string"
+          plugin_idc_compliance_contract_template.provider_updated_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_template.creation_idempotency_digest:
+            type: "*string"
+          plugin_idc_compliance_contract_template.creation_fingerprint:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.scope_code:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.signing_order_code:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.provider_version:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.provider_snapshot_digest:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.current_content_revision_no:
+            type: "*string"
+          plugin_idc_compliance_contract_template_version.current_field_set_no:
+            type: "*string"
+          plugin_idc_compliance_contract_template_content.pdf_object_ref:
+            type: "*string"
+          plugin_idc_compliance_contract_template_content.pdf_sha256:
+            type: "*string"
+          plugin_idc_compliance_contract_template_content.pdf_byte_size:
+            type: "*int64"
+          plugin_idc_compliance_contract_template_content.provider_file_ref:
+            type: "*string"
+          plugin_idc_compliance_contract_template_field.variable_code:
+            type: "*string"
+          plugin_idc_compliance_tax_invoice.exchange_rate_numerator:
+            type: "*int64"
+          plugin_idc_compliance_tax_invoice.exchange_rate_denominator:
+            type: "*int64"
+          plugin_idc_compliance_tax_invoice.exchange_rate_date:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_tax_invoice.exchange_rate_source_code:
+            type: "*string"
+          plugin_idc_compliance_tax_invoice.provider_code:
+            type: "*string"
+          plugin_idc_compliance_tax_invoice.external_invoice_ref:
+            type: "*string"
+          plugin_idc_compliance_tax_invoice.invoice_number_lookup_digest:
+            type: "*string"
+          plugin_idc_compliance_tax_invoice.reviewed_by_user_id:
+            type: "*int"
+          plugin_idc_compliance_tax_invoice.reviewed_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_tax_invoice.provider_not_issued_confirmed_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_red_letter_task.provider_code:
+            type: "*string"
+          plugin_idc_compliance_red_letter_task.external_task_ref:
+            type: "*string"
+          plugin_idc_compliance_red_letter_task.tax_invoice_no:
+            type: "*string"
+          plugin_idc_compliance_red_letter_task.completion_evidence_no:
+            type: "*string"
+          plugin_idc_compliance_red_letter_task.customer_recheck_requested_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_external_evidence.private_object_ref:
+            type: "*string"
+          plugin_idc_compliance_external_evidence.media_type:
+            type: "*string"
+          plugin_idc_compliance_external_evidence.byte_size:
+            type: "*int64"
+          plugin_idc_compliance_provider_configuration.credential_secret_ref:
+            type: "*string"
+          plugin_idc_compliance_provider_configuration.last_mutation_digest:
+            type: "*string"
+          plugin_idc_compliance_provider_configuration.mutation_operation_key:
+            type: "*string"
+          plugin_idc_compliance_provider_configuration.mutation_secret_updated_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_provider_configuration.validated_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_supplier_configuration.credential_secret_ref:
+            type: "*string"
+          plugin_idc_compliance_supplier_configuration.last_mutation_digest:
+            type: "*string"
+          plugin_idc_compliance_supplier_configuration.mutation_operation_key:
+            type: "*string"
+          plugin_idc_compliance_supplier_configuration.mutation_secret_updated_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_supplier_configuration.subject_binding_no:
+            type: "*string"
+          plugin_idc_compliance_supplier_configuration.last_operation_no:
+            type: "*string"
+          plugin_idc_compliance_supplier_configuration.subject_proof_digest:
+            type: "*string"
+          plugin_idc_compliance_personal_verification_attempt.certify_id:
+            type: "*string"
+          plugin_idc_compliance_contract_signer_profile.identity_attempt_no:
+            type: "*string"
+          plugin_idc_compliance_contract_signer_profile.identity_verified_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_signer_profile.phone_verification_no:
+            type: "*string"
+          plugin_idc_compliance_contract_signer_profile.phone_verified_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_signer_profile.disabled_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_contract_signer_identity_attempt.certify_id:
+            type: "*string"
+          plugin_idc_compliance_auto_sign_auth.revoked_by_user_id:
+            type: "*int"
+          plugin_idc_compliance_auto_sign_auth.revoked_at:
+            type: "*time.Time"
+            import: time
+          plugin_idc_compliance_auto_sign_auth.revocation_idempotency_digest:
+            type: "*string"
+          plugin_idc_compliance_auto_sign_auth.revocation_fingerprint:
+            type: "*string"

@@ -22,10 +22,10 @@ import (
 // plugins still contribute plugin-owned scheduled jobs through the host-managed
 // Jobs projection path.
 func TestListExecutableJobsIncludesSourcePluginDefinitions(t *testing.T) {
-	services := testutil.NewServices()
-
 	pluginID := "plugin-dev-source-jobs-managed"
 	testutil.CreateTestPluginDir(t, pluginID)
+	isolateSourcePluginCallbacks(t, pluginID)
+	services := testutil.NewServices()
 
 	items, err := services.Integration.ListExecutableJobs(context.Background())
 	if err != nil {
@@ -40,6 +40,7 @@ func TestListExecutableJobsIncludesSourcePluginDefinitions(t *testing.T) {
 // dynamic plugins can declare built-in jobs through the Jobs-domain discovery
 // method and publish executable handlers through the same management projection.
 func TestListJobDeclarationsIncludesDynamicJobsRegisterDefinitions(t *testing.T) {
+	isolateSourcePluginCallbacks(t)
 	ctx := context.Background()
 	const pluginID = "plugin-dev-dynamic-jobs-register"
 	executor := &fakeDynamicJobRuntime{

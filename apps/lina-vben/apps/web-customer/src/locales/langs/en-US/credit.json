@@ -1,0 +1,78 @@
+{
+  "menu": "Credit account",
+  "eyebrow": "PAY LATER · CURRENCY-SPECIFIC",
+  "title": "Credit account",
+  "description": "Apply for credit, review limits and statements, and repay safely from the same-currency balance.",
+  "loadFailed": "Credit information is temporarily unavailable. Please try again.",
+  "retry": "Reload",
+  "metrics": {
+    "available": "Total available",
+    "pending": "Applications pending",
+    "open": "Statements due",
+    "overdue": "Overdue statements"
+  },
+  "tabs": {
+    "accounts": "My limits",
+    "applications": "Applications",
+    "statements": "Statements"
+  },
+  "account": {
+    "available": "Available now",
+    "total": "Total limit",
+    "unbilled": "Unbilled",
+    "billed": "Billed",
+    "empty": "No active credit account yet"
+  },
+  "table": {
+    "number": "Number",
+    "currency": "Currency",
+    "requested": "Requested limit",
+    "progress": "Review progress",
+    "status": "Status",
+    "total": "Statement total",
+    "outstanding": "Amount due",
+    "due": "Due date",
+    "action": "Action"
+  },
+  "status": {
+    "pending_review": "Pending review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "expired": "Expired",
+    "active": "Available",
+    "frozen": "Frozen",
+    "closed": "Closed",
+    "bad_debt": "Bad debt",
+    "open": "Payment due",
+    "partially_paid": "Partially paid",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "written_off": "Written off",
+    "refunded": "Refunded"
+  },
+  "application": {
+    "button": "Apply for credit",
+    "title": "Submit credit application",
+    "help": "Enter the requested limit and validity honestly. Evidence is visible only to authorized reviewers.",
+    "currency": "Currency",
+    "limit": "Requested limit",
+    "from": "Start date",
+    "until": "End date",
+    "files": "Evidence",
+    "fileHelp": "Up to 10 PDF, JPG, or PNG files; 20 MiB each and 200 MiB total.",
+    "fileRejected": "The file type, size, or count is not allowed.",
+    "invalid": "Enter a valid limit and dates, and upload at least one evidence file.",
+    "success": "Credit application submitted",
+    "failed": "The application was not submitted. Please try again."
+  },
+  "repayment": {
+    "button": "Repay from balance",
+    "title": "Repay from balance",
+    "amount": "Repayment amount",
+    "help": "This statement has {amount} due; available same-currency balance is {balance}.",
+    "invalid": "The amount must be positive and no greater than the outstanding amount.",
+    "success": "Repayment completed and the limit was released for repaid principal.",
+    "failed": "Repayment did not complete. Balance and statement remain unchanged."
+  }
+}

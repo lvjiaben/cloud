@@ -574,6 +574,7 @@ const idMainContent = ELEMENT_ID_MAIN_CONTENT;
             <VbenIconButton
               v-if="showHeaderToggleButton"
               class="my-0 mr-1 rounded-md"
+              data-testid="sidebar-mobile-toggle"
               @click="handleHeaderToggle"
             >
               <IconifyIcon v-if="showSidebar" icon="ep:fold" />
@@ -628,6 +629,7 @@ const idMainContent = ELEMENT_ID_MAIN_CONTENT;
       v-if="maskVisible"
       :style="maskStyle"
       class="fixed top-0 left-0 size-full bg-overlay transition-[background-color] duration-200"
+      data-testid="sidebar-mobile-mask"
       @click="handleClickMask"
     ></div>
   </div>

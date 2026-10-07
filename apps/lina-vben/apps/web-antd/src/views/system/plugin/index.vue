@@ -8,7 +8,7 @@ import { defineAsyncComponent, h, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useAccess } from '@vben/access';
-import { Page, useVbenModal } from '@vben/common-ui';
+import { Page, useVbenDrawer, useVbenModal } from '@vben/common-ui';
 import { useAccessStore } from '@vben/stores';
 
 import { message, Modal, Space, Switch, Tag, Tooltip } from 'ant-design-vue';
@@ -19,6 +19,8 @@ import {
   pluginDetail,
   pluginEnable,
   pluginList,
+  pluginResumeNewBusiness,
+  pluginStopNewBusiness,
   pluginSync,
   pluginUpdateTenantProvisioningPolicy,
 } from '#/api/system/plugin';
@@ -33,6 +35,9 @@ import { formatTimestamp } from '#/utils/time';
 
 const PluginDetailModal = defineAsyncComponent(
   () => import('./plugin-detail-modal.vue'),
+);
+const PluginDeveloperGuideDrawer = defineAsyncComponent(
+  () => import('./plugin-developer-guide-drawer.vue'),
 );
 const PluginDynamicUploadModal = defineAsyncComponent(
   () => import('./plugin-dynamic-upload-modal.vue'),
@@ -52,6 +57,10 @@ const LifecyclePreconditionDialog = defineAsyncComponent(
 
 const [DetailModal, detailModalApi] = useVbenModal({
   connectedComponent: PluginDetailModal,
+});
+
+const [DeveloperGuideDrawer, developerGuideDrawerApi] = useVbenDrawer({
+  connectedComponent: PluginDeveloperGuideDrawer,
 });
 
 const [DynamicUploadModal, dynamicUploadModalApi] = useVbenModal({
@@ -84,6 +93,8 @@ const pluginAccessCodes = {
   edit: 'plugin:edit',
   enable: 'plugin:enable',
   install: 'plugin:install',
+  resumeNewBusiness: 'plugin:resume-new-business',
+  stopNewBusiness: 'plugin:stop-new-business',
   uninstall: 'plugin:uninstall',
 } as const;
 
@@ -91,6 +102,7 @@ const { hasAccessByCodes } = useAccess();
 const accessStore = useAccessStore();
 const router = useRouter();
 const statusChangingPluginIds = ref<Record<string, boolean>>({});
+const newBusinessChangingPluginIds = ref<Record<string, boolean>>({});
 const tenantProvisioningChangingPluginIds = ref<Record<string, boolean>>({});
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -210,6 +222,12 @@ const [Grid, gridApi] = useVbenVxeGrid({
         slots: { default: 'enabled' },
         title: $t('pages.common.status'),
         width: 96,
+      },
+      {
+        field: 'newBusinessState',
+        slots: { default: 'newBusinessState' },
+        title: $t('pages.system.plugin.fields.newBusinessState'),
+        width: 132,
       },
       {
         field: 'runtimeState',
@@ -541,6 +559,30 @@ function setPluginStatusChanging(pluginId: string, changing: boolean) {
   statusChangingPluginIds.value = next;
 }
 
+function canToggleNewBusiness(row: PluginListItem) {
+  if (isBuiltinPlugin(row) || row.installed !== 1) {
+    return false;
+  }
+  return row.newBusinessState === 'stopped'
+    ? row.enabled === 1 &&
+        hasAccessByCodes([pluginAccessCodes.resumeNewBusiness])
+    : hasAccessByCodes([pluginAccessCodes.stopNewBusiness]);
+}
+
+function isNewBusinessChanging(row: PluginListItem) {
+  return newBusinessChangingPluginIds.value[row.id] === true;
+}
+
+function setNewBusinessChanging(pluginId: string, changing: boolean) {
+  const next = { ...newBusinessChangingPluginIds.value };
+  if (changing) {
+    next[pluginId] = true;
+  } else {
+    delete next[pluginId];
+  }
+  newBusinessChangingPluginIds.value = next;
+}
+
 function isTenantProvisioningChanging(row: PluginListItem) {
   return tenantProvisioningChangingPluginIds.value[row.id] === true;
 }
@@ -696,6 +738,49 @@ async function handleTenantProvisioningPolicyChange(
   }
 }
 
+async function handleNewBusinessChange(
+  row: PluginListItem,
+  accepting: boolean,
+) {
+  const currentAccepting = row.newBusinessState !== 'stopped';
+  if (accepting === currentAccepting || !canToggleNewBusiness(row)) {
+    return;
+  }
+  if (!accepting) {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      Modal.confirm({
+        title: $t('pages.system.plugin.newBusiness.stopConfirmTitle'),
+        content: $t('pages.system.plugin.newBusiness.stopConfirmContent'),
+        okText: $t('pages.system.plugin.newBusiness.stop'),
+        okType: 'danger',
+        onCancel: () => resolve(false),
+        onOk: () => resolve(true),
+      });
+    });
+    if (!confirmed) {
+      return;
+    }
+  }
+
+  setNewBusinessChanging(row.id, true);
+  try {
+    await (accepting
+      ? pluginResumeNewBusiness(row.id)
+      : pluginStopNewBusiness(row.id));
+    row.newBusinessState = accepting ? 'accepting' : 'stopped';
+    row.newBusinessStoppedAt = accepting ? row.newBusinessStoppedAt : Date.now();
+    message.success(
+      accepting
+        ? $t('pages.system.plugin.newBusiness.resumed')
+        : $t('pages.system.plugin.newBusiness.stopped'),
+    );
+  } catch {
+    await gridApi.query();
+  } finally {
+    setNewBusinessChanging(row.id, false);
+  }
+}
+
 async function handleInstall(row: PluginListItem) {
   if (isBuiltinPlugin(row)) {
     return;
@@ -759,6 +844,10 @@ function handleOpenDynamicUpload() {
   dynamicUploadModalApi.open();
 }
 
+function handleOpenDeveloperGuide() {
+  developerGuideDrawerApi.open();
+}
+
 async function handleDynamicUploadReload() {
   await notifyPluginRegistryChanged();
   await gridApi.query();
@@ -816,6 +905,12 @@ async function handleLifecyclePreconditionForce(payload: { pluginId: string }) {
     <Grid :table-title="$t('pages.system.plugin.tableTitle')">
       <template #toolbar-tools>
         <Space>
+          <a-button
+            data-testid="plugin-developer-guide-trigger"
+            @click="handleOpenDeveloperGuide"
+          >
+            {{ $t('pages.system.plugin.actions.developerGuide') }}
+          </a-button>
           <a-button
             data-testid="plugin-dynamic-upload-trigger"
             type="primary"
@@ -1052,6 +1147,31 @@ async function handleLifecyclePreconditionForce(payload: { pluginId: string }) {
         </Tooltip>
       </template>
 
+      <template #newBusinessState="{ row }">
+        <Tooltip
+          v-if="!isBuiltinPlugin(row)"
+          :title="
+            row.newBusinessState === 'stopped'
+              ? $t('pages.system.plugin.newBusiness.stoppedHint')
+              : $t('pages.system.plugin.newBusiness.acceptingHint')
+          "
+        >
+          <Switch
+            :checked="row.newBusinessState !== 'stopped'"
+            :disabled="
+              !canToggleNewBusiness(row) || isNewBusinessChanging(row)
+            "
+            :loading="isNewBusinessChanging(row)"
+            :checked-children="$t('pages.system.plugin.newBusiness.accepting')"
+            :un-checked-children="$t('pages.system.plugin.newBusiness.stoppedLabel')"
+            :data-testid="`plugin-new-business-${row.id}`"
+            @change="
+              (checked) => handleNewBusinessChange(row, Boolean(checked))
+            "
+          />
+        </Tooltip>
+      </template>
+
       <template #hasMockData="{ row }">
         <Tag
           :color="hasPluginMockData(row) ? 'green' : 'default'"
@@ -1215,6 +1335,7 @@ async function handleLifecyclePreconditionForce(payload: { pluginId: string }) {
       </template>
     </Grid>
     <DetailModal />
+    <DeveloperGuideDrawer />
     <DynamicUploadModal @reload="handleDynamicUploadReload" />
     <HostServiceAuthModal @reload="handleHostServiceAuthReload" />
     <UpgradeModal @reload="handleUpgradeReload" />

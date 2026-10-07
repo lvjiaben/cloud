@@ -74,6 +74,39 @@ func dispatchPluginsHostService(
 		}
 		result, err := registry.ListTenantPlugins(ctx, request)
 		return domainCapabilityResult(result, err)
+	case bridgehostservice.HostServiceMethodPluginsBusinessExtensionsList:
+		registry := service.Registry()
+		if registry == nil {
+			return domainServiceNotScoped("plugins.registry")
+		}
+		var request plugincap.BusinessExtensionProviderListInput
+		if err := decodeCapabilityJSONRequest(payload, &request); err != nil {
+			return invalidCapabilityRequest(err)
+		}
+		result, err := registry.ListBusinessExtensionProviders(ctx, request)
+		return domainCapabilityResult(result, err)
+	case bridgehostservice.HostServiceMethodPluginsBusinessExtensionsExact:
+		registry := service.Registry()
+		if registry == nil {
+			return domainServiceNotScoped("plugins.registry")
+		}
+		var request plugincap.BusinessExtensionProviderExactInput
+		if err := decodeCapabilityJSONRequest(payload, &request); err != nil {
+			return invalidCapabilityRequest(err)
+		}
+		result, err := registry.GetBusinessExtensionProviderExact(ctx, request)
+		return domainCapabilityResult(result, err)
+	case bridgehostservice.HostServiceMethodPluginsBusinessExtensionsExactBatch:
+		registry := service.Registry()
+		if registry == nil {
+			return domainServiceNotScoped("plugins.registry")
+		}
+		var request []plugincap.BusinessExtensionProviderExactInput
+		if err := decodeCapabilityJSONRequest(payload, &request); err != nil {
+			return invalidCapabilityRequest(err)
+		}
+		result, err := registry.GetBusinessExtensionProvidersExact(ctx, request)
+		return domainCapabilityResult(result, err)
 	case bridgehostservice.HostServiceMethodPluginsStateIsEnabled:
 		stateSvc := service.State()
 		if stateSvc == nil {

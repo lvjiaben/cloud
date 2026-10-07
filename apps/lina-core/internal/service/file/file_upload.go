@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -239,7 +240,11 @@ func buildStorageKey(ctx context.Context, filename string) string {
 	if ext != "" {
 		storedName += "." + gstr.ToLower(ext)
 	}
-	return gfile.Join(dir, storedName)
+	// Object keys and public URLs always use forward slashes, including on
+	// Windows. gfile.Join follows the host OS separator and would persist
+	// backslashes on Windows, making the recorded URL resolve to a different
+	// metadata key after URL normalization.
+	return path.Join(dir, storedName)
 }
 
 // storageURL returns the public file-center access URL for one object key.

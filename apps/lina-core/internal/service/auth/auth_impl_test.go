@@ -129,7 +129,7 @@ func TestIssueImpersonationTokenUsesHostSignerAndTenantScopedPrime(t *testing.T)
 	if err != nil {
 		t.Fatalf("parse impersonation token: %v", err)
 	}
-	if !claims.IsImpersonation || claims.ActingUserId != userID || claims.UserId != userID || claims.TenantId != 42 || claims.TokenId != out.TokenID {
+	if !claims.IsImpersonation || !claims.ActingAsTenant || claims.ActingUserId != userID || claims.UserId != userID || claims.TenantId != 42 || claims.TokenId != out.TokenID {
 		t.Fatalf("unexpected impersonation claims: %#v", claims)
 	}
 	if claims.ClientType != tokencap.ClientTypeDesktop {
@@ -157,6 +157,37 @@ func TestIssueImpersonationTokenUsesHostSignerAndTenantScopedPrime(t *testing.T)
 	}
 	if _, err = svc.parseAccessTokenForTest(ctx, out.AccessToken); !bizerr.Is(err, CodeAuthTokenInvalid) {
 		t.Fatalf("expected revoked impersonation token to be invalid, got %v", err)
+	}
+}
+
+func TestIssueRepresentedUserTokenKeepsTargetPermissionsSeparate(t *testing.T) {
+	var (
+		ctx     = context.WithValue(context.Background(), bizctx.ContextKey, &model.Context{ClientType: tokencap.ClientTypeWeb.String()})
+		svc     = newTenantAuthTestService()
+		roleSvc = &trackingRoleTestService{}
+	)
+	svc.roleSvc = roleSvc
+	actorID := insertAuthTestUser(t, ctx, fmt.Sprintf("assistance-actor-%d", time.Now().UnixNano()), "admin123")
+	targetID := insertAuthTestUser(t, ctx, fmt.Sprintf("assistance-customer-%d", time.Now().UnixNano()), "customer123")
+
+	out, err := svc.IssueImpersonationToken(ctx, ImpersonationTokenIssueInput{
+		ActingUserID: actorID, SubjectUserID: targetID, TenantID: 0, ExpiresInSeconds: 900,
+	})
+	if err != nil {
+		t.Fatalf("issue represented-user token: %v", err)
+	}
+	claims, err := svc.parseAccessTokenForTest(ctx, out.AccessToken)
+	if err != nil {
+		t.Fatalf("parse represented-user token: %v", err)
+	}
+	if !claims.IsImpersonation || claims.ActingAsTenant || claims.ActingUserId != actorID ||
+		claims.UserId != targetID || claims.TenantId != 0 || out.SubjectUserID != targetID {
+		t.Fatalf("unexpected represented-user claims: %#v output=%#v", claims, out)
+	}
+	if len(roleSvc.contexts) != 1 || roleSvc.contexts[0] == nil ||
+		roleSvc.contexts[0].UserId != targetID || roleSvc.contexts[0].ActingUserId != actorID ||
+		roleSvc.contexts[0].ActingAsTenant || !roleSvc.contexts[0].IsImpersonation {
+		t.Fatalf("represented-user permission context leaked actor identity: %#v", roleSvc.contexts)
 	}
 }
 

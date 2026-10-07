@@ -1,0 +1,14 @@
+{
+  "enter": "Enter customer center",
+  "failedDescription": "The link may have expired, been used, or been replaced by a resend. If you are signed in with a staff account, sign out and use a separate customer account.",
+  "failedTitle": "This invitation cannot be claimed",
+  "login": "Sign in to continue",
+  "readyDescription": "Sign in with the account that received the invitation, or register first. An administrator never knows or sets your password.",
+  "readyTitle": "Claim your customer account invitation",
+  "redeemingDescription": "We are checking the invitation and your signed-in account. Please do not repeat the action.",
+  "redeemingTitle": "Activating your customer account",
+  "register": "Register a new account",
+  "successDescription": "The invitation was claimed and this login is now securely bound to the customer profile.",
+  "successTitle": "Customer account activated",
+  "useAnotherAccount": "Sign in with another account"
+}

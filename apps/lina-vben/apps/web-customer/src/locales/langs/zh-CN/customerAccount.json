@@ -1,0 +1,130 @@
+{
+  "common": {
+    "cancelChanges": "撤销修改",
+    "refresh": "刷新",
+    "retry": "重试"
+  },
+  "type": {
+    "enterprise": "企业客户",
+    "individual": "个人客户"
+  },
+  "status": {
+    "active": "正常",
+    "disabled": "已停用",
+    "pending_activation": "待激活",
+    "restricted": "受限制"
+  },
+  "verification": {
+    "expired": "认证已过期",
+    "pending": "认证处理中",
+    "rejected": "认证未通过",
+    "revoked": "认证已撤销",
+    "unverified": "未认证",
+    "verified": "已认证"
+  },
+  "profile": {
+    "accountCard": "账户信息",
+    "accountStatus": "账户状态",
+    "countryCode": "国家或地区代码",
+    "customerNo": "客户编号",
+    "customerType": "客户类型",
+    "displayName": "显示名称",
+    "editCard": "可修改资料",
+    "eyebrow": "账户资料",
+    "heading": "管理你的基本资料",
+    "identifier": "证件或登记号码",
+    "legalName": "认证名称",
+    "legalNote": "认证姓名、证件和企业登记资料不能在这里直接修改，需要通过实名认证页面重新提交审核。",
+    "loadFailed": "资料读取失败，请重试。",
+    "locale": "常用语言",
+    "localeEn": "English",
+    "localeZh": "简体中文",
+    "menu": "账户资料",
+    "save": "保存资料",
+    "saved": "账户资料已保存。",
+    "subtitle": "这里保存日常展示信息，不会改动实名认证、登录密码或账户权限。",
+    "title": "账户资料",
+    "verification": "认证状态"
+  },
+  "contacts": {
+    "add": "新增联系人",
+    "archive": "停用",
+    "archiveCancel": "暂不停用",
+    "archiveConfirm": "确认停用",
+    "archiveDescription": "停用后，这位联系人不再接收新的通知；历史记录会继续保留。",
+    "archiveTitle": "停用这位联系人？",
+    "archived": "联系人已停用。",
+    "authorityWarning": "通知联系人只负责接收你授权的消息，不会获得登录、付款、服务器操作或合同签署权限。",
+    "callingCode": "国际区号",
+    "cancel": "取消",
+    "createTitle": "新增通知联系人",
+    "created": "联系人已新增。",
+    "description": "维护账单、服务和安全提醒的接收人。至少填写邮箱或手机号其中一项。",
+    "edit": "编辑",
+    "editTitle": "编辑通知联系人",
+    "email": "邮箱",
+    "empty": "还没有通知联系人。",
+    "name": "联系人姓名",
+    "phone": "手机号",
+    "save": "保存联系人",
+    "status": {
+      "active": "使用中",
+      "archived": "已停用"
+    },
+    "title": "通知联系人",
+    "updated": "联系人已更新。",
+    "verification": {
+      "unverified": "未验证",
+      "verified": "已验证"
+    },
+    "verificationReset": "修改邮箱或手机号后，原来的验证状态会失效，需要重新验证后才能用于对应通知。"
+  },
+  "data": {
+    "closureAction": "申请注销账户",
+    "closureBlocked": "当前还有需要先处理的事项，暂时不能提交注销。",
+    "closureCancel": "暂不申请",
+    "closureConfirm": "确认申请",
+    "closureConfirmDescription": "系统会先检查余额、账单、服务器、合同和处理中业务。通过后只进入人工复核，不会立刻删除账户。",
+    "closureConfirmTitle": "确认申请注销账户？",
+    "closureDescription": "注销不是立即删除。系统会先检查资金、账单、服务器、合同和处理中业务，复核通过后才匿名化普通资料。依法需要保留的合同、发票和审计证据仍会保留。",
+    "closurePending": "注销申请已进入人工复核。在最终处理前，系统还会再次检查全部阻断条件。",
+    "closureSafety": "有余额、未结账单、活动服务器、有效合同或处理中业务时，注销会被阻止。",
+    "closureSubmitted": "注销申请已提交，等待后台复核。",
+    "closureTitle": "账户注销",
+    "download": "下载导出文件",
+    "expiresAt": "文件失效时间",
+    "exportAction": "申请导出",
+    "exportDescription": "系统会生成只属于当前账户的压缩文件，文件不会公开，也不会通过普通链接长期保存。",
+    "exportFailed": "导出申请没有提交。请重新登录后再试。",
+    "exportRequested": "导出任务已创建，请稍后刷新状态。",
+    "exportSecurity": "导出敏感资料前，需要使用最近一次完整登录确认是你本人。文件和下载入口都会在短时间后失效。",
+    "exportTitle": "导出我的数据",
+    "eyebrow": "数据权利",
+    "findingsTitle": "检查结果",
+    "heading": "下载资料或申请注销",
+    "menu": "数据与注销",
+    "refreshStatus": "刷新导出状态",
+    "requestNo": "申请编号",
+    "requestedAt": "申请时间",
+    "resolveFindings": "请先处理上面的事项，再重新提交注销申请。",
+    "status": "处理状态",
+    "subtitle": "所有操作都只针对当前登录的客户账户，后台员工身份不能进入这里代替操作。",
+    "title": "数据与注销"
+  },
+  "exportStatus": {
+    "cancelled": "已取消",
+    "failed": "生成失败",
+    "pending": "等待生成",
+    "ready": "可以下载",
+    "running": "正在生成",
+    "succeeded": "生成完成"
+  },
+  "closureFinding": {
+    "active_contracts": "仍在处理的合同",
+    "active_services": "仍在使用的服务器服务",
+    "in_progress_operations": "仍在处理的业务操作",
+    "legal_retention": "依法需要继续保留的证据（不阻止申请）",
+    "unsettled_funds": "未结清的余额或冻结资金",
+    "unsettled_invoices": "未结清的账单"
+  }
+}

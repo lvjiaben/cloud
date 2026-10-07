@@ -1,0 +1,219 @@
+.payment-reconciliation-shell,
+.payment-reconciliation-shell * {
+  box-sizing: border-box;
+}
+
+.payment-reconciliation-shell {
+  --payment-ink: hsl(var(--foreground));
+  --payment-muted: hsl(var(--muted-foreground));
+  --payment-line: hsl(var(--border));
+  --payment-brand: hsl(var(--primary));
+  --payment-soft: hsl(var(--muted));
+  min-height: 100%;
+  color: var(--payment-ink);
+  background: transparent;
+  font-family: inherit;
+}
+
+.payment-reconciliation-shell .workspace {
+  width: 100%;
+  padding: 16px;
+}
+.payment-reconciliation-shell .page-toolbar,
+.payment-reconciliation-shell .section-title {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.payment-reconciliation-shell .section-title {
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+.payment-reconciliation-shell h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+.payment-reconciliation-shell section {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--payment-line);
+  border-radius: 0;
+  background: hsl(var(--card));
+  box-shadow: none;
+}
+.payment-reconciliation-shell button,
+.payment-reconciliation-shell select,
+.payment-reconciliation-shell input {
+  font: inherit;
+}
+.payment-reconciliation-shell button:not(:where(.vxe-grid *)),
+.payment-reconciliation-shell .standalone-table-action {
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 0;
+  color: hsl(var(--primary-foreground));
+  background: var(--payment-brand);
+  cursor: pointer;
+}
+.payment-reconciliation-shell button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.payment-reconciliation-shell .secondary {
+  color: var(--payment-brand);
+  background: hsl(var(--accent));
+}
+.payment-reconciliation-shell .health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+  gap: 12px;
+}
+.payment-reconciliation-shell .health-card {
+  padding: 16px;
+  border: 1px solid transparent;
+  color: var(--payment-ink);
+  background: var(--payment-soft);
+  text-align: left;
+}
+.payment-reconciliation-shell .health-card.selected,
+.payment-reconciliation-shell .batch-list button.selected,
+.payment-reconciliation-shell .standalone-table-action[aria-pressed="true"] {
+  border-color: var(--payment-brand);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 12%);
+}
+.payment-reconciliation-shell .standalone-table-action[aria-pressed="true"] {
+  outline: 2px solid var(--payment-brand);
+  outline-offset: 2px;
+}
+.payment-reconciliation-shell .health-card small,
+.payment-reconciliation-shell .health-card strong,
+.payment-reconciliation-shell td strong,
+.payment-reconciliation-shell td small {
+  display: block;
+}
+.payment-reconciliation-shell .health-card small,
+.payment-reconciliation-shell td small {
+  margin-top: 4px;
+  color: var(--payment-muted);
+}
+.payment-reconciliation-shell .status-dot {
+  float: right;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #a2aca7;
+}
+.payment-reconciliation-shell .status-dot[data-health="healthy"] {
+  background: #1b9b68;
+}
+.payment-reconciliation-shell .status-dot[data-health="differences"] {
+  background: #e99b25;
+}
+.payment-reconciliation-shell .status-dot[data-health="failed"],
+.payment-reconciliation-shell .status-dot[data-health="unavailable"] {
+  background: #d55252;
+}
+.payment-reconciliation-shell dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.payment-reconciliation-shell dt {
+  color: var(--payment-muted);
+}
+.payment-reconciliation-shell dd {
+  margin: 0;
+  font-weight: 650;
+}
+.payment-reconciliation-shell .unknown,
+.payment-reconciliation-shell .alert {
+  padding: 10px 12px;
+  border-radius: 0;
+  color: #8d3e2f;
+  background: #fff1ed;
+}
+.payment-reconciliation-shell .batch-list {
+  display: grid;
+  gap: 8px;
+}
+.payment-reconciliation-shell .batch-list button {
+  display: grid;
+  grid-template-columns: 150px 1fr 2fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--payment-line);
+  color: var(--payment-ink);
+  background: hsl(var(--card));
+  text-align: left;
+}
+.payment-reconciliation-shell .batch-list em {
+  color: var(--payment-brand);
+  font-style: normal;
+}
+.payment-reconciliation-shell code {
+  font-size: 12px;
+}
+.payment-reconciliation-shell .review {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.payment-reconciliation-shell .review span {
+  width: 100%;
+  color: var(--payment-muted);
+  font-size: 12px;
+}
+.payment-reconciliation-shell .danger {
+  background: #a83f3f;
+}
+.payment-reconciliation-shell .empty {
+  padding: 28px;
+  color: var(--payment-muted);
+  text-align: center;
+}
+.payment-reconciliation-shell .help {
+  margin: 0 0 16px;
+  color: var(--payment-muted);
+}
+.payment-reconciliation-shell .fund-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.payment-reconciliation-shell .fund-actions label {
+  display: grid;
+  gap: 5px;
+  color: var(--payment-muted);
+  font-size: 12px;
+}
+.payment-reconciliation-shell .fund-actions input {
+  min-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid var(--payment-line);
+  border-radius: 0;
+  color: var(--payment-ink);
+  background: hsl(var(--card));
+}
+
+@media (max-width: 760px) {
+  .payment-reconciliation-shell .workspace {
+    padding: 12px;
+  }
+  .payment-reconciliation-shell section {
+    padding: 12px;
+  }
+  .payment-reconciliation-shell .batch-list button {
+    grid-template-columns: 1fr;
+  }
+  .payment-reconciliation-shell .health-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.payment-reconciliation-shell .standalone-vben-table { min-width: 0; width: 100%; }

@@ -1,0 +1,7 @@
+{
+  "menu": {
+    "plugin:idc-portal:brand": { "title": "Website Brand Settings" },
+    "plugin:idc-portal:customer-external-menus": { "title": "Customer Center Menus" },
+    "plugin:idc-portal:customer-external-menus:manage": { "title": "Manage Customer Center Menus" }
+  }
+}

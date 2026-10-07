@@ -1,0 +1,15 @@
+{
+  "menu": {
+    "plugin:idc-payment:channels": { "title": "支付方式" },
+    "plugin:idc-payment:channels:manage": { "title": "管理支付方式" },
+    "plugin:idc-payment:reconciliation": { "title": "支付渠道对账" },
+    "plugin:idc-payment:reconciliation:view": { "title": "查看支付渠道对账" },
+    "plugin:idc-payment:reconciliation:supplement-submit": { "title": "提交补单" },
+    "plugin:idc-payment:reconciliation:supplement-review": { "title": "审核补单" },
+    "plugin:idc-payment:exception-funds": { "title": "待归属资金" },
+    "plugin:idc-payment:exception-funds:view": { "title": "查看待归属资金" },
+    "plugin:idc-payment:exception-funds:allocate": { "title": "归属待处理资金" },
+    "plugin:idc-payment:exception-funds:refund": { "title": "申请原路退款" },
+    "plugin:idc-payment:exception-funds:refund-confirm": { "title": "确认人工原路退款" }
+  }
+}

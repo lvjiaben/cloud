@@ -326,6 +326,15 @@ func validateRuntimeArtifact(manifest *Manifest, rootDir string) error {
 	if manifest.Version != artifact.Manifest.Version {
 		return gerror.Newf("Dynamic plugin embedded manifest version does not match plugin.yaml: %s != %s", artifact.Manifest.Version, manifest.Version)
 	}
+	if plugintypes.NormalizeDistribution(manifest.Distribution) != plugintypes.NormalizeDistribution(artifact.Manifest.Distribution) {
+		return gerror.Newf("Dynamic plugin embedded distribution does not match plugin.yaml: %s", artifactPath)
+	}
+	if !ManifestBusinessDeclarationsMatch(manifest, artifact.Manifest) {
+		return gerror.Newf("Dynamic plugin embedded business extensions or frontend surfaces do not match plugin.yaml: %s", artifactPath)
+	}
+	if err := ValidatePageBridgeRouteBindings(manifest, artifact.RouteContracts); err != nil {
+		return gerror.Wrapf(err, "Dynamic plugin page bridge route bindings are invalid: %s", artifactPath)
+	}
 	if !publicAssetDeclarationsMatch(manifest.PublicAssets, artifact.Manifest.PublicAssets) {
 		return gerror.Newf("Dynamic plugin embedded public_assets does not match plugin.yaml: %s", artifactPath)
 	}
@@ -375,6 +384,9 @@ func unmarshalRuntimeArtifactSection(content []byte, target interface{}) error {
 // validateRuntimeManifestDependencySchema validates current dependency entry
 // fields before JSON decoding drops unsupported plugin policies.
 func validateRuntimeManifestDependencySchema(filePath string, content []byte) error {
+	if err := validateJSONBusinessExtensionSchema(content); err != nil {
+		return gerror.Wrapf(err, "dynamic plugin business extension schema contains unsupported fields: %s", filePath)
+	}
 	var manifest map[string]json.RawMessage
 	if err := json.Unmarshal(content, &manifest); err != nil {
 		return gerror.New("Dynamic plugin custom sections support JSON encoding only")

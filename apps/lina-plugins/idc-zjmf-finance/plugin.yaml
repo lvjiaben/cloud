@@ -1,0 +1,162 @@
+id: idc-zjmf-finance
+name: ZJMF Finance Native Provider
+version: v0.1.4
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed native ZJMF Finance connector using /zjmf_api_login and resource-owned server execution.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.21 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods:
+      - configuration.candidates
+      - provision
+      - query
+    product_configuration:
+      version: v1
+      fields:
+        - key: upstream_product_id
+          type: single_select
+          label: { en-US: Upstream product, zh-CN: 上游商品 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: upstream_region_option_id
+          type: single_select
+          label: { en-US: Upstream region option, zh-CN: 上游地区配置项 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: upstream_line_option_id
+          type: single_select
+          label: { en-US: Upstream network option, zh-CN: 上游线路配置项 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: upstream_os_option_id
+          type: single_select
+          label: { en-US: Upstream operating system option, zh-CN: 上游操作系统配置项 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: region
+          type: single_select
+          label: { en-US: Region, zh-CN: 地区 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: line
+          type: single_select
+          label: { en-US: Network line, zh-CN: 线路 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: cpu
+          type: integer
+          label: { en-US: CPU cores, zh-CN: 处理器核心数 }
+          required: true
+          minimum: "1"
+        - key: memory
+          type: integer
+          label: { en-US: Memory (MiB), zh-CN: 内存（MiB） }
+          required: true
+          minimum: "128"
+        - key: system_disk
+          type: integer
+          label: { en-US: System disk (GiB), zh-CN: 系统盘（GiB） }
+          required: true
+          minimum: "1"
+        - key: data_disk
+          type: integer
+          label: { en-US: Data disk (GiB), zh-CN: 数据盘（GiB） }
+          required: true
+          minimum: "0"
+        - key: bandwidth
+          type: integer
+          label: { en-US: Bandwidth (Mbps), zh-CN: 带宽（Mbps） }
+          required: true
+          minimum: "1"
+    customer_configuration:
+      version: v1
+      fields:
+        - key: operating_system
+          type: single_select
+          label: { en-US: Operating system, zh-CN: 操作系统 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability:
+          enUS: Native ZJMF Finance upstream server fulfillment and management
+          zhCN: 魔方财务原生上游服务器履约与管理
+        granularity: per_quantity_unit
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: unsupported
+        entitlementOwnerId: idc-resource
+        methodRoles: { provision: provision, query: query }
+  - point: resource-provider
+    version: v1
+    role: provider
+    owner: idc-resource
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: username
+          type: secret
+          label: { en-US: API username, zh-CN: API 用户名 }
+          required: true
+        - key: password
+          type: secret
+          label: { en-US: API password, zh-CN: API 密码 }
+          required: true
+    methods:
+      - connection.verify
+      - capabilities.discover
+      - configuration.candidates
+      - provision.parameters.build
+      - provider-capacity.list
+      - catalog.products.list
+      - catalog.products.detail
+      - operation.execute
+      - task.query
+      - resource.query
+    provider_metadata:
+      type: resource-provider-contract
+      version: v1
+      values:
+        providerId: zjmf-finance-native
+        authenticationProfiles:
+          profiles:
+            default:
+              strategy: login_session
+              fields: { username: username, password: password }
+              loginPath: /zjmf_api_login
+              tokenJSONPath: [jwt]
+              tokenHeader: Authorization
+              tokenScheme: Bearer
+              refreshJSONPath: [status]
+              refreshJSONValues: ["405"]
+              sessionTTLSeconds: 3600
+              serializeInvocations: true
+              callbackRequired: true
+hostServices:
+  - service: confidentialoutbound
+    methods: [execute]

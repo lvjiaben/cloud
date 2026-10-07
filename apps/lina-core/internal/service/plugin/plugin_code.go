@@ -16,11 +16,41 @@ var (
 	CodePluginStatusInvalid = lifecycle.CodePluginStatusInvalid
 	// CodePluginNotInstalled reports that a lifecycle operation requires an installed plugin.
 	CodePluginNotInstalled = lifecycle.CodePluginNotInstalled
+	// CodePluginNewBusinessResumeNotReady reports a failed admission readiness check.
+	CodePluginNewBusinessResumeNotReady = lifecycle.CodePluginNewBusinessResumeNotReady
+	// CodePluginNewBusinessMustStopFirst enforces the first lifecycle stage.
+	CodePluginNewBusinessMustStopFirst = lifecycle.CodePluginNewBusinessMustStopFirst
+	// CodePluginBusinessImpactCheckFailed reports an unavailable trusted impact result.
+	CodePluginBusinessImpactCheckFailed = lifecycle.CodePluginBusinessImpactCheckFailed
+	// CodePluginBusinessReferencesBlocked reports live business references.
+	CodePluginBusinessReferencesBlocked = lifecycle.CodePluginBusinessReferencesBlocked
+	// CodePluginBusinessDataPurgeDenied protects historical business evidence.
+	CodePluginBusinessDataPurgeDenied = lifecycle.CodePluginBusinessDataPurgeDenied
+	// CodePluginLifecycleLockUnavailable reports that the host could not prove
+	// exclusive ownership of a plugin lifecycle transition.
+	CodePluginLifecycleLockUnavailable = bizerr.MustDefine(
+		"PLUGIN_LIFECYCLE_LOCK_UNAVAILABLE",
+		"Plugin {pluginId} lifecycle protection is temporarily unavailable",
+		gcode.CodeOperationFailed,
+	)
+	// CodePluginLifecycleAlreadyRunning reports a concurrent lifecycle action.
+	CodePluginLifecycleAlreadyRunning = bizerr.MustDefine(
+		"PLUGIN_LIFECYCLE_ALREADY_RUNNING",
+		"Another lifecycle operation is already running for plugin {pluginId}",
+		gcode.CodeOperationFailed,
+	)
 	// CodePluginNotFound reports that a plugin management query could not find the target plugin.
 	CodePluginNotFound = bizerr.MustDefine(
 		"PLUGIN_NOT_FOUND",
 		"Plugin does not exist: {pluginId}",
 		gcode.CodeNotFound,
+	)
+	// CodePluginPageBridgeGrantDenied reports that the current actor or active
+	// release cannot authorize the requested isolated-page binding.
+	CodePluginPageBridgeGrantDenied = bizerr.MustDefine(
+		"PLUGIN_PAGE_BRIDGE_GRANT_DENIED",
+		"This plugin page request is unavailable or no longer authorized",
+		gcode.CodeNotAuthorized,
 	)
 	// CodePluginRuntimeUpgradePreviewUnavailable reports that no upgrade preview can be produced.
 	CodePluginRuntimeUpgradePreviewUnavailable = upgrade.CodePluginRuntimeUpgradePreviewUnavailable

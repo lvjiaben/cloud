@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-notify/backend/internal/composition/notification.go",
+      "maxCalls": 1,
+      "reason": "Notification composition boundary; constructs the plugin-owned notification service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-notify/backend/internal/composition/security_code.go",
+      "maxCalls": 1,
+      "reason": "Security-code composition boundary; constructs the plugin-owned code service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-notify/backend/plugin.go",
+      "maxCalls": 6,
+      "reason": "IDC notify plugin composition boundary; wires private notification services once."
+    }
+  ]
+}

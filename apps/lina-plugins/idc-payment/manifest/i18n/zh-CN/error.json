@@ -1,0 +1,8 @@
+{
+  "error.idc.payment.channel.page.invalid": "支付列表分页参数无效，请刷新后重试",
+  "error.idc.payment.channel.page.unavailable": "支付列表暂时不可用，请稍后重试",
+  "error.idc.payment.reconciliation.page.invalid": "支付列表分页参数无效，请刷新后重试",
+  "error.idc.payment.reconciliation.page.unavailable": "支付列表暂时不可用，请稍后重试",
+  "error.idc.payment.exception.fund.page.invalid": "支付列表分页参数无效，请刷新后重试",
+  "error.idc.payment.exception.fund.page.unavailable": "支付列表暂时不可用，请稍后重试"
+}

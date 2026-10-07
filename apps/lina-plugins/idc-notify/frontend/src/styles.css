@@ -1,0 +1,410 @@
+.notify-plugin-shell,
+.notify-plugin-shell * {
+  box-sizing: border-box;
+}
+.notify-plugin-shell {
+  --ink: #172033;
+  --muted: #667086;
+  --line: #dfe6ef;
+  --panel: #fff;
+  --bg: #f4f7fb;
+  --blue: #3157d5;
+  --green: #087d69;
+  --red: #bd3347;
+  --amber: #8a5a10;
+  min-height: 100%;
+  color: var(--ink);
+  background: transparent;
+  font-family: inherit;
+}
+.notify-plugin-shell .notify-workspace {
+  width: 100%;
+  padding: 16px;
+}
+.notify-plugin-shell .notify-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.notify-plugin-shell .panel,
+.notify-plugin-shell .channel-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 3%);
+}
+.notify-plugin-shell .panel {
+  padding: 16px;
+}
+.notify-plugin-shell .panel h2,
+.notify-plugin-shell .channel-card h2 {
+  margin: 0;
+}
+.notify-plugin-shell .channel-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.48fr);
+  gap: 14px;
+}
+.notify-plugin-shell .channel-layout.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+.notify-plugin-shell .channel-wizard {
+  position: sticky;
+  top: 18px;
+  align-self: start;
+}
+.notify-plugin-shell .binding-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.65fr);
+  gap: 14px;
+}
+.notify-plugin-shell .binding-card,
+.notify-plugin-shell .authorization-card {
+  min-height: 320px;
+}
+.notify-plugin-shell .binding-lead {
+  max-width: 720px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.notify-plugin-shell .authorization-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--panel);
+}
+.notify-plugin-shell .binding-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+  place-items: center;
+  border-radius: 0;
+  color: #fff;
+  background: var(--blue);
+  font-size: 18px;
+  font-weight: 750;
+  box-shadow: none;
+}
+.notify-plugin-shell .authorization-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.notify-plugin-shell .authorization-actions .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.notify-plugin-shell .card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.notify-plugin-shell .channel-card {
+  padding: 18px;
+}
+.notify-plugin-shell .card-heading,
+.notify-plugin-shell .row,
+.notify-plugin-shell .actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.notify-plugin-shell .icon-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--muted);
+  background: #fff;
+  cursor: pointer;
+  font-size: 22px;
+}
+.notify-plugin-shell .status {
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: #eef2f8;
+  font-size: 12px;
+  font-weight: 750;
+}
+.notify-plugin-shell .status[data-state="enabled"],
+.notify-plugin-shell .status[data-state="active"],
+.notify-plugin-shell .status[data-state="delivered"],
+.notify-plugin-shell .status[data-state="succeeded"] {
+  color: var(--green);
+  background: #e6f6f1;
+}
+.notify-plugin-shell .status[data-state="failed"],
+.notify-plugin-shell .status[data-state="configuration_failed"],
+.notify-plugin-shell .status[data-state="invalidated"] {
+  color: var(--red);
+  background: #fcecef;
+}
+.notify-plugin-shell dl {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+.notify-plugin-shell dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #edf1f6;
+}
+.notify-plugin-shell dt {
+  color: var(--muted);
+}
+.notify-plugin-shell dd {
+  margin: 0;
+  font-weight: 650;
+}
+.notify-plugin-shell .button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 730;
+}
+.notify-plugin-shell .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.notify-plugin-shell .button.primary {
+  color: #fff;
+  background: var(--blue);
+}
+.notify-plugin-shell .button.secondary {
+  border-color: var(--line);
+  background: #fff;
+}
+.notify-plugin-shell .button.danger {
+  border-color: #efc5cc;
+  color: var(--red);
+  background: #fdf0f2;
+}
+.notify-plugin-shell .actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.notify-plugin-shell .notice {
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.notify-plugin-shell .notice.info {
+  color: #39538c;
+  background: #edf2ff;
+}
+.notify-plugin-shell .notice.error {
+  color: var(--red);
+  background: #fcecef;
+}
+.notify-plugin-shell .notice.success {
+  color: var(--green);
+  background: #e6f6f1;
+}
+.notify-plugin-shell .notice.warning {
+  color: var(--amber);
+  background: #fff4dc;
+}
+.notify-plugin-shell .split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(340px, 0.75fr);
+  gap: 14px;
+}
+.notify-plugin-shell .split.single-column {
+  grid-template-columns: minmax(0, 1fr);
+}
+.notify-plugin-shell .row {
+  width: 100%;
+  padding: 14px 4px;
+  border: 0;
+  border-bottom: 1px solid #edf1f6;
+  background: transparent;
+  text-align: left;
+}
+.notify-plugin-shell .row p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.notify-plugin-shell .row-button {
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.notify-plugin-shell .editor,
+.notify-plugin-shell .detail {
+  position: sticky;
+  top: 18px;
+  align-self: start;
+}
+.notify-plugin-shell label {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 13px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.notify-plugin-shell input,
+.notify-plugin-shell select,
+.notify-plugin-shell textarea {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  font: inherit;
+}
+.notify-plugin-shell .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.notify-plugin-shell .mapping {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.notify-plugin-shell .mapping legend {
+  padding: 0 8px;
+  color: var(--ink);
+  font-weight: 750;
+}
+.notify-plugin-shell .mapping-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.notify-plugin-shell .mapping-row .button {
+  min-height: 42px;
+}
+.notify-plugin-shell .preview,
+.notify-plugin-shell .reason-list,
+.notify-plugin-shell .result-card {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f4f7fb;
+}
+.notify-plugin-shell .preview p,
+.notify-plugin-shell .reason-list p,
+.notify-plugin-shell .result-card p {
+  white-space: pre-wrap;
+}
+.notify-plugin-shell .reason-list p {
+  margin: 5px 0;
+  color: var(--red);
+  font-size: 13px;
+}
+.notify-plugin-shell .empty {
+  padding: 30px;
+  color: var(--muted);
+  text-align: center;
+}
+.notify-plugin-shell .section-title {
+  margin-top: 20px;
+}
+.notify-plugin-shell .template-tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  margin: 12px 0;
+  padding-bottom: 2px;
+}
+.notify-plugin-shell .workspace-tabs {
+  margin-top: 0;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+}
+.notify-plugin-shell .template-tab {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: #fff;
+  cursor: pointer;
+}
+.notify-plugin-shell .template-tab.active {
+  border-color: var(--blue);
+  color: #fff;
+  background: var(--blue);
+}
+.notify-plugin-shell .template-scroll {
+  max-height: 440px;
+  overflow: auto;
+  padding-right: 4px;
+}
+.notify-plugin-shell .policy-scroll {
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 1180px) {
+  .notify-plugin-shell .channel-layout,
+  .notify-plugin-shell .binding-layout {
+    grid-template-columns: 1fr;
+  }
+  .notify-plugin-shell .channel-wizard {
+    position: static;
+  }
+}
+@media (max-width: 980px) {
+  .notify-plugin-shell .card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .notify-plugin-shell .split {
+    grid-template-columns: 1fr;
+  }
+  .notify-plugin-shell .editor,
+  .notify-plugin-shell .detail {
+    position: static;
+  }
+}
+@media (max-width: 640px) {
+  .notify-plugin-shell .notify-workspace {
+    padding: 12px;
+  }
+  .notify-plugin-shell .card-grid,
+  .notify-plugin-shell .two,
+  .notify-plugin-shell .mapping-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Match the compact, square Vben configuration surfaces. Status pills and
+ * the icon-only close button keep their semantic shapes. */
+.notify-plugin-shell .panel,
+.notify-plugin-shell .channel-card,
+.notify-plugin-shell .button,
+.notify-plugin-shell .notice,
+.notify-plugin-shell .mapping,
+.notify-plugin-shell .preview,
+.notify-plugin-shell .reason-list,
+.notify-plugin-shell .result-card,
+.notify-plugin-shell .template-tab,
+.notify-plugin-shell input,
+.notify-plugin-shell select,
+.notify-plugin-shell textarea {
+  border-radius: 0;
+  box-shadow: none;
+}

@@ -21,6 +21,8 @@ const (
 	ExecutionSourceJobsDiscovery ExecutionSource = "jobs.discovery"
 	// ExecutionSourceLifecycle marks one install/enable/disable lifecycle execution.
 	ExecutionSourceLifecycle ExecutionSource = "lifecycle"
+	// ExecutionSourceBusinessExtension marks one host-governed provider method invocation.
+	ExecutionSourceBusinessExtension ExecutionSource = "business-extension"
 )
 
 // NormalizeExecutionSource trims and lowercases one execution source value.

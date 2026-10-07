@@ -31,11 +31,11 @@ func TestValidateRouteContractsRejectsInvalidPublicPermission(t *testing.T) {
 			Path:        "/api/v1/review-summary",
 			Method:      http.MethodGet,
 			Access:      AccessPublic,
-			Permission:  "linapro-demo-dynamic:review:view",
+			Permission:  "demo-dynamic:review:view",
 			RequestType: "ReviewSummaryReq",
 		},
 	}
-	if err := ValidateRouteContracts("linapro-demo-dynamic", routes); err == nil {
+	if err := ValidateRouteContracts("demo-dynamic", routes); err == nil {
 		t.Fatal("expected public route with permission to be rejected")
 	}
 }
@@ -57,7 +57,7 @@ func TestValidateRouteContractsRejectsDuplicateMethodPath(t *testing.T) {
 			RequestType: "ReviewSummaryReq",
 		},
 	}
-	if err := ValidateRouteContracts("linapro-demo-dynamic", routes); err == nil {
+	if err := ValidateRouteContracts("demo-dynamic", routes); err == nil {
 		t.Fatal("expected duplicate method and path to be rejected")
 	}
 }
@@ -85,7 +85,7 @@ func TestValidateRouteContractsAllowsPluginOwnedPathShapes(t *testing.T) {
 			RequestType: "GraphQLReq",
 		},
 	}
-	if err := ValidateRouteContracts("linapro-demo-dynamic", routes); err != nil {
+	if err := ValidateRouteContracts("demo-dynamic", routes); err != nil {
 		t.Fatalf("expected plugin-owned route path shapes to be accepted, got error: %v", err)
 	}
 }
@@ -94,14 +94,14 @@ func TestValidateRouteContractsAllowsPluginOwnedPathShapes(t *testing.T) {
 // preserves nested route, request, and identity snapshots.
 func TestEncodeDecodeRequestEnvelopeRoundTrip(t *testing.T) {
 	input := &BridgeRequestEnvelopeV1{
-		PluginID: "linapro-demo-dynamic",
+		PluginID: "demo-dynamic",
 		Route: &RouteMatchSnapshotV1{
 			Method:       http.MethodGet,
-			PublicPath:   "/x/linapro-demo-dynamic/api/v1/review-summary",
+			PublicPath:   "/x/demo-dynamic/api/v1/review-summary",
 			InternalPath: "/api/v1/review-summary",
 			RoutePath:    "/api/v1/review-summary",
 			Access:       AccessLogin,
-			Permission:   "linapro-demo-dynamic:review:view",
+			Permission:   "demo-dynamic:review:view",
 			RequestType:  "ReviewSummaryReq",
 			PathParams: map[string]string{
 				"id": "42",
@@ -112,9 +112,9 @@ func TestEncodeDecodeRequestEnvelopeRoundTrip(t *testing.T) {
 		},
 		Request: &HTTPRequestSnapshotV1{
 			Method:       http.MethodGet,
-			PublicPath:   "/x/linapro-demo-dynamic/api/v1/review-summary",
+			PublicPath:   "/x/demo-dynamic/api/v1/review-summary",
 			InternalPath: "/api/v1/review-summary",
-			RawPath:      "/x/linapro-demo-dynamic/api/v1/review-summary",
+			RawPath:      "/x/demo-dynamic/api/v1/review-summary",
 			RawQuery:     "q=hello",
 			Host:         "localhost:9120",
 			Scheme:       "http",
@@ -136,7 +136,7 @@ func TestEncodeDecodeRequestEnvelopeRoundTrip(t *testing.T) {
 			ActingUserId:    7,
 			ActingAsTenant:  true,
 			IsImpersonation: true,
-			Permissions:     []string{"linapro-demo-dynamic:review:view"},
+			Permissions:     []string{"demo-dynamic:review:view"},
 			RoleNames:       []string{"超级管理员"},
 			DataScope:       1,
 			IsSuperAdmin:    true,

@@ -1,0 +1,17 @@
+{
+  "title": "购买流量包",
+  "name": "套餐名称",
+  "capacity": "流量容量",
+  "price": "一次性含税总价",
+  "availability": "销售状态",
+  "actions": "操作",
+  "available": "可购买",
+  "soldOut": "已售罄",
+  "buy": "购买",
+  "confirm": "确认流量包订单",
+  "createOrder": "确认下单",
+  "expiryWarning": "有效期按上游重置规则执行，暂未提供具体到期时间",
+  "executionWarning": "流量只增加到当前服务器。收费套餐须付款后执行，购买不会自动开机或解除暂停。",
+  "paymentRequired": "订单已生成，请完成付款后等待流量到账",
+  "created": "流量追加任务已提交"
+}

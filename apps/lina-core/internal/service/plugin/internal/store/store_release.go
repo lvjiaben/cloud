@@ -339,6 +339,12 @@ func (s *serviceImpl) buildManifestSnapshotModel(manifest *catalog.Manifest) (*M
 	if manifest == nil {
 		return nil, nil
 	}
+	if err := catalog.ValidateBusinessExtensions(manifest); err != nil {
+		return nil, err
+	}
+	if err := catalog.ValidateFrontendSurfaces(manifest); err != nil {
+		return nil, err
+	}
 
 	requestedHostServices, err := protocol.NormalizeHostServiceSpecsForPlugin(manifest.ID, manifest.HostServices)
 	if err != nil {
@@ -351,41 +357,45 @@ func (s *serviceImpl) buildManifestSnapshotModel(manifest *catalog.Manifest) (*M
 	}
 
 	snapshot := &ManifestSnapshot{
-		ID:                        manifest.ID,
-		Name:                      manifest.Name,
-		Version:                   manifest.Version,
-		Type:                      manifest.Type,
-		Distribution:              plugintypes.NormalizeDistribution(manifest.Distribution).String(),
-		ScopeNature:               manifest.ScopeNature,
-		SupportsMultiTenant:       manifest.SupportsTenantGovernance(),
-		DefaultInstallMode:        manifest.DefaultInstallMode,
-		Description:               manifest.Description,
-		Author:                    manifest.Author,
-		Homepage:                  manifest.Homepage,
-		License:                   manifest.License,
-		Dependencies:              plugintypes.CloneDependencySpec(manifest.Dependencies),
-		RuntimeKind:               buildDynamicKind(manifest),
-		RuntimeABIVersion:         buildDynamicABIVersion(manifest),
-		ManifestDeclared:          s.isManifestDeclared(manifest),
-		InstallSQLCount:           s.countSQLAssets(manifest, plugintypes.MigrationDirectionInstall),
-		UninstallSQLCount:         s.countSQLAssets(manifest, plugintypes.MigrationDirectionUninstall),
-		MockSQLCount:              s.countSQLAssets(manifest, plugintypes.MigrationDirectionMock),
-		FrontendPageCount:         s.buildFrontendPageCount(manifest),
-		FrontendSlotCount:         s.buildFrontendSlotCount(manifest),
-		MenuCount:                 len(manifest.Menus),
-		BackendHookCount:          len(manifest.Hooks),
-		LifecycleHandlerCount:     len(manifest.LifecycleHandlers),
-		ResourceSpecCount:         len(manifest.BackendResources),
-		RouteCount:                len(manifest.Routes),
-		RouteExecutionEnabled:     buildDynamicRouteExecutionEnabled(manifest),
-		RouteRequestCodec:         buildDynamicRouteRequestCodec(manifest),
-		RouteResponseCodec:        buildDynamicRouteResponseCodec(manifest),
-		Routes:                    cloneRouteContracts(manifest.Routes),
-		RuntimeFrontendAssetCount: buildDynamicFrontendAssetCount(manifest),
-		RuntimeSQLAssetCount:      buildDynamicSQLAssetCount(manifest),
-		PublicAssets:              catalog.ClonePublicAssetSpecs(manifest.PublicAssets),
-		RequestedHostServices:     requestedHostServices,
-		HostServiceAuthRequired:   HasResourceScopedHostServices(manifest.HostServices),
+		ID:                           manifest.ID,
+		Name:                         manifest.Name,
+		Version:                      manifest.Version,
+		Type:                         manifest.Type,
+		Distribution:                 plugintypes.NormalizeDistribution(manifest.Distribution).String(),
+		ScopeNature:                  manifest.ScopeNature,
+		SupportsMultiTenant:          manifest.SupportsTenantGovernance(),
+		DefaultInstallMode:           manifest.DefaultInstallMode,
+		Description:                  manifest.Description,
+		Author:                       manifest.Author,
+		Homepage:                     manifest.Homepage,
+		License:                      manifest.License,
+		Dependencies:                 plugintypes.CloneDependencySpec(manifest.Dependencies),
+		BusinessExtensions:           catalog.CloneBusinessExtensionDeclarations(manifest.BusinessExtensions),
+		AuthorizedBusinessExtensions: nil,
+		AdminSurfaces:                catalog.CloneFrontendSurfaceDeclarations(manifest.AdminSurfaces),
+		CustomerSurfaces:             catalog.CloneFrontendSurfaceDeclarations(manifest.CustomerSurfaces),
+		RuntimeKind:                  buildDynamicKind(manifest),
+		RuntimeABIVersion:            buildDynamicABIVersion(manifest),
+		ManifestDeclared:             s.isManifestDeclared(manifest),
+		InstallSQLCount:              s.countSQLAssets(manifest, plugintypes.MigrationDirectionInstall),
+		UninstallSQLCount:            s.countSQLAssets(manifest, plugintypes.MigrationDirectionUninstall),
+		MockSQLCount:                 s.countSQLAssets(manifest, plugintypes.MigrationDirectionMock),
+		FrontendPageCount:            s.buildFrontendPageCount(manifest),
+		FrontendSlotCount:            s.buildFrontendSlotCount(manifest),
+		MenuCount:                    len(manifest.Menus),
+		BackendHookCount:             len(manifest.Hooks),
+		LifecycleHandlerCount:        len(manifest.LifecycleHandlers),
+		ResourceSpecCount:            len(manifest.BackendResources),
+		RouteCount:                   len(manifest.Routes),
+		RouteExecutionEnabled:        buildDynamicRouteExecutionEnabled(manifest),
+		RouteRequestCodec:            buildDynamicRouteRequestCodec(manifest),
+		RouteResponseCodec:           buildDynamicRouteResponseCodec(manifest),
+		Routes:                       cloneRouteContracts(manifest.Routes),
+		RuntimeFrontendAssetCount:    buildDynamicFrontendAssetCount(manifest),
+		RuntimeSQLAssetCount:         buildDynamicSQLAssetCount(manifest),
+		PublicAssets:                 catalog.ClonePublicAssetSpecs(manifest.PublicAssets),
+		RequestedHostServices:        requestedHostServices,
+		HostServiceAuthRequired:      HasResourceScopedHostServices(manifest.HostServices),
 	}
 	if !snapshot.HostServiceAuthRequired {
 		authorizedHostServices, normalizeErr := protocol.NormalizeHostServiceSpecsForPlugin(manifest.ID, snapshot.RequestedHostServices)
@@ -543,7 +553,8 @@ func shouldPreserveArchivedPackagePath(manifest *catalog.Manifest, packagePath s
 	if normalizedPath == "" {
 		return false
 	}
-	normalizedPath = strings.TrimPrefix(filepath.Clean("/"+normalizedPath), "/")
+	normalizedPath = filepath.ToSlash(filepath.Clean("/" + normalizedPath))
+	normalizedPath = strings.TrimPrefix(normalizedPath, "/")
 	return strings.Contains("/"+normalizedPath, "/releases/")
 }
 

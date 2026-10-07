@@ -1,0 +1,5 @@
+{
+  "plugin.yunsu-ssl.name": "云速 SSL 证书",
+  "plugin.yunsu-ssl.description": "通过云速供应商接口申请、验证、查询和管理 SSL 证书。",
+  "plugin.yunsu-ssl.certificates.title": "SSL 证书"
+}

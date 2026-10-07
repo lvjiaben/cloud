@@ -16,6 +16,6 @@
 
 #### Scenario: 源码插件示例附件走 Storage
 
-- **WHEN** `linapro-demo-source` 保存、下载、替换、删除或卸载清理附件
+- **WHEN** `demo-source` 保存、下载、替换、删除或卸载清理附件
 - **THEN** 实现 MUST 通过 `storagecap.Service` / `pluginhost.Services.Storage()` 完成
 - **AND** MUST NOT 直接读取 `upload.path` 拼接宿主本地物理路径

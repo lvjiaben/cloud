@@ -108,7 +108,7 @@ export class MainLayout {
     return menuItem;
   }
 
-  tabTitle(label: string) {
+  tabTitle(label: string | RegExp) {
     return this.page
       .locator('[data-tab-item="true"] span[title]')
       .filter({ hasText: label })

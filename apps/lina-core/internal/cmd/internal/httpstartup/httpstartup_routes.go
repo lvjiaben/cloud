@@ -71,10 +71,15 @@ func bindHostAPIRoutes(_ context.Context, server *ghttp.Server, runtime *httpRun
 			authCtrl.ForgetPassword,
 			authCtrl.ResetPassword,
 			i18nCtrl,
-			pluginCtrl.DynamicList,
 			publicCfgCtrl,
 			fileCtrl.Access,
 		)
+		// Runtime states remain public, while customer surface discovery must use
+		// the same validated identity as subsequent governed page-bridge calls.
+		group.Group("/", func(discovery *ghttp.RouterGroup) {
+			discovery.Middleware(middlewareSvc.OptionalAuth)
+			discovery.Bind(pluginCtrl.DynamicList)
+		})
 		bindProtectedStaticAPIRoutes(
 			group,
 			middlewareSvc,
@@ -100,6 +105,10 @@ func bindHostAPIRoutes(_ context.Context, server *ghttp.Server, runtime *httpRun
 			jobHandlerCtrl,
 			pluginCtrl.List,
 			pluginCtrl.Detail,
+			pluginCtrl.StopNewBusiness,
+			pluginCtrl.ResumeNewBusiness,
+			pluginCtrl.BusinessImpact,
+			pluginCtrl.PageBridgeGrant,
 			pluginCtrl.DependencyCheck,
 			pluginCtrl.Sync,
 			pluginCtrl.Install,

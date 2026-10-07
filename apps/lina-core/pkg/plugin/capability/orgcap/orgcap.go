@@ -90,7 +90,7 @@ const (
 	// CapabilityOrgV1 identifies the versioned organization framework capability.
 	CapabilityOrgV1 = "framework.org.v1"
 	// ProviderPluginID is the official source-plugin identifier that provides organization capability.
-	ProviderPluginID = "linapro-org-core"
+	ProviderPluginID = "org-core"
 )
 
 const (

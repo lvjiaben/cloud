@@ -1,0 +1,159 @@
+{
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "codeLogin": "验证码登录",
+    "qrcodeLogin": "二维码登录",
+    "forgetPassword": "忘记密码",
+    "resetPassword": "重置密码",
+    "profile": "个人中心"
+  },
+  "dashboard": {
+    "title": "概览",
+    "analytics": "分析页",
+    "workspace": "工作台"
+  },
+  "customer": {
+    "overview": "客户概览",
+    "description": "集中管理产品选购、订单、云服务、财务和售后事项。",
+    "avatarMenu": {
+      "profile": "账户资料",
+      "addresses": "联系人与地址",
+      "dataRights": "数据与账号",
+      "privacy": "隐私设置"
+    },
+    "summary": {
+      "welcome": "欢迎回来",
+      "customerCode": "客户编号：",
+      "individual": "个人账号",
+      "enterprise": "企业账号",
+      "verified": "已实名",
+      "unverified": "未实名",
+      "manageAccount": "管理账户",
+      "balance": "账户余额",
+      "frozen": "冻结金额",
+      "recharge": "充值与付款",
+      "transactions": "查看流水",
+      "openInvoices": "待支付账单",
+      "activeServers": "运行中服务",
+      "expiringSoon": "7 天内到期",
+      "openTickets": "待处理工单",
+      "withinSevenDays": "按当前已加载服务统计",
+      "viewDetails": "查看详情",
+      "services": "我的服务",
+      "serviceName": "产品 / 服务名称",
+      "serviceStatus": "状态",
+      "expiresAt": "到期时间",
+      "serviceNo": "服务编号",
+      "action": "操作",
+      "manage": "管理",
+      "noServices": "当前没有已开通服务，可从产品选购开始。",
+      "unknown": "状态待确认",
+      "unavailable": "财务数据暂时不可用",
+      "partialFailed": "部分摘要暂时未加载，已显示其余真实数据。",
+      "loadFailed": "账户摘要暂时无法加载，请稍后重试。",
+      "retry": "重新加载"
+    },
+    "quickAccess": {
+      "title": "常用入口",
+      "description": "直接进入最常用的服务，减少在菜单中来回查找。",
+      "products": "产品选购",
+      "productsDescription": "查看可购买的产品和配置方案",
+      "servers": "我的服务器",
+      "serversDescription": "查看服务状态和可用操作",
+      "orders": "订单管理",
+      "ordersDescription": "查看订单与交付进度",
+      "finance": "财务中心",
+      "financeDescription": "处理账单、发票和续费",
+      "support": "技术支持",
+      "supportDescription": "提交并跟进服务工单",
+      "profile": "账户资料",
+      "profileDescription": "维护联系人和账户信息"
+    },
+    "workflow": {
+      "title": "常用办理流程",
+      "description": "从选购到使用，按这三个步骤即可完成主要业务。",
+      "choose": "选择产品并确认配置",
+      "submit": "提交订单并完成付款",
+      "manage": "在我的服务器查看交付和运行状态"
+    }
+  },
+  "about": {
+    "project": {
+      "description": "一个基于 GoFrame、Vue 3 和 Vben 5 的面向可持续交付的 AI 原生全栈框架，提供核心宿主服务、默认管理工作台、插件扩展能力与 AI 原生研发工作流。",
+      "name": "当前应用",
+      "title": "关于项目",
+      "viewLink": "点击查看",
+      "sections": {
+        "basic": "基本信息",
+        "dependencies": "生产环境依赖",
+        "devDependencies": "开发环境依赖"
+      },
+      "items": {
+        "author": "作者",
+        "buildTime": "最后构建时间",
+        "documentation": "文档地址",
+        "homepage": "主页",
+        "license": "开源许可协议",
+        "preview": "预览地址",
+        "version": "版本号"
+      }
+    },
+    "systemInfo": {
+      "loading": "加载中...",
+      "viewLink": "点击查看",
+      "sections": {
+        "framework": "关于项目",
+        "backend": "后端组件",
+        "frontend": "前端组件"
+      },
+      "items": {
+        "frameworkName": "项目名称",
+        "homepage": "项目官网",
+        "repositoryUrl": "仓库地址",
+        "version": "版本号",
+        "license": "开源许可",
+        "description": "项目介绍"
+      }
+    }
+  },
+  "plugin": {
+    "dynamicPage": {
+      "mountFailedTitle": "动态插件挂载失败",
+      "notFoundTitle": "插件页面未找到",
+      "notFoundSubtitle": "当前路由没有匹配到已注册的源码插件前端页面，也没有声明可用的动态插件内嵌挂载入口。",
+      "refreshNoticeTitle": "插件已更新",
+      "refreshNoticeDescription": "当前插件页面已有新代际生效，请刷新当前页面以切换到最新版本。",
+      "refreshNoticeAction": "刷新当前页面"
+    }
+  },
+  "routes": {
+    "about": {
+      "developerCenter": "开发中心",
+      "apiDocs": "接口文档",
+      "systemInfo": "版本信息"
+    },
+    "system": {
+      "accessManagement": "权限管理",
+      "userManagement": "用户管理",
+      "roleManagement": "角色管理",
+      "menuManagement": "菜单管理",
+      "roleUserManagement": "角色授权用户",
+      "systemSettings": "系统设置",
+      "dictManagement": "字典管理",
+      "configManagement": "参数设置",
+      "fileManagement": "文件管理",
+      "messageList": "消息列表",
+      "scheduler": "任务调度",
+      "jobManagement": "任务管理",
+      "jobGroupManagement": "分组管理",
+      "jobLogManagement": "执行日志",
+      "extensionCenter": "扩展中心",
+      "pluginManagement": "插件管理"
+    },
+    "platform": {
+      "title": "平台管理",
+      "tenants": "租户管理"
+    }
+  }
+}

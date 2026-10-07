@@ -10,17 +10,17 @@
 
 下列官方云 storage provider 插件在可生产配置下 MUST 实现 `storagecap` 可选 Multipart 接口（含 SupportsMultipart、CreateMultipart、UploadPart、CompleteMultipart、AbortMultipart，以及供直传使用的 part 级访问签发能力，若该插件已实现 DirectAccess）：
 
-- `linapro-storage-s3`
-- `linapro-storage-aws`
-- `linapro-storage-cos`
-- `linapro-storage-oss`
-- `linapro-storage-obs`
+- `storage-s3`
+- `storage-aws`
+- `storage-cos`
+- `storage-oss`
+- `storage-obs`
 
 实现 MUST 只接收 scoped object key 与 Multipart 会话参数，MUST NOT 解析插件 hostServices 授权快照。无法在合理成本内对齐的插件（如部分 Azure/七牛路径）MAY 在未实现时使 SupportsMultipart 返回 false，但 MUST NOT 抛出未说明的 panic 或静默写错对象。
 
 #### Scenario: S3 兼容 provider 创建并完成 Multipart
 
-- **WHEN** `linapro-storage-s3` 或 `linapro-storage-aws` 为唯一可服务 provider
+- **WHEN** `storage-s3` 或 `storage-aws` 为唯一可服务 provider
 - **AND** 调用方 CreateMultipart 后上传至少一个 part 并 Complete
 - **THEN** provider MUST 在桶中生成完整对象
 - **AND** Stat/Get 可观察到与单次 Put 等价的对象内容

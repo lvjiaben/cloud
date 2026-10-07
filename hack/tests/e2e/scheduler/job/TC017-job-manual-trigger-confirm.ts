@@ -1,7 +1,7 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
-import { JobPage } from '../../../pages/JobPage';
+import { test, expect } from "../../../fixtures/auth";
+import { JobPage } from "../../../pages/JobPage";
 import {
   buildShellJobPayload,
   createAdminApiContext,
@@ -11,9 +11,13 @@ import {
   restoreCronShellEnabled,
   getDefaultGroup,
   setCronShellEnabled,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-17 Scheduled job manual trigger confirmation', () => {
+test.describe("TC-17 Scheduled job manual trigger confirmation", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_job_trigger_confirm_${Date.now()}`;
 
   let api: APIRequestContext;
@@ -22,7 +26,7 @@ test.describe('TC-17 Scheduled job manual trigger confirmation', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
 
     const defaultGroup = await getDefaultGroup(api);
@@ -32,7 +36,7 @@ test.describe('TC-17 Scheduled job manual trigger confirmation', () => {
         groupId: defaultGroup.id,
         name: jobName,
         shellCmd: "printf 'manual trigger confirmation'",
-        status: 'disabled',
+        status: "disabled",
       }),
     );
     jobId = created.id;
@@ -49,7 +53,7 @@ test.describe('TC-17 Scheduled job manual trigger confirmation', () => {
     await api.dispose();
   });
 
-  test('TC-17a~d: Shell-disabled Run Now opens confirmation, cancel skips API call, confirm triggers once', async ({
+  test("TC-17a~d: Shell-disabled Run Now opens confirmation, cancel skips API call, confirm triggers once", async ({
     adminPage,
     mainLayout,
   }) => {
@@ -60,30 +64,32 @@ test.describe('TC-17 Scheduled job manual trigger confirmation', () => {
         body: JSON.stringify({
           code: 0,
           data: { logId: 987_654 },
-          message: 'OK',
+          message: "OK",
         }),
-        contentType: 'application/json',
+        contentType: "application/json",
         status: 200,
       });
     });
 
-    await mainLayout.switchLanguage('English');
+    await mainLayout.switchLanguage("English");
     const jobPage = new JobPage(adminPage);
     await jobPage.goto();
     await jobPage.fillSearchKeyword(jobName);
     await jobPage.clickSearch();
 
-    await expect.poll(() => jobPage.countActions('job-edit-')).toBe(1);
-    await expect.poll(() => jobPage.isActionDisabled('job-edit-')).toBe(true);
-    await expect.poll(() => jobPage.isActionDisabled('job-trigger-')).toBe(false);
+    await expect.poll(() => jobPage.countActions("job-edit-")).toBe(1);
+    await expect.poll(() => jobPage.isActionDisabled("job-edit-")).toBe(true);
+    await expect
+      .poll(() => jobPage.isActionDisabled("job-trigger-"))
+      .toBe(false);
 
     const firstConfirm = await jobPage.openTriggerConfirmForSearchedJob();
-    await expect(firstConfirm).toContainText('Run this job now?');
+    await expect(firstConfirm).toContainText("Run this job now?");
     await jobPage.cancelTriggerConfirm();
     expect(triggerCalls).toBe(0);
 
     const secondConfirm = await jobPage.openTriggerConfirmForSearchedJob();
-    await expect(secondConfirm).toContainText('Run this job now?');
+    await expect(secondConfirm).toContainText("Run this job now?");
     await jobPage.confirmTriggerConfirm();
 
     await expect.poll(() => triggerCalls).toBe(1);

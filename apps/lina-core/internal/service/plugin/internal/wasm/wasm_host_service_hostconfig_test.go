@@ -16,6 +16,7 @@ import (
 	"lina-core/internal/model/do"
 	hostconfig "lina-core/internal/service/config"
 	"lina-core/internal/service/datascope"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	hostconfigadapter "lina-core/internal/service/plugin/internal/hostconfig"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/capregistry"
@@ -355,6 +356,7 @@ func TestConfigureHostConfigServiceRejectsNil(t *testing.T) {
 		noopTestConfigFactory{},
 		nil,
 		noopTestManifestFactory{},
+		confidentialoutbound.New(),
 	); err == nil {
 		t.Fatal("expected nil host config service to return an error")
 	}

@@ -28,7 +28,7 @@ import (
 	"linactl/internal/toolutil"
 )
 
-const marketplaceAPIPathPrefix = "/x/linapro-plugin-marketplace/api/v1/market"
+const marketplaceAPIPathPrefix = "/x/plugin-marketplace/api/v1/market"
 
 // marketplaceDistributionResponse mirrors the marketplace distribution endpoint.
 type marketplaceDistributionResponse struct {

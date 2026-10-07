@@ -1,0 +1,6 @@
+{
+  "plugins.idc_core.api.account.v1.CommerceCartItemAddReq.fields.billingTermToken.dc": "不透明的已选计费周期令牌",
+  "plugins.idc_core.api.account.v1.CommerceCartItemAddReq.fields.configurationRevision.dc": "不透明的已发布配置修订",
+  "plugins.idc_core.api.admin.v1.CommerceAssistedQuoteItemInput.fields.billingTermToken.dc": "不透明的已选计费周期令牌",
+  "plugins.idc_core.api.admin.v1.CommerceAssistedQuoteItemInput.fields.configurationRevision.dc": "不透明的已发布配置修订"
+}

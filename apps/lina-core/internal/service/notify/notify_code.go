@@ -25,7 +25,7 @@ var (
 	// CodeNotifyEmailDeliveryUnavailable reports that mail-core email delivery is not registered.
 	CodeNotifyEmailDeliveryUnavailable = bizerr.MustDefine(
 		"NOTIFY_EMAIL_DELIVERY_UNAVAILABLE",
-		"Email notification delivery is unavailable; install and enable linapro-mail-core",
+		"Email notification delivery is unavailable; install and enable mail-core",
 		gcode.CodeInvalidOperation,
 	)
 	// CodeNotifyEmailRecipientRequired reports that email delivery has no recipients.

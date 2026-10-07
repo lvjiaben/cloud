@@ -173,9 +173,17 @@ func serveRuntimePluginAsset(
 		return true
 	}
 	r.Response.Header().Set("Content-Type", out.ContentType)
+	applyRuntimePluginAssetHeaders(r.Response.Header())
 	r.Response.Write(out.Content)
 	r.ExitAll()
 	return true
+}
+
+// applyRuntimePluginAssetHeaders keeps isolated iframe assets loadable. The
+// sandbox deliberately gives the frame an opaque `null` origin; these public,
+// versioned assets carry no credentials and therefore can use anonymous CORS.
+func applyRuntimePluginAssetHeaders(header http.Header) {
+	header.Set("Access-Control-Allow-Origin", "*")
 }
 
 // serveEmbeddedFrontendAsset serves one concrete embedded frontend file when

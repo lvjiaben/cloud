@@ -1,0 +1,159 @@
+{
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "codeLogin": "Code Login",
+    "qrcodeLogin": "Qr Code Login",
+    "forgetPassword": "Forget Password",
+    "resetPassword": "Reset Password",
+    "profile": "Profile"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "analytics": "Analytics",
+    "workspace": "Workspace"
+  },
+  "customer": {
+    "overview": "Customer Overview",
+    "description": "Manage purchases, orders, cloud services, billing, and support in one place.",
+    "avatarMenu": {
+      "profile": "Account profile",
+      "addresses": "Contacts & addresses",
+      "dataRights": "Data & account",
+      "privacy": "Privacy settings"
+    },
+    "summary": {
+      "welcome": "Welcome back",
+      "customerCode": "Customer ID: ",
+      "individual": "Individual account",
+      "enterprise": "Enterprise account",
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "manageAccount": "Manage account",
+      "balance": "Account balance",
+      "frozen": "Held",
+      "recharge": "Add funds & pay",
+      "transactions": "Transactions",
+      "openInvoices": "Unpaid invoices",
+      "activeServers": "Running services",
+      "expiringSoon": "Expiring in 7 days",
+      "openTickets": "Open tickets",
+      "withinSevenDays": "Based on currently loaded services",
+      "viewDetails": "View details",
+      "services": "My services",
+      "serviceName": "Product / service",
+      "serviceStatus": "Status",
+      "expiresAt": "Expires",
+      "serviceNo": "Service ID",
+      "action": "Action",
+      "manage": "Manage",
+      "noServices": "No active services yet. Start by browsing products.",
+      "unknown": "Status pending",
+      "unavailable": "Financial data is temporarily unavailable",
+      "partialFailed": "Some summary sections are unavailable; the remaining live data is shown.",
+      "loadFailed": "The account summary is temporarily unavailable. Try again later.",
+      "retry": "Reload"
+    },
+    "quickAccess": {
+      "title": "Quick access",
+      "description": "Open frequently used services without searching through the navigation.",
+      "products": "Browse products",
+      "productsDescription": "Review available products and configurations",
+      "servers": "My servers",
+      "serversDescription": "Check service status and available actions",
+      "orders": "Orders",
+      "ordersDescription": "Track orders and delivery progress",
+      "finance": "Finance center",
+      "financeDescription": "Manage bills, invoices, and renewals",
+      "support": "Technical support",
+      "supportDescription": "Create and follow up support tickets",
+      "profile": "Account profile",
+      "profileDescription": "Maintain contacts and account details"
+    },
+    "workflow": {
+      "title": "Common workflow",
+      "description": "Complete the main service journey in three clear steps.",
+      "choose": "Choose a product and confirm its configuration",
+      "submit": "Submit the order and complete payment",
+      "manage": "Track delivery and service status under My servers"
+    }
+  },
+  "about": {
+    "project": {
+      "description": "An AI-native full-stack framework for sustainable delivery, built with GoFrame, Vue 3, and Vben 5. It provides the core host service, default management workspace, plugin extension capabilities, and AI-native development workflow.",
+      "name": "Current Application",
+      "title": "About",
+      "viewLink": "View",
+      "sections": {
+        "basic": "Basic Information",
+        "dependencies": "Production Dependencies",
+        "devDependencies": "Development Dependencies"
+      },
+      "items": {
+        "author": "Author",
+        "buildTime": "Last Build Time",
+        "documentation": "Documentation",
+        "homepage": "Homepage",
+        "license": "License",
+        "preview": "Preview",
+        "version": "Version"
+      }
+    },
+    "systemInfo": {
+      "loading": "Loading...",
+      "viewLink": "View",
+      "sections": {
+        "framework": "About LinaPro",
+        "backend": "Backend Components",
+        "frontend": "Frontend Components"
+      },
+      "items": {
+        "frameworkName": "Framework Name",
+        "homepage": "Homepage",
+        "repositoryUrl": "Repository",
+        "version": "Version",
+        "license": "License",
+        "description": "Description"
+      }
+    }
+  },
+  "plugin": {
+    "dynamicPage": {
+      "mountFailedTitle": "Dynamic plugin mount failed",
+      "notFoundTitle": "Plugin page not found",
+      "notFoundSubtitle": "The current route does not match a registered source-plugin page or a valid dynamic embedded entry.",
+      "refreshNoticeTitle": "Plugin updated",
+      "refreshNoticeDescription": "A newer plugin generation is ready for this page. Refresh now to switch to the latest version.",
+      "refreshNoticeAction": "Refresh current page"
+    }
+  },
+  "routes": {
+    "about": {
+      "developerCenter": "Dev Tools",
+      "apiDocs": "API Docs",
+      "systemInfo": "Version Info"
+    },
+    "system": {
+      "accessManagement": "Access",
+      "userManagement": "Users",
+      "roleManagement": "Roles",
+      "menuManagement": "Menus",
+      "roleUserManagement": "Role Members",
+      "systemSettings": "Settings",
+      "dictManagement": "Dictionaries",
+      "configManagement": "Parameters",
+      "fileManagement": "Files",
+      "messageList": "Messages",
+      "scheduler": "Scheduler",
+      "jobManagement": "Jobs",
+      "jobGroupManagement": "Groups",
+      "jobLogManagement": "Run Logs",
+      "extensionCenter": "Extensions",
+      "pluginManagement": "Plugins"
+    },
+    "platform": {
+      "title": "Platform",
+      "tenants": "Tenants"
+    }
+  }
+}

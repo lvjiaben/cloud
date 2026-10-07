@@ -1,0 +1,100 @@
+id: idc-notify
+name: IDC Notifications
+version: v0.1.4
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Notification events, bilingual templates, delivery channels, retries, preferences, and delivery evidence.
+author: linapro
+license: Proprietary
+
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.55 <1.0.0"
+    - id: shared-services
+      version: ">=0.1.0 <1.0.0"
+
+business_extensions:
+  - point: sms-channel
+    version: v1
+    role: owner
+    owner: idc-notify
+
+menus:
+  - key: plugin:idc-notify:wecom-self-binding
+    parent_key: plugin:idc-core:notification-marketing
+    name: My WeCom Binding
+    path: /idc/notifications/wechat-work-binding
+    component: system/plugin/dynamic-page
+    query:
+      pluginAccessMode: embedded-mount
+      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      routePath: /idc/notifications/wechat-work-binding
+    icon: lucide:scan-qr-code
+    type: M
+    sort: 39
+    remark: Let the current direct staff member bind or remove only their own WeCom account
+  - key: plugin:idc-notify:channels
+    parent_key: plugin:idc-core:notification-marketing
+    name: Notification Channels
+    path: /idc/notifications/channels
+    component: system/plugin/dynamic-page
+    query:
+      pluginAccessMode: embedded-mount
+      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      routePath: /idc/notifications/channels
+    perms: idc:admin:notification:channel:manage
+    icon: lucide:send
+    type: M
+    sort: 40
+    remark: Configure and safely operate installation-owned notification channels
+  - key: plugin:idc-notify:templates
+    parent_key: plugin:idc-core:notification-marketing
+    name: Notification Templates
+    path: /idc/notifications/templates
+    component: system/plugin/dynamic-page
+    query:
+      pluginAccessMode: embedded-mount
+      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      routePath: /idc/notifications/templates
+    perms: idc:admin:notification:channel:manage
+    icon: lucide:layout-template
+    type: M
+    sort: 41
+    remark: Manage bilingual immutable notification template versions
+  - key: plugin:idc-notify:deliveries
+    parent_key: plugin:idc-core:notification-marketing
+    name: Notification Deliveries
+    path: /idc/notifications/deliveries
+    component: system/plugin/dynamic-page
+    query:
+      pluginAccessMode: embedded-mount
+      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      routePath: /idc/notifications/deliveries
+    perms: idc:admin:notification:channel:manage
+    icon: lucide:list-checks
+    type: M
+    sort: 42
+    remark: Inspect delivery chains, retries, results, and manual review
+  - key: plugin:idc-notify:manage
+    parent_key: plugin:idc-notify:channels
+    name: Manage Notification Channels
+    perms: idc:admin:notification:channel:manage
+    type: B
+    visible: 0
+    sort: 1
+
+public_assets:
+  - source: frontend/dist
+    mount: /

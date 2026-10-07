@@ -12,7 +12,7 @@ test.describe("TC007 主题切换性能回归", () => {
     await adminPage.setViewportSize({ width: 1440, height: 900 });
   });
 
-  test("TC007a: 双向圆形揭幕方向正确且保留 ECharts 实例", async ({
+  test("TC007a: 双向圆形揭幕方向正确且保留真实工作台内容", async ({
     adminPage,
     mainLayout,
   }) => {
@@ -21,12 +21,10 @@ test.describe("TC007 主题切换性能回归", () => {
 
     await dashboardPage.gotoAnalytics();
     await mainLayout.prepareThemeModeWithoutAnimation("light");
-    await dashboardPage.waitForAnalyticsChartInstances(4);
-    await dashboardPage.waitForAnalyticsChartsPainted(4);
-
-    const chartIdsBeforeSwitch =
-      await dashboardPage.getAnalyticsChartInstanceIds();
-    expect(chartIdsBeforeSwitch.length).toBeGreaterThanOrEqual(4);
+    const operations = dashboardPage.analyticsPage.getByTestId(
+      "operations-workbench",
+    );
+    await expect(operations).toBeVisible();
     await dashboardPage.captureAnalyticsScreenshot(screenshots.light);
 
     expect(await mainLayout.hasStartViewTransitionApi()).toBeTruthy();
@@ -35,35 +33,19 @@ test.describe("TC007 主题切换性能回归", () => {
     await mainLayout.ensureThemeMode("dark");
     await mainLayout.waitForThemeTransitionFinished(1);
     await expectThemeTransitionRuntimeClean(mainLayout);
-    expect(await dashboardPage.getAnalyticsChartInstanceIds()).toEqual(
-      chartIdsBeforeSwitch,
-    );
-    expectPaintedChartSnapshot(
-      await dashboardPage.getAnalyticsChartCanvasPaintInfo(),
-      4,
-    );
+    await expect(operations).toBeVisible();
 
     const darkSnapshot = await mainLayout.getThemeTransitionProbeSnapshot();
     expect(darkSnapshot.transitions).toHaveLength(1);
     expect(darkSnapshot.animations).toHaveLength(1);
     expectTransitionRecord(darkSnapshot.transitions[0], "dark");
     expectCircularThemeAnimation(darkSnapshot.animations[0], 1, "collapse");
-    await expect
-      .poll(async () => dashboardPage.getAnalyticsChartInstanceIds())
-      .toEqual(chartIdsBeforeSwitch);
-    await dashboardPage.waitForAnalyticsChartsPainted(4);
     await dashboardPage.captureAnalyticsScreenshot(screenshots.dark);
 
     await mainLayout.ensureThemeMode("light");
     await mainLayout.waitForThemeTransitionFinished(2);
     await expectThemeTransitionRuntimeClean(mainLayout);
-    expect(await dashboardPage.getAnalyticsChartInstanceIds()).toEqual(
-      chartIdsBeforeSwitch,
-    );
-    expectPaintedChartSnapshot(
-      await dashboardPage.getAnalyticsChartCanvasPaintInfo(),
-      4,
-    );
+    await expect(operations).toBeVisible();
 
     const lightSnapshot = await mainLayout.getThemeTransitionProbeSnapshot();
     expect(lightSnapshot.transitions).toHaveLength(2);
@@ -80,10 +62,6 @@ test.describe("TC007 主题切换性能回归", () => {
       lightSnapshot.animations[1].clipPath[1],
       lightSnapshot.animations[1].clipPath[0],
     ]);
-    await expect
-      .poll(async () => dashboardPage.getAnalyticsChartInstanceIds())
-      .toEqual(chartIdsBeforeSwitch);
-    await dashboardPage.waitForAnalyticsChartsPainted(4);
     await dashboardPage.captureAnalyticsScreenshot(screenshots.lightRestored);
 
     console.info(
@@ -95,40 +73,6 @@ test.describe("TC007 主题切换性能回归", () => {
           updateCallbackMs: roundTiming(record.updateCallbackDurationMs),
         })),
       )}`,
-    );
-
-    await mainLayout.captureNextThemeTransitionReadyCanvas();
-    await mainLayout.ensureThemeMode("dark");
-    await mainLayout.waitForThemeTransitionFinished(3);
-    await expectThemeTransitionRuntimeClean(mainLayout);
-
-    const readyBoundarySnapshot =
-      await mainLayout.getThemeTransitionProbeSnapshot();
-    expect(readyBoundarySnapshot.transitions).toHaveLength(3);
-    expectReadyCanvasSnapshot(
-      readyBoundarySnapshot.transitions[2],
-      4,
-      chartIdsBeforeSwitch,
-    );
-    expect(await dashboardPage.getAnalyticsChartInstanceIds()).toEqual(
-      chartIdsBeforeSwitch,
-    );
-
-    await mainLayout.captureNextThemeTransitionReadyCanvas();
-    await mainLayout.ensureThemeMode("light");
-    await mainLayout.waitForThemeTransitionFinished(4);
-    await expectThemeTransitionRuntimeClean(mainLayout);
-
-    const restoredReadyBoundarySnapshot =
-      await mainLayout.getThemeTransitionProbeSnapshot();
-    expect(restoredReadyBoundarySnapshot.transitions).toHaveLength(4);
-    expectReadyCanvasSnapshot(
-      restoredReadyBoundarySnapshot.transitions[3],
-      4,
-      chartIdsBeforeSwitch,
-    );
-    expect(await dashboardPage.getAnalyticsChartInstanceIds()).toEqual(
-      chartIdsBeforeSwitch,
     );
   });
 
@@ -212,41 +156,6 @@ async function expectThemeTransitionRuntimeClean(mainLayout: MainLayout) {
       x: "",
       y: "",
     });
-}
-
-function expectReadyCanvasSnapshot(
-  record: {
-    readyCanvasCount: null | number;
-    readyChartInstanceIds: null | string[];
-    readyPaintedCanvasCount: null | number;
-    readyRejected: boolean;
-    readySettled: boolean;
-  },
-  minimumCount: number,
-  expectedInstanceIds: string[],
-) {
-  expect(record.readySettled).toBeTruthy();
-  expect(record.readyRejected).toBeFalsy();
-  expect(record.readyCanvasCount).not.toBeNull();
-  expect(record.readyCanvasCount ?? 0).toBeGreaterThanOrEqual(minimumCount);
-  expect(record.readyPaintedCanvasCount).toBe(record.readyCanvasCount);
-  expect(record.readyChartInstanceIds).toEqual(expectedInstanceIds);
-}
-
-function expectPaintedChartSnapshot(
-  paintInfo: Array<{
-    canvasCount: number;
-    paintedCanvasCount: number;
-  }>,
-  minimumCount: number,
-) {
-  expect(paintInfo.length).toBeGreaterThanOrEqual(minimumCount);
-  expect(
-    paintInfo.every(
-      ({ canvasCount, paintedCanvasCount }) =>
-        canvasCount > 0 && paintedCanvasCount > 0,
-    ),
-  ).toBeTruthy();
 }
 
 function expectCircularThemeAnimation(

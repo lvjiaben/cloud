@@ -7,11 +7,11 @@
 ## What Changes
 
 - 明确 `Storage()` 为插件私有对象存储领域能力，`Files()` 为宿主文件中心资源投影领域能力；二者契约与生命周期互不混入。
-- 迁移 `linapro-demo-source` 示例，使源码插件附件通过 `pluginhost.Services.Storage()` / `storagecap.Service` 管理，禁止直读 `upload.path` 拼接宿主本地路径。
+- 迁移 `demo-source` 示例，使源码插件附件通过 `pluginhost.Services.Storage()` / `storagecap.Service` 管理，禁止直读 `upload.path` 拼接宿主本地路径。
 - 为动态插件 `storage` host service 增加 `put.init` / `put.chunk` / `put.commit` / `put.abort` 分片方法；guest SDK 的 `Storage().Put` 按输入大小自动选择单次或分片上传。
 - 落实 `storagecap.Provider` 扩展：源码插件通过 `storagecap.Provide(pluginID, factory)` 注册云后端；运行时以「唯一可服务已注册 provider 插件」自动选中（0 个回退 local，多个冲突拒绝），不依赖主配置 active provider ID。
 - 交付官方 source 云存储插件：腾讯云 COS、阿里云 OSS、华为云 OBS、七牛云 Kodo、AWS S3、Azure Blob 厂商插件，以及 S3 兼容协议插件；各自实现完整 `Provider`、settings API/页面、密钥掩码与连通性探测。
-- 云存储配置菜单统一挂载到宿主 `setting`（系统设置）；不新增 `storage` 一级稳定目录，不引入 `linapro-storage-core` 壳插件。
+- 云存储配置菜单统一挂载到宿主 `setting`（系统设置）；不新增 `storage` 一级稳定目录，不引入 `storage-core` 壳插件。
 - **客户端直连访问**：`storagecap.Provider` 可选实现 DirectAccess 探测与签发；`storagecap.Service` 提供直连 put/get 与确认语义；官方七云插件实现 put/get 直连；配置页补充浏览器 CORS 运维说明；local 与不支持时降级服务端中转。
 - **Out of scope**：跨 provider 数据迁移、多 active provider 并存、按租户选择不同云后端、动态插件实现 Provider、浏览器默认内嵌各云官方 SDK。
 
@@ -32,7 +32,7 @@
 ## Impact
 
 - **宿主 `lina-core`**：`storagecap` 公开方法契约保持稳定并扩展 DirectAccess；强化 Provider 选择与冲突语义；动态 storage host service 与 guest SDK 支持分片上传；直连 path 授权与稳定业务码；菜单种子不维护 `storage` 一级目录。
-- **插件 `lina-plugins`**：`linapro-storage-cos`、`linapro-storage-oss`、`linapro-storage-obs`、`linapro-storage-qiniu`、`linapro-storage-aws`、`linapro-storage-azure`、`linapro-storage-s3` 实现完整 Provider + DirectAccess；`linapro-demo-source` / demo 动态插件示例与文档更新。
+- **插件 `lina-plugins`**：`storage-cos`、`storage-oss`、`storage-obs`、`storage-qiniu`、`storage-aws`、`storage-azure`、`storage-s3` 实现完整 Provider + DirectAccess；`demo-source` / demo 动态插件示例与文档更新。
 - **运行时**：业务插件继续只调用 `Storage()`；启用恰好一个云插件后对象写入云桶；支持直连时客户端可直传；误多开则 `CodeStorageProviderConflict`；唯一云插件配置无效时 fail-closed，不静默回退 local。
 - **依赖**：云 SDK 仅引入各云插件 `go.mod`，宿主不引入云 SDK。
 - **i18n**：云插件菜单/设置页/错误文案/CORS 提示双语；宿主不再维护 `storage` 菜单标题。

@@ -25,7 +25,7 @@ import (
 
 const (
 	// notifyTenantMembershipTable is the plugin-owned membership table used by tests.
-	notifyTenantMembershipTable = "plugin_linapro_tenant_core_user_membership"
+	notifyTenantMembershipTable = "plugin_tenant_core_user_membership"
 	// notifyTenantMembershipStatusActive marks active test memberships.
 	notifyTenantMembershipStatusActive = 1
 )
@@ -356,13 +356,13 @@ func insertNotifyTenantTestMembership(t *testing.T, ctx context.Context, userID 
 }
 
 // ensureNotifyTenantTestMembershipTable creates the minimal plugin membership
-// table needed by host notification tests when the linapro-tenant-core plugin has not
+// table needed by host notification tests when the tenant-core plugin has not
 // been installed in the local test database.
 func ensureNotifyTenantTestMembershipTable(t *testing.T, ctx context.Context) {
 	t.Helper()
 
 	_, err := g.DB().Exec(ctx, `
-CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_user_membership (
+CREATE TABLE IF NOT EXISTS plugin_tenant_core_user_membership (
 	    "id" BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 	    "user_id" BIGINT NOT NULL,
 	    "tenant_id" BIGINT NOT NULL,

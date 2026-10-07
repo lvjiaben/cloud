@@ -1,0 +1,16 @@
+{
+  "plugins.idc_resource.api.admin.v1.ProviderCapacityObservationListReq.fields.page.dc": "从1开始的页码，不能同时传入游标",
+  "plugins.idc_resource.api.admin.v1.ProviderCapacityObservationListRes.fields.total.dc": "当前员工可见范围及筛选条件下的准确总条数",
+  "plugins.idc_resource.api.admin.v1.ProviderHealthListReq.fields.page.dc": "从1开始的页码，不能同时传入游标",
+  "plugins.idc_resource.api.admin.v1.ProviderHealthListRes.fields.total.dc": "当前员工可见范围及筛选条件下的准确总条数",
+  "plugins.idc_resource.api.admin.v1.ProviderTaskListReq.fields.page.dc": "从1开始的页码，不能同时传入游标",
+  "plugins.idc_resource.api.admin.v1.ProviderTaskListRes.fields.total.dc": "当前员工可见范围及筛选条件下的准确总条数",
+  "plugins.idc_resource.api.admin.v1.ServerRenewalListReq.fields.page.dc": "从1开始的页码，不能同时传入游标",
+  "plugins.idc_resource.api.admin.v1.ServerRenewalListRes.fields.total.dc": "当前员工可见范围及筛选条件下的准确总条数",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewReq.fields.poolPage.dc": "资源池页码，从1开始",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewReq.fields.poolPageSize.dc": "资源池每页条数",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewReq.fields.financePage.dc": "财务快照页码，从1开始",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewReq.fields.financePageSize.dc": "财务快照每页条数",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewSummary.fields.poolTotal.dc": "当前员工可见范围内的准确资源池总数",
+  "plugins.idc_resource.api.admin.v1.ResourceOverviewSummary.fields.financeTotal.dc": "当前员工可见范围内最新财务快照的准确总数"
+}

@@ -1,0 +1,21 @@
+{
+  "apiVersion": "2021-05-26",
+  "secretId": "replace-with-this-installation-secret-id",
+  "secretKey": "replace-with-this-installation-secret-key",
+  "appId": "replace-with-this-installation-app-id",
+  "callbackVerifyToken": "replace-with-this-installation-callback-token",
+  "callbackUrlKey": "0123456789abcdef0123456789abcdef",
+  "capabilities": [
+    "template.read",
+    "flow.create",
+    "flow.release",
+    "sign_url.create",
+    "flow.query",
+    "flow.download",
+    "evidence_report.create",
+    "callback.receive",
+    "auto_sign.enterprise",
+    "usage.read",
+    "account_bill.read"
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "eyebrow": "客户财务中心",
+  "lead": "余额、应收账单、资金流水和自动续费都以后端最新账务事实为准。不同币种始终分开显示，不进行隐式换算。",
+  "views": {
+    "overview": "财务总览",
+    "invoices": "我的账单",
+    "transactions": "资金流水",
+    "renewals": "自动续费"
+  },
+  "overview": { "openInvoices": "待处理账单", "autoRenew": "已开启自动续费" },
+  "creditPayment": {
+    "action": "使用信用额度支付",
+    "title": "确认使用信用额度",
+    "description": "本次支付 {amount}，支付后预计剩余可用额度 {remaining}。确认后服务器会再次检查额度。",
+    "confirm": "确认信用支付",
+    "success": "信用支付成功，订单已取得财务结清资格。",
+    "failed": "信用支付没有完成，账单和额度保持不变。"
+  },
+  "account": {
+    "customer_balance": "余额账户",
+    "customer_credit": "信用账户",
+    "customer_gift": "赠送账户",
+    "customer_commission": "佣金账户"
+  },
+  "amount": {
+    "balance": "账户余额",
+    "available": "可用余额",
+    "outstanding": "待付金额",
+    "total": "账单金额"
+  },
+  "status": {
+    "all": "全部状态",
+    "active": "有效",
+    "cancelled": "已取消",
+    "expired": "已到期",
+    "grace": "宽限期",
+    "overdue": "已逾期",
+    "paid": "已付清",
+    "partially_paid": "部分付款",
+    "pending": "待处理",
+    "confirming": "确认中",
+    "failed": "未完成",
+    "pending_payment": "待付款",
+    "refunded": "已退款",
+    "submitted": "已提交，待通道确认",
+    "succeeded": "已完成"
+  },
+  "invoice": {
+    "detailTitle": "账单 {invoiceNo}",
+    "due": "付款截止",
+    "items": "账单项目"
+  },
+  "transaction": {
+    "businessAmount": "业务金额",
+    "change": "账户变动",
+    "posted": "入账时间"
+  },
+  "filters": { "currency": "币种，如 CNY" },
+  "empty": {
+    "balances": "暂时没有余额账户",
+    "invoices": "暂无账单",
+    "transactions": "暂无资金流水",
+    "renewals": "暂无可续期的长期权益"
+  },
+  "recharge": {
+    "action": "账户充值",
+    "title": "充值到账户余额",
+    "description": "选择币种和本地商家已启用的支付通道，支付确认后自动计入同币种余额。",
+    "currency": "充值币种",
+    "amount": "充值金额",
+    "channel": "支付通道",
+    "mode": "付款方式",
+    "continue": "继续付款",
+    "cancel": "暂不充值",
+    "close": "关闭",
+    "invalid": "请填写有效的正数金额，并选择支付通道和付款方式。",
+    "failed": "暂时无法发起充值，请检查支付通道后重试。",
+    "confirmationNote": "付款页面返回不代表已经到账；系统只在支付平台确认成功后增加余额。",
+    "scanTitle": "微信扫码付款",
+    "scanDescription": "请使用微信扫描二维码。付款后点击“查看到账状态”，系统会读取服务端确认结果。",
+    "checkStatus": "查看到账状态",
+    "modes": {
+      "alipay_page": "支付宝电脑网站",
+      "alipay_wap": "支付宝手机网站",
+      "wechat_h5": "微信 H5",
+      "wechat_native": "微信扫码",
+      "wechat_jsapi": "微信公众号支付",
+      "epay_cashier": "易支付收银台"
+    },
+    "unavailable": "当前尚未安装通过能力门禁的支付通道，充值入口暂不可用；余额支付不受影响。"
+  },
+  "paymentReturn": {
+    "title": "付款确认",
+    "eyebrow": "安全付款状态",
+    "complete": "充值已经到账",
+    "confirming": "正在等待支付平台确认",
+    "description": "这里展示服务端确认结果。即使付款页面已返回，也不会直接把余额显示为到账。",
+    "attemptNo": "付款编号",
+    "currency": "币种",
+    "refresh": "刷新状态",
+    "back": "返回财务中心",
+    "loadFailed": "暂时无法读取付款状态，请稍后刷新。"
+  },
+  "merge": {
+    "action": "合并所选账单",
+    "selected": "已选择 {count} 张",
+    "title": "确认合并账单",
+    "description": "只会合并未发生付款、退款或减免的同客户同币种账单；原账单会保留为不可变凭证。",
+    "confirm": "确认合并"
+  },
+  "balancePayment": {
+    "action": "余额支付",
+    "title": "确认余额支付",
+    "description": "确认使用同币种可用余额支付这张账单？系统会按当前实际欠款精确扣款。",
+    "confirm": "确认支付"
+  },
+  "renewal": {
+    "note": "自动续费只使用同币种可用余额；余额不足不会伪造成功状态。",
+    "enabled": "已开启",
+    "disabled": "未开启",
+    "configure": "设置自动续费",
+    "entitlementStatus": "权益状态",
+    "expiry": "权益到期时间",
+    "nextAttempt": "下次尝试",
+    "insufficient": "自动续费因余额不足未完成。充值后系统会按当前策略重试。",
+    "failureNotify": "续费失败时通知我",
+    "cycles": "每次续费周期数",
+    "leadDays": "提前天数",
+    "attempts": "最大尝试次数",
+    "retryHours": "重试间隔（小时）"
+  },
+  "actions": {
+    "apply": "应用筛选",
+    "backToInvoices": "返回账单列表",
+    "detail": "查看明细",
+    "next": "下一页",
+    "previous": "上一页",
+    "retry": "重新加载",
+    "save": "保存策略"
+  },
+  "messages": {
+    "loadFailed": "财务数据暂时无法加载，请稍后重试。",
+    "merged": "账单已安全合并，列表已经刷新。",
+    "paid": "余额支付成功，账单状态已经刷新。",
+    "renewalSaved": "自动续费策略已更新。"
+  }
+}

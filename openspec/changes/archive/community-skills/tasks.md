@@ -5,7 +5,7 @@
 - [x] 新建`.agents/skills/lina-community-release-changelog/SKILL.md`，覆盖手动触发、默认范围、显式双引用范围、证据收集、双语模板和`temp/changelog.md`输出。
 - [x] **FB-1**（`issue-review`）：新增已处理核对流程，功能或`Bug`已在当前项目中处理时评论说明并关闭`Issue`。
 - [x] **FB-2**（`pr-review`）：将`SKILL.md`改为中文描述，保留英文评论模板。
-- [x] **FB-3**（`release-changelog`）：修复`plugin-full / plugins-2-of-5`中源码插件卸载用例受动态插件反向依赖状态污染导致的`GitHub Actions`失败，在`beforeEach`中同步重置`linapro-demo-dynamic`注册行。
+- [x] **FB-3**（`release-changelog`）：修复`plugin-full / plugins-2-of-5`中源码插件卸载用例受动态插件反向依赖状态污染导致的`GitHub Actions`失败，在`beforeEach`中同步重置`demo-dynamic`注册行。
 - [x] 运行`openspec validate`三个变更均通过`--strict`验证。
 - [x] 静态检索确认技能覆盖默认仓库、指定编号、全量遍历、跳过规则、语言跟随、标签/关闭/通过契约和不可信输入边界。
 - [x] `git diff --name-only -- .github apps manifest hack Makefile make.cmd`无输出，确认未修改运行时代码、数据库、前端、插件或`CI`。

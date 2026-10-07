@@ -1,9 +1,9 @@
-import {existsSync, readdirSync, readFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
-import {dirname, join, relative, sep} from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join, relative, sep } from 'node:path';
 
-import {defineConfig} from '@vben/vite-config';
-import {loadEnv, type ViteDevServer} from 'vite';
+import { defineConfig } from '@vben/vite-config';
+import { loadEnv, type ViteDevServer } from 'vite';
 
 // Cache the HTML content to avoid repeated synchronous file reads
 let cachedApidocsHtml: string | undefined;
@@ -15,6 +15,15 @@ const appThirdPartyLocaleModuleId = 'virtual:lina-app-third-party-locales';
 const vxeLocaleModuleId = 'virtual:lina-vxe-locales';
 const appRequire = createRequire(import.meta.url);
 const sourcePluginsEnabled = process.env.LINAPRO_SOURCE_PLUGINS === '1';
+
+function isSourcePluginDirectory(pluginPath: string) {
+  const manifestPath = join(pluginPath, 'plugin.yaml');
+  if (!existsSync(manifestPath)) {
+    return false;
+  }
+  const manifest = readFileSync(manifestPath, 'utf8');
+  return /^type:\s*source\s*$/mu.test(manifest);
+}
 
 function collectPluginSourceFiles(pluginRoot: string) {
   const pageFiles: string[] = [];
@@ -28,6 +37,12 @@ function collectPluginSourceFiles(pluginRoot: string) {
     for (const entry of readdirSync(currentPath, { withFileTypes: true })) {
       const fullPath = join(currentPath, entry.name);
       if (entry.isDirectory()) {
+        if (
+          currentPath === pluginRoot &&
+          !isSourcePluginDirectory(fullPath)
+        ) {
+          continue;
+        }
         walk(fullPath);
         continue;
       }
@@ -71,7 +86,7 @@ function isPluginFrontendSourceFile(pluginRoot: string, filePath: string) {
     return false;
   }
 
-  if (!normalizedFilePath.endsWith('.vue')) {
+  if (!/\.(?:c|m)?(?:j|t)sx?$|\.vue$/.test(normalizedFilePath)) {
     return false;
   }
 
@@ -220,10 +235,7 @@ function resolveWorkspaceStoplightApiDocsPath(base: string) {
 
 function readStoplightApiDocsHtml() {
   if (!cachedApidocsHtml) {
-    const filePath = join(
-      import.meta.dirname,
-      'public/stoplight/apidocs.html',
-    );
+    const filePath = join(import.meta.dirname, 'public/stoplight/apidocs.html');
     cachedApidocsHtml = readFileSync(filePath, 'utf8');
   }
   return cachedApidocsHtml;
@@ -372,8 +384,7 @@ export default defineConfig(async (config) => {
   // linactl/make dev 会注入 LINAPRO_BACKEND_PROXY_TARGET，便于用 LINA_CORE_PORT
   // 改后端端口而无需改写下方 proxy 字面量；缺省仍指向默认宿主后端端口。
   const backendProxyTarget =
-    process.env.LINAPRO_BACKEND_PROXY_TARGET?.trim() ||
-    'http://localhost:9120';
+    process.env.LINAPRO_BACKEND_PROXY_TARGET?.trim() || 'http://localhost:6030';
   const workspaceStoplightApiDocsPath = resolveWorkspaceStoplightApiDocsPath(
     env.VITE_BASE || '/',
   );

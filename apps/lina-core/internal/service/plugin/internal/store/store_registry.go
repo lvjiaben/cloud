@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/util/gconv"
 
 	pluginv1 "lina-core/api/plugin/v1"
@@ -281,6 +282,36 @@ func (s *serviceImpl) SetPluginStatus(ctx context.Context, pluginID string, enab
 	}
 	if registry == nil {
 		return nil
+	}
+	return nil
+}
+
+// SetPluginNewBusinessState changes only the new-business admission state.
+func (s *serviceImpl) SetPluginNewBusinessState(
+	ctx context.Context,
+	pluginID string,
+	state plugintypes.NewBusinessState,
+) error {
+	data := do.SysPlugin{NewBusinessState: state.String()}
+	if state == plugintypes.NewBusinessStateStopped {
+		data.NewBusinessStoppedAt = timePtr(time.Now())
+	}
+	result, err := dao.SysPlugin.Ctx(ctx).
+		Where(do.SysPlugin{PluginId: pluginID, Installed: statusflag.Installed.Int()}).
+		Data(data).
+		Update()
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return gerror.Newf("installed plugin registry changed during new-business transition: %s", pluginID)
+	}
+	if updated := updateStartupRegistry(ctx, pluginID, data); updated != nil {
+		updated.NewBusinessState = state.String()
 	}
 	return nil
 }

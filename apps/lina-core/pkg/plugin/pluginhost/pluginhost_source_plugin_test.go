@@ -167,13 +167,13 @@ func TestProviderDeclarationsStoreFactories(t *testing.T) {
 // plugins cannot declare descriptors owned by a different plugin ID.
 func TestProviderDeclarationsRejectMismatchedCapabilityOwner(t *testing.T) {
 	providers := NewDeclarations("test-plugin-owner").Providers()
-	descriptor := testCapabilityDescriptor("linapro-ai-core", "ai", "v1", "text.generate")
+	descriptor := testCapabilityDescriptor("ai-core", "ai", "v1", "text.generate")
 
 	err := providers.ProvideCapability(descriptor)
 	if err == nil {
 		t.Fatal("expected mismatched owner descriptor declaration to fail")
 	}
-	for _, want := range []string{"test-plugin-owner", "linapro-ai-core", "ai", "v1"} {
+	for _, want := range []string{"test-plugin-owner", "ai-core", "ai", "v1"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("expected error to contain %q, got %v", want, err)
 		}

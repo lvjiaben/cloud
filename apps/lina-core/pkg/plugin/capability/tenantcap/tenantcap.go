@@ -79,7 +79,7 @@ const (
 	// CapabilityTenantV1 identifies the versioned tenant framework capability.
 	CapabilityTenantV1 = "framework.tenant.v1"
 	// ProviderPluginID is the official source-plugin identifier that provides tenant capability.
-	ProviderPluginID = "linapro-tenant-core"
+	ProviderPluginID = "tenant-core"
 )
 
 // TenantID identifies one tenant in the pooled tenancy model.

@@ -118,6 +118,9 @@ type Service interface {
 		pluginGroup *ghttp.RouterGroup,
 		middlewares pluginhost.RouteMiddlewares,
 	) error
+	// BindBusinessExtensionHost attaches the source-owner admission facade after
+	// the root plugin service (and its lifecycle lock) has been constructed.
+	BindBusinessExtensionHost(host businessExtensionHost)
 	// RegisterJobs registers callback-contributed scheduled jobs for source plugins.
 	RegisterJobs(ctx context.Context) error
 	// ListExecutableJobs returns plugin-owned job definitions whose
@@ -231,7 +234,22 @@ type serviceImpl struct {
 
 	runtimeSvc runtime.Service
 
+	businessExtensionHost businessExtensionHost
+
 	sharedState *sharedState
+}
+
+// businessExtensionHost creates one source-plugin-owner-scoped facade.
+type businessExtensionHost interface {
+	ForBusinessExtensionOwner(pluginID string) pluginhost.BusinessExtensionRegistrar
+}
+
+// BindBusinessExtensionHost completes the construction cycle without exposing
+// the lifecycle lock or persistence tables to source plugins.
+func (s *serviceImpl) BindBusinessExtensionHost(host businessExtensionHost) {
+	if s != nil {
+		s.businessExtensionHost = host
+	}
 }
 
 // New creates and returns a new integration Service.

@@ -1,6 +1,6 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
+import { test, expect } from "../../../fixtures/auth";
 
 import {
   buildShellJobPayload,
@@ -13,9 +13,13 @@ import {
   getLog,
   setCronShellEnabled,
   triggerJob,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-2 Shell 输出截断可查看', () => {
+test.describe("TC-2 Shell 输出截断可查看", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_shell_output_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -23,11 +27,13 @@ test.describe('TC-2 Shell 输出截断可查看', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
     await expect
-      .poll(async () => (await getConfigByKey(api, 'sys.cron.shell.enabled')).value)
-      .toBe('true');
+      .poll(
+        async () => (await getConfigByKey(api, "sys.cron.shell.enabled")).value,
+      )
+      .toBe("true");
   });
 
   test.afterAll(async () => {
@@ -41,14 +47,18 @@ test.describe('TC-2 Shell 输出截断可查看', () => {
     await api.dispose();
   });
 
-  test('TC-2a~d: 超长 stdout/stderr 会被截断并保存在结果日志中', async () => {
+  test("TC-2a~d: 超长 stdout/stderr 会被截断并保存在结果日志中", async () => {
     const defaultGroup = await getDefaultGroup(api);
-    const created = await createJob(api, buildShellJobPayload({
-      groupId: defaultGroup.id,
-      name: jobName,
-      shellCmd: "head -c 70000 /dev/zero | tr '\\000' 'a'; head -c 70000 /dev/zero | tr '\\000' 'b' 1>&2",
-      timeoutSeconds: 30,
-    }));
+    const created = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId: defaultGroup.id,
+        name: jobName,
+        shellCmd:
+          "head -c 70000 /dev/zero | tr '\\000' 'a'; head -c 70000 /dev/zero | tr '\\000' 'b' 1>&2",
+        timeoutSeconds: 30,
+      }),
+    );
     jobId = created.id;
 
     const triggered = await triggerJob(api, jobId);
@@ -57,21 +67,21 @@ test.describe('TC-2 Shell 输出截断可查看', () => {
     await expect
       .poll(async () => (await getLog(api, triggered.logId)).status, {
         timeout: 10000,
-        message: '超长输出脚本执行后应写入成功日志',
+        message: "超长输出脚本执行后应写入成功日志",
       })
-      .toBe('success');
+      .toBe("success");
 
     const logDetail = await getLog(api, triggered.logId);
-    const result = JSON.parse(logDetail.resultJson ?? '{}') as {
+    const result = JSON.parse(logDetail.resultJson ?? "{}") as {
       stdout?: string;
       stderr?: string;
       exitCode?: number;
     };
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout ?? '').toContain('[truncated]');
-    expect(result.stderr ?? '').toContain('[truncated]');
-    expect((result.stdout ?? '').length).toBeGreaterThan(1024);
-    expect((result.stderr ?? '').length).toBeGreaterThan(1024);
+    expect(result.stdout ?? "").toContain("[truncated]");
+    expect(result.stderr ?? "").toContain("[truncated]");
+    expect((result.stdout ?? "").length).toBeGreaterThan(1024);
+    expect((result.stderr ?? "").length).toBeGreaterThan(1024);
   });
 });

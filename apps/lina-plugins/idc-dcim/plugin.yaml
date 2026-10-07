@@ -1,0 +1,163 @@
+id: idc-dcim
+name: DCIM Server Connector
+version: v0.1.1
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed DCIM server connector with an explicitly frozen legacy or BMS protocol per interface revision.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.21 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods:
+      - configuration.candidates
+      - provision
+      - query
+    product_configuration:
+      version: v1
+      fields:
+        - key: server_group
+          type: single_select
+          label: { en-US: DCIM server group, zh-CN: DCIM 服务器组 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+        - key: ip_address_count
+          type: integer
+          label: { en-US: IP address count, zh-CN: IP 地址数量 }
+          required: true
+          minimum: "1"
+          maximum: "256"
+        - key: backup_count
+          type: integer
+          label: { en-US: Backup quota, zh-CN: 备份配额 }
+          minimum: "0"
+          maximum: "1024"
+        - key: snapshot_count
+          type: integer
+          label: { en-US: Snapshot quota, zh-CN: 快照配额 }
+          minimum: "0"
+          maximum: "1024"
+    customer_configuration:
+      version: v1
+      fields:
+        - key: operating_system
+          type: single_select
+          label: { en-US: Operating system, zh-CN: 操作系统 }
+          required: true
+          dynamic_candidates: { version: v1, method: configuration.candidates }
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability:
+          enUS: DCIM server configuration with idc-resource-owned fulfillment
+          zhCN: DCIM 服务器配置，以及由 idc-resource 负责的履约
+        granularity: per_quantity_unit
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: unsupported
+        entitlementOwnerId: idc-resource
+        methodRoles: { provision: provision, query: query }
+  - point: resource-provider
+    version: v1
+    role: provider
+    owner: idc-resource
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: endpoint
+          type: single_line
+          label: { en-US: DCIM API endpoint, zh-CN: DCIM 接口地址 }
+          required: true
+          text_format: url
+          maximum_length: 2048
+        - key: protocol
+          type: single_select
+          label: { en-US: API protocol, zh-CN: 接口协议 }
+          required: true
+          static_candidates:
+            - value: legacy
+              label: { en-US: Legacy DCIM API, zh-CN: 旧版 DCIM 接口 }
+            - value: bms
+              label: { en-US: BMS API, zh-CN: BMS 接口 }
+        - key: username
+          type: secret
+          label: { en-US: Legacy API username, zh-CN: 旧版接口用户名 }
+        - key: password
+          type: secret
+          label: { en-US: Legacy API password, zh-CN: 旧版接口密码 }
+        - key: access_user
+          type: secret
+          label: { en-US: BMS access user, zh-CN: BMS 访问用户 }
+        - key: access_token
+          type: secret
+          label: { en-US: BMS access token, zh-CN: BMS 访问令牌 }
+      conditions:
+        - when: { operator: equal, field: protocol, value: legacy }
+          actions:
+            - { action: show, field: username }
+            - { action: require, field: username }
+            - { action: show, field: password }
+            - { action: require, field: password }
+            - { action: hide, field: access_user }
+            - { action: hide, field: access_token }
+        - when: { operator: equal, field: protocol, value: bms }
+          actions:
+            - { action: show, field: access_user }
+            - { action: require, field: access_user }
+            - { action: show, field: access_token }
+            - { action: require, field: access_token }
+            - { action: hide, field: username }
+            - { action: hide, field: password }
+    methods:
+      - connection.verify
+      - capabilities.discover
+      - configuration.candidates
+      - provision.parameters.build
+      - provider-capacity.list
+      - operation.execute
+      - task.query
+      - resource.query
+    provider_metadata:
+      type: resource-provider-contract
+      version: v1
+      values:
+        providerId: dcim
+        interfaceSettingsProjection:
+          - protocol
+        authenticationProfiles:
+          selectorField: protocol
+          profiles:
+            legacy:
+              strategy: per_request_form
+              fields:
+                username: username
+                password: password
+            bms:
+              strategy: per_request_headers
+              fields:
+                access-user: access_user
+                access-token: access_token
+hostServices:
+  - service: confidentialoutbound
+    methods: [execute]

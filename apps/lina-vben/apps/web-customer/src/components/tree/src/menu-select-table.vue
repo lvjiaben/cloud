@@ -1,0 +1,338 @@
+<script setup lang="ts">
+import type { RadioChangeEvent } from 'ant-design-vue';
+
+import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { MenuTreeNode } from '#/api/system/menu';
+
+import type { MenuPermissionOption } from './data';
+
+import { nextTick, onMounted, ref, shallowRef, watch } from 'vue';
+
+import { cloneDeep } from '@vben/utils';
+
+import { Alert, Checkbox, RadioGroup, Space } from 'ant-design-vue';
+
+import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { $t } from '#/locales';
+import { findGroupParentIds } from '#/utils/tree';
+
+/**
+ * 数组去重
+ */
+function uniq<T>(arr: T[]): T[] {
+  return [...new Set(arr)];
+}
+
+import { columns, nodeOptions } from './data';
+import {
+  filterPersistedMenuIds,
+  menusWithPermissions,
+  rowAndChildrenChecked,
+  setPermissionsChecked,
+  setTableChecked,
+} from './helper';
+import { useFullScreenGuide } from './hook';
+
+defineOptions({
+  name: 'MenuSelectTable',
+  inheritAttrs: false,
+});
+
+const props = withDefaults(
+  defineProps<{
+    checkedKeys: (number | string)[];
+    defaultExpandAll?: boolean;
+    menus: MenuTreeNode[];
+  }>(),
+  {
+    defaultExpandAll: true,
+    checkedKeys: () => [],
+  },
+);
+
+const association = defineModel<boolean>('association', {
+  default: true,
+});
+const emit = defineEmits<{
+  'update:checkedKeys': [keys: (number | string)[]];
+}>();
+
+const gridOptions: VxeGridProps = {
+  checkboxConfig: {
+    labelField: 'label',
+    checkStrictly: !association.value,
+  },
+  size: 'small',
+  columns,
+  // Keep the permission selector bounded so large menu trees scroll inside
+  // the table instead of expanding the surrounding drawer indefinitely.
+  height: 520,
+  keepSource: true,
+  maxHeight: 520,
+  pagerConfig: {
+    enabled: false,
+  },
+  proxyConfig: {
+    enabled: false,
+  },
+  toolbarConfig: {
+    refresh: false,
+    custom: false,
+  },
+  rowConfig: {
+    isHover: false,
+    isCurrent: false,
+    keyField: 'id',
+  },
+  scrollY: {
+    enabled: true,
+    gt: 0,
+  },
+  treeConfig: {
+    parentField: 'parentId',
+    rowField: 'id',
+    transform: false,
+  },
+  showOverflow: false,
+};
+
+const checkedNum = ref(0);
+const selectedKeys = shallowRef<(number | string)[]>([]);
+
+function getTableRecords() {
+  return tableApi.grid.getData() as MenuPermissionOption[];
+}
+
+function getCheckedRecords() {
+  return (tableApi?.grid?.getCheckboxRecords?.(true) ??
+    []) as MenuPermissionOption[];
+}
+
+function normalizeCheckedKeys(keys: (number | string)[]) {
+  return filterPersistedMenuIds(uniq([...keys]));
+}
+
+function updateSelectedKeys(keys: (number | string)[], emitChange = false) {
+  const checkedKeys = normalizeCheckedKeys(keys);
+  selectedKeys.value = checkedKeys;
+  checkedNum.value = checkedKeys.length;
+  if (emitChange) {
+    emit('update:checkedKeys', checkedKeys);
+  }
+}
+
+function resetTableChecked(records: MenuPermissionOption[]) {
+  records.forEach((item) => {
+    rowAndChildrenChecked(item, false);
+  });
+  tableApi.grid.clearCheckboxRow();
+}
+
+function applyCheckedKeysToTable(
+  keys: (number | string)[],
+  associationMode = association.value,
+) {
+  const records = getTableRecords();
+  resetTableChecked(records);
+  setTableChecked(keys, records, tableApi, associationMode);
+}
+
+function syncSelectedKeysFromTable(emitChange = false) {
+  updateSelectedKeys(getTableCheckedKeys(), emitChange);
+}
+
+const [BasicTable, tableApi] = useVbenVxeGrid({
+  gridOptions,
+  gridEvents: {
+    checkboxChange: (params: any) => {
+      const checked = params.checked;
+      const record = params.row;
+      if (association.value) {
+        rowAndChildrenChecked(record, checked);
+      } else {
+        setPermissionsChecked(record, checked);
+      }
+      syncSelectedKeysFromTable(true);
+    },
+    checkboxAll: (params: any) => {
+      const records = params.$grid.getData();
+      records.forEach((item: any) => {
+        rowAndChildrenChecked(item, params.checked);
+      });
+      syncSelectedKeysFromTable(true);
+    },
+  },
+});
+
+const { FullScreenGuide, closeGuide, openGuide } = useFullScreenGuide();
+onMounted(() => {
+  watch(
+    () => props.menus,
+    async (menus) => {
+      const clonedMenus = cloneDeep(menus);
+      menusWithPermissions(clonedMenus);
+      tableApi.setGridOptions({ data: clonedMenus });
+      applyCheckedKeysToTable(selectedKeys.value);
+      if (props.defaultExpandAll) {
+        await nextTick();
+        setExpandOrCollapse(true);
+      }
+    },
+  );
+
+  watch(association, (value) => {
+    tableApi.setGridOptions({
+      checkboxConfig: {
+        checkStrictly: !value,
+      },
+    });
+  });
+
+  watch(
+    () => props.checkedKeys,
+    (value) => {
+      updateSelectedKeys(value);
+      applyCheckedKeysToTable(selectedKeys.value);
+      setTimeout(openGuide, 1000);
+    },
+  );
+});
+
+async function handleAssociationChange(e: RadioChangeEvent) {
+  applyCheckedKeysToTable(selectedKeys.value, e.target.value);
+  await tableApi.grid.scrollTo(0, 0);
+}
+
+function setExpandOrCollapse(expand: boolean) {
+  tableApi.grid?.setAllTreeExpand(expand);
+}
+
+function handlePermissionChange(row: any, emitChange = true) {
+  if (association.value) {
+    const checkedPermissions = row.permissions.filter(
+      (item: any) => item.checked === true,
+    );
+    if (checkedPermissions.length > 0) {
+      tableApi.grid.setCheckboxRow(row, true);
+    }
+    if (checkedPermissions.length === 0) {
+      tableApi.grid.setCheckboxRow(row, false);
+    }
+  }
+  syncSelectedKeysFromTable(emitChange);
+}
+
+function getKeys(records: MenuPermissionOption[], addCurrent: boolean) {
+  const allKeys: (number | string)[] = [];
+  records.forEach((item) => {
+    if (item.children && item.children.length > 0) {
+      const keys = getKeys(item.children as MenuPermissionOption[], addCurrent);
+      allKeys.push(...keys);
+    } else {
+      addCurrent && allKeys.push(item.id);
+      if (item.permissions && item.permissions.length > 0) {
+        const ids = item.permissions
+          .filter((m) => m.checked === true)
+          .map((m) => m.id);
+        allKeys.push(...ids);
+      }
+    }
+  });
+  return uniq(allKeys);
+}
+
+function getTableCheckedKeys() {
+  if (association.value) {
+    const records = getCheckedRecords();
+    const nodeKeys = getKeys(records, true);
+    const parentIds = findGroupParentIds(props.menus, nodeKeys as number[]);
+    const realKeys = filterPersistedMenuIds(uniq([...parentIds, ...nodeKeys]));
+    return realKeys;
+  }
+
+  const records = getCheckedRecords();
+  const allRecords = getTableRecords();
+  const checkedIds = records.map((item: any) => item.id);
+  const permissionIds = getKeys(allRecords, false);
+  const allIds = filterPersistedMenuIds(
+    uniq([...checkedIds, ...permissionIds]),
+  );
+  return allIds;
+}
+
+defineExpose({
+  closeGuide,
+  getCheckedKeys: () => selectedKeys.value,
+});
+</script>
+
+<template>
+  <div class="flex h-full flex-col" id="menu-select-table">
+    <BasicTable>
+      <template #toolbar-actions>
+        <div
+          class="permission-selection-toolbar flex items-center gap-4"
+          data-testid="menu-permission-toolbar"
+        >
+          <RadioGroup
+            class="shrink-0"
+            data-testid="menu-permission-association-mode"
+            v-model:value="association"
+            :options="nodeOptions"
+            button-style="solid"
+            option-type="button"
+            @change="handleAssociationChange"
+          />
+          <Alert
+            class="permission-selection-count shrink-0"
+            data-testid="menu-permission-selected-count"
+            type="info"
+          >
+            <template #message>
+              <div>
+                {{ $t('pages.tree.messages.selectedPrefix') }}
+                <span class="text-primary mx-1 font-semibold">
+                  {{ checkedNum }}
+                </span>
+                {{ $t('pages.tree.messages.selectedSuffix') }}
+              </div>
+            </template>
+          </Alert>
+        </div>
+      </template>
+      <template #toolbar-tools>
+        <Space>
+          <a-button @click="setExpandOrCollapse(false)">
+            {{ $t('pages.common.collapse') }}
+          </a-button>
+          <a-button @click="setExpandOrCollapse(true)">
+            {{ $t('pages.common.expand') }}
+          </a-button>
+        </Space>
+      </template>
+      <template #permissions="{ row }">
+        <div class="flex flex-wrap gap-x-3 gap-y-1">
+          <Checkbox
+            v-for="permission in row.permissions"
+            :key="permission.id"
+            v-model:checked="permission.checked"
+            @change="() => handlePermissionChange(row)"
+          >
+            {{ permission.label }}
+          </Checkbox>
+        </div>
+      </template>
+    </BasicTable>
+    <FullScreenGuide />
+  </div>
+</template>
+
+<style scoped>
+.permission-selection-toolbar {
+  gap: 16px;
+}
+
+:deep(.ant-alert) {
+  padding: 4px 8px;
+}
+</style>

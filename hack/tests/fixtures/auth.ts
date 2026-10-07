@@ -42,6 +42,44 @@ async function installWorkspaceGoto(page: Page) {
   workspaceAwarePage[workspaceGotoInstalled] = true;
 }
 
+async function installSourcePluginRoutes(page: Page) {
+  const paths = (process.env.E2E_SOURCE_PLUGIN_ROUTES ?? '')
+    .split(',')
+    .map((path) => path.trim())
+    .filter((path) => path.startsWith('/'));
+  if (paths.length === 0) {
+    return;
+  }
+
+  await page.route('**/api/v1/menus/all', async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as {
+      code?: number;
+      data?: { list?: Array<Record<string, unknown>> };
+      message?: string;
+    };
+    const list = Array.isArray(payload.data?.list) ? payload.data.list : [];
+    const sourcePluginRoutes = paths.map((path, index) => ({
+      component: '#/views/system/plugin/dynamic-page',
+      id: -10_000 - index,
+      meta: {
+        order: 10_000 + index,
+        title: `Source plugin E2E ${index + 1}`,
+      },
+      name: `SourcePluginE2E${index + 1}`,
+      parentId: 0,
+      path,
+    }));
+    await route.fulfill({
+      response,
+      json: {
+        ...payload,
+        data: { ...payload.data, list: [...list, ...sourcePluginRoutes] },
+      },
+    });
+  });
+}
+
 export const test = base.extend<AuthFixtures>({
   page: async ({ page }, use) => {
     await installWorkspaceGoto(page);
@@ -64,6 +102,7 @@ export const test = base.extend<AuthFixtures>({
   adminPage: async ({ adminContext }, use) => {
     const page = await adminContext.newPage();
     await installWorkspaceGoto(page);
+    await installSourcePluginRoutes(page);
     await page.goto(workspacePath('/dashboard/analytics'), { waitUntil: 'domcontentloaded' });
     await waitForRouteReady(page, 15000);
     await use(page);

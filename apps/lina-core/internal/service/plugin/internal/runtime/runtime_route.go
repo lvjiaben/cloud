@@ -100,6 +100,11 @@ func (s *serviceImpl) AuthenticateDynamicRouteMiddleware(r *ghttp.Request) {
 		r.ExitAll()
 		return
 	}
+	if failure = s.authorizePageBridgeRoute(r.Context(), runtimeState, identity, r.Header); failure != nil {
+		s.writeDynamicRouteResponse(r, failure)
+		r.ExitAll()
+		return
+	}
 	if identity != nil {
 		setDynamicRouteIdentitySnapshot(r, identity)
 	}
@@ -158,6 +163,9 @@ func (s *serviceImpl) DispatchDynamicRoute(
 		return nil, err
 	}
 	if failure != nil {
+		return failure, nil
+	}
+	if failure = s.authorizePageBridgeRoute(ctx, runtimeState, identity, in.Request.Header); failure != nil {
 		return failure, nil
 	}
 	return s.executePreparedDynamicRoute(ctx, runtimeState, identity, in.Request)

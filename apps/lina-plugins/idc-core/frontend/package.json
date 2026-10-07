@@ -1,0 +1,27 @@
+{
+  "name": "@linapro/idc-core-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm run typecheck && vite build && pnpm run verify:bundle",
+    "test": "pnpm run test:typecheck && vitest run pages && pnpm run test:requests",
+    "test:requests": "node ../../../lina-vben/node_modules/vitest/vitest.mjs run --config vitest.requests.config.mjs",
+    "test:typecheck": "vue-tsc -p tsconfig.tests.json --noEmit",
+    "typecheck": "vue-tsc --noEmit",
+    "verify:bundle": "node scripts/verify-build.mjs"
+  },
+  "dependencies": {
+    "@linapro/vben-plugin-adapter": "file:../../vben-adapter/frontend",
+    "vue": "3.5.29",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.4",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vitest": "4.0.18",
+    "vue-tsc": "3.2.5"
+  },
+  "packageManager": "pnpm@11.18.0"
+}

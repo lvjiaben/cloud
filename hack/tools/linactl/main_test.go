@@ -1022,19 +1022,23 @@ func TestEnsurePackedPublicPlaceholderCreatesGitkeep(t *testing.T) {
 	}
 }
 
-// TestRunBuildRunsPluginConfigCommandsBeforeBackendCompile verifies
-// plugin-owned build commands run before Go embed compilation.
-func TestRunBuildRunsPluginConfigCommandsBeforeBackendCompile(t *testing.T) {
+// TestRunBuildRunsPluginConfigCommandsBeforeFrontendAndBackend verifies
+// plugin-owned assets exist before source pages and Go embed are compiled.
+func TestRunBuildRunsPluginConfigCommandsBeforeFrontendAndBackend(t *testing.T) {
 	root := t.TempDir()
 	writeBuildFixture(t, root)
 
 	calls := runBuildWithCapturedCommands(t, root, nil, commandInput{Params: map[string]string{"plugins": "1"}})
 
 	pluginBuildIndex := -1
+	frontendBuildIndex := -1
 	backendBuildIndex := -1
 	for index, call := range calls {
 		if call.name == "pnpm" && len(call.args) >= 4 && call.args[0] == "--dir" && call.args[2] == "run" && call.args[3] == "build" && call.cmd.Dir == filepath.Join(root, "apps", "lina-plugins", "john-ai-agentbox") {
 			pluginBuildIndex = index
+		}
+		if call.name == "pnpm" && len(call.args) >= 2 && call.args[0] == "run" && call.args[1] == "build" && call.cmd.Dir == filepath.Join(root, "apps", "lina-vben") {
+			frontendBuildIndex = index
 		}
 		if call.name == "go" && len(call.args) >= 1 && call.args[0] == "build" && call.cmd.Dir == filepath.Join(root, "apps", "lina-core") {
 			backendBuildIndex = index
@@ -1043,11 +1047,14 @@ func TestRunBuildRunsPluginConfigCommandsBeforeBackendCompile(t *testing.T) {
 	if pluginBuildIndex < 0 {
 		t.Fatalf("expected plugin build command call, got %#v", calls)
 	}
+	if frontendBuildIndex < 0 {
+		t.Fatalf("expected frontend build command call, got %#v", calls)
+	}
 	if backendBuildIndex < 0 {
 		t.Fatalf("expected backend go build call, got %#v", calls)
 	}
-	if pluginBuildIndex > backendBuildIndex {
-		t.Fatalf("plugin build command must run before backend build, calls=%#v", calls)
+	if pluginBuildIndex > frontendBuildIndex || pluginBuildIndex > backendBuildIndex {
+		t.Fatalf("plugin build command must run before frontend and backend builds, calls=%#v", calls)
 	}
 }
 
@@ -1070,13 +1077,14 @@ func TestRunBuildDirBuildsSelectedPluginOnly(t *testing.T) {
 		t.Fatalf("expected one plugin build call, got %#v", calls)
 	}
 	call := calls[0]
-	if call.name != "pnpm" || len(call.args) < 4 || call.args[0] != "--dir" || call.args[1] != filepath.Join(root, "apps", "lina-plugins", "john-ai-agentbox", "frontend") || call.args[2] != "run" || call.args[3] != "build" {
+	expectedPluginDir := filepath.Join(root, "apps", "lina-plugins", "john-ai-agentbox")
+	if call.name != "pnpm" || len(call.args) < 4 || call.args[0] != "--dir" || !samePath(t, call.args[1], filepath.Join(expectedPluginDir, "frontend")) || call.args[2] != "run" || call.args[3] != "build" {
 		t.Fatalf("unexpected selected plugin build command: %#v", call)
 	}
-	if call.cmd.Dir != filepath.Join(root, "apps", "lina-plugins", "john-ai-agentbox") {
+	if !samePath(t, call.cmd.Dir, expectedPluginDir) {
 		t.Fatalf("selected plugin build dir mismatch: %q", call.cmd.Dir)
 	}
-	if got := toolutil.EnvValue(call.cmd.Env, "GOWORK"); got != filepath.Join(root, "temp", "go.work.plugins") {
+	if got := toolutil.EnvValue(call.cmd.Env, "GOWORK"); !samePath(t, got, filepath.Join(root, "temp", "go.work.plugins")) {
 		t.Fatalf("expected selected plugin build to use prepared plugin workspace, got %q", got)
 	}
 	if got := toolutil.EnvValue(call.cmd.Env, plugins.SourcePluginsEnvKey); got != "1" {
@@ -1188,14 +1196,17 @@ func TestRunBuildDirBuildsHostBackendWithPreparedAssets(t *testing.T) {
 		"dir": "apps/lina-core",
 	}})
 
-	if len(calls) != 2 {
-		t.Fatalf("expected frontend and backend build calls, got %#v", calls)
+	if len(calls) != 3 {
+		t.Fatalf("expected frontend, website, and backend build calls, got %#v", calls)
 	}
 	if calls[0].name != "pnpm" || calls[0].cmd.Dir != filepath.Join(root, "apps", "lina-vben") {
 		t.Fatalf("expected frontend build first, got %#v", calls[0])
 	}
-	if calls[1].name != "go" || len(calls[1].args) < 1 || calls[1].args[0] != "build" || calls[1].cmd.Dir != filepath.Join(root, "apps", "lina-core") {
-		t.Fatalf("expected backend go build second, got %#v", calls[1])
+	if calls[1].name != "pnpm" || calls[1].cmd.Dir != filepath.Join(root, "apps", "lina-websites") {
+		t.Fatalf("expected website build second, got %#v", calls[1])
+	}
+	if calls[2].name != "go" || len(calls[2].args) < 1 || calls[2].args[0] != "build" || calls[2].cmd.Dir != filepath.Join(root, "apps", "lina-core") {
+		t.Fatalf("expected backend go build third, got %#v", calls[2])
 	}
 	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-core", "internal", "packed", "manifest", "config", "config.template.yaml")) {
 		t.Fatalf("host backend build did not prepare packed manifest assets")
@@ -1385,7 +1396,7 @@ func TestResolveBuildConfigStepsSkipsTargetsWithoutCommands(t *testing.T) {
 	if len(steps) != 2 {
 		t.Fatalf("unexpected plugin build steps: %#v", steps)
 	}
-	if steps[1].Command != "pnpm" || steps[1].Args[1] != filepath.Join(withBuild, "frontend") {
+	if steps[1].Command != "pnpm" || !samePath(t, steps[1].Args[1], filepath.Join(withBuild, "frontend")) {
 		t.Fatalf("expected build dir expansion in command, got %#v", steps[1])
 	}
 	emptySteps, exists, err := resolveBuildConfigSteps(root, withoutBuild)
@@ -1448,7 +1459,7 @@ func TestRunWasmResolvesExplicitRelativeOutputFromRepositoryRoot(t *testing.T) {
 	root := t.TempDir()
 	pluginRoot := filepath.Join(root, "apps", "lina-plugins")
 	writeFile(t, filepath.Join(root, "go.work"), "go 1.25.0\n")
-	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "linapro-demo-dynamic"), "linapro-demo-dynamic")
+	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "demo-dynamic"), "demo-dynamic")
 
 	workDir := filepath.Join(pluginRoot)
 	if err := os.MkdirAll(workDir, 0o755); err != nil {
@@ -1473,18 +1484,18 @@ func TestRunWasmResolvesExplicitRelativeOutputFromRepositoryRoot(t *testing.T) {
 	if err = runWasm(context.Background(), application, commandInput{
 		Params: map[string]string{
 			"out": "temp/output",
-			"dir": filepath.Join("apps", "lina-plugins", "linapro-demo-dynamic"),
+			"dir": filepath.Join("apps", "lina-plugins", "demo-dynamic"),
 		},
 	}); err != nil {
 		t.Fatalf("runWasm returned error: %v", err)
 	}
 
 	expected := filepath.Join(root, "temp", "output")
-	artifactPath := filepath.Join(expected, "linapro-demo-dynamic.wasm")
+	artifactPath := filepath.Join(expected, "demo-dynamic.wasm")
 	if !fileutil.FileExists(artifactPath) {
 		t.Fatalf("expected wasm artifact at %s", artifactPath)
 	}
-	workspaceArtifactPath := filepath.Join(workDir, "temp", "output", "linapro-demo-dynamic.wasm")
+	workspaceArtifactPath := filepath.Join(workDir, "temp", "output", "demo-dynamic.wasm")
 	if fileutil.FileExists(workspaceArtifactPath) {
 		t.Fatalf("wasm artifact should not be written under plugin workspace: %s", workspaceArtifactPath)
 	}
@@ -1494,20 +1505,20 @@ func TestRunWasmUsesRepositoryTempOutputByDefault(t *testing.T) {
 	root := t.TempDir()
 	pluginRoot := filepath.Join(root, "apps", "lina-plugins")
 	writeFile(t, filepath.Join(root, "go.work"), "go 1.25.0\n")
-	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "linapro-demo-dynamic"), "linapro-demo-dynamic")
+	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "demo-dynamic"), "demo-dynamic")
 
 	var stdout bytes.Buffer
 	application := newApp(&stdout, ioDiscard{}, strings.NewReader(""))
 	application.root = root
 
 	if err := runWasm(context.Background(), application, commandInput{
-		Params: map[string]string{"dir": filepath.Join("apps", "lina-plugins", "linapro-demo-dynamic")},
+		Params: map[string]string{"dir": filepath.Join("apps", "lina-plugins", "demo-dynamic")},
 	}); err != nil {
 		t.Fatalf("runWasm returned error: %v", err)
 	}
 
 	expected := filepath.Join(root, "temp", "output")
-	artifactPath := filepath.Join(expected, "linapro-demo-dynamic.wasm")
+	artifactPath := filepath.Join(expected, "demo-dynamic.wasm")
 	if !fileutil.FileExists(artifactPath) {
 		t.Fatalf("expected wasm artifact at %s", artifactPath)
 	}
@@ -1768,7 +1779,7 @@ func TestRunDevRejectsOccupiedPort(t *testing.T) {
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
 	application.execCommand = func(_ context.Context, _ string, _ ...string) *exec.Cmd {
-		return exec.Command("true")
+		return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 	}
 	// Backend port pretends to be occupied by an external process.
 	// 模拟后端端口被外部进程占用。
@@ -1779,7 +1790,11 @@ func TestRunDevRejectsOccupiedPort(t *testing.T) {
 		return nil, nil
 	}
 
-	err := runDev(context.Background(), application, commandInput{Params: map[string]string{"skip_wasm": "true"}})
+	err := runDev(context.Background(), application, commandInput{Params: map[string]string{
+		"backend_port":  strconv.Itoa(defaultBackendPort),
+		"frontend_port": strconv.Itoa(defaultFrontendPort),
+		"skip_wasm":     "true",
+	}})
 	if err == nil {
 		t.Fatalf("runDev should fail when backend port is occupied")
 	}
@@ -1805,7 +1820,7 @@ func TestRunDevWaitsForManagedServicePortsToRelease(t *testing.T) {
 	}
 	writeFrontendDependencySentinel(t, root)
 
-	services := devservice.Services(root, defaultBackendPort, defaultFrontendPort)
+	services := devservice.Services(root, defaultBackendPort, defaultFrontendPort, defaultCustomerPort)
 	for _, service := range services {
 		cmd := exec.Command(os.Args[0], "-test.run=TestHelperLongRunningProcess", "--")
 		if err := cmd.Start(); err != nil {
@@ -1826,7 +1841,7 @@ func TestRunDevWaitsForManagedServicePortsToRelease(t *testing.T) {
 	application.root = root
 	application.execCommand = func(_ context.Context, name string, args ...string) *exec.Cmd {
 		if name == "go" && len(args) >= 1 && args[0] == "build" {
-			return exec.Command("true")
+			return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 		}
 		return exec.Command(os.Args[0], "-test.run=TestHelperLongRunningProcess", "--")
 	}
@@ -1843,7 +1858,11 @@ func TestRunDevWaitsForManagedServicePortsToRelease(t *testing.T) {
 		return probes <= 4
 	}
 
-	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{"skip_wasm": "true"}}); err != nil {
+	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{
+		"backend_port":  strconv.Itoa(defaultBackendPort),
+		"frontend_port": strconv.Itoa(defaultFrontendPort),
+		"skip_wasm":     "true",
+	}}); err != nil {
 		t.Fatalf("runDev should wait for managed service ports to release, got: %v", err)
 	}
 	if probes < 5 {
@@ -1882,7 +1901,7 @@ func TestRunDevOnlyWaitsForStoppedManagedPorts(t *testing.T) {
 	}
 	writeFrontendDependencySentinel(t, root)
 
-	services := devservice.Services(root, defaultBackendPort, defaultFrontendPort)
+	services := devservice.Services(root, defaultBackendPort, defaultFrontendPort, defaultCustomerPort)
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperLongRunningProcess", "--")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("start existing backend helper: %v", err)
@@ -1900,7 +1919,7 @@ func TestRunDevOnlyWaitsForStoppedManagedPorts(t *testing.T) {
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
 	application.execCommand = func(_ context.Context, _ string, _ ...string) *exec.Cmd {
-		return exec.Command("true")
+		return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 	}
 
 	backendProbes := 0
@@ -1921,7 +1940,11 @@ func TestRunDevOnlyWaitsForStoppedManagedPorts(t *testing.T) {
 		return nil, nil
 	}
 
-	err := runDev(context.Background(), application, commandInput{Params: map[string]string{"skip_wasm": "true"}})
+	err := runDev(context.Background(), application, commandInput{Params: map[string]string{
+		"backend_port":  strconv.Itoa(defaultBackendPort),
+		"frontend_port": strconv.Itoa(defaultFrontendPort),
+		"skip_wasm":     "true",
+	}})
 	if err == nil {
 		t.Fatalf("runDev should reject externally occupied frontend port")
 	}
@@ -1954,7 +1977,7 @@ func TestRunDevStopsCurrentProjectFrontendPortOccupant(t *testing.T) {
 	application := newApp(&stdout, ioDiscard{}, strings.NewReader(""))
 	application.root = root
 	application.execCommand = func(_ context.Context, _ string, _ ...string) *exec.Cmd {
-		return exec.Command("true")
+		return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 	}
 	application.waitHTTP = func(_ string, _ string, pidPath string, _ string, _ time.Duration) error {
 		if devservice.ReadPID(pidPath) == 0 {
@@ -1989,13 +2012,17 @@ func TestRunDevStopsCurrentProjectFrontendPortOccupant(t *testing.T) {
 		return nil
 	}
 
-	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{"skip_wasm": "true"}}); err != nil {
+	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{
+		"backend_port":  strconv.Itoa(defaultBackendPort),
+		"frontend_port": strconv.Itoa(defaultFrontendPort),
+		"skip_wasm":     "true",
+	}}); err != nil {
 		t.Fatalf("runDev should stop current-project frontend occupant, got: %v", err)
 	}
 	if killedPID != 43210 {
 		t.Fatalf("expected current-project frontend process to be stopped, got pid %d", killedPID)
 	}
-	if !strings.Contains(stdout.String(), "Frontend port 5666 is occupied by current project process 43210; stopped it") {
+	if !strings.Contains(stdout.String(), "Admin Frontend port 6031 is occupied by current project process 43210; stopped it") {
 		t.Fatalf("expected cleanup message, got: %s", stdout.String())
 	}
 }
@@ -2026,7 +2053,7 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 	application.root = root
 	application.execCommand = func(runCtx context.Context, name string, args ...string) *exec.Cmd {
 		if name == "go" && len(args) >= 1 && args[0] == "build" {
-			return exec.Command("true")
+			return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 		}
 		// Regression for https://github.com/linaproai/linapro/issues/85:
 		// runDev must start Vite through node instead of Windows batch shims.
@@ -2039,15 +2066,19 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_FRONTEND_DEV_SERVER_URL"); got != "" {
 				t.Fatalf("frontend process must not receive backend-only env, got %q", got)
 			}
-			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_BACKEND_PROXY_TARGET"); got != "http://127.0.0.1:9120" {
+			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_BACKEND_PROXY_TARGET"); got != "http://127.0.0.1:6030" {
 				t.Fatalf("frontend process must receive backend proxy target, got %q", got)
+			}
+			vitePort := toolutil.EnvValue(serviceEnv, "VITE_PORT")
+			if vitePort != strconv.Itoa(defaultFrontendPort) && vitePort != strconv.Itoa(defaultCustomerPort) {
+				t.Fatalf("frontend process must receive an owned Vite port, got %q", vitePort)
 			}
 		} else {
 			serviceEnv, _ := runCtx.Value(devservice.RunnerContextServiceEnvKey).([]string)
-			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_FRONTEND_DEV_SERVER_URL"); got != "http://127.0.0.1:5666" {
+			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_FRONTEND_DEV_SERVER_URL"); got != "http://127.0.0.1:6031" {
 				t.Fatalf("backend process must receive frontend dev server URL, got %q", got)
 			}
-			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_SERVER_ADDRESS"); got != ":9120" {
+			if got := toolutil.EnvValue(serviceEnv, "LINAPRO_SERVER_ADDRESS"); got != ":6030" {
 				t.Fatalf("backend process must receive LINAPRO_SERVER_ADDRESS, got %q", got)
 			}
 		}
@@ -2067,7 +2098,9 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 	start := time.Now()
 	if err := runDev(context.Background(), application, commandInput{
 		Params: map[string]string{
-			"skip_wasm": "true",
+			"backend_port":  strconv.Itoa(defaultBackendPort),
+			"frontend_port": strconv.Itoa(defaultFrontendPort),
+			"skip_wasm":     "true",
 		},
 	}); err != nil {
 		t.Fatalf("runDev returned error: %v", err)
@@ -2078,6 +2111,7 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 	for _, path := range []string{
 		filepath.Join(root, "temp", "pids", "lina-core.pid"),
 		filepath.Join(root, "temp", "pids", "lina-vben.pid"),
+		filepath.Join(root, "temp", "pids", "lina-customer.pid"),
 	} {
 		pid := devservice.ReadPID(path)
 		if pid == 0 {
@@ -2096,8 +2130,9 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 
 	output := stdout.String()
 	for _, expected := range []string{
-		"Lina Core is ready: http://127.0.0.1:9120/",
-		"Lina Vben is ready: http://127.0.0.1:5666/",
+		"Lina Core is ready: http://127.0.0.1:6030/",
+		"Lina Admin is ready: http://127.0.0.1:6031/",
+		"Lina Customer is ready: http://127.0.0.1:6032/",
 	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected readiness output to contain %q, got:\n%s", expected, output)
@@ -2111,9 +2146,11 @@ func TestRunDevStartsServicesAsAsyncProcessesAndPrintsFinalStatus(t *testing.T) 
 	for _, expected := range []string{
 		"| Entry",
 		"| Lina Core",
-		"| Lina Vben",
+		"| Lina Admin",
+		"| Lina Customer",
 		"temp/pids/lina-core.pid",
 		"temp/lina-vben.log",
+		"temp/lina-customer.log",
 	} {
 		if !strings.Contains(finalOutput, expected) {
 			t.Fatalf("expected final status output to contain %q, got:\n%s", expected, finalOutput)
@@ -2136,8 +2173,8 @@ func TestRunDevPassesRepositoryWasmOutputWhenPluginsEnabled(t *testing.T) {
 	writeFile(t, filepath.Join(root, "apps", "lina-core", "manifest", "sql", "001.sql"), "select 1;\n")
 	writeFile(t, filepath.Join(root, "apps", "lina-core", "manifest", "i18n", "en-US", "framework.json"), "{}\n")
 	writeFile(t, filepath.Join(pluginRoot, "go.mod"), "module lina-plugins\n")
-	writeFile(t, filepath.Join(pluginRoot, "linapro-demo-dynamic", "go.mod"), "module linapro-demo-dynamic\n")
-	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "linapro-demo-dynamic"), "linapro-demo-dynamic")
+	writeFile(t, filepath.Join(pluginRoot, "demo-dynamic", "go.mod"), "module demo-dynamic\n")
+	writeDynamicPluginManifest(t, filepath.Join(pluginRoot, "demo-dynamic"), "demo-dynamic")
 	if err := os.MkdirAll(filepath.Join(root, "apps", "lina-vben", "apps", "web-antd"), 0o755); err != nil {
 		t.Fatalf("mkdir frontend workdir: %v", err)
 	}
@@ -2148,7 +2185,7 @@ func TestRunDevPassesRepositoryWasmOutputWhenPluginsEnabled(t *testing.T) {
 	application.root = root
 	application.execCommand = func(_ context.Context, name string, args ...string) *exec.Cmd {
 		if name == "go" && len(args) >= 1 && args[0] == "build" {
-			return exec.Command("true")
+			return exec.Command(os.Args[0], "-test.run=TestHelperCommandSuccess", "--")
 		}
 		return exec.Command(os.Args[0], "-test.run=TestHelperLongRunningProcess", "--")
 	}
@@ -2163,12 +2200,17 @@ func TestRunDevPassesRepositoryWasmOutputWhenPluginsEnabled(t *testing.T) {
 	// 测试中将开发端口视为空闲，避免本机其他进程占用导致用例不稳定。
 	application.portInUse = func(int) bool { return false }
 
-	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{"plugins": "1"}}); err != nil {
+	if err := runDev(context.Background(), application, commandInput{Params: map[string]string{
+		"backend_port":  strconv.Itoa(defaultBackendPort),
+		"frontend_port": strconv.Itoa(defaultFrontendPort),
+		"plugins":       "1",
+	}}); err != nil {
 		t.Fatalf("runDev returned error: %v", err)
 	}
 	for _, path := range []string{
 		filepath.Join(root, "temp", "pids", "lina-core.pid"),
 		filepath.Join(root, "temp", "pids", "lina-vben.pid"),
+		filepath.Join(root, "temp", "pids", "lina-customer.pid"),
 	} {
 		pid := devservice.ReadPID(path)
 		if pid > 0 {
@@ -2180,7 +2222,7 @@ func TestRunDevPassesRepositoryWasmOutputWhenPluginsEnabled(t *testing.T) {
 		}
 	}
 	expected := filepath.Join(root, "temp", "output")
-	if !fileutil.FileExists(filepath.Join(expected, "linapro-demo-dynamic.wasm")) {
+	if !fileutil.FileExists(filepath.Join(expected, "demo-dynamic.wasm")) {
 		t.Fatalf("expected dev wasm artifact under %s", expected)
 	}
 	if !strings.Contains(stdout.String(), "Source plugin pages are mounted inside Lina Vben.") {
@@ -3945,7 +3987,7 @@ func TestValidatePluginConfigAcceptsStringItemsAndFilters(t *testing.T) {
 			Repo:  "https://example.com/custom.git",
 			Root:  "apps/lina-plugins",
 			Ref:   "main",
-			Items: []config.PluginItem{{ID: "linapro-content-notice"}},
+			Items: []config.PluginItem{{ID: "content-notice"}},
 		},
 		"official": {
 			Type: config.OriginTypeGit,
@@ -3953,13 +3995,13 @@ func TestValidatePluginConfigAcceptsStringItemsAndFilters(t *testing.T) {
 			Root: ".",
 			Ref:  "main",
 			Items: []config.PluginItem{
-				{ID: "linapro-tenant-core"},
-				{ID: "linapro-org-core"},
+				{ID: "tenant-core"},
+				{ID: "org-core"},
 			},
 		},
 	}
 
-	plan, err := plugins.ValidateConfig(cfg, commandInput{Params: map[string]string{"p": "linapro-org-core", "source": "official"}})
+	plan, err := plugins.ValidateConfig(cfg, commandInput{Params: map[string]string{"p": "org-core", "source": "official"}})
 	if err != nil {
 		t.Fatalf("plugins.ValidateConfig returned error: %v", err)
 	}
@@ -3967,7 +4009,7 @@ func TestValidatePluginConfigAcceptsStringItemsAndFilters(t *testing.T) {
 		t.Fatalf("expected one filtered item, got %#v", plan.Items)
 	}
 	item := plan.Items[0]
-	if item.ID != "linapro-org-core" || item.Source != "official" || item.Root != "." || item.GitRef != "main" {
+	if item.ID != "org-core" || item.Source != "official" || item.Root != "." || item.GitRef != "main" {
 		t.Fatalf("unexpected filtered item: %#v", item)
 	}
 }
@@ -3976,8 +4018,8 @@ func TestValidatePluginConfigAcceptsStringItemsAndFilters(t *testing.T) {
 // IDs across origins are rejected before any workspace write.
 func TestValidatePluginConfigRejectsDuplicatePluginIDs(t *testing.T) {
 	cfg := config.PluginOrigins{
-		"a": {Type: config.OriginTypeGit, Repo: "repo-a", Root: ".", Ref: "main", Items: []config.PluginItem{{ID: "linapro-tenant-core"}}},
-		"b": {Type: config.OriginTypeGit, Repo: "repo-b", Root: ".", Ref: "main", Items: []config.PluginItem{{ID: "linapro-tenant-core"}}},
+		"a": {Type: config.OriginTypeGit, Repo: "repo-a", Root: ".", Ref: "main", Items: []config.PluginItem{{ID: "tenant-core"}}},
+		"b": {Type: config.OriginTypeGit, Repo: "repo-b", Root: ".", Ref: "main", Items: []config.PluginItem{{ID: "tenant-core"}}},
 	}
 
 	_, err := plugins.ValidateConfig(cfg, commandInput{})
@@ -3995,7 +4037,7 @@ func TestValidatePluginConfigRejectsWildcardMixedWithExplicitIDs(t *testing.T) {
 			Repo:  "repo",
 			Root:  ".",
 			Ref:   "main",
-			Items: []config.PluginItem{{ID: "*"}, {ID: "linapro-tenant-core"}},
+			Items: []config.PluginItem{{ID: "*"}, {ID: "tenant-core"}},
 		},
 	}
 
@@ -4032,14 +4074,14 @@ func TestLoadPluginPlanAcceptsStructuredItems(t *testing.T) {
     root: "."
     ref: "main"
     items:
-      - id: linapro-tenant-core
+      - id: tenant-core
 `)
 
 	plan, err := plugins.LoadPlan(root, commandInput{})
 	if err != nil {
 		t.Fatalf("LoadPlan returned error: %v", err)
 	}
-	if len(plan.Items) != 1 || plan.Items[0].ID != "linapro-tenant-core" || plan.Items[0].GitRef != "main" {
+	if len(plan.Items) != 1 || plan.Items[0].ID != "tenant-core" || plan.Items[0].GitRef != "main" {
 		t.Fatalf("unexpected plan: %#v", plan.Items)
 	}
 }
@@ -4154,10 +4196,10 @@ func TestRunPluginsInitConvertsGitlinkAndPreservesFiles(t *testing.T) {
 func TestPluginsInstallAutoInitializesSubmoduleWorkspace(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 	writeFile(t, filepath.Join(root, ".gitmodules"), `[submodule "apps/lina-plugins"]
 	path = apps/lina-plugins
 	url = https://example.com/plugins.git
@@ -4178,10 +4220,10 @@ func TestPluginsInstallAutoInitializesSubmoduleWorkspace(t *testing.T) {
 		t.Fatalf("runPluginsInstall returned error: %v", err)
 	}
 	output := stdout.String()
-	if !strings.Contains(output, "Plugin workspace converted to ordinary directory") || !strings.Contains(output, "Installed plugin linapro-tenant-core") {
+	if !strings.Contains(output, "Plugin workspace converted to ordinary directory") || !strings.Contains(output, "Installed plugin tenant-core") {
 		t.Fatalf("expected install to auto-initialize workspace and continue, got:\n%s", output)
 	}
-	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "plugin.yaml")) {
+	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "tenant-core", "plugin.yaml")) {
 		t.Fatalf("plugin was not installed after auto initialization")
 	}
 	stage := runGitOutput(t, root, "ls-files", "--stage", "--", plugins.ManagedRootRelativePath)
@@ -4198,11 +4240,11 @@ func TestPluginsInstallAutoInitializesSubmoduleWorkspace(t *testing.T) {
 func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "README.md"), "v1\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "README.md"), "v1\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 
 	var installOut bytes.Buffer
 	application := newApp(&installOut, ioDiscard{}, strings.NewReader(""))
@@ -4210,21 +4252,21 @@ func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 	if err := runPluginsInstall(context.Background(), application, commandInput{}); err != nil {
 		t.Fatalf("runPluginsInstall returned error: %v", err)
 	}
-	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "plugin.yaml")) {
+	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "tenant-core", "plugin.yaml")) {
 		t.Fatalf("plugin was not installed")
 	}
 	for _, expected := range []string{
 		"Preparing plugin installation for 1 configured item(s)...",
 		"Installing 1 git plugin(s)...",
 		"Synchronizing plugin origin official",
-		"[1/1] installing plugin linapro-tenant-core from official@master...",
-		"Installed plugin linapro-tenant-core",
+		"[1/1] installing plugin tenant-core from official@master...",
+		"Installed plugin tenant-core",
 	} {
 		if !strings.Contains(installOut.String(), expected) {
 			t.Fatalf("expected install output to contain %q, got:\n%s", expected, installOut.String())
 		}
 	}
-	if fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", ".git")) || !fileutil.FileExists(plugins.LockPath(root)) {
+	if fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "tenant-core", ".git")) || !fileutil.FileExists(plugins.LockPath(root)) {
 		t.Fatalf("plugin metadata or lock state is incorrect")
 	}
 	runGit(t, root, "add", ".")
@@ -4234,13 +4276,13 @@ func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 		t.Fatalf("expected install to reject existing plugin, got %v", err)
 	}
 
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.2.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.2.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "update plugin")
 	if err := runPluginsUpdate(context.Background(), application, commandInput{}); err != nil {
 		t.Fatalf("runPluginsUpdate returned error: %v", err)
 	}
-	content, err := os.ReadFile(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "plugin.yaml"))
+	content, err := os.ReadFile(filepath.Join(root, "apps", "lina-plugins", "tenant-core", "plugin.yaml"))
 	if err != nil {
 		t.Fatalf("read updated plugin manifest: %v", err)
 	}
@@ -4264,7 +4306,7 @@ func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 		"| Installed",
 		"| Dirty",
 		"| Remote",
-		"| linapro-tenant-core",
+		"| tenant-core",
 		"| official",
 		"| 0.2.0",
 		"| true",
@@ -4277,11 +4319,11 @@ func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 
 	var filteredStatusOut bytes.Buffer
 	application.stdout = &filteredStatusOut
-	if err = runPluginsStatus(context.Background(), application, commandInput{Params: map[string]string{"p": "linapro-tenant-core"}}); err != nil {
+	if err = runPluginsStatus(context.Background(), application, commandInput{Params: map[string]string{"p": "tenant-core"}}); err != nil {
 		t.Fatalf("filtered runPluginsStatus returned error: %v", err)
 	}
 	filteredOutput := filteredStatusOut.String()
-	if !strings.Contains(filteredOutput, "| linapro-tenant-core") || !strings.Contains(filteredOutput, "| current") {
+	if !strings.Contains(filteredOutput, "| tenant-core") || !strings.Contains(filteredOutput, "| current") {
 		t.Fatalf("expected filtered status table to include current plugin row, got:\n%s", filteredOutput)
 	}
 	if strings.Contains(filteredOutput, "remote=current") {
@@ -4294,10 +4336,10 @@ func TestPluginsInstallUpdateAndStatusUseConfiguredSources(t *testing.T) {
 func TestPluginsSourceCacheReusesCheckoutWithFetch(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 
 	var firstOut bytes.Buffer
 	application := newApp(&firstOut, ioDiscard{}, strings.NewReader(""))
@@ -4313,7 +4355,7 @@ func TestPluginsSourceCacheReusesCheckoutWithFetch(t *testing.T) {
 
 	runGit(t, root, "add", ".")
 	runGit(t, root, "commit", "-m", "install plugin")
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.2.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.2.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "update plugin")
 
@@ -4326,7 +4368,7 @@ func TestPluginsSourceCacheReusesCheckoutWithFetch(t *testing.T) {
 	if strings.Contains(output, "Cloning into") {
 		t.Fatalf("expected update to reuse source cache instead of cloning again, got:\n%s", output)
 	}
-	content, err := os.ReadFile(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "plugin.yaml"))
+	content, err := os.ReadFile(filepath.Join(root, "apps", "lina-plugins", "tenant-core", "plugin.yaml"))
 	if err != nil {
 		t.Fatalf("read updated plugin manifest: %v", err)
 	}
@@ -4340,7 +4382,7 @@ func TestPluginsSourceCacheReusesCheckoutWithFetch(t *testing.T) {
 // installs resolve the user-selected version to the exact marketplace ref.
 func TestMarketplaceInstallUsesConfiguredBaseAndPinnedGitRef(t *testing.T) {
 	root := newGitRepo(t)
-	pluginID := "linapro-demo-source"
+	pluginID := "demo-source"
 	source, pinnedCommit := newMarketplaceGitSource(t, pluginID)
 	var requestedPath string
 	var authorization string
@@ -4350,7 +4392,7 @@ func TestMarketplaceInstallUsesConfiguredBaseAndPinnedGitRef(t *testing.T) {
 		if request.Method != http.MethodGet {
 			t.Fatalf("unexpected marketplace method: %s", request.Method)
 		}
-		expectedPath := "/x/linapro-plugin-marketplace/api/v1/market/plugins/" + pluginID + "/releases/v1.0.0/distribution"
+		expectedPath := "/x/plugin-marketplace/api/v1/market/plugins/" + pluginID + "/releases/v1.0.0/distribution"
 		if request.URL.Path != expectedPath {
 			t.Fatalf("unexpected marketplace path: got %s want %s", request.URL.Path, expectedPath)
 		}
@@ -4415,7 +4457,7 @@ func TestMarketplaceInstallUsesConfiguredBaseAndPinnedGitRef(t *testing.T) {
 // marketplace URLs can be overridden for one command invocation.
 func TestMarketplaceInstallBaseParameterOverridesConfiguredBase(t *testing.T) {
 	root := newGitRepo(t)
-	pluginID := "linapro-demo-source"
+	pluginID := "demo-source"
 	source, pinnedCommit := newMarketplaceGitSource(t, pluginID)
 	configuredHits := 0
 	configuredServer := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -4462,7 +4504,7 @@ func TestMarketplaceInstallBaseParameterOverridesConfiguredBase(t *testing.T) {
 // workspace overwrite guard for marketplace installs.
 func TestMarketplaceInstallRejectsExistingPluginWithoutForce(t *testing.T) {
 	root := newGitRepo(t)
-	pluginID := "linapro-demo-source"
+	pluginID := "demo-source"
 	source, pinnedCommit := newMarketplaceGitSource(t, pluginID)
 	writeFile(t, filepath.Join(root, "apps", "lina-plugins", pluginID, "plugin.yaml"), "id: "+pluginID+"\nversion: local\n")
 	writeFile(t, filepath.Join(root, "apps", "lina-plugins", pluginID, "README.md"), "local\n")
@@ -4505,7 +4547,7 @@ func TestMarketplaceInstallRejectsExistingPluginWithoutForce(t *testing.T) {
 // same marketplace distribution semantics after an installed plugin is clean.
 func TestMarketplaceUpdateUsesDistributionRef(t *testing.T) {
 	root := newGitRepo(t)
-	pluginID := "linapro-demo-source"
+	pluginID := "demo-source"
 	source, v1Commit := newMarketplaceGitSource(t, pluginID)
 	v2Commit := strings.TrimSpace(runGitOutput(t, source, "rev-parse", "HEAD"))
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -4573,7 +4615,7 @@ func TestMarketplaceUpdateUsesDistributionRef(t *testing.T) {
 // download sessions and package checksum verification for uploaded releases.
 func TestMarketplaceInstallDownloadsHTTPSPackageAndVerifiesSHA(t *testing.T) {
 	root := newGitRepo(t)
-	pluginID := "linapro-demo-source"
+	pluginID := "demo-source"
 	packageBytes := marketplacePluginZip(t, pluginID)
 	checksum := fmt.Sprintf("%x", sha256.Sum256(packageBytes))
 	var requestedPaths []string
@@ -4581,7 +4623,7 @@ func TestMarketplaceInstallDownloadsHTTPSPackageAndVerifiesSHA(t *testing.T) {
 		requestedPaths = append(requestedPaths, request.Method+" "+request.URL.Path)
 		writer.Header().Set("Content-Type", "application/json")
 		switch {
-		case request.Method == http.MethodGet && request.URL.Path == "/tenant-a/x/linapro-plugin-marketplace/api/v1/market/plugins/"+pluginID+"/releases/v1.0.0/distribution":
+		case request.Method == http.MethodGet && request.URL.Path == "/tenant-a/x/plugin-marketplace/api/v1/market/plugins/"+pluginID+"/releases/v1.0.0/distribution":
 			if err := json.NewEncoder(writer).Encode(map[string]interface{}{
 				"distribution": map[string]interface{}{
 					"mode":         "https",
@@ -4593,7 +4635,7 @@ func TestMarketplaceInstallDownloadsHTTPSPackageAndVerifiesSHA(t *testing.T) {
 			}); err != nil {
 				t.Fatalf("encode distribution response: %v", err)
 			}
-		case request.Method == http.MethodPost && request.URL.Path == "/tenant-a/x/linapro-plugin-marketplace/api/v1/market/plugins/"+pluginID+"/releases/v1.0.0/downloads":
+		case request.Method == http.MethodPost && request.URL.Path == "/tenant-a/x/plugin-marketplace/api/v1/market/plugins/"+pluginID+"/releases/v1.0.0/downloads":
 			if err := json.NewEncoder(writer).Encode(map[string]interface{}{
 				"session": map[string]interface{}{
 					"sessionId":    "session-1",
@@ -4606,7 +4648,7 @@ func TestMarketplaceInstallDownloadsHTTPSPackageAndVerifiesSHA(t *testing.T) {
 			}); err != nil {
 				t.Fatalf("encode download session response: %v", err)
 			}
-		case request.Method == http.MethodGet && request.URL.Path == "/tenant-a/x/linapro-plugin-marketplace/api/v1/market/download-sessions/session-1/content":
+		case request.Method == http.MethodGet && request.URL.Path == "/tenant-a/x/plugin-marketplace/api/v1/market/download-sessions/session-1/content":
 			writer.Header().Set("Content-Type", "application/zip")
 			if _, err := writer.Write(packageBytes); err != nil {
 				t.Fatalf("write package response: %v", err)
@@ -4640,8 +4682,8 @@ func TestMarketplaceInstallDownloadsHTTPSPackageAndVerifiesSHA(t *testing.T) {
 func TestPluginsInstallExpandsWildcardItems(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "plugins", "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
-	writeFile(t, filepath.Join(source, "plugins", "linapro-org-core", "plugin.yaml"), "id: linapro-org-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "plugins", "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "plugins", "org-core", "plugin.yaml"), "id: org-core\nversion: 0.1.0\n")
 	writeFile(t, filepath.Join(source, "plugins", "not-plugin", "README.md"), "ignored\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "source plugins")
@@ -4652,7 +4694,7 @@ func TestPluginsInstallExpandsWildcardItems(t *testing.T) {
 	if err := runPluginsInstall(context.Background(), application, commandInput{}); err != nil {
 		t.Fatalf("runPluginsInstall returned error: %v", err)
 	}
-	for _, pluginID := range []string{"linapro-tenant-core", "linapro-org-core"} {
+	for _, pluginID := range []string{"tenant-core", "org-core"} {
 		if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", pluginID, "plugin.yaml")) {
 			t.Fatalf("expected wildcard plugin %s to be installed", pluginID)
 		}
@@ -4667,21 +4709,21 @@ func TestPluginsInstallExpandsWildcardItems(t *testing.T) {
 func TestPluginsInstallWildcardHonorsPluginFilter(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
-	writeFile(t, filepath.Join(source, "linapro-org-core", "plugin.yaml"), "id: linapro-org-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "org-core", "plugin.yaml"), "id: org-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "source plugins")
 	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: \"*\"\n")
 
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
-	if err := runPluginsInstall(context.Background(), application, commandInput{Params: map[string]string{"p": "linapro-org-core"}}); err != nil {
+	if err := runPluginsInstall(context.Background(), application, commandInput{Params: map[string]string{"p": "org-core"}}); err != nil {
 		t.Fatalf("runPluginsInstall returned error: %v", err)
 	}
-	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "linapro-org-core", "plugin.yaml")) {
+	if !fileutil.FileExists(filepath.Join(root, "apps", "lina-plugins", "org-core", "plugin.yaml")) {
 		t.Fatalf("expected filtered wildcard plugin to be installed")
 	}
-	if fileutil.DirExists(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core")) {
+	if fileutil.DirExists(filepath.Join(root, "apps", "lina-plugins", "tenant-core")) {
 		t.Fatalf("unexpected unfiltered wildcard plugin installed")
 	}
 }
@@ -4691,10 +4733,10 @@ func TestPluginsInstallWildcardHonorsPluginFilter(t *testing.T) {
 func TestRunPluginsUpdateRejectsLocalChangesUnlessForced(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
@@ -4703,8 +4745,8 @@ func TestRunPluginsUpdateRejectsLocalChangesUnlessForced(t *testing.T) {
 	}
 	runGit(t, root, "add", ".")
 	runGit(t, root, "commit", "-m", "install plugin")
-	writeFile(t, filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "local.txt"), "local change\n")
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.2.0\n")
+	writeFile(t, filepath.Join(root, "apps", "lina-plugins", "tenant-core", "local.txt"), "local change\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.2.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "update plugin")
 
@@ -4722,10 +4764,10 @@ func TestRunPluginsUpdateRejectsLocalChangesUnlessForced(t *testing.T) {
 func TestRunPluginsUpdateRejectsCommittedLockDrift(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
@@ -4734,10 +4776,10 @@ func TestRunPluginsUpdateRejectsCommittedLockDrift(t *testing.T) {
 	}
 	runGit(t, root, "add", ".")
 	runGit(t, root, "commit", "-m", "install plugin")
-	writeFile(t, filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core", "local.txt"), "committed local change\n")
+	writeFile(t, filepath.Join(root, "apps", "lina-plugins", "tenant-core", "local.txt"), "committed local change\n")
 	runGit(t, root, "add", ".")
 	runGit(t, root, "commit", "-m", "local plugin customization")
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.2.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.2.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "update plugin")
 
@@ -4752,10 +4794,10 @@ func TestRunPluginsUpdateRejectsCommittedLockDrift(t *testing.T) {
 func TestPluginsStatusAutoInitializesSubmoduleWithoutPluginWrites(t *testing.T) {
 	root := newGitRepo(t)
 	source := newGitRepo(t)
-	writeFile(t, filepath.Join(source, "linapro-tenant-core", "plugin.yaml"), "id: linapro-tenant-core\nversion: 0.1.0\n")
+	writeFile(t, filepath.Join(source, "tenant-core", "plugin.yaml"), "id: tenant-core\nversion: 0.1.0\n")
 	runGit(t, source, "add", ".")
 	runGit(t, source, "commit", "-m", "initial plugin")
-	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: linapro-tenant-core\n")
+	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "plugins:\n  official:\n      type: git\n      repo: \""+filepath.ToSlash(source)+"\"\n      root: \".\"\n      ref: \"master\"\n      items:\n        - id: tenant-core\n")
 	writeFile(t, filepath.Join(root, ".gitmodules"), `[submodule "apps/lina-plugins"]
 	path = apps/lina-plugins
 	url = https://example.com/plugins.git
@@ -4777,7 +4819,7 @@ func TestPluginsStatusAutoInitializesSubmoduleWithoutPluginWrites(t *testing.T) 
 	if strings.Contains(stage, "160000") {
 		t.Fatalf("gitlink still exists after plugins.status auto initialization: %s", stage)
 	}
-	if fileutil.DirExists(filepath.Join(root, "apps", "lina-plugins", "linapro-tenant-core")) {
+	if fileutil.DirExists(filepath.Join(root, "apps", "lina-plugins", "tenant-core")) {
 		t.Fatalf("status must not install plugin directories")
 	}
 	if fileutil.FileExists(plugins.LockPath(root)) {
@@ -5029,7 +5071,7 @@ func writeMarketplaceConfig(t *testing.T, root string, baseURL string) {
 		"    type: marketplace\n"+
 		"    url: \""+baseURL+"\"\n"+
 		"    items:\n"+
-		"      - id: linapro-demo-source\n"+
+		"      - id: demo-source\n"+
 		"        version: \"v1.0.0\"\n")
 }
 
@@ -5122,6 +5164,10 @@ func writeBuildFixture(t *testing.T, root string) {
 	writeFile(t, filepath.Join(root, "go.work"), "go 1.25.0\n\nuse ./apps/lina-core\n")
 	writeFile(t, filepath.Join(root, "hack", "config.yaml"), "build:\n  platforms:\n    - auto\n")
 	writeFile(t, filepath.Join(root, "apps", "lina-vben", "apps", "web-antd", "dist", "index.html"), "host")
+	writeFile(t, filepath.Join(root, "apps", "lina-vben", "apps", "web-customer", "dist", "index.html"), "customer")
+	writeFile(t, filepath.Join(root, "apps", "lina-websites", "sites", "default", ".output", "server", "index.mjs"), "website")
+	writeFile(t, filepath.Join(root, "apps", "lina-websites", "sites", "default", ".output", "public", "robots.txt"), "robots")
+	writeFile(t, filepath.Join(root, "temp", "test-node-runtime"), "runtime")
 	writeFile(t, filepath.Join(root, "apps", "lina-core", "manifest", "config", "config.template.yaml"), "template: true\n")
 	writeFile(t, filepath.Join(root, "apps", "lina-core", "manifest", "config", "metadata.yaml"), "framework:\n  version: test\n")
 	writeFile(t, filepath.Join(root, "apps", "lina-core", "manifest", "sql", "001.sql"), "-- sql\n")
@@ -5136,9 +5182,10 @@ func runBuildWithCapturedCommands(t *testing.T, root string, env []string, input
 	var calls []capturedCommand
 	application := newApp(ioDiscard{}, ioDiscard{}, strings.NewReader(""))
 	application.root = root
-	if env != nil {
-		application.env = env
-	}
+	application.env = append([]string(nil), env...)
+	runtimeSuffix := targetRuntimeEnvironmentSuffix(targetPlatform{OS: "linux", Arch: runtime.GOARCH})
+	application.env = toolutil.SetEnvValue(application.env, "LINAPRO_SITE_NODE_RUNTIME_"+runtimeSuffix, filepath.Join(root, "temp", "test-node-runtime"))
+	application.env = toolutil.SetEnvValue(application.env, "LINAPRO_SITE_NODE_RUNTIME_VERSION_"+runtimeSuffix, "v24.20.0")
 	application.lookPath = func(name string) (string, error) {
 		return name, nil
 	}
@@ -5285,6 +5332,9 @@ func (rows *envCheckSQLRows) Next(dest []driver.Value) error {
 // ensureFrontendDeps so runDev unit tests do not require pnpm on PATH.
 func writeFrontendDependencySentinel(t *testing.T, root string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Join(root, "apps", "lina-vben", "apps", "web-customer"), 0o755); err != nil {
+		t.Fatalf("mkdir customer frontend workdir: %v", err)
+	}
 	writeFile(t, toolutil.ViteCommand(root), "")
 }
 

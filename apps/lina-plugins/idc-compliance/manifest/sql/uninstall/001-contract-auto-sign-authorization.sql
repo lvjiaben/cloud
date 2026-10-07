@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS plugin_idc_compliance_contract_auto_sign_usage;
+DROP TABLE IF EXISTS plugin_idc_compliance_auto_sign_auth_template;
+DROP TABLE IF EXISTS plugin_idc_compliance_auto_sign_auth;

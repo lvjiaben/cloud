@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-payment/backend/plugin.go",
+      "maxCalls": 9,
+      "reason": "IDC payment plugin composition boundary; wires private payment services once."
+    }
+  ]
+}

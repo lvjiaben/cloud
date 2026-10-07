@@ -24,6 +24,7 @@ import (
 	"lina-core/internal/service/kvcache"
 	"lina-core/internal/service/notify"
 	"lina-core/internal/service/plugin/internal/capabilityhost"
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	hostconfigadapter "lina-core/internal/service/plugin/internal/hostconfig"
 	"lina-core/internal/service/plugin/internal/manifestresource"
 	"lina-core/internal/service/plugin/internal/pluginconfig"
@@ -167,6 +168,7 @@ func newWasmHostServiceRuntime(
 	configFactory PluginConfigFactory,
 	hostConfigSvc hostconfigcap.Service,
 	manifestFactory manifestresource.Factory,
+	confidentialOutboundRegistry *confidentialoutbound.Registry,
 ) (wasm.Runtime, error) {
 	runtime, err := wasm.NewRuntime(
 		hostServices,
@@ -174,6 +176,7 @@ func newWasmHostServiceRuntime(
 		configFactory,
 		hostConfigSvc,
 		manifestFactory,
+		confidentialOutboundRegistry,
 	)
 	if err != nil {
 		return nil, gerror.Wrap(err, "create wasm host service runtime failed")

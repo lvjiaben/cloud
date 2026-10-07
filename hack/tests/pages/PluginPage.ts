@@ -59,6 +59,34 @@ export class PluginPage {
     return this.page.getByTestId("plugin-dynamic-upload-trigger").first();
   }
 
+  get developerGuideTrigger(): Locator {
+    return this.page.getByTestId("plugin-developer-guide-trigger").first();
+  }
+
+  get developerGuide(): Locator {
+    return this.page.getByTestId("plugin-developer-guide").first();
+  }
+
+  async openDeveloperGuide() {
+    await expect(this.developerGuideTrigger).toBeVisible();
+    await this.developerGuideTrigger.click();
+    await expect(this.developerGuide).toBeVisible();
+    await this.developerGuide.locator(".ant-collapse").waitFor();
+  }
+
+  async openDeveloperGuideSection(title: string) {
+    const header = this.developerGuide
+      .locator(".ant-collapse-header")
+      .filter({ hasText: title })
+      .first();
+    await expect(header).toBeVisible();
+    await header.scrollIntoViewIfNeeded();
+    if ((await header.getAttribute("aria-expanded")) !== "true") {
+      await header.click();
+    }
+    await expect(header).toHaveAttribute("aria-expanded", "true");
+  }
+
   get dynamicUploadDragger(): Locator {
     return this.page.getByTestId("plugin-dynamic-upload-dragger").first();
   }
@@ -104,7 +132,8 @@ export class PluginPage {
         "xpath=ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' ant-menu-submenu ') or contains(concat(' ', normalize-space(@class), ' '), ' vben-sub-menu ')][1]",
       )
       .first();
-    const className = (await submenu.getAttribute("class").catch(() => "")) ?? "";
+    const className =
+      (await submenu.getAttribute("class").catch(() => "")) ?? "";
     if (
       !className.includes("ant-menu-submenu-open") &&
       !className.includes("is-opened")
@@ -223,6 +252,16 @@ export class PluginPage {
       .locator(".vxe-table--header .vxe-header--column")
       .filter({ hasText: title })
       .first();
+  }
+
+  async showPluginLifecycleColumns() {
+    const body = this.page
+      .locator(".vxe-table--main-wrapper .vxe-table--body-wrapper")
+      .first();
+    await body.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+      element.dispatchEvent(new Event("scroll"));
+    });
   }
 
   pluginMainRows(): Locator {
@@ -354,9 +393,7 @@ export class PluginPage {
   }
 
   pluginDependencyFrameworkBlocker(): Locator {
-    return this.page
-      .getByTestId("plugin-dependency-framework-blocker")
-      .last();
+    return this.page.getByTestId("plugin-dependency-framework-blocker").last();
   }
 
   pluginDependencyBlockers(): Locator {
@@ -538,9 +575,7 @@ export class PluginPage {
   }
 
   pluginDetailSupportsMultiTenant(): Locator {
-    return this.page
-      .getByTestId("plugin-detail-supports-multi-tenant")
-      .last();
+    return this.page.getByTestId("plugin-detail-supports-multi-tenant").last();
   }
 
   pluginDetailTenantProvisioning(): Locator {
@@ -624,7 +659,9 @@ export class PluginPage {
   }
 
   lifecyclePreconditionForcePluginIdInput(): Locator {
-    return this.page.getByTestId("lifecycle-precondition-force-plugin-id").last();
+    return this.page
+      .getByTestId("lifecycle-precondition-force-plugin-id")
+      .last();
   }
 
   lifecyclePreconditionReasonText(): Locator {
@@ -633,7 +670,9 @@ export class PluginPage {
 
   lifecyclePreconditionConfirmButton(): Locator {
     return this.page
-      .getByRole("dialog", { name: /生命周期前置条件|Lifecycle Precondition/iu })
+      .getByRole("dialog", {
+        name: /生命周期前置条件|Lifecycle Precondition/iu,
+      })
       .last()
       .getByRole("button", { name: confirmActionPattern })
       .last();
@@ -641,6 +680,27 @@ export class PluginPage {
 
   pluginEnabledSwitch(pluginId: string): Locator {
     return this.pluginLifecycleSwitch(this.pluginRow(pluginId));
+  }
+
+  pluginNewBusinessSwitch(pluginId: string): Locator {
+    return this.page.getByTestId(`plugin-new-business-${pluginId}`).first();
+  }
+
+  newBusinessStopDialog(): Locator {
+    return this.page
+      .locator(".ant-modal:visible")
+      .filter({
+        hasText: /停止这个插件的新销售|Stop new sales for this plugin/iu,
+      })
+      .last();
+  }
+
+  newBusinessStopConfirmButton(): Locator {
+    return this.newBusinessStopDialog()
+      .getByRole("button", {
+        name: /确认停止新销售|Stop New Sales/iu,
+      })
+      .last();
   }
 
   pluginEnabledSwitches(pluginId: string): Locator {
@@ -665,7 +725,9 @@ export class PluginPage {
     text: string | RegExp,
   ) {
     await this.pluginColumnHelpIcon(name).hover();
-    await expect(this.antTooltip().filter({ hasText: text }).last()).toBeVisible();
+    await expect(
+      this.antTooltip().filter({ hasText: text }).last(),
+    ).toBeVisible();
   }
 
   vxeTooltip(): Locator {
@@ -680,6 +742,11 @@ export class PluginPage {
   async searchByPluginId(pluginId: string) {
     await this.filterByPluginId(pluginId);
     await expect(this.pluginRow(pluginId)).toBeVisible();
+  }
+
+  async searchAndExpectPluginMissing(pluginId: string) {
+    await this.filterByPluginId(pluginId);
+    await expect(this.pluginRow(pluginId)).toHaveCount(0);
   }
 
   async syncPlugins() {
@@ -806,7 +873,9 @@ export class PluginPage {
   }
 
   async selectInstallMode(modeLabel: string | RegExp) {
-    await this.pluginInstallModeSelect().locator(".ant-select-selector").click();
+    await this.pluginInstallModeSelect()
+      .locator(".ant-select-selector")
+      .click();
     const option = this.page
       .locator(".ant-select-dropdown:visible .ant-select-item-option")
       .filter({ hasText: modeLabel })
@@ -920,9 +989,10 @@ export class PluginPage {
   async openPluginDetail(pluginId: string) {
     // Prefer stable test id when present; fall back to action-column text match.
     const byTestId = this.pluginDetailAction(pluginId);
-    const detailButton = (await byTestId.count()) > 0
-      ? byTestId
-      : await this.pluginActionButton(pluginId, pluginDetailActionPattern);
+    const detailButton =
+      (await byTestId.count()) > 0
+        ? byTestId
+        : await this.pluginActionButton(pluginId, pluginDetailActionPattern);
     await expect(detailButton).toBeVisible();
     await detailButton.click();
     await expect(this.pluginDetailModal()).toBeVisible();
@@ -1070,7 +1140,8 @@ export class PluginPage {
         switcher,
         `未找到插件启用状态开关: ${pluginId}`,
       ).toBeVisible();
-      const isChecked = (await switcher.getAttribute("aria-checked")) === "true";
+      const isChecked =
+        (await switcher.getAttribute("aria-checked")) === "true";
       if (isChecked === enabled) {
         return;
       }
@@ -1136,10 +1207,9 @@ export class PluginPage {
         }
       }
       const response = await statusResponse;
-      expect(
-        response.ok(),
-        `${actionPath} ${pluginId} should return 2xx`,
-      ).toBe(true);
+      expect(response.ok(), `${actionPath} ${pluginId} should return 2xx`).toBe(
+        true,
+      );
       await Promise.all([pluginStateRefresh, menuRefresh]);
       await this.filterByPluginId(pluginId);
       const refreshedSwitcher = this.pluginLifecycleSwitch(
@@ -1390,7 +1460,9 @@ export class PluginPage {
       .filter(Boolean);
 
     const findHeaderIndex = (titleOrTitles: string | string[]) => {
-      const titles = Array.isArray(titleOrTitles) ? titleOrTitles : [titleOrTitles];
+      const titles = Array.isArray(titleOrTitles)
+        ? titleOrTitles
+        : [titleOrTitles];
       return headerTitles.findIndex((title) => titles.includes(title));
     };
     const formatTitle = (titleOrTitles: string | string[]) =>
@@ -1523,7 +1595,10 @@ export class PluginPage {
 
     for (const narrowerTitle of narrowerTitles) {
       const narrowerCell = this.tableHeaderCell(narrowerTitle);
-      await expect(narrowerCell, `未找到列表列: ${narrowerTitle}`).toBeVisible();
+      await expect(
+        narrowerCell,
+        `未找到列表列: ${narrowerTitle}`,
+      ).toBeVisible();
       const narrowerWidth = await narrowerCell.evaluate(
         (element) => element.getBoundingClientRect().width,
       );
@@ -1594,11 +1669,15 @@ export class PluginPage {
             }
             const buttons = Array.from(
               cell.querySelectorAll("button.ant-btn"),
-            ).filter((node): node is HTMLElement => node instanceof HTMLElement);
+            ).filter(
+              (node): node is HTMLElement => node instanceof HTMLElement,
+            );
             if (buttons.length < 2) {
               return false;
             }
-            const tops = buttons.map((button) => button.getBoundingClientRect().top);
+            const tops = buttons.map(
+              (button) => button.getBoundingClientRect().top,
+            );
             const baseTop = tops[0] ?? 0;
             // Wrapped buttons jump by roughly a full control height (~24px+).
             return tops.every((top) => Math.abs(top - baseTop) <= 2);
@@ -1636,10 +1715,7 @@ export class PluginPage {
       .toBe(true);
   }
 
-  async expectBooleanTableCell(
-    cell: Locator,
-    expected: boolean,
-  ) {
+  async expectBooleanTableCell(cell: Locator, expected: boolean) {
     await expect(cell).toBeVisible();
     await expect(cell).toContainText(expected ? /是|Yes/iu : /否|No/iu);
   }

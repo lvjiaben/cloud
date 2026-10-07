@@ -1,0 +1,44 @@
+gfcli:
+  gen:
+    dao:
+      - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+        path: "internal"
+        tables: >-
+          plugin_shared_services_challenge,
+          plugin_shared_services_inbox_message,
+          plugin_shared_services_inbox_delivery_evidence
+        removePrefix: "plugin_shared_services_"
+        importPrefix: "lina-plugin-shared-services/backend/internal"
+        descriptionTag: true
+        noModelComment: true
+        stdTime: true
+        typeMapping:
+          timestamp:
+            type: "*time.Time"
+            import: time
+          "timestamp without time zone":
+            type: "*time.Time"
+            import: time
+          timestamptz:
+            type: "*time.Time"
+            import: time
+          "timestamp with time zone":
+            type: "*time.Time"
+            import: time
+        fieldMapping:
+          plugin_shared_services_challenge.answer_salt:
+            type: any
+          plugin_shared_services_challenge.answer_digest:
+            type: any
+          plugin_shared_services_challenge.proof_digest:
+            type: any
+          plugin_shared_services_challenge.proof_expires_at:
+            type: any
+          plugin_shared_services_challenge.verified_at:
+            type: any
+          plugin_shared_services_challenge.consumed_at:
+            type: any
+          plugin_shared_services_inbox_message.action_url:
+            type: any
+          plugin_shared_services_inbox_message.read_at:
+            type: any

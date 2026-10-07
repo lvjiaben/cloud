@@ -1,0 +1,5 @@
+{
+  "menu": {
+    "plugin:idc-channel:tokens": { "title": "Downstream channel management" }
+  }
+}

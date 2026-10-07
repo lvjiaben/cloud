@@ -1,0 +1,82 @@
+{
+  "menu": {
+    "plugin:idc-resource:provider-configuration": {
+      "title": "服务器供应商接口"
+    },
+    "plugin:idc-resource:provider-configuration:write": {
+      "title": "管理上游渠道与资源池"
+    },
+    "plugin:idc-resource:overview": {
+      "title": "资源运营总览"
+    },
+    "plugin:idc-resource:provider-capacity": {
+      "title": "供应商容量观测"
+    },
+    "plugin:idc-resource:provider-capacity:refresh": {
+      "title": "采集供应商容量"
+    },
+    "plugin:idc-resource:health": {
+      "title": "上游渠道健康"
+    },
+    "plugin:idc-resource:health:policy": {
+      "title": "调整健康策略"
+    },
+    "plugin:idc-resource:tasks": {
+      "title": "上游任务核对"
+    },
+    "plugin:idc-resource:tasks:query": {
+      "title": "查看 Provider 任务证据"
+    },
+    "plugin:idc-resource:tasks:manual-takeover": {
+      "title": "接管 Provider 任务"
+    },
+    "plugin:idc-resource:server-accessories": {
+      "title": "服务器管理"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-create": {
+      "title": "创建快照"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-delete": {
+      "title": "删除快照"
+    },
+    "plugin:idc-resource:server-accessories:snapshot-restore": {
+      "title": "恢复快照"
+    },
+    "plugin:idc-resource:server-accessories:backup-create": {
+      "title": "创建备份"
+    },
+    "plugin:idc-resource:server-accessories:backup-delete": {
+      "title": "删除备份"
+    },
+    "plugin:idc-resource:server-accessories:backup-restore": {
+      "title": "恢复备份"
+    },
+    "plugin:idc-resource:server-accessories:security-group-attach": {
+      "title": "绑定安全组"
+    },
+    "plugin:idc-resource:server-accessories:security-group-detach": {
+      "title": "解绑安全组"
+    },
+    "plugin:idc-resource:server-accessories:nat-create": {
+      "title": "创建 NAT 规则"
+    },
+    "plugin:idc-resource:server-accessories:nat-delete": {
+      "title": "删除 NAT 规则"
+    },
+    "plugin:idc-resource:server-accessories:virtual-media-mount": {
+      "title": "挂载虚拟介质"
+    },
+    "plugin:idc-resource:server-accessories:virtual-media-unmount": {
+      "title": "卸载虚拟介质"
+    },
+    "plugin:idc-resource:server-accessories:traffic-add": {
+      "title": "购买流量包"
+    },
+    "plugin:idc-resource:server-renewals": {
+      "title": "服务器续费"
+    },
+    "plugin:idc-resource:server-renewals:safe": {
+      "title": "确认服务器续费"
+    }
+  }
+}

@@ -20,6 +20,10 @@ function runValidator(root, baselinePath) {
   });
 }
 
+function toPosix(value) {
+  return value.split(path.sep).join('/');
+}
+
 function writeFixture(root) {
   const serviceDir = path.join(root, 'apps/lina-core/internal/service/auth');
   const controllerDir = path.join(root, 'apps/lina-core/internal/controller/demo');
@@ -42,7 +46,7 @@ function writeFixture(root) {
       '',
     ].join('\n'),
   );
-  return path.relative(repoRoot, path.join(controllerDir, 'demo.go'));
+  return toPosix(path.relative(repoRoot, path.join(controllerDir, 'demo.go')));
 }
 
 const tmpRoot = mkdtempSync(path.join(tmpdir(), 'linapro-service-deps-'));

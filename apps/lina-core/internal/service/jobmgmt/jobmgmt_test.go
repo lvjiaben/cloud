@@ -4,6 +4,8 @@ package jobmgmt
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -332,5 +334,9 @@ func syncBuiltinHandlerJob(
 
 // uniqueTestName returns one collision-resistant identifier for DB-backed tests.
 func uniqueTestName(prefix string) string {
+	var random [16]byte
+	if _, err := rand.Read(random[:]); err == nil {
+		return prefix + "-" + hex.EncodeToString(random[:])
+	}
 	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixNano())
 }

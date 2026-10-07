@@ -8,6 +8,7 @@ import (
 	pluginv1 "lina-core/api/plugin/v1"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -287,6 +288,9 @@ func TestResolveRuntimeFrontendAssetRejectsSymlinkEscape(t *testing.T) {
 	testutil.WriteTestFile(t, filepath.Join(outsideDir, "secret.txt"), "outside")
 	linkPath := filepath.Join(pluginDir, "frontend", "linked-public")
 	if err := os.Symlink(outsideDir, linkPath); err != nil {
+		if runtime.GOOS == "windows" {
+			t.Skipf("symlink fixture requires Windows Developer Mode or elevated privileges: %v", err)
+		}
 		t.Fatalf("failed to create source public asset symlink: %v", err)
 	}
 	testutil.WriteTestFile(

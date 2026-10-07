@@ -29,6 +29,21 @@ import (
 	"lina-core/pkg/plugin/capability/storagecap"
 )
 
+// TestBuildStorageKeyUsesURLSeparators keeps persisted object keys portable
+// across Windows and Unix hosts, where filesystem path separators differ.
+func TestBuildStorageKeyUsesURLSeparators(t *testing.T) {
+	key := buildStorageKey(context.Background(), "report.txt")
+	if strings.Contains(key, "\\") {
+		t.Fatalf("storage key must use forward slashes, got %q", key)
+	}
+	if !strings.HasSuffix(key, ".txt") {
+		t.Fatalf("storage key must preserve the normalized suffix, got %q", key)
+	}
+	if !path.IsAbs(key) && strings.Count(key, "/") < 3 {
+		t.Fatalf("storage key must include tenant/year/month segments, got %q", key)
+	}
+}
+
 // TestStorageUploadBodyOmitsCloser ensures host-owned spool files are not exposed
 // as io.Closer to storage backends (COS SDK TeeReader closes request bodies).
 func TestStorageUploadBodyOmitsCloser(t *testing.T) {

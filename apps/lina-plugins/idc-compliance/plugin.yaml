@@ -1,0 +1,288 @@
+id: idc-compliance
+name: IDC Compliance
+version: v0.1.19
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Identity verification, enterprise review, electronic contracts, tax invoicing, and compliance evidence.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.0 <1.0.0"
+    - id: idc-notify
+      version: ">=0.1.0 <1.0.0"
+menus:
+  - key: plugin:idc-compliance:electronic-contract
+    parent_key: plugin:idc-core:compliance-governance
+    name: Electronic Contract
+    path: /idc/compliance/electronic-contract
+    component: system/plugin/dynamic-page
+    icon: lucide:file-signature
+    type: M
+    sort: 1
+    remark: Buyer-owned Tencent eSign enterprise onboarding
+  - key: plugin:idc-compliance:electronic-contract:onboard
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Onboard Electronic Contract
+    perms: idc:admin:compliance:supplier:subject:bind
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-compliance:electronic-contract:template:query
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: View Electronic Contract Templates
+    perms: idc:admin:compliance:contract-template:query
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-compliance:electronic-contract:template:manage
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Manage Electronic Contract Templates
+    perms: idc:admin:compliance:contract-template:manage
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-compliance:electronic-contract:create
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Create Electronic Contract
+    perms: idc:admin:compliance:contract:create
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-compliance:electronic-contract:query
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: View Electronic Contracts
+    perms: idc:admin:compliance:contract:query
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-compliance:electronic-contract:auto-sign:manage
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Manage Enterprise Auto-sign Authorization
+    perms: idc:admin:compliance:contract-auto-sign:manage
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-compliance:electronic-contract:reissue
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Reissue Electronic Contract
+    perms: idc:admin:compliance:contract:reissue
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-compliance:electronic-contract:terminate
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Terminate Electronic Contract
+    perms: idc:admin:compliance:contract:terminate
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-compliance:electronic-contract:cancel-order
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Cancel Failed Contract Order
+    perms: idc:admin:compliance:contract:cancel-order
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-compliance:electronic-contract:failure-policy
+    parent_key: plugin:idc-compliance:electronic-contract
+    name: Configure Contract Failure Policy
+    perms: idc:admin:compliance:contract:failure-policy
+    type: B
+    visible: 0
+    sort: 10
+  - key: plugin:idc-compliance:provider
+    parent_key: plugin:idc-core:compliance-governance
+    name: Identity Provider
+    path: /idc/compliance/providers/aliyun-face
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:provider:query
+    icon: lucide:scan-face
+    type: M
+    sort: 2
+    remark: Aliyun FACE credential, connectivity, and interrupted update recovery
+  - key: plugin:idc-compliance:provider:write
+    parent_key: plugin:idc-compliance:provider
+    name: Configure Identity Provider
+    perms: idc:admin:compliance:provider:write
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-compliance:suppliers
+    parent_key: plugin:idc-core:compliance-governance
+    name: Contract and Invoice Providers
+    path: /idc/compliance/suppliers
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:supplier:query
+    icon: lucide:plug-zap
+    type: M
+    sort: 3
+    remark: Configure and inspect merchant-owned Tencent eSign and Nuonuo supplier readiness
+  - key: plugin:idc-compliance:provider:validate
+    parent_key: plugin:idc-compliance:provider
+    name: Validate Identity Provider
+    perms: idc:admin:compliance:provider:validate
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-compliance:supplier:query
+    parent_key: plugin:idc-compliance:provider
+    name: View Local Supplier Configuration
+    perms: idc:admin:compliance:supplier:query
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-compliance:supplier:credential:write
+    parent_key: plugin:idc-compliance:provider
+    name: Update Local Supplier Credential
+    perms: idc:admin:compliance:supplier:credential:write
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-compliance:supplier:subject:bind
+    parent_key: plugin:idc-compliance:provider
+    name: Bind Local Supplier Subject
+    perms: idc:admin:compliance:supplier:subject:bind
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-compliance:supplier:subject:revoke
+    parent_key: plugin:idc-compliance:provider
+    name: Revoke Local Supplier Subject
+    perms: idc:admin:compliance:supplier:subject:revoke
+    type: B
+    visible: 0
+    sort: 6
+  - key: plugin:idc-compliance:supplier:subject:reopen
+    parent_key: plugin:idc-compliance:provider
+    name: Reopen Local Supplier Subject
+    perms: idc:admin:compliance:supplier:subject:reopen
+    type: B
+    visible: 0
+    sort: 7
+  - key: plugin:idc-compliance:enterprise-verification
+    parent_key: plugin:idc-core:compliance-governance
+    name: Enterprise Verification
+    path: /idc/compliance/enterprise-verifications
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:enterprise-verification:list
+    icon: lucide:building-2
+    type: M
+    sort: 3
+    remark: Bounded enterprise verification review queue and audited original access
+  - key: plugin:idc-compliance:enterprise-verification:query
+    parent_key: plugin:idc-compliance:enterprise-verification
+    name: View Enterprise Verification
+    perms: idc:admin:compliance:enterprise-verification:query
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-compliance:enterprise-verification:review
+    parent_key: plugin:idc-compliance:enterprise-verification
+    name: Start Enterprise Verification Review
+    perms: idc:admin:compliance:enterprise-verification:review
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-compliance:enterprise-verification:approve
+    parent_key: plugin:idc-compliance:enterprise-verification
+    name: Approve Enterprise Verification
+    perms: idc:admin:compliance:enterprise-verification:approve
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-compliance:enterprise-verification:reject
+    parent_key: plugin:idc-compliance:enterprise-verification
+    name: Reject Enterprise Verification
+    perms: idc:admin:compliance:enterprise-verification:reject
+    type: B
+    visible: 0
+    sort: 4
+  - key: plugin:idc-compliance:enterprise-material:access
+    parent_key: plugin:idc-compliance:enterprise-verification
+    name: Access Enterprise Verification Originals
+    perms: idc:admin:compliance:enterprise-material:access
+    type: B
+    visible: 0
+    sort: 5
+  - key: plugin:idc-compliance:tax-invoice:query
+    parent_key: plugin:idc-core:compliance-governance
+    name: View Tax Invoice Requests
+    path: /idc/compliance/tax-invoices
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:tax-invoice:query
+    icon: lucide:receipt-text
+    type: M
+    sort: 20
+  - key: plugin:idc-compliance:tax-invoice:review
+    parent_key: plugin:idc-compliance:tax-invoice:query
+    name: Review Tax Invoice Requests
+    perms: idc:admin:compliance:tax-invoice:review
+    type: B
+    visible: 0
+    sort: 21
+  - key: plugin:idc-compliance:tax-invoice:submit
+    parent_key: plugin:idc-compliance:tax-invoice:query
+    name: Submit Tax Invoice Requests
+    perms: idc:admin:compliance:tax-invoice:submit
+    type: B
+    visible: 0
+    sort: 22
+  - key: plugin:idc-compliance:tax-invoice:cancel
+    parent_key: plugin:idc-compliance:tax-invoice:query
+    name: Cancel Tax Invoice Requests
+    perms: idc:admin:compliance:tax-invoice:cancel
+    type: B
+    visible: 0
+    sort: 23
+  - key: plugin:idc-compliance:red-letter:query
+    parent_key: plugin:idc-core:compliance-governance
+    name: View Red-letter Tasks
+    path: /idc/compliance/red-letters
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:red-letter:query
+    icon: lucide:file-warning
+    type: M
+    sort: 24
+  - key: plugin:idc-compliance:red-letter:handle
+    parent_key: plugin:idc-compliance:red-letter:query
+    name: Handle Red-letter Tasks
+    perms: idc:admin:compliance:red-letter:handle
+    type: B
+    visible: 0
+    sort: 25
+  - key: plugin:idc-compliance:privacy:query
+    parent_key: plugin:idc-core:compliance-governance
+    name: View Privacy Governance
+    path: /idc/compliance/privacy
+    component: system/plugin/dynamic-page
+    perms: idc:admin:compliance:privacy:query
+    icon: lucide:shield-check
+    type: M
+    sort: 26
+  - key: plugin:idc-compliance:privacy:configure
+    parent_key: plugin:idc-compliance:privacy:query
+    name: Configure Privacy Governance
+    perms: idc:admin:compliance:privacy:configure
+    type: B
+    visible: 0
+    sort: 27
+  - key: plugin:idc-compliance:privacy:incident
+    parent_key: plugin:idc-compliance:privacy:query
+    name: Handle Privacy Incidents
+    perms: idc:admin:compliance:privacy:incident
+    type: B
+    visible: 0
+    sort: 28

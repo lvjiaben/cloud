@@ -9,6 +9,7 @@ import (
 	pluginv1 "lina-core/api/plugin/v1"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -299,39 +300,13 @@ func TestLoadManifestFromYAMLReadsI18NPolicy(t *testing.T) {
 	}
 }
 
-// TestParsePluginIDReturnsSuggestedIdentityParts verifies plugin IDs can expose
-// suggested author, domain, and capability parts without making that structure
-// a runtime acceptance requirement.
-func TestParsePluginIDReturnsSuggestedIdentityParts(t *testing.T) {
-	parts, err := plugintypes.ParsePluginID("linapro-content-notice")
-	if err != nil {
-		t.Fatalf("expected structured plugin ID to parse, got %v", err)
-	}
-	if parts.Author != "linapro" || parts.Domain != "content" || parts.Capability != "notice" {
-		t.Fatalf("unexpected plugin ID parts: %#v", parts)
-	}
-
-	parts, err = plugintypes.ParsePluginID("linapro-ops-demo-guard")
-	if err != nil {
-		t.Fatalf("expected multi-word capability to parse, got %v", err)
-	}
-	if parts.Author != "linapro" || parts.Domain != "ops" || parts.Capability != "demo-guard" {
-		t.Fatalf("unexpected multi-word capability parts: %#v", parts)
-	}
-
-	parts, err = plugintypes.ParsePluginID("demo-control")
-	if err != nil {
-		t.Fatalf("expected non-three-segment plugin ID to parse, got %v", err)
-	}
-	if parts.Author != "demo" || parts.Domain != "control" || parts.Capability != "" {
-		t.Fatalf("unexpected non-three-segment parts: %#v", parts)
-	}
-}
-
 // TestValidatePluginIDEnforcesOnlyRuntimeSafetyBoundary verifies runtime
-// validation rejects unsafe identifiers without hard-coding plugin taxonomy.
+// validation accepts any safe, stable kebab-case identifier without inferring
+// an author, organization, domain, or capability taxonomy from its segments.
 func TestValidatePluginIDEnforcesOnlyRuntimeSafetyBoundary(t *testing.T) {
 	for _, pluginID := range []string{
+		"phone",
+		"ssl",
 		"demo-control",
 		"acme-random-report",
 		"acme-org-core",
@@ -347,7 +322,7 @@ func TestValidatePluginIDEnforcesOnlyRuntimeSafetyBoundary(t *testing.T) {
 		pluginID string
 		want     string
 	}{
-		{name: "uppercase", pluginID: "Acme-linapro-org-core", want: "kebab-case"},
+		{name: "uppercase", pluginID: "Acme-org-core", want: "kebab-case"},
 		{name: "overlong", pluginID: "acme-demo-" + strings.Repeat("x", plugintypes.MaxPluginIDLength), want: "length"},
 	}
 
@@ -389,11 +364,11 @@ func TestValidatePluginManifestNormalizesDependencyDefaults(t *testing.T) {
 			Framework: &plugintypes.FrameworkDependencySpec{Version: " >=0.1.0 <1.0.0 "},
 			Plugins: []*plugintypes.PluginDependencySpec{
 				{
-					ID:      " linapro-tenant-core ",
+					ID:      " tenant-core ",
 					Version: " >=0.1.0 ",
 				},
 				{
-					ID:      "linapro-org-core",
+					ID:      "org-core",
 					Version: ">=0.1.0",
 				},
 			},
@@ -407,7 +382,7 @@ func TestValidatePluginManifestNormalizesDependencyDefaults(t *testing.T) {
 		t.Fatalf("expected framework range to be trimmed, got %q", manifest.Dependencies.Framework.Version)
 	}
 	firstDependency := manifest.Dependencies.Plugins[0]
-	if firstDependency.ID != "linapro-tenant-core" {
+	if firstDependency.ID != "tenant-core" {
 		t.Fatalf("expected dependency ID to be trimmed, got %q", firstDependency.ID)
 	}
 	if firstDependency.Version != ">=0.1.0" {
@@ -448,8 +423,8 @@ func TestValidatePluginManifestRejectsInvalidDependencies(t *testing.T) {
 			name: "duplicate dependency",
 			dependencies: &plugintypes.DependencySpec{
 				Plugins: []*plugintypes.PluginDependencySpec{
-					{ID: "linapro-tenant-core"},
-					{ID: "linapro-tenant-core"},
+					{ID: "tenant-core"},
+					{ID: "tenant-core"},
 				},
 			},
 			want: "duplicate",
@@ -457,7 +432,7 @@ func TestValidatePluginManifestRejectsInvalidDependencies(t *testing.T) {
 		{
 			name: "invalid dependency version range",
 			dependencies: &plugintypes.DependencySpec{
-				Plugins: []*plugintypes.PluginDependencySpec{{ID: "linapro-tenant-core", Version: ">= v0.1.0"}},
+				Plugins: []*plugintypes.PluginDependencySpec{{ID: "tenant-core", Version: ">= v0.1.0"}},
 			},
 			want: "version",
 		},
@@ -511,14 +486,14 @@ func TestValidateManifestRequiresOwnerHostServiceDependency(t *testing.T) {
 		{
 			name: "missing owner dependency version",
 			dependencies: &plugintypes.DependencySpec{
-				Plugins: []*plugintypes.PluginDependencySpec{{ID: "linapro-ai-core"}},
+				Plugins: []*plugintypes.PluginDependencySpec{{ID: "ai-core"}},
 			},
 			want: "version range",
 		},
 		{
 			name: "declared owner dependency version",
 			dependencies: &plugintypes.DependencySpec{
-				Plugins: []*plugintypes.PluginDependencySpec{{ID: "linapro-ai-core", Version: ">=0.1.0 <0.2.0"}},
+				Plugins: []*plugintypes.PluginDependencySpec{{ID: "ai-core", Version: ">=0.1.0 <0.2.0"}},
 			},
 		},
 	}
@@ -571,12 +546,12 @@ func TestLoadManifestFromYAMLRejectsUnsupportedDependencyPolicyFields(t *testing
 	}{
 		{
 			name:    "plugin dependency required",
-			content: "id: acme-demo-dependency-policy\nname: Demo\nversion: 0.1.0\ntype: source\ndependencies:\n  plugins:\n    - id: linapro-tenant-core\n      required: true\n",
+			content: "id: acme-demo-dependency-policy\nname: Demo\nversion: 0.1.0\ntype: source\ndependencies:\n  plugins:\n    - id: tenant-core\n      required: true\n",
 			want:    "dependencies.plugins[0].required",
 		},
 		{
 			name:    "plugin dependency install",
-			content: "id: acme-demo-dependency-policy\nname: Demo\nversion: 0.1.0\ntype: source\ndependencies:\n  plugins:\n    - id: linapro-tenant-core\n      install: auto\n",
+			content: "id: acme-demo-dependency-policy\nname: Demo\nversion: 0.1.0\ntype: source\ndependencies:\n  plugins:\n    - id: tenant-core\n      install: auto\n",
 			want:    "dependencies.plugins[0].install",
 		},
 	}
@@ -861,6 +836,9 @@ func TestValidatePluginManifestRejectsSymlinkedPublicAssetSource(t *testing.T) {
 		linkPath   = filepath.Join(pluginDir, "frontend", "linked-public")
 	)
 	if err := os.Symlink(outsideDir, linkPath); err != nil {
+		if runtime.GOOS == "windows" {
+			t.Skipf("symlink fixture requires Windows Developer Mode or elevated privileges: %v", err)
+		}
 		t.Fatalf("failed to create public asset symlink fixture: %v", err)
 	}
 	manifest := &catalog.Manifest{
@@ -1631,13 +1609,13 @@ func TestValidateManifestMenusAcceptsExternalParentKey(t *testing.T) {
 // declare an external plugin menu as parent and let runtime sync resolve it.
 func TestValidateManifestMenusAcceptsCrossPluginParentKey(t *testing.T) {
 	manifest := &catalog.Manifest{
-		ID: "linapro-org-core",
+		ID: "org-core",
 		Menus: []*catalog.MenuSpec{
 			{
-				Key:       "plugin:linapro-org-core:catalog",
+				Key:       "plugin:org-core:catalog",
 				Name:      "组织管理",
-				ParentKey: "plugin:linapro-content-notice:notice",
-				Path:      "linapro-org-core-catalog",
+				ParentKey: "plugin:content-notice:notice",
+				Path:      "org-core-catalog",
 				Type:      catalog.MenuTypeDirectory.String(),
 			},
 		},
@@ -1652,19 +1630,19 @@ func TestValidateManifestMenusAcceptsCrossPluginParentKey(t *testing.T) {
 // can keep children inside their own manifest-declared tree.
 func TestValidateManifestMenusAcceptsInternalPluginParent(t *testing.T) {
 	manifest := &catalog.Manifest{
-		ID: "linapro-org-core",
+		ID: "org-core",
 		Menus: []*catalog.MenuSpec{
 			{
-				Key:       "plugin:linapro-org-core:catalog",
+				Key:       "plugin:org-core:catalog",
 				Name:      "组织管理",
 				ParentKey: menusvc.Org,
-				Path:      "linapro-org-core-catalog",
+				Path:      "org-core-catalog",
 				Type:      catalog.MenuTypeDirectory.String(),
 			},
 			{
-				Key:       "plugin:linapro-org-core:dept",
+				Key:       "plugin:org-core:dept",
 				Name:      "部门管理",
-				ParentKey: "plugin:linapro-org-core:catalog",
+				ParentKey: "plugin:org-core:catalog",
 				Path:      "/system/dept",
 				Component: "system/plugin/dynamic-page",
 				Type:      catalog.MenuTypePage.String(),
@@ -1681,10 +1659,10 @@ func TestValidateManifestMenusAcceptsInternalPluginParent(t *testing.T) {
 // key is accepted during manifest validation and resolved during menu sync.
 func TestValidateManifestMenusAcceptsCustomTenantParent(t *testing.T) {
 	manifest := &catalog.Manifest{
-		ID: "linapro-tenant-core",
+		ID: "tenant-core",
 		Menus: []*catalog.MenuSpec{
 			{
-				Key:       "plugin:linapro-tenant-core:tenant:members",
+				Key:       "plugin:tenant-core:tenant:members",
 				Name:      "成员管理",
 				ParentKey: "tenant",
 				Path:      "/tenant/members",
@@ -1793,7 +1771,7 @@ func TestValidateManifestForcesGlobalWhenTenantGovernanceUnsupported(t *testing.
 func newOwnerHostServiceDynamicManifest(dependencies *plugintypes.DependencySpec) *catalog.Manifest {
 	supportsMultiTenant := true
 	return &catalog.Manifest{
-		ID:                  "linapro-demo-dynamic",
+		ID:                  "demo-dynamic",
 		Name:                "Dynamic Owner Host Service Demo",
 		Version:             "0.1.0",
 		Type:                pluginv1.PluginTypeDynamic.String(),
@@ -1803,7 +1781,7 @@ func newOwnerHostServiceDynamicManifest(dependencies *plugintypes.DependencySpec
 		Dependencies:        dependencies,
 		HostServices: []*protocol.HostServiceSpec{
 			{
-				Owner:   "linapro-ai-core",
+				Owner:   "ai-core",
 				Service: "ai",
 				Version: "v1",
 				Methods: []string{

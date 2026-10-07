@@ -25,21 +25,27 @@ type MenuRouteItem struct {
 
 // MenuRouteMeta represents route metadata for Vben
 type MenuRouteMeta struct {
-	Title            string            `json:"title" dc:"menu title" eg:"System management"`
-	Icon             string            `json:"icon,omitempty" dc:"menu icon" eg:"ant-design:setting-outlined"`
-	I18nKey          string            `json:"i18nKey,omitempty" dc:"Runtime i18n key used by the frontend to relocalize this menu title without refetching menus" eg:"menu.system:user:list.title"`
-	ActiveIcon       string            `json:"activeIcon,omitempty" dc:"Activation icon" eg:"ant-design:setting-filled"`
-	HideInMenu       bool              `json:"hideInMenu,omitempty" dc:"Whether to hide in the menu" eg:"false"`
-	HideInBreadcrumb bool              `json:"hideInBreadcrumb,omitempty" dc:"Whether to hide in breadcrumbs" eg:"false"`
-	HideInTab        bool              `json:"hideInTab,omitempty" dc:"Whether to hide in tabs" eg:"false"`
-	KeepAlive        bool              `json:"keepAlive,omitempty" dc:"Whether to cache the page" eg:"true"`
-	IframeSrc        string            `json:"iframeSrc,omitempty" dc:"The target address in iframe mode, usually used to host inline hosted pages" eg:"/x-assets/plugin-runtime-demo/v0.1.0/index.html"`
-	Link             string            `json:"link,omitempty" dc:"The target address in new tab mode, which will be opened directly by the host when the menu is clicked." eg:"/x-assets/plugin-runtime-demo/v0.1.0/index.html"`
-	OpenInNewWindow  bool              `json:"openInNewWindow,omitempty" dc:"Whether to open the current menu in a new window or tab" eg:"true"`
-	Query            map[string]string `json:"query,omitempty" dc:"Query parameters attached when the menu is opened, for host inline mounting or normal page recovery context" eg:"{\"pluginAccessMode\":\"embedded-mount\"}"`
-	Order            int               `json:"order" dc:"Sorting number, 0 represents the highest priority, the smaller the value, the higher it is." eg:"1"`
-	Authority        string            `json:"authority,omitempty" dc:"Permission ID" eg:"system:user:list"`
-	IgnoreAccess     bool              `json:"ignoreAccess,omitempty" dc:"Whether to ignore permissions" eg:"false"`
+	Title                     string            `json:"title" dc:"menu title" eg:"System management"`
+	Icon                      string            `json:"icon,omitempty" dc:"menu icon" eg:"ant-design:setting-outlined"`
+	I18nKey                   string            `json:"i18nKey,omitempty" dc:"Runtime i18n key used by the frontend to relocalize this menu title without refetching menus" eg:"menu.system:user:list.title"`
+	ActiveIcon                string            `json:"activeIcon,omitempty" dc:"Activation icon" eg:"ant-design:setting-filled"`
+	HideInMenu                bool              `json:"hideInMenu,omitempty" dc:"Whether to hide in the menu" eg:"false"`
+	HideInBreadcrumb          bool              `json:"hideInBreadcrumb,omitempty" dc:"Whether to hide in breadcrumbs" eg:"false"`
+	HideInTab                 bool              `json:"hideInTab,omitempty" dc:"Whether to hide in tabs" eg:"false"`
+	KeepAlive                 bool              `json:"keepAlive,omitempty" dc:"Whether to cache the page" eg:"true"`
+	IframeSrc                 string            `json:"iframeSrc,omitempty" dc:"The target address in iframe mode, usually used to host inline hosted pages" eg:"/x-assets/plugin-runtime-demo/v0.1.0/index.html"`
+	PluginSandboxSrc          string            `json:"pluginSandboxSrc,omitempty" dc:"The version-frozen plugin page address rendered only by the isolated plugin sandbox" eg:"/x-assets/plugin-runtime-demo/v0.1.0/index.html"`
+	PluginSurfaceId           string            `json:"pluginSurfaceId,omitempty" dc:"The plugin ID authorized for this isolated page" eg:"ssl-provider"`
+	PluginSurfaceKey          string            `json:"pluginSurfaceKey,omitempty" dc:"The exact isolated page surface key" eg:"certificates"`
+	PluginSurfaceVer          string            `json:"pluginSurfaceVersion,omitempty" dc:"The page bridge contract version" eg:"v1"`
+	PluginSurfaceHost         string            `json:"pluginSurfaceHost,omitempty" dc:"The identity host used by the isolated page" eg:"admin"`
+	PluginSurfaceCapabilities []string          `json:"pluginSurfaceCapabilities,omitempty" dc:"Method-scoped page bridge capabilities granted to this surface" eg:"[\"certificates.query\"]"`
+	Link                      string            `json:"link,omitempty" dc:"The target address in new tab mode, which will be opened directly by the host when the menu is clicked." eg:"/x-assets/plugin-runtime-demo/v0.1.0/index.html"`
+	OpenInNewWindow           bool              `json:"openInNewWindow,omitempty" dc:"Whether to open the current menu in a new window or tab" eg:"true"`
+	Query                     map[string]string `json:"query,omitempty" dc:"Query parameters attached when the menu is opened, for host inline mounting or normal page recovery context" eg:"{\"pluginAccessMode\":\"embedded-mount\"}"`
+	Order                     int               `json:"order" dc:"Sorting number, 0 represents the highest priority, the smaller the value, the higher it is." eg:"1"`
+	Authority                 string            `json:"authority,omitempty" dc:"Permission ID" eg:"system:user:list"`
+	IgnoreAccess              bool              `json:"ignoreAccess,omitempty" dc:"Whether to ignore permissions" eg:"false"`
 }
 
 // GetAllRes defines the wrapped response for user menu routes.

@@ -11,7 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
@@ -21,6 +23,7 @@ import (
 	"lina-core/internal/model"
 	"lina-core/internal/model/do"
 	i18nsvc "lina-core/internal/service/i18n"
+	"lina-core/internal/service/locker"
 	"lina-core/internal/service/plugin/internal/catalog"
 	"lina-core/internal/service/plugin/internal/migration"
 	"lina-core/internal/service/plugin/internal/plugintypes"
@@ -49,15 +52,130 @@ func TestWrapMockDataLoadErrorPassesThroughNonMockErrors(t *testing.T) {
 	}
 }
 
+func TestPluginLifecycleLockRenewalFailureCancelsGuardedAction(t *testing.T) {
+	service := newTestService()
+	service.lifecycleLockRenewInterval = 10 * time.Millisecond
+	ctx := context.Background()
+	pluginID := "lifecycle-renewal-loss-test"
+	testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID)
+	t.Cleanup(func() { testutil.CleanupPluginGovernanceRowsHard(t, ctx, pluginID) })
+	testutil.CreateTestRuntimeStorageArtifact(t, pluginID, "Lifecycle renewal loss test", "v0.5.0", nil, nil)
+	if _, err := service.Install(ctx, pluginID, InstallOptions{}); err != nil {
+		t.Fatalf("install renewal-loss test plugin: %v", err)
+	}
+	registryBefore, err := service.storeSvc.GetRegistry(ctx, pluginID)
+	if err != nil || registryBefore == nil {
+		t.Fatalf("read renewal-loss registry: registry=%#v err=%v", registryBefore, err)
+	}
+	lockName := pluginLifecycleLockName(pluginID)
+	_, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete()
+	t.Cleanup(func() { _, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete() })
+	entered := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- service.withPluginLifecycleLock(ctx, pluginID, "renewal-loss-test", func(lockedCtx context.Context) error {
+			return dao.SysPlugin.Transaction(lockedCtx, func(txCtx context.Context, _ gdb.TX) error {
+				if _, updateErr := dao.SysPlugin.Ctx(txCtx).Where(do.SysPlugin{PluginId: pluginID}).Data(do.SysPlugin{Name: "must-roll-back"}).Update(); updateErr != nil {
+					return updateErr
+				}
+				close(entered)
+				<-txCtx.Done()
+				return txCtx.Err()
+			})
+		})
+	}()
+	<-entered
+	expiredAt := time.Now().Add(-time.Minute)
+	if _, err := dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Data(do.SysLocker{ExpireTime: &expiredAt}).Update(); err != nil {
+		t.Fatalf("expire lifecycle lock: %v", err)
+	}
+	select {
+	case err := <-done:
+		if !bizerr.Is(err, CodePluginLifecycleLockUnavailable) {
+			t.Fatalf("expected renewal loss to fail closed, got %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("renewal loss did not cancel guarded action")
+	}
+	registryAfter, err := service.storeSvc.GetRegistry(ctx, pluginID)
+	if err != nil || registryAfter == nil || registryAfter.Name != registryBefore.Name {
+		t.Fatalf("context-aware owner transaction must roll back after lock loss: before=%#v after=%#v err=%v", registryBefore, registryAfter, err)
+	}
+}
+
+func TestPluginLifecycleLockRenewalFailureAfterSuccessfulCallbackDoesNotMisreportFailure(t *testing.T) {
+	service := newTestService()
+	service.lifecycleLockRenewInterval = 10 * time.Millisecond
+	ctx := context.Background()
+	pluginID := "lifecycle-renewal-short-error-test"
+	lockName := pluginLifecycleLockName(pluginID)
+	_, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete()
+	t.Cleanup(func() { _, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete() })
+	entered := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- service.withPluginLifecycleLock(ctx, pluginID, "renewal-short-error-test", func(lockedCtx context.Context) error {
+			close(entered)
+			<-lockedCtx.Done()
+			return nil
+		})
+	}()
+	<-entered
+	expiredAt := time.Now().Add(-time.Minute)
+	if _, err := dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Data(do.SysLocker{ExpireTime: &expiredAt}).Update(); err != nil {
+		t.Fatalf("expire lifecycle lock: %v", err)
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("successful callback must not be reported as failed after renewal error: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("renewal error did not cancel successful callback")
+	}
+}
+
+func TestPluginLifecycleLockSuccessfulActionCancelsBlockedRenewAndJoins(t *testing.T) {
+	service := newTestService()
+	service.lifecycleLockRenewInterval = 10 * time.Millisecond
+	service.lifecycleLockRenewTimeout = 100 * time.Millisecond
+	renewEntered := make(chan struct{})
+	service.lifecycleLockRenew = func(callCtx context.Context, _ *locker.Instance) error {
+		close(renewEntered)
+		<-callCtx.Done()
+		return callCtx.Err()
+	}
+	ctx := context.Background()
+	pluginID := "lifecycle-renewal-block-test"
+	lockName := pluginLifecycleLockName(pluginID)
+	_, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete()
+	t.Cleanup(func() { _, _ = dao.SysLocker.Ctx(ctx).Where(do.SysLocker{Name: lockName}).Delete() })
+	done := make(chan error, 1)
+	go func() {
+		done <- service.withPluginLifecycleLock(ctx, pluginID, "renewal-block-test", func(context.Context) error {
+			<-renewEntered
+			return nil
+		})
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("successful action with canceled blocked renewal must succeed: %v", err)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("guard did not cancel and join a blocked renewal call")
+	}
+}
+
 // TestWrapMockDataLoadErrorWrapsTypedError verifies that a *MockDataLoadError
 // (or any error chain that contains one) is converted into the stable bizerr
 // carrying pluginId / failedFile / rolledBackFiles / cause for i18n rendering.
 func TestWrapMockDataLoadErrorWrapsTypedError(t *testing.T) {
 	cause := errors.New("Duplicate entry 'admin' for key sys_user.idx_username")
 	loadErr := &migration.MockDataLoadError{
-		PluginID:        "linapro-content-notice",
-		FailedFile:      "002-linapro-content-notice-mock-data.sql",
-		RolledBackFiles: []string{"001-linapro-content-notice-mock-data.sql", "002-linapro-content-notice-mock-data.sql"},
+		PluginID:        "content-notice",
+		FailedFile:      "002-content-notice-mock-data.sql",
+		RolledBackFiles: []string{"001-content-notice-mock-data.sql", "002-content-notice-mock-data.sql"},
 		Cause:           cause,
 	}
 
@@ -175,6 +293,9 @@ func TestUpdateStatusPreservesDynamicPluginStorage(t *testing.T) {
 
 	if err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.EnabledValue.Int()}); err != nil {
 		t.Fatalf("expected dynamic plugin enable to succeed, got error: %v", err)
+	}
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
 	}
 	if err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.Disabled.Int()}); err != nil {
 		t.Fatalf("expected dynamic plugin disable to succeed, got error: %v", err)
@@ -347,12 +468,28 @@ func TestUninstallDynamicUsesArchivedReleaseWhenStagingArtifactMissing(t *testin
 	if release == nil {
 		t.Fatalf("expected dynamic plugin release row after install")
 	}
+	if err = service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
+	afterStopRegistry, err := service.getPluginRegistry(ctx, pluginID)
+	if err != nil || afterStopRegistry == nil || afterStopRegistry.ReleaseId != release.Id {
+		t.Fatalf("expected stop-new-business to preserve active release %d, registry=%#v err=%v", release.Id, afterStopRegistry, err)
+	}
+	if _, err = service.runtimeSvc.LoadActiveDynamicPluginManifest(ctx, afterStopRegistry); err != nil {
+		t.Fatalf("expected stop-new-business to preserve readable active release: %v", err)
+	}
 	archivePath := resolveTestDynamicPackagePath(t, release.PackagePath)
 	if _, err = os.Stat(archivePath); err != nil {
 		t.Fatalf("expected active release archive to exist before staging removal: %v", err)
 	}
 	if err = os.Remove(artifactPath); err != nil {
 		t.Fatalf("failed to remove staging artifact: %v", err)
+	}
+	if _, err = service.runtimeSvc.LoadActiveDynamicPluginManifest(ctx, afterStopRegistry); err != nil {
+		t.Fatalf("expected archived active release to remain readable after staging removal: %v", err)
+	}
+	if err = service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
 	}
 
 	if err = service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true}); err != nil {
@@ -408,6 +545,9 @@ func TestDynamicLifecycleBeforeDisableFailsClosedBeforeStatusChange(t *testing.T
 	if err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.EnabledValue.Int()}); err != nil {
 		t.Fatalf("expected dynamic plugin enable to succeed, got error: %v", err)
 	}
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.Disabled.Int()})
 	if !bizerr.Is(err, CodePluginLifecyclePreconditionVetoed) {
@@ -458,6 +598,9 @@ func TestDynamicLifecycleBeforeUninstallUsesActiveReleaseWhenStagingMissing(t *t
 	if err := os.Remove(artifactPath); err != nil {
 		t.Fatalf("failed to remove staging artifact: %v", err)
 	}
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true})
 	if !bizerr.Is(err, CodePluginLifecyclePreconditionVetoed) {
@@ -503,6 +646,9 @@ func TestDynamicLifecycleUninstallRunsOnlyWhenPurgeRequested(t *testing.T) {
 	if _, err := service.Install(ctx, blockingID, InstallOptions{}); err != nil {
 		t.Fatalf("expected blocking dynamic plugin install to succeed, got error: %v", err)
 	}
+	if err := service.StopNewBusiness(ctx, blockingID); err != nil {
+		t.Fatalf("expected blocking plugin stop-new-business to succeed, got error: %v", err)
+	}
 	err := service.Uninstall(ctx, blockingID, UninstallOptions{PurgeStorageData: true})
 	if !bizerr.Is(err, CodePluginUninstallExecutionFailed) {
 		t.Fatalf("expected purge uninstall lifecycle callback to return uninstall execution bizerr, got %v", err)
@@ -527,6 +673,9 @@ func TestDynamicLifecycleUninstallRunsOnlyWhenPurgeRequested(t *testing.T) {
 	)
 	if _, err = service.Install(ctx, skipID, InstallOptions{}); err != nil {
 		t.Fatalf("expected skip dynamic plugin install to succeed, got error: %v", err)
+	}
+	if err = service.StopNewBusiness(ctx, skipID); err != nil {
+		t.Fatalf("expected skip plugin stop-new-business to succeed, got error: %v", err)
 	}
 	if err = service.Uninstall(ctx, skipID, UninstallOptions{PurgeStorageData: false}); err != nil {
 		t.Fatalf("expected keep-data uninstall to skip dynamic Uninstall lifecycle, got error: %v", err)
@@ -600,6 +749,9 @@ func TestUninstallForceClearsDynamicOrphanWhenArtifactsMissing(t *testing.T) {
 	if release == nil {
 		t.Fatalf("expected dynamic plugin release row after install")
 	}
+	if err = service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business before orphan simulation, got error: %v", err)
+	}
 	archivePath := resolveTestDynamicPackagePath(t, release.PackagePath)
 	if err = os.Remove(artifactPath); err != nil {
 		t.Fatalf("failed to remove staging artifact: %v", err)
@@ -619,14 +771,14 @@ func TestUninstallForceClearsDynamicOrphanWhenArtifactsMissing(t *testing.T) {
 	}
 
 	err = service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true})
-	if !bizerr.Is(err, CodePluginDynamicArtifactMissingForUninstall) {
-		t.Fatalf("expected missing-artifact uninstall bizerr, got %v", err)
+	if !bizerr.Is(err, CodePluginBusinessDataPurgeDenied) {
+		t.Fatalf("expected missing-artifact data purge protection, got %v", err)
 	}
 
 	enabled := true
 	setTestPluginAllowForceUninstallOverride(&enabled)
 	if err = service.Uninstall(ctx, pluginID, UninstallOptions{
-		PurgeStorageData: true,
+		PurgeStorageData: false,
 		Force:            true,
 	}); err != nil {
 		t.Fatalf("expected force orphan uninstall to succeed, got error: %v", err)
@@ -1062,6 +1214,9 @@ func TestSourceLifecycleBeforeDisableBlocksDisable(t *testing.T) {
 		&operations,
 		sourceLifecycleCallbackOptions{vetoOperation: pluginhost.LifecycleHookBeforeDisable.String()},
 	)
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.Disabled.Int()})
 	if !bizerr.Is(err, CodePluginLifecyclePreconditionVetoed) {
@@ -1108,6 +1263,9 @@ func TestSourceLifecycleBeforeUninstallBlocksUninstall(t *testing.T) {
 		&operations,
 		sourceLifecycleCallbackOptions{vetoOperation: pluginhost.LifecycleHookBeforeUninstall.String()},
 	)
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true})
 	if !bizerr.Is(err, CodePluginLifecyclePreconditionVetoed) {
@@ -1157,6 +1315,9 @@ func TestSourceLifecycleBeforeUninstallForceBypassesWhenConfigured(t *testing.T)
 	)
 	enabled := true
 	setTestPluginAllowForceUninstallOverride(&enabled)
+	if err := service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	if err := service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true, Force: true}); err != nil {
 		t.Fatalf("expected force uninstall to bypass BeforeUninstall veto, got error: %v", err)
@@ -1222,6 +1383,12 @@ func TestSourceLifecycleBeforeUninstallReceivesPurgePolicy(t *testing.T) {
 			allowedPurgeStorage: &purgeAllowed,
 		},
 	)
+	if err := service.StopNewBusiness(ctx, skipID); err != nil {
+		t.Fatalf("expected skip plugin stop-new-business to succeed, got error: %v", err)
+	}
+	if err := service.StopNewBusiness(ctx, purgeID); err != nil {
+		t.Fatalf("expected purge plugin stop-new-business to succeed, got error: %v", err)
+	}
 
 	err := service.Uninstall(ctx, skipID, UninstallOptions{PurgeStorageData: false})
 	if !bizerr.Is(err, CodePluginLifecyclePreconditionVetoed) {
@@ -1994,6 +2161,9 @@ func TestSourcePluginInstallAndUninstallRequireExplicitLifecycle(t *testing.T) {
 	if resourceCount == 0 {
 		t.Fatalf("expected source plugin install to materialize governance resource refs")
 	}
+	if err = service.StopNewBusiness(ctx, pluginID); err != nil {
+		t.Fatalf("expected stop-new-business to succeed, got error: %v", err)
+	}
 
 	if err = service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true}); err != nil {
 		t.Fatalf("expected source plugin uninstall to succeed, got error: %v", err)
@@ -2089,6 +2259,8 @@ func TestBuiltinPluginManagementActionsAreDenied(t *testing.T) {
 	assertDenied("update status", service.UpdateStatus(ctx, pluginID, UpdateStatusOptions{Status: statusflag.EnabledValue.Int()}))
 	assertDenied("uninstall", service.Uninstall(ctx, pluginID, UninstallOptions{PurgeStorageData: true}))
 	assertDenied("tenant provisioning", service.UpdateTenantProvisioningPolicy(ctx, pluginID, true))
+	assertDenied("stop new business", service.StopNewBusiness(ctx, pluginID))
+	assertDenied("resume new business", service.ResumeNewBusiness(ctx, pluginID))
 	_, err = service.UpgradeSourcePlugin(ctx, pluginID)
 	assertDenied("source upgrade", err)
 	_, err = service.ExecuteRuntimeUpgrade(ctx, pluginID, RuntimeUpgradeOptions{Confirmed: true})

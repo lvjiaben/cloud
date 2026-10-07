@@ -49,6 +49,9 @@ type Service interface {
 	SyncManifest(ctx context.Context, manifest *catalog.Manifest) (*PluginRecord, error)
 	// SetPluginStatus updates the enabled flag and stable host state for one plugin.
 	SetPluginStatus(ctx context.Context, pluginID string, enabled int) error
+	// SetPluginNewBusinessState changes only new-business admission. Existing
+	// service menus and runtime enablement remain untouched.
+	SetPluginNewBusinessState(ctx context.Context, pluginID string, state plugintypes.NewBusinessState) error
 	// SetPluginInstalled updates the installed flag and stable lifecycle state for one plugin.
 	SetPluginInstalled(ctx context.Context, pluginID string, installed int) error
 	// SetRegistryRuntimeState updates transient registry runtime-state fields.
@@ -91,6 +94,9 @@ type Service interface {
 		manifest *catalog.Manifest,
 		input *HostServiceAuthorizationInput,
 	) (*ManifestSnapshot, error)
+	// PersistReleaseBusinessExtensionAuthorization resolves the current manifest
+	// against owner publications and freezes the accepted declarations.
+	PersistReleaseBusinessExtensionAuthorization(ctx context.Context, manifest *catalog.Manifest) (*ManifestSnapshot, error)
 	// PersistReleaseUninstallPurgePolicy writes one host-confirmed uninstall cleanup policy.
 	PersistReleaseUninstallPurgePolicy(
 		ctx context.Context,

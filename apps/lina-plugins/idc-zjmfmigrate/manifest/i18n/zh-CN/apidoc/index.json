@@ -1,0 +1,20 @@
+{
+  "plugins.idc_zjmfmigrate.api.admin.v1.PreflightReq.meta.summary": "执行只读来源预检",
+  "plugins.idc_zjmfmigrate.api.admin.v1.PreflightReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.CreateBatchReq.meta.summary": "创建迁移批次",
+  "plugins.idc_zjmfmigrate.api.admin.v1.CreateBatchReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.RunReq.meta.summary": "运行迁移演练或导入",
+  "plugins.idc_zjmfmigrate.api.admin.v1.RunReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.meta.summary": "查看迁移冲突",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ConflictsReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.DecideConflictReq.meta.summary": "处理迁移冲突",
+  "plugins.idc_zjmfmigrate.api.admin.v1.DecideConflictReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ReconcileReq.meta.summary": "执行迁移对账",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ReconcileReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.CutoverReq.meta.summary": "检查迁移切换",
+  "plugins.idc_zjmfmigrate.api.admin.v1.CutoverReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.RollbackReq.meta.summary": "回退未切换迁移批次",
+  "plugins.idc_zjmfmigrate.api.admin.v1.RollbackReq.meta.tags": "迁移",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ReportReq.meta.summary": "查看迁移证据报告",
+  "plugins.idc_zjmfmigrate.api.admin.v1.ReportReq.meta.tags": "迁移"
+}

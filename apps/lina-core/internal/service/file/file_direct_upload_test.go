@@ -197,7 +197,7 @@ func TestDirectUploadCompleteRequiresObject(t *testing.T) {
 		Scene:        "other",
 		StoragePath:  "0/2026/07/demo.txt",
 		Size:         4,
-		ProviderID:   "linapro-storage-s3",
+		ProviderID:   "storage-s3",
 		ExpiresAt:    time.Now().UTC().Add(10 * time.Minute),
 	})
 	svc := &serviceImpl{

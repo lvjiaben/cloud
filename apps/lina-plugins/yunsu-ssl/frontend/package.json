@@ -1,0 +1,16 @@
+{
+  "name": "@lina-plugin/yunsu-ssl-frontend",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && vite build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {"@linapro/vben-plugin-adapter": "file:../../vben-adapter/frontend"},
+  "devDependencies": {
+    "happy-dom": "20.8.3",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18",
+    "vite": "7.3.1"
+  }
+}

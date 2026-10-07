@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS plugin_shared_services_inbox_delivery_evidence;
+DROP TABLE IF EXISTS plugin_shared_services_inbox_message;
+DROP TABLE IF EXISTS plugin_shared_services_challenge;

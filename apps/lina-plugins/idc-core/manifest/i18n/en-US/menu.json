@@ -1,0 +1,266 @@
+{
+  "menu": {
+    "plugin:idc-core:customer-sales": { "title": "Customers and Sales" },
+    "plugin:idc-core:catalog-products": { "title": "Catalog and Pricing" },
+    "plugin:idc-core:resource-operations": { "title": "Servers and Resources" },
+    "plugin:idc-core:orders-finance": { "title": "Orders and Finance" },
+    "plugin:idc-core:support-content": { "title": "Support and Content" },
+    "plugin:idc-core:notification-marketing": {
+      "title": "Notifications and Marketing"
+    },
+    "plugin:idc-core:compliance-governance": {
+      "title": "Compliance and Governance"
+    },
+    "plugin:idc-core:operations-workbench": { "title": "Operations Workbench" },
+    "plugin:idc-core:operations-workbench:view": { "title": "View Operations Workbench" },
+    "plugin:idc-core:sales-channel": { "title": "Sales Channel Operations" },
+    "plugin:idc-core:sales-channel:overview": { "title": "View Sales Channel Overview" },
+    "plugin:idc-core:sales-channel:qualification": { "title": "Manage Agent Qualifications" },
+    "plugin:idc-core:sales-channel:commission:review": { "title": "Review Commission Settlements" },
+    "plugin:idc-core:sales-channel:commission:payout": { "title": "Process Commission Payouts" },
+    "plugin:idc-core:server-batches": { "title": "Server Batch Control" },
+    "plugin:idc-core:server-batches:safe": {
+      "title": "Run Safe Server Batches"
+    },
+    "plugin:idc-core:server-batches:dangerous": {
+      "title": "Run Dangerous Server Batches"
+    },
+    "plugin:idc-core:operations": {
+      "title": "IDC Operations"
+    },
+    "plugin:idc-core:operations:contract-template-list": {
+      "title": "List Selectable Contract Templates"
+    },
+    "plugin:idc-core:customers": {
+      "title": "Customer Management"
+    },
+    "plugin:idc-core:customers:query": {
+      "title": "Customer Details"
+    },
+    "plugin:idc-core:customers:assist": {
+      "title": "Start Read-only Customer Assistance"
+    },
+    "plugin:idc-core:customers:create": {
+      "title": "Create Customer and Send Activation Invitation"
+    },
+    "plugin:idc-core:customers:contract-policy-write": {
+      "title": "Edit Enterprise Contract Rules"
+    },
+    "plugin:idc-core:catalog": {
+      "title": "Catalog Management"
+    },
+    "plugin:idc-core:catalog-automation-interfaces": {
+      "title": "Automation Interfaces"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:view": {
+      "title": "View Automation Interfaces"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:manage": {
+      "title": "Manage Automation Interfaces"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:binding-write": {
+      "title": "Manage Product Fulfillment Bindings"
+    },
+    "plugin:idc-core:catalog-automation-interfaces:configuration-write": {
+      "title": "Configure Product Automation"
+    },
+    "plugin:idc-core:catalog-categories": {
+      "title": "Catalog Categories"
+    },
+    "plugin:idc-core:catalog:category-list": {
+      "title": "List Catalog Categories"
+    },
+    "plugin:idc-core:catalog:category-create": {
+      "title": "Create Catalog Category"
+    },
+    "plugin:idc-core:catalog:category-update": {
+      "title": "Edit Catalog Category"
+    },
+    "plugin:idc-core:catalog:category-delete": {
+      "title": "Delete Catalog Category"
+    },
+    "plugin:idc-core:catalog:category-restore": {
+      "title": "Restore Catalog Category"
+    },
+    "plugin:idc-core:catalog:product-create": {
+      "title": "Create Product"
+    },
+    "plugin:idc-core:catalog:tax-write": {
+      "title": "Edit Catalog Tax Policies"
+    },
+    "plugin:idc-core:catalog:contract-policy-write": {
+      "title": "Edit Product Contract Rules"
+    },
+    "plugin:idc-core:marketing": {
+      "title": "Marketing Operations"
+    },
+    "plugin:idc-core:commerce-orders": {
+      "title": "Commerce Orders"
+    },
+    "plugin:idc-core:product-fulfillment-tasks": {
+      "title": "Product Fulfillment Tasks"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:list": {
+      "title": "View Fulfillment Tasks"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:query": {
+      "title": "View Fulfillment Task Details"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:review-approve": {
+      "title": "Approve and Start Fulfillment"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:review-reject": {
+      "title": "Reject Fulfillment Review"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:takeover": {
+      "title": "Take Over Fulfillment"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:manual-conclude": {
+      "title": "Record Manual Fulfillment Result"
+    },
+    "plugin:idc-core:commerce:risk-review-approve": {
+      "title": "Approve Order Risk Reviews"
+    },
+    "plugin:idc-core:commerce:risk-review-reject": {
+      "title": "Reject Order Risk Reviews"
+    },
+    "plugin:idc-core:commerce:order-list": {
+      "title": "View Orders"
+    },
+    "plugin:idc-core:commerce:order-query": {
+      "title": "View Order Details"
+    },
+    "plugin:idc-core:commerce:contract-policy-write": {
+      "title": "Edit Order Contract Rules"
+    },
+    "plugin:idc-core:assisted-quotes": {
+      "title": "Assisted Quotes"
+    },
+    "plugin:idc-core:assisted-quotes:list": {
+      "title": "View Assisted Quotes"
+    },
+    "plugin:idc-core:assisted-quotes:query": {
+      "title": "View Assisted Quote Details"
+    },
+    "plugin:idc-core:assisted-quotes:create": {
+      "title": "Request Assisted Quote"
+    },
+    "plugin:idc-core:assisted-quotes:approve": {
+      "title": "Approve Assisted Quote"
+    },
+    "plugin:idc-core:assisted-quotes:reject": {
+      "title": "Reject Assisted Quote"
+    },
+    "plugin:idc-core:assisted-quotes:checkout": {
+      "title": "Checkout Assisted Quote"
+    },
+    "plugin:idc-core:financial-management": {
+      "title": "Financial Management"
+    },
+    "plugin:idc-core:financial-management:invoice-list": {
+      "title": "List Billing Invoices"
+    },
+    "plugin:idc-core:financial-management:invoice-query": {
+      "title": "Query Billing Invoice Details"
+    },
+    "plugin:idc-core:financial-management:transaction-list": {
+      "title": "List Ledger Transactions"
+    },
+    "plugin:idc-core:financial-management:transaction-query": {
+      "title": "Query Ledger Transaction Details"
+    },
+    "plugin:idc-core:financial-management:adjustment-list": {
+      "title": "List Financial Adjustments"
+    },
+    "plugin:idc-core:financial-management:adjustment-query": {
+      "title": "Query Financial Adjustment Details"
+    },
+    "plugin:idc-core:financial-management:manual-receipt-create": {
+      "title": "Create Reviewed Manual Receipts"
+    },
+    "plugin:idc-core:financial-management:invoice-waiver-create": {
+      "title": "Create Reviewed Invoice Waivers"
+    },
+    "plugin:idc-core:financial-management:adjustment-review": {
+      "title": "Review Financial Adjustments"
+    },
+    "plugin:idc-core:financial-management:adjustment-policy-write": {
+      "title": "Configure Adjustment Review Policies"
+    },
+    "plugin:idc-core:financial-management:credit-application-list": {
+      "title": "List Credit Applications"
+    },
+    "plugin:idc-core:financial-management:credit-application-query": {
+      "title": "Query Credit Application Details"
+    },
+    "plugin:idc-core:financial-management:credit-application-review": {
+      "title": "Review Credit Applications"
+    },
+    "plugin:idc-core:financial-management:credit-account-list": {
+      "title": "List Credit Accounts"
+    },
+    "plugin:idc-core:financial-management:credit-account-query": {
+      "title": "Query Credit Account Details"
+    },
+    "plugin:idc-core:financial-management:credit-statement-list": {
+      "title": "List Credit Statements"
+    },
+    "plugin:idc-core:financial-management:credit-statement-query": {
+      "title": "Query Credit Statement Details"
+    },
+    "plugin:idc-core:financial-management:credit-policy-write": {
+      "title": "Configure Credit Policies"
+    },
+    "plugin:idc-core:financial-management:invoice-resend": {
+      "title": "Resend Billing Invoices"
+    },
+    "plugin:idc-core:financial-management:note-list": {
+      "title": "List Internal Financial Notes"
+    },
+    "plugin:idc-core:financial-management:note-create": {
+      "title": "Append Internal Financial Notes"
+    },
+    "plugin:idc-core:financial-management:personal-filter": {
+      "title": "Manage Personal Financial Filters"
+    },
+    "plugin:idc-core:financial-management:export": {
+      "title": "Export Financial XLSX Files"
+    },
+    "plugin:idc-core:financial-management:refund-list": {
+      "title": "List Refund Requests"
+    },
+    "plugin:idc-core:financial-management:refund-query": {
+      "title": "View Refund Evidence"
+    },
+    "plugin:idc-core:financial-management:refund-review": {
+      "title": "Review Refund Requests"
+    },
+    "plugin:idc-core:financial-management:refund-policy-write": {
+      "title": "Configure Refund Policies"
+    },
+    "plugin:idc-core:support": {
+      "title": "Support Desk"
+    },
+    "plugin:idc-core:support-settings": {
+      "title": "Support Settings"
+    },
+    "plugin:idc-core:server-operation-security": {
+      "title": "Server Operation Security"
+    },
+    "plugin:idc-core:ip-change-policy": {
+      "title": "Server IP Change Policy"
+    },
+    "plugin:idc-core:server-operation-security:write": {
+      "title": "Update Server Operation Security"
+    },
+    "plugin:idc-core:accessory-price:read": {
+      "title": "View Server Accessory Prices"
+    },
+    "plugin:idc-core:accessory-price:write": {
+      "title": "Publish Server Accessory Prices"
+    },
+    "plugin:idc-core:content": {
+      "title": "Content Management"
+    }
+  }
+}

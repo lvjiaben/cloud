@@ -20,6 +20,15 @@ type testClusterTopology struct {
 	nodeID  string
 }
 
+type recordingBusinessExtensionHost struct {
+	owner string
+}
+
+func (h *recordingBusinessExtensionHost) ForBusinessExtensionOwner(pluginID string) pluginhost.BusinessExtensionRegistrar {
+	h.owner = pluginID
+	return nil
+}
+
 func (t testClusterTopology) Start(context.Context) {}
 
 func (t testClusterTopology) Stop(context.Context) {}
@@ -100,6 +109,24 @@ func TestSourceJobRegistrarReportsPrimaryNodeFromTopology(t *testing.T) {
 	}
 }
 
+func TestSourceJobRegistrarBindsBusinessExtensionsToOwnerAndFailsClosed(t *testing.T) {
+	host := &recordingBusinessExtensionHost{}
+	registrar := newSourceJobRegistrar("  plugin-demo  ", &serviceImpl{
+		businessExtensionHost: host,
+	})
+	if host.owner != "plugin-demo" {
+		t.Fatalf("expected normalized owner binding, got %q", host.owner)
+	}
+	if registrar.BusinessExtensions() != nil {
+		t.Fatal("expected unavailable owner facade to fail closed")
+	}
+
+	registrar = newSourceJobRegistrar("plugin-demo", nil)
+	if registrar.BusinessExtensions() != nil {
+		t.Fatal("expected nil host service to fail closed")
+	}
+}
+
 // TestStoreLoadedEnabledSnapshotBackfillsSharedState verifies a registry read
 // warms the shared enablement snapshot for later filter passes.
 func TestStoreLoadedEnabledSnapshotBackfillsSharedState(t *testing.T) {
@@ -137,17 +164,17 @@ func TestTenantSnapshotDoesNotOverwritePlatformSnapshot(t *testing.T) {
 	svc := &serviceImpl{sharedState: shared}
 
 	svc.storeLoadedEnabledSnapshot(context.Background(), map[string]bool{
-		"linapro-monitor-loginlog": true,
+		"monitor-loginlog": true,
 	})
 	svc.storeLoadedEnabledSnapshot(datascope.WithTenantScope(context.Background(), 42), map[string]bool{
-		"linapro-monitor-loginlog": false,
+		"monitor-loginlog": false,
 	})
 
-	enabledByID := map[string]bool{"linapro-monitor-loginlog": false}
+	enabledByID := map[string]bool{"monitor-loginlog": false}
 	if !svc.applyLoadedEnabledSnapshot(enabledByID) {
 		t.Fatal("expected platform snapshot to remain available")
 	}
-	if !enabledByID["linapro-monitor-loginlog"] {
+	if !enabledByID["monitor-loginlog"] {
 		t.Fatal("expected tenant snapshot not to hide platform admin monitor menu")
 	}
 }
@@ -160,7 +187,7 @@ func TestPlatformOnlyGlobalPluginRemainsEnabledInTenantContext(t *testing.T) {
 	ctx := datascope.WithTenantScope(context.Background(), 42)
 
 	enabled, err := svc.registryEnabledForTenant(ctx, &store.PluginRecord{
-		PluginId:    "linapro-tenant-core",
+		PluginId:    "tenant-core",
 		Installed:   statusflag.Installed.Int(),
 		Status:      statusflag.EnabledValue.Int(),
 		ScopeNature: pluginv1.ScopeNaturePlatformOnly.String(),

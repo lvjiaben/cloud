@@ -1,0 +1,176 @@
+@import './customer-inner-pages.css';
+
+/* Customer-only enterprise cloud console skin. The management app is a
+ * separate document, so these selectors cannot leak into web-antd. */
+html[data-customer-console='true'] {
+  --background: 216 33% 97%;
+  --background-deep: 214 28% 94%;
+  --foreground: 222 47% 11%;
+  --border: 214 23% 88%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 214 32% 95%;
+  --muted-foreground: 215 14% 42%;
+  --primary: 215 100% 54%;
+  --primary-foreground: 0 0% 100%;
+  --sidebar: 0 0% 100%;
+  --sidebar-deep: 214 32% 96%;
+  --menu: 0 0% 100%;
+  --header: 0 0% 100%;
+  --radius: 0rem;
+}
+
+html[data-customer-console='true'].dark {
+  --background: 218 27% 9%;
+  --background-deep: 220 25% 7%;
+  --foreground: 214 32% 95%;
+  --border: 215 18% 24%;
+  --card: 218 24% 13%;
+  --card-foreground: 214 32% 95%;
+  --muted: 217 20% 17%;
+  --muted-foreground: 215 14% 66%;
+  --primary: 213 100% 64%;
+  --primary-foreground: 222 47% 11%;
+  --sidebar: 224 54% 8%;
+  --sidebar-deep: 222 47% 6%;
+  --menu: 224 54% 8%;
+  --header: 218 24% 13%;
+}
+
+body.customer-console-app {
+  min-width: 320px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  /* Keep the Vben theme's font stack as the single source of truth. */
+  font-family: inherit;
+}
+
+/* Cloud consoles use sharp, information-dense surfaces. Explicit component
+ * styles in customer pages and source-plugin pages are normalized here. */
+body.customer-console-app *,
+body.customer-console-app *::before,
+body.customer-console-app *::after {
+  border-radius: 0 !important;
+}
+
+/* Keep shapes that are semantically circular instead of decorative. */
+body.customer-console-app
+  :where(
+    .ant-avatar,
+    .ant-badge-status-dot,
+    .ant-progress-circle,
+    .ant-radio-inner,
+    .ant-radio-inner::after,
+    .rounded-full
+  ),
+body.customer-console-app .ant-switch,
+body.customer-console-app .ant-switch-handle,
+body.customer-console-app .ant-switch-handle::before,
+body.customer-console-app .ant-switch-handle::after {
+  border-radius: 9999px !important;
+}
+
+/* Ant Design paints the visible switch thumb on a pseudo-element. Keep this
+ * selector outside :where() so it wins over the console-wide square reset. */
+body.customer-console-app .ant-switch-handle::before,
+body.customer-console-app .ant-switch-handle::after {
+  border-radius: 9999px !important;
+}
+
+body.customer-console-app :where(.ant-card) {
+  border: 1px solid hsl(var(--border)) !important;
+  background: hsl(var(--card));
+  box-shadow: none !important;
+}
+
+body.customer-console-app
+  :where(
+    [class$='-card'],
+    [class*='-card '],
+    [class$='__card'],
+    [class*='__card ']
+  ) {
+  box-shadow: none !important;
+}
+
+body.customer-console-app :where(.ant-card-head) {
+  min-height: 48px;
+  border-bottom-color: hsl(var(--border));
+  padding-inline: 20px;
+}
+
+body.customer-console-app :where(.ant-card-body) {
+  padding: 20px;
+}
+
+body.customer-console-app :where(.ant-btn-primary) {
+  box-shadow: none;
+}
+
+body.customer-console-app :where(.ant-modal-content, .ant-drawer-content) {
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 12px 32px rgb(15 23 42 / 14%);
+}
+
+/* Table surfaces use the panel token, not the outer page background. Keep
+ * hover, selection, focus and disabled tokens unchanged. */
+body.customer-console-app .vxe-grid {
+  --vxe-ui-layout-background-color: hsl(var(--card));
+  --vxe-ui-table-header-background-color: hsl(var(--muted));
+  --vxe-ui-table-row-striped-background-color: hsl(var(--card));
+  --vxe-ui-table-border-color: hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+body.customer-console-app :where(.vxe-table--header-wrapper) {
+  background: hsl(var(--muted));
+}
+
+body.customer-console-app .vxe-grid .vxe-table--empty-content {
+  color: hsl(var(--muted-foreground));
+}
+
+body.customer-console-app :where(.customer-console-root) {
+  min-height: 100%;
+}
+
+/* Customer navigation is a fixed task directory: every group stays open and
+ * the headings act as labels rather than disclosure controls. */
+body.customer-console-app
+  :where(.vben-menu.is-vertical > .vben-sub-menu > .vben-sub-menu-content) {
+  min-height: 28px;
+  height: 28px;
+  margin: 10px 0 2px;
+  padding-inline: 16px !important;
+  color: hsl(var(--muted-foreground)) !important;
+  background: transparent !important;
+  cursor: default;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+body.customer-console-app
+  :where(
+    .vben-menu.is-vertical
+      > .vben-sub-menu
+      > .vben-sub-menu-content
+      .vben-menu__icon
+  ) {
+  display: none;
+}
+
+body.customer-console-app
+  :where(
+    .vben-sub-menu__icon-arrow,
+    .vben-sub-menu-content__icon-arrow
+  ) {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  body.customer-console-app :where(.ant-card-body) {
+    padding: 16px;
+  }
+}

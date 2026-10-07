@@ -101,13 +101,13 @@ func TestValidatePluginDataCommitTableUsesExactIdentifier(t *testing.T) {
 func TestValidatePluginDataCommitTableAllowsMetadataLookup(t *testing.T) {
 	metadata := &AuditMetadata{
 		PluginID:      "test-plugin-data",
-		Table:         "plugin_linapro_demo_dynamic_record",
+		Table:         "plugin_demo_dynamic_record",
 		Method:        "list",
-		ResourceTable: "plugin_linapro_demo_dynamic_record",
+		ResourceTable: "plugin_demo_dynamic_record",
 	}
 	err := validatePluginDataCommitTable(metadata, gdbDoCommitInputForTest(
 		`SELECT column_name FROM information_schema.columns WHERE table_name = ?`,
-		"plugin_linapro_demo_dynamic_record",
+		"plugin_demo_dynamic_record",
 	), mustPostgresDialectForTest(t))
 	if err != nil {
 		t.Fatalf("expected metadata lookup for authorized table to pass, got %v", err)
@@ -119,9 +119,9 @@ func TestValidatePluginDataCommitTableAllowsMetadataLookup(t *testing.T) {
 func TestValidatePluginDataCommitTableAllowsSchemaProbe(t *testing.T) {
 	metadata := &AuditMetadata{
 		PluginID:      "test-plugin-data",
-		Table:         "plugin_linapro_demo_dynamic_record",
+		Table:         "plugin_demo_dynamic_record",
 		Method:        "list",
-		ResourceTable: "plugin_linapro_demo_dynamic_record",
+		ResourceTable: "plugin_demo_dynamic_record",
 	}
 	err := validatePluginDataCommitTable(
 		metadata,
@@ -145,14 +145,14 @@ func TestValidatePluginDataCommitTableAllowsSchemaProbe(t *testing.T) {
 func TestValidatePluginDataCommitTableRejectsMutationSchemaProbe(t *testing.T) {
 	metadata := &AuditMetadata{
 		PluginID:      "test-plugin-data",
-		Table:         "plugin_linapro_demo_dynamic_record",
+		Table:         "plugin_demo_dynamic_record",
 		Method:        "transaction",
-		ResourceTable: "plugin_linapro_demo_dynamic_record",
+		ResourceTable: "plugin_demo_dynamic_record",
 	}
 	err := validatePluginDataCommitTable(metadata, gdb.DoCommitInput{
 		Type: gdb.SqlTypeExecContext,
 		Sql:  `DELETE FROM sys_plugin WHERE id IN (SELECT id FROM pg_class WHERE relname = ?)`,
-		Args: []any{"plugin_linapro_demo_dynamic_record"},
+		Args: []any{"plugin_demo_dynamic_record"},
 	}, mustPostgresDialectForTest(t))
 	if err == nil {
 		t.Fatal("expected mutation schema probe to be rejected")
@@ -168,13 +168,13 @@ func TestValidatePluginDataCommitTableRejectsMutationSchemaProbe(t *testing.T) {
 func TestValidatePluginDataCommitTableRejectsCatalogSubqueryAroundUnauthorizedTable(t *testing.T) {
 	metadata := &AuditMetadata{
 		PluginID:      "test-plugin-data",
-		Table:         "plugin_linapro_demo_dynamic_record",
+		Table:         "plugin_demo_dynamic_record",
 		Method:        "list",
-		ResourceTable: "plugin_linapro_demo_dynamic_record",
+		ResourceTable: "plugin_demo_dynamic_record",
 	}
 	err := validatePluginDataCommitTable(metadata, gdbDoCommitInputForTest(
 		`SELECT * FROM sys_plugin WHERE id IN (SELECT id FROM pg_class WHERE relname = ?)`,
-		"plugin_linapro_demo_dynamic_record",
+		"plugin_demo_dynamic_record",
 	), mustPostgresDialectForTest(t))
 	if err == nil {
 		t.Fatal("expected catalog subquery around unauthorized table to be rejected")

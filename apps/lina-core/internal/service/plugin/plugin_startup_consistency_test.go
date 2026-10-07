@@ -36,7 +36,7 @@ import (
 	"lina-core/pkg/statusflag"
 )
 
-const startupConsistencyMembershipTable = "plugin_linapro_tenant_core_user_membership"
+const startupConsistencyMembershipTable = "plugin_tenant_core_user_membership"
 
 // TestEnsurePlatformGovernanceAllowsSingleTenantMode verifies disabled tenancy
 // keeps plugin governance available in platform-only deployments.
@@ -322,7 +322,7 @@ func TestValidateStartupConsistencyRejectsPlatformUserMembership(t *testing.T) {
 }
 
 // TestValidateStartupConsistencyRejectsEnabledTenantPluginWithoutProvider
-// verifies linapro-tenant-core enablement requires a registered tenantcap provider.
+// verifies tenant-core enablement requires a registered tenantcap provider.
 func TestValidateStartupConsistencyRejectsEnabledTenantPluginWithoutProvider(t *testing.T) {
 	var (
 		ctx      = context.Background()
@@ -347,11 +347,11 @@ func TestValidateStartupConsistencyRejectsEnabledTenantPluginWithoutProvider(t *
 	})
 
 	err = service.ValidateStartupConsistency(ctx)
-	assertStartupConsistencyErrorContains(t, err, "linapro-tenant-core plugin is enabled but capability tenant provider is not active")
+	assertStartupConsistencyErrorContains(t, err, "tenant-core plugin is enabled but capability tenant provider is not active")
 }
 
 // TestValidateStartupConsistencyAllowsEnabledTenantPluginWithProvider verifies
-// provider registration satisfies linapro-tenant-core startup consistency.
+// provider registration satisfies tenant-core startup consistency.
 func TestValidateStartupConsistencyAllowsEnabledTenantPluginWithProvider(t *testing.T) {
 	var (
 		ctx      = context.Background()
@@ -494,7 +494,7 @@ func ensureStartupConsistencyTenantMembershipTable(t *testing.T, ctx context.Con
 	t.Helper()
 
 	statements := []string{
-		`CREATE TABLE IF NOT EXISTS plugin_linapro_tenant_core_user_membership (
+		`CREATE TABLE IF NOT EXISTS plugin_tenant_core_user_membership (
 			"id" BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 			"user_id" BIGINT NOT NULL,
 			"tenant_id" BIGINT NOT NULL,
@@ -505,18 +505,18 @@ func ensureStartupConsistencyTenantMembershipTable(t *testing.T, ctx context.Con
 			"created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			"updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			"deleted_at" TIMESTAMP,
-			CONSTRAINT uk_plugin_linapro_tenant_core_membership_user_tenant UNIQUE ("user_id", "tenant_id")
+			CONSTRAINT uk_plugin_tenant_core_membership_user_tenant UNIQUE ("user_id", "tenant_id")
 		)`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "joined_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "created_by" BIGINT NOT NULL DEFAULT 0`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "updated_by" BIGINT NOT NULL DEFAULT 0`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
-		`ALTER TABLE plugin_linapro_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMP`,
-		`CREATE INDEX IF NOT EXISTS idx_plugin_linapro_tenant_core_membership_tenant
-			ON plugin_linapro_tenant_core_user_membership ("tenant_id", "status")`,
-		`CREATE INDEX IF NOT EXISTS idx_plugin_linapro_tenant_core_membership_user
-			ON plugin_linapro_tenant_core_user_membership ("user_id", "status")`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "joined_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "created_by" BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "updated_by" BIGINT NOT NULL DEFAULT 0`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`,
+		`ALTER TABLE plugin_tenant_core_user_membership ADD COLUMN IF NOT EXISTS "deleted_at" TIMESTAMP`,
+		`CREATE INDEX IF NOT EXISTS idx_plugin_tenant_core_membership_tenant
+			ON plugin_tenant_core_user_membership ("tenant_id", "status")`,
+		`CREATE INDEX IF NOT EXISTS idx_plugin_tenant_core_membership_user
+			ON plugin_tenant_core_user_membership ("user_id", "status")`,
 	}
 	for _, statement := range statements {
 		if _, err := dao.SysUser.DB().Exec(ctx, statement); err != nil {

@@ -7,16 +7,18 @@ import type {
 import type { PluginDynamicState } from '#/api/system/plugin/model';
 
 import { generateAccessible } from '@vben/access';
+import { prewarmPluginSandboxSource } from '@vben/layouts';
 import { preferences } from '@vben/preferences';
 
 import { message } from 'ant-design-vue';
 
 import { getAllMenusApi } from '#/api';
-import { BasicLayout, IFrameView } from '#/layouts';
+import { BasicLayout, IFrameView, PluginSandboxView } from '#/layouts';
 import { $t } from '#/locales';
 import { filterDisabledPluginRoutes } from '#/plugins/access-filter';
 
 import { filterTenantAccessRoutes } from './tenant-access';
+import { organizeAdminMenus } from './menu-organization';
 
 const forbiddenComponent = () => import('#/views/_core/fallback/forbidden.vue');
 
@@ -39,6 +41,7 @@ async function generateAccess(
   const layoutMap: ComponentRecordType = {
     BasicLayout,
     IFrameView,
+    PluginSandboxView,
   };
 
   const result = await generateAccessible(preferences.app.accessMode, {
@@ -52,10 +55,17 @@ async function generateAccess(
         });
       }
       const routes = await getAllMenusApi();
-      return await filterDisabledPluginRoutes(
+      const filtered = await filterDisabledPluginRoutes(
         filterTenantAccessRoutes(routes),
         pluginStateMap,
       );
+      const organized = organizeAdminMenus(filtered, {
+        systemConfigurationTitle: $t(
+          'page.routes.system.configurationCenter',
+        ),
+      });
+      prewarmPluginSandboxRoutes(organized);
+      return organized;
     },
     // 可以指定没有权限跳转403页面
     forbiddenComponent,
@@ -75,7 +85,22 @@ async function generateAccess(
   };
 }
 
-function collectHiddenFrontendRoutes(routes: RouteRecordRaw[]): RouteRecordRaw[] {
+type PluginSandboxRouteProjection = {
+  children?: PluginSandboxRouteProjection[];
+  meta?: { pluginSandboxSrc?: string };
+};
+
+function prewarmPluginSandboxRoutes(routes: PluginSandboxRouteProjection[]) {
+  for (const route of routes) {
+    const source = String(route.meta?.pluginSandboxSrc ?? '').trim();
+    if (source) prewarmPluginSandboxSource(source);
+    prewarmPluginSandboxRoutes(route.children ?? []);
+  }
+}
+
+function collectHiddenFrontendRoutes(
+  routes: RouteRecordRaw[],
+): RouteRecordRaw[] {
   return routes.flatMap((route) => {
     const hiddenCurrent =
       route.meta?.hideInMenu && route.component

@@ -1,0 +1,4 @@
+{
+  "plugin.idc-zjmf-finance.name": "ZJMF Finance Native Connector",
+  "plugin.idc-zjmf-finance.description": "Provides product discovery and server operations through the native ZJMF Finance JWT API."
+}

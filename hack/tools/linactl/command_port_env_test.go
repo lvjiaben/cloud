@@ -19,4 +19,8 @@ func TestPortFromEnv(t *testing.T) {
 	if got := portFromEnv("LINA_VBEN_PORT", 5666); got != 15666 {
 		t.Fatalf("frontend env: got %d", got)
 	}
+	t.Setenv("LINA_CUSTOMER_PORT", "16032")
+	if got := portFromEnv("LINA_CUSTOMER_PORT", defaultCustomerPort); got != 16032 {
+		t.Fatalf("customer frontend env: got %d", got)
+	}
 }

@@ -1,0 +1,22 @@
+{
+  "plugins.idc_portal.api.admin.v1.BrandGetReq.meta.summary": "获取已发布的官网品牌配置",
+  "plugins.idc_portal.api.admin.v1.BrandGetReq.meta.tags": "官网品牌",
+  "plugins.idc_portal.api.admin.v1.BrandSaveReq.meta.summary": "暂存官网品牌修订",
+  "plugins.idc_portal.api.admin.v1.BrandSaveReq.meta.tags": "官网品牌",
+  "plugins.idc_portal.api.admin.v1.BrandPreviewReq.meta.summary": "预览官网品牌修订",
+  "plugins.idc_portal.api.admin.v1.BrandPreviewReq.meta.tags": "官网品牌",
+  "plugins.idc_portal.api.admin.v1.BrandPublishReq.meta.summary": "发布官网品牌修订",
+  "plugins.idc_portal.api.admin.v1.BrandPublishReq.meta.tags": "官网品牌",
+  "plugins.idc_portal.api.admin.v1.BrandRollbackReq.meta.summary": "回滚官网品牌配置",
+  "plugins.idc_portal.api.admin.v1.BrandRollbackReq.meta.tags": "官网品牌",
+  "plugins.idc_portal.api.public.v1.BrandGetReq.meta.summary": "获取已发布的官网品牌配置",
+  "plugins.idc_portal.api.public.v1.BrandGetReq.meta.tags": "官网",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuListReq.meta.summary": "查询客户中心外部菜单",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuListReq.meta.tags": "客户中心外部菜单",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuSaveReq.meta.summary": "新建或更新客户中心外部菜单",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuSaveReq.meta.tags": "客户中心外部菜单",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuStatusReq.meta.summary": "启用或停用客户中心外部菜单",
+  "plugins.idc_portal.api.admin.v1.ExternalMenuStatusReq.meta.tags": "客户中心外部菜单",
+  "plugins.idc_portal.api.public.v1.ExternalMenuListReq.meta.summary": "查询已启用的客户中心外部菜单",
+  "plugins.idc_portal.api.public.v1.ExternalMenuListReq.meta.tags": "客户中心"
+}

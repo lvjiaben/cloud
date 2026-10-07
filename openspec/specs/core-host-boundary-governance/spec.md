@@ -76,12 +76,12 @@
 系统 SHALL 将认证会话事实源和统一登录事件、统一审计事件的发布能力保留在宿主，而非委托给可选源码插件。
 
 #### Scenario:规划在线用户插件边界
-- **当** 团队规划 `linapro-monitor-online` 的能力边界时
+- **当** 团队规划 `monitor-online` 的能力边界时
 - **则** 插件仅承载在线用户查询和强制下线管理
 - **且** JWT 验证、会话触碰刷新、超时判定和清理任务仍保留在宿主
 
 #### Scenario:规划日志插件边界
-- **当** 团队规划 `linapro-monitor-loginlog` 或 `linapro-monitor-operlog` 的能力边界时
+- **当** 团队规划 `monitor-loginlog` 或 `monitor-operlog` 的能力边界时
 - **则** 宿主在认证链路和请求链路上发布统一事件
 - **且** 宿主核心链路不直接依赖这些插件的具体持久化实现
 
@@ -92,8 +92,8 @@
 #### Scenario:宿主调用可选组织能力
 - **当** 用户管理、认证或其他宿主核心模块需要访问部门、岗位、组织树或组织数据范围等可选能力时
 - **则** 宿主通过显式注入的`orgcap.Service`或由`pluginservice.Services.Org()`发布的组织能力入口访问这些能力
-- **且** `linapro-org-core`的插件状态判断和功能分支不直接散落在宿主实现中
-- **且** 宿主仅持有该能力的接口、DTO、消费 service 和空实现，不直接查询或维护`linapro-org-core`的物理表
+- **且** `org-core`的插件状态判断和功能分支不直接散落在宿主实现中
+- **且** 宿主仅持有该能力的接口、DTO、消费 service 和空实现，不直接查询或维护`org-core`的物理表
 
 #### Scenario:宿主调用可选租户能力
 - **当** 认证、会话、数据权限或插件 host service 需要访问租户上下文时
@@ -240,22 +240,22 @@
 
 ### Requirement:云对象存储实现由插件扩展且配置挂载到系统设置
 
-系统 SHALL 将对象存储领域契约与内置 local provider 保留在宿主，将具体云厂商对象存储后端实现交付为官方源码插件。云存储配置菜单 MUST 挂载到宿主已有 `setting`（系统设置）稳定目录；MUST NOT 要求单独的 `storage` 一级目录或 `linapro-storage-core` 类壳插件。
+系统 SHALL 将对象存储领域契约与内置 local provider 保留在宿主，将具体云厂商对象存储后端实现交付为官方源码插件。云存储配置菜单 MUST 挂载到宿主已有 `setting`（系统设置）稳定目录；MUST NOT 要求单独的 `storage` 一级目录或 `storage-core` 类壳插件。
 
 #### Scenario:规划云存储插件边界
-- **当** 团队规划 `linapro-storage-cos`、`linapro-storage-oss`、`linapro-storage-obs`、`linapro-storage-qiniu`、`linapro-storage-aws`、`linapro-storage-azure` 或 `linapro-storage-s3` 的能力边界时
+- **当** 团队规划 `storage-cos`、`storage-oss`、`storage-obs`、`storage-qiniu`、`storage-aws`、`storage-azure` 或 `storage-s3` 的能力边界时
 - **则** 插件仅承载对应云厂商 `storagecap.Provider`、配置 settings 与连通性探测
 - **且** `storagecap.Service`、插件/租户 key 作用域与 local provider 仍保留在宿主
 - **且** 配置入口挂载在宿主「系统设置」目录下
 
 ### Requirement: 邮件协议与连接配置不得进入宿主核心契约
 
-系统 SHALL 将邮件协议实现、Connection/Account 权威存储与邮件管理面保留在 `linapro-mail-core` 及其协议插件中。`apps/lina-core/pkg/plugin` MUST NOT 新增邮件协议 SPI 实现包或邮件 Connection 领域表访问作为长期公共契约。宿主 notify 可依赖邮件 owner 能力完成 email 通道投递，但 MUST NOT 将 SMTP/IMAP/POP3 细节嵌入宿主通用模块。
+系统 SHALL 将邮件协议实现、Connection/Account 权威存储与邮件管理面保留在 `mail-core` 及其协议插件中。`apps/lina-core/pkg/plugin` MUST NOT 新增邮件协议 SPI 实现包或邮件 Connection 领域表访问作为长期公共契约。宿主 notify 可依赖邮件 owner 能力完成 email 通道投递，但 MUST NOT 将 SMTP/IMAP/POP3 细节嵌入宿主通用模块。
 
 #### Scenario: 邮件公开契约位于 owner 插件
 
 - **WHEN** 源码插件需要类型化邮件发送或接收能力
-- **THEN** 公开契约 MUST 来自 `linapro-mail-core` 的 `backend/cap` 路径
+- **THEN** 公开契约 MUST 来自 `mail-core` 的 `backend/cap` 路径
 - **AND** MUST NOT 要求从 `lina-core/pkg/plugin/capability` 导入邮件协议实现
 
 #### Scenario: 宿主保持通用边界

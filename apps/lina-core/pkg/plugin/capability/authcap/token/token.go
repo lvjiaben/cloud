@@ -6,6 +6,7 @@ package token
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 )
@@ -17,7 +18,7 @@ type Service interface {
 	// SwitchTenant validates membership, revokes the current token, and issues a new token.
 	SwitchTenant(ctx context.Context, in SwitchTenantInput) (*TenantTokenOutput, error)
 	// IssueImpersonationToken asks the host auth service to sign and register a
-	// tenant impersonation access token for the current platform administrator.
+	// tenant or represented-user impersonation access token for a direct actor.
 	// Plugins remain responsible for their own business authorization and audit
 	// checks before calling this method; the host owns JWT signing, token IDs,
 	// online-session state, and permission-cache priming.
@@ -98,6 +99,13 @@ type ImpersonationTokenIssueInput struct {
 	ActingUserID int
 	// TenantID is the target tenant that the administrator enters.
 	TenantID int
+	// SubjectUserID optionally selects the represented user. Zero preserves
+	// tenant-administrator impersonation where the actor represents themself;
+	// a different user ID preserves the actor without granting actor permissions.
+	SubjectUserID int
+	// ExpiresInSeconds optionally shortens the access token lifetime. The host
+	// accepts only a bounded value and never extends its configured JWT TTL.
+	ExpiresInSeconds int
 }
 
 // ImpersonationTokenRevokeInput defines input for host-owned impersonation
@@ -120,6 +128,10 @@ type ImpersonationTokenOutput struct {
 	TenantID int
 	// ActingUserID is the platform administrator user ID stored in token claims.
 	ActingUserID int
+	// SubjectUserID is the represented user stored in token claims.
+	SubjectUserID int
+	// ExpiresAt is the authoritative JWT expiry time.
+	ExpiresAt time.Time
 }
 
 // BearerTokenFromContext extracts the bearer token from the current HTTP request.

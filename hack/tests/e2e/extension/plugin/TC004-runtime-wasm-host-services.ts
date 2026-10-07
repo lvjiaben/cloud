@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
@@ -48,7 +54,12 @@ function linactlDir() {
 }
 
 function runtimeStorageDir() {
-  return path.join(repoRoot(), "temp", "output");
+  const configured = process.env.E2E_PLUGIN_STORAGE_PATH?.trim();
+  return configured
+    ? path.isAbsolute(configured)
+      ? configured
+      : path.join(repoRoot(), configured)
+    : path.join(repoRoot(), "temp", "output");
 }
 
 function sourcePluginDir(pluginID: string) {
@@ -127,11 +138,15 @@ async function expectApiFailure(
     expect(text, `${message}, body=${text}`).toContain(expectedText);
     return;
   }
-  expect(text, `${message}, status=${response.status()}`).toContain(expectedText);
+  expect(text, `${message}, status=${response.status()}`).toContain(
+    expectedText,
+  );
 }
 
 async function createAdminApiContext(): Promise<APIRequestContext> {
-  const anonymousApi = await playwrightRequest.newContext({ baseURL: apiBaseURL });
+  const anonymousApi = await playwrightRequest.newContext({
+    baseURL: apiBaseURL,
+  });
   const loginResponse = await anonymousApi.post("auth/login", {
     data: {
       username: config.adminUser,
@@ -145,7 +160,10 @@ async function createAdminApiContext(): Promise<APIRequestContext> {
   );
   await anonymousApi.dispose();
 
-  expect(loginPayload?.accessToken, "管理员登录后应返回 accessToken").toBeTruthy();
+  expect(
+    loginPayload?.accessToken,
+    "管理员登录后应返回 accessToken",
+  ).toBeTruthy();
   return playwrightRequest.newContext({
     baseURL: apiBaseURL,
     extraHTTPHeaders: {
@@ -207,7 +225,10 @@ async function uninstallPlugin(adminApi: APIRequestContext, pluginID: string) {
   await expectApiSuccess(response, `卸载动态插件失败: ${pluginID}`);
 }
 
-async function tryUninstallPlugin(adminApi: APIRequestContext, pluginID: string) {
+async function tryUninstallPlugin(
+  adminApi: APIRequestContext,
+  pluginID: string,
+) {
   const response = await adminApi.delete(`plugins/${pluginID}`);
   const payload = (await response.json()) as {
     code?: number;
@@ -220,6 +241,12 @@ async function setPluginEnabled(
   pluginID: string,
   enabled: boolean,
 ) {
+  if (!enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/stop`),
+      `停止动态插件新业务失败: ${pluginID}`,
+    );
+  }
   const response = await adminApi.put(
     enabled ? `plugins/${pluginID}/enable` : `plugins/${pluginID}/disable`,
   );
@@ -227,6 +254,12 @@ async function setPluginEnabled(
     response,
     `切换动态插件状态失败: ${pluginID} enabled=${enabled}`,
   );
+  if (enabled) {
+    await expectApiSuccess(
+      await adminApi.put(`plugins/${pluginID}/new-business/resume`),
+      `恢复动态插件新业务失败: ${pluginID}`,
+    );
+  }
 }
 
 async function resetPlugin(adminApi: APIRequestContext, pluginID: string) {
@@ -428,13 +461,19 @@ function buildSuccessPluginSource(upstreamBaseURL: string) {
   const moduleName = "lina-plugin-dev-host-services-e2e";
   rmSync(pluginDir, { force: true, recursive: true });
 
+  writeTestFile(path.join(pluginDir, "go.mod"), pluginGoModContent(moduleName));
   writeTestFile(
-    path.join(pluginDir, "go.mod"),
-    pluginGoModContent(moduleName),
+    path.join(pluginDir, "main.go"),
+    buildPluginRuntimeMain(moduleName),
   );
-  writeTestFile(path.join(pluginDir, "main.go"), buildPluginRuntimeMain(moduleName));
-  writeTestFile(path.join(pluginDir, "plugin_embed.go"), buildPluginEmbedFile());
-  writeTestFile(path.join(pluginDir, "backend", "plugin.go"), buildBackendPluginFile(moduleName));
+  writeTestFile(
+    path.join(pluginDir, "plugin_embed.go"),
+    buildPluginEmbedFile(),
+  );
+  writeTestFile(
+    path.join(pluginDir, "backend", "plugin.go"),
+    buildBackendPluginFile(moduleName),
+  );
   writeTestFile(
     path.join(pluginDir, "backend", "plugin_wasip1.go"),
     buildBackendWasmDispatcherFile(moduleName, successPluginID),
@@ -508,7 +547,14 @@ type HostServicesReq struct {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "dynamic.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "dynamic.go",
+    ),
     `package dynamic
 
 type Controller struct{}
@@ -519,7 +565,14 @@ func New() *Controller {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "host_services.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "host_services.go",
+    ),
     `package dynamic
 
 import (
@@ -781,13 +834,19 @@ function buildDeniedPluginSource() {
   const moduleName = "lina-plugin-dev-host-services-denied-e2e";
   rmSync(pluginDir, { force: true, recursive: true });
 
+  writeTestFile(path.join(pluginDir, "go.mod"), pluginGoModContent(moduleName));
   writeTestFile(
-    path.join(pluginDir, "go.mod"),
-    pluginGoModContent(moduleName),
+    path.join(pluginDir, "main.go"),
+    buildPluginRuntimeMain(moduleName),
   );
-  writeTestFile(path.join(pluginDir, "main.go"), buildPluginRuntimeMain(moduleName));
-  writeTestFile(path.join(pluginDir, "plugin_embed.go"), buildPluginEmbedFile());
-  writeTestFile(path.join(pluginDir, "backend", "plugin.go"), buildBackendPluginFile(moduleName));
+  writeTestFile(
+    path.join(pluginDir, "plugin_embed.go"),
+    buildPluginEmbedFile(),
+  );
+  writeTestFile(
+    path.join(pluginDir, "backend", "plugin.go"),
+    buildBackendPluginFile(moduleName),
+  );
   writeTestFile(
     path.join(pluginDir, "backend", "plugin_wasip1.go"),
     buildBackendWasmDispatcherFile(moduleName, deniedPluginID),
@@ -840,7 +899,14 @@ type DeniedServiceReq struct {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "dynamic.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "dynamic.go",
+    ),
     `package dynamic
 
 type Controller struct{}
@@ -851,7 +917,14 @@ func New() *Controller {
 `,
   );
   writeTestFile(
-    path.join(pluginDir, "backend", "internal", "controller", "dynamic", "denied_routes.go"),
+    path.join(
+      pluginDir,
+      "backend",
+      "internal",
+      "controller",
+      "dynamic",
+      "denied_routes.go",
+    ),
     `package dynamic
 
 import (
@@ -913,6 +986,9 @@ func (c *Controller) DeniedService(request *protocol.BridgeRequestEnvelopeV1) (*
 function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
   mkdirSync(buildOutputDir(), { recursive: true });
   const goWorkPath = path.join(pluginDir, ".e2e-host-services.go.work");
+  const coreModulePath = path
+    .join(repoRoot(), "apps", "lina-core")
+    .replaceAll("\\", "/");
   writeFileSync(
     goWorkPath,
     [
@@ -923,6 +999,8 @@ function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
       `\t${linactlDir()}`,
       `\t${pluginDir}`,
       ")",
+      "",
+      `replace lina-core v0.0.0 => ${coreModulePath}`,
       "",
     ].join("\n"),
   );
@@ -937,13 +1015,7 @@ function buildDynamicPluginArtifact(pluginDir: string, pluginID: string) {
     });
     execFileSync(
       "go",
-      [
-        "run",
-        ".",
-        "wasm",
-        `dir=${pluginDir}`,
-        `out=${buildOutputDir()}`,
-      ],
+      ["run", ".", "wasm", `dir=${pluginDir}`, `out=${buildOutputDir()}`],
       {
         cwd: linactlDir(),
         env: {
@@ -1147,7 +1219,9 @@ test.describe("TC-4 Runtime Wasm Host Services", () => {
     await installPlugin(adminApi!, successPluginID);
     await setPluginEnabled(adminApi!, successPluginID, true);
 
-    const response = await adminApi!.get(pluginApiPath(successPluginID, "/host-services"));
+    const response = await adminApi!.get(
+      pluginApiPath(successPluginID, "/host-services"),
+    );
     const responseText = await response.text();
     expect(
       response.status(),

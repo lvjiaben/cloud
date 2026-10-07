@@ -1,0 +1,59 @@
+id: idc-ai
+name: IDC AI
+version: v0.1.0
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Read-only operational insights, retrieval, diagnostics, prediction, and draft assistance through merchant-owned AI configuration.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.0 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.0 <1.0.0"
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+menus:
+  - key: plugin:idc-ai:copilot
+    parent_key: plugin:idc-core:operations-workbench
+    name: AI Operations Copilot
+    path: /idc/ai-copilot
+    component: system/plugin/dynamic-page
+    icon: lucide:sparkles
+    type: M
+    sort: 90
+    perms: idc:admin:ai:use
+    remark: Read-only insights, diagnostics and draft assistance
+  - key: plugin:idc-ai:config-view
+    parent_key: plugin:idc-ai:copilot
+    name: View AI configuration
+    perms: idc:admin:ai:config:view
+    type: B
+    visible: 0
+  - key: plugin:idc-ai:config-manage
+    parent_key: plugin:idc-ai:copilot
+    name: Manage AI configuration
+    perms: idc:admin:ai:config:manage
+    type: B
+    visible: 0
+  - key: plugin:idc-ai:audit
+    parent_key: plugin:idc-ai:copilot
+    name: View AI audit
+    perms: idc:admin:ai:audit
+    type: B
+    visible: 0

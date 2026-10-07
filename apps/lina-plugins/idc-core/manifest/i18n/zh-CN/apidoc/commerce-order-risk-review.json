@@ -1,0 +1,23 @@
+{
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalReq.meta.summary": "批准订单风控审核",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalReq.meta.dc": "使用独立的精确后台权限批准一个待处理订单风控审核，并保留库存与履约的独立审核门禁。",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalReq.fields.reviewNo.dc": "待处理订单风控审核业务编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalReq.fields.requestNo.dc": "客户端稳定的幂等请求编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalReq.fields.evidenceDigest.dc": "审核证据包的小写 SHA-256 摘要",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewApprovalRes.fields.decision.dc": "已审计并提交的风控审核批准结果",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionReq.meta.summary": "驳回订单风控审核",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionReq.meta.dc": "使用独立的精确后台权限驳回一个待处理订单风控审核，并以原子事务取消未付款订单。",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionReq.fields.reviewNo.dc": "待处理订单风控审核业务编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionReq.fields.requestNo.dc": "客户端稳定的幂等请求编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionReq.fields.evidenceDigest.dc": "审核证据包的小写 SHA-256 摘要",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewRejectionRes.fields.decision.dc": "已审计并提交的风控驳回与订单取消结果",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.reviewNo.dc": "稳定的订单风控审核业务编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.orderNo.dc": "该风控审核所管控的订单业务编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.customerNo.dc": "订单所属客户业务编号",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.statusCode.dc": "已提交的审核决定：已批准或已驳回",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.reasonCode.dc": "稳定的决定原因：风控已批准或风控已驳回",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.reviewedBy.dc": "提交决定的可信后台人员用户标识",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.reviewedAt.dc": "决定提交时间，Unix 毫秒时间戳",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.orderStatus.dc": "完成全部独立门禁判断后的订单状态",
+  "plugins.idc_core.api.admin.v1.CommerceOrderRiskReviewDecisionItem.fields.reused.dc": "是否复用了之前完全相同且已经提交的决定"
+}

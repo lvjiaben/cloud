@@ -1,0 +1,125 @@
+id: idc-payment
+name: IDC Payment
+version: v0.1.8
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Payment channels, payment and refund attempts, callback verification, queries, and reconciliation.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
+    - id: idc-core
+      version: ">=0.1.0 <1.0.0"
+
+business_extensions:
+  - point: payment-method
+    version: v1
+    role: owner
+    owner: idc-payment
+    methods:
+      - capabilities.describe
+
+public_assets:
+  - source: frontend/dist
+    mount: /
+
+menus:
+  - key: plugin:idc-payment:channels
+    parent_key: plugin:idc-core:orders-finance
+    name: Payment Channels
+    path: /idc/payment-channels
+    component: system/plugin/dynamic-page
+    perms: idc:admin:payment:channel:view
+    icon: lucide:credit-card
+    type: M
+    sort: 35
+    remark: Configure and enable verified payment channels
+  - key: plugin:idc-payment:channels:manage
+    parent_key: plugin:idc-payment:channels
+    name: Manage Payment Channels
+    perms: idc:admin:payment:channel:manage
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-payment:reconciliation
+    parent_key: plugin:idc-core:orders-finance
+    name: Payment Reconciliation
+    path: /idc/payment-reconciliation
+    component: system/plugin/dynamic-page
+    perms: idc:admin:payment:reconciliation:view
+    icon: lucide:receipt-text
+    type: M
+    sort: 36
+    remark: Daily payment and refund reconciliation, channel health, and controlled supplementation
+  - key: plugin:idc-payment:reconciliation:view
+    parent_key: plugin:idc-payment:reconciliation
+    name: View Payment Reconciliation
+    perms: idc:admin:payment:reconciliation:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-payment:reconciliation:supplement-submit
+    parent_key: plugin:idc-payment:reconciliation
+    name: Submit Payment Supplement
+    perms: idc:admin:payment:reconciliation:supplement-submit
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-payment:reconciliation:supplement-review
+    parent_key: plugin:idc-payment:reconciliation
+    name: Review Payment Supplement
+    perms: idc:admin:payment:reconciliation:supplement-review
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-payment:exception-funds
+    parent_key: plugin:idc-core:orders-finance
+    name: Unassigned Payment Funds
+    path: /idc/payment-exception-funds
+    component: system/plugin/dynamic-page
+    perms: idc:admin:payment:exception-fund:view
+    icon: lucide:circle-dollar-sign
+    type: M
+    sort: 37
+    remark: Late successful payments awaiting exact allocation or original-source refund
+  - key: plugin:idc-payment:exception-funds:view
+    parent_key: plugin:idc-payment:exception-funds
+    name: View Unassigned Payment Funds
+    perms: idc:admin:payment:exception-fund:view
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-payment:exception-funds:allocate
+    parent_key: plugin:idc-payment:exception-funds
+    name: Allocate Unassigned Payment Funds
+    perms: idc:admin:payment:exception-fund:allocate
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-payment:exception-funds:refund
+    parent_key: plugin:idc-payment:exception-funds
+    name: Request Original-source Refund
+    perms: idc:admin:payment:exception-fund:refund
+    type: B
+    visible: 0
+    sort: 3
+  - key: plugin:idc-payment:exception-funds:refund-confirm
+    parent_key: plugin:idc-payment:exception-funds
+    name: Confirm Manual Original-source Refund
+    perms: idc:admin:payment:exception-fund:refund-confirm
+    type: B
+    visible: 0
+    sort: 4

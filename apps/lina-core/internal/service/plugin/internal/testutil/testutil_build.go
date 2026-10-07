@@ -77,7 +77,7 @@ func EnsureBundledRuntimeSampleArtifactForTests(t *testing.T) {
 			return
 		}
 
-		pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "linapro-demo-dynamic")
+		pluginDir := filepath.Join(repoRoot, "apps", "lina-plugins", "demo-dynamic")
 		if _, statErr := os.Stat(filepath.Join(pluginDir, "plugin.yaml")); statErr != nil {
 			if os.IsNotExist(statErr) {
 				bundledRuntimeSampleMissing = true

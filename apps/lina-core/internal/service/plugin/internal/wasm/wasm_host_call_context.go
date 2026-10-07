@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"lina-core/internal/service/plugin/internal/confidentialoutbound"
 	bridgecontract "lina-core/pkg/plugin/pluginbridge/contract"
 	bridgehostservice "lina-core/pkg/plugin/pluginbridge/protocol"
 )
@@ -48,6 +49,9 @@ type hostCallContext struct {
 	identity *bridgecontract.IdentitySnapshotV1
 	// jobCollector captures Jobs declarations during dynamic-plugin discovery.
 	jobCollector JobRegistrationCollector
+	// confidentialOutboundInvocation is host-only exact provider evidence and is
+	// never serialized into guest memory.
+	confidentialOutboundInvocation *confidentialoutbound.Invocation
 }
 
 // withHostCallContext attaches the host call context to the execution context.
@@ -134,8 +138,10 @@ func (hcc *hostCallContext) hasOwnerHostServiceAccess(
 }
 
 // hasOwnerScopedHostServiceAccess authorizes owner-plugin host service targets.
-// Owner-scoped calls never authorize tables; empty resource refs require an
-// empty resource grant list, otherwise the resource must match the snapshot.
+// Owner-scoped calls never authorize tables. A business-extension execution
+// may pass only its exact short-lived invocation context to an owner service;
+// the registered owner invoker performs the remaining method-specific checks.
+// Other calls continue to require an exact manifest resource grant.
 func hasOwnerScopedHostServiceAccess(
 	hcc *hostCallContext,
 	owner string,
@@ -150,6 +156,12 @@ func hasOwnerScopedHostServiceAccess(
 	}
 	if resourceRef == "" {
 		return len(spec.Resources) == 0
+	}
+	if len(spec.Resources) == 0 {
+		invocation := hcc.confidentialOutboundInvocation
+		return hcc.executionSource == bridgecontract.ExecutionSourceBusinessExtension &&
+			invocation != nil && invocation.ContextID == resourceRef &&
+			invocation.OwnerPluginID == owner && invocation.ProviderPluginID == hcc.pluginID
 	}
 	return hcc.ownerHostServiceResource(owner, service, version, resourceRef) != nil
 }

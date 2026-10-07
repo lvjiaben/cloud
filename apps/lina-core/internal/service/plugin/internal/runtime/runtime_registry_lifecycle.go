@@ -27,6 +27,10 @@ func (s *serviceImpl) updateDesiredState(
 		Where(do.SysPlugin{PluginId: pluginID}).
 		Data(do.SysPlugin{DesiredState: desiredState.String()}).
 		Update()
+	if err != nil {
+		return err
+	}
+	_, err = s.storeSvc.RefreshStartupRegistry(ctx, pluginID)
 	return err
 }
 
@@ -48,6 +52,10 @@ func (s *serviceImpl) markReconciling(
 			CurrentState: plugintypes.HostStateReconciling.String(),
 		}).
 		Update()
+	if err != nil {
+		return err
+	}
+	_, err = s.storeSvc.RefreshStartupRegistry(ctx, registry.PluginId)
 	return err
 }
 

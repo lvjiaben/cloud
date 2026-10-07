@@ -1,0 +1,24 @@
+{
+  "name": "@linapro/idc-resource-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm run typecheck && vite build && pnpm run verify:bundle",
+    "test": "vitest run pages/provider-interface-configuration.test.ts pages/resource-page.test.ts pages/provider-catalog-state.test.ts pages/provider-catalog-import.test.ts",
+    "typecheck": "vue-tsc --noEmit",
+    "verify:bundle": "node scripts/verify-build.mjs"
+  },
+  "dependencies": {
+    "@linapro/vben-plugin-adapter": "file:..\\..\\vben-adapter\\frontend",
+    "vue": "3.5.29"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.4",
+    "typescript": "5.9.3",
+    "vite": "7.3.1",
+    "vitest": "4.0.18",
+    "vue-tsc": "3.2.5"
+  },
+  "packageManager": "pnpm@11.18.0"
+}

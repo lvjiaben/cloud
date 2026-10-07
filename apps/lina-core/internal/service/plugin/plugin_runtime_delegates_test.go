@@ -5,14 +5,66 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/gogf/gf/v2/net/goai"
 
+	"lina-core/internal/service/cachecoord"
+	"lina-core/internal/service/cachecoord/revisionctrl"
 	"lina-core/internal/service/plugin/internal/catalog"
+	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/pluginhost"
 )
+
+type pageBridgeGrantFailingCacheCoord struct {
+	err error
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) ConfigureDomain(cachecoord.DomainSpec) error {
+	return nil
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) MarkChanged(
+	context.Context,
+	cachecoord.Domain,
+	cachecoord.Scope,
+	cachecoord.ChangeReason,
+) (int64, error) {
+	return 0, f.err
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) MarkTenantChanged(
+	context.Context,
+	cachecoord.Domain,
+	cachecoord.Scope,
+	cachecoord.InvalidationScope,
+	cachecoord.ChangeReason,
+) (int64, error) {
+	return 0, f.err
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) EnsureFresh(
+	context.Context,
+	cachecoord.Domain,
+	cachecoord.Scope,
+	cachecoord.Refresher,
+) (int64, error) {
+	return 0, f.err
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) CurrentRevision(
+	context.Context,
+	cachecoord.Domain,
+	cachecoord.Scope,
+) (int64, error) {
+	return 0, f.err
+}
+
+func (f *pageBridgeGrantFailingCacheCoord) Snapshot(context.Context) ([]cachecoord.SnapshotItem, error) {
+	return nil, f.err
+}
 
 // TestRuntimeDelegateReportsUnboundSideEffects verifies side-effecting
 // delegate calls do not silently succeed before startup binding completes.
@@ -50,6 +102,42 @@ func TestRuntimeDelegateReportsBoundAfterStartupWiring(t *testing.T) {
 	if !delegate.Bound() {
 		t.Fatal("expected runtime delegate to report bound")
 	}
+}
+
+// TestIssuePageBridgeGrantHidesInternalFailures verifies both cache freshness
+// and runtime validation failures keep their internal cause while exposing the
+// same stable, translatable business error to HTTP callers.
+func TestIssuePageBridgeGrantHidesInternalFailures(t *testing.T) {
+	t.Run("cache freshness failure", func(t *testing.T) {
+		cause := errors.New("cache coordination backend unavailable")
+		service := &serviceImpl{
+			runtimeCacheRevisionCtrl: revisionctrl.NewControllerWithCoordinator(
+				true,
+				&pageBridgeGrantFailingCacheCoord{err: cause},
+				revisionctrl.NewObservedRevision(),
+				nil,
+			),
+		}
+
+		_, err := service.IssuePageBridgeGrant(context.Background(), PageBridgeGrantInput{})
+		if !bizerr.Is(err, CodePluginPageBridgeGrantDenied) {
+			t.Fatalf("expected stable page bridge grant error, got %v", err)
+		}
+		if !errors.Is(err, cause) {
+			t.Fatalf("expected wrapped cache freshness cause, got %v", err)
+		}
+	})
+
+	t.Run("runtime validation failure", func(t *testing.T) {
+		service := newTestService()
+		_, err := service.IssuePageBridgeGrant(context.Background(), PageBridgeGrantInput{})
+		if !bizerr.Is(err, CodePluginPageBridgeGrantDenied) {
+			t.Fatalf("expected stable page bridge grant error, got %v", err)
+		}
+		if err == nil || !strings.Contains(err.Error(), CodePluginPageBridgeGrantDenied.Fallback()) {
+			t.Fatalf("expected stable fallback with preserved internal cause, got %v", err)
+		}
+	})
 }
 
 // TestInternalDelegateProvidersReportUnboundSideEffects verifies internal

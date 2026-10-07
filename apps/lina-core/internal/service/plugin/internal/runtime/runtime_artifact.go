@@ -332,6 +332,12 @@ func (s *serviceImpl) ValidateRuntimeArtifact(manifest *catalog.Manifest, rootDi
 	if manifest.Version != artifact.Manifest.Version {
 		return gerror.Newf("Dynamic plugin embedded manifest version does not match plugin.yaml: %s != %s", artifact.Manifest.Version, manifest.Version)
 	}
+	if plugintypes.NormalizeDistribution(manifest.Distribution) != plugintypes.NormalizeDistribution(artifact.Manifest.Distribution) {
+		return gerror.Newf("Dynamic plugin embedded distribution does not match plugin.yaml: %s", artifactPath)
+	}
+	if !catalog.ManifestBusinessDeclarationsMatch(manifest, artifact.Manifest) {
+		return gerror.Newf("Dynamic plugin embedded business extensions or frontend surfaces do not match plugin.yaml: %s", artifactPath)
+	}
 	if !publicAssetDeclarationsMatch(manifest.PublicAssets, artifact.Manifest.PublicAssets) {
 		return gerror.Newf("Dynamic plugin embedded public_assets does not match plugin.yaml: %s", artifactPath)
 	}

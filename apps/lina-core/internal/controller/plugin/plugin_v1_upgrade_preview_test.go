@@ -52,7 +52,7 @@ func TestBuildUpgradePreviewResponseProjectsAllSections(t *testing.T) {
 					Tables:  []string{"sys_plugin", "sys_plugin_release"},
 				},
 				{
-					Owner:   "linapro-ai-core",
+					Owner:   "ai-core",
 					Service: "ai",
 					Version: "v1",
 					Methods: []string{
@@ -75,7 +75,7 @@ func TestBuildUpgradePreviewResponseProjectsAllSections(t *testing.T) {
 		HostServicesDiff: pluginsvc.RuntimeUpgradeHostServicesDiff{
 			Changed: []*pluginsvc.RuntimeUpgradeHostServiceChange{
 				{
-					Owner:   "linapro-ai-core",
+					Owner:   "ai-core",
 					Service: "ai",
 					Version: "v1",
 					FromMethods: []string{
@@ -131,7 +131,7 @@ func TestBuildUpgradePreviewResponseProjectsAllSections(t *testing.T) {
 		t.Fatalf("expected requested hostServices with table comments, got %#v", out.ToManifest.RequestedHostServices)
 	}
 	ownerHostService := out.ToManifest.RequestedHostServices[1]
-	if ownerHostService.Owner != "linapro-ai-core" ||
+	if ownerHostService.Owner != "ai-core" ||
 		ownerHostService.Service != "ai" ||
 		ownerHostService.Version != "v1" ||
 		len(ownerHostService.Methods) != 1 ||
@@ -147,7 +147,7 @@ func TestBuildUpgradePreviewResponseProjectsAllSections(t *testing.T) {
 	if !out.HostServicesDiff.AuthorizationRequired || len(out.HostServicesDiff.Changed) != 1 {
 		t.Fatalf("expected hostServices diff projection, got %#v", out.HostServicesDiff)
 	}
-	if out.HostServicesDiff.Changed[0].Owner != "linapro-ai-core" || out.HostServicesDiff.Changed[0].Version != "v1" {
+	if out.HostServicesDiff.Changed[0].Owner != "ai-core" || out.HostServicesDiff.Changed[0].Version != "v1" {
 		t.Fatalf("expected owner-aware hostServices diff projection, got %#v", out.HostServicesDiff.Changed[0])
 	}
 	if out.HostServicesDiff.Changed[0].FromResourceCount != 1 ||

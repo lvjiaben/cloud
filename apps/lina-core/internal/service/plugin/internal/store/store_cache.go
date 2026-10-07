@@ -175,6 +175,10 @@ func cloneManifestSnapshot(snapshot *ManifestSnapshot) *ManifestSnapshot {
 	}
 	out := *snapshot
 	out.Dependencies = plugintypes.CloneDependencySpec(snapshot.Dependencies)
+	out.BusinessExtensions = catalog.CloneBusinessExtensionDeclarations(snapshot.BusinessExtensions)
+	out.AuthorizedBusinessExtensions = catalog.CloneBusinessExtensionDeclarations(snapshot.AuthorizedBusinessExtensions)
+	out.AdminSurfaces = catalog.CloneFrontendSurfaceDeclarations(snapshot.AdminSurfaces)
+	out.CustomerSurfaces = catalog.CloneFrontendSurfaceDeclarations(snapshot.CustomerSurfaces)
 	out.Routes = cloneRouteContracts(snapshot.Routes)
 	out.PublicAssets = catalog.ClonePublicAssetSpecs(snapshot.PublicAssets)
 	out.RequestedHostServices = cloneHostServiceSpecs(snapshot.RequestedHostServices)

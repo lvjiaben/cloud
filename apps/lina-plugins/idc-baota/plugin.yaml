@@ -1,0 +1,82 @@
+id: idc-baota
+name: IDC BT Panel Connector
+version: v0.1.2
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Managed BT Panel connector for query-first website fulfillment with host-confidential double-MD5 request signing.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - { locale: en-US, nativeName: English }
+    - { locale: zh-CN, nativeName: 简体中文 }
+dependencies:
+  plugins:
+    - { id: idc-core, version: ">=0.1.85 <1.0.0" }
+    - { id: idc-resource, version: ">=0.1.21 <1.0.0" }
+
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods: [configuration.candidates, configuration.validate, provision, query]
+    interface_configuration_cardinality: multiple
+    interface_configuration: &panel_interface
+      version: v1
+      fields:
+        - { key: endpoint, type: single_line, label: { en-US: Panel endpoint, zh-CN: 面板地址 }, required: true, text_format: url, maximum_length: 2048 }
+        - { key: api_key, type: secret, label: { en-US: Panel API key, zh-CN: 面板 API 密钥 }, required: true }
+    product_configuration:
+      version: v1
+      fields:
+        - key: deployment_type
+          type: single_select
+          label: { en-US: Delivery type, zh-CN: 交付类型 }
+          required: true
+          static_candidates:
+            - { value: php_site, label: { en-US: PHP website, zh-CN: PHP 网站 } }
+            - { value: static_site, label: { en-US: Static website, zh-CN: 静态网站 } }
+        - { key: php_version, type: single_line, label: { en-US: PHP version code, zh-CN: PHP 版本代码 }, maximum_length: 16 }
+    customer_configuration:
+      version: v1
+      fields:
+        - { key: primary_domain, type: single_line, label: { en-US: Primary domain, zh-CN: 主域名 }, required: true, maximum_length: 255 }
+        - { key: additional_domains, type: multi_line, label: { en-US: Additional domains, zh-CN: 附加域名 }, maximum_length: 4096 }
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability: { enUS: BT Panel website and database delivery, zhCN: 宝塔面板网站和数据库交付 }
+        granularity: per_quantity_unit
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: unsupported
+        entitlementOwnerId: idc-core
+        methodRoles: { provision: provision, query: query }
+  - point: resource-provider
+    version: v1
+    role: provider
+    owner: idc-resource
+    interface_configuration_cardinality: multiple
+    interface_configuration: *panel_interface
+    methods: [connection.verify, capabilities.discover, configuration.candidates, provision.parameters.build, provider-capacity.list, operation.execute, task.query, resource.query]
+    provider_metadata:
+      type: resource-provider-contract
+      version: v1
+      values:
+        providerId: bt-panel
+        authenticationProfiles:
+          profiles:
+            default:
+              strategy: bt_panel_double_md5
+              fields: { material: api_key }
+
+hostServices:
+  - service: confidentialoutbound
+    methods: [execute]

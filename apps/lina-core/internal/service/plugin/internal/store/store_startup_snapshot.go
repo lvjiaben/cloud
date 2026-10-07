@@ -243,6 +243,12 @@ func applyPluginRegistryData(registry *PluginRecord, data do.SysPlugin) {
 	if data.InstalledAt != nil {
 		registry.InstalledAt = data.InstalledAt
 	}
+	if data.NewBusinessState != nil {
+		registry.NewBusinessState = gconv.String(data.NewBusinessState)
+	}
+	if data.NewBusinessStoppedAt != nil {
+		registry.NewBusinessStoppedAt = data.NewBusinessStoppedAt
+	}
 	if data.EnabledAt != nil {
 		registry.EnabledAt = data.EnabledAt
 	}

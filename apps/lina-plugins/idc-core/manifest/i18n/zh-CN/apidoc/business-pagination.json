@@ -1,0 +1,11 @@
+{
+  "plugins.idc_core.api.admin.v1.CommerceOrderListReq.fields.page.dc": "从一开始的页码；使用游标时不要同时传入",
+  "plugins.idc_core.api.admin.v1.CommerceOrderListRes.fields.total.dc": "当前筛选条件和可见范围内的准确总条数",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.meta.dc": "返回当前客户拥有且可见的有界工单页及对应总数；数字页码与游标不能混用。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.fields.stage.dc": "可选客户工单阶段：新建、处理中、等待客户、已解决或已关闭；省略时包含全部阶段。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.fields.query.dc": "可选的精确工单编号或标题字面前缀；省略时不按关键词筛选。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.fields.cursor.dc": "可选的不透明续页游标；不能与页码混用。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.fields.page.dc": "从一开始的页码；零或省略时使用游标模式。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListReq.fields.limit.dc": "每页一至一百条，默认二十五条。",
+  "plugins.idc_core.api.supportaccount.v1.TicketListRes.fields.total.dc": "分页前、相同客户所有权和筛选条件下的准确总数。"
+}

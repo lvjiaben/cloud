@@ -1,0 +1,10 @@
+{
+  "error.shared.challenge.conflict": "The verification challenge has changed or was already used",
+  "error.shared.challenge.invalid": "The verification request is invalid",
+  "error.shared.challenge.rejected": "Verification failed",
+  "error.shared.challenge.unavailable": "Human verification is temporarily unavailable",
+  "error.shared.inbox.conflict": "The same message key was already used with different content",
+  "error.shared.inbox.invalid": "The in-app message request is invalid",
+  "error.shared.inbox.unavailable": "In-app messaging is temporarily unavailable",
+  "error.shared.source.not.authorized": "The calling plugin is not authorized to use this shared capability"
+}

@@ -1,7 +1,7 @@
-import type { APIRequestContext } from '@playwright/test';
+import type { APIRequestContext } from "@playwright/test";
 
-import { test, expect } from '../../../fixtures/auth';
-import { JobPage } from '../../../pages/JobPage';
+import { test, expect } from "../../../fixtures/auth";
+import { JobPage } from "../../../pages/JobPage";
 
 import {
   buildShellJobPayload,
@@ -12,9 +12,13 @@ import {
   getDefaultGroup,
   getJob,
   setCronShellEnabled,
-} from '../../../support/api/job';
+} from "../../../support/api/job";
 
-test.describe('TC-5 定时任务启停', () => {
+test.describe("TC-5 定时任务启停", () => {
+  test.skip(
+    process.platform === "win32",
+    "Windows 宿主按产品约束不支持 Shell 调度任务",
+  );
   const jobName = `e2e_toggle_job_${Date.now()}`;
   let api: APIRequestContext;
   let jobId = 0;
@@ -22,7 +26,7 @@ test.describe('TC-5 定时任务启停', () => {
 
   test.beforeAll(async () => {
     api = await createAdminApiContext();
-    originalShellSwitch = await getConfigByKey(api, 'sys.cron.shell.enabled');
+    originalShellSwitch = await getConfigByKey(api, "sys.cron.shell.enabled");
     await setCronShellEnabled(api, true);
   });
 
@@ -36,42 +40,47 @@ test.describe('TC-5 定时任务启停', () => {
     await api.dispose();
   });
 
-  test('TC-5a~d: 任务支持通过编辑弹窗从停用切换到启用，再切回停用', async ({ adminPage }) => {
+  test("TC-5a~d: 任务支持通过编辑弹窗从停用切换到启用，再切回停用", async ({
+    adminPage,
+  }) => {
     const jobPage = new JobPage(adminPage);
     const defaultGroup = await getDefaultGroup(api);
-    const created = await createJob(api, buildShellJobPayload({
-      groupId: defaultGroup.id,
-      name: jobName,
-      status: 'disabled',
-    }));
+    const created = await createJob(
+      api,
+      buildShellJobPayload({
+        groupId: defaultGroup.id,
+        name: jobName,
+        status: "disabled",
+      }),
+    );
     jobId = created.id;
 
     let detail = await getJob(api, jobId);
-    expect(detail.status).toBe('disabled');
+    expect(detail.status).toBe("disabled");
 
     await jobPage.goto();
     await jobPage.fillSearchKeyword(jobName);
     await jobPage.clickSearch();
-    await expect(await jobPage.hasAction('job-enable-')).toBe(false);
+    await expect(await jobPage.hasAction("job-enable-")).toBe(false);
 
     await jobPage.openEditSearchedJob();
-    await jobPage.setTaskStatus('启用');
+    await jobPage.setTaskStatus("启用");
     await jobPage.save();
     await expect
       .poll(async () => (await getJob(api, jobId)).status, {
         timeout: 5000,
-        message: '编辑任务并将状态设为启用后应成功生效',
+        message: "编辑任务并将状态设为启用后应成功生效",
       })
-      .toBe('enabled');
+      .toBe("enabled");
 
     await jobPage.openEditSearchedJob();
-    await jobPage.setTaskStatus('停用');
+    await jobPage.setTaskStatus("停用");
     await jobPage.save();
     await expect
       .poll(async () => (await getJob(api, jobId)).status, {
         timeout: 5000,
-        message: '编辑任务并将状态设为停用后应成功生效',
+        message: "编辑任务并将状态设为停用后应成功生效",
       })
-      .toBe('disabled');
+      .toBe("disabled");
   });
 });

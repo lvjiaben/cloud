@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "description": "Plugin-owned service dependency baseline for source-plugin registration and composition boundaries.",
+  "entries": [
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/composition/provider_production.go",
+      "maxCalls": 2,
+      "reason": "Resource provider composition boundary; constructs provider production collaborators."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/interfacecandidate/interfacecandidate.go",
+      "maxCalls": 1,
+      "reason": "Resource interface-candidate composition boundary; constructs the plugin-owned service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/lifecyclesource/lifecyclesource.go",
+      "maxCalls": 1,
+      "reason": "Resource lifecycle-source composition boundary; constructs the plugin-owned service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/managedparameters/managedparameters.go",
+      "maxCalls": 1,
+      "reason": "Resource managed-parameters composition boundary; constructs the plugin-owned service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/provisionsource/provisionsource.go",
+      "maxCalls": 2,
+      "reason": "Resource provision-source composition boundary; constructs plugin-owned provisioning services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/renewalsource/renewalsource.go",
+      "maxCalls": 1,
+      "reason": "Resource renewal-source composition boundary; constructs the plugin-owned service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/serveroperationsource/serveroperationsource_accessory.go",
+      "maxCalls": 1,
+      "reason": "Resource accessory-operation composition boundary; constructs plugin-owned operation services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/serveroperationsource/serveroperationsource_directory.go",
+      "maxCalls": 1,
+      "reason": "Resource server-operation directory composition boundary; constructs plugin-owned services."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/internal/service/serveroperationsource/serveroperationsource.go",
+      "maxCalls": 1,
+      "reason": "Resource server-operation composition boundary; constructs the plugin-owned service."
+    },
+    {
+      "path": "apps/lina-plugins/idc-resource/backend/plugin.go",
+      "maxCalls": 36,
+      "reason": "IDC resource plugin composition boundary; wires process-wide private resource services, projections, and workers once."
+    }
+  ]
+}

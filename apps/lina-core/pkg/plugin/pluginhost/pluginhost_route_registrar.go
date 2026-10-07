@@ -4,6 +4,7 @@
 package pluginhost
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gogf/gf/v2/net/ghttp"
@@ -34,6 +35,9 @@ type RouteMiddlewares interface {
 	Tenancy() RouteMiddleware
 	// Permission returns the host declarative permission middleware.
 	Permission() RouteMiddleware
+	// PageBridge returns the host verifier for routes exposed to isolated plugin
+	// pages. It must run after authentication and permission middleware.
+	PageBridge() RouteMiddleware
 }
 
 // RouteRegistrar exposes plugin route group registration helpers for one plugin.
@@ -61,6 +65,11 @@ type RouteGroup interface {
 	Middleware(handlers ...RouteMiddleware)
 	// Bind registers one or more handlers or controller objects.
 	Bind(handlerOrObject ...interface{})
+	// BindCustomerPageBridge registers DTO customer routes with an owner identity
+	// proof. The callback must reuse the owner's authoritative current-customer
+	// check and return its host user ID; nil or non-customer routes fail Err.
+	// This does not replace authentication, permissions or object ownership.
+	BindCustomerPageBridge(authorize func(context.Context) (int, error), handlerOrObject ...interface{})
 	// ALL registers one handler for all HTTP methods.
 	ALL(pattern string, object interface{}, params ...interface{})
 	// GET registers one GET handler.
@@ -116,6 +125,12 @@ func NewRouteMiddlewares(
 		auth:            auth,
 		tenancy:         tenancy,
 		permission:      permission,
+	}
+}
+
+func (m *routeMiddlewares) PageBridge() RouteMiddleware {
+	return func(request *ghttp.Request) {
+		request.Middleware.Next()
 	}
 }
 

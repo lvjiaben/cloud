@@ -15,12 +15,6 @@
     "dashboard": {
       "title": "Dashboard"
     },
-    "dashboard:analytics:list": {
-      "title": "Analytics"
-    },
-    "dashboard:workspace:list": {
-      "title": "Workspace"
-    },
     "developer": {
       "title": "Dev Tools"
     },
@@ -44,6 +38,15 @@
     },
     "extension:plugin:query": {
       "title": "Query"
+    },
+    "extension:plugin:business-impact": {
+      "title": "Business Impact"
+    },
+    "extension:plugin:stop-new-business": {
+      "title": "Stop New Sales"
+    },
+    "extension:plugin:resume-new-business": {
+      "title": "Resume New Sales"
     },
     "extension:plugin:uninstall": {
       "title": "Uninstall"

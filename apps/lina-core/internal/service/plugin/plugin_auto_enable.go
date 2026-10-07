@@ -59,7 +59,7 @@ func (s *serviceImpl) BootstrapAutoEnable(ctx context.Context) error {
 // plugin governance after source plugins have registered tenant-capability
 // providers. Startup auto-enable first installs and enables plugins at the host
 // registry level; this later pass converts tenant-scoped entries into the
-// platform's new-tenant default policy and asks the linapro-tenant-core provider to
+// platform's new-tenant default policy and asks the tenant-core provider to
 // provision existing tenants.
 func (s *serviceImpl) ReconcileAutoEnabledTenantPlugins(ctx context.Context) error {
 	if s == nil || s.configSvc == nil {

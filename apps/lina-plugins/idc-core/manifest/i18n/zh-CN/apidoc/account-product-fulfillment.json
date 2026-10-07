@@ -1,0 +1,14 @@
+{
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.lineNumber.dc": "冻结的订单行序号",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.unitSequence.dc": "冻结履约粒度中的单件顺序，从一开始",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.quantity.dc": "冻结的通用订单项数量",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.granularityCode.dc": "冻结的通用履约粒度",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.productNameZhCN.dc": "冻结的简体中文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.productNameEnUS.dc": "冻结的英文商品名称",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.statusCode.dc": "客户安全状态：待付款、待商家审核、处理中、已完成、处理未完成或已取消",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.messageCode.dc": "可选的客户安全处理提示",
+  "plugins.idc_core.api.account.v1.CommerceProductFulfillment.fields.updatedAt.dc": "最后一次权威更新时间，Unix 毫秒时间戳",
+  "plugins.idc_core.api.account.v1.CommerceOrderFulfillment.fields.orderItemNo.dc": "现有按服务退款选择器使用的订单项号",
+  "plugins.idc_core.api.account.v1.CommerceOrderFulfillment.fields.serviceNo.dc": "现有按服务退款选择器使用的客户可见服务器服务号",
+  "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.productFulfillments.dc": "不含任务、插件、供应商、证据、错误、密钥或配置字段的有界客户安全通用履约进度"
+}

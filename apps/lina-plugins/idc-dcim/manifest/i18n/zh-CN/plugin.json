@@ -1,0 +1,4 @@
+{
+  "plugin.idc-dcim.name": "DCIM 服务器连接器",
+  "plugin.idc-dcim.description": "每个接口版本明确冻结为旧版或 BMS 协议的托管 DCIM 服务器连接器。"
+}

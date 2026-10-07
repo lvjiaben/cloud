@@ -75,13 +75,13 @@ type ProcessListFunc func() ([]process.Info, error)
 // ProcessKillFunc stops one process by PID.
 type ProcessKillFunc func(int) error
 
-// Services returns backend and frontend development service definitions.
+// Services returns backend, admin frontend, and customer frontend development
+// service definitions.
 // Runtime listen and proxy ports are injected through process environment so
-// make dev LINA_CORE_PORT=/LINA_VBEN_PORT= (or matching env vars) can start the
-// stack without editing config.yaml or vite.config.mts proxy literals.
-// 通过进程环境注入监听与代理端口，使 make dev LINA_CORE_PORT=/LINA_VBEN_PORT=
-// （或等价环境变量）无需改配置文件即可启动。
-func Services(root string, backendPort int, frontendPort int) []Config {
+// make dev LINA_CORE_PORT=/LINA_VBEN_PORT=/LINA_CUSTOMER_PORT= (or matching
+// env vars) can start the stack without editing configuration files.
+// 通过进程环境注入监听与代理端口，使三个开发入口无需改配置文件即可启动。
+func Services(root string, backendPort int, frontendPort int, customerPort int) []Config {
 	tempDir := filepath.Join(root, "temp")
 	pidDir := filepath.Join(tempDir, "pids")
 	backendProxyTarget := fmt.Sprintf("http://127.0.0.1:%d", backendPort)
@@ -103,8 +103,8 @@ func Services(root string, backendPort int, frontendPort int) []Config {
 			},
 		},
 		{
-			Name:        "Frontend",
-			DisplayName: "Lina Vben",
+			Name:        "Admin Frontend",
+			DisplayName: "Lina Admin",
 			URL:         fmt.Sprintf("http://127.0.0.1:%d/", frontendPort),
 			Port:        frontendPort,
 			PIDPath:     filepath.Join(pidDir, "lina-vben.pid"),
@@ -116,6 +116,20 @@ func Services(root string, backendPort int, frontendPort int) []Config {
 				// 通过环境变量驱动 vite 代理目标，无需改写 vite.config.mts。
 				fmt.Sprintf("LINAPRO_BACKEND_PROXY_TARGET=%s", backendProxyTarget),
 				fmt.Sprintf("VITE_PORT=%d", frontendPort),
+			},
+		},
+		{
+			Name:        "Customer Frontend",
+			DisplayName: "Lina Customer",
+			URL:         fmt.Sprintf("http://127.0.0.1:%d/", customerPort),
+			Port:        customerPort,
+			PIDPath:     filepath.Join(pidDir, "lina-customer.pid"),
+			LogPath:     filepath.Join(tempDir, "lina-customer.log"),
+			WorkDir:     filepath.Join(root, "apps", "lina-vben", "apps", "web-customer"),
+			StartArgs:   []string{"--mode", "development", "--host", "127.0.0.1", "--port", strconv.Itoa(customerPort), "--strictPort"},
+			Env: []string{
+				fmt.Sprintf("LINAPRO_BACKEND_PROXY_TARGET=%s", backendProxyTarget),
+				fmt.Sprintf("VITE_PORT=%d", customerPort),
 			},
 		},
 	}
@@ -223,13 +237,13 @@ func printTableRow(out io.Writer, widths []int, values []string) error {
 // a custom probe; production uses IsTCPListening.
 // 校验开发端口是否空闲，被占用时直接报错，避免后端启动后 fatal "address already in use"
 // 却被外部占用方的 4xx 响应假装为就绪。
-func EnsurePortsAvailable(probe PortInUseFunc, backendPort int, frontendPort int) error {
-	occupied := occupiedPorts(probe, backendPort, frontendPort)
+func EnsurePortsAvailable(probe PortInUseFunc, backendPort int, frontendPort int, customerPort int) error {
+	occupied := occupiedPorts(probe, backendPort, frontendPort, customerPort)
 	if len(occupied) == 0 {
 		return nil
 	}
 	return fmt.Errorf(
-		"%s already in use; stop the occupant or choose a different port via the LINA_CORE_PORT/LINA_VBEN_PORT make variables",
+		"%s already in use; stop the occupant or choose a different port via the LINA_CORE_PORT/LINA_VBEN_PORT/LINA_CUSTOMER_PORT make variables",
 		strings.Join(occupied, " and "),
 	)
 }
@@ -299,7 +313,7 @@ func WaitPortsReleased(probe PortInUseFunc, timeout time.Duration, ports ...int)
 }
 
 // occupiedPorts returns printable labels for all bound development ports.
-func occupiedPorts(probe PortInUseFunc, backendPort int, frontendPort int) []string {
+func occupiedPorts(probe PortInUseFunc, backendPort int, frontendPort int, customerPort int) []string {
 	if probe == nil {
 		probe = IsTCPListening
 	}
@@ -309,7 +323,8 @@ func occupiedPorts(probe PortInUseFunc, backendPort int, frontendPort int) []str
 	}
 	checks := []portCheck{
 		{role: "backend", port: backendPort},
-		{role: "frontend", port: frontendPort},
+		{role: "admin frontend", port: frontendPort},
+		{role: "customer frontend", port: customerPort},
 	}
 	var occupied []string
 	for _, check := range checks {
@@ -345,7 +360,7 @@ func matchingProjectServiceProcesses(root string, service Config, infos []proces
 			if matchesBackendService(root, info) {
 				matches = append(matches, info)
 			}
-		case "Frontend":
+		case "Admin Frontend", "Customer Frontend":
 			if matchesFrontendService(service, info) {
 				matches = append(matches, info)
 			}
@@ -378,7 +393,7 @@ func matchesFrontendService(service Config, info process.Info) bool {
 	if hasExplicitDifferentPort(info.Args, service.Port) {
 		return false
 	}
-	return pathWithin(service.WorkDir, info.CWD) || strings.Contains(command, "apps/lina-vben")
+	return pathWithin(service.WorkDir, info.CWD) || strings.Contains(command, filepath.ToSlash(service.WorkDir))
 }
 
 func hasExplicitDifferentPort(args []string, expected int) bool {
