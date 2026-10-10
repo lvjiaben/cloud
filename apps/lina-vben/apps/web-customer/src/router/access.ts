@@ -6,10 +6,13 @@ import type {
 import { generateAccessible } from '@vben/access';
 import { preferences } from '@vben/preferences';
 
+import { listCustomerProductDirectories } from '#/api/idc/product-directories';
 import { BasicLayout, IFrameView, PluginSandboxView } from '#/layouts';
 import { appendCustomerPluginSurfaceRoutes } from '#/plugins/customer-surface-routes';
 import { getPluginPages } from '#/plugins/page-registry';
 import { getPluginStateMap } from '#/plugins/slot-registry';
+
+import { appendProductDirectoryRoutes } from './product-directory-routes';
 
 const forbiddenComponent = () => import('#/views/_core/fallback/forbidden.vue');
 
@@ -38,10 +41,36 @@ async function generateAccess(
   const routeStates = new Map(
     [...pluginStateMap.values()].map((item) => [item.id, item]),
   );
-  const routes = appendCustomerPluginSurfaceRoutes(
+  const surfaceRoutes = appendCustomerPluginSurfaceRoutes(
     options.routes,
     routeStates.values(),
     getPluginPages(),
+  );
+
+  // Each request is bounded to 100 entries; fetch remaining pages in batches.
+  // A directory outage must not prevent login or access to all purchased services.
+  const directories = await (async () => {
+    try {
+      const first = await listCustomerProductDirectories(1, 100);
+      const items = [...first.items];
+      const pages = Math.ceil(first.total / 100);
+      for (let page = 2; page <= pages; page += 4) {
+        const batch = await Promise.all(
+          Array.from({ length: Math.min(4, pages - page + 1) }, (_, offset) =>
+            listCustomerProductDirectories(page + offset, 100),
+          ),
+        );
+        items.push(...batch.flatMap((result) => result.items));
+      }
+      return items;
+    } catch {
+      return [];
+    }
+  })();
+  const routes = appendProductDirectoryRoutes(
+    surfaceRoutes,
+    directories,
+    preferences.app.locale,
   );
 
   return generateAccessible(preferences.app.accessMode, {

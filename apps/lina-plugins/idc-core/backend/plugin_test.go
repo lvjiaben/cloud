@@ -87,7 +87,7 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 		t.Fatalf("embedded manifest does not identify %s", pluginID)
 	}
 	for _, fragment := range []string{
-		"version: v0.1.93",
+		"version: v0.1.94",
 		"      - provision",
 		"      - query",
 		"key: plugin:idc-core:catalog-automation-interfaces",

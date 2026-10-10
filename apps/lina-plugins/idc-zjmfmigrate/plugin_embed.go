@@ -4,7 +4,7 @@ package main
 
 import "embed"
 
-// EmbeddedFiles contains the plugin manifest, frontend scaffold, and manifest resources.
+// EmbeddedFiles contains only compiled delivery assets and governed resources.
 //
-//go:embed plugin.yaml frontend manifest
+//go:embed plugin.yaml frontend/dist manifest
 var EmbeddedFiles embed.FS

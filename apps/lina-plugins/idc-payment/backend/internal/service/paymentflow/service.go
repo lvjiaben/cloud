@@ -120,25 +120,44 @@ func (s *Service) CreateBalanceRecharge(ctx context.Context, input RechargeCreat
 }
 
 func (s *Service) submit(ctx context.Context, attemptNo, channelNo, billingReference string, mode paymentcap.Mode, currency string, amountMinor int64, subject, clientIP, openID string, expiresAt time.Time) (*Created, error) {
-	var redirect *paymentcap.Redirect
-	err := s.channels.WithCredentials(ctx, channelNo, func(adapter paymentcap.Adapter, credentials paymentcap.Credentials) error {
+	var (
+		redirect   *paymentcap.Redirect
+		dispatched bool
+	)
+	err := s.channels.WithCreateCredentials(ctx, channelNo, func(adapter paymentcap.Adapter, credentials paymentcap.Credentials) error {
+		// Persist submission before crossing the provider boundary so a lost
+		// process never leaves a possibly accepted request looking unsubmitted.
+		if submitErr := s.attempts.MarkSubmitted(ctx, attemptNo); submitErr != nil {
+			return submitErr
+		}
+		dispatched = true
 		var createErr error
 		redirect, createErr = adapter.Create(ctx, credentials, paymentcap.CreateRequest{AttemptNo: attemptNo, InvoiceNo: billingReference, Mode: mode, Currency: currency, AmountMinor: amountMinor, Subject: subject, NotifyURL: s.origin + "/api/v1/callbacks/payments/" + url.PathEscape(channelNo), ReturnURL: s.origin + "/payment/return/" + url.PathEscape(attemptNo), ClientIP: clientIP, OpenID: openID, ExpiresAt: expiresAt})
 		return createErr
 	})
-	if err != nil || redirect == nil {
-		_ = s.attempts.FailAndRelease(ctx, attemptNo)
-		if err == nil {
-			err = gerror.New("payment channel returned no redirect")
+	if err == nil && redirect == nil {
+		err = gerror.New("payment channel returned no redirect")
+	}
+	if err == nil {
+		err = validateRedirect(mode, *redirect)
+	}
+	if err != nil {
+		var stateErr error
+		if dispatched {
+			// A transport error or invalid response is not proof that the
+			// provider did not accept payment. Preserve the balance hold.
+			stateErr = s.attempts.MarkSubmissionUnknown(ctx, attemptNo)
+		} else {
+			stateErr = s.attempts.FailAndRelease(ctx, attemptNo)
+		}
+		if stateErr != nil {
+			return nil, gerror.Wrap(stateErr, err.Error())
 		}
 		return nil, err
 	}
-	if err = validateRedirect(mode, *redirect); err != nil {
-		_ = s.attempts.FailAndRelease(ctx, attemptNo)
-		return nil, err
-	}
 	if err = s.attempts.MarkSubmitted(ctx, attemptNo); err != nil {
-		_ = s.attempts.FailAndRelease(ctx, attemptNo)
+		// A local persistence error after provider acceptance must never
+		// downgrade callback success or release held funds.
 		return nil, err
 	}
 	return &Created{AttemptNo: attemptNo, StatusCode: "confirming", Redirect: *redirect, ExpiresAt: expiresAt}, nil

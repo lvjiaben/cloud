@@ -247,7 +247,10 @@ gfcli:
           plugin_idc_core_product_automation_interface_instance,
           plugin_idc_core_product_automation_interface_configuration_revision,
           plugin_idc_core_product_automation_interface_secret_reference,
-          plugin_idc_core_catalog_product_version_configuration
+          plugin_idc_core_catalog_product_version_configuration,
+          plugin_idc_core_product_directory,
+          plugin_idc_core_product_directory_membership,
+          plugin_idc_core_product_directory_visibility
         removePrefix: "plugin_idc_core_"
         importPrefix: "lina-plugin-idc-core/backend/internal"
         descriptionTag: true

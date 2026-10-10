@@ -1,0 +1,26 @@
+{
+  "menu": "My services",
+  "all": "All services",
+  "product": "Product",
+  "status": "Status",
+  "startedAt": "Started",
+  "expiresAt": "Expires",
+  "actions": "Actions",
+  "viewOrder": "View order",
+  "noExpiry": "No expiry",
+  "empty": "No product directories configured",
+  "loadFailed": "Unable to load directories",
+  "retry": "Retry",
+  "states": {
+    "pending": "Pending",
+    "active": "Active",
+    "suspended": "Suspended",
+    "expired": "Expired",
+    "terminated": "Terminated",
+    "cancelled": "Cancelled",
+    "failed": "Failed",
+    "provisioning": "Provisioning",
+    "pending_activation": "Pending activation"
+  },
+  "notStarted": "Not started"
+}

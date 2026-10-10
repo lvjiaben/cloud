@@ -17,6 +17,9 @@ const (
 // adminPermissionCatalog is the exhaustive set of concrete IDC management
 // permissions owned by the compiled plugin suite.
 var adminPermissionCatalog = [...]string{
+	"idc:admin:product-directory:list",
+	"idc:admin:product-directory:create",
+	"idc:admin:product-directory:update",
 	"idc:admin:customer:list",
 	"idc:admin:customer:query",
 	"idc:admin:customer:update",

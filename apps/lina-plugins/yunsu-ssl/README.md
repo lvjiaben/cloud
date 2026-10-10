@@ -33,12 +33,14 @@ Certificate-chain download uses a host-owned, two-minute, one-use ticket. The ho
 
 ## Build and test
 
-```powershell
-$env:GOWORK='off'
-go test ./...
-$env:GOWORK=$null
-Set-Location E:\golang\cloud
-go run ./hack/tools/linactl wasm dir=apps/lina-plugins/yunsu-ssl out=temp/output/yunsu-ssl
+Run from the repository root on Windows, Linux, or macOS:
+
+```text
+go run ./hack/tools/linactl build dir=apps/lina-plugins/yunsu-ssl
+go run ./hack/tools/linactl test dir=apps/lina-plugins/yunsu-ssl
+pnpm --dir apps/lina-plugins/yunsu-ssl/frontend test
 ```
+
+The `build` command installs the locked frontend dependencies, builds both certificate pages, and embeds them into `temp/output/yunsu-ssl.wasm`. A clean checkout must use `build` before the low-level `wasm` packaging command; `wasm` alone requires the declared `frontend/dist` assets to exist. Upload the package in plugin management, install it, then enable it to expose the administration and customer surfaces. Supplier credentials and certificate products are configured separately; enabling the plugin does not create a supplier order.
 
 Production verification requires a lawful isolated Yunsu account and dedicated test certificate orders. Existing customer certificates must never be used.

@@ -1,6 +1,6 @@
 id: idc-zjmfcloud
 name: IDC ZJMFCloud Provider
-version: v0.2.5
+version: v0.2.6
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -19,10 +19,12 @@ i18n:
       nativeName: 简体中文
 dependencies:
   plugins:
+    - id: vben-adapter
+      version: "=0.1.0"
     - id: idc-core
       version: ">=0.1.85 <1.0.0"
     - id: idc-resource
-      version: ">=0.1.21 <1.0.0"
+      version: ">=0.1.26 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -172,10 +174,12 @@ admin_surfaces:
     version: v1
     title: 魔方云服务器管理
     icon: lucide:server-cog
-    permission: idc:admin:resource:server:view
+    permission: idc:admin:resource:server-batch:view
     slot: admin.resource-operations
     route: zjmfcloud-servers
     entry: admin/server-management/index.html
+    bridge_capabilities:
+      - zjmfcloud-servers.admin.v1
     status: active
 
 customer_surfaces:

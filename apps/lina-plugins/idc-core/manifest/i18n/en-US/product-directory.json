@@ -1,0 +1,20 @@
+{
+  "plugin.idc-core.productDirectory.name": "Directory",
+  "plugin.idc-core.productDirectory.productCount": "Linked products",
+  "plugin.idc-core.productDirectory.sortOrder": "Sort order",
+  "plugin.idc-core.productDirectory.status": "Status",
+  "plugin.idc-core.productDirectory.actions": "Actions",
+  "plugin.idc-core.productDirectory.create": "Create directory",
+  "plugin.idc-core.productDirectory.edit": "Edit directory",
+  "plugin.idc-core.productDirectory.enabled": "Enabled",
+  "plugin.idc-core.productDirectory.disabled": "Disabled",
+  "plugin.idc-core.productDirectory.nameZhCn": "Chinese name",
+  "plugin.idc-core.productDirectory.nameEnUs": "English name",
+  "plugin.idc-core.productDirectory.products": "Linked products",
+  "plugin.idc-core.productDirectory.productSearch": "Search products by name (up to 200)",
+  "plugin.idc-core.productDirectory.retainedProduct": "Product name unavailable",
+  "plugin.idc-core.productDirectory.lookupFailed": "Product options are unavailable. Close and retry.",
+  "plugin.idc-core.productDirectory.saved": "Directory saved",
+  "plugin.idc-core.productDirectory.note": "Directories appear as customer-center menu entries for purchased services associated with their products. Purchase navigation uses separate sales categories. Disabling a directory does not affect services or billing.",
+  "plugin.idc-core.productDirectory.associationNote": "A product belongs to one customer directory. Association changes preserve orders, prices, and service permissions."
+}

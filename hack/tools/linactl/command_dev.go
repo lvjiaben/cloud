@@ -93,7 +93,7 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	}
 
 	if !skipWasm {
-		if err = runWasm(ctx, a, commandInput{Params: map[string]string{"out": filepath.Join(a.root, "temp", "output")}}); err != nil {
+		if err = buildDevDynamicPlugins(ctx, a, env); err != nil {
 			return err
 		}
 	}
@@ -154,6 +154,22 @@ func runDev(ctx context.Context, a *app, input commandInput) error {
 	}
 
 	return runStatus(ctx, a, stopInput)
+}
+
+// buildDevDynamicPlugins generates declared plugin assets before packing WASM.
+// Source plugins use their development frontend and are not rebuilt here.
+func buildDevDynamicPlugins(ctx context.Context, a *app, env []string) error {
+	ids, err := dynamicPlugins(a.root)
+	if err != nil {
+		return err
+	}
+	options := buildOptions{OutputDir: filepath.Join(a.root, "temp", "output")}
+	for _, id := range ids {
+		if err = runOnePluginBuild(ctx, a, filepath.Join(a.root, "apps", "lina-plugins", id), env, options); err != nil {
+			return fmt.Errorf("build development dynamic plugin %s: %w", id, err)
+		}
+	}
+	return nil
 }
 
 // ensureFrontendDeps delegates frontend dependency checks to the frontend

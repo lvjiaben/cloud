@@ -1,0 +1,666 @@
+{
+  "source": "AGENTS-era user-preferences.md at migration",
+  "source_sha256": "d64e4a1e162ced69ac0e814c895bdfd487abe06c3afcc2efa10bdf0da147087c",
+  "source_bytes": 324071,
+  "sections": [
+    {
+      "file": "00-title.md",
+      "title": "用户偏好与产品体验规则",
+      "source_start_line": 1,
+      "source_lines": 2,
+      "source_bytes": 37,
+      "source_sha256": "9180967fa0c3331d3956af015ce8a0872dd552e2bf85a7717164f38bfbd7c6ec",
+      "migration_sha256": "9180967fa0c3331d3956af015ce8a0872dd552e2bf85a7717164f38bfbd7c6ec"
+    },
+    {
+      "file": "01-customer-interior.md",
+      "title": "客户内页视觉优化确认（2026-09-05）",
+      "source_start_line": 3,
+      "source_lines": 7,
+      "source_bytes": 1040,
+      "source_sha256": "adf18a753ba2ca63a87c5f7027ec3754d848c2427bd9e1a80e984e2559d39d51",
+      "migration_sha256": "adf18a753ba2ca63a87c5f7027ec3754d848c2427bd9e1a80e984e2559d39d51"
+    },
+    {
+      "file": "02-scope.md",
+      "title": "适用范围",
+      "source_start_line": 10,
+      "source_lines": 10,
+      "source_bytes": 502,
+      "source_sha256": "da74ccf7b936719399d0a73538624e87aaa920ee7e63df6e7ad759cc3a67b392",
+      "migration_sha256": "da74ccf7b936719399d0a73538624e87aaa920ee7e63df6e7ad759cc3a67b392"
+    },
+    {
+      "file": "03-communication.md",
+      "title": "沟通偏好",
+      "source_start_line": 20,
+      "source_lines": 11,
+      "source_bytes": 1687,
+      "source_sha256": "0ee336374777ec01ad0fb2d40cf232920d7e76d74508b68beac4a6806f3d2168",
+      "migration_sha256": "0ee336374777ec01ad0fb2d40cf232920d7e76d74508b68beac4a6806f3d2168"
+    },
+    {
+      "file": "04-local-project.md",
+      "title": "本地私有项目约定",
+      "source_start_line": 31,
+      "source_lines": 7,
+      "source_bytes": 366,
+      "source_sha256": "5a153df77a3190b95f03523f54cc861c0cd867f00c410ee89246f11b55027463",
+      "migration_sha256": "5a153df77a3190b95f03523f54cc861c0cd867f00c410ee89246f11b55027463"
+    },
+    {
+      "file": "05-development-workflow.md",
+      "title": "开发流程要求",
+      "source_start_line": 38,
+      "source_lines": 8,
+      "source_bytes": 589,
+      "source_sha256": "9b733d5d861ca04d8035b876c8fb162d35fa880659fa45e031e3198ed921a57d",
+      "migration_sha256": "9b733d5d861ca04d8035b876c8fb162d35fa880659fa45e031e3198ed921a57d"
+    },
+    {
+      "file": "06-memory-maintenance.md",
+      "title": "业务记忆维护要求",
+      "source_start_line": 46,
+      "source_lines": 7,
+      "source_bytes": 754,
+      "source_sha256": "579c2b5581fbcbfea75f8049e69b6d5f97591b0836bfe501867dec95c7964815",
+      "migration_sha256": "579c2b5581fbcbfea75f8049e69b6d5f97591b0836bfe501867dec95c7964815"
+    },
+    {
+      "file": "07-requirements.md",
+      "title": "需求分析原则",
+      "source_start_line": 53,
+      "source_lines": 8,
+      "source_bytes": 1029,
+      "source_sha256": "49f6b3d14e4c4aa632f322991392e48aa48e8baeed00c487b9a83a0dc5a7325d",
+      "migration_sha256": "5bf8066e4ac6fda80ef371a91a96871006cd1ac526c3c6f3e23912870bc4201f"
+    },
+    {
+      "file": "08-clarification.md",
+      "title": "强制需求澄清门禁",
+      "source_start_line": 61,
+      "source_lines": 11,
+      "source_bytes": 2404,
+      "source_sha256": "00bf3ff19d363af303393bbc1a32cea4af28f98b722beca273ddc74ef073a981",
+      "migration_sha256": "00bf3ff19d363af303393bbc1a32cea4af28f98b722beca273ddc74ef073a981"
+    },
+    {
+      "file": "09-user-experience.md",
+      "title": "用户体验原则",
+      "source_start_line": 72,
+      "source_lines": 8,
+      "source_bytes": 664,
+      "source_sha256": "1b44d91860a90c783b2716f884aef2fb182c63cd182b1f277a44525d169337d1",
+      "migration_sha256": "1b44d91860a90c783b2716f884aef2fb182c63cd182b1f277a44525d169337d1"
+    },
+    {
+      "file": "10-frontend-verification.md",
+      "title": "前端与真实验证偏好",
+      "source_start_line": 80,
+      "source_lines": 21,
+      "source_bytes": 7899,
+      "source_sha256": "47e2e372652b83018e746f738fe92107c054dbe880a8c3577c02a5beef86339b",
+      "migration_sha256": "47e2e372652b83018e746f738fe92107c054dbe880a8c3577c02a5beef86339b"
+    },
+    {
+      "file": "11-customer-center.md",
+      "title": "用户端要求",
+      "source_start_line": 101,
+      "source_lines": 25,
+      "source_bytes": 10186,
+      "source_sha256": "1547e8ff2ea8370a14fb1c332be9b098b6b2b7ee27256b274f87f684d82301a9",
+      "migration_sha256": "1547e8ff2ea8370a14fb1c332be9b098b6b2b7ee27256b274f87f684d82301a9"
+    },
+    {
+      "file": "12-business-baseline.md",
+      "title": "服务器运营平台业务基线",
+      "source_start_line": 126,
+      "source_lines": 50,
+      "source_bytes": 21416,
+      "source_sha256": "2b4b7599fb9a6f65e7991fc0e763d8b831a8f01f5cf42b22a4f9597200a74314",
+      "migration_sha256": "2b4b7599fb9a6f65e7991fc0e763d8b831a8f01f5cf42b22a4f9597200a74314"
+    },
+    {
+      "file": "13-architecture.md",
+      "title": "正式设计架构决策",
+      "source_start_line": 176,
+      "source_lines": 50,
+      "source_bytes": 26558,
+      "source_sha256": "fc2f761776425aee7778cb60dfd591c625f4f759846e201e89b841e30b5bded6",
+      "migration_sha256": "fc2f761776425aee7778cb60dfd591c625f4f759846e201e89b841e30b5bded6"
+    },
+    {
+      "file": "14-integrations.md",
+      "title": "第三方服务对接决策",
+      "source_start_line": 226,
+      "source_lines": 52,
+      "source_bytes": 34807,
+      "source_sha256": "d44f2e04ef8e914122b8ced8a8979582719a99ba49254e7a183d82c99c866c07",
+      "migration_sha256": "d44f2e04ef8e914122b8ced8a8979582719a99ba49254e7a183d82c99c866c07"
+    },
+    {
+      "file": "15-content.md",
+      "title": "内容发布与可见范围长期规则",
+      "source_start_line": 278,
+      "source_lines": 22,
+      "source_bytes": 12291,
+      "source_sha256": "9a58d794be3879895d1091e43bdf545525c92bed65afba8d0a245e719b7e9a24",
+      "migration_sha256": "9a58d794be3879895d1091e43bdf545525c92bed65afba8d0a245e719b7e9a24"
+    },
+    {
+      "file": "16-notifications.md",
+      "title": "通知渠道要求",
+      "source_start_line": 300,
+      "source_lines": 34,
+      "source_bytes": 23013,
+      "source_sha256": "ca9c3e2ca6f63ef2379a9bd8a8d6d029ba53b51b619ee3bb7df9ea91cfe5fffc",
+      "migration_sha256": "ca9c3e2ca6f63ef2379a9bd8a8d6d029ba53b51b619ee3bb7df9ea91cfe5fffc"
+    },
+    {
+      "file": "17-ai.md",
+      "title": "AI业务要求",
+      "source_start_line": 334,
+      "source_lines": 9,
+      "source_bytes": 1257,
+      "source_sha256": "1a59001978109af699a5f9f3d48785014e68d494e2cac462e77b928ece23a642",
+      "migration_sha256": "1a59001978109af699a5f9f3d48785014e68d494e2cac462e77b928ece23a642"
+    },
+    {
+      "file": "18-performance.md",
+      "title": "当前运营重点与性能基线",
+      "source_start_line": 343,
+      "source_lines": 25,
+      "source_bytes": 8604,
+      "source_sha256": "b16dfe9d268f7685a5ea055dd7963fe5961835004e7b9e705da81df77883b22c",
+      "migration_sha256": "b16dfe9d268f7685a5ea055dd7963fe5961835004e7b9e705da81df77883b22c"
+    },
+    {
+      "file": "19-provider-production.md",
+      "title": "智简魔方生产验证边界",
+      "source_start_line": 368,
+      "source_lines": 17,
+      "source_bytes": 4314,
+      "source_sha256": "99bd80752ff7af8e0777a9ada9dc07f6440b9b085e62895dc175c89d918dd8e3",
+      "migration_sha256": "99bd80752ff7af8e0777a9ada9dc07f6440b9b085e62895dc175c89d918dd8e3"
+    },
+    {
+      "file": "20-references.md",
+      "title": "外部功能参考入口",
+      "source_start_line": 385,
+      "source_lines": 6,
+      "source_bytes": 869,
+      "source_sha256": "c277537bfd5e1d87f6c5350f195f8a054af2360793ddd3a7e78a6143b3fae65a",
+      "migration_sha256": "c277537bfd5e1d87f6c5350f195f8a054af2360793ddd3a7e78a6143b3fae65a"
+    },
+    {
+      "file": "21-verification.md",
+      "title": "验证和汇报要求",
+      "source_start_line": 391,
+      "source_lines": 9,
+      "source_bytes": 619,
+      "source_sha256": "2cffa5fb836d2b2d7ad716dc7d6068ddb4ff25ac7a89d211320cac512db11c0b",
+      "migration_sha256": "2cffa5fb836d2b2d7ad716dc7d6068ddb4ff25ac7a89d211320cac512db11c0b"
+    },
+    {
+      "file": "22-finance-boundaries.md",
+      "title": "交易与财务数据边界",
+      "source_start_line": 400,
+      "source_lines": 13,
+      "source_bytes": 2737,
+      "source_sha256": "532b12633ca7db294067e06759368cdde4afcb9980a7eca3c5432242cbb7ccfc",
+      "migration_sha256": "532b12633ca7db294067e06759368cdde4afcb9980a7eca3c5432242cbb7ccfc"
+    },
+    {
+      "file": "23-precedence.md",
+      "title": "优先规则",
+      "source_start_line": 413,
+      "source_lines": 5,
+      "source_bytes": 364,
+      "source_sha256": "bda565ec1e25af1933ddf6a1633145041b3b6a16f350cea0aacbb4c6f85a44f3",
+      "migration_sha256": "bda565ec1e25af1933ddf6a1633145041b3b6a16f350cea0aacbb4c6f85a44f3"
+    },
+    {
+      "file": "24-resource-coordinator.md",
+      "title": "资源任务执行协调器",
+      "source_start_line": 418,
+      "source_lines": 59,
+      "source_bytes": 27452,
+      "source_sha256": "dd800f6bd1319d240dd5f4beb2df63896d807448a93b2a71c931b12a44c922d3",
+      "migration_sha256": "dd800f6bd1319d240dd5f4beb2df63896d807448a93b2a71c931b12a44c922d3"
+    },
+    {
+      "file": "25-marketing.md",
+      "title": "营销优惠计算与名额规则",
+      "source_start_line": 477,
+      "source_lines": 7,
+      "source_bytes": 809,
+      "source_sha256": "8ffbaedc232fedfcd716f050a18a75fb2722dbce0c49650e05058f0eb8a038f4",
+      "migration_sha256": "8ffbaedc232fedfcd716f050a18a75fb2722dbce0c49650e05058f0eb8a038f4"
+    },
+    {
+      "file": "26-checkout-dependencies.md",
+      "title": "最终报价与结账依赖",
+      "source_start_line": 484,
+      "source_lines": 9,
+      "source_bytes": 2397,
+      "source_sha256": "5d83e6088c8d2c470a1cfe008dcd515773534b2dcb6a471fc488147162c18d52",
+      "migration_sha256": "5d83e6088c8d2c470a1cfe008dcd515773534b2dcb6a471fc488147162c18d52"
+    },
+    {
+      "file": "27-billing.md",
+      "title": "财务账单与分层账本",
+      "source_start_line": 493,
+      "source_lines": 13,
+      "source_bytes": 3017,
+      "source_sha256": "4e278b08082cec07f0f9b7d64a2da084b221efac4f6bcb7fc5452c69e80fccf4",
+      "migration_sha256": "4e278b08082cec07f0f9b7d64a2da084b221efac4f6bcb7fc5452c69e80fccf4"
+    },
+    {
+      "file": "28-atomic-checkout.md",
+      "title": "原子结账与库存预留规则",
+      "source_start_line": 506,
+      "source_lines": 8,
+      "source_bytes": 2168,
+      "source_sha256": "91faffdc681b46894af2d8e5e68d7c593b5f0f900605117455d04d88f8ab84ac",
+      "migration_sha256": "91faffdc681b46894af2d8e5e68d7c593b5f0f900605117455d04d88f8ab84ac"
+    },
+    {
+      "file": "29-order-lifecycle.md",
+      "title": "订单取消、到期与风险审核规则",
+      "source_start_line": 514,
+      "source_lines": 9,
+      "source_bytes": 2384,
+      "source_sha256": "2203f98ebc61fa5deb360bdf4bc0724df2a27bde2bc7ef7530e5d0ba568c1bf1",
+      "migration_sha256": "2203f98ebc61fa5deb360bdf4bc0724df2a27bde2bc7ef7530e5d0ba568c1bf1"
+    },
+    {
+      "file": "30-first-payment-identity.md",
+      "title": "首次付款实名门禁与订单恢复规则",
+      "source_start_line": 523,
+      "source_lines": 7,
+      "source_bytes": 1287,
+      "source_sha256": "1c171e34afa6bd55593bbe94bdbdf86ebc105f0b1b35d6cc3190e1ac63748343",
+      "migration_sha256": "1c171e34afa6bd55593bbe94bdbdf86ebc105f0b1b35d6cc3190e1ac63748343"
+    },
+    {
+      "file": "31-customer-commerce.md",
+      "title": "客户交易门户与后台订单目录规则",
+      "source_start_line": 530,
+      "source_lines": 9,
+      "source_bytes": 2267,
+      "source_sha256": "61c5624d91bf308af655e122b147d921f86ca06a2332e82f348eb49ce432a5e4",
+      "migration_sha256": "61c5624d91bf308af655e122b147d921f86ca06a2332e82f348eb49ce432a5e4"
+    },
+    {
+      "file": "32-assisted-orders.md",
+      "title": "后台协助报价与订单规则",
+      "source_start_line": 539,
+      "source_lines": 6,
+      "source_bytes": 863,
+      "source_sha256": "5b2c067f2c792b0591b49fd92fe29e7b7a0221990f7d55f51da8759e137df910",
+      "migration_sha256": "5b2c067f2c792b0591b49fd92fe29e7b7a0221990f7d55f51da8759e137df910"
+    },
+    {
+      "file": "33-invoice-review.md",
+      "title": "账单变换与财务复核长期规则",
+      "source_start_line": 545,
+      "source_lines": 7,
+      "source_bytes": 755,
+      "source_sha256": "8c90719ea38a80439ec2c660556a8314f1bf3baa44f51aebdec5e4c6776c2044",
+      "migration_sha256": "8c90719ea38a80439ec2c660556a8314f1bf3baa44f51aebdec5e4c6776c2044"
+    },
+    {
+      "file": "34-renewal.md",
+      "title": "服务期限与续费履约长期规则",
+      "source_start_line": 552,
+      "source_lines": 19,
+      "source_bytes": 6066,
+      "source_sha256": "2cd1d83a80f5648343269dd5f9cf6bb1f884370a97d7314d3409e649d908e645",
+      "migration_sha256": "2cd1d83a80f5648343269dd5f9cf6bb1f884370a97d7314d3409e649d908e645"
+    },
+    {
+      "file": "35-finance-workspace.md",
+      "title": "财务工作台与客户财务中心规则",
+      "source_start_line": 571,
+      "source_lines": 14,
+      "source_bytes": 3300,
+      "source_sha256": "93f4f16521c650d78b253b5612d2043fce0768cc988fad38d1731fca9b102e23",
+      "migration_sha256": "93f4f16521c650d78b253b5612d2043fce0768cc988fad38d1731fca9b102e23"
+    },
+    {
+      "file": "36-refunds.md",
+      "title": "在线退款长期规则",
+      "source_start_line": 585,
+      "source_lines": 10,
+      "source_bytes": 2697,
+      "source_sha256": "1701d4848963ac5d76f99677174f3c7c7ff82d90e17aa184cbc60c84082a9e57",
+      "migration_sha256": "1701d4848963ac5d76f99677174f3c7c7ff82d90e17aa184cbc60c84082a9e57"
+    },
+    {
+      "file": "37-credit.md",
+      "title": "信用账户与坏账规则",
+      "source_start_line": 595,
+      "source_lines": 18,
+      "source_bytes": 6482,
+      "source_sha256": "95976d7af3a7fe8a08b0c6b60c06f46bbf935a3806e2df1a5845144ca39890ac",
+      "migration_sha256": "95976d7af3a7fe8a08b0c6b60c06f46bbf935a3806e2df1a5845144ca39890ac"
+    },
+    {
+      "file": "38-credit-gates.md",
+      "title": "信用管理接口与高风险门禁长期规则",
+      "source_start_line": 613,
+      "source_lines": 8,
+      "source_bytes": 1579,
+      "source_sha256": "1a42a5e045dc3d29b53ae118c3dbc9cb45c396251ca5dbffd1d85270a76ea93c",
+      "migration_sha256": "1a42a5e045dc3d29b53ae118c3dbc9cb45c396251ca5dbffd1d85270a76ea93c"
+    },
+    {
+      "file": "39-settlement.md",
+      "title": "统一财务结清与履约触发长期规则",
+      "source_start_line": 621,
+      "source_lines": 16,
+      "source_bytes": 5651,
+      "source_sha256": "7f156b0d2e648d70c7a7401dfa4424a6235053fc3d284d20600fd4f3a60466e0",
+      "migration_sha256": "7f156b0d2e648d70c7a7401dfa4424a6235053fc3d284d20600fd4f3a60466e0"
+    },
+    {
+      "file": "40-trial.md",
+      "title": "通用试用资格长期规则",
+      "source_start_line": 637,
+      "source_lines": 9,
+      "source_bytes": 2236,
+      "source_sha256": "0488bb57ec0ac22f1b8e904193e6e1f6606808ea028de7bd8b629719442f3cea",
+      "migration_sha256": "0488bb57ec0ac22f1b8e904193e6e1f6606808ea028de7bd8b629719442f3cea"
+    },
+    {
+      "file": "41-provider-unknown.md",
+      "title": "Provider 未知结果与保护模式长期规则",
+      "source_start_line": 646,
+      "source_lines": 7,
+      "source_bytes": 945,
+      "source_sha256": "0c9276b845a2b056bfd7c14615ca02a6a6fd2aa2ee03c6ee55a08d9c7bc422af",
+      "migration_sha256": "0c9276b845a2b056bfd7c14615ca02a6a6fd2aa2ee03c6ee55a08d9c7bc422af"
+    },
+    {
+      "file": "42-server-operations.md",
+      "title": "服务器日常操作长期规则",
+      "source_start_line": 653,
+      "source_lines": 14,
+      "source_bytes": 3464,
+      "source_sha256": "cb248162dea5e28291369d0f575d03d155e76d31c10caa9e06cebfddfb2977d9",
+      "migration_sha256": "cb248162dea5e28291369d0f575d03d155e76d31c10caa9e06cebfddfb2977d9"
+    },
+    {
+      "file": "43-rescue.md",
+      "title": "Provider 救援模式长期规则",
+      "source_start_line": 667,
+      "source_lines": 5,
+      "source_bytes": 538,
+      "source_sha256": "67340052e17d43bad3fe54ee626bbc9caa2ef3ca07968f926d7257bbde68fee1",
+      "migration_sha256": "67340052e17d43bad3fe54ee626bbc9caa2ef3ca07968f926d7257bbde68fee1"
+    },
+    {
+      "file": "44-security-groups.md",
+      "title": "Provider 安全组长期规则",
+      "source_start_line": 672,
+      "source_lines": 6,
+      "source_bytes": 817,
+      "source_sha256": "f5ac194b0c878503267be8fa2af6180ad7fcf15e34c68e7c17f8d6665a4182a3",
+      "migration_sha256": "f5ac194b0c878503267be8fa2af6180ad7fcf15e34c68e7c17f8d6665a4182a3"
+    },
+    {
+      "file": "45-browser-authorization.md",
+      "title": "本机与浏览器操作授权",
+      "source_start_line": 678,
+      "source_lines": 5,
+      "source_bytes": 629,
+      "source_sha256": "c7a7524cf66e3bc1f4c0032218c1f1895604a690cbbba0f25bcaecf40cc0d350",
+      "migration_sha256": "c7a7524cf66e3bc1f4c0032218c1f1895604a690cbbba0f25bcaecf40cc0d350"
+    },
+    {
+      "file": "46-nat.md",
+      "title": "Provider NAT 长期规则",
+      "source_start_line": 683,
+      "source_lines": 6,
+      "source_bytes": 809,
+      "source_sha256": "e0c2ed883bf1588b6f35b7125dac2d2c18c6396374493d171b2afb12df520edd",
+      "migration_sha256": "e0c2ed883bf1588b6f35b7125dac2d2c18c6396374493d171b2afb12df520edd"
+    },
+    {
+      "file": "47-virtual-media.md",
+      "title": "Provider 虚拟介质长期规则",
+      "source_start_line": 689,
+      "source_lines": 6,
+      "source_bytes": 716,
+      "source_sha256": "caf6b2c09237e355a74a1f73c74202637b957737d0ce43106f609e430f3e3cce",
+      "migration_sha256": "caf6b2c09237e355a74a1f73c74202637b957737d0ce43106f609e430f3e3cce"
+    },
+    {
+      "file": "48-traffic-pack.md",
+      "title": "Provider 流量包长期规则",
+      "source_start_line": 695,
+      "source_lines": 6,
+      "source_bytes": 727,
+      "source_sha256": "5b642d80a7f6a28fd599b95f1e9c8f589198482c9e24187704781fdd486d6b8a",
+      "migration_sha256": "5b642d80a7f6a28fd599b95f1e9c8f589198482c9e24187704781fdd486d6b8a"
+    },
+    {
+      "file": "49-server-capabilities.md",
+      "title": "服务器附属能力长期规则",
+      "source_start_line": 701,
+      "source_lines": 18,
+      "source_bytes": 5837,
+      "source_sha256": "ef65f2d961724d471a3712f1601630c8bb8fe6405d5856085d529488edac4a53",
+      "migration_sha256": "ef65f2d961724d471a3712f1601630c8bb8fe6405d5856085d529488edac4a53"
+    },
+    {
+      "file": "50-ip-change.md",
+      "title": "客户自助换 IP 长期规则",
+      "source_start_line": 719,
+      "source_lines": 7,
+      "source_bytes": 1561,
+      "source_sha256": "28b79673457500589b91db38965c8ff3b5edb01e6858373afe847d555da9561d",
+      "migration_sha256": "28b79673457500589b91db38965c8ff3b5edb01e6858373afe847d555da9561d"
+    },
+    {
+      "file": "51-upstream-tickets.md",
+      "title": "Provider 上游工单长期边界",
+      "source_start_line": 726,
+      "source_lines": 7,
+      "source_bytes": 1586,
+      "source_sha256": "3cdd0061ec27a6dbaaaa240a6258e701aa3de8fde85a943e9d53a6c51dde2d79",
+      "migration_sha256": "3cdd0061ec27a6dbaaaa240a6258e701aa3de8fde85a943e9d53a6c51dde2d79"
+    },
+    {
+      "file": "52-ticket-visibility.md",
+      "title": "工单创建与查看范围长期规则",
+      "source_start_line": 733,
+      "source_lines": 9,
+      "source_bytes": 1856,
+      "source_sha256": "1297bcc509284a6d755f36b48b2fb2ac56e17fb9f5cd0f43e4dfcadd947f0868",
+      "migration_sha256": "1297bcc509284a6d755f36b48b2fb2ac56e17fb9f5cd0f43e4dfcadd947f0868"
+    },
+    {
+      "file": "53-ticket-fields.md",
+      "title": "工单自定义字段与长期权益关联规则",
+      "source_start_line": 742,
+      "source_lines": 7,
+      "source_bytes": 2985,
+      "source_sha256": "1d6ee7ca2f9b66789099913d68801dc9c427011f6a901138ff4a6c90182bc239",
+      "migration_sha256": "1d6ee7ca2f9b66789099913d68801dc9c427011f6a901138ff4a6c90182bc239"
+    },
+    {
+      "file": "54-ticket-routing.md",
+      "title": "工单路由、领取与转派长期规则",
+      "source_start_line": 749,
+      "source_lines": 6,
+      "source_bytes": 1549,
+      "source_sha256": "2160b99005f2d37dd7a6fe839ed40b3a4fd2017b992c301286026b25374e2aae",
+      "migration_sha256": "2160b99005f2d37dd7a6fe839ed40b3a4fd2017b992c301286026b25374e2aae"
+    },
+    {
+      "file": "55-ticket-escalation.md",
+      "title": "工单合并、拆分与升级长期规则",
+      "source_start_line": 755,
+      "source_lines": 6,
+      "source_bytes": 1927,
+      "source_sha256": "adf8abca8e9d2737e2c94a9e99c0cc3a818b02c4da6100a94cd78a7ed96979f6",
+      "migration_sha256": "adf8abca8e9d2737e2c94a9e99c0cc3a818b02c4da6100a94cd78a7ed96979f6"
+    },
+    {
+      "file": "56-ticket-sla.md",
+      "title": "工单 SLA 长期规则",
+      "source_start_line": 761,
+      "source_lines": 8,
+      "source_bytes": 1964,
+      "source_sha256": "6eb719f06539162433c601598364718a5c1ca4f1f951974bf94e061efafe03c3",
+      "migration_sha256": "6eb719f06539162433c601598364718a5c1ca4f1f951974bf94e061efafe03c3"
+    },
+    {
+      "file": "57-ticket-notes.md",
+      "title": "工单内部备注、附件与上游转发长期规则",
+      "source_start_line": 769,
+      "source_lines": 7,
+      "source_bytes": 2604,
+      "source_sha256": "186cbc9fc055223200d12cd0131fbba2ffc307b521184402a88df818da172958",
+      "migration_sha256": "186cbc9fc055223200d12cd0131fbba2ffc307b521184402a88df818da172958"
+    },
+    {
+      "file": "58-ticket-states.md",
+      "title": "工单状态长期规则",
+      "source_start_line": 776,
+      "source_lines": 9,
+      "source_bytes": 3379,
+      "source_sha256": "970495ca1850a0b15a9d0ecdd1959ae48f79446254fd8bfbb33dd56f9ef36ad2",
+      "migration_sha256": "970495ca1850a0b15a9d0ecdd1959ae48f79446254fd8bfbb33dd56f9ef36ad2"
+    },
+    {
+      "file": "59-provider-health.md",
+      "title": "Provider 健康保护长期规则",
+      "source_start_line": 785,
+      "source_lines": 10,
+      "source_bytes": 2075,
+      "source_sha256": "11595111c4ac6a6448892cf5713560f515a743923e28ceeb454171992a6dbc90",
+      "migration_sha256": "11595111c4ac6a6448892cf5713560f515a743923e28ceeb454171992a6dbc90"
+    },
+    {
+      "file": "60-provider-takeover.md",
+      "title": "Provider 任务人工接管长期规则",
+      "source_start_line": 795,
+      "source_lines": 6,
+      "source_bytes": 749,
+      "source_sha256": "61382cab79aab53501214c7431057cefb38f5d52b8b9ece41074083d32d9b2a8",
+      "migration_sha256": "61382cab79aab53501214c7431057cefb38f5d52b8b9ece41074083d32d9b2a8"
+    },
+    {
+      "file": "61-sms.md",
+      "title": "全系统短信通道长期规则",
+      "source_start_line": 801,
+      "source_lines": 7,
+      "source_bytes": 1348,
+      "source_sha256": "4b2bca08a3e3385b58bacc2c8a1a6505ec1e8801baa8edec7ed27b3f85523f3d",
+      "migration_sha256": "4b2bca08a3e3385b58bacc2c8a1a6505ec1e8801baa8edec7ed27b3f85523f3d"
+    },
+    {
+      "file": "62-personal-identity.md",
+      "title": "个人实名认证长期规则",
+      "source_start_line": 808,
+      "source_lines": 18,
+      "source_bytes": 4934,
+      "source_sha256": "68fb3937cd42f7fbb6467aa75e494c5896e7f6083f9f11816f7debd65589e636",
+      "migration_sha256": "68fb3937cd42f7fbb6467aa75e494c5896e7f6083f9f11816f7debd65589e636"
+    },
+    {
+      "file": "63-enterprise-identity.md",
+      "title": "企业实名认证长期规则",
+      "source_start_line": 826,
+      "source_lines": 17,
+      "source_bytes": 4805,
+      "source_sha256": "37dbdafd095729b4f3a6231bc0644f662bf97d60cc26169ba726f875cbc313e4",
+      "migration_sha256": "37dbdafd095729b4f3a6231bc0644f662bf97d60cc26169ba726f875cbc313e4"
+    },
+    {
+      "file": "64-plugin-exceptions.md",
+      "title": "插件开发门禁例外记录",
+      "source_start_line": 843,
+      "source_lines": 4,
+      "source_bytes": 361,
+      "source_sha256": "b20462320ee588d571798ac1f8488819106de9e7602cc8779e014cbfb564d0ac",
+      "migration_sha256": "b20462320ee588d571798ac1f8488819106de9e7602cc8779e014cbfb564d0ac"
+    },
+    {
+      "file": "65-identity-ui.md",
+      "title": "企业认证页面与浏览器状态长期规则",
+      "source_start_line": 847,
+      "source_lines": 8,
+      "source_bytes": 1687,
+      "source_sha256": "2f8ad1414b047416650b265854cf716294892704bd048990eb797e69cf76389e",
+      "migration_sha256": "2f8ad1414b047416650b265854cf716294892704bd048990eb797e69cf76389e"
+    },
+    {
+      "file": "66-gateway-subject.md",
+      "title": "本地合规网关供应商主体长期规则",
+      "source_start_line": 855,
+      "source_lines": 20,
+      "source_bytes": 5607,
+      "source_sha256": "a80e7209595af6a571516071bbd5dbe3d48fb1e42955294590a659278b3ff4f6",
+      "migration_sha256": "a80e7209595af6a571516071bbd5dbe3d48fb1e42955294590a659278b3ff4f6"
+    },
+    {
+      "file": "67-gateway-auth.md",
+      "title": "本地合规网关业务请求认证长期规则",
+      "source_start_line": 875,
+      "source_lines": 17,
+      "source_bytes": 4296,
+      "source_sha256": "dd4f436f2320b61f1e27d026df9f600871971ac86996115ec91bf16f10873a1b",
+      "migration_sha256": "dd4f436f2320b61f1e27d026df9f600871971ac86996115ec91bf16f10873a1b"
+    },
+    {
+      "file": "68-gateway-callbacks.md",
+      "title": "本地合规网关回调与对账长期规则",
+      "source_start_line": 892,
+      "source_lines": 13,
+      "source_bytes": 4697,
+      "source_sha256": "9b69234e67005888a9ee530235f10e8e5467670d1cb4b39e682f78cd444910c1",
+      "migration_sha256": "9b69234e67005888a9ee530235f10e8e5467670d1cb4b39e682f78cd444910c1"
+    },
+    {
+      "file": "69-server-transfer.md",
+      "title": "服务器附属操作、变配与转移长期规则",
+      "source_start_line": 905,
+      "source_lines": 9,
+      "source_bytes": 1944,
+      "source_sha256": "b9fd1c88aa7f48f94d64a2ba20f55bbb6a57bdb3408f22dc7946023c96b58112",
+      "migration_sha256": "b9fd1c88aa7f48f94d64a2ba20f55bbb6a57bdb3408f22dc7946023c96b58112"
+    },
+    {
+      "file": "70-ssl.md",
+      "title": "SSL 证书插件长期规则",
+      "source_start_line": 914,
+      "source_lines": 6,
+      "source_bytes": 740,
+      "source_sha256": "9bc4c585de533182bc3fd621b475875369681e82e9584c0e2997600178be5977",
+      "migration_sha256": "9bc4c585de533182bc3fd621b475875369681e82e9584c0e2997600178be5977"
+    },
+    {
+      "file": "71-marketing-abuse.md",
+      "title": "营销反滥用复核长期规则",
+      "source_start_line": 920,
+      "source_lines": 36,
+      "source_bytes": 9359,
+      "source_sha256": "5944e59d98d860d547cd5c26190085efbb03a77cf2cb0c726079b83c315be42d",
+      "migration_sha256": "5944e59d98d860d547cd5c26190085efbb03a77cf2cb0c726079b83c315be42d"
+    },
+    {
+      "file": "72-customer-website-visual.md",
+      "title": "用户中心与官网视觉长期规则",
+      "source_start_line": 956,
+      "source_lines": 34,
+      "source_bytes": 12160,
+      "source_sha256": "6aa9e907b8e744e5ecd787805688792c489407070aaac25c36bd3ea77e5e833d",
+      "migration_sha256": "6aa9e907b8e744e5ecd787805688792c489407070aaac25c36bd3ea77e5e833d"
+    }
+  ],
+  "source_path": ".agents/rules/user-preferences.md",
+  "source_git_revision": "7b1da641258de8a3977cbe5b64e944a57ab21f76"
+}

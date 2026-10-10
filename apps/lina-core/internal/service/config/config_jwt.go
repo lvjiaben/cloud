@@ -4,6 +4,8 @@ package config
 
 import (
 	"context"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
@@ -24,6 +26,10 @@ func (s *serviceImpl) getStaticJwtConfig(ctx context.Context) *JwtConfig {
 		}
 		if secretVar := g.Cfg().MustGet(ctx, "jwt.secret"); secretVar != nil {
 			cfg.Secret = secretVar.String()
+		}
+		// An operator-provided environment secret overrides the public template.
+		if secret := strings.TrimSpace(os.Getenv("LINA_JWT_SECRET")); secret != "" {
+			cfg.Secret = secret
 		}
 		cfg.Expire = mustLoadDurationConfig(ctx, "jwt.expire", cfg.Expire)
 		return cfg

@@ -1,0 +1,20 @@
+{
+  "plugin.idc-core.productDirectory.name": "目录名称",
+  "plugin.idc-core.productDirectory.productCount": "关联商品数",
+  "plugin.idc-core.productDirectory.sortOrder": "排序",
+  "plugin.idc-core.productDirectory.status": "状态",
+  "plugin.idc-core.productDirectory.actions": "操作",
+  "plugin.idc-core.productDirectory.create": "新增目录",
+  "plugin.idc-core.productDirectory.edit": "编辑目录",
+  "plugin.idc-core.productDirectory.enabled": "启用",
+  "plugin.idc-core.productDirectory.disabled": "已停用",
+  "plugin.idc-core.productDirectory.nameZhCn": "中文名称",
+  "plugin.idc-core.productDirectory.nameEnUs": "英文名称",
+  "plugin.idc-core.productDirectory.products": "关联商品",
+  "plugin.idc-core.productDirectory.productSearch": "输入商品名称搜索（最多200个）",
+  "plugin.idc-core.productDirectory.retainedProduct": "商品名称暂不可用",
+  "plugin.idc-core.productDirectory.lookupFailed": "商品选项暂不可用，请关闭后重试",
+  "plugin.idc-core.productDirectory.saved": "目录已保存",
+  "plugin.idc-core.productDirectory.note": "目录将显示为用户中心菜单，点击后查看关联商品的已购服务。购买页使用独立销售分类。停用目录不会影响服务和账单。",
+  "plugin.idc-core.productDirectory.associationNote": "一个商品只能归属一个用户中心目录。调整关联不会修改订单、价格或服务权限。"
+}

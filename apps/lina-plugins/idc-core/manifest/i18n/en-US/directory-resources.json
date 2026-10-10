@@ -1,0 +1,27 @@
+{
+  "menu": {
+    "plugin:idc-core:product-directories": {
+      "title": "Product Directories"
+    },
+    "plugin:idc-core:product-directories:create": {
+      "title": "Create Product Directory"
+    },
+    "plugin:idc-core:product-directories:update": {
+      "title": "Update Product Directory"
+    }
+  },
+  "error": {
+    "idc": {
+      "product": {
+        "directory": {
+          "invalid": "The product directory configuration is invalid",
+          "not": {
+            "accessible": "The product directory is not accessible"
+          },
+          "conflict": "The directory changed or a product belongs to another directory; refresh and review its association",
+          "unavailable": "The product directory operation is temporarily unavailable"
+        }
+      }
+    }
+  }
+}

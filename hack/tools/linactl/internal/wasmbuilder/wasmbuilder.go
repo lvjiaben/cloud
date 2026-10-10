@@ -36,6 +36,9 @@ func buildRuntimeWasmArtifactFromSource(pluginDir string, outputDir string) (*Ru
 	if err != nil {
 		return nil, err
 	}
+	if err = validatePackagedFrontendAssets(manifest, frontendAssets); err != nil {
+		return nil, err
+	}
 	i18nAssets, err := collectI18NAssets(pluginDir, embeddedResources)
 	if err != nil {
 		return nil, err

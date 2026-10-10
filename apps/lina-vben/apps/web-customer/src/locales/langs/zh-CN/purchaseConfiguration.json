@@ -14,7 +14,9 @@
     "refresh": "刷新",
     "retry": "重试",
     "title": "商品选购",
-    "unavailable": "暂不可购买"
+    "unavailable": "暂不可购买",
+    "categories": "商品分类",
+    "allProducts": "全部商品"
   },
   "file": {
     "drag": "点击或拖拽文件到这里上传",

@@ -75,7 +75,7 @@ func TestEnterpriseAutoSignAuthorizationPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	database, cleanup := autoSignTestDatabase(t, ctx, dsn)
 	defer cleanup()
-	now := time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC)
+	now := time.Now().UTC().Truncate(time.Microsecond)
 	if _, err := database.Exec(ctx, `
 INSERT INTO plugin_idc_compliance_contract_template_version
   (tenant_id, template_no, version_no, name, status_code, scope_code, provider_merchant_seal_count, updated_at)
@@ -217,7 +217,11 @@ func autoSignTestDatabase(t *testing.T, ctx context.Context, dsn string) (gdb.DB
 	if _, err = admin.Exec(ctx, `CREATE SCHEMA "`+schema+`"`); err != nil {
 		t.Fatalf("create schema: %v", err)
 	}
-	database, err := gdb.New(gdb.ConfigNode{Link: dsn + "&search_path=" + schema})
+	separator := "?"
+	if strings.Contains(dsn, "?") {
+		separator = "&"
+	}
+	database, err := gdb.New(gdb.ConfigNode{Link: dsn + separator + "search_path=" + schema})
 	if err != nil {
 		t.Fatalf("open scoped PostgreSQL: %v", err)
 	}

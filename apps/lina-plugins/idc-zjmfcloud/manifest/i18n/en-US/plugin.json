@@ -1,4 +1,8 @@
 {
   "plugin.idc-zjmfcloud.name": "IDC ZJMFCloud Provider",
-  "plugin.idc-zjmfcloud.description": "Provides resource-owned product configuration discovery and ZJMF public-cloud v1 server operations."
+  "plugin.idc-zjmfcloud.description": "Provides resource-owned product configuration discovery and ZJMF public-cloud v1 server operations.",
+  "plugin.idc-zjmfcloud.admin.title": "ZJMFCloud servers",
+  "plugin.idc-zjmfcloud.admin.refresh": "Refresh",
+  "plugin.idc-zjmfcloud.admin.detail": "Server details",
+  "plugin.idc-zjmfcloud.admin.error": "Servers could not load. Check access or try again."
 }

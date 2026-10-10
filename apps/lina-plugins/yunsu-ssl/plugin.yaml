@@ -1,6 +1,6 @@
 id: yunsu-ssl
 name: Yunsu SSL Certificate Connector
-version: v0.3.5
+version: v0.3.6
 type: dynamic
 distribution: managed
 scope_nature: platform_only

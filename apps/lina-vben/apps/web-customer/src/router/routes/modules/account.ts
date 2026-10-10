@@ -32,6 +32,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('#/views/account/products/index.vue'),
         meta: {
           icon: 'lucide:shopping-bag',
+          fullPathKey: false,
           title: 'purchaseConfiguration.catalog.menu',
         },
         name: 'CustomerProductCatalog',
@@ -42,6 +43,20 @@ const routes: RouteRecordRaw[] = [
         meta: { hideInMenu: true, title: 'purchaseConfiguration.title' },
         name: 'CustomerProductConfiguration',
         path: '/account/products/:publicSlug/configure',
+      },
+      {
+        component: () =>
+          import('#/views/account/product-directories/index.vue'),
+        meta: { icon: 'lucide:folders', title: 'productDirectories.menu' },
+        name: 'CustomerProductDirectories',
+        path: '/account/product-directories',
+      },
+      {
+        component: () =>
+          import('#/views/account/product-directories/index.vue'),
+        meta: { hideInMenu: true, title: 'productDirectories.menu' },
+        name: 'CustomerProductDirectoryServices',
+        path: '/account/product-directories/:directoryNo',
       },
       {
         component: () => import('#/views/account/servers/index.vue'),

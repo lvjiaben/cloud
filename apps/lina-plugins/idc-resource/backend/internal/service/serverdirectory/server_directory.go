@@ -101,6 +101,7 @@ type Item struct {
 }
 
 type Page struct {
+	Total      int
 	Items      []Item
 	NextCursor string
 }

@@ -314,3 +314,35 @@ func provisionDynamicRequest() resourcecap.DynamicOperationRequest {
 		ProviderCorrelation:    &resourcecap.ProviderCorrelation{DownstreamID: 1001, DownstreamURL: "https://platform.example.test/api/plugins/idc-resource/provider-callback"},
 	}
 }
+
+// Native upstream CartController returns both invoiceid and hostid for unpaid
+// downstream orders; the host must not bypass apply_credit settlement.
+func TestProvisionUnpaidHostReferenceStillAppliesCredit(t *testing.T) {
+	supplier := newNativeFinanceSupplier(t)
+	supplier.settleBody = `{"status":200,"data":{"invoiceid":71,"hostid":[91]}}`
+	result := executeProvisionAgainstSupplier(t, supplier)
+	if result.Status != resourcecap.TaskStatusSucceeded || result.ExternalResourceRef != "91" || supplier.creditCount != 1 {
+		t.Fatalf("unpaid native order bypassed settlement: status=%s host=%s credits=%d", result.Status, result.ExternalResourceRef, supplier.creditCount)
+	}
+}
+
+func TestProvisionUnpaidHostReferenceWithRejectedCreditNeverSucceeds(t *testing.T) {
+	supplier := newNativeFinanceSupplier(t)
+	supplier.settleBody = `{"status":200,"data":{"invoiceid":71,"hostid":[91]}}`
+	supplier.creditBody = `{"status":400,"msg":"insufficient credit"}`
+	result := executeProvisionAgainstSupplier(t, supplier)
+	if result.Status != resourcecap.TaskStatusFailed || supplier.creditCount != 1 {
+		t.Fatalf("unpaid native order became provisioned: status=%s credits=%d", result.Status, supplier.creditCount)
+	}
+}
+
+func TestProvisionPartialCreditResponseRemainsUnknown(t *testing.T) {
+	supplier := newNativeFinanceSupplier(t)
+	supplier.settleBody = `{"status":200,"data":{"invoiceid":71,"hostid":[91]}}`
+	supplier.creditBody = `{"status":200,"data":{"invoiceid":71,"hostid":[91]}}`
+	result := executeProvisionAgainstSupplier(t, supplier)
+	assertUnknownProvisionResult(t, result)
+	if supplier.creditCount != 1 {
+		t.Fatal("credit was retried or skipped")
+	}
+}

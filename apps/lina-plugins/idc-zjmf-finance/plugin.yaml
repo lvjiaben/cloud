@@ -1,6 +1,6 @@
 id: idc-zjmf-finance
 name: ZJMF Finance Native Provider
-version: v0.1.4
+version: v0.1.5
 type: dynamic
 distribution: managed
 scope_nature: platform_only

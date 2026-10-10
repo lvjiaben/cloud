@@ -110,3 +110,21 @@ jobs:
           LINA_TEST_PGSQL_LINK: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro?sslmode=disable"
         run: |
           make test.go plugins="${{ inputs.plugins }}" race=true verbose=true
+
+      # Required integration coverage must run against the disposable CI database.
+      # 必跑的 IDC 数据库回归测试不能以 SKIP 冒充通过；codegen 准备用例不属于门禁。
+      - name: Create Dedicated IDC Regression Database
+        if: inputs.plugins == '1'
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE linapro_idc_codegen'
+
+      - name: Run Required IDC PostgreSQL Regressions
+        if: inputs.plugins == '1'
+        env:
+          LINAPRO_IDC_CORE_TEST_DSN: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+          LINAPRO_IDC_PAYMENT_TEST_DSN: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+          LINAPRO_IDC_RESOURCE_TEST_DSN: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+          LINAPRO_IDC_COMPLIANCE_TEST_DSN: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+          LINAPRO_IDC_NOTIFY_TEST_DSN: "pgsql:postgres:postgres@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
+        run: go run ./hack/tools/idc-testguard/main.go

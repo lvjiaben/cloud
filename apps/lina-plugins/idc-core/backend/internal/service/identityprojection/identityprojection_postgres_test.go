@@ -628,7 +628,7 @@ INSERT INTO plugin_idc_core_customer_individual_profile (
     identity_status_code, identity_verified_at, version
 ) VALUES (0, ?, 'individual', 'Test Operator', 'T***r',
           '110***********001', ?, 'case_personal_prerequisite_0001',
-          'verified', ?, 2)`, strings.Repeat("a", 64), verifiedAt); err != nil {
+          'verified', ?, 2)`, customerNo, strings.Repeat("a", 64), verifiedAt); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := database.Exec(ctx, `

@@ -440,11 +440,23 @@ func decodeChannel(row gdb.Record) (*Channel, error) {
 	return &Channel{ChannelNo: row["channel_no"].String(), Provider: paymentcap.ProviderCode(row["provider_code"].String()), DisplayName: row["display_name"].String(), EndpointOrigin: row["endpoint_origin"].String(), MerchantReference: row["merchant_reference"].String(), StatusCode: row["status_code"].String(), Modes: modes, Currencies: currencies, Version: row["version"].Int64(), VerifiedAt: row["verified_at"].Time().UTC()}, nil
 }
 
+// WithCreateCredentials requires an enabled channel before initiating a new payment.
+func (s *Service) WithCreateCredentials(ctx context.Context, channelNo string, consume func(paymentcap.Adapter, paymentcap.Credentials) error) error {
+	return s.withCredentials(ctx, channelNo, false, consume)
+}
+
+// WithCredentials permits existing transaction settlement on disabled channels.
+// Callers must validate the original transaction or verified callback; deleted
+// channels and revoked secret handles remain unavailable.
 func (s *Service) WithCredentials(ctx context.Context, channelNo string, consume func(paymentcap.Adapter, paymentcap.Credentials) error) error {
+	return s.withCredentials(ctx, channelNo, true, consume)
+}
+
+func (s *Service) withCredentials(ctx context.Context, channelNo string, allowDisabled bool, consume func(paymentcap.Adapter, paymentcap.Credentials) error) error {
 	if consume == nil {
 		return errors.New("payment credential consumer is required")
 	}
-	row, err := s.database.GetOne(ctx, `SELECT provider_code,secret_ref,endpoint_origin FROM plugin_idc_payment_channel WHERE channel_no=? AND status_code='enabled' AND deleted_at IS NULL`, channelNo)
+	row, err := s.database.GetOne(ctx, `SELECT provider_code,secret_ref,endpoint_origin FROM plugin_idc_payment_channel WHERE channel_no=? AND status_code IN ('enabled','disabled') AND (? OR status_code='enabled') AND deleted_at IS NULL`, channelNo, allowDisabled)
 	if err != nil {
 		return err
 	}

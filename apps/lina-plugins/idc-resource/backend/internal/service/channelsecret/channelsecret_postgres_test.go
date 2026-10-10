@@ -75,6 +75,7 @@ type testAudit struct {
 	mu           sync.Mutex
 	events       []idccap.BusinessAuditTransition
 	failComplete bool
+	failRotation bool
 }
 
 func (a *testAudit) AppendBusinessTransition(
@@ -86,6 +87,10 @@ func (a *testAudit) AppendBusinessTransition(
 	if a.failComplete && strings.HasSuffix(event.OperationCode, ".create.complete") {
 		a.failComplete = false
 		return errors.New("audit unavailable")
+	}
+	if a.failRotation && strings.HasSuffix(event.OperationCode, ".rotate.complete") {
+		a.failRotation = false
+		return errors.New("rotation audit unavailable")
 	}
 	a.events = append(a.events, event)
 	return nil
@@ -108,10 +113,11 @@ type testSecret struct {
 }
 
 type testManager struct {
-	mu      sync.Mutex
-	secret  testSecret
-	creates int
-	rotates int
+	mu         sync.Mutex
+	secret     testSecret
+	creates    int
+	rotates    int
+	rotationDB gdb.DB
 }
 
 func (m *testManager) Create(
@@ -212,10 +218,15 @@ func (m *testManager) Revoke(
 	return m.secret.metadata, nil
 }
 
-func (m *testManager) Rotate(_ context.Context, limit int) (secretcap.RotationResult, error) {
+func (m *testManager) Rotate(ctx context.Context, limit int) (secretcap.RotationResult, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.rotates++
+	if m.rotationDB != nil {
+		if _, err := m.rotationDB.Exec(ctx, `INSERT INTO rotation_test_evidence VALUES (1)`); err != nil {
+			return secretcap.RotationResult{}, err
+		}
+	}
 	return secretcap.RotationResult{Rewrapped: min(limit, 1)}, nil
 }
 
@@ -332,6 +343,21 @@ FROM plugin_idc_resource_interface_configuration_revision WHERE revision_no=?`, 
 		Operation: OperationRotate, ChannelNo: channelNo, RotateLimit: 10,
 		IdempotencyKey: rotate.IdempotencyKey,
 	})
+	if _, err = database.Exec(ctx, `CREATE TABLE rotation_test_evidence(id INT)`); err != nil {
+		t.Fatal(err)
+	}
+	manager.rotationDB = database
+	audit.failRotation = true
+	if _, err = service.Rotate(ctx, rotate); err == nil {
+		t.Fatal("rotation audit failure did not fail closed")
+	}
+	evidence, err := database.GetValue(ctx, `SELECT COUNT(*) FROM rotation_test_evidence`)
+	if err != nil || evidence.Int() != 0 {
+		t.Fatalf("rotation owner writes escaped audit rollback: %v %v", evidence, err)
+	}
+	rotate.AccessContext = issueTestAccess(t, service, proofs, AccessRequest{
+		Operation: OperationRotate, ChannelNo: channelNo, RotateLimit: 10, IdempotencyKey: rotate.IdempotencyKey,
+	})
 	rotated, err := service.Rotate(ctx, rotate)
 	if err != nil || rotated.Rewrapped != 1 {
 		t.Fatalf("rotate: result=%+v err=%v", rotated, err)
@@ -364,6 +390,17 @@ WHERE "channel_no"=?`, channelNo)
 	}
 
 	audit.mu.Lock()
+	for _, operation := range []Operation{OperationCreate, OperationReplace, OperationRevoke, OperationRotate} {
+		found := false
+		for _, event := range audit.events {
+			if event.OperationCode == "resource.channel-secret."+string(operation)+".complete" {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("missing secret-free %s audit", operation)
+		}
+	}
 	auditText := fmt.Sprintf("%+v", audit.events)
 	audit.mu.Unlock()
 	if strings.Contains(auditText, string(secret)) || strings.Contains(auditText, string(replacement)) ||

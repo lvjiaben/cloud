@@ -12,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/internal/dao"
 )
 
 const catalogPublicationTestDSNEnvironment = "LINAPRO_IDC_CORE_TEST_DSN"
@@ -48,7 +49,11 @@ func (catalogDraftTestAutomationAdmission) WithPublicationAdmission(
 	_ string,
 	action func(context.Context) error,
 ) error {
-	return action(ctx)
+	// Production admission owns the publication transaction; the fake must
+	// preserve that contract so audit failures exercise genuine rollback.
+	return dao.CatalogProduct.DB().Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
+		return action(txCtx)
+	})
 }
 
 func configureCatalogDraftIntegrationDB(t *testing.T, ctx context.Context) {

@@ -27,7 +27,9 @@ database:
 # JWT configuration
 # JWT 配置
 jwt:
-  secret: "lina-jwt-secret-key-change-in-production"
+  # Required: set LINA_JWT_SECRET or supply a unique secret in mounted config.
+  # 必须设置 LINA_JWT_SECRET 或在挂载配置中提供独立密钥。
+  secret: ""
   expire: 24h
 
 # Online session configuration

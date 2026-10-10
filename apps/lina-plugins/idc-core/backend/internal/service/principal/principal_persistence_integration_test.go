@@ -6,8 +6,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
+	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -34,7 +38,7 @@ type principalIntegrationIntent struct {
 
 // TestDAOPersistenceRedeemConvergesConcurrentRequests proves the real
 // PostgreSQL transaction creates one customer and invokes one audited transition under replay.
-func TestDAOPersistenceRedeemConvergesConcurrentRequests(t *testing.T) {
+func TestDAOPersistenceRedeemConvergesConcurrentRequestsPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 
@@ -96,7 +100,7 @@ func TestDAOPersistenceRedeemConvergesConcurrentRequests(t *testing.T) {
 	assertPrincipalIntegrationCount(t, ctx, dao.CustomerIdentityBinding.Table(), "sys_user_id", userID, 1)
 	assertPrincipalIntegrationCount(t, ctx, dao.CustomerSubject.Table(), "customer_no", customerNo, 1)
 	assertPrincipalIntegrationCount(t, ctx, dao.CustomerIndividualProfile.Table(), "customer_no", customerNo, 1)
-	assertPrincipalIntegrationCount(t, ctx, dao.CustomerEnterpriseProfile.Table(), "customer_no", customerNo, 0)
+	assertPrincipalIntegrationCount(t, ctx, dao.CustomerEnterpriseProfile.Table(), "customer_no", customerNo, 1)
 	if auditWriter.count() != 1 {
 		t.Fatalf("onboarding audit transitions=%d, want one", auditWriter.count())
 	}
@@ -131,11 +135,11 @@ func TestDAOPersistenceRedeemConvergesConcurrentRequests(t *testing.T) {
 	}
 }
 
-func TestDAOPersistenceRedeemCreatesEnterpriseProfileShell(t *testing.T) {
+func TestDAOPersistenceRedeemCreatesPersonalFirstProfileShellsPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
-	intent := insertVerifiedPrincipalIntegrationIntentOfType(t, ctx, userID, CustomerTypeEnterprise)
+	intent := insertVerifiedPrincipalIntegrationIntent(t, ctx, userID)
 	t.Cleanup(func() {
 		cleanupPrincipalIntegrationRows(t, ctx, userID, intent.IntentNo)
 	})
@@ -144,11 +148,24 @@ func TestDAOPersistenceRedeemCreatesEnterpriseProfileShell(t *testing.T) {
 		UserID: userID, HostRegistrationUserID: userID, DisplayName: intent.Username,
 		UsernameDigest: digestValue(intent.Username), TokenDigest: digestValue(intent.RawToken), BrowserDigest: digestValue("browser:" + intent.IntentNo),
 	})
-	if err != nil || result == nil || result.CustomerType != CustomerTypeEnterprise {
-		t.Fatalf("enterprise redemption result=%+v err=%v", result, err)
+	if err != nil || result == nil || result.CustomerType != CustomerTypeIndividual {
+		t.Fatalf("personal-first redemption result=%+v err=%v", result, err)
 	}
 	assertPrincipalIntegrationCount(t, ctx, dao.CustomerEnterpriseProfile.Table(), "customer_no", result.CustomerNo, 1)
-	assertPrincipalIntegrationCount(t, ctx, dao.CustomerIndividualProfile.Table(), "customer_no", result.CustomerNo, 0)
+	assertPrincipalIntegrationCount(t, ctx, dao.CustomerIndividualProfile.Table(), "customer_no", result.CustomerNo, 1)
+	// A legacy enterprise onboarding intent must not bypass personal verification
+	// and the separate approved enterprise upgrade workflow.
+	legacyUserID := newIntegrationUserID(t)
+	legacy := insertVerifiedPrincipalIntegrationIntentOfType(t, ctx, legacyUserID, CustomerTypeEnterprise)
+	t.Cleanup(func() { cleanupPrincipalIntegrationRows(t, ctx, legacyUserID, legacy.IntentNo) })
+	rejected, err := persistence.redeem(ctx, redeemInput{UserID: legacyUserID, HostRegistrationUserID: legacyUserID, DisplayName: legacy.Username,
+		UsernameDigest: digestValue(legacy.Username), TokenDigest: digestValue(legacy.RawToken), BrowserDigest: digestValue("browser:" + legacy.IntentNo)})
+	if rejected != nil || !bizerr.Is(err, CodeOnboardingUnavailable) {
+		t.Fatalf("legacy enterprise onboarding bypassed personal-first workflow: %+v %v", rejected, err)
+	}
+	assertPrincipalIntegrationCount(t, ctx, dao.PrincipalAudience.Table(), "sys_user_id", legacyUserID, 0)
+	assertPrincipalIntegrationCount(t, ctx, dao.CustomerSubject.Table(), "created_by", legacyUserID, 0)
+
 }
 
 func TestDAOPersistenceRedeemAttachesCurrentHostIdentityPostgreSQL(t *testing.T) {
@@ -187,7 +204,7 @@ func TestDAOPersistenceRedeemRejectsBrowserTamperingPostgreSQL(t *testing.T) {
 	assertPrincipalIntegrationCount(t, ctx, dao.PrincipalAudience.Table(), "sys_user_id", userID, 0)
 }
 
-func TestDAOPersistenceRedeemRollsBackWhenAuditAppendFails(t *testing.T) {
+func TestDAOPersistenceRedeemRollsBackWhenAuditAppendFailsPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
@@ -224,7 +241,7 @@ func TestDAOPersistenceRedeemRollsBackWhenAuditAppendFails(t *testing.T) {
 
 // TestDAOPersistenceStaffBindingIsConcurrentAndIdempotent proves concurrent
 // authorized calls converge on one active staff audience.
-func TestDAOPersistenceStaffBindingIsConcurrentAndIdempotent(t *testing.T) {
+func TestDAOPersistenceStaffBindingIsConcurrentAndIdempotentPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
@@ -260,7 +277,7 @@ func TestDAOPersistenceStaffBindingIsConcurrentAndIdempotent(t *testing.T) {
 
 // TestDAOPersistenceCompetingIntentsForSameUserConverge proves two different
 // verified intents cannot create two customer graphs for one host identity.
-func TestDAOPersistenceCompetingIntentsForSameUserConverge(t *testing.T) {
+func TestDAOPersistenceCompetingIntentsForSameUserConvergePostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
@@ -373,7 +390,7 @@ func TestDAOPersistenceCompetingIntentsForSameUserConverge(t *testing.T) {
 
 // TestDAOPersistenceStaffAndCustomerRaceConverges proves missing-row locks do
 // not permit staff and customer audiences to commit for the same identity.
-func TestDAOPersistenceStaffAndCustomerRaceConverges(t *testing.T) {
+func TestDAOPersistenceStaffAndCustomerRaceConvergesPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
@@ -458,7 +475,7 @@ func TestDAOPersistenceStaffAndCustomerRaceConverges(t *testing.T) {
 
 // TestDAOPersistenceCurrentRejectsOrphanCustomerSubject proves a customer
 // audience and identity binding are not sufficient without their subject row.
-func TestDAOPersistenceCurrentRejectsOrphanCustomerSubject(t *testing.T) {
+func TestDAOPersistenceCurrentRejectsOrphanCustomerSubjectPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	configurePrincipalIntegrationDB(t, ctx)
 	userID := newIntegrationUserID(t)
@@ -504,6 +521,31 @@ func configurePrincipalIntegrationDB(t *testing.T, ctx context.Context) {
 	if dsn == "" {
 		t.Skipf("set %s to run PostgreSQL principal integration tests", principalIntegrationDSNEnv)
 	}
+	admin, err := gdb.New(gdb.ConfigNode{Link: dsn})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var nonce [8]byte
+	if _, err = rand.Read(nonce[:]); err != nil {
+		t.Fatal(err)
+	}
+	schema := "linapro_principal_test_" + hex.EncodeToString(nonce[:])
+	if _, err = admin.Exec(ctx, `CREATE SCHEMA "`+schema+`"`); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if _, err := admin.Exec(ctx, `DROP SCHEMA "`+schema+`" CASCADE`); err != nil {
+			t.Error(err)
+		}
+		if err := admin.Close(ctx); err != nil {
+			t.Error(err)
+		}
+	})
+	separator := "?"
+	if strings.Contains(dsn, "?") {
+		separator = "&"
+	}
+	dsn += separator + "search_path=" + url.QueryEscape(schema)
 	originalConfig := gdb.GetAllConfig()
 	if err := gdb.SetConfig(gdb.Config{
 		gdb.DefaultGroupName: gdb.ConfigGroup{{Link: dsn}},
@@ -523,6 +565,25 @@ func configurePrincipalIntegrationDB(t *testing.T, ctx context.Context) {
 	})
 	if _, err := db.Exec(ctx, "SELECT 1"); err != nil {
 		t.Fatalf("connect principal integration database failed: %v", err)
+	}
+	if err := db.GetCore().ClearTableFieldsAll(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(ctx, principalDictionaryFixtureSQL); err != nil {
+		t.Fatal(err)
+	}
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve principal migrations")
+	}
+	for _, name := range []string{"001-core-foundation.sql", "003-customer-account.sql", "007-customer-account-workflows.sql", "106-personal-first-enterprise-upgrade.sql"} {
+		content, err := os.ReadFile(filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "manifest", "sql", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = db.Exec(ctx, string(content)); err != nil {
+			t.Fatalf("principal fixture migration %s: %v", name, err)
+		}
 	}
 }
 
@@ -744,3 +805,21 @@ func verifyPrincipalIntegrationCleanup(
 		}
 	}
 }
+
+const principalDictionaryFixtureSQL = `
+CREATE TABLE IF NOT EXISTS sys_dict_type (
+ id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, tenant_id INT NOT NULL DEFAULT 0,
+ name VARCHAR(128) NOT NULL DEFAULT '', type VARCHAR(128) NOT NULL DEFAULT '',
+ status SMALLINT NOT NULL DEFAULT 1, is_builtin SMALLINT NOT NULL DEFAULT 0,
+ allow_tenant_override BOOL NOT NULL DEFAULT FALSE, remark VARCHAR(512) NOT NULL DEFAULT '',
+ created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ,
+ UNIQUE (tenant_id,type)
+);
+CREATE TABLE IF NOT EXISTS sys_dict_data (
+ id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, tenant_id INT NOT NULL DEFAULT 0,
+ dict_type VARCHAR(128) NOT NULL DEFAULT '', label VARCHAR(128) NOT NULL DEFAULT '',
+ value VARCHAR(128) NOT NULL DEFAULT '', sort INT NOT NULL DEFAULT 0,
+ tag_style VARCHAR(128) NOT NULL DEFAULT '', status SMALLINT NOT NULL DEFAULT 1,
+ is_builtin SMALLINT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ,
+ UNIQUE (tenant_id,dict_type,value)
+);`

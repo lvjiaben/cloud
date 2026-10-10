@@ -128,6 +128,9 @@ func configureHTTPServer(
 	server *ghttp.Server,
 	configSvc config.Service,
 ) error {
+	if err := validateJWTSigningSecret(configSvc.GetJwtSecret(ctx)); err != nil {
+		return err
+	}
 	loggerCfg := configSvc.GetLogger(ctx)
 	if err := logger.BindServer(server, logger.ServerOutputConfig{
 		Path:   loggerCfg.Path,
@@ -705,4 +708,14 @@ func resolveRuntimeShutdownTimeout(server *ghttp.Server) time.Duration {
 		return time.Duration(ghttp.NewConfig().GracefulShutdownTimeout) * time.Second
 	}
 	return time.Duration(server.GetGracefulShutdownTimeout()) * time.Second
+}
+
+// validateJWTSigningSecret rejects public template secrets before HTTP listeners
+// accept traffic. No secret value is included in logs or returned diagnostics.
+func validateJWTSigningSecret(secret string) error {
+	secret = strings.TrimSpace(secret)
+	if secret == "" || secret == "lina-jwt-secret-key-change-in-production" {
+		return gerror.New("JWT signing secret is missing or uses the public template; configure jwt.secret or LINA_JWT_SECRET before startup")
+	}
+	return nil
 }

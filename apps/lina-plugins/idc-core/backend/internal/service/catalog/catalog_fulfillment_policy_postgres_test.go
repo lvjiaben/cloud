@@ -15,6 +15,7 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
+	"lina-plugin-idc-core/backend/internal/dao"
 )
 
 func TestFulfillmentPolicyPostgreSQL(t *testing.T) {
@@ -128,6 +129,13 @@ func configureFulfillmentPolicyTestDatabase(t *testing.T, ctx context.Context, d
 	}
 	database, err := gdb.Instance()
 	if err != nil {
+		t.Fatal(err)
+	}
+	// These tests replace the default group's search_path with distinct schemas
+	// and deliberately use different table shapes. GoFrame caches column metadata
+	// by group/schema/table, so invalidate the previous fixture's metadata before
+	// constructing this fixture rather than silently dropping legitimate DO fields.
+	if err = dao.CatalogProductVersion.DB().GetCore().ClearTableFieldsAll(ctx); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {

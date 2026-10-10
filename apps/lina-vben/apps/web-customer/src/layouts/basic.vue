@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { MenuRecordRaw } from '@vben/types';
 
+import type { CustomerExternalMenu } from '#/api/idc/external-menu';
+
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -8,15 +10,13 @@ import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { useWatermark } from '@vben/hooks';
 import { BasicLayout, LockScreen, UserDropdown } from '@vben/layouts';
 import { preferences, updatePreferences } from '@vben/preferences';
-import { useAccessStore, useUserStore } from '@vben/stores';
+import { useAccessStore, useTabbarStore, useUserStore } from '@vben/stores';
 
+import { listCustomerExternalMenus } from '#/api/idc/external-menu';
+import { $t } from '#/locales';
+import { refreshAccessibleState } from '#/router/access-refresh';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
-import { $t } from '#/locales';
-import {
-  listCustomerExternalMenus,
-  type CustomerExternalMenu,
-} from '#/api/idc/external-menu';
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
@@ -129,7 +129,30 @@ watch(
 
 watch(
   () => preferences.app.locale,
-  () => applyExternalMenus(),
+  async () => {
+    await refreshAccessibleState(router, {
+      refreshUserInfo: false,
+      skipRouteNavigation: true,
+    });
+    const tabbar = useTabbarStore();
+    await Promise.all(
+      tabbar.getTabs
+        .filter((tab) => tab.meta.productDirectoryNo)
+        .map((tab) =>
+          tabbar.setTabTitle(
+            tab,
+            String(router.resolve(tab.fullPath).meta.title || tab.meta.title),
+          ),
+        ),
+    );
+    await router.replace({
+      path: router.currentRoute.value.path,
+      query: router.currentRoute.value.query,
+      hash: router.currentRoute.value.hash,
+      force: true,
+    });
+    applyExternalMenus();
+  },
 );
 
 watch(
@@ -175,25 +198,23 @@ onBeforeUnmount(() => {
     lock-sidebar-menu-open
     @clear-preferences-and-logout="handleLogout"
   >
-    <template
-      v-if="authStore.customerAssistanceSession"
-      #header-left-60
-    >
-      <div
-        class="assistance-banner"
-        data-testid="customer-assistance-banner"
-      >
+    <template v-if="authStore.customerAssistanceSession" #header-left-60>
+      <div class="assistance-banner" data-testid="customer-assistance-banner">
         <span class="assistance-banner__dot" aria-hidden="true"></span>
         <span class="hidden sm:inline">
-          {{ $t('assistance.banner', {
-            customer: authStore.customerAssistanceSession.customerName,
-            minutes: assistanceRemainingMinutes,
-          }) }}
+          {{
+            $t('assistance.banner', {
+              customer: authStore.customerAssistanceSession.customerName,
+              minutes: assistanceRemainingMinutes,
+            })
+          }}
         </span>
         <span class="sm:hidden">
-          {{ $t('assistance.bannerMobile', {
-            minutes: assistanceRemainingMinutes,
-          }) }}
+          {{
+            $t('assistance.bannerMobile', {
+              minutes: assistanceRemainingMinutes,
+            })
+          }}
         </span>
       </div>
     </template>

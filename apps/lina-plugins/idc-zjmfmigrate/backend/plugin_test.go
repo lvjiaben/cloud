@@ -19,7 +19,7 @@ func TestDynamicPluginDeclarationAndManifest(t *testing.T) {
 	}
 	for _, fragment := range []string{
 		"id: idc-zjmfmigrate",
-		"version: v0.2.1",
+		"version: v0.2.2",
 		"type: dynamic",
 		"distribution: managed",
 		"service: data",

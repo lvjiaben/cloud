@@ -183,9 +183,6 @@ func (s *serviceImpl) storeRuntimeManifestArtifactCache(artifactPath string, man
 		fingerprint: fingerprint,
 		manifest:    cachedManifest,
 	}
-	if cachedManifest != nil && strings.TrimSpace(cachedManifest.ID) != "" {
-		s.runtimePluginArtifactIndex[cachedManifest.ID] = key
-	}
 	s.cacheMu.Unlock()
 	return nil
 }

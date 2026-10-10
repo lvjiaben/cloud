@@ -9,6 +9,27 @@ import {
 const product = (slug: string) => ({ publicSlug: slug }) as never;
 
 describe('purchase catalog pagination state', () => {
+  it('keeps owner category choices across pagination and retry failures', () => {
+    const categories = [
+      {
+        categoryNo: 'ctg_cloud',
+        nameZhCN: '云计算',
+        nameEnUS: 'Cloud computing',
+      },
+    ];
+    const loaded = applyPurchaseCatalogPage(
+      createPurchaseCatalogState(),
+      true,
+      { categories, products: [product('first')] },
+    );
+    expect(
+      applyPurchaseCatalogPage(loaded, false, { products: [product('second')] })
+        .categories,
+    ).toEqual(categories);
+    expect(applyPurchaseCatalogFailure(loaded, false).categories).toEqual(
+      categories,
+    );
+  });
   it('keeps the first page and retry cursor when loading more fails', () => {
     const loaded = applyPurchaseCatalogPage(
       createPurchaseCatalogState(),

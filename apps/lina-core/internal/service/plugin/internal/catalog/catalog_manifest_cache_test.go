@@ -507,3 +507,41 @@ func encodeCacheTestWasmULEB128(value uint32) []byte {
 		}
 	}
 }
+
+// TestDesiredManifestNeverUsesEffectiveArchive verifies reading an installed
+// release between preview and execution cannot replace the staged upgrade target.
+func TestDesiredManifestNeverUsesEffectiveArchive(t *testing.T) {
+	service := newCacheTestCatalogService(t)
+	pluginID := "cache-test-release-isolation"
+	staged := writeCacheTestRuntimeArtifact(t, service.runtimeStorageDir, pluginID, "0.2.0")
+	archived := writeCacheTestRuntimeArtifact(t, filepath.Join(service.runtimeStorageDir, "releases", "effective"), pluginID, "0.1.0")
+	if _, err := service.ScanManifests(); err != nil {
+		t.Fatal(err)
+	}
+	effective, err := service.LoadManifestFromArtifactPath(archived)
+	if err != nil || effective.Version != "0.1.0" {
+		t.Fatalf("effective release changed: %#v %v", effective, err)
+	}
+	desired, err := service.GetDesiredManifest(pluginID)
+	if err != nil || desired.Version != "0.2.0" {
+		t.Fatalf("archive poisoned staged target: %#v %v", desired, err)
+	}
+	// Uploaded staging replacement invalidates the old discovery and rebuilds it.
+	service.InvalidateManifestCache(pluginID)
+	writeCacheTestRuntimeArtifactAtPath(t, staged, pluginID, "0.3.0")
+	if _, err = service.LoadManifestFromArtifactPath(staged); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.LoadManifestFromArtifactPath(archived); err != nil {
+		t.Fatal(err)
+	}
+	desired, err = service.GetDesiredManifest(pluginID)
+	if err != nil || desired.Version != "0.3.0" {
+		t.Fatalf("uploaded target lost after archive read: %#v %v", desired, err)
+	}
+	// Effective serving continues to resolve its immutable v1 archive.
+	effective, err = service.LoadManifestFromArtifactPath(archived)
+	if err != nil || effective.Version != "0.1.0" {
+		t.Fatalf("effective release changed before upgrade: %#v %v", effective, err)
+	}
+}

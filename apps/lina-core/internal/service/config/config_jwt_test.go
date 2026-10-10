@@ -99,3 +99,16 @@ func TestRuntimeParamParseErrorsReturnError(t *testing.T) {
 		t.Fatal("expected invalid runtime JWT override to return an error")
 	}
 }
+
+// TestJWTEnvironmentSecretOverridesTemplate proves deployment secrets override
+// public defaults without modifying the user's configuration file.
+func TestJWTEnvironmentSecretOverridesTemplate(t *testing.T) {
+	t.Setenv("LINA_JWT_SECRET", "independent-environment-test-secret")
+	setTestConfigContent(t, `jwt:
+  secret: "lina-jwt-secret-key-change-in-production"
+  expire: 24h
+`)
+	if secret := New().GetJwtSecret(context.Background()); secret != "independent-environment-test-secret" {
+		t.Fatal("environment secret was not applied")
+	}
+}

@@ -8,7 +8,8 @@ import { $t } from '#/locales';
 
 export function getExtensions(placeholder?: string) {
   return [
-    StarterKit,
+    // Keep the existing independently configured link and underline extensions.
+    StarterKit.configure({ link: false, underline: false }),
     Underline,
     Image.configure({
       inline: true,

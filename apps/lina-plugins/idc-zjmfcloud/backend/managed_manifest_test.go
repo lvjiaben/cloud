@@ -1,3 +1,4 @@
+// This file validates the managed connector manifest and governed frontend sources.
 package backend
 
 import (
@@ -36,7 +37,7 @@ type managedManifest struct {
 func TestManagedManifestSatisfiesProductAndServerOwnerContracts(t *testing.T) {
 	t.Parallel()
 	manifest := readManagedManifest(t)
-	if manifest.ID != pluginID || manifest.Version != "v0.2.4" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
+	if manifest.ID != pluginID || manifest.Version != "v0.2.6" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
 		t.Fatalf("connector is not a managed dynamic release: %#v", manifest)
 	}
 	if !strings.Contains(manifest.Description, "product configuration discovery") ||
@@ -101,11 +102,14 @@ func TestManagedReleaseHasNoSourceRegistrationOrUnsafeFrontendAccess(t *testing.
 		}
 	}
 	for _, entry := range []string{
-		filepath.Join("frontend", "dist", "admin", "server-management", "index.html"),
-		filepath.Join("frontend", "dist", "customer", "servers", "index.html"),
-		filepath.Join("frontend", "dist", "customer", "servers", "entry.js"),
-		filepath.Join("frontend", "dist", "customer", "servers", "model.js"),
-		filepath.Join("frontend", "dist", "customer", "servers", "page.js"),
+		filepath.Join("frontend", "admin", "server-management", "index.html"),
+		filepath.Join("frontend", "customer", "servers", "index.html"),
+		filepath.Join("frontend", "src", "customer", "servers", "entry.ts"),
+		filepath.Join("frontend", "src", "customer", "servers", "model.ts"),
+		filepath.Join("frontend", "src", "customer", "servers", "page.ts"),
+		filepath.Join("frontend", "src", "admin", "entry.ts"),
+		filepath.Join("frontend", "src", "admin", "page.ts"),
+		filepath.Join("frontend", "src", "shared", "bridge.ts"),
 	} {
 		content, err := os.ReadFile(filepath.Join(pluginRoot, entry))
 		if err != nil {

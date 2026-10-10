@@ -1,6 +1,6 @@
 id: idc-resource
 name: LinaPro IDC Resource
-version: v0.1.25
+version: v0.1.26
 type: source
 distribution: builtin
 scope_nature: platform_only

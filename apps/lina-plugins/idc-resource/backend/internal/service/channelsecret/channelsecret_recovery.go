@@ -120,7 +120,7 @@ WHERE tenant_id = 0 AND id = ? AND version = ? AND status_code IN (?,?)`,
 		if _, revisionErr := interfacerevision.Append(ctx, tx, request.ChannelNo, actor); revisionErr != nil {
 			return revisionErr
 		}
-		return nil
+		return s.appendBindingAudit(ctx, OperationCreate, row, completed)
 	})
 	return completed, publicError(err)
 }
@@ -228,7 +228,7 @@ WHERE tenant_id = 0 AND id = ? AND version = ? AND status_code IN (?,?)`,
 		if _, revisionErr := interfacerevision.Append(ctx, tx, request.ChannelNo, actor); revisionErr != nil {
 			return revisionErr
 		}
-		return nil
+		return s.appendBindingAudit(ctx, OperationReplace, current, completed)
 	})
 	return completed, publicError(err)
 }

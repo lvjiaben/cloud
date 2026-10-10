@@ -65,6 +65,7 @@ permissions:
 # 让浏览器日志、数据库时间戳和测试输出使用项目时区。
 env:
   TZ: "Asia/Shanghai"
+  LINA_JWT_SECRET: "ci-only-e2e-fixture-not-for-deployment"
 
 jobs:
   # Starts LinaPro services and runs the requested Playwright E2E suite.

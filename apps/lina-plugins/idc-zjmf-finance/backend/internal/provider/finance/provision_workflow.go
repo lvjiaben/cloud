@@ -110,8 +110,10 @@ func SettlementResult(requestID string, raw json.RawMessage) resourcecap.Operati
 		hostID = findString(raw, "hostid")
 	}
 	now := timeNowUTC()
-	if (status == "1001" || status == "200") && positiveDecimal(hostID) {
-		return resourcecap.OperationResult{Status: resourcecap.TaskStatusSucceeded, ExternalResourceRef: hostID, Evidence: []resourcecap.Evidence{{Kind: "upstream_settlement", Reference: requestID, Summary: "native finance settlement returned a server reference", ObservedAt: now}}}
+	// Native finance returns 200 with invoiceid and hostid for an unpaid order.
+	// Only 1001 proves settlement; a created host reference is not payment evidence.
+	if status == "1001" && positiveDecimal(hostID) {
+		return resourcecap.OperationResult{Status: resourcecap.TaskStatusSucceeded, ExternalResourceRef: hostID, Evidence: []resourcecap.Evidence{{Kind: "upstream_settlement", Reference: requestID, Summary: "native finance confirmed settlement and returned a server reference", ObservedAt: now}}}
 	}
 	return failedResult(requestID, "")
 }

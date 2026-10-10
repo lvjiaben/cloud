@@ -100,6 +100,11 @@ func (s *serviceImpl) scanRuntimeManifests(ctx context.Context) ([]*Manifest, er
 			)
 		}
 		seenIDs[manifest.ID] = artifactPath
+		// Only discovery owns the desired index; parsing an effective archive
+		// must never redirect a pending upgrade back to the installed release.
+		s.cacheMu.Lock()
+		s.runtimePluginArtifactIndex[manifest.ID] = artifactPath
+		s.cacheMu.Unlock()
 		manifests = append(manifests, manifest)
 	}
 	return manifests, nil

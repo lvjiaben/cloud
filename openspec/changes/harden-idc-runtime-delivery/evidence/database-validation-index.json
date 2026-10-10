@@ -1,0 +1,283 @@
+{
+  "packages": 69,
+  "tests": 454,
+  "missing": {},
+  "evidence": {
+    "apps/lina-plugins/idc-core/backend": [
+      25,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/asynctask": [
+      8,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/billing": [
+      33,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/catalog": [
+      6,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/catalogdraft": [
+      2,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/closureprecheck": [
+      1,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/commerce": [
+      88,
+      "temp/project-audit/idc-ci-recursive-gate.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/commission": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/contenthub": [
+      21,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/contractsnapshot": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customer360summary": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customeractivation": [
+      6,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customeraddress": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customerassistance": [
+      3,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customerclosure": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customercontact": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customerexport": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/customermanagement": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/financeops": [
+      3,
+      "temp/project-audit/idc-ci-remaining-before-identity.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/identityprojection": [
+      8,
+      "temp/project-audit/idc-ci-remaining-before-marketing.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/invoiceprofile": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-marketing.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/marketing": [
+      12,
+      "temp/project-audit/idc-ci-remaining-before-principal.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/notificationpolicy": [
+      4,
+      "temp/project-audit/idc-ci-remaining-before-principal.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/onboarding": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-principal.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/operations": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-principal.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/outbox": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-principal.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/principal": [
+      10,
+      "temp/project-audit/principal-db-validation.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/productautomation": [
+      3,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/productdirectory": [
+      4,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/productfulfillment": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/reauth": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/renewal": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/resourceinterfaceprojection": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/saleschannel": [
+      4,
+      "temp/project-audit/idc-ci-remaining-before-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/secret": [
+      11,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/serveroperation": [
+      19,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/serviceaction": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/supportdesk": [
+      35,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-core/backend/internal/service/taxinvoicesource": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-payment/backend": [
+      9,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend": [
+      7,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/batchrenewal": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-channel-secret.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/channelsecret": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/interfacecandidate": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/interfaceprojection": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/principalprovision": [
+      5,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/providerconfiguration": [
+      7,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/provisionsource": [
+      3,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/renewalsource": [
+      4,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-resource/backend/internal/service/serverdirectory": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend": [
+      4,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/contractarchive": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-auto-sign.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/contractautosign": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-360.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/contractfailure": [
+      2,
+      "temp/project-audit/idc-ci-remaining-before-360.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/contractfulfillmentgate": [
+      1,
+      "temp/project-audit/idc-ci-remaining-before-360.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/contractlifecycle": [
+      6,
+      "temp/project-audit/idc-ci-remaining-before-360.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/customer360summary": [
+      1,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/electroniccontractpreparation": [
+      3,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/electroniccontracttemplate": [
+      3,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/enterpriseverification": [
+      3,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/personalverification": [
+      6,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/providerconfig": [
+      5,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/supplierconfig": [
+      2,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/taxinvoicemanagement": [
+      2,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/taxinvoiceredletter": [
+      4,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-compliance/backend/internal/service/taxinvoicerequest": [
+      2,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-notify/backend": [
+      4,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-notify/backend/internal/service/customer360summary": [
+      1,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ],
+    "apps/lina-plugins/idc-notify/backend/internal/service/notification": [
+      30,
+      "temp/project-audit/idc-ci-remaining-gate.log"
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+:root {
+  --background: 216 33% 97%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --border: 214 23% 88%;
+  --primary: 211 100% 55%;
+  --muted: 214 32% 95%;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font: 14px/1.6 system-ui;
+}
+button,
+input {
+  font: inherit;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  color: inherit;
+  padding: 6px 12px;
+  border-radius: 0;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.migration {
+  padding: 16px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+h2 {
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+.panel {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  margin: 16px 0;
+  padding: 16px;
+}
+.notice {
+  background: hsl(var(--muted));
+  border-left: 3px solid hsl(var(--primary));
+  padding: 12px 16px;
+}
+.actions,
+header > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.actions {
+  margin-top: 12px;
+}
+[role="status"] {
+  color: hsl(var(--primary));
+  overflow-wrap: anywhere;
+}
+.panel p {
+  margin: 8px 0;
+}
+@media (max-width: 720px) {
+  header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .migration {
+    padding: 12px;
+  }
+}

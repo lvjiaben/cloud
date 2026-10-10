@@ -19,7 +19,7 @@ test.describe('TC-3 SSL真实客户插件发现',()=>{
       expect(await live.discovery(customer,'invalid')).toEqual({status:401,surfaces:[]});
       const authenticated=await live.discovery(customer,'current');
       expect(authenticated.status).toBe(200);
-      expect(authenticated.surfaces).toContainEqual(expect.objectContaining({pluginId:'yunsu-ssl',entryUrl:'/x-assets/yunsu-ssl/v0.3.4/customer/certificates/index.html'}));
+      expect(authenticated.surfaces).toContainEqual(expect.objectContaining({pluginId:'yunsu-ssl',entryUrl:expect.stringMatching(/^\/x-assets\/yunsu-ssl\/v\d+\.\d+\.\d+\/customer\/certificates\/index\.html$/u)}));
       const frame=await live.openCertificates(customer);
       await expect(frame.locator('[role="alert"]')).toHaveCount(0);
       await expect(frame.getByTestId('ssl-error')).toBeHidden();

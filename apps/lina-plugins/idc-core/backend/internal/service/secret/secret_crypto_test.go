@@ -261,3 +261,24 @@ type failingAuthorizer struct {
 func (a failingAuthorizer) Authorize(context.Context, AuthorizationRequest) error {
 	return a.err
 }
+
+// TestPublicSecretErrorDropsSensitiveCauses keeps internal SQL and cryptographic
+// material out of the public service boundary while retaining local stable codes.
+func TestPublicSecretErrorDropsSensitiveCauses(t *testing.T) {
+	const canary = "sensitive-sql-wrapped-dek-nonce"
+	raw := errors.New(canary)
+	for _, code := range []*bizerr.Code{CodeInvalid, CodeAccessDenied, CodeNotConfigured,
+		CodeIdempotencyConflict, CodeVersionConflict, CodeConsumerFailed, CodeUnavailable} {
+		result := publicSecretError(bizerr.WrapCode(raw, code))
+		if !bizerr.Is(result, code) || strings.Contains(result.Error(), canary) || errors.Is(result, raw) {
+			t.Fatalf("unsafe secret business error: %v", result)
+		}
+	}
+	result := publicSecretError(raw)
+	if !bizerr.Is(result, CodeUnavailable) || strings.Contains(result.Error(), canary) || errors.Is(result, raw) {
+		t.Fatalf("unsafe raw secret error: %v", result)
+	}
+	if publicSecretError(nil) != nil {
+		t.Fatal("nil error became failure")
+	}
+}

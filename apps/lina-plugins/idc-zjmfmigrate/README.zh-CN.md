@@ -14,8 +14,18 @@
 
 ## 交付
 
-`v0.2.1`以`dynamic + managed`交付，并使用`platform_only`、`supports_multi_tenant: false`和`global`治理。插件以隔离`WASM`运行，页面入口收纳在“系统配置”，只在迁移窗口人工启用。冲突列表使用`vben-adapter`隔离运行时，按有界页查询并显示宿主权限范围内的准确总数。升级保留配置，不新增`SQL`迁移。
+`v0.2.2`以`dynamic + managed`交付，并使用`platform_only`、`supports_multi_tenant: false`和`global`治理。插件以隔离`WASM`运行，页面入口收纳在“系统配置”，只在迁移窗口人工启用。冲突列表使用`vben-adapter`隔离运行时，按有界页查询并显示宿主权限范围内的准确总数。升级保留配置，不新增`SQL`迁移。
 
 ## 阶段边界
 
 当前能力提供来源参数预检、迁移批次、冲突决定、对账、切换检查、回滚门禁和证据报告。真实来源连接与正式导入仍必须在有来源账号、备份和验收窗口时执行；只读预检不产生外部副作用。
+
+## 构建与页面桥
+
+在仓库根目录执行：
+
+```bash
+go run ./hack/tools/linactl build dir=apps/lina-plugins/idc-zjmfmigrate
+```
+
+前端交付`admin/migration/index.html`和编译资源，使用`vben-adapter`官方隔离表格和表单抽屉。`migration-checks`页面通过`idc-migration.admin.v1`请求`admin/migration/*`已有业务接口，写操作使用`body`载荷，权限由宿主和业务拥有方继续校验。通过来源预检才允许创建批次，正式导入、执行、切换和回滚还需页面确认。页面不读取宿主存储或令牌。

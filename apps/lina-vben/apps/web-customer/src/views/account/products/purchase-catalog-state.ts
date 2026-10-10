@@ -1,6 +1,10 @@
-import type { PublicCatalogProduct } from '#/api/idc/purchase-configuration';
+import type {
+  PublicCatalogCategory,
+  PublicCatalogProduct,
+} from '#/api/idc/purchase-configuration';
 
 export interface PurchaseCatalogState {
+  categories: PublicCatalogCategory[];
   initialFailed: boolean;
   moreFailed: boolean;
   nextCursor: string;
@@ -9,6 +13,7 @@ export interface PurchaseCatalogState {
 
 export function createPurchaseCatalogState(): PurchaseCatalogState {
   return {
+    categories: [],
     initialFailed: false,
     moreFailed: false,
     nextCursor: '',
@@ -19,9 +24,14 @@ export function createPurchaseCatalogState(): PurchaseCatalogState {
 export function applyPurchaseCatalogPage(
   state: PurchaseCatalogState,
   reset: boolean,
-  page: { nextCursor?: string; products?: PublicCatalogProduct[] },
+  page: {
+    categories?: PublicCatalogCategory[];
+    nextCursor?: string;
+    products?: PublicCatalogProduct[];
+  },
 ) {
   return {
+    categories: page.categories ?? state.categories,
     initialFailed: false,
     moreFailed: false,
     nextCursor: page.nextCursor || '',

@@ -4,7 +4,9 @@
       "resource": {
         "catalog": {
           "invalid": "The upstream product query is invalid",
-          "not": { "accessible": "You cannot view upstream products for this interface" },
+          "not": {
+            "accessible": "You cannot view upstream products for this interface"
+          },
           "unavailable": "Upstream products could not be read; verify the interface and connector support"
         },
         "configuration": {
@@ -71,6 +73,15 @@
             },
             "conflict": "The channel secret changed; refresh and try again",
             "unavailable": "The channel secret service is temporarily unavailable"
+          }
+        },
+        "directory": {
+          "admin": {
+            "unavailable": "The server directory is temporarily unavailable",
+            "invalid": "The server directory request is invalid",
+            "not": {
+              "accessible": "The server is not accessible"
+            }
           }
         }
       }

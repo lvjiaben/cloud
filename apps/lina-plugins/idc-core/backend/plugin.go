@@ -74,6 +74,8 @@ import (
 	contentpubliccontroller "lina-plugin-idc-core/backend/internal/controller/contentpublic"
 	customeraccountcontroller "lina-plugin-idc-core/backend/internal/controller/customeraccount"
 	customeradmincontroller "lina-plugin-idc-core/backend/internal/controller/customeradmin"
+	directoryaccountcontroller "lina-plugin-idc-core/backend/internal/controller/directoryaccount"
+	directoryadmincontroller "lina-plugin-idc-core/backend/internal/controller/directoryadmin"
 	onboardingaccountcontroller "lina-plugin-idc-core/backend/internal/controller/onboardingaccount"
 	publiccontroller "lina-plugin-idc-core/backend/internal/controller/public"
 	serviceaccountcontroller "lina-plugin-idc-core/backend/internal/controller/serviceaccount"
@@ -120,6 +122,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 	"lina-plugin-idc-core/backend/internal/service/productautomationtoken"
 	"lina-plugin-idc-core/backend/internal/service/productdeliverydirectory"
+	"lina-plugin-idc-core/backend/internal/service/productdirectory"
 	"lina-plugin-idc-core/backend/internal/service/productfulfillment"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 	"lina-plugin-idc-core/backend/internal/service/reauth"
@@ -2339,6 +2342,22 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
+	directoryAccess, err := productdirectory.NewAccess(services.BizCtx(), principalSvc, services.Auth().Authz(), serviceCustomerReader)
+	if err != nil {
+		return err
+	}
+	directoryService, err := productdirectory.New(g.DB(), directoryAccess, auditWriter)
+	if err != nil {
+		return err
+	}
+	directoryAdminController, err := directoryadmincontroller.NewV1(directoryService)
+	if err != nil {
+		return err
+	}
+	directoryAccountController, err := directoryaccountcontroller.NewV1(directoryService)
+	if err != nil {
+		return err
+	}
 	serviceActions, err := serviceaction.NewConfigured(g.DB(), registrar.BusinessExtensions(), supplierRuntimeInvoker, supplierRuntimeInvoker, services.Storage())
 	if err != nil {
 		return err
@@ -2434,6 +2453,7 @@ func registerRoutes(
 		supportContentControllers.supportPublic, supportContentControllers.contentAdmin,
 		supportContentControllers.contentAccount, supportContentControllers.contentPublic,
 		serviceAccountController, serviceAdminController, serviceActionAccess,
+		directoryAccountController, directoryAdminController,
 	)
 	if err == nil {
 		automationRuntimeOwned = true
@@ -2485,6 +2505,8 @@ func bindRouteControllers(
 	serviceAccountController *serviceaccountcontroller.ControllerV1,
 	serviceAdminController *serviceadmincontroller.ControllerV1,
 	serviceActionAccess serviceaction.Access,
+	directoryAccountController *directoryaccountcontroller.ControllerV1,
+	directoryAdminController *directoryadmincontroller.ControllerV1,
 ) error {
 	if serviceActionAccess == nil {
 		return gerror.New("service customer page bridge requires its shared access service")
@@ -2515,6 +2537,7 @@ func bindRouteControllers(
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(),
 					middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy(),
 					customerAccess.Middleware, initialPasswordGuard.Middleware, middlewares.PageBridge())
+				group.Bind(directoryAccountController)
 				group.Bind(accountController)
 				group.Bind(customerAccountController)
 				group.Bind(supportAccountController)
@@ -2528,6 +2551,7 @@ func bindRouteControllers(
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(),
 					middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(),
 					middlewares.Tenancy(), middlewares.Permission(), staffMiddleware.Middleware, middlewares.PageBridge())
+				group.Bind(directoryAdminController)
 				group.Bind(adminController)
 				group.Bind(customerAdminController)
 				group.Bind(assistanceAdminController)

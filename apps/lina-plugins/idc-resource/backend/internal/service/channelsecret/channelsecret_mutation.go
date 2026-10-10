@@ -169,7 +169,10 @@ WHERE tenant_id = 0 AND id = ? AND version = ? AND status_code = ?`,
 		if _, revisionErr := interfacerevision.Append(ctx, tx, request.ChannelNo, actor); revisionErr != nil {
 			return revisionErr
 		}
-		return nil
+		after := *current
+		after.StatusCode = bindingStatusRevoked
+		after.Version++
+		return s.appendBindingAudit(ctx, OperationRevoke, current, &after)
 	})
 	if err != nil {
 		return nil, publicError(err)
@@ -190,9 +193,19 @@ func (s *serviceImpl) Rotate(ctx context.Context, input MutationInput) (secretca
 	if err != nil || nilDependency(manager) {
 		return secretcap.RotationResult{}, bizerr.NewCode(CodeUnavailable)
 	}
-	result, err := manager.Rotate(ctx, request.RotateLimit)
-	if err != nil || result.Rewrapped < 0 || result.Rewrapped > request.RotateLimit {
-		return secretcap.RotationResult{}, bizerr.NewCode(CodeUnavailable)
+	var result secretcap.RotationResult
+	// The secret owner joins this ambient transaction, so wrapping progress and
+	// the caller's secret-free audit evidence commit or roll back together.
+	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		var rotateErr error
+		result, rotateErr = manager.Rotate(ctx, request.RotateLimit)
+		if rotateErr != nil || result.Rewrapped < 0 || result.Rewrapped > request.RotateLimit {
+			return bizerr.NewCode(CodeUnavailable)
+		}
+		return s.appendRotationAudit(ctx, request.ChannelNo, input.AccessContext, result)
+	})
+	if err != nil {
+		return secretcap.RotationResult{}, publicError(err)
 	}
 	return result, nil
 }
@@ -326,8 +339,8 @@ func publicError(err error) error {
 		CodeConflict, CodeUnavailable,
 	} {
 		if bizerr.Is(err, code) {
-			return err
+			return bizerr.NewCode(code)
 		}
 	}
-	return bizerr.WrapCode(err, CodeUnavailable)
+	return bizerr.NewCode(CodeUnavailable)
 }

@@ -42,7 +42,7 @@ function cloneRoute(
 ): RouteRecordStringComponent {
   return {
     ...route,
-    children: route.children?.map(cloneRoute),
+    children: route.children?.map((route) => cloneRoute(route)),
     meta: route.meta ? { ...route.meta } : undefined,
   };
 }
@@ -87,14 +87,14 @@ export function organizeAdminMenus(
   source: RouteRecordStringComponent[],
   options: OrganizationOptions,
 ) {
-  const routes = source.map(cloneRoute);
+  const routes = source.map((route) => cloneRoute(route));
 
   visit(routes, (route) => {
     if (!hiddenPaths.has(route.path) && !configurationPaths.has(route.path)) {
       return;
     }
     route.meta = {
-      ...(route.meta || {}),
+      ...route.meta,
       hideInMenu: true,
       title: route.meta?.title || String(route.name || route.path),
     };
@@ -106,7 +106,7 @@ export function organizeAdminMenus(
   );
   if (businessAccess) {
     businessAccess.meta = {
-      ...(businessAccess.meta || {}),
+      ...businessAccess.meta,
       hideInMenu: true,
       title:
         businessAccess.meta?.title ||
@@ -128,7 +128,7 @@ export function organizeAdminMenus(
   const aiCopilot = detachByPath(routes, '/idc/ai-copilot');
   if (aiCopilot) {
     aiCopilot.meta = {
-      ...(aiCopilot.meta || {}),
+      ...aiCopilot.meta,
       hideInMenu: true,
       title: aiCopilot.meta?.title || String(aiCopilot.name || aiCopilot.path),
     };
@@ -158,10 +158,18 @@ export function organizeAdminMenus(
   }
 
   const pluginManagement = detachByPath(routes, '/system/plugin');
-  // Plugin management now belongs to system settings. The former extension
-  // container has no remaining merchant workflow and must not survive as an
-  // empty top-level menu.
-  detachByPath(routes, '/extension');
+  // Keep configuration and sandbox routes reachable after removing their
+  // former sidebar container. Plugin management moves into settings below.
+  const extension = detachByPath(routes, '/extension');
+  const extensionRoutes = extension?.children || [];
+  visit(extensionRoutes, (route) => {
+    route.meta = {
+      ...route.meta,
+      title: route.meta?.title || String(route.name || route.path),
+      hideInMenu: true,
+    };
+  });
+  routes.push(...extensionRoutes);
   const setting = findByPath(routes, '/setting');
   if (setting) {
     const children = setting.children || [];
@@ -184,7 +192,7 @@ export function organizeAdminMenus(
       return;
     }
     route.meta = {
-      ...(route.meta || {}),
+      ...route.meta,
       hideInMenu: true,
       title: route.meta?.title || String(route.name || route.path),
     };

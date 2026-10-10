@@ -33,12 +33,14 @@
 
 ## 构建与测试
 
-```powershell
-$env:GOWORK='off'
-go test ./...
-$env:GOWORK=$null
-Set-Location E:\golang\cloud
-go run ./hack/tools/linactl wasm dir=apps/lina-plugins/yunsu-ssl out=temp/output/yunsu-ssl
+在仓库根目录执行，支持`Windows`、`Linux`和`macOS`：
+
+```text
+go run ./hack/tools/linactl build dir=apps/lina-plugins/yunsu-ssl
+go run ./hack/tools/linactl test dir=apps/lina-plugins/yunsu-ssl
+pnpm --dir apps/lina-plugins/yunsu-ssl/frontend test
 ```
+
+`build`安装锁定的前端依赖，构建后台和客户中心证书页面，并将其嵌入`temp/output/yunsu-ssl.wasm`。全新检出必须先使用`build`；底层`wasm`打包命令要求清单声明的`frontend/dist`资源已经存在。在插件管理上传安装包，安装后启用，即可装配后台和客户中心入口。供应商凭据和证书商品另行配置；启用插件不会创建供应商订单。
 
 生产验证必须使用合法的云速隔离账号和专用测试证书订单，不能操作真实客户证书。

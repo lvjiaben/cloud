@@ -1,0 +1,17 @@
+{
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.tags": "IDC 服务器目录",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.summary": "查询魔方云服务器",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.dc": "在当前员工授权范围内返回有界的魔方云本地服务器目录，不返回凭据或供应商原始信息。",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.schema.dc": "在当前员工授权范围内返回有界的魔方云本地服务器目录，不返回凭据或供应商原始信息。",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.fields.page.dc": "从一开始的页码",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.fields.limit.dc": "本页最多返回的本地服务器数量",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListRes.fields.total.dc": "与当前员工和固定连接器范围一致的准确总数",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListRes.fields.items.dc": "有界且不含秘密的服务器投影",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListRes.fields.nextCursor.dc": "下一页游标，末页为空",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailReq.meta.tags": "IDC 服务器目录",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailReq.meta.summary": "查询魔方云服务器详情",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailReq.meta.dc": "重新检查直接员工身份和固定连接器后返回本地安全投影。",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailReq.schema.dc": "重新检查直接员工身份和固定连接器后返回本地安全投影。",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailReq.fields.serverNo.dc": "从已授权列表中选中的公开服务器编号",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerDetailRes.fields.item.dc": "单个不含秘密的本地服务器投影"
+}

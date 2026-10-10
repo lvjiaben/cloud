@@ -14,7 +14,9 @@
     "refresh": "Refresh",
     "retry": "Retry",
     "title": "Browse products",
-    "unavailable": "Unavailable"
+    "unavailable": "Unavailable",
+    "categories": "Product categories",
+    "allProducts": "All products"
   },
   "file": {
     "drag": "Click or drag files here to upload",

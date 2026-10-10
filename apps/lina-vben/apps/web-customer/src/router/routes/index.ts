@@ -4,14 +4,20 @@ import { mergeRouteModules, traverseTreeValues } from '@vben/utils';
 
 import { coreRoutes, fallbackNotFoundRoute } from './core';
 
-const dynamicRouteFiles = import.meta.glob('./modules/**/*.ts', {
-  eager: true,
-});
+const dynamicRouteFiles = import.meta.glob(
+  ['./modules/**/*.ts', '!./modules/**/*.test.ts'],
+  {
+    eager: true,
+  },
+);
 
 // 有需要可以自行打开注释，并创建文件夹
-const externalRouteFiles = import.meta.glob('./external/**/*.ts', {
-  eager: true,
-});
+const externalRouteFiles = import.meta.glob(
+  ['./external/**/*.ts', '!./external/**/*.test.ts'],
+  {
+    eager: true,
+  },
+);
 // const staticRouteFiles = import.meta.glob('./static/**/*.ts', { eager: true });
 
 /** 动态路由 */

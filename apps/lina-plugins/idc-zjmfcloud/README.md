@@ -6,10 +6,10 @@ English | [简体中文](README.zh-CN.md)
 
 ## Delivery model
 
-Version `v0.2.1` is delivered only as `dynamic + managed`. It has no source-plugin registration, built-in distribution mode, or compatibility path. Build the installable WASM artifact from the repository root:
+Version `v0.2.6` is delivered only as `dynamic + managed`. It has no source-plugin registration, built-in distribution mode, or compatibility path. Build the installable WASM artifact from the repository root:
 
-```powershell
-go run ./hack/tools/linactl wasm dir=apps/lina-plugins/idc-zjmfcloud out=temp/output/idc-zjmfcloud
+```bash
+go run ./hack/tools/linactl build dir=apps/lina-plugins/idc-zjmfcloud
 ```
 
 The artifact declares the `product-fulfillment@v1` provider contract owned by `idc-core` so the host can render product and customer configuration and freeze the server contract on a published product version. The declared `configuration.candidates`, `provision`, and `query` methods are authorization metadata; the guest rejects all direct execution through the product-owner context. Candidate discovery, provisioning, and later server operations use the `resource-provider@v1` extension owned by `idc-resource`. The resource owner resolves the selected `pfi_*` interface to its channel, creates the persistent task, binds the generated server password, and then invokes this connector.
@@ -31,3 +31,9 @@ The managed artifact publishes separate entries under `admin.resource-operations
 `backend/internal/provider/zjmfcloud` contains the protocol projection used by the managed WASM guest and its capability conformance tests. It is not registered as a source plugin. The managed-release contract test reuses its capability declaration so the dynamic manifest and the proven server action matrix cannot drift silently.
 
 Production write validation still requires a trusted HTTPS supplier endpoint and isolated test objects. Existing customer resources must never be used for destructive verification.
+
+## Page bridge contract
+
+The admin `server-management` surface borrows the read-only `zjmfcloud-servers.admin.v1` projection from `idc-resource >= 0.1.26`: `GET admin/resource/zjmfcloud-servers` and `GET admin/resource/zjmfcloud-servers/{serverNo}`. Every request checks the current staff identity, single-merchant scope, and `idc:admin:resource:server-batch:view` permission. Queries are fixed to this connector, bounded to 100 rows per page, and return an exact scoped total. Details share the same boundary. The projection excludes channel credentials and action references. The customer surface retains the resource owner's customer directory and action gates.
+
+Build runs the plugin's locked dependency install, type check, and both page entry builds before assembling WASM. Installation or upgrade must be followed by enablement; live supplier operations additionally require a configured resource channel.

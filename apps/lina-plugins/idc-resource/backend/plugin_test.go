@@ -38,7 +38,7 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 		t.Fatalf("read embedded manifest: %v", err)
 	}
 	if !strings.Contains(string(manifest), "id: "+pluginID) ||
-		!strings.Contains(string(manifest), "version: v0.1.25") {
+		!strings.Contains(string(manifest), "version: v0.1.26") {
 		t.Fatalf("embedded manifest does not identify %s", pluginID)
 	}
 }

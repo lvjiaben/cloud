@@ -111,7 +111,9 @@ func TestCommissionFoundationMigrationPostgreSQL(t *testing.T) {
 			t.Fatalf("execute commission migration %s: %v", filepath.Base(path), err)
 		}
 	}
-	latest, err := os.ReadFile(paths[len(paths)-1])
+	// Replay the commission migration itself even after newer modules append SQL.
+	commissionPath := filepath.Join(filepath.Dir(paths[0]), "061-commission-refund-reversal.sql")
+	latest, err := os.ReadFile(commissionPath)
 	if err != nil {
 		t.Fatalf("read commission migration for idempotence: %v", err)
 	}
@@ -561,8 +563,14 @@ func commissionMigrationPaths(t *testing.T) []string {
 		t.Fatalf("list commission migrations: %v", err)
 	}
 	sort.Strings(paths)
-	if len(paths) == 0 || filepath.Base(paths[len(paths)-1]) != "099-recent-auth-purpose.sql" {
-		t.Fatalf("commission migration is not latest: %v", paths)
+	foundCommission := false
+	for _, path := range paths {
+		if filepath.Base(path) == "061-commission-refund-reversal.sql" {
+			foundCommission = true
+		}
+	}
+	if !foundCommission {
+		t.Fatal("commission migration is missing")
 	}
 	return paths
 }

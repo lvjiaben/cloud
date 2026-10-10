@@ -6,10 +6,10 @@
 
 ## 交付方式
 
-`v0.2.1`只以`dynamic + managed`方式交付，不再保留源码插件注册、内置分发或旧兼容路径。在仓库根目录执行下面的命令可构建可安装的 WASM 产物：
+`v0.2.6`只以`dynamic + managed`方式交付，不再保留源码插件注册、内置分发或旧兼容路径。在仓库根目录执行下面的命令可构建可安装的 WASM 产物：
 
-```powershell
-go run ./hack/tools/linactl wasm dir=apps/lina-plugins/idc-zjmfcloud out=temp/output/idc-zjmfcloud
+```bash
+go run ./hack/tools/linactl build dir=apps/lina-plugins/idc-zjmfcloud
 ```
 
 产物声明由`idc-core`拥有的`product-fulfillment@v1`扩展点，供宿主渲染商品配置和客户购买配置，并把服务器契约冻结到已经发布的商品版本。清单中的`configuration.candidates`、`provision`和`query`只作为授权和冻结证据，客体会拒绝从商品拥有方上下文直接执行它们。候选加载、真实开通和后续服务器操作都使用`idc-resource`拥有的`resource-provider@v1`扩展点。资源插件负责把选中的`pfi_*`接口解析到资源渠道、创建持久任务并绑定生成的服务器密码，然后再调用本连接器。
@@ -31,3 +31,9 @@ go run ./hack/tools/linactl wasm dir=apps/lina-plugins/idc-zjmfcloud out=temp/ou
 `backend/internal/provider/zjmfcloud`包含托管 WASM 客体实际使用的协议投影和能力校验测试。它不会注册成源码插件。托管版本契约测试会复用其中的能力声明，避免动态清单和已经验证过的服务器动作矩阵悄悄产生偏差。
 
 生产写入验证仍需要可信的 HTTPS 供应商入口，并且只能操作专门创建的隔离测试对象，严禁使用已有客户资源做破坏性验证。
+
+## 页面桥契约
+
+后台`server-management`只借用`idc-resource >= 0.1.26`的`zjmfcloud-servers.admin.v1`只读投影：`GET admin/resource/zjmfcloud-servers`及`GET admin/resource/zjmfcloud-servers/{serverNo}`。每次请求验证当前员工、单商户范围和`idc:admin:resource:server-batch:view`权限；查询固定限定当前魔方云连接器，列表每页最多100条，准确总数与详情来自相同资源范围。只返回可展示的服务器状态，不返回渠道凭据或动作引用。客户页沿用资源拥有方的客户服务器契约和操作门禁。
+
+构建先执行插件自己的锁定依赖安装、类型检查和双入口页面构建，再装配WASM。安装或升级后还需启用插件；真实供应商功能另需配置资源渠道。

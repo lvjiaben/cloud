@@ -1,13 +1,23 @@
 {
   "compilerOptions": {
-    "lib": ["DOM", "ES2023"],
+    "lib": [
+      "DOM",
+      "ES2023",
+      "DOM.Iterable"
+    ],
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "noEmit": true,
     "strict": true,
     "target": "ES2022",
-    "types": []
+    "types": [],
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
-  "exclude": ["src/**/*.test.ts"],
-  "include": ["src/**/*.ts"]
+  "exclude": [
+    "src/**/*.test.ts"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ]
 }

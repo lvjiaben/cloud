@@ -662,10 +662,15 @@ func publicSecretError(err error) error {
 	if err == nil {
 		return nil
 	}
-	if _, ok := bizerr.As(err); ok {
-		return err
+	// Secret persistence errors can embed encrypted wrappers, nonces and SQL.
+	// Preserve only this service's stable public codes, never their raw cause.
+	for _, code := range []*bizerr.Code{CodeInvalid, CodeAccessDenied, CodeNotConfigured,
+		CodeIdempotencyConflict, CodeVersionConflict, CodeConsumerFailed, CodeUnavailable} {
+		if bizerr.Is(err, code) {
+			return bizerr.NewCode(code)
+		}
 	}
-	return bizerr.WrapCode(err, CodeUnavailable)
+	return bizerr.NewCode(CodeUnavailable)
 }
 
 func publicOptionalSecretError(err error) error {

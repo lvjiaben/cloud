@@ -47,7 +47,7 @@ type OperationsCustomerStatsGetRes struct {
 // OperationsRevenueTrendGetReq asks for the daily paid-order revenue series
 // of a moving window used by the ECharts trend chart.
 type OperationsRevenueTrendGetReq struct {
-	g.Meta `path:"/admin/operations/dashboard/revenue-trend" method:"get" tags:"IDC Operations" summary:"Get daily operations revenue trend" dc:"Return the daily paid-order revenue series of a moving window plus the comparison window, grouped by original currency." permission:"idc:admin:operations:workbench:view"`
+	g.Meta       `path:"/admin/operations/dashboard/revenue-trend" method:"get" tags:"IDC Operations" summary:"Get daily operations revenue trend" dc:"Return the daily paid-order revenue series of a moving window plus the comparison window, grouped by original currency." permission:"idc:admin:operations:workbench:view"`
 	CurrencyCode string `json:"currencyCode" in:"query" v:"required|max-length:3" dc:"ISO 4217 currency code of the trend series" eg:"CNY"`
 	Days         int    `json:"days" in:"query" d:"30" v:"between:7,31" dc:"Window length in days including today; 30 by default" eg:"30"`
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 
 	"lina-plugin-idc-core/backend/cap/billingcap"
@@ -179,19 +180,22 @@ func (s *Store) PrepareRechargeAndCreate(ctx context.Context, input RechargePrep
 }
 
 func (s *Store) MarkSubmitted(ctx context.Context, attemptNo string) error {
-	result, err := s.database.Exec(ctx, `UPDATE plugin_idc_payment_attempt SET status_code='submitted',submitted_at=COALESCE(submitted_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE attempt_no=? AND status_code IN ('created','submitted')`, attemptNo)
+	result, err := s.database.Exec(ctx, `UPDATE plugin_idc_payment_attempt SET status_code=CASE WHEN status_code='created' THEN 'submitted' ELSE status_code END,submitted_at=COALESCE(submitted_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE attempt_no=? AND status_code IN ('created','submitted','confirming','succeeded')`, attemptNo)
 	if err != nil {
 		return err
 	}
-	affected, _ := result.RowsAffected()
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if affected != 1 {
-		return errors.New("payment attempt cannot be submitted")
+		return gerror.New("payment attempt cannot be submitted")
 	}
 	return nil
 }
 
 func (s *Store) FailAndRelease(ctx context.Context, attemptNo string) error {
-	row, err := s.database.GetOne(ctx, `UPDATE plugin_idc_payment_attempt SET status_code='failed',updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE attempt_no=? AND status_code IN ('created','submitted','confirming') RETURNING balance_lock_reference`, attemptNo)
+	row, err := s.database.GetOne(ctx, `UPDATE plugin_idc_payment_attempt SET status_code='failed',result_unknown=FALSE,updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE attempt_no=? AND (status_code IN ('created','submitted') OR (status_code='manual_review' AND funding_result_digest=repeat('0',64))) RETURNING balance_lock_reference`, attemptNo)
 	if err != nil {
 		return err
 	}
@@ -278,25 +282,46 @@ func (s *Store) CompleteQuery(ctx context.Context, work ClaimedQuery, result pay
 	}
 	digest := sha256Hex(work.LeaseToken)
 	observationNo := stableNo("pqo", work.AttemptNo, result.EvidenceDigest)
-	if _, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_payment_query_observation(observation_no,attempt_no,query_reference,authority_code,observed_status_code,evidence_digest) VALUES(?,?,?,'authoritative',?,?) ON CONFLICT(attempt_no,query_reference) DO NOTHING`, observationNo, work.AttemptNo, observationNo, result.Status, result.EvidenceDigest); err != nil {
-		return err
-	}
-	if result.Status == "succeeded" {
-		if _, err := s.RecordVerifiedCallback(ctx, CallbackInput{ChannelNo: work.ChannelNo, Result: result, PayloadDigest: result.EvidenceDigest}); err != nil {
+	return s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
+		// Fence the entire result application before observations, callbacks or
+		// releasing held funds. The lock is retained until all changes commit.
+		lease, err := tx.GetOne(`SELECT w.work_no FROM plugin_idc_payment_work_item w JOIN plugin_idc_payment_attempt a ON a.attempt_no=w.subject_no WHERE w.work_no=? AND w.work_type='query_payment' AND w.subject_no=? AND a.channel_no=? AND w.status_code='leased' AND w.lease_token_digest=? AND w.lease_expires_at>CURRENT_TIMESTAMP FOR UPDATE OF w`, work.WorkNo, work.AttemptNo, work.ChannelNo, digest)
+		if err != nil {
 			return err
 		}
-	}
-	if result.Status == "closed" {
-		if err := s.FailAndRelease(ctx, work.AttemptNo); err != nil {
+		if lease.IsEmpty() {
+			return gerror.New("payment query work lease is stale")
+		}
+		if _, err = tx.Exec(`INSERT INTO plugin_idc_payment_query_observation(observation_no,attempt_no,query_reference,authority_code,observed_status_code,evidence_digest) VALUES(?,?,?,'authoritative',?,?) ON CONFLICT(attempt_no,query_reference) DO NOTHING`, observationNo, work.AttemptNo, observationNo, result.Status, result.EvidenceDigest); err != nil {
 			return err
 		}
-	}
-	status := "succeeded"
-	if result.Status == "pending" || result.Status == "refunding" {
-		status = "pending"
-	}
-	_, err := s.database.Exec(ctx, `UPDATE plugin_idc_payment_work_item SET status_code=?,available_at=CASE WHEN ?='pending' THEN CURRENT_TIMESTAMP+INTERVAL '30 seconds' ELSE available_at END,lease_token_digest=repeat('0',64),lease_expires_at=NULL,finished_at=CASE WHEN ?='succeeded' THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE work_no=? AND status_code='leased' AND lease_token_digest=?`, status, status, status, work.WorkNo, digest)
-	return err
+		if result.Status == "succeeded" {
+			if _, err = s.RecordVerifiedCallback(ctx, CallbackInput{ChannelNo: work.ChannelNo, Result: result, PayloadDigest: result.EvidenceDigest}); err != nil {
+				return err
+			}
+		}
+		if result.Status == "closed" {
+			if err = s.FailAndRelease(ctx, work.AttemptNo); err != nil {
+				return err
+			}
+		}
+		status := "succeeded"
+		if result.Status == "pending" || result.Status == "refunding" {
+			status = "pending"
+		}
+		completed, err := tx.Exec(`UPDATE plugin_idc_payment_work_item SET status_code=?,available_at=CASE WHEN ?='pending' THEN CURRENT_TIMESTAMP+INTERVAL '30 seconds' ELSE available_at END,lease_token_digest=repeat('0',64),lease_expires_at=NULL,finished_at=CASE WHEN ?='succeeded' THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE work_no=? AND status_code='leased' AND lease_token_digest=?`, status, status, status, work.WorkNo, digest)
+		if err != nil {
+			return err
+		}
+		affected, err := completed.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if affected != 1 {
+			return gerror.New("payment query work lease is stale")
+		}
+		return nil
+	})
 }
 
 func New(database gdb.DB, billing billingcap.Service) (*Store, error) {
@@ -540,9 +565,19 @@ failure_code='', finished_at=CURRENT_TIMESTAMP, updated_at=CURRENT_TIMESTAMP WHE
 		if affected != 1 {
 			return errors.New("payment work lease is stale")
 		}
-		_, err = tx.Exec(`UPDATE plugin_idc_payment_attempt SET status_code='succeeded', result_unknown=FALSE,
+		confirmed, err := tx.Exec(`UPDATE plugin_idc_payment_attempt SET status_code='succeeded', result_unknown=FALSE,
 confirmed_at=COALESCE(confirmed_at,CURRENT_TIMESTAMP), updated_at=CURRENT_TIMESTAMP, version=version+1 WHERE attempt_no=? AND status_code IN ('confirming','succeeded')`, work.AttemptNo)
-		return err
+		if err != nil {
+			return err
+		}
+		affected, err = confirmed.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if affected != 1 {
+			return gerror.New("payment confirmation state changed")
+		}
+		return nil
 	})
 	return err
 }

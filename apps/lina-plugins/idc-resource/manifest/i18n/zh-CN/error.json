@@ -4,12 +4,16 @@
       "resource": {
         "catalog": {
           "invalid": "上游商品查询条件不正确",
-          "not": { "accessible": "无权查看该接口的上游商品" },
+          "not": {
+            "accessible": "无权查看该接口的上游商品"
+          },
           "unavailable": "未能读取上游商品，请检查接口连接及连接器是否支持商品读取"
         },
         "configuration": {
           "invalid": "上游渠道或资源池配置填写不正确",
-          "not": { "accessible": "无权访问该上游配置" },
+          "not": {
+            "accessible": "无权访问该上游配置"
+          },
           "conflict": "配置已经变化，或启用渠道前账号密码尚未配置完整，请刷新后重试",
           "unavailable": "上游配置服务暂时不可用"
         },
@@ -69,6 +73,15 @@
             },
             "conflict": "渠道秘密已发生变化，请刷新后重试",
             "unavailable": "渠道秘密服务暂时不可用"
+          }
+        },
+        "directory": {
+          "admin": {
+            "unavailable": "服务器目录暂时不可用，请稍后重试",
+            "invalid": "服务器查询条件不正确",
+            "not": {
+              "accessible": "无权查看该服务器"
+            }
           }
         }
       }

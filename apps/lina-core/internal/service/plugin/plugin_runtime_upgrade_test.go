@@ -459,6 +459,17 @@ func TestExecuteRuntimeUpgradeUpgradesDynamicPlugin(t *testing.T) {
 		t.Fatalf("expected running state reset to succeed, got error: %v", err)
 	}
 
+	// A preview reads the effective archived release after discovering v2.
+	// Execution must still select staged v2 while installed v1 remains active.
+	preview, err := service.PreviewRuntimeUpgrade(ctx, pluginID)
+	if err != nil || preview.DiscoveredVersion != newVersion || preview.EffectiveVersion != oldVersion {
+		t.Fatalf("expected pending preview versions %s/%s, got %#v err=%v", oldVersion, newVersion, preview, err)
+	}
+	effectiveManifest, err := service.catalogSvc.LoadManifestFromArtifactPath(filepath.Join(testutil.TestDynamicStorageDir(), oldRelease.PackagePath))
+	if err != nil || effectiveManifest.Version != oldVersion {
+		t.Fatalf("expected effective archive to remain %s, got %#v err=%v", oldVersion, effectiveManifest, err)
+	}
+
 	result, err := service.ExecuteRuntimeUpgrade(ctx, pluginID, RuntimeUpgradeOptions{Confirmed: true})
 	if err != nil {
 		t.Fatalf("expected runtime upgrade execution to succeed, got error: %v", err)

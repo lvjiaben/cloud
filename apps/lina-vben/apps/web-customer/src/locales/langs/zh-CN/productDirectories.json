@@ -1,0 +1,26 @@
+{
+  "menu": "我的服务",
+  "all": "全部服务",
+  "product": "商品",
+  "status": "状态",
+  "startedAt": "开始时间",
+  "expiresAt": "到期时间",
+  "actions": "操作",
+  "viewOrder": "查看订单",
+  "noExpiry": "无到期时间",
+  "empty": "商家尚未设置商品目录",
+  "loadFailed": "目录加载失败",
+  "retry": "重试",
+  "states": {
+    "pending": "待开通",
+    "active": "运行中",
+    "suspended": "已暂停",
+    "expired": "已到期",
+    "terminated": "已终止",
+    "cancelled": "已取消",
+    "failed": "失败",
+    "provisioning": "开通中",
+    "pending_activation": "待激活"
+  },
+  "notStarted": "未开始"
+}

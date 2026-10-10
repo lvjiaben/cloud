@@ -125,9 +125,9 @@ describe('admin menu organization', () => {
           (route) => route.path === '/system/configuration-center',
         )?.meta?.title,
     ).toBe('系统配置');
-    expect(
-      result.find((route) => route.path === '/setting')?.redirect,
-    ).toBe('/system/configuration-center');
+    expect(result.find((route) => route.path === '/setting')?.redirect).toBe(
+      '/system/configuration-center',
+    );
     expect(
       result
         .find((route) => route.path === '/setting')
@@ -154,5 +154,36 @@ describe('admin menu organization', () => {
         ?.hideInMenu,
     ).toBe(true);
     expect(routes[1]?.children).toHaveLength(1);
+  });
+  it('preserves hidden sandbox routes and bridge metadata from the extension container', () => {
+    const surface: RouteRecordStringComponent = {
+      component: 'PluginSandboxView',
+      name: 'MigrationChecks',
+      path: '/plugins/idc-zjmfmigrate/migration-checks',
+      meta: {
+        title: 'Migration',
+        authority: ['idc-zjmfmigrate:migration:query'],
+        pluginSandboxSrc:
+          '/x-assets/idc-zjmfmigrate/v0.2.2/admin/migration/index.html',
+      },
+    };
+    const routes: RouteRecordStringComponent[] = [
+      {
+        component: 'BasicLayout',
+        name: 'Extension',
+        path: '/extension',
+        meta: { title: 'Extensions' },
+        children: [surface],
+      },
+    ];
+    const result = organizeAdminMenus(routes, {
+      systemConfigurationTitle: 'Settings',
+    });
+    expect(result.find((route) => route.path === '/extension')).toBeUndefined();
+    expect(result.find((route) => route.name === surface.name)).toEqual({
+      ...surface,
+      meta: { ...surface.meta, hideInMenu: true },
+    });
+    expect(surface.meta?.hideInMenu).toBeUndefined();
   });
 });

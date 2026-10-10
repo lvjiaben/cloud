@@ -21,9 +21,9 @@ func (*unifiedPublicationAutomationReadiness) CheckPublicationReadiness(context.
 }
 
 func TestCatalogUnifiedPublicationPostgreSQLIntegration(t *testing.T) {
-	t.Skip("legacy server publication checks replaced by generic commercial checks")
 	ctx := context.Background()
 	configureCatalogDraftIntegrationDB(t, ctx)
+	installAutomationPublicationMigration(t, ctx)
 	insertUnifiedPublicationCatalog(t, ctx)
 	authorizer := &catalogProductPublicationTestAuthorizer{actorUserID: 17}
 	auditWriter := &catalogDraftTestAuditWriter{}
@@ -36,7 +36,7 @@ func TestCatalogUnifiedPublicationPostgreSQLIntegration(t *testing.T) {
 		t.Fatalf("create unified publication preview service: %v", err)
 	}
 	readyPreview, err := previewService.PreviewVersion(ctx, "version-manual-1")
-	if err != nil || !readyPreview.Ready || len(readyPreview.Checks) != 7 {
+	if err != nil || !readyPreview.Ready || len(readyPreview.Checks) != 6 {
 		t.Fatalf("ready publication preview=%+v err=%v", readyPreview, err)
 	}
 	incompletePreview, err := previewService.PreviewVersion(ctx, "version-incomplete-1")
@@ -72,7 +72,7 @@ func TestCatalogUnifiedPublicationPostgreSQLIntegration(t *testing.T) {
 		t.Fatalf("repeat unified publication returned %v", err)
 	}
 	if _, err = service.PublishVersion(ctx, "version-incomplete-1"); !bizerr.Is(err, catalog.CodePublicationIncomplete) {
-		t.Fatalf("publication without fulfillment pool returned %v", err)
+		t.Fatalf("publication without commercial pricing returned %v", err)
 	}
 }
 
@@ -105,14 +105,6 @@ VALUES
      'unified-product', '统一发布商品', 'Unified product', '完整中文摘要', 'Complete English summary'),
     ('product-incomplete', 'category-unified', 'draft',
      'incomplete-product', '不完整商品', 'Incomplete product', '完整中文摘要', 'Complete English summary');
-INSERT INTO plugin_idc_core_legacy_server_category
-    (tenant_id, category_no, category_type_code)
-VALUES (0, 'category-unified', 'cloud_server');
-INSERT INTO plugin_idc_core_legacy_server_product
-    (tenant_id, product_no, category_no, product_type_code, configuration_mode_code)
-VALUES
-    (0, 'product-unified', 'category-unified', 'cloud_server', 'fixed'),
-    (0, 'product-incomplete', 'category-unified', 'cloud_server', 'fixed');
 INSERT INTO plugin_idc_core_catalog_product_version
     (version_no, product_no, version_number, status_code, source_code, source_version)
 VALUES
@@ -152,7 +144,6 @@ VALUES
     ('price-manual-cpu', 'version-manual-1', 'billing-manual-month', 'option-manual-cpu', 'CNY', 0, 0),
     ('price-copy-base', 'version-copy-2', 'billing-copy-month', NULL, 'CNY', 10000, 10000),
     ('price-copy-cpu', 'version-copy-2', 'billing-copy-month', 'option-copy-cpu', 'CNY', 0, 0),
-    ('price-incomplete-base', 'version-incomplete-1', 'billing-incomplete-month', NULL, 'CNY', 10000, 10000),
     ('price-incomplete-cpu', 'version-incomplete-1', 'billing-incomplete-month', 'option-incomplete-cpu', 'CNY', 0, 0);
 INSERT INTO plugin_idc_core_catalog_tax_policy
     (tax_policy_no, version_no, currency_code, price_includes_tax,
@@ -165,11 +156,7 @@ VALUES
      'taxable', 600, 'cloud_service', 'line', 'half_up', 1),
     ('tax-incomplete-cny', 'version-incomplete-1', 'CNY', TRUE,
      'taxable', 600, 'cloud_service', 'line', 'half_up', 1);
-INSERT INTO plugin_idc_core_catalog_resource_pool_binding
-    (binding_no, version_no, pool_no, priority, weight, new_order_enabled, status_code)
-VALUES
-    ('binding-manual', 'version-manual-1', 'pool-manual', 10, 100, TRUE, 'active'),
-    ('binding-copy', 'version-copy-2', 'pool-copy', 10, 100, TRUE, 'active')`); err != nil {
+`); err != nil {
 		t.Fatalf("insert unified publication catalog: %v", err)
 	}
 }

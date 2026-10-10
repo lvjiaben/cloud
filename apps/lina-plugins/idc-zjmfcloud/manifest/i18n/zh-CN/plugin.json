@@ -1,4 +1,8 @@
 {
   "plugin.idc-zjmfcloud.name": "IDC 智简魔方云适配器",
-  "plugin.idc-zjmfcloud.description": "提供由资源插件统一管理的商品配置发现和智简魔方公有云 v1 服务器操作。"
+  "plugin.idc-zjmfcloud.description": "提供由资源插件统一管理的商品配置发现和智简魔方公有云 v1 服务器操作。",
+  "plugin.idc-zjmfcloud.admin.title": "魔方云服务器管理",
+  "plugin.idc-zjmfcloud.admin.refresh": "刷新",
+  "plugin.idc-zjmfcloud.admin.detail": "服务器详情",
+  "plugin.idc-zjmfcloud.admin.error": "服务器加载失败，请检查权限或稍后重试。"
 }

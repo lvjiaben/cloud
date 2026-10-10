@@ -1,6 +1,6 @@
 id: idc-core
 name: LinaPro IDC Core
-version: v0.1.93
+version: v0.1.94
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -275,6 +275,30 @@ menus:
     type: M
     sort: 21
     remark: Search, create, edit, soft-delete, and restore catalog categories
+  - key: plugin:idc-core:product-directories
+    parent_key: plugin:idc-core:catalog-products
+    name: Product Directories
+    path: /idc/catalog/product-directories
+    component: system/plugin/dynamic-page
+    perms: idc:admin:product-directory:list
+    icon: lucide:folders
+    type: M
+    sort: 23
+    remark: Configure purchased-service navigation independently of sales categories
+  - key: plugin:idc-core:product-directories:create
+    parent_key: plugin:idc-core:product-directories
+    name: Create Product Directory
+    perms: idc:admin:product-directory:create
+    type: B
+    visible: 0
+    sort: 1
+  - key: plugin:idc-core:product-directories:update
+    parent_key: plugin:idc-core:product-directories
+    name: Update Product Directory
+    perms: idc:admin:product-directory:update
+    type: B
+    visible: 0
+    sort: 2
   - key: plugin:idc-core:catalog-automation-interfaces
     parent_key: plugin:idc-core:catalog-products
     name: Automation Interfaces

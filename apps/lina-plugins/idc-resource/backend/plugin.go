@@ -35,6 +35,7 @@ import (
 	"lina-plugin-idc-resource/backend/internal/composition"
 	accountcontroller "lina-plugin-idc-resource/backend/internal/controller/account"
 	admincontroller "lina-plugin-idc-resource/backend/internal/controller/admin"
+	"lina-plugin-idc-resource/backend/internal/controller/adminserver"
 	serverpagecontroller "lina-plugin-idc-resource/backend/internal/controller/serverpage"
 	"lina-plugin-idc-resource/backend/internal/dao"
 	"lina-plugin-idc-resource/backend/internal/service/accessorydirectory"
@@ -395,6 +396,14 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 	if err != nil {
 		return err
 	}
+	staffServerDirectory, err := serverdirectory.NewAdmin(serverDirectory, runtime.Authorizer)
+	if err != nil {
+		return err
+	}
+	staffServerController, err := adminserver.New(staffServerDirectory)
+	if err != nil {
+		return err
+	}
 	currentCustomerServers, err := serverprojection.New(customers, serverDirectory)
 	if err != nil {
 		return err
@@ -424,6 +433,7 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 			group.Bind(admincontroller.NewV1(
 				management, healthManagement, taskManagement, secretManagement, overview, configurations, verification, serverRenewals, catalogSource,
 			))
+			group.Bind(staffServerController)
 		})
 	})
 	if err = routes.Err(); err != nil {

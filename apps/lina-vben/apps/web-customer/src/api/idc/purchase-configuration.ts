@@ -87,7 +87,14 @@ export interface PurchaseFileItem {
   status: 'ready' | 'reserved' | 'revoked';
 }
 
+export interface PublicCatalogCategory {
+  categoryNo: string;
+  nameEnUS: string;
+  nameZhCN: string;
+}
+
 export interface PublicCatalogProduct {
+  categoryNo: string;
   availability: 'available' | 'manual_confirmation' | 'unavailable';
   categoryNameEnUS: string;
   categoryNameZhCN: string;
@@ -99,10 +106,10 @@ export interface PublicCatalogProduct {
   summaryZhCN: string;
 }
 
-export function listPublicCatalogProducts(cursor = '') {
-  return requestClient.get<{ nextCursor: string; products: PublicCatalogProduct[] }>(
+export function listPublicCatalogProducts(cursor = '', categoryNo = '') {
+  return requestClient.get<{ categories: PublicCatalogCategory[]; nextCursor: string; products: PublicCatalogProduct[] }>(
     path('public/catalog/products'),
-    { params: { cursor: cursor || undefined, limit: 24 } },
+    { params: { categoryNo: categoryNo || undefined, cursor: cursor || undefined, limit: 24 } },
   );
 }
 

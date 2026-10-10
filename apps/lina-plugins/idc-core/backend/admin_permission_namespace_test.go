@@ -134,6 +134,36 @@ func TestInspectIDCAPIFileClassifiesAdminContracts(t *testing.T) {
 			wantViolation: true,
 		},
 		{
+			name:           "directory resource is explicitly registered",
+			path:           "backend/api/directoryadmin/v1/directory.go",
+			meta:           `path:"/admin/product-directories" method:"get" permission:"idc:admin:product-directory:list"`,
+			wantPermission: "idc:admin:product-directory:list",
+		},
+		{
+			name:           "server resource is explicitly registered",
+			path:           "backend/api/adminserver/v1/server_list.go",
+			meta:           `path:"/admin/resource/zjmfcloud-servers" method:"get" permission:"idc:admin:resource:server-batch:view"`,
+			wantPermission: "idc:admin:resource:server-batch:view",
+		},
+		{
+			name:          "registered resource cannot contain customer route",
+			path:          "backend/api/adminserver/v1/server_list.go",
+			meta:          `path:"/account/servers" method:"get" permission:"idc:admin:resource:server-batch:view"`,
+			wantViolation: true,
+		},
+		{
+			name:          "registered resource cannot omit permission",
+			path:          "backend/api/directoryadmin/v1/directory.go",
+			meta:          `path:"/admin/product-directories" method:"get"`,
+			wantViolation: true,
+		},
+		{
+			name:          "admin prefix is not an implicit registration",
+			path:          "backend/api/adminunregistered/v1/resource.go",
+			meta:          `path:"/admin/resource" method:"get" permission:"idc:admin:resource:server-batch:view"`,
+			wantViolation: true,
+		},
+		{
 			name: "public contract has no admin permission",
 			path: "backend/api/account/v1/profile.go",
 			meta: `path:"/account/profile" method:"get"`,
@@ -161,7 +191,7 @@ func TestInspectIDCAPIFileClassifiesAdminContracts(t *testing.T) {
 }
 
 // inspectIDCAPIFile parses g.Meta declarations and enforces that management
-// contracts use both backend/api/admin and /admin routing, with exactly one
+// contracts use an explicitly registered admin API directory and /admin routing, with exactly one
 // non-empty permission attribute. This makes the admin classification explicit.
 func inspectIDCAPIFile(path string, content []byte) apiMetaInspection {
 	inspection := apiMetaInspection{}
@@ -197,7 +227,7 @@ func inspectIDCAPIFile(path string, content []byte) apiMetaInspection {
 			adminRoute := route == "/admin" || strings.HasPrefix(route, "/admin/")
 			isAdmin := adminFile || adminRoute
 			if adminFile != adminRoute {
-				inspection.violations = append(inspection.violations, "admin API must use both backend/api/admin and an /admin route")
+				inspection.violations = append(inspection.violations, "admin API must use a registered admin directory and an /admin route")
 			}
 			permission, hasPermission := tag.Lookup("permission")
 			permissionCount := strings.Count(tagValue, `permission:"`)
@@ -218,7 +248,14 @@ func inspectIDCAPIFile(path string, content []byte) apiMetaInspection {
 
 func isAdminAPIFile(path string) bool {
 	normalized := "/" + strings.Trim(filepath.ToSlash(path), "/") + "/"
-	return strings.Contains(normalized, "/backend/api/admin/")
+	// Resource-specific namespaces keep generated controllers independent while
+	// retaining an explicit, closed set of management API directories.
+	for _, directory := range []string{"admin", "directoryadmin", "adminserver"} {
+		if strings.Contains(normalized, "/backend/api/"+directory+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // recordIDCAdminPermissions validates comma-separated static permission tags

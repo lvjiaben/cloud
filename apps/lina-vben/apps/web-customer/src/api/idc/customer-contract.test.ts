@@ -4,6 +4,8 @@ const requestClient = {
   delete: vi.fn(),
   download: vi.fn(),
   get: vi.fn(),
+  instance: { defaults: { transformRequest: [], transformResponse: [] } },
+  request: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
 };
@@ -51,13 +53,13 @@ describe('customer IDC API boundaries', () => {
 
   it('uses the real cursor-based support ticket list envelope', async () => {
     const { listCustomerTickets } = await import('./support');
-    requestClient.get.mockResolvedValue({ nextCursor: '', tickets: [] });
+    requestClient.request.mockResolvedValue({ nextCursor: '', tickets: [] });
 
     await listCustomerTickets({ cursor: 'next-page', limit: 10 });
 
-    expect(requestClient.get).toHaveBeenCalledWith(
+    expect(requestClient.request).toHaveBeenCalledWith(
       '/x/idc-core/api/v1/account/support/tickets',
-      { params: { cursor: 'next-page', limit: 10 } },
+      expect.objectContaining({ params: { cursor: 'next-page', limit: 10 } }),
     );
   });
 

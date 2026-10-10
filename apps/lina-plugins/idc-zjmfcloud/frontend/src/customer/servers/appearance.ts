@@ -3,6 +3,7 @@
 export function installCustomerServerAppearance(doc: Document = document) {
   const style = doc.createElement('style');
   style.textContent = `
+:root{--background:216 33% 97%;--foreground:222 47% 11%;--card:0 0% 100%;--border:214 23% 88%;--primary:211 100% 55%;--primary-foreground:0 0% 100%}*{box-sizing:border-box}body{margin:0;background:hsl(var(--background));color:hsl(var(--foreground));font:14px/1.5 system-ui}button{font:inherit;cursor:pointer;padding:6px 12px;border:1px solid hsl(var(--border))}.server-list{list-style:none;margin:0;padding:0}.server-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:16px;padding:14px 16px;border-bottom:1px solid hsl(var(--border))}.product span{display:block}.detail{padding:16px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.detail-grid dd{margin:0}.state{padding:24px}
 .zjmfcloud-servers {
   min-width: 0;
   padding: 16px;
