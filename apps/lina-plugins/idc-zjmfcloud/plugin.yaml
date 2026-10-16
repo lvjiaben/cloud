@@ -1,6 +1,6 @@
 id: idc-zjmfcloud
 name: IDC ZJMFCloud Provider
-version: v0.2.6
+version: v0.3.0
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -24,7 +24,7 @@ dependencies:
     - id: idc-core
       version: ">=0.1.85 <1.0.0"
     - id: idc-resource
-      version: ">=0.1.26 <1.0.0"
+      version: ">=0.1.33 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -33,6 +33,7 @@ business_extensions:
     owner: idc-core
     methods:
       - configuration.candidates
+      - product.configuration.validate
       - provision
       - query
     product_configuration:
@@ -96,6 +97,44 @@ business_extensions:
           required: true
           minimum: "1"
           maximum: "1000000"
+        - key: hostname_prefix
+          type: single_line
+          label: { en-US: Hostname prefix, zh-CN: 主机名前缀 }
+          description: { en-US: Up to 10 letters. Leave blank for automatic names., zh-CN: 最多10个英文字母，留空自动生成。 }
+          maximum_length: 10
+        - key: hostname_length
+          type: integer
+          label: { en-US: Hostname length, zh-CN: 主机名总长度 }
+          description: { en-US: Includes the prefix. Leave blank to use the default., zh-CN: 包含前缀，留空使用默认规则。 }
+          minimum: "4"
+          maximum: "63"
+        - key: hostname_characters
+          type: multi_select
+          label: { en-US: Hostname characters, zh-CN: 主机名允许字符 }
+          static_candidates:
+            - value: lowercase
+              label: { en-US: Lowercase letters, zh-CN: 小写字母 }
+            - value: digits
+              label: { en-US: Numbers, zh-CN: 数字 }
+        - key: password_length
+          type: integer
+          label: { en-US: Generated password length, zh-CN: 自动生成密码长度 }
+          description: { en-US: Leave blank to use the default secure password., zh-CN: 留空使用默认安全密码。 }
+          minimum: "6"
+          maximum: "20"
+        - key: password_characters
+          type: multi_select
+          label: { en-US: Password character rules, zh-CN: 密码字符规则 }
+          description: { en-US: Each selected character type is required. Leave blank for letters and numbers., zh-CN: 每种选中的字符都会包含，留空使用大小写字母和数字。 }
+          static_candidates:
+            - value: lowercase
+              label: { en-US: Lowercase letters, zh-CN: 小写字母 }
+            - value: uppercase
+              label: { en-US: Uppercase letters, zh-CN: 大写字母 }
+            - value: digits
+              label: { en-US: Numbers, zh-CN: 数字 }
+            - value: symbols
+              label: { en-US: Symbols, zh-CN: 特殊字符 }
     customer_configuration:
       version: v1
       fields:
@@ -108,6 +147,101 @@ business_extensions:
           dynamic_candidates:
             version: v1
             method: configuration.candidates
+        - key: cpu
+          type: integer
+          label: { en-US: "CPU cores", zh-CN: "处理器核心数" }
+          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
+          minimum: "1"
+          maximum: "1024"
+        - key: memory_gib
+          type: integer
+          label: { en-US: "Memory (GiB)", zh-CN: "内存（GiB）" }
+          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
+          minimum: "1"
+          maximum: "1024"
+        - key: system_disk
+          type: integer
+          label: { en-US: "System disk (GiB)", zh-CN: "系统盘（GiB）" }
+          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
+          minimum: "1"
+          maximum: "1048576"
+        - key: data_disk
+          type: integer
+          label: { en-US: "Data disk (GiB, zero means none)", zh-CN: "数据盘（GiB，0表示不要）" }
+          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
+          minimum: "0"
+          maximum: "1048576"
+        - key: bandwidth
+          type: integer
+          label: { en-US: "Bandwidth (Mbps)", zh-CN: "带宽（Mbps）" }
+          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
+          minimum: "1"
+          maximum: "1000000"
+        - key: snapshot_count
+          type: integer
+          label: { en-US: "Number of snapshots", zh-CN: "快照数量" }
+          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          minimum: "0"
+          maximum: "1000000"
+        - key: snapshot_unlimited
+          type: single_select
+          label: { en-US: "Unlimited snapshots", zh-CN: "快照不限量" }
+          description: { en-US: "Select only for unlimited service; priced separately from quantity.", zh-CN: "需要不限量才选择，按不限量价格单独收费。" }
+          static_candidates:
+            - value: unlimited
+              label: { en-US: Unlimited, zh-CN: 不限量 }
+        - key: backup_count
+          type: integer
+          label: { en-US: "Number of backups", zh-CN: "备份数量" }
+          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          minimum: "0"
+          maximum: "1000000"
+        - key: backup_unlimited
+          type: single_select
+          label: { en-US: "Unlimited backups", zh-CN: "备份不限量" }
+          description: { en-US: "Select only for unlimited service; priced separately from quantity.", zh-CN: "需要不限量才选择，按不限量价格单独收费。" }
+          static_candidates:
+            - value: unlimited
+              label: { en-US: Unlimited, zh-CN: 不限量 }
+        - key: nat_forward_count
+          type: integer
+          label: { en-US: "Number of NAT forwarding rules", zh-CN: "NAT转发数量" }
+          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          minimum: "0"
+          maximum: "1000000"
+        - key: nat_forward_unlimited
+          type: single_select
+          label: { en-US: "Unlimited NAT forwarding rules", zh-CN: "NAT转发不限量" }
+          description: { en-US: "Select only for unlimited service; priced separately from quantity.", zh-CN: "需要不限量才选择，按不限量价格单独收费。" }
+          static_candidates:
+            - value: unlimited
+              label: { en-US: Unlimited, zh-CN: 不限量 }
+        - key: nat_website_count
+          type: integer
+          label: { en-US: "Number of NAT websites", zh-CN: "共享建站数量" }
+          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          minimum: "0"
+          maximum: "1000000"
+        - key: nat_website_unlimited
+          type: single_select
+          label: { en-US: "Unlimited NAT websites", zh-CN: "共享建站不限量" }
+          description: { en-US: "Select only for unlimited service; priced separately from quantity.", zh-CN: "需要不限量才选择，按不限量价格单独收费。" }
+          static_candidates:
+            - value: unlimited
+              label: { en-US: Unlimited, zh-CN: 不限量 }
+      conditions:
+        - when: { operator: equal, field: snapshot_unlimited, value: unlimited }
+          actions:
+            - { action: hide, field: snapshot_count }
+        - when: { operator: equal, field: backup_unlimited, value: unlimited }
+          actions:
+            - { action: hide, field: backup_count }
+        - when: { operator: equal, field: nat_forward_unlimited, value: unlimited }
+          actions:
+            - { action: hide, field: nat_forward_count }
+        - when: { operator: equal, field: nat_website_unlimited, value: unlimited }
+          actions:
+            - { action: hide, field: nat_website_count }
     provider_metadata:
       type: product-fulfillment-contract
       version: v1
@@ -115,6 +249,7 @@ business_extensions:
         capability:
           enUS: ZJMFCloud server configuration with idc-resource-owned provisioning and ongoing management
           zhCN: 智简魔方云服务器配置，以及由 idc-resource 负责的开通和持续管理
+        merchantCustomerFields: [cpu, memory_gib, system_disk, data_disk, bandwidth, snapshot_count, snapshot_unlimited, backup_count, backup_unlimited, nat_forward_count, nat_forward_unlimited, nat_website_count, nat_website_unlimited]
         granularity: per_quantity_unit
         ongoingManagement: true
         renewalSupport: unsupported
@@ -164,7 +299,7 @@ business_extensions:
             default:
               strategy: login_session
               fields: { username: username, password: password }
-              loginPath: /administrator/v1/login
+              loginPath: /login
               tokenJSONPath: [$]
               tokenHeader: Access-Token
               sessionTTLSeconds: 3600

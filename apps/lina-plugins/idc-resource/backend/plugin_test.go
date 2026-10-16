@@ -4,6 +4,10 @@ package backend
 
 import (
 	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -37,9 +41,27 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read embedded manifest: %v", err)
 	}
-	if !strings.Contains(string(manifest), "id: "+pluginID) ||
-		!strings.Contains(string(manifest), "version: v0.1.26") {
-		t.Fatalf("embedded manifest does not identify %s", pluginID)
+	var embedded, current struct {
+		ID      string `yaml:"id"`
+		Version string `yaml:"version"`
+	}
+	if err = gyaml.DecodeTo(manifest, &embedded); err != nil {
+		t.Fatal(err)
+	}
+	_, sourceFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("resolve plugin manifest path")
+	}
+	source, err := os.ReadFile(filepath.Join(filepath.Dir(sourceFile), "..", "plugin.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = gyaml.DecodeTo(source, &current); err != nil {
+		t.Fatal(err)
+	}
+	validVersion := regexp.MustCompile(`^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$`).MatchString(embedded.Version)
+	if embedded.ID != pluginID || embedded.ID != registered.ID() || embedded != current || !validVersion {
+		t.Fatalf("embedded manifest identity/version mismatch: embedded=%+v current=%+v registered=%s", embedded, current, registered.ID())
 	}
 }
 
@@ -66,7 +88,7 @@ func TestPublishedProviderMethods(t *testing.T) {
 	if err := gyaml.DecodeTo(content, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	want := append(resourcecap.DynamicProviderMethods(), resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct)
+	want := append(resourcecap.DynamicProviderMethods(), resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct, resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration, resourcecap.DynamicProviderMethodCatalogBillingTerms)
 	slices.Sort(want)
 	for _, extension := range manifest.Extensions {
 		if extension.Point == "resource-provider" && extension.Role == "owner" && extension.Owner == pluginID && extension.Version == "v1" {

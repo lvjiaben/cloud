@@ -57,7 +57,7 @@ type ManagementCreditApplicationReviewIntent struct {
 
 // ManagementCreditApplicationReviewProofReq requests a proof bound to one review decision.
 type ManagementCreditApplicationReviewProofReq struct {
-	g.Meta        `path:"/admin/billing/credit/applications/{applicationNo}/review-proofs" method:"post" tags:"IDC Credit Management" summary:"Issue a credit application review proof" dc:"Authorize the exact independent decision and issue a short-lived proof only after a recent full login." permission:"idc:admin:billing:credit-application:review"`
+	g.Meta        `path:"/admin/billing/credit/applications/{applicationNo}/review-proofs" method:"post" tags:"IDC Credit Management" summary:"Issue a credit application review proof" dc:"Authorize the exact independent decision and issue a short-lived proof only after a current active session." permission:"idc:admin:billing:credit-application:review"`
 	ApplicationNo string `json:"applicationNo" in:"path" v:"required|max-length:40" dc:"Stable pending credit application number" eg:"CAP_01J2ABCDEF"`
 	ManagementCreditApplicationReviewIntent
 }

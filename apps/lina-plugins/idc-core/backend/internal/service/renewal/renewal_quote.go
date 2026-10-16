@@ -1,3 +1,6 @@
+// This file freezes owned recurring-service renewal quotes using the effective
+// paid price period. Trials must use formal conversion instead of this path.
+
 package renewal
 
 import (
@@ -20,6 +23,7 @@ import (
 const maximumRenewalBatchRows = 250
 
 type entitlementQuoteRow struct {
+	TrialConversion              bool
 	EntitlementNo                string     `orm:"entitlement_no"`
 	CustomerNo                   string     `orm:"customer_no"`
 	CustomerStatus               string     `orm:"customer_status_code"`
@@ -30,6 +34,7 @@ type entitlementQuoteRow struct {
 	ConfigurationSnapshotNo      string     `orm:"configuration_snapshot_no"`
 	PriceConfigurationSnapshotNo string     `orm:"price_configuration_snapshot_no"`
 	CurrencyCode                 string     `orm:"currency_code"`
+	ChargeTypeCode               string     `orm:"charge_type_code"`
 	EntitlementStatusCode        string     `orm:"entitlement_status_code"`
 	RenewalModeCode              string     `orm:"renewal_mode_code"`
 	RenewalMethod                string     `orm:"renewal_method"`
@@ -137,9 +142,10 @@ func (s *serviceImpl) quoteOwned(
 	idempotency := idempotencyDigest(normalized.IdempotencyKey)
 	requestDigest, err := contentDigest(struct {
 		CustomerNo, EntitlementNo, RequestSource string
+		FormalBillingRuleNo                      string `json:",omitempty"`
 		RenewalCycles                            int
 		AssetNumbers                             []string
-	}{customerNo, normalized.EntitlementNo, requestSource, normalized.RenewalCycles,
+	}{customerNo, normalized.EntitlementNo, requestSource, normalized.FormalBillingRuleNo, normalized.RenewalCycles,
 		normalized.AssetNumbers})
 	if err != nil {
 		return nil, normalizeError(err)
@@ -180,6 +186,11 @@ SELECT pg_advisory_xact_lock(hashtextextended(?, 0))`,
 		if nowErr != nil {
 			return nowErr
 		}
+		if normalized.FormalBillingRuleNo != "" {
+			if err := s.prepareTrialConversion(ctx, service, normalized.FormalBillingRuleNo); err != nil {
+				return err
+			}
+		}
 		if eligibilityErr := validateEntitlementQuoteEligibility(service); eligibilityErr != nil {
 			return eligibilityErr
 		}
@@ -212,8 +223,11 @@ SELECT pg_advisory_xact_lock(hashtextextended(?, 0))`,
 				IssuedAt: now, AssetNumbers: append([]string(nil), normalized.AssetNumbers...),
 				Lines: []commerce.QuoteAdjustmentLineInput{{
 					ReferenceNo: service.EntitlementNo, ProductNo: service.ProductNo,
-					CategoryNo:    catalogLine.CategoryNo,
-					SubtotalMinor: initialAmounts.SubtotalMinor,
+					CategoryNo:     catalogLine.CategoryNo,
+					SubtotalMinor:  initialAmounts.SubtotalMinor,
+					ChargeTypeCode: catalogLine.ChargeTypeCode, PeriodUnitCode: catalogLine.PeriodUnitCode,
+					PeriodCount: catalogLine.PeriodCount, Quantity: catalogLine.Quantity,
+					PurchaseCycles: catalogLine.PurchaseCycles, PeriodSubtotalMinor: initialAmounts.PeriodSubtotalMinor,
 				}},
 			},
 		)
@@ -221,13 +235,17 @@ SELECT pg_advisory_xact_lock(hashtextextended(?, 0))`,
 			len(adjustmentResult.Adjustments) > maximumAdjustments {
 			return bizerr.NewCode(CodePriceUnavailable)
 		}
-		discountMinor, adjustmentErr := validateRenewalAdjustments(
+		_, adjustmentErr = validateRenewalAdjustments(
 			service.EntitlementNo, adjustmentResult.Adjustments,
 		)
 		if adjustmentErr != nil {
 			return adjustmentErr
 		}
-		amounts, amountErr := commerce.CalculatePricingAmounts(catalogLine, discountMinor)
+		catalogLine, amountErr = commerce.ApplyAgentPrice(catalogLine, adjustmentResult.Adjustments)
+		if amountErr != nil {
+			return bizerr.NewCode(CodePriceUnavailable)
+		}
+		amounts, amountErr := commerce.CalculatePricingAmountsWithAdjustments(catalogLine, adjustmentResult.Adjustments)
 		if amountErr != nil {
 			return bizerr.NewCode(CodePriceUnavailable)
 		}
@@ -296,14 +314,17 @@ func lockOwnedEntitlementForQuote(
 SELECT service.entitlement_no AS entitlement_no, service.customer_no,
 	       customer.status_code AS customer_status_code,
 	       customer.version AS customer_subject_version,
-	       service.product_no, service.version_no, service.billing_rule_no,
+	       service.product_no,
+	       COALESCE(current_price.version_no, service.version_no) AS version_no,
+	       COALESCE(current_price.billing_rule_no, service.billing_rule_no) AS billing_rule_no,
 	       service.configuration_snapshot_no,
 	       COALESCE(current_price.configuration_snapshot_no,
 	                order_item.configuration_snapshot_no) AS price_configuration_snapshot_no,
-       service.currency_code, service.status_code AS entitlement_status_code,
+       service.currency_code, service.charge_type_code, service.status_code AS entitlement_status_code,
        service.renewal_mode_code,service.renewal_method,service.entitlement_owner_id,service.plugin_id,
        service.plugin_release_version,service.contract_version,service.declaration_digest,
-       service.period_unit_code, service.period_count,
+       COALESCE(current_price.period_unit_code, service.period_unit_code) AS period_unit_code,
+       COALESCE(current_price.period_count, service.period_count) AS period_count,
        service.expires_at AS entitlement_expires_at, service.version
 FROM plugin_idc_core_service_entitlement service
 INNER JOIN plugin_idc_core_customer_subject customer
@@ -331,6 +352,11 @@ func validateEntitlementQuoteEligibility(service *entitlementQuoteRow) error {
 		service.EntitlementExpiresAt == nil || service.PeriodUnitCode == "once" ||
 		(service.EntitlementStatusCode != "active" && service.EntitlementStatusCode != "expired") {
 		return bizerr.NewCode(CodeConflict)
+	}
+	// Trial conversion must select a formal period and resume the existing
+	// resource after payment; ordinary renewal cannot perform that transition.
+	if service.ChargeTypeCode != string(catalog.ChargeTypeRecurring) {
+		return bizerr.NewCode(CodeCapabilityUnavailable)
 	}
 	if service.RenewalModeCode != "provider_confirmed" &&
 		service.RenewalModeCode != "local_entitlement" {
@@ -385,6 +411,7 @@ func (s *serviceImpl) assembleRenewalCatalogLine(
 	}
 	lines, err := s.catalog.AssembleRenewalQuote(ctx, catalog.RenewalQuoteInput{
 		CurrencyCode: service.CurrencyCode, Lines: []catalog.RenewalQuoteLineInput{requested},
+		TrialConversion: service.TrialConversion,
 	})
 	if err != nil || len(lines) != 1 {
 		return catalog.PurchaseQuoteLine{}, bizerr.NewCode(CodePriceUnavailable)
@@ -432,7 +459,7 @@ func validateRenewalAdjustments(
 			adjustment.TypeCode == commerce.QuoteAdjustmentCustomerPrice ||
 			adjustment.TypeCode == commerce.QuoteAdjustmentAgentPrice ||
 			adjustment.TypeCode == commerce.QuoteAdjustmentManualDiscount
-		if adjustment.ReferenceNo != entitlementNo || !validType || adjustment.AmountMinor <= 0 ||
+		if adjustment.ReferenceNo != entitlementNo || !validType || (adjustment.AmountMinor < 0 || (adjustment.AmountMinor == 0 && adjustment.TypeCode != commerce.QuoteAdjustmentAgentPrice)) ||
 			!validReference(adjustment.SourceReference, 128) ||
 			!canonicalDigestPattern.MatchString(adjustment.SourceVersionDigest) ||
 			(adjustment.ReservationReference != "" &&
@@ -648,13 +675,13 @@ VALUES (0, ?, ?, ?, 'renewal', ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
 			0, adjustment.QuoteAdjustmentNo, quoteItemNo, service.CurrencyCode,
 			index + 1, adjustment.Adjustment.TypeCode, adjustment.Adjustment.SourceReference,
 			adjustment.Adjustment.SourceVersionDigest, reservation,
-			adjustment.Adjustment.AmountMinor, adjustmentDigest,
+			adjustment.Adjustment.AmountMinor, adjustmentDigest, adjustment.Adjustment.OriginalPeriodAmountMinor, adjustment.Adjustment.TargetPeriodAmountMinor,
 		})
 	}
 	if err = insertRenewalRows(ctx, s.database, `INSERT INTO plugin_idc_core_commerce_quote_adjustment_snapshot
     (tenant_id, quote_adjustment_no, quote_item_no, currency_code,
      application_order, adjustment_type_code, source_reference,
-     source_version_digest, reservation_reference, amount_minor, content_digest)
+     source_version_digest, reservation_reference, amount_minor, content_digest, original_period_amount_minor, target_period_amount_minor)
 	VALUES `, adjustmentRows); err != nil {
 		return nil, gerror.Wrap(err, "insert renewal quote adjustments")
 	}

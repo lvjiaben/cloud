@@ -16,12 +16,19 @@ import (
 const maxSupportSettings = 500
 
 func (s *serviceImpl) DepartmentSettings(ctx context.Context) ([]DepartmentOption, error) {
-	if _, err := s.staffActor(ctx, PermissionConfigure); err != nil {
+	a, err := s.staffActor(ctx, PermissionConfigure)
+	if err != nil {
 		return nil, err
 	}
+	if a.DataScope >= 3 {
+		return nil, bizNotAccessible()
+	}
 	var rows []DepartmentOption
-	err := s.database.GetScan(ctx, &rows, `SELECT department_no,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 ORDER BY name_zh_cn,department_no LIMIT ?`, maxSupportSettings)
-	return rows, settingReadResult(err, "load support department settings")
+	err = s.database.GetScan(ctx, &rows, `SELECT department_no,org_dept_id,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 ORDER BY name_zh_cn,department_no LIMIT ?`, maxSupportSettings)
+	if err != nil {
+		return nil, settingReadResult(err, "load support department settings")
+	}
+	return rows, s.projectOrganizationNames(ctx, rows)
 }
 
 func (s *serviceImpl) CreateDepartmentSetting(ctx context.Context, input DepartmentSettingInput) (*DepartmentOption, error) {
@@ -38,13 +45,16 @@ func (s *serviceImpl) CreateDepartmentSetting(ctx context.Context, input Departm
 		return nil, wrapUnavailable(err, "generate support department number")
 	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		if err := s.requireOrganizationBinding(ctx, input.OrgDeptID); err != nil {
+			return err
+		}
 		if err := s.lockSupportSettings(ctx); err != nil {
 			return err
 		}
 		if err := s.requireDepartmentParent(ctx, departmentNo, input.ParentDepartmentNo); err != nil {
 			return err
 		}
-		_, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_department (tenant_id,department_no,name_zh_cn,name_en_us,parent_department_no,assignment_mode,status_code,version,created_by,updated_by) VALUES (0,?,?,?,?,?,?,1,?,?)`, departmentNo, input.NameZhCN, input.NameEnUS, nullable(input.ParentDepartmentNo), input.AssignmentMode, input.Status, a.UserID, a.UserID)
+		_, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_department (tenant_id,department_no,org_dept_id,name_zh_cn,name_en_us,parent_department_no,assignment_mode,status_code,version,created_by,updated_by) VALUES (0,?,?,?,?,?,?,?,1,?,?)`, departmentNo, input.OrgDeptID, input.NameZhCN, input.NameEnUS, nullable(input.ParentDepartmentNo), input.AssignmentMode, input.Status, a.UserID, a.UserID)
 		return err
 	})
 	if err = settingWriteResult(err, "create support department setting"); err != nil {
@@ -63,13 +73,22 @@ func (s *serviceImpl) UpdateDepartmentSetting(ctx context.Context, departmentNo 
 		return nil, bizInvalid()
 	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		if err := s.requireOrganizationBinding(ctx, input.OrgDeptID); err != nil {
+			return err
+		}
 		if err := s.lockSupportSettings(ctx); err != nil {
 			return err
 		}
 		if err := s.requireDepartmentParent(ctx, departmentNo, input.ParentDepartmentNo); err != nil {
 			return err
 		}
+		if err := s.requireQueueConfigurationScope(ctx, departmentNo); err != nil {
+			return err
+		}
 		if input.Status == SettingStatusDisabled {
+			if err := s.requireQueueConfigurationScope(ctx, departmentNo); err != nil {
+				return err
+			}
 			if err := s.ensureDepartmentCanDisable(ctx, departmentNo); err != nil {
 				return err
 			}
@@ -78,7 +97,7 @@ func (s *serviceImpl) UpdateDepartmentSetting(ctx context.Context, departmentNo 
 		if err != nil {
 			return err
 		}
-		result, err := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_department SET name_zh_cn=?,name_en_us=?,parent_department_no=?,assignment_mode=?,status_code=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND department_no=? AND version=?`, input.NameZhCN, input.NameEnUS, nullable(input.ParentDepartmentNo), input.AssignmentMode, input.Status, a.UserID, now, departmentNo, input.ExpectedVersion)
+		result, err := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_department SET org_dept_id=?,name_zh_cn=?,name_en_us=?,parent_department_no=?,assignment_mode=?,status_code=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND department_no=? AND version=?`, input.OrgDeptID, input.NameZhCN, input.NameEnUS, nullable(input.ParentDepartmentNo), input.AssignmentMode, input.Status, a.UserID, now, departmentNo, input.ExpectedVersion)
 		return requireOneChanged(result, err)
 	})
 	if err = settingWriteResult(err, "update support department setting"); err != nil {
@@ -525,8 +544,8 @@ func normalizeDepartmentSetting(input DepartmentSettingInput, create bool) (Depa
 	if input.Status == "" {
 		input.Status = SettingStatusActive
 	}
-	validMode := input.AssignmentMode == AssignmentModeManualClaim || input.AssignmentMode == AssignmentModeRoundRobin || input.AssignmentMode == AssignmentModeLeastUnresolved
-	return input, input.NameZhCN != "" && input.NameEnUS != "" && validMode && validSettingStatus(input.Status) && (input.ParentDepartmentNo == "" || businessNoPattern.MatchString(input.ParentDepartmentNo))
+	validMode := input.AssignmentMode == AssignmentModeManualClaim
+	return input, input.OrgDeptID > 0 && input.NameZhCN != "" && input.NameEnUS != "" && validMode && validSettingStatus(input.Status) && (input.ParentDepartmentNo == "" || businessNoPattern.MatchString(input.ParentDepartmentNo))
 }
 
 func normalizeIssueCategorySetting(input IssueCategorySettingInput) (IssueCategorySettingInput, bool) {
@@ -609,12 +628,15 @@ func normalizeSLARuleSetting(input SLARuleSettingInput) (SLARuleSettingInput, bo
 
 func (s *serviceImpl) departmentSetting(ctx context.Context, departmentNo string) (*DepartmentOption, error) {
 	var rows []DepartmentOption
-	err := s.database.GetScan(ctx, &rows, `SELECT department_no,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 AND department_no=? LIMIT 1`, departmentNo)
+	err := s.database.GetScan(ctx, &rows, `SELECT department_no,org_dept_id,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 AND department_no=? LIMIT 1`, departmentNo)
 	if err = settingReadResult(err, "load support department setting"); err != nil {
 		return nil, err
 	}
 	if len(rows) != 1 {
 		return nil, bizNotAccessible()
+	}
+	if err := s.projectOrganizationNames(ctx, rows); err != nil {
+		return nil, err
 	}
 	return &rows[0], nil
 }

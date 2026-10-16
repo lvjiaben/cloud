@@ -37,10 +37,12 @@ type provisionValues struct {
 	region, line, datacenter, image string
 	cpu, memory                     int64
 	systemDisk                      int64
-	ip, backup                      int64
+	dataDisk                        int64
+	ip                              int64
 	bandwidth                       int64
 	traffic                         int64
 	unlimitedTraffic                bool
+	quotas                          map[resourcecap.ServerProvisionComponentType]resourcecap.ServerProvisionComponent
 }
 
 // BuildProvisionParameters translates one reviewed server plan without
@@ -98,12 +100,15 @@ func BuildProvisionParameters(
 	if values.systemDisk > 0 {
 		parameters["system_disk_size"] = values.systemDisk
 	}
+	// A zero capacity means no data disk; keep the upstream default in that
+	// case instead of translating it into an unlimited resource.
+	if values.dataDisk > 0 {
+		parameters["data_disk_size"] = values.dataDisk
+	}
 	if values.ip > 0 {
 		parameters["ip_num"] = values.ip
 	}
-	if values.backup > 0 {
-		parameters["backup_num"] = values.backup
-	}
+	appendProvisionQuotas(parameters, values.quotas)
 	if values.bandwidth > 0 {
 		parameters["in_bw"] = values.bandwidth
 		parameters["out_bw"] = values.bandwidth
@@ -151,7 +156,7 @@ func decodeProvisionSelector(payload json.RawMessage) (provisionSelector, error)
 }
 
 func collectProvisionValues(components []resourcecap.ServerProvisionComponent) (provisionValues, error) {
-	values := provisionValues{}
+	values := provisionValues{quotas: make(map[resourcecap.ServerProvisionComponentType]resourcecap.ServerProvisionComponent, 4)}
 	seen := make(map[resourcecap.ServerProvisionComponentType]struct{}, len(components))
 	for _, component := range components {
 		if _, exists := seen[component.Type]; exists {
@@ -195,8 +200,13 @@ func collectProvisionValues(components []resourcecap.ServerProvisionComponent) (
 				return provisionValues{}, errInvalidConfig
 			}
 			values.ip, err = safeMultiply(component.Count, quantity)
-		case resourcecap.ServerProvisionComponentBackup:
-			values.backup, err = safeMultiply(component.Count, quantity)
+		case resourcecap.ServerProvisionComponentBackup,
+			resourcecap.ServerProvisionComponentSnapshot,
+			resourcecap.ServerProvisionComponentNATForward,
+			resourcecap.ServerProvisionComponentNATWebsite:
+			if err = validateProvisionQuota(component); err == nil {
+				values.quotas[component.Type] = component
+			}
 		case resourcecap.ServerProvisionComponentBandwidth:
 			values.bandwidth, err = safeMultiply(component.MegabitsPerSecond, quantity)
 		case resourcecap.ServerProvisionComponentTraffic:
@@ -204,7 +214,15 @@ func collectProvisionValues(components []resourcecap.ServerProvisionComponent) (
 			if !component.Unlimited {
 				values.traffic, err = safeMultiply(component.Gigabytes, quantity)
 			}
-		case resourcecap.ServerProvisionComponentDataDisk, resourcecap.ServerProvisionComponentOther:
+		case resourcecap.ServerProvisionComponentDataDisk:
+			// This release supports one capacity-only disk. Storage/media
+			// selectors require separately declared upstream evidence.
+			if quantity != 1 || component.Gigabytes < 0 || component.Gigabytes > 1048576 ||
+				component.Media != "" || component.Code != "" || component.ModelCode != "" {
+				return provisionValues{}, errInvalidConfig
+			}
+			values.dataDisk = component.Gigabytes
+		case resourcecap.ServerProvisionComponentOther:
 			return provisionValues{}, errInvalidConfig
 		default:
 			return provisionValues{}, errInvalidConfig
@@ -246,4 +264,38 @@ func lookupNumeric(mapping map[string]string, code string) string {
 func strictPositiveDecimal(value string) bool {
 	parsed, err := strconv.ParseUint(value, 10, 63)
 	return err == nil && parsed > 0 && value == strconv.FormatUint(parsed, 10)
+}
+
+// validateProvisionQuota rejects multiplied or contradictory quota facts.
+func validateProvisionQuota(component resourcecap.ServerProvisionComponent) error {
+	if component.SelectionQuantity != 1 || component.Count < 0 || (component.Unlimited && component.Count != 0) {
+		return errInvalidConfig
+	}
+	return nil
+}
+
+// appendProvisionQuotas translates at most four owner quota kinds. Omitted
+// kinds retain the legacy supplier behavior; explicit disabled is never zero.
+func appendProvisionQuotas(parameters map[string]any, quotas map[resourcecap.ServerProvisionComponentType]resourcecap.ServerProvisionComponent) {
+	for kind, component := range quotas {
+		key := ""
+		switch kind {
+		case resourcecap.ServerProvisionComponentBackup:
+			key = "backup_num"
+		case resourcecap.ServerProvisionComponentSnapshot:
+			key = "snap_num"
+		case resourcecap.ServerProvisionComponentNATForward:
+			key = "nat_acl_limit"
+		case resourcecap.ServerProvisionComponentNATWebsite:
+			key = "nat_web_limit"
+		}
+		switch {
+		case component.Unlimited:
+			parameters[key] = int64(0)
+		case component.Count == 0:
+			parameters[key] = int64(-1)
+		default:
+			parameters[key] = component.Count
+		}
+	}
 }

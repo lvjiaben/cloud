@@ -193,16 +193,19 @@ func (s *serviceImpl) ResolvePublicPurchaseCandidates(
 		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
 		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) ||
-		!sameExactConfiguration(schema, exact.CustomerConfiguration) {
+	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	configuration, err := s.loadVersionConfigurationRow(ctx, versionNo)
 	if err != nil || configuration == nil || configuration.InterfaceInstanceNo != binding.InterfaceInstanceNo || configuration.InterfaceConfigurationRevision < 1 {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
+	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, configuration, exact)
+	if schemaErr != nil || !sameExactConfiguration(schema, customerSchema) {
+		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+	}
 	return s.resolveDynamicCandidates(ctx, exact, schema, values, configurationcontract.SurfaceCustomer, dynamicCandidateScope{
-		interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: configuration.InterfaceConfigurationRevision,
+		versionNo: versionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: configuration.InterfaceConfigurationRevision,
 	})
 }
 
@@ -214,6 +217,9 @@ func (s *serviceImpl) resolveDynamicCandidates(
 	surface configurationcontract.ConfigurationSurface,
 	scope dynamicCandidateScope,
 ) (configurationcontract.ResolvedCandidates, error) {
+	if exact.PluginID == portableImportProviderID && surface == configurationSurfaceCustomer && scope.versionNo != "" {
+		return s.resolveImportedCandidates(ctx, exact, schema, values, scope)
+	}
 	batches, err := configurationcontract.BuildDynamicCandidateBatches(schema, values, surface, exact.AuthorizedMethods)
 	if err != nil {
 		return nil, err

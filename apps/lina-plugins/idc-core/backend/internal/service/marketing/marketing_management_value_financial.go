@@ -246,7 +246,7 @@ func (s *managementActionServiceImpl) requestValueGrantFinancialAction(
 		result = projectManagedGrantFinancialMutation(adjustment, grant.GrantNo)
 		return s.appendValueGrantFinancialAudit(
 			ctx, "request", normalized.RequestNo, normalized.ReasonCode,
-			actorUserID, result,
+			actorUserID, result, map[string]any{"state": grant.Status, "pending_amount_minor": grant.PendingAmountMinor, "available_amount_minor": grant.AvailableAmountMinor},
 		)
 	})
 	return managementActionResult(result, err)
@@ -322,7 +322,7 @@ func (s *managementActionServiceImpl) ReviewValueGrantAdjustment(
 		result = projectManagedGrantFinancialMutation(adjustment, request.GrantNo)
 		return s.appendValueGrantFinancialAudit(
 			ctx, "review", normalized.AdjustmentNo, normalized.ReasonCode,
-			actorUserID, result,
+			actorUserID, result, map[string]any{"state": request.Status},
 		)
 	})
 	return managementActionResult(result, err)
@@ -476,6 +476,7 @@ func (s *managementActionServiceImpl) appendValueGrantFinancialAudit(
 	reasonCode string,
 	actorUserID int,
 	result *ManagedValueGrantFinancialMutation,
+	before map[string]any,
 ) error {
 	if result == nil || actorUserID <= 0 {
 		return bizerr.NewCode(CodeManagementActionConflict)
@@ -492,7 +493,8 @@ func (s *managementActionServiceImpl) appendValueGrantFinancialAudit(
 		TargetType: "marketing_value_grant", TargetNo: result.GrantNo,
 		CustomerNo: result.CustomerNo, ResultCode: "succeeded", ReasonCode: reasonCode,
 		RiskCode: "high", RequiredPermission: permission,
-		CorrelationNo: result.AdjustmentNo,
+		CorrelationNo:  result.AdjustmentNo,
+		BeforeSnapshot: before,
 		AfterSnapshot: map[string]any{
 			"state": result.Status, "adjustment_no": result.AdjustmentNo,
 			"adjustment_type": result.AdjustmentType,

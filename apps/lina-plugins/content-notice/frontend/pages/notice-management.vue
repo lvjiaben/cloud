@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { Notice } from "./notice-client";
 
 import { computed, onMounted, ref } from "vue";
@@ -151,10 +153,11 @@ function handleMultiDelete() {
 function onReload() {
   gridApi.query();
 }
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" content-class="p-0">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true" content-class="p-0">
     <section class="notice-page" data-testid="notice-management-page">
       <div class="notice-list-panel">
         <Grid :table-title="$t('plugin.content-notice.tableTitle')">

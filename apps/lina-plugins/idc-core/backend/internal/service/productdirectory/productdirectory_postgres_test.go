@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/internal/model/do"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -109,11 +110,23 @@ func directoryDatabase(t *testing.T) gdb.DB {
 			t.Fatal(err)
 		}
 	}
+	source, err = os.ReadFile(filepath.Join("..", "..", "..", "..", "manifest", "sql", "129-member-navigation.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for pass := 0; pass < 2; pass++ {
+		if _, err = db.Exec(ctx, string(source)); err != nil {
+			t.Fatal(err)
+		}
+	}
 	return db
 }
 func newDirectoryFixture(t *testing.T) (gdb.DB, Service, *directoryAccessFake, *directoryAuditFake) {
 	t.Helper()
 	db := directoryDatabase(t)
+	if _, err := db.Exec(context.Background(), "DELETE FROM plugin_idc_core_product_directory WHERE navigation_type='system'"); err != nil {
+		t.Fatal(err)
+	}
 	access := &directoryAccessFake{customer: "customer-a"}
 	writer := &directoryAuditFake{}
 	service, err := New(db, access, writer)
@@ -125,12 +138,15 @@ func newDirectoryFixture(t *testing.T) (gdb.DB, Service, *directoryAccessFake, *
 func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	db, service, access, writer := newDirectoryFixture(t)
 	ctx := context.Background()
-	created, err := service.Save(ctx, SaveInput{NameZhCn: "云服务", NameEnUs: "Cloud services", ProductNos: []string{"product-a"}})
+	created, err := service.Save(ctx, SaveInput{NameZhCn: "云服务", NameEnUs: "Cloud services"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if created.DirectoryNo == AllDirectory || len(created.Products) != 1 || created.Products[0].NameZhCn != "云服务器" || writer.calls != 1 {
-		t.Fatalf("missing safe product projection or audit: %#v", created)
+	if created.DirectoryNo == AllDirectory || created.ProductCount != 0 || writer.calls != 1 {
+		t.Fatalf("new navigation must not assign products: %#v", created)
+	}
+	if _, err := db.Exec(ctx, "INSERT INTO plugin_idc_core_product_directory_membership(product_no,directory_no) VALUES('product-a',?)", created.DirectoryNo); err != nil {
+		t.Fatal(err)
 	}
 	dirs, err := service.ListAccount(ctx, 1, 100)
 	if err != nil || len(dirs.Items) != 1 || dirs.Items[0].ServiceCount != 1 {
@@ -158,7 +174,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 		t.Fatalf("all fallback crossed customer boundary: %#v %v", services, err)
 	}
 	access.customer = "customer-a"
-	disabled, err := service.Save(ctx, SaveInput{DirectoryNo: created.DirectoryNo, NameZhCn: created.NameZhCn, NameEnUs: created.NameEnUs, ProductNos: created.ProductNos, StatusCode: StatusDisabled, ExpectedVersion: created.Version})
+	disabled, err := service.Save(ctx, SaveInput{DirectoryNo: created.DirectoryNo, NameZhCn: created.NameZhCn, NameEnUs: created.NameEnUs, StatusCode: StatusDisabled, ExpectedVersion: created.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +193,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	if err != nil || len(next.Items) != 1 || next.Items[0].EntitlementNo == services.Items[0].EntitlementNo {
 		t.Fatal("pagination repeated or lost service", err)
 	}
-	if _, err = service.Save(ctx, SaveInput{DirectoryNo: created.DirectoryNo, NameZhCn: created.NameZhCn, NameEnUs: created.NameEnUs, ProductNos: created.ProductNos, StatusCode: StatusEnabled, ExpectedVersion: disabled.Version}); err != nil {
+	if _, err = service.Save(ctx, SaveInput{DirectoryNo: created.DirectoryNo, NameZhCn: created.NameZhCn, NameEnUs: created.NameEnUs, StatusCode: StatusEnabled, ExpectedVersion: disabled.Version}); err != nil {
 		t.Fatal(err)
 	}
 	dirs, err = service.ListAccount(ctx, 1, 100)
@@ -189,53 +205,54 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 		t.Fatal("navigation changed service facts", err)
 	}
 }
-func TestDirectoryAssociationVersionAndAuditRollbackPostgreSQL(t *testing.T) {
-	_, service, access, writer := newDirectoryFixture(t)
+func TestDirectoryMetadataPreservesAssignmentsPostgreSQL(t *testing.T) {
+	db, service, access, writer := newDirectoryFixture(t)
 	ctx := context.Background()
-	first, err := service.Save(ctx, SaveInput{NameZhCn: "服务器", NameEnUs: "Servers", ProductNos: []string{"product-a"}})
+	first, err := service.Save(ctx, SaveInput{NameZhCn: "服务器", NameEnUs: "Servers"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = service.Save(ctx, SaveInput{NameZhCn: "冲突目录", NameEnUs: "Conflicting directory", ProductNos: []string{"product-a", "product-b"}}); !bizerr.Is(err, CodeConflict) {
-		t.Fatal("membership conflict silently moved a product", err)
+	if _, err := db.Exec(ctx, "INSERT INTO plugin_idc_core_product_directory_membership(product_no,directory_no) VALUES('product-a',?)", first.DirectoryNo); err != nil {
+		t.Fatal(err)
 	}
-	page, err := service.ListAdmin(ctx, 1, 100)
-	if err != nil || page.Total != 1 || page.Items[0].ProductCount != 1 || len(page.Items[0].Products) != 1 {
-		t.Fatal("association conflict left partial configuration", err)
-	}
-	update := SaveInput{DirectoryNo: first.DirectoryNo, NameZhCn: first.NameZhCn, NameEnUs: first.NameEnUs, ProductNos: []string{"product-b"}, StatusCode: StatusEnabled, ExpectedVersion: first.Version}
+	update := SaveInput{DirectoryNo: first.DirectoryNo, NameZhCn: "改名后的菜单", NameEnUs: first.NameEnUs, StatusCode: StatusEnabled, ExpectedVersion: first.Version}
 	changed, err := service.Save(ctx, update)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || changed.ProductCount != 1 {
+		t.Fatalf("metadata changed assignment: %#v %v", changed, err)
 	}
 	if _, err = service.Save(ctx, update); !bizerr.Is(err, CodeConflict) {
-		t.Fatal("stale optimistic version was accepted", err)
+		t.Fatal("stale version accepted", err)
 	}
 	writer.fail = true
 	update.ExpectedVersion = changed.Version
-	update.ProductNos = []string{"product-c"}
+	update.NameZhCn = "不应保存"
 	if _, err = service.Save(ctx, update); err == nil {
-		t.Fatal("failed audit did not roll back business write")
+		t.Fatal("audit failure accepted")
 	}
-	page, err = service.ListAdmin(ctx, 1, 100)
-	if err != nil || page.Items[0].Version != changed.Version || page.Items[0].ProductNos[0] != "product-b" {
-		t.Fatal("audit failure changed version or membership", err)
+	listed, err := service.ListAdmin(ctx, 1, 100)
+	if err != nil || listed.Items[0].Version != changed.Version || listed.Items[0].NameZhCn != changed.NameZhCn || listed.Items[0].ProductCount != 1 {
+		t.Fatal("audit failure modified metadata or assignment", err)
 	}
 	writer.fail = false
-	update.ProductNos = []string{"product-a", "product-a"}
-	if _, err = service.Save(ctx, update); !bizerr.Is(err, CodeInvalid) {
-		t.Fatal("duplicate product links accepted", err)
+	update.NavigationType = NavigationCustom
+	update.TargetURL = "https://example.com"
+	if _, err = service.Save(ctx, update); !bizerr.Is(err, CodeHasProducts) {
+		t.Fatal("linked product menu changed type", err)
 	}
-	update.ProductNos = []string{"missing-product"}
-	if _, err = service.Save(ctx, update); !bizerr.Is(err, CodeNotAccessible) {
-		t.Fatal("unknown product became linked", err)
+	listed, err = service.ListAdmin(ctx, 1, 100)
+	if err != nil || listed.Items[0].NavigationType != NavigationProduct || listed.Items[0].ProductCount != 1 {
+		t.Fatal("rejected type change modified mapping", err)
+	}
+	assignment, err := db.Model(do.ProductDirectoryMembership{}).Ctx(ctx).Where(do.ProductDirectoryMembership{TenantId: 0, ProductNo: "product-a"}).Value("directory_no")
+	if err != nil || assignment.String() != first.DirectoryNo {
+		t.Fatal("metadata operation changed stored product assignment", err)
 	}
 	access.deny = true
 	if _, err = service.ListAdmin(ctx, 1, 100); !bizerr.Is(err, CodeNotAccessible) {
-		t.Fatal("unauthorized admin read accepted", err)
+		t.Fatal("unauthorized admin accepted", err)
 	}
 	if _, err = service.ListAccount(ctx, 1, 100); !bizerr.Is(err, CodeNotAccessible) {
-		t.Fatal("unauthorized customer menu read accepted", err)
+		t.Fatal("unauthorized customer accepted", err)
 	}
 }
 func TestDirectoryPagingIncludesAllMerchantMenusPostgreSQL(t *testing.T) {
@@ -291,5 +308,34 @@ func TestDirectoryORMMaintainsUpdateTimesPostgreSQL(t *testing.T) {
 	changed, err := db.GetValue(ctx, `SELECT updated_at>'2000-01-01T00:00:00Z'::timestamptz AND created_at=?::timestamptz FROM plugin_idc_core_product_directory WHERE directory_no=?`, before.Time(), created.DirectoryNo)
 	if err != nil || !changed.Bool() {
 		t.Fatalf("ORM directory time maintenance: value=%v err=%v", changed, err)
+	}
+}
+
+// A menu may contain more products than the old navigation editor's 200-item
+// selection limit; listing and metadata writes return counts, never full rows.
+func TestDirectoryProductCountBeyondLegacySelectionPostgreSQL(t *testing.T) {
+	db, service, _, _ := newDirectoryFixture(t)
+	ctx := context.Background()
+	menu, err := service.Save(ctx, SaveInput{NameZhCn: "大目录", NameEnUs: "Large menu"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_product(product_no,name_zh_cn,name_en_us) SELECT 'bulk-'||i,'批量商品','Bulk product' FROM generate_series(1,201) AS i`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_product_directory_membership(product_no,directory_no) SELECT product_no,? FROM plugin_idc_core_catalog_product WHERE product_no LIKE 'bulk-%'`, menu.DirectoryNo); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := service.ListAdmin(ctx, 1, 20)
+	if err != nil || len(listed.Items) != 1 || listed.Items[0].ProductCount != 201 {
+		t.Fatalf("aggregate omitted products: %#v %v", listed, err)
+	}
+	changed, err := service.Save(ctx, SaveInput{DirectoryNo: menu.DirectoryNo, NameZhCn: "改名", NameEnUs: "Renamed", StatusCode: StatusEnabled, ExpectedVersion: menu.Version})
+	if err != nil || changed.ProductCount != 201 {
+		t.Fatalf("metadata lost aggregate: %#v %v", changed, err)
+	}
+	count, err := db.Model(do.ProductDirectoryMembership{}).Ctx(ctx).Where(do.ProductDirectoryMembership{TenantId: 0, DirectoryNo: menu.DirectoryNo}).Count()
+	if err != nil || count != 201 {
+		t.Fatal("metadata changed stored membership", count, err)
 	}
 }

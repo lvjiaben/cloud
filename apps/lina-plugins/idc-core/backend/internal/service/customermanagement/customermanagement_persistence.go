@@ -161,8 +161,9 @@ func projectPage(rows []*entity.CustomerSubject, input normalizedSearch, project
 			return nil, gerror.New("customer management batch projection is inconsistent")
 		}
 		page.Customers = append(page.Customers, Summary{
+			Balances:   projection.balancesByCustomer[row.CustomerNo],
 			CustomerNo: row.CustomerNo, Type: customer.Type(row.CustomerTypeCode),
-			CustomerCode: projection.codeByCustomer[row.CustomerNo], PrimaryPhone: projection.phoneByCustomer[row.CustomerNo],
+			CustomerCode: projection.codeByCustomer[row.CustomerNo], PrimaryPhone: projection.phoneByCustomer[row.CustomerNo], PrimaryEmail: projection.emailByCustomer[row.CustomerNo],
 			Status: customer.Status(row.StatusCode), DisplayName: row.DisplayName,
 			CountryCode: row.CountryCode, PreferredLocale: row.PreferredLocale,
 			EnterpriseContractPolicyCode: row.EnterpriseContractPolicyCode,

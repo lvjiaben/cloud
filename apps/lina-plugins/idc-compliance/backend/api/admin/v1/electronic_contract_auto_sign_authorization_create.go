@@ -4,7 +4,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // ElectronicContractAutoSignAuthorizationCreateReq enables one immutable authorization.
 type ElectronicContractAutoSignAuthorizationCreateReq struct {
-	g.Meta              `path:"/admin/compliance/electronic-contract/auto-sign-authorizations" method:"post" tags:"IDC Compliance Electronic Contract" summary:"Enable enterprise auto-sign authorization" dc:"Enable one immutable installation-local enterprise auto-sign authorization after a recent full login, explicit confirmation, and current Tencent capability check." permission:"idc:admin:compliance:contract-auto-sign:manage"`
+	g.Meta              `path:"/admin/compliance/electronic-contract/auto-sign-authorizations" method:"post" tags:"IDC Compliance Electronic Contract" summary:"Enable enterprise auto-sign authorization" dc:"Enable one immutable installation-local enterprise auto-sign authorization after a current active session, explicit confirmation, and current Tencent capability check." permission:"idc:admin:compliance:contract-auto-sign:manage"`
 	CurrencyCode        string                                  `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Single ISO 4217 uppercase currency code" eg:"CNY"`
 	AllowRequiredOrder  bool                                    `json:"allowRequiredOrder" dc:"Allow required order contracts" eg:"true"`
 	AllowManualOptional bool                                    `json:"allowManualOptional" dc:"Allow administrator-created optional contracts" eg:"false"`

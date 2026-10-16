@@ -36,6 +36,7 @@ type CustomerIndividualProfileColumns struct {
 	Version                  string //
 	CreatedAt                string //
 	UpdatedAt                string //
+	ManualVerification       string // Current verification status set by staff; not supplier identity evidence
 }
 
 // customerIndividualProfileColumns holds the columns for the table plugin_idc_core_customer_individual_profile.
@@ -55,6 +56,7 @@ var customerIndividualProfileColumns = CustomerIndividualProfileColumns{
 	Version:                  "version",
 	CreatedAt:                "created_at",
 	UpdatedAt:                "updated_at",
+	ManualVerification:       "manual_verification",
 }
 
 // NewCustomerIndividualProfileDao creates and returns a new DAO object for table data access.

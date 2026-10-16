@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 )
 
 type ChannelOrderInput struct {
+	QuoteNo                string
 	ChannelID              string
 	ExternalCustomerID     string
 	OwnershipMode          string
@@ -29,6 +31,7 @@ type ChannelOrderInput struct {
 }
 
 type ChannelOrderService interface {
+	CreateQuote(context.Context, string, string, string, catalog.PurchaseConfigurationInput, int) (*Quote, error)
 	Quote(context.Context, string, catalog.PurchaseConfigurationInput, int) (*Quote, error)
 	Checkout(context.Context, ChannelOrderInput) (*Checkout, error)
 	Cancel(context.Context, string, string, string, string) (*OrderCancellation, error)
@@ -70,7 +73,21 @@ func (s *channelOrderService) Quote(
 	if err != nil || resolved == nil || purchase.PurchaseCycles < resolved.MinimumPurchaseCycles {
 		return nil, bizerr.NewCode(CodeQuoteNotAvailable)
 	}
-	return s.buildQuote(ctx, payerCustomerNo, purchase, resolved, quantity, "channel-preview", "", false)
+	// Evaluation may reserve marketing assets; preview always rolls them back.
+	rollback := gerror.New("channel quote preview rollback")
+	var result *Quote
+	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		var buildErr error
+		result, buildErr = s.buildQuote(ctx, payerCustomerNo, purchase, resolved, quantity, "channel-preview", "", false)
+		if buildErr != nil {
+			return buildErr
+		}
+		return rollback
+	})
+	if !errors.Is(err, rollback) {
+		return nil, err
+	}
+	return result, nil
 }
 
 func normalizeChannelOrderInput(input ChannelOrderInput) ChannelOrderInput {
@@ -84,7 +101,7 @@ func normalizeChannelOrderInput(input ChannelOrderInput) ChannelOrderInput {
 
 func validateChannelOrderInput(input ChannelOrderInput) error {
 	if input.ChannelID == "" || input.PayerCustomerNo == "" || input.ServiceOwnerCustomerNo == "" ||
-		input.Quantity < 1 || input.Quantity > 1000 ||
+		(input.QuoteNo == "" && (input.Quantity < 1 || input.Quantity > 1000)) ||
 		(input.OwnershipMode != "channel_owned" && input.OwnershipMode != "delegated_customer") ||
 		(input.OwnershipMode == "channel_owned" &&
 			(input.PayerCustomerNo != input.ServiceOwnerCustomerNo || input.ExternalCustomerID != "")) ||
@@ -103,7 +120,14 @@ func (s *channelOrderService) Checkout(
 	if err := validateChannelOrderInput(input); err != nil {
 		return nil, err
 	}
-	quoteNo := deterministicChannelQuoteNo(input.ChannelID, input.PayerCustomerNo, input.IdempotencyKey)
+	uploader, err := s.configurationUploader(ctx, input.PayerCustomerNo)
+	if err != nil {
+		return nil, err
+	}
+	quoteNo := input.QuoteNo
+	if quoteNo == "" {
+		quoteNo = deterministicChannelQuoteNo(input.ChannelID, input.PayerCustomerNo, input.IdempotencyKey)
+	}
 	requestDigest, err := quoteContentDigest(struct {
 		ChannelID, ExternalCustomerID, OwnershipMode string
 		PayerCustomerNo, ServiceOwnerCustomerNo      string
@@ -130,6 +154,13 @@ func (s *channelOrderService) Checkout(
 			return loadErr
 		}
 		if existing != nil {
+			var previous *entity.CommerceQuoteSnapshot
+			if err := tx.Model("plugin_idc_core_commerce_quote_snapshot").Ctx(ctx).Where("tenant_id=0 AND quote_no=?", quoteNo).Scan(&previous); err != nil {
+				return err
+			}
+			if previous == nil || (input.QuoteNo == "" && previous.InputDigest != requestDigest) {
+				return bizerr.NewCode(CodeConflict)
+			}
 			if existing.QuoteNo != quoteNo || existing.CheckoutRequestDigest != checkoutInput.requestDigest {
 				return bizerr.NewCode(CodeConflict)
 			}
@@ -143,6 +174,9 @@ func (s *channelOrderService) Checkout(
 			return loadErr
 		}
 		if header == nil {
+			if input.QuoteNo != "" {
+				return bizerr.NewCode(CodeQuoteNotAvailable)
+			}
 			resolved, resolveErr := s.catalog.ResolvePurchaseConfiguration(ctx, input.Purchase)
 			if resolveErr != nil || resolved == nil || input.Purchase.PurchaseCycles < resolved.MinimumPurchaseCycles {
 				return bizerr.NewCode(CodeQuoteNotAvailable)
@@ -152,13 +186,13 @@ func (s *channelOrderService) Checkout(
 			if resolveErr != nil {
 				return resolveErr
 			}
-		} else if header.InputDigest != requestDigest || header.SourceCode != "channel" ||
+		} else if (input.QuoteNo == "" && header.InputDigest != requestDigest) || header.SourceCode != "channel" ||
 			header.CustomerNo == nil || *header.CustomerNo != input.PayerCustomerNo {
 			return bizerr.NewCode(CodeConflict)
 		}
 		_ = quote
 		result, loadErr = s.commerce.checkoutInTransaction(ctx, tx, checkoutAuthority{
-			customerNo: input.PayerCustomerNo, sourceCode: "channel",
+			customerNo: input.PayerCustomerNo, sourceCode: "channel", userID: uploader,
 			paymentTermCode:  "standard_prepay",
 			contractOverride: contractpolicy.Rule{Policy: contractpolicy.PolicyInherit},
 			channelAttribution: &channelCheckoutAttribution{
@@ -242,9 +276,6 @@ func (s *channelOrderService) buildQuote(
 	if err != nil {
 		return nil, err
 	}
-	if err = applyQuoteAdjustments(calculated, &QuoteAdjustmentResult{Adjustments: []QuoteAdjustment{}}); err != nil {
-		return nil, err
-	}
 	now, err := quoteDatabaseNow(ctx, s.database)
 	if err != nil {
 		return nil, err
@@ -254,6 +285,17 @@ func (s *channelOrderService) buildQuote(
 	customer, err := loadQuoteCustomerFact(ctx, s.database, payerCustomerNo)
 	if err != nil || customer == nil {
 		return nil, bizerr.NewCode(CodeQuoteNotAvailable)
+	}
+	adjustments, adjustmentErr := s.commerce.evaluateQuoteAdjustments(ctx, quoteNo, resolved.CurrencyCode, now, customer, nil, calculated)
+	if adjustmentErr != nil {
+		return nil, adjustmentErr
+	}
+	if adjustments.ExpiresAt != nil && adjustments.ExpiresAt.Before(expiresAt) {
+		expiresAt = *adjustments.ExpiresAt
+		graph.cart.ExpiresAt = &expiresAt
+	}
+	if err = applyQuoteAdjustments(calculated, adjustments); err != nil {
+		return nil, err
 	}
 	if !persist {
 		quote := &Quote{QuoteNo: quoteNo, CurrencyCode: resolved.CurrencyCode, IssuedAt: now, ExpiresAt: expiresAt}
@@ -271,14 +313,19 @@ func (s *channelOrderService) buildQuote(
 	if err != nil {
 		return nil, err
 	}
-	if s.commerce.structuredConfiguration != nil {
+	hasStructured, lookupErr := s.database.GetValue(ctx, `SELECT EXISTS(SELECT 1 FROM plugin_idc_core_catalog_product_version_configuration WHERE tenant_id=0 AND version_no=?)`, resolved.VersionNo)
+	if lookupErr != nil {
+		return nil, lookupErr
+	}
+	if s.commerce.structuredConfiguration != nil && hasStructured.Bool() {
 		if len(quote.Items) != 1 || quote.Items[0].QuoteItemNo == "" {
 			return nil, bizerr.NewCode(CodeUnavailable)
 		}
-		if _, err = s.commerce.freezeQuoteItemConfiguration(ctx, &principal.Audience{
-			Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive,
-			CustomerNo: payerCustomerNo,
-		}, FreezeQuoteItemConfigurationInput{
+		uploader, uploaderErr := s.configurationUploader(ctx, payerCustomerNo)
+		if uploaderErr != nil {
+			return nil, uploaderErr
+		}
+		if _, err = s.commerce.freezeQuoteItemConfiguration(ctx, payerCustomerNo, uploader, FreezeQuoteItemConfigurationInput{
 			QuoteItemNo: quote.Items[0].QuoteItemNo,
 			Purchase: catalog.PublicPurchaseConfigurationInput{
 				PublicSlug: purchase.PublicSlug, ConfigurationRevision: purchase.ConfigurationRevision,
@@ -289,6 +336,16 @@ func (s *channelOrderService) buildQuote(
 		}
 	}
 	return quote, nil
+}
+
+// configurationUploader consumes the explicitly bound owner principal used by
+// channel file reservation and verification; it never selects a browser user.
+func (s *channelOrderService) configurationUploader(ctx context.Context, customerNo string) (int, error) {
+	audience, err := s.commerce.principal.Current(ctx)
+	if err != nil || audience == nil || audience.Code != principal.AudienceCustomer || audience.Status != principal.AudienceStatusActive || audience.UserID < 1 || audience.CustomerNo != customerNo {
+		return 0, bizerr.NewCode(CodeNotAccessible)
+	}
+	return audience.UserID, nil
 }
 
 func (s *channelOrderService) Cancel(
@@ -341,4 +398,47 @@ func deterministicChannelQuoteNo(parts ...string) string {
 		_, _ = hash.Write([]byte(part))
 	}
 	return "QTE_" + hex.EncodeToString(hash.Sum(nil)[:16])
+}
+
+// CreateQuote freezes a customer-specific purchase and pricing decision. A
+// repeated request key reuses the immutable quote only for identical input.
+func (s *channelOrderService) CreateQuote(ctx context.Context, appID, customerNo, key string, purchase catalog.PurchaseConfigurationInput, quantity int) (*Quote, error) {
+	if appID == "" || customerNo == "" || len(key) < 8 || len(key) > 120 || quantity < 1 || quantity > 1000 {
+		return nil, bizerr.NewCode(CodeInvalid)
+	}
+	number := deterministicChannelQuoteNo(appID, customerNo, "quote:"+key)
+	digest, err := quoteContentDigest(struct {
+		Purchase catalog.PurchaseConfigurationInput
+		Quantity int
+	}{purchase, quantity})
+	if err != nil {
+		return nil, err
+	}
+	var result *Quote
+	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		if _, err := s.database.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended(?,0))`, number); err != nil {
+			return err
+		}
+		var previous *entity.CommerceQuoteSnapshot
+		if err := s.database.Model("plugin_idc_core_commerce_quote_snapshot").Ctx(ctx).Where("tenant_id=0 AND quote_no=?", number).Scan(&previous); err != nil {
+			return err
+		}
+		if previous != nil {
+			if previous.InputDigest != digest || previous.CustomerNo == nil || *previous.CustomerNo != customerNo {
+				return bizerr.NewCode(CodeConflict)
+			}
+			if previous.ExpiresAt == nil || !previous.ExpiresAt.After(time.Now()) {
+				return bizerr.NewCode(CodeQuoteNotAvailable)
+			}
+			result = &Quote{QuoteNo: number, CurrencyCode: previous.CurrencyCode, SubtotalMinor: previous.SubtotalMinor, DiscountMinor: previous.DiscountMinor, TaxAmountMinor: previous.TaxAmountMinor, TotalAmountMinor: previous.TotalAmountMinor, ExpiresAt: *previous.ExpiresAt}
+			return nil
+		}
+		resolved, err := s.catalog.ResolvePurchaseConfiguration(ctx, purchase)
+		if err != nil || resolved == nil {
+			return bizerr.NewCode(CodeQuoteNotAvailable)
+		}
+		result, err = s.buildQuote(ctx, customerNo, purchase, resolved, quantity, number, digest, true)
+		return err
+	})
+	return result, err
 }

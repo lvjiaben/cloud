@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { CustomerExternalMenu } from "./external-menu-client";
 
@@ -176,10 +178,11 @@ onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" :description="tr('description')" :title="tr('title')">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true">
     <div class="external-menu-layout">
       <Alert :message="tr('securityHint')" show-icon type="info" />
       <Card :body-style="{ height: '100%' }" :bordered="true" class="external-menu-card">

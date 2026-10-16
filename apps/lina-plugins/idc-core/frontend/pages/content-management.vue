@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import { Page } from "@vben/common-ui";
 import App from "../src/App.vue";
 import "../src/styles.css";
@@ -15,8 +16,8 @@ const context = useSourcePluginContext();
 </script>
 
 <template>
-  <Page :auto-content-height="true" content-class="p-0">
-    <div class="idc-plugin-shell h-full bg-card">
+  <Page class="plugin-admin-page" :auto-content-height="true">
+    <div class="idc-plugin-shell h-full">
       <App :context="context" />
     </div>
   </Page>

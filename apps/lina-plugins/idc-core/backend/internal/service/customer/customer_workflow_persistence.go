@@ -398,7 +398,7 @@ func (p *daoPersistence) transitionAccount(
 		_, auditErr := p.audit.AppendTransition(ctx, audit.TransitionInput{
 			Fields: audit.Fields{
 				IdempotencyScope: accountTransitionOperation, IdempotencyKey: input.idempotencyKey,
-				OperationCode: accountTransitionOperation, TargetType: idempotencyResourceCustomer,
+				OperationCode: accountTransitionOperation, RequiredPermission: permissionCustomerAccountUpdate, TargetType: idempotencyResourceCustomer,
 				TargetNo: input.customerNo, CustomerNo: input.customerNo,
 				Result: audit.ResultSucceeded, ReasonCode: string(input.reason), Risk: audit.RiskHigh,
 				CorrelationNo: transitionNo, ContextSnapshot: map[string]any{"source": "staff"},

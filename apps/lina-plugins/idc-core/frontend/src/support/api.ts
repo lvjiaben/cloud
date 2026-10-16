@@ -284,10 +284,12 @@ export type TicketRelatedEntitlement = {
 };
 
 export type SupportDepartmentSetting = {
-  assignmentMode: 'least_unresolved' | 'manual_claim' | 'round_robin';
+  assignmentMode: 'manual_claim';
   departmentNo: string;
   nameEnUS: string;
   nameZhCN: string;
+  orgDeptId: number;
+  orgDeptName?: string;
   parentDepartmentNo?: string;
   status: SupportSettingStatus;
   version: number;
@@ -364,8 +366,10 @@ export type SupportSLARuleSetting = {
 
 export type SupportDepartmentSettingInput = Omit<
   SupportDepartmentSetting,
-  'departmentNo' | 'version'
+  'departmentNo' | 'version' | 'orgDeptName'
 >;
+
+export type SupportOrganizationDepartment = { deptId: number; deptName: string; deptCode: string };
 export type SupportIssueCategorySettingInput = Omit<
   SupportIssueCategorySetting,
   'categoryNo' | 'version'
@@ -480,6 +484,13 @@ export function createSupportAPI(
     return result.item;
   }
   return {
+    transfer(ticketNo: string, body: { ticketVersion: number; departmentNo: string; reason: string }) {
+      return request<Record<string, never>>(`${supportBase}/tickets/${encodeURIComponent(ticketNo)}/transfers`, { method: 'POST', body });
+    },
+    organizationDepartments(page: number, pageSize: number, keyword: string) {
+      const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize), keyword });
+      return request<{ items: SupportOrganizationDepartment[]; total: number }>(`${supportBase}/organization-departments?${query}`);
+    },
     async action(ticketNo: string, action: string, body: unknown) {
       const result = await request<{ item: TicketDetail }>(
         `${supportBase}/tickets/${encodeURIComponent(ticketNo)}/${action}`,

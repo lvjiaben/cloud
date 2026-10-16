@@ -20,6 +20,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -44,10 +45,11 @@ var forbiddenConfidentialHTTPFields = map[string]struct{}{
 }
 
 type confidentialHTTPHandler struct {
-	configuration    channelconfig.Configuration
-	environment      resourcecap.ProviderEnv
-	operationSecrets []resourcecap.SecretBinding
-	login            *resourcecap.ConfidentialHTTPRequest
+	configuration            channelconfig.Configuration
+	environment              resourcecap.ProviderEnv
+	operationSecrets         []resourcecap.SecretBinding
+	login                    *resourcecap.ConfidentialHTTPRequest
+	forceFreshAuthentication bool
 }
 
 func NewProductionDynamicOutboundFactory(secretSource secretcap.Source, leases ...*channelinvocation.Service) DynamicOutboundFactory {
@@ -71,7 +73,7 @@ func NewProductionDynamicOutboundFactory(secretSource secretcap.Source, leases .
 			}
 			return nil, nil, err
 		}
-		handler := &confidentialHTTPHandler{configuration: configuration, environment: environment, operationSecrets: append([]resourcecap.SecretBinding(nil), operationSecrets...)}
+		handler := &confidentialHTTPHandler{configuration: configuration, environment: environment, operationSecrets: append([]resourcecap.SecretBinding(nil), operationSecrets...), forceFreshAuthentication: method == resourcecap.DynamicProviderMethodVerifyConnection}
 		return handler.Execute, func() {
 			cleanup()
 			if invocationLease != nil {
@@ -90,14 +92,18 @@ func (h *confidentialHTTPHandler) Execute(ctx context.Context, input *pluginhost
 	var request resourcecap.ConfidentialHTTPRequest
 	decoder := json.NewDecoder(bytes.NewReader(input.Payload))
 	decoder.DisallowUnknownFields()
-	if decoder.Decode(&request) != nil || decoder.Decode(&struct{}{}) != io.EOF || validateConfidentialHTTPRequest(request) != nil {
+	if decoder.Decode(&request) != nil || decoder.Decode(&struct{}{}) != io.EOF || normalizeConfidentialSecretFormBindings(&request) != nil || validateConfidentialHTTPRequest(request) != nil {
 		return nil, gerror.New("confidential Provider HTTP step is invalid")
+	}
+	if err := h.validateConfidentialOperationSlots(request); err != nil {
+		return nil, err
+	}
+	if slices.Contains(request.ResponseFields, "key") && h.configuration.PluginID != "idc-peer" {
+		return nil, gerror.New("confidential schema projection is not authorized")
 	}
 	switch request.Kind {
 	case resourcecap.ConfidentialHTTPKindAuthenticate:
-		copyRequest := request
-		h.login = &copyRequest
-		if err := h.accessSession(ctx, func([]byte, int64) error { return nil }); err != nil {
+		if err := h.authenticate(ctx, request); err != nil {
 			h.login = nil
 			return nil, err
 		}
@@ -125,7 +131,7 @@ func (h *confidentialHTTPHandler) Execute(ctx context.Context, input *pluginhost
 		}
 		settings, settingsErr := decodeChannelAuthenticationSettings(h.configuration.Config.Settings)
 		var err error
-		if settingsErr == nil && (settings.Strategy == "per_request_form" || settings.Strategy == "per_request_headers" || settings.Strategy == "bt_panel_double_md5") {
+		if settingsErr == nil && (settings.Strategy == "per_request_form" || settings.Strategy == "per_request_headers" || settings.Strategy == "bt_panel_double_md5" || settings.Strategy == "per_request_basic") {
 			err = consume(nil, 0)
 		} else {
 			err = h.accessSession(ctx, consume)
@@ -133,7 +139,7 @@ func (h *confidentialHTTPHandler) Execute(ctx context.Context, input *pluginhost
 				err = h.accessSession(ctx, func(token []byte, generation int64) error {
 					callErr := consume(token, generation)
 					if errors.Is(callErr, errAuthenticationRefreshRequired) {
-						return gerror.New("confidential Provider authentication was rejected after refresh")
+						return bizerr.NewCode(resourcecap.CodeProviderAuthRejected)
 					}
 					return callErr
 				})
@@ -173,7 +179,7 @@ func (h *confidentialHTTPHandler) performBusinessWithOperationSecrets(ctx contex
 		upstreamField := fields[index]
 		handle, ok := confidentialBinding(h.operationSecrets, request.SecretFormFields[upstreamField])
 		if !ok {
-			return gerror.New("confidential Provider operation binding is unavailable")
+			return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 		purpose, err := secretcap.NewPurpose("provider.operation-secret")
 		if err != nil {
@@ -183,7 +189,7 @@ func (h *confidentialHTTPHandler) performBusinessWithOperationSecrets(ctx contex
 		if err != nil {
 			return err
 		}
-		return h.environment.Secrets.Access(ctx, access, func(value []byte) error {
+		return accessConfidentialProviderSecret(ctx, h.environment.Secrets, access, func(value []byte) error {
 			if request.Form == nil {
 				request.Form = make(map[string]string)
 			}
@@ -252,12 +258,15 @@ func (h *confidentialHTTPHandler) withChannelAuthentication(
 	if settings.Strategy == "login_session" {
 		return action()
 	}
+	if settings.Strategy == "per_request_basic" {
+		return h.withBasicAuthentication(ctx, request, settings, action)
+	}
 	if settings.Strategy == "bt_panel_double_md5" {
 		return h.withBTPanelAuthentication(ctx, request, settings, action)
 	}
 	if (settings.Strategy != "per_request_form" && settings.Strategy != "per_request_headers") ||
 		len(settings.Fields) == 0 || len(settings.Fields) > 8 {
-		return gerror.New("resource channel authentication policy is invalid")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	fields := sortedMapKeys(settings.Fields)
 	var visit func(int) error
@@ -267,11 +276,11 @@ func (h *confidentialHTTPHandler) withChannelAuthentication(
 		}
 		upstreamField := fields[index]
 		if !confidentialHTTPFieldPattern.MatchString(strings.ReplaceAll(upstreamField, "-", "_")) {
-			return gerror.New("resource channel authentication field is invalid")
+			return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 		handle, ok := confidentialBinding(h.configuration.Config.SecretBindings, settings.Fields[upstreamField])
 		if !ok {
-			return gerror.New("resource channel authentication binding is unavailable")
+			return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 		purpose, err := secretcap.NewPurpose("provider.channel-authentication")
 		if err != nil {
@@ -281,14 +290,14 @@ func (h *confidentialHTTPHandler) withChannelAuthentication(
 		if err != nil {
 			return err
 		}
-		return h.environment.Secrets.Access(ctx, access, func(value []byte) error {
+		return accessConfidentialProviderSecret(ctx, h.environment.Secrets, access, func(value []byte) error {
 			switch settings.Strategy {
 			case "per_request_form":
 				if request.Form == nil {
 					request.Form = make(map[string]string)
 				}
 				if _, exists := request.Form[upstreamField]; exists {
-					return gerror.New("resource channel authentication field conflicts")
+					return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 				}
 				request.Form[upstreamField] = string(value)
 				defer delete(request.Form, upstreamField)
@@ -312,10 +321,10 @@ func (h *confidentialHTTPHandler) withBTPanelAuthentication(
 	action func() error,
 ) error {
 	if request.Method != http.MethodPost || len(settings.Fields) != 1 || settings.Fields["material"] == "" {
-		return gerror.New("resource channel BT Panel authentication policy is invalid")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if h.environment.Secrets == nil {
-		return gerror.New("resource channel BT Panel credential access is unavailable")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if request.Form == nil {
 		request.Form = make(map[string]string)
@@ -328,7 +337,7 @@ func (h *confidentialHTTPHandler) withBTPanelAuthentication(
 	}
 	handle, ok := confidentialBinding(h.configuration.Config.SecretBindings, settings.Fields["material"])
 	if !ok {
-		return gerror.New("resource channel BT Panel authentication binding is unavailable")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	purpose, err := secretcap.NewPurpose("provider.channel-authentication")
 	if err != nil {
@@ -338,7 +347,7 @@ func (h *confidentialHTTPHandler) withBTPanelAuthentication(
 	if err != nil {
 		return err
 	}
-	return h.environment.Secrets.Access(ctx, access, func(value []byte) error {
+	return accessConfidentialProviderSecret(ctx, h.environment.Secrets, access, func(value []byte) error {
 		requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 		inner := md5.Sum(value)
 		innerHex := make([]byte, hex.EncodedLen(len(inner)))
@@ -363,7 +372,7 @@ func (h *confidentialHTTPHandler) rejectConfiguredSecretEchoes(ctx context.Conte
 		return nil
 	}
 	if h.environment.Secrets == nil {
-		return gerror.New("confidential Provider credential access is unavailable")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	purpose, err := secretcap.NewPurpose("provider.response-screening")
 	if err != nil {
@@ -374,7 +383,7 @@ func (h *confidentialHTTPHandler) rejectConfiguredSecretEchoes(ctx context.Conte
 		if accessErr != nil {
 			return gerror.New("confidential Provider response screening is unavailable")
 		}
-		accessErr = h.environment.Secrets.Access(ctx, access, func(value []byte) error {
+		accessErr = accessConfidentialProviderSecret(ctx, h.environment.Secrets, access, func(value []byte) error {
 			if confidentialPlaintextAppears(content, value) {
 				return gerror.New("confidential Provider HTTP response contains credential material")
 			}
@@ -421,13 +430,25 @@ func confidentialPlaintextAppears(content, secret []byte) bool {
 	return appears(value)
 }
 
+// authenticate bypasses shared session caches for explicit connection tests.
+// The probe token is cleared without replacing or invalidating business sessions.
+func (h *confidentialHTTPHandler) authenticate(ctx context.Context, request resourcecap.ConfidentialHTTPRequest) error {
+	h.login = &request
+	if h.forceFreshAuthentication {
+		token, err := h.performLogin(ctx, request)
+		clear(token)
+		return err
+	}
+	return h.accessSession(ctx, func([]byte, int64) error { return nil })
+}
+
 func (h *confidentialHTTPHandler) accessSession(ctx context.Context, consume resourcecap.AuthenticationTokenConsumer) error {
 	if h.login == nil || h.environment.AuthenticationSessions == nil {
-		return gerror.New("confidential Provider authentication is unavailable")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	settings, err := h.authenticationSettings()
 	if err != nil || settings.Strategy != "login_session" {
-		return gerror.New("resource channel login-session policy is invalid")
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	return h.environment.AuthenticationSessions.Access(ctx, resourcecap.AuthenticationSessionRequest{
 		ChannelRef: h.configuration.Config.ChannelRef,
@@ -444,10 +465,18 @@ func (h *confidentialHTTPHandler) accessSession(ctx context.Context, consume res
 
 func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request resourcecap.ConfidentialHTTPRequest) ([]byte, error) {
 	settings, err := h.authenticationSettings()
-	if err != nil || settings.Strategy != "login_session" || request.Path != settings.LoginPath ||
-		!equalStringMap(request.CredentialFields, settings.Fields) {
-		return nil, gerror.New("resource channel login-session policy is invalid")
+	canonicalPath := confidentialCanonicalLoginPath(h.configuration.Config.Endpoint, settings.LoginPath)
+	if err != nil || settings.Strategy != "login_session" ||
+		(request.Path != settings.LoginPath && request.Path != canonicalPath) ||
+		(len(request.CredentialFields) > 0 && !equalStringMap(request.CredentialFields, settings.Fields)) {
+		return nil, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
+	// The owner already holds the frozen credential mapping. Guests may omit
+	// it so password-named fields never cross the governed JSON boundary.
+	request.CredentialFields = settings.Fields
+	// Older frozen declarations contain an absolute API prefix. The configured
+	// endpoint already owns that API root; dispatch its exact relative tail.
+	request.Path = canonicalPath
 	values := url.Values{}
 	fields := sortedMapKeys(request.CredentialFields)
 	var tokenResult []byte
@@ -458,12 +487,21 @@ func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request reso
 				Kind: resourcecap.ConfidentialHTTPKindRequest, Method: request.Method, Path: request.Path,
 				Form: firstValues(values),
 			}, nil)
-			if err != nil || response.StatusCode < 200 || response.StatusCode >= 300 {
-				return gerror.New("confidential Provider authentication failed")
+			if err != nil {
+				return err
+			}
+			if response.StatusCode == http.StatusBadRequest {
+				return bizerr.NewCode(resourcecap.CodeProviderAuthRejected)
+			}
+			if response.StatusCode >= http.StatusInternalServerError || response.StatusCode == http.StatusTooManyRequests {
+				return bizerr.NewCode(resourcecap.CodeProviderNetwork)
+			}
+			if response.StatusCode < 200 || response.StatusCode >= 300 {
+				return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 			}
 			token, tokenErr := extractAuthenticationToken(response.Data, settings.TokenJSONPath)
 			if tokenErr != nil {
-				return gerror.New("confidential Provider authentication response is invalid")
+				return confidentialAuthenticationResponseError(response.Data)
 			}
 			tokenResult = []byte(token)
 			return nil
@@ -471,7 +509,7 @@ func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request reso
 		field := fields[index]
 		handle, ok := confidentialBinding(h.configuration.Config.SecretBindings, request.CredentialFields[field])
 		if !ok {
-			return gerror.New("confidential Provider credential binding is unavailable")
+			return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 		purpose, err := secretcap.NewPurpose("provider.authentication")
 		if err != nil {
@@ -481,7 +519,7 @@ func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request reso
 		if err != nil {
 			return err
 		}
-		return h.environment.Secrets.Access(ctx, access, func(value []byte) error {
+		return accessConfidentialProviderSecret(ctx, h.environment.Secrets, access, func(value []byte) error {
 			values.Set(field, string(value))
 			defer values.Del(field)
 			return visit(index + 1)
@@ -511,7 +549,11 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 	for key, value := range request.Form {
 		body.Set(key, value)
 	}
-	httpRequest, err := http.NewRequestWithContext(ctx, request.Method, target.String(), strings.NewReader(body.Encode()))
+	var requestBody io.Reader = strings.NewReader(body.Encode())
+	if len(request.JSONBody) > 0 {
+		requestBody = bytes.NewReader(request.JSONBody)
+	}
+	httpRequest, err := http.NewRequestWithContext(ctx, request.Method, target.String(), requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -522,10 +564,13 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 	if len(body) > 0 {
 		httpRequest.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}
+	if len(request.JSONBody) > 0 {
+		httpRequest.Header.Set("Content-Type", "application/json")
+	}
 	if len(token) > 0 {
 		settings, settingsErr := h.authenticationSettings()
 		if settingsErr != nil || settings.Strategy != "login_session" {
-			return nil, gerror.New("resource channel login-session policy is invalid")
+			return nil, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 		value := string(token)
 		if settings.TokenScheme != "" {
@@ -535,17 +580,40 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 		defer httpRequest.Header.Del(settings.TokenHeader)
 	}
 	response, err := h.environment.HTTPClient.Do(httpRequest)
-	if err != nil || response == nil || response.Body == nil {
-		return nil, gerror.New("confidential Provider HTTP request failed")
+	if err != nil {
+		return nil, confidentialTransportError(err)
+	}
+	if response == nil || response.Body == nil {
+		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
 	defer response.Body.Close()
+	if response.StatusCode == http.StatusNotFound {
+		return nil, bizerr.NewCode(resourcecap.CodeProviderEndpointNotFound)
+	}
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+		return nil, bizerr.NewCode(resourcecap.CodeProviderAuthRejected)
+	}
 	if response.StatusCode >= http.StatusMultipleChoices && response.StatusCode < http.StatusBadRequest {
-		return nil, gerror.New("confidential Provider HTTP redirect is forbidden")
+		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
 	content, err := io.ReadAll(io.LimitReader(response.Body, maximumConfidentialHTTPResponse+1))
-	if err != nil || len(content) > maximumConfidentialHTTPResponse || !json.Valid(content) {
+	if err != nil {
 		clear(content)
-		return nil, gerror.New("confidential Provider HTTP response is invalid")
+		return nil, confidentialTransportError(err)
+	}
+	if len(content) > maximumConfidentialHTTPResponse || !json.Valid(content) {
+		clear(content)
+		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
+	}
+	if slices.Contains(request.ResponseFields, "key") && validatePeerImportSchemaKeys(request, content) != nil {
+		clear(content)
+		return nil, gerror.New("confidential schema field key is invalid")
+	}
+	for name, value := range request.Headers {
+		if strings.EqualFold(name, "Authorization") && confidentialPlaintextAppears(content, []byte(value)) {
+			clear(content)
+			return nil, gerror.New("confidential Provider HTTP response contains authentication material")
+		}
 	}
 	// An empty allowlist is reachable only from the host-internal login call;
 	// guest-originated business requests are rejected without one.
@@ -555,54 +623,54 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 	projected, err := projectConfidentialHTTPResponse(content, request.ResponseFields)
 	clear(content)
 	if err != nil {
-		return nil, err
+		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
 	return &resourcecap.ConfidentialHTTPResponse{StatusCode: response.StatusCode, Data: projected}, nil
 }
 
 func (h *confidentialHTTPHandler) authenticationSettings() (channelAuthenticationSettings, error) {
 	if h == nil {
-		return channelAuthenticationSettings{}, gerror.New("resource channel authentication policy is invalid")
+		return channelAuthenticationSettings{}, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	settings, err := decodeChannelAuthenticationSettings(h.configuration.Config.Settings)
 	if err != nil {
-		return settings, gerror.New("resource channel authentication policy is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if settings.Strategy != "login_session" {
 		return settings, nil
 	}
 	if len(settings.TokenJSONPath) == 0 || len(settings.TokenJSONPath) > 4 {
-		return settings, gerror.New("resource channel authentication token path is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	for index, part := range settings.TokenJSONPath {
 		if part == "$" && len(settings.TokenJSONPath) == 1 && index == 0 {
 			continue
 		}
 		if !confidentialHTTPFieldPattern.MatchString(part) {
-			return settings, gerror.New("resource channel authentication token path is invalid")
+			return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 	}
 	if _, ok := allowedAuthenticationTokenHeaders[settings.TokenHeader]; !ok {
-		return settings, gerror.New("resource channel authentication token header is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if settings.TokenScheme != "" && settings.TokenScheme != "Bearer" {
-		return settings, gerror.New("resource channel authentication token scheme is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if settings.SessionTTLSeconds < 60 || settings.SessionTTLSeconds > 3600 {
-		return settings, gerror.New("resource channel authentication session TTL is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	if (len(settings.RefreshJSONPath) == 0) != (len(settings.RefreshJSONValues) == 0) ||
 		len(settings.RefreshJSONPath) > 4 || len(settings.RefreshJSONValues) > 8 {
-		return settings, gerror.New("resource channel authentication refresh policy is invalid")
+		return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	for _, part := range settings.RefreshJSONPath {
 		if !confidentialHTTPFieldPattern.MatchString(part) {
-			return settings, gerror.New("resource channel authentication refresh path is invalid")
+			return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 	}
 	for _, value := range settings.RefreshJSONValues {
 		if value == "" || len(value) > 64 || strings.ContainsAny(value, "\r\n\x00") {
-			return settings, gerror.New("resource channel authentication refresh value is invalid")
+			return settings, bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 		}
 	}
 	return settings, nil
@@ -692,6 +760,9 @@ func (h *confidentialHTTPHandler) requiresAuthenticationRefresh(content []byte) 
 }
 
 func validateConfidentialHTTPRequest(request resourcecap.ConfidentialHTTPRequest) error {
+	if err := validateConfidentialJSONBody(request); err != nil {
+		return err
+	}
 	if request.Path == "" || request.Path[0] != '/' || strings.Contains(request.Path, "..") || strings.ContainsAny(request.Path, "?#\\") || len(request.Path) > 1024 {
 		return gerror.New("confidential Provider path is invalid")
 	}
@@ -702,7 +773,7 @@ func validateConfidentialHTTPRequest(request resourcecap.ConfidentialHTTPRequest
 		return gerror.New("confidential Provider HTTP fields exceed the limit")
 	}
 	if request.Kind == resourcecap.ConfidentialHTTPKindAuthenticate {
-		if request.Method != http.MethodPost || len(request.CredentialFields) == 0 || len(request.SecretFormFields) != 0 || len(request.ResponseFields) != 0 || request.UseAuthentication {
+		if request.Method != http.MethodPost || len(request.SecretFormFields) != 0 || len(request.ResponseFields) != 0 || request.UseAuthentication {
 			return gerror.New("confidential Provider authentication step is invalid")
 		}
 	} else if request.Kind == resourcecap.ConfidentialHTTPKindRequest {
@@ -710,7 +781,27 @@ func validateConfidentialHTTPRequest(request resourcecap.ConfidentialHTTPRequest
 			return gerror.New("confidential Provider request step is invalid")
 		}
 	}
-	for _, field := range request.ResponseFields {
+	fields := request.ResponseFields
+	if peerImportSchemaRequest(request) {
+		fields = slices.DeleteFunc(slices.Clone(fields), func(field string) bool { return field == "key" })
+	}
+	if err := validateConfidentialResponseFields(fields); err != nil {
+		return err
+	}
+	for upstreamField, slotName := range request.SecretFormFields {
+		if upstreamField == "" || slotName == "" || len(upstreamField) > 128 || len(slotName) > 128 {
+			return gerror.New("confidential Provider operation secret field is invalid")
+		}
+		if _, exists := request.Form[upstreamField]; exists {
+			return gerror.New("confidential Provider operation secret field conflicts with public form")
+		}
+	}
+	return nil
+}
+
+// validateConfidentialResponseFields limits projection to explicitly allowed public fields.
+func validateConfidentialResponseFields(fields []string) error {
+	for _, field := range fields {
 		normalized := strings.ReplaceAll(strings.ToLower(field), "_", "")
 		if !confidentialHTTPFieldPattern.MatchString(field) {
 			return gerror.New("confidential Provider response field is invalid")
@@ -719,12 +810,17 @@ func validateConfidentialHTTPRequest(request resourcecap.ConfidentialHTTPRequest
 			return gerror.New("confidential Provider response field is forbidden")
 		}
 	}
-	for upstreamField, slotName := range request.SecretFormFields {
-		if upstreamField == "" || slotName == "" || len(upstreamField) > 128 || len(slotName) > 128 {
-			return gerror.New("confidential Provider operation secret field is invalid")
+	return nil
+}
+
+func validateConfidentialJSONBody(request resourcecap.ConfidentialHTTPRequest) error {
+	if len(request.JSONBody) > 0 {
+		if len(request.JSONBody) > maximumConfidentialHTTPResponse || len(request.Form) > 0 || len(request.SecretFormFields) > 0 || len(request.CredentialFields) > 0 || request.Kind != resourcecap.ConfidentialHTTPKindRequest || request.Method == http.MethodGet {
+			return gerror.New("confidential Provider JSON body is invalid")
 		}
-		if _, exists := request.Form[upstreamField]; exists {
-			return gerror.New("confidential Provider operation secret field conflicts with public form")
+		var object map[string]json.RawMessage
+		if json.Unmarshal(request.JSONBody, &object) != nil || object == nil || len(object) > 128 {
+			return gerror.New("confidential Provider JSON object is invalid")
 		}
 	}
 	return nil
@@ -739,7 +835,10 @@ func projectConfidentialHTTPResponse(content []byte, fields []string) (json.RawM
 	decoder.UseNumber()
 	var value any
 	if decoder.Decode(&value) != nil {
-		return nil, gerror.New("confidential Provider HTTP response is invalid")
+		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
+	}
+	if !boundedConfidentialHTTPValue(value, allowed, 0) {
+		return nil, gerror.New("confidential Provider HTTP response exceeds structural limits")
 	}
 	projected, ok := projectConfidentialHTTPValue(value, allowed, 0)
 	if !ok {
@@ -753,7 +852,7 @@ func projectConfidentialHTTPResponse(content []byte, fields []string) (json.RawM
 }
 
 func projectConfidentialHTTPValue(value any, allowed map[string]struct{}, depth int) (any, bool) {
-	if depth > 16 {
+	if depth > 32 {
 		return nil, false
 	}
 	switch typed := value.(type) {
@@ -769,7 +868,7 @@ func projectConfidentialHTTPValue(value any, allowed map[string]struct{}, depth 
 		}
 		return result, len(result) != 0
 	case []any:
-		if len(typed) > 512 {
+		if len(typed) > 4096 {
 			return nil, false
 		}
 		result := make([]any, 0, len(typed))
@@ -784,6 +883,32 @@ func projectConfidentialHTTPValue(value any, allowed map[string]struct{}, depth 
 	default:
 		return nil, false
 	}
+}
+
+// Validate permitted structure before projection so an oversized price or
+// candidate array cannot disappear while the rest appears complete.
+func boundedConfidentialHTTPValue(value any, allowed map[string]struct{}, depth int) bool {
+	if depth > 32 {
+		return false
+	}
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if _, ok := allowed[key]; ok && !boundedConfidentialHTTPValue(child, allowed, depth+1) {
+				return false
+			}
+		}
+	case []any:
+		if len(typed) > 4096 {
+			return false
+		}
+		for _, child := range typed {
+			if !boundedConfidentialHTTPValue(child, allowed, depth+1) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func confidentialBinding(bindings []resourcecap.SecretBinding, name string) (secretcap.Handle, bool) {

@@ -96,10 +96,10 @@ func TestImportedPartialBindingPostgreSQL(t *testing.T) {
 		AuthorizedMethods: evidence.AuthorizedMethods, ReleaseDigest: evidence.ReleaseDigest, DeclarationDigest: evidence.DeclarationDigest}
 	staleRead := *readEvidence
 	staleRead.InterfaceConfigurationRevision = "rci_22222222222222222222222222222222"
-	if _, err = service.PrepareImportBinding(ctx, created.InterfaceInstanceNo, &staleRead, nil); !bizerr.Is(err, catalog.CodeManagementConflict) {
+	if _, err = service.PrepareImportBinding(ctx, created.InterfaceInstanceNo, &staleRead, nil, nil); !bizerr.Is(err, catalog.CodeManagementConflict) {
 		t.Fatalf("source read and core projection revision mismatch was accepted: %v", err)
 	}
-	prepared, err := service.PrepareImportBinding(ctx, created.InterfaceInstanceNo, readEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue{{FieldKey: "upstream_product_id", OptionValue: &reference}})
+	prepared, err := service.PrepareImportBinding(ctx, created.InterfaceInstanceNo, readEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue{{FieldKey: "upstream_product_id", OptionValue: &reference}}, nil)
 	if err != nil || len(prepared.MissingConfiguration) != 1 || prepared.MissingConfiguration[0].FieldKey != "cpu" {
 		t.Fatalf("prepare partial binding: %+v %v", prepared, err)
 	}

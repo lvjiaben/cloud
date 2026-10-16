@@ -1,13 +1,13 @@
 {
   "menu": {
     "plugin:idc-core:product-directories": {
-      "title": "Product Directories"
+      "title": "Member Navigation"
     },
     "plugin:idc-core:product-directories:create": {
-      "title": "Create Product Directory"
+      "title": "Create Member Navigation"
     },
     "plugin:idc-core:product-directories:update": {
-      "title": "Update Product Directory"
+      "title": "Edit Member Navigation"
     }
   },
   "error": {
@@ -19,7 +19,10 @@
             "accessible": "The product directory is not accessible"
           },
           "conflict": "The directory changed or a product belongs to another directory; refresh and review its association",
-          "unavailable": "The product directory operation is temporarily unavailable"
+          "unavailable": "The product directory operation is temporarily unavailable",
+          "has": {
+            "products": "This menu still has products. Change or clear their member menu in product editing before changing the menu type."
+          }
         }
       }
     }

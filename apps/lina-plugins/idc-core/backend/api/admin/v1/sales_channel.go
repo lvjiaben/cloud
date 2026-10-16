@@ -8,7 +8,7 @@ type SalesChannelOfferEvaluateReq struct {
 	g.Meta             `path:"/admin/sales-channel/agent/offer/evaluate" method:"post" tags:"IDC Sales Channel" summary:"Evaluate agent offer" dc:"Evaluate one bounded agent offer and return the immutable price snapshot." permission:"idc:admin:sales-channel:offer:view"`
 	CustomerNo         string `json:"customerNo" v:"required|max-length:40" dc:"Customer short number" eg:"C10001"`
 	ProductNo          string `json:"productNo" v:"required|max-length:40" dc:"Generic product number" eg:"product.demo"`
-	CurrencyCode       string `json:"currencyCode" v:"required|length:3" dc:"ISO currency code" eg:"CNY"`
+	CurrencyCode       string `json:"currencyCode" v:"required|length:3,3" dc:"ISO currency code" eg:"CNY"`
 	BasePriceMinor     int64  `json:"basePriceMinor" v:"min:0" dc:"Public price in minor units" eg:"10000"`
 	CostMinor          int64  `json:"costMinor" v:"min:0" dc:"Cost floor in minor units" eg:"6000"`
 	ExistingCreditUsed int64  `json:"existingCreditUsed" v:"min:0" dc:"Already used credit in minor units" eg:"0"`
@@ -84,7 +84,7 @@ type SalesChannelCommissionCalculateReq struct {
 	OperationTypeCode    string                             `json:"operationTypeCode" v:"required|max-length:32"`
 	BeneficiaryTypeCode  string                             `json:"beneficiaryTypeCode" v:"required|max-length:32"`
 	ProductNo            string                             `json:"productNo" v:"max-length:40"`
-	CurrencyCode         string                             `json:"currencyCode" v:"required|length:3"`
+	CurrencyCode         string                             `json:"currencyCode" v:"required|length:3,3"`
 	BaseAmountMinor      int64                              `json:"baseAmountMinor" v:"min:0"`
 	RuleNo               string                             `json:"ruleNo" v:"required|max-length:40"`
 	CalculationTypeCode  string                             `json:"calculationTypeCode" v:"required|in:fixed,rate,tiered"`
@@ -140,7 +140,7 @@ type SalesChannelCustomerReferrerGetRes struct {
 }
 
 type SalesChannelSettlementReviewReq struct {
-	g.Meta         `path:"/admin/sales-channel/commission/settlements/{settlementNo}/review" method:"post" tags:"IDC Sales Channel" summary:"Review commission settlement" permission:"idc:admin:sales-channel:commission:review"`
+	g.Meta         `path:"/admin/sales-channel/commission/settlements/{settlementNo}/review" method:"post" tags:"IDC Sales Channel" summary:"Release historical commission request" dc:"Only rejected is accepted to release a historical unreviewed request. Approval and new settlement applications are retired." permission:"idc:admin:sales-channel:commission:review"`
 	SettlementNo   string `json:"settlementNo" v:"required|max-length:40"`
 	DecisionCode   string `json:"decisionCode" v:"required|in:approved,rejected,manual_review"`
 	ReasonCode     string `json:"reasonCode" v:"required|max-length:64"`
@@ -151,7 +151,7 @@ type SalesChannelSettlementReviewRes struct {
 }
 
 type SalesChannelPayoutBatchCreateReq struct {
-	g.Meta        `path:"/admin/sales-channel/commission/payout-batches" method:"post" tags:"IDC Sales Channel" summary:"Create commission payout batch" permission:"idc:admin:sales-channel:commission:payout"`
+	g.Meta        `path:"/admin/sales-channel/commission/payout-batches" method:"post" tags:"IDC Sales Channel" summary:"Retired commission payout batch endpoint" dc:"This endpoint always rejects writes. Administrators record offline commission payments in sales management." permission:"idc:admin:sales-channel:commission:payout"`
 	CurrencyCode  string   `json:"currencyCode" v:"required|length:3"`
 	SettlementNos []string `json:"settlementNos" v:"required"`
 }
@@ -163,7 +163,7 @@ type SalesChannelPayoutBatchCreateRes struct {
 }
 
 type SalesChannelPayoutResultReq struct {
-	g.Meta            `path:"/admin/sales-channel/commission/payout-batches/{batchNo}/items/{settlementNo}/result" method:"post" tags:"IDC Sales Channel" summary:"Record commission payout result" permission:"idc:admin:sales-channel:commission:payout"`
+	g.Meta            `path:"/admin/sales-channel/commission/payout-batches/{batchNo}/items/{settlementNo}/result" method:"post" tags:"IDC Sales Channel" summary:"Release failed historical commission payout" dc:"Only failed is accepted after confirming a historical payment did not occur. Successful payments and new payout batches are retired." permission:"idc:admin:sales-channel:commission:payout"`
 	BatchNo           string `json:"batchNo" v:"required|max-length:40"`
 	SettlementNo      string `json:"settlementNo" v:"required|max-length:40"`
 	StatusCode        string `json:"statusCode" v:"required|in:succeeded,failed,result_unknown,manual_review"`

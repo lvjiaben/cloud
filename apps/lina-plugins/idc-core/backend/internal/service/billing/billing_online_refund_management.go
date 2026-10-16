@@ -240,7 +240,7 @@ VALUES (0,?,?,?,?,?,?,?,?,?)`, policyNo, input.CurrencyCode, version,
 			AutomaticApprovalEnabled: input.AutomaticApprovalEnabled,
 			ConfiguredBy:             actor, EffectiveAt: now,
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"policy": current},
 			IdempotencyScope: "billing.refund_policy.configure", IdempotencyKey: policyNo,
 			OperationCode: "billing.refund_policy.configure",
 			TargetType:    "refund_policy", TargetNo: policyNo,

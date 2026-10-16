@@ -7,6 +7,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { Post } from "./post-client";
 
 import { computed, onMounted, ref } from "vue";
@@ -153,10 +155,11 @@ function onReload() {
   gridApi.query();
   deptTreeRef.value?.refreshTree();
 }
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page
+  <Page :ref="layoutRoot" class="plugin-admin-page"
     :auto-content-height="true"
     content-class="flex min-h-0 flex-col gap-[8px] w-full 2xl:flex-row"
   >

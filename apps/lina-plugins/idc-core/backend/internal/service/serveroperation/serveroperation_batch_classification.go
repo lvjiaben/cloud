@@ -57,6 +57,14 @@ func (s *batchManagementImpl) SaveClassification(ctx context.Context,
 		auditKey = classificationNo + ":" + strconv.FormatInt(input.ExpectedVersion, 10)
 	}
 	err = s.management.directory.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		var before *ServerClassification
+		if input.ClassificationNo != "" {
+			var loadErr error
+			before, loadErr = s.loadClassification(ctx, classificationNo)
+			if loadErr != nil {
+				return loadErr
+			}
+		}
 		if input.ClassificationNo == "" {
 			_, err = s.management.directory.database.Exec(ctx, `INSERT INTO plugin_idc_core_server_classification
 (tenant_id,classification_no,name_zh_cn,name_en_us,status_code,version,created_by,updated_by,created_at,updated_at)
@@ -86,7 +94,7 @@ WHERE tenant_id=0 AND classification_no=? AND version=?`, input.NameZhCN, input.
 		if err != nil {
 			return err
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"classification": before},
 			IdempotencyScope: "server.classification.save", IdempotencyKey: auditKey,
 			OperationCode: "server.classification.save", TargetType: "server_classification",
 			TargetNo: classificationNo, ResultCode: "succeeded", ReasonCode: "staff_server_classification",
@@ -119,7 +127,7 @@ WHERE tenant_id=0 AND classification_no=? AND version=? AND status_code='active'
 		if countErr != nil || affected != 1 {
 			return bizerr.NewCode(CodeServerBatchConflict)
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"status": "active", "version": expectedVersion},
 			IdempotencyScope: "server.classification.disable",
 			IdempotencyKey:   classificationNo + ":" + strconv.FormatInt(expectedVersion, 10),
 			OperationCode:    "server.classification.disable", TargetType: "server_classification",

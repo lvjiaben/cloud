@@ -1,0 +1,9 @@
+# Optional source-plugin download origin; checked-out plugins already ship with this repository.
+plugins:
+  official:
+    type: git
+    repo: "https://github.com/lvjiaben/cloud.git"
+    root: "apps/lina-plugins"
+    ref: "main"
+    items:
+      - id: "*"

@@ -20,6 +20,7 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/authcap/authz"
 	"lina-core/pkg/plugin/capability/bizctxcap"
+	"lina-core/pkg/plugin/capability/orgcap"
 	"lina-core/pkg/plugin/capability/sessioncap"
 	"lina-core/pkg/plugin/capability/storagecap"
 	"lina-plugin-idc-core/backend/cap/idccap"
@@ -27,7 +28,6 @@ import (
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/supportupstream"
-	"lina-plugin-staff-access/backend/cap/staffaccesscap"
 )
 
 const (
@@ -53,6 +53,7 @@ const (
 	PermissionEscalate      = "idc:admin:support:ticket:escalate"
 	PermissionHide          = "idc:admin:support:ticket:hide"
 	PermissionUpstream      = "idc:admin:support:ticket:upstream-forward"
+	PermissionLead          = "idc:admin:support:ticket:lead"
 	PermissionViewAll       = "idc:admin:support:ticket:view-all"
 	PermissionMergeAll      = "idc:admin:support:ticket:merge-all"
 	PermissionConfigure     = "idc:admin:support:configuration:manage"
@@ -325,6 +326,8 @@ type CategorySearchInput struct {
 }
 
 type DepartmentOption struct {
+	OrgDeptID                                                int `orm:"org_dept_id"`
+	OrgDeptName                                              string
 	DepartmentNo, NameZhCN, NameEnUS, AssignmentMode, Status string
 	ParentDepartmentNo                                       string
 	Version                                                  int64
@@ -374,6 +377,7 @@ const (
 )
 
 type DepartmentSettingInput struct {
+	OrgDeptID                              int
 	NameZhCN, NameEnUS, ParentDepartmentNo string
 	AssignmentMode                         AssignmentMode
 	Status                                 SettingStatus
@@ -587,6 +591,10 @@ type Service interface {
 	// SearchAccountEntitlementCandidates returns a bounded cursor page owned by the current customer and rejects non-customer contexts.
 	SearchAccountEntitlementCandidates(context.Context, string, string, string, int) (*EntitlementCandidatePage, error)
 	Departments(context.Context) ([]DepartmentOption, error)
+	// ManagedDepartments lists queues for a supervisor within the same live role scope.
+	ManagedDepartments(context.Context) ([]DepartmentOption, error)
+	// OrganizationDepartments returns enabled, bounded department choices constrained by current role scope.
+	OrganizationDepartments(context.Context, string, int, int) (*OrganizationDepartmentPage, error)
 	IssueCategories(context.Context) ([]CategoryOption, error)
 	Statuses(context.Context) ([]StatusOption, error)
 	ReplyPresets(context.Context, string) ([]ReplyPresetOption, error)
@@ -642,7 +650,7 @@ type Service interface {
 	ReplyStaff(context.Context, MessageInput) (*Detail, error)
 	NoteStaff(context.Context, MessageInput) (*Detail, error)
 	Claim(context.Context, ClaimInput) (*Detail, error)
-	Transfer(context.Context, TransferInput) (*Detail, error)
+	Transfer(context.Context, TransferInput) error
 	Resolve(context.Context, TransitionInput) (*Detail, error)
 	CloseStaff(context.Context, TransitionInput) (*Detail, error)
 	ReopenStaff(context.Context, TransitionInput) (*Detail, error)
@@ -695,7 +703,7 @@ type serviceImpl struct {
 	storage              storagecap.Service
 	notifications        notificationcap.EventSink
 	audit                idccap.BusinessAuditWriter
-	staffAccess          staffaccesscap.Service
+	organization         orgcap.Service
 	upstreamSecrets      secretcap.Manager
 	upstreamSecretAccess secretcap.Accessor
 	sessions             sessioncap.Service
@@ -708,6 +716,19 @@ var _ Service = (*serviceImpl)(nil)
 
 func New(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service) (Service, error) {
 	return newService(database, bizCtx, principalReader, authorization, storage, nil)
+}
+
+// NewReader creates a read-only support service with the shared organization capability.
+func NewReader(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, organization orgcap.Service) (Service, error) {
+	if organization == nil {
+		return nil, gerror.New("support reader requires organization capability")
+	}
+	service, err := newService(database, bizCtx, principalReader, authorization, storage, nil)
+	if err != nil {
+		return nil, err
+	}
+	service.organization = organization
+	return service, nil
 }
 
 // NewWithEvents creates the operational support service with a transaction-local
@@ -737,11 +758,11 @@ func NewWithEventsAndAudit(database gdb.DB, bizCtx bizctxcap.Service, principalR
 	return service, nil
 }
 
-// NewWithEventsAuditAndStaffAccess creates the production support service with
-// authoritative target-employee business qualification checks.
-func NewWithEventsAuditAndStaffAccess(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, notifications notificationcap.EventSink, auditWriter idccap.BusinessAuditWriter, staffAccess staffaccesscap.Service) (Service, error) {
-	if staffAccess == nil {
-		return nil, gerror.New("support desk requires target-staff business access")
+// NewWithEventsAuditAndOrganization creates the production support service with
+// live organization assignments and role authorization.
+func NewWithEventsAuditAndOrganization(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, notifications notificationcap.EventSink, auditWriter idccap.BusinessAuditWriter, organization orgcap.Service) (Service, error) {
+	if organization == nil {
+		return nil, gerror.New("support desk requires organization capability")
 	}
 	service, err := NewWithEventsAndAudit(database, bizCtx, principalReader, authorization, storage, notifications, auditWriter)
 	if err != nil {
@@ -751,16 +772,16 @@ func NewWithEventsAuditAndStaffAccess(database gdb.DB, bizCtx bizctxcap.Service,
 	if !ok {
 		return nil, gerror.New("support desk implementation is unavailable")
 	}
-	implementation.staffAccess = staffAccess
+	implementation.organization = organization
 	return implementation, nil
 }
 
 // NewProduction creates the complete Phase 11 support route service.
-func NewProduction(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, notifications notificationcap.EventSink, auditWriter idccap.BusinessAuditWriter, staffAccess staffaccesscap.Service, upstreamSecrets secretcap.Manager, upstreamSecretAccess secretcap.Accessor, sessions sessioncap.Service) (Service, error) {
+func NewProduction(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, notifications notificationcap.EventSink, auditWriter idccap.BusinessAuditWriter, organization orgcap.Service, upstreamSecrets secretcap.Manager, upstreamSecretAccess secretcap.Accessor, sessions sessioncap.Service) (Service, error) {
 	if upstreamSecrets == nil || upstreamSecretAccess == nil || sessions == nil {
 		return nil, gerror.New("support desk requires upstream ticket secrets and sessions")
 	}
-	service, err := NewWithEventsAuditAndStaffAccess(database, bizCtx, principalReader, authorization, storage, notifications, auditWriter, staffAccess)
+	service, err := NewWithEventsAuditAndOrganization(database, bizCtx, principalReader, authorization, storage, notifications, auditWriter, organization)
 	if err != nil {
 		return nil, err
 	}
@@ -862,37 +883,29 @@ func (s *serviceImpl) staffActor(ctx context.Context, permission string) (*actor
 		(current.DataScope < 1 || current.DataScope > 4) {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
+	// Shared support settings include cross-department routing and SLA policy.
+	if permission == PermissionConfigure && current.DataScope >= 3 {
+		return nil, bizNotAccessible()
+	}
 	audience, err := s.principal.Current(ctx)
 	if err != nil || audience == nil || audience.UserID != current.UserID ||
 		audience.Code != principal.AudienceStaff || audience.Status != principal.AudienceStatusActive {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
-	keys := []authz.PermissionKey{authz.PermissionKey(permission), authz.PermissionKey(PermissionViewAll), authz.PermissionKey(idccap.HostPermissionWildcard)}
+	keys := []authz.PermissionKey{authz.PermissionKey(permission), authz.PermissionKey(PermissionViewAll), authz.PermissionKey(PermissionLead), authz.PermissionKey(idccap.HostPermissionWildcard)}
 	grants, err := s.authorization.BatchHasPermissions(ctx, keys)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeNotAccessible)
 	}
-	platformAdmin, err := s.authorization.IsPlatformAdmin(ctx, authz.UserID(strconv.Itoa(current.UserID)))
-	if err != nil {
-		return nil, bizerr.WrapCode(err, CodeNotAccessible)
-	}
-	if !grants[authz.PermissionKey(permission)] && !grants[authz.PermissionKey(idccap.HostPermissionWildcard)] && !platformAdmin {
+	if !grants[authz.PermissionKey(permission)] && !grants[authz.PermissionKey(idccap.HostPermissionWildcard)] {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
-	var rows []struct {
-		DepartmentNo string `orm:"department_no"`
-		RoleCode     string `orm:"role_code"`
+	departments, err := s.actorDepartments(ctx, current.UserID)
+	if err != nil {
+		return nil, err
 	}
-	if err = s.database.GetScan(ctx, &rows, `SELECT department_no,role_code FROM plugin_idc_core_support_department_member WHERE tenant_id = 0 AND user_id = ? AND status_code = 'active' ORDER BY department_no`, current.UserID); err != nil {
-		return nil, wrapUnavailable(err, "load support department membership")
-	}
-	departments := make([]string, 0, len(rows))
-	leader := false
-	for _, row := range rows {
-		departments = append(departments, row.DepartmentNo)
-		leader = leader || row.RoleCode == "leader"
-	}
-	global := platformAdmin || grants[authz.PermissionKey(idccap.HostPermissionWildcard)] || (current.DataScope <= 2 && grants[authz.PermissionKey(PermissionViewAll)])
+	leader := grants[authz.PermissionKey(PermissionLead)] || grants[authz.PermissionKey(idccap.HostPermissionWildcard)]
+	global := current.DataScope <= 2 && (grants[authz.PermissionKey(idccap.HostPermissionWildcard)] || grants[authz.PermissionKey(PermissionViewAll)])
 	return &actor{UserID: current.UserID, Global: global, DataScope: current.DataScope, Leader: leader, Departments: departments}, nil
 }
 
@@ -916,12 +929,18 @@ func appendStaffAccess(where *strings.Builder, args *[]any, a *actor, alias stri
 		return
 	}
 	where.WriteString(" AND (")
-	where.WriteString(alias + ".assignee_user_id = ? OR EXISTS (SELECT 1 FROM plugin_idc_core_support_ticket_follower f WHERE f.tenant_id = 0 AND f.ticket_no = " + alias + ".ticket_no AND f.user_id = ?)")
+	where.WriteString("(" + alias + ".assignee_user_id = ? OR EXISTS (SELECT 1 FROM plugin_idc_core_support_ticket_follower f WHERE f.tenant_id = 0 AND f.ticket_no = " + alias + ".ticket_no AND f.user_id = ?))")
+	if len(a.Departments) == 0 {
+		where.WriteString(" AND 1=0")
+	} else {
+		where.WriteString(" AND " + alias + ".department_no IN (" + sqlPlaceholders(len(a.Departments)) + ")")
+	}
 	*args = append(*args, a.UserID, a.UserID)
-	// Host scope 3 identifies a host department, but there is no authoritative
-	// mapping from that department to a support department. It therefore falls
-	// back to the provable self/follower subset instead of guessing by membership.
-	if a.DataScope <= 2 && len(a.Departments) > 0 {
+	for _, department := range a.Departments {
+		*args = append(*args, department)
+	}
+	// Department scope follows the live organization assignment and explicit queue mapping.
+	if a.DataScope <= 3 && len(a.Departments) > 0 {
 		where.WriteString(" OR " + alias + ".department_no IN (" + sqlPlaceholders(len(a.Departments)) + ")")
 		for _, department := range a.Departments {
 			*args = append(*args, department)

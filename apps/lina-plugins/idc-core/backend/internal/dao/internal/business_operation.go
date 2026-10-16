@@ -57,6 +57,7 @@ type BusinessOperationColumns struct {
 	SubjectTypeCode             string //
 	SubjectNo                   string //
 	ExpectedSubjectVersion      string //
+	PayerCustomerNo             string //
 }
 
 // businessOperationColumns holds the columns for the table plugin_idc_core_business_operation.
@@ -97,6 +98,7 @@ var businessOperationColumns = BusinessOperationColumns{
 	SubjectTypeCode:             "subject_type_code",
 	SubjectNo:                   "subject_no",
 	ExpectedSubjectVersion:      "expected_subject_version",
+	PayerCustomerNo:             "payer_customer_no",
 }
 
 // NewBusinessOperationDao creates and returns a new DAO object for table data access.

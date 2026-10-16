@@ -69,25 +69,25 @@ func (s *serviceImpl) ConsumeOrderCancelled(ctx context.Context, input OrderCanc
 			}
 			updated, err := s.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_intent SET status_code='canceled',version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND intent_no IN(SELECT jsonb_array_elements_text(?::jsonb)) AND status_code IN('manual_pending','review_pending','gate_pending','queued','processing')`, payloads.cancelIntents)
 			if err != nil || affected(updated) != int64(len(cancelIntents)) {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		if len(cancelTasks) > 0 {
 			updated, err := s.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code='canceled',phase_code='frozen_unknown',cancel_requested=TRUE,next_attempt_at=CURRENT_TIMESTAMP,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no IN(SELECT jsonb_array_elements_text(?::jsonb)) AND status_code IN('pending_query','pending_submit','retry_wait') AND lease_token='' AND submit_attempt_count=0`, payloads.cancelTasks)
 			if err != nil || affected(updated) != int64(len(cancelTasks)) {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		if len(requestTasks) > 0 {
 			updated, err := s.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET cancel_requested=TRUE,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no IN(SELECT jsonb_array_elements_text(?::jsonb)) AND status_code IN('querying','submitting') AND cancel_requested=FALSE`, payloads.requestTasks)
 			if err != nil || affected(updated) != int64(len(requestTasks)) {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		if len(attentionTasks) > 0 {
 			updated, err := s.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code='cancellation_attention',phase_code='frozen_unknown',cancel_requested=TRUE,next_attempt_at=CURRENT_TIMESTAMP,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no IN(SELECT jsonb_array_elements_text(?::jsonb)) AND status_code IN('pending_query','pending_submit','retry_wait','accepted','running','result_unknown') AND lease_token=''`, payloads.attentionTasks)
 			if err != nil || affected(updated) != int64(len(attentionTasks)) {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		if len(manualIntents) > 0 {
@@ -100,7 +100,7 @@ func (s *serviceImpl) ConsumeOrderCancelled(ctx context.Context, input OrderCanc
 			}
 			updated, err := s.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_intent SET status_code='manual_pending',version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND intent_no IN(SELECT jsonb_array_elements_text(?::jsonb)) AND status_code IN('queued','processing')`, payloads.manualIntents)
 			if err != nil || affected(updated) != int64(len(manualIntents)) {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		output.Cancelled, output.AwaitingQuery, output.Manual = len(cancelIntents), len(requestTasks), len(manualIntents)
@@ -160,7 +160,7 @@ func planCancellation(rows []cancellationRow) (cancellationPlan, error) {
 			plan.manualIntents = append(plan.manualIntents, current.IntentNo)
 		case "succeeded", "failed", "manual_takeover", "cancellation_attention", "canceled":
 		default:
-			return cancellationPlan{}, errorsNew("product_fulfillment_task_conflict")
+			return cancellationPlan{}, errorsNew(taskConflictCode)
 		}
 	}
 	return plan, nil

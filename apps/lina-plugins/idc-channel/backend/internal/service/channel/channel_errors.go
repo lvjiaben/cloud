@@ -7,7 +7,10 @@ import (
 )
 
 var (
-	codePageInvalid = bizerr.MustDefine(
+	codeCatalogUnavailable = bizerr.MustDefine("IDC_CHANNEL_CATALOG_UNAVAILABLE", "The product configuration is unavailable", gcode.CodeInternalError)
+	// CodePurchaseInvalid rejects malformed customer purchase configuration.
+	CodePurchaseInvalid = bizerr.MustDefine("IDC_CHANNEL_PURCHASE_INVALID", "The purchase configuration is invalid", gcode.CodeInvalidParameter)
+	codePageInvalid     = bizerr.MustDefine(
 		"IDC_CHANNEL_PAGE_INVALID",
 		"The channel pagination request is invalid",
 		gcode.CodeInvalidParameter,

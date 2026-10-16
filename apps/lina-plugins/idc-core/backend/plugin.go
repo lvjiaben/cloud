@@ -33,6 +33,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/customerauthcap"
 	customerauthspi "lina-plugin-idc-core/backend/cap/customerauthcap/spi"
 	closureprecheckspi "lina-plugin-idc-core/backend/cap/customerclosurecap/spi"
+	"lina-plugin-idc-core/backend/cap/entitlementcreatedcap"
 	entitlementcreatedspi "lina-plugin-idc-core/backend/cap/entitlementcreatedcap/spi"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	idcspi "lina-plugin-idc-core/backend/cap/idccap/spi"
@@ -49,6 +50,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 	provisionresourcespi "lina-plugin-idc-core/backend/cap/provisionresourcecap/spi"
+	"lina-plugin-idc-core/backend/cap/renewalownercap"
 	renewalownerspi "lina-plugin-idc-core/backend/cap/renewalownercap/spi"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	resourceinterfaceprojectionspi "lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap/spi"
@@ -83,10 +85,12 @@ import (
 	supportaccountcontroller "lina-plugin-idc-core/backend/internal/controller/supportaccount"
 	supportadmincontroller "lina-plugin-idc-core/backend/internal/controller/supportadmin"
 	supportpubliccontroller "lina-plugin-idc-core/backend/internal/controller/supportpublic"
+	upgradescontroller "lina-plugin-idc-core/backend/internal/controller/upgrades"
 	"lina-plugin-idc-core/backend/internal/runtimeconfig"
 	"lina-plugin-idc-core/backend/internal/service/asynctask"
 	"lina-plugin-idc-core/backend/internal/service/audit"
 	"lina-plugin-idc-core/backend/internal/service/billing"
+	"lina-plugin-idc-core/backend/internal/service/businessimpact"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/catalogdraft"
 	"lina-plugin-idc-core/backend/internal/service/closureprecheck"
@@ -96,6 +100,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/contractcompensation"
 	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 	"lina-plugin-idc-core/backend/internal/service/contractsnapshot"
+	"lina-plugin-idc-core/backend/internal/service/currency"
 	"lina-plugin-idc-core/backend/internal/service/customer"
 	"lina-plugin-idc-core/backend/internal/service/customer360summary"
 	"lina-plugin-idc-core/backend/internal/service/customeractivation"
@@ -105,19 +110,20 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/customercontact"
 	"lina-plugin-idc-core/backend/internal/service/customerexport"
 	"lina-plugin-idc-core/backend/internal/service/customermanagement"
+	"lina-plugin-idc-core/backend/internal/service/entitlementupgrade"
 	"lina-plugin-idc-core/backend/internal/service/financeops"
 	"lina-plugin-idc-core/backend/internal/service/fulfillment"
 	"lina-plugin-idc-core/backend/internal/service/identityprojection"
 	"lina-plugin-idc-core/backend/internal/service/identityworkflow"
 	"lina-plugin-idc-core/backend/internal/service/invoiceprofile"
 	"lina-plugin-idc-core/backend/internal/service/lifecycle"
-	"lina-plugin-idc-core/backend/internal/service/managementruntime"
 	"lina-plugin-idc-core/backend/internal/service/marketing"
 	"lina-plugin-idc-core/backend/internal/service/merchantcontext"
 	"lina-plugin-idc-core/backend/internal/service/notificationpolicy"
 	"lina-plugin-idc-core/backend/internal/service/onboarding"
 	operationsservice "lina-plugin-idc-core/backend/internal/service/operations"
 	"lina-plugin-idc-core/backend/internal/service/outbox"
+	"lina-plugin-idc-core/backend/internal/service/peerrenewal"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 	"lina-plugin-idc-core/backend/internal/service/productautomationtoken"
@@ -129,13 +135,14 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/renewal"
 	"lina-plugin-idc-core/backend/internal/service/resourceinterfaceprojection"
 	"lina-plugin-idc-core/backend/internal/service/saleschannel"
+	"lina-plugin-idc-core/backend/internal/service/salesmanagement"
 	"lina-plugin-idc-core/backend/internal/service/secret"
 	"lina-plugin-idc-core/backend/internal/service/serveroperation"
 	"lina-plugin-idc-core/backend/internal/service/serviceaction"
 	"lina-plugin-idc-core/backend/internal/service/sshkey"
 	"lina-plugin-idc-core/backend/internal/service/supportdesk"
 	"lina-plugin-idc-core/backend/internal/service/taxinvoicesource"
-	staffaccesssource "lina-plugin-staff-access/backend/cap/staffaccesscap/source"
+	"lina-plugin-idc-core/backend/internal/service/triallifecycle"
 )
 
 // pluginID is the immutable source-plugin identifier.
@@ -224,10 +231,15 @@ func init() {
 	}); err != nil {
 		panic(err)
 	}
-	if err := managementspi.Declare(managementruntime.New); err != nil {
+	if err := managementspi.Declare(newManagementRuntime); err != nil {
 		panic(err)
 	}
 	if err := channelcommercespi.Declare(newChannelCommerceRuntime); err != nil {
+		panic(err)
+	}
+	if err := entitlementcreatedspi.Register(renewalownercap.PeerOwnerID, func(context.Context) (entitlementcreatedcap.Sink, error) {
+		return productfulfillment.NewPeerEntitlementCreatedSink(g.DB())
+	}); err != nil {
 		panic(err)
 	}
 	if err := resourceinterfaceprojectionspi.DeclareSink(func(context.Context) (resourceinterfaceprojectioncap.Sink, error) {
@@ -268,6 +280,13 @@ func init() {
 		panic(err)
 	}
 	declarations := pluginhost.NewDeclarations(pluginID)
+	impactHandler, err := businessimpact.NewLazy(func() gdb.DB { return g.DB() })
+	if err != nil {
+		panic(err)
+	}
+	if err := declarations.Lifecycle().RegisterBusinessImpactHandler(impactHandler); err != nil {
+		panic(err)
+	}
 	declarations.Assets().UseEmbeddedFiles(idccore.EmbeddedFiles)
 	if err := declarations.BusinessExtensions().RegisterProviderValidator(
 		capmodel.BusinessExtensionProductFulfillment,
@@ -480,7 +499,18 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 			return gerror.Wrap(err, "construct resource-owner product fulfillment source")
 		}
 	}
-	fulfillmentWorker, err := productfulfillment.NewWorker(g.DB(), businessJobRegistrar.BusinessExtensions(), supplierRuntimeCapabilityInvoker, fulfillmentEvidence, fulfillmentSystemReasons, resourceProvisioningSource)
+	var peerOutbound resourceinterfaceprojectioncap.ExistingBusinessOutboundSource
+	if factory := resourceinterfaceprojectionspi.Freeze().ExistingBusinessOutboundFactory(); factory != nil {
+		peerOutbound, err = factory(ctx)
+		if err != nil {
+			return gerror.Wrap(err, "construct peer business outbound source")
+		}
+	}
+	fulfillmentFiles, err := purchaseconfigurationfile.NewConsumedFileReader(g.DB(), registrar.Services().Storage())
+	if err != nil {
+		return err
+	}
+	fulfillmentWorker, err := productfulfillment.NewWorker(g.DB(), businessJobRegistrar.BusinessExtensions(), supplierRuntimeCapabilityInvoker, fulfillmentEvidence, fulfillmentSystemReasons, resourceProvisioningSource, peerOutbound, fulfillmentFiles)
 	if err != nil {
 		return err
 	}
@@ -625,7 +655,11 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return gerror.Wrap(err, "construct commission refund outbox")
 	}
-	commissionConsumer, err := commission.NewConsumer(g.DB())
+	commissionRules, err := saleschannel.NewWithDatabase(g.DB())
+	if err != nil {
+		return err
+	}
+	commissionConsumer, err := commission.NewConsumer(g.DB(), commissionRules)
 	if err != nil {
 		return err
 	}
@@ -647,7 +681,7 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if jobRuntimeServices == nil || jobRuntimeServices.BizCtx() == nil {
 		return gerror.New("idc-core operations job requires business context")
 	}
-	operationsWorker, err := operationsservice.New(g.DB(), jobRuntimeServices.BizCtx())
+	operationsWorker, err := operationsservice.New(g.DB(), jobRuntimeServices.BizCtx(), jobRuntimeServices.Sessions(), jobRuntimeServices.Auth().Authz())
 	if err != nil {
 		return err
 	}
@@ -692,6 +726,17 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return gerror.Wrap(err, "construct generic financial settlement consumer")
 	}
+	financialGateReleaser, err := productfulfillment.NewOwnerGateReleaser(g.DB(), financialConfigurationValidator, financialOwnerGates, fulfillmentSystemReasons)
+	if err != nil {
+		return err
+	}
+	financialGateRecovery, err := productfulfillment.NewGateRecoveryWorker(g.DB(), financialGateReleaser)
+	if err != nil {
+		return err
+	}
+	if err = composition.RegisterProductFulfillmentGateRecoveryJob(ctx, registrar, financialGateRecovery); err != nil {
+		return err
+	}
 	financialEvidenceReader, err := billing.NewSettlementEvidenceReader(g.DB())
 	if err != nil {
 		return gerror.Wrap(err, "construct read-only financial settlement evidence")
@@ -734,6 +779,21 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 		); lifecycleErr != nil {
 			return lifecycleErr
 		}
+		// Trial expiry uses the same startup-owned async task boundary and the
+		// resource lifecycle source. It is intentionally skipped when the
+		// resource capability is unavailable, allowing manual-delivery products
+		// to keep running without pretending they support pause/resume.
+		trialNotifications, trialErr := notificationpolicy.NewEventSink(pluginID, lifecycleOutbox)
+		if trialErr != nil {
+			return gerror.Wrap(trialErr, "construct trial lifecycle notifications")
+		}
+		trialWorker, trialErr := triallifecycle.New(g.DB(), exportTasks, lifecycleResource, trialNotifications)
+		if trialErr != nil {
+			return trialErr
+		}
+		if trialErr = composition.RegisterTrialLifecycleJob(ctx, registrar, trialWorker); trialErr != nil {
+			return trialErr
+		}
 	}
 	serverOperationFactory := serveroperationspi.Freeze().Factory()
 	if serverOperationFactory != nil {
@@ -741,13 +801,20 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 		if operationErr != nil {
 			return gerror.Wrap(operationErr, "construct resource server operation source")
 		}
-		accessoryDirectory, ok := serverOperationSource.(serveroperationresourcecap.AccessoryDirectory)
-		if !ok {
-			return gerror.New("resource server accessory directory is unavailable")
-		}
 		accessoryInvoices, operationErr := billing.NewInvoiceService(g.DB())
 		if operationErr != nil {
 			return operationErr
+		}
+		upgradeWorker, upgradeErr := entitlementupgrade.NewWorker(g.DB(), accessoryInvoices, serverOperationSource)
+		if upgradeErr != nil {
+			return upgradeErr
+		}
+		if upgradeErr = composition.RegisterEntitlementUpgradeJob(ctx, registrar, upgradeWorker); upgradeErr != nil {
+			return upgradeErr
+		}
+		accessoryDirectory, ok := serverOperationSource.(serveroperationresourcecap.AccessoryDirectory)
+		if !ok {
+			return gerror.New("resource server accessory directory is unavailable")
 		}
 		accessoryOutbox, operationErr := outbox.NewEnqueuer(g.DB(), outbox.Config{})
 		if operationErr != nil {
@@ -773,6 +840,10 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return gerror.Wrap(err, "construct renewal owner router")
 	}
+	owners, err = peerrenewal.NewRouter(owners, g.DB(), businessJobRegistrar.BusinessExtensions(), peerOutbound)
+	if err != nil {
+		return gerror.Wrap(err, "construct same-system renewal owner")
+	}
 	cursorKey, err := runtimeconfig.LoadCatalogCursorKey()
 	if err != nil {
 		return err
@@ -782,8 +853,19 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return err
 	}
-	automaticWorker, providerWorker, err := renewal.NewWorkers(
-		ctx, g.DB(), catalogReader, owners,
+	currencyReader, err := currency.NewReader(g.DB())
+	if err != nil {
+		return err
+	}
+	if err = catalog.BindCurrencies(catalogReader, currencyReader); err != nil {
+		return err
+	}
+	renewalAdjustments, err := newChannelQuoteAdjustments(ctx, registrar.Services())
+	if err != nil {
+		return err
+	}
+	automaticWorker, providerWorker, err := renewal.NewWorkersWithQuoteAdjustments(
+		ctx, g.DB(), catalogReader, owners, renewalAdjustments,
 	)
 	if err != nil {
 		return err
@@ -1073,7 +1155,7 @@ func newSourceNotificationRuntime(
 	if err != nil {
 		return notificationcap.Runtime{}, err
 	}
-	supportReader, err := supportdesk.New(g.DB(), services.BizCtx(), principalReader, services.Auth().Authz(), services.Storage())
+	supportReader, err := supportdesk.NewReader(g.DB(), services.BizCtx(), principalReader, services.Auth().Authz(), services.Storage(), services.Org())
 	if err != nil {
 		return notificationcap.Runtime{}, err
 	}
@@ -1628,13 +1710,19 @@ func newFinancialRouteServices(
 	if err != nil {
 		return nil, err
 	}
-	accountCommands, err := billing.NewAccountFinanceCommandService(
-		g.DB(), principalSvc, settlements,
-	)
+	renewalAdjustments, err := newChannelQuoteAdjustments(ctx, services)
 	if err != nil {
 		return nil, err
 	}
-	accountRenewals, err := renewal.New(ctx, g.DB(), principalSvc, catalogReader)
+	trialRecovery, err := triallifecycle.NewRecoveryScheduler(g.DB(), refundTasks)
+	if err != nil {
+		return nil, err
+	}
+	accountRenewals, err := renewal.NewWithTrialConversion(ctx, g.DB(), principalSvc, catalogReader, renewalAdjustments, trialRecovery)
+	if err != nil {
+		return nil, err
+	}
+	accountCommands, err := billing.NewAccountFinanceCommandServiceWithRenewals(g.DB(), principalSvc, settlements, accountRenewals)
 	if err != nil {
 		return nil, err
 	}
@@ -1795,10 +1883,6 @@ func newSupportContentRouteControllers(
 	if err != nil {
 		return nil, err
 	}
-	targetStaffAccess, err := staffaccesssource.New(ctx, services, pluginID)
-	if err != nil {
-		return nil, gerror.Wrap(err, "construct target-staff business access")
-	}
 	upstreamSecretSource, err := newSourceSecretService(ctx)
 	if err != nil {
 		return nil, err
@@ -1814,7 +1898,7 @@ func newSupportContentRouteControllers(
 	}
 	supportService, err := supportdesk.NewProduction(
 		g.DB(), services.BizCtx(), principalSvc, services.Auth().Authz(), services.Storage(), supportNotifications,
-		auditWriter, targetStaffAccess, upstreamSecretManager, upstreamSecretAccessor, services.Sessions(),
+		auditWriter, services.Org(), upstreamSecretManager, upstreamSecretAccessor, services.Sessions(),
 	)
 	if err != nil {
 		return nil, err
@@ -2071,11 +2155,18 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
+	currencyService, err := currency.New(g.DB(), services.BizCtx(), principalSvc, services.Auth().Authz(), auditWriter)
+	if err != nil {
+		return err
+	}
 	catalogServices, err := newCatalogRouteServices(
 		ctx, catalogAuthorizer, catalogPublicationAuthorizer, auditWriter,
 		automationSvc, automationSvc, automationSvc, purchaseFiles,
 	)
 	if err != nil {
+		return err
+	}
+	if err = catalog.BindCurrencies(catalogServices.public, currencyService); err != nil {
 		return err
 	}
 	importAuthorizer, err := catalog.NewImportAuthorizer(services.BizCtx(), principalSvc, services.Auth().Authz())
@@ -2088,6 +2179,14 @@ func registerRoutes(
 		if err != nil {
 			return gerror.Wrap(err, "construct upstream catalog read source")
 		}
+	}
+	copyWriter, err := catalog.ProductCopyWriterFromManagement(catalogServices.writer)
+	if err != nil {
+		return err
+	}
+	copyAutomation, err := productautomation.ProductCopyServiceFromService(automationSvc)
+	if err != nil {
+		return err
 	}
 	catalogImportService, err := catalogdraft.New(importAuthorizer, catalogSource, catalogServices.writer, automationSvc)
 	if err != nil {
@@ -2152,8 +2251,12 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
-	commerceSvc, err := commerce.NewWithContractTemplates(
-		g.DB(), purchaseResolver, principalSvc, financialServices.settlements,
+	quoteAdjustments, err := newChannelQuoteAdjustments(ctx, services)
+	if err != nil {
+		return err
+	}
+	commerceSvc, err := commerce.NewWithQuoteAdjustmentsAndContractTemplates(
+		g.DB(), purchaseResolver, principalSvc, quoteAdjustments, financialServices.settlements,
 		catalogServices.contractTemplates,
 	)
 	if err != nil {
@@ -2161,6 +2264,9 @@ func registerRoutes(
 	}
 	purchaseFreezer, err := catalog.PurchaseConfigurationFreezerFromPublicReader(catalogServices.public)
 	if err != nil {
+		return err
+	}
+	if err = commerce.BindCheckoutCurrencies(commerceSvc, currencyService); err != nil {
 		return err
 	}
 	if err = commerce.BindStructuredConfigurationSnapshots(commerceSvc, purchaseFreezer, purchaseFiles); err != nil {
@@ -2206,6 +2312,9 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
+	if err = commerce.BindAssistedCurrencies(assistedQuoteSvc, currencyService); err != nil {
+		return err
+	}
 	contractPolicySvc, err := contractpolicy.NewManagementService(
 		g.DB(), services.BizCtx(), principalSvc, services.Auth().Authz(), auditWriter,
 		catalogServices.contractTemplates,
@@ -2223,7 +2332,19 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
-	operationsService, err := operationsservice.New(g.DB(), services.BizCtx())
+	salesManagementService, err := salesmanagement.New(g.DB(), services.BizCtx(), principalSvc, services.Auth().Authz(), services.Users(), salesChannelService, auditWriter)
+	if err != nil {
+		return err
+	}
+	priceCopyService, err := salesmanagement.ProductPriceCopyServiceFromService(salesManagementService)
+	if err != nil {
+		return err
+	}
+	catalogCopyService, err := catalogdraft.NewCopy(copyWriter, copyAutomation, priceCopyService)
+	if err != nil {
+		return err
+	}
+	operationsService, err := operationsservice.New(g.DB(), services.BizCtx(), services.Sessions(), services.Auth().Authz())
 	if err != nil {
 		return err
 	}
@@ -2283,6 +2404,9 @@ func registerRoutes(
 	if err = admincontroller.BindContractPolicies(adminController, contractPolicySvc); err != nil {
 		return err
 	}
+	if err = admincontroller.BindCustomerAudit(adminController, auditSvc); err != nil {
+		return err
+	}
 	if err = admincontroller.BindCustomerAccountLifecycle(adminController, customerServices.accountLifecycle); err != nil {
 		return err
 	}
@@ -2313,13 +2437,22 @@ func registerRoutes(
 	if err = admincontroller.BindProductAutomation(adminController, automationSvc); err != nil {
 		return err
 	}
+	if err = admincontroller.BindCatalogCopy(adminController, catalogCopyService); err != nil {
+		return err
+	}
 	if err = admincontroller.BindCatalogImport(adminController, catalogImportService); err != nil {
 		return err
 	}
 	if err = admincontroller.BindProductFulfillment(adminController, productFulfillmentService); err != nil {
 		return err
 	}
+	if err = admincontroller.BindSalesManagement(adminController, salesManagementService); err != nil {
+		return err
+	}
 	if err = admincontroller.BindSalesChannel(adminController, salesChannelService); err != nil {
+		return err
+	}
+	if err = admincontroller.BindCurrencies(adminController, currencyService); err != nil {
 		return err
 	}
 	if err = admincontroller.BindOperations(adminController, operationsService); err != nil {
@@ -2440,6 +2573,26 @@ func registerRoutes(
 	if err != nil {
 		return err
 	}
+	upgradeFactory := serveroperationspi.Freeze().Factory()
+	if upgradeFactory == nil {
+		return gerror.New("upgrade resource source unavailable")
+	}
+	upgradeSource, err := upgradeFactory(context.Background())
+	if err != nil {
+		return err
+	}
+	upgradeInvoices, err := billing.NewInvoiceService(g.DB())
+	if err != nil {
+		return err
+	}
+	upgradeRuntime, err := entitlementupgrade.New(g.DB(), principalSvc, upgradeInvoices, upgradeSource)
+	if err != nil {
+		return err
+	}
+	upgradeController, err := upgradescontroller.NewV1(upgradeRuntime)
+	if err != nil {
+		return err
+	}
 	err = bindRouteControllers(
 		registrar, idcInvoker, customerServices.merchant, billingInvoker, financialServices.channelPayments,
 		catalogServices, commerceSvc, accountController, adminController,
@@ -2453,7 +2606,7 @@ func registerRoutes(
 		supportContentControllers.supportPublic, supportContentControllers.contentAdmin,
 		supportContentControllers.contentAccount, supportContentControllers.contentPublic,
 		serviceAccountController, serviceAdminController, serviceActionAccess,
-		directoryAccountController, directoryAdminController,
+		directoryAccountController, directoryAdminController, upgradeController,
 	)
 	if err == nil {
 		automationRuntimeOwned = true
@@ -2507,12 +2660,20 @@ func bindRouteControllers(
 	serviceActionAccess serviceaction.Access,
 	directoryAccountController *directoryaccountcontroller.ControllerV1,
 	directoryAdminController *directoryadmincontroller.ControllerV1,
+	upgradeController *upgradescontroller.ControllerV1,
 ) error {
 	if serviceActionAccess == nil {
 		return gerror.New("service customer page bridge requires its shared access service")
 	}
 	publicController, err := publiccontroller.NewV1(catalogServices.public, catalogServices.publicCampaigns, commerceService)
 	if err != nil {
+		return err
+	}
+	currencyReader, err := currency.NewReader(g.DB())
+	if err != nil {
+		return err
+	}
+	if err = publiccontroller.BindCurrencies(publicController, currencyReader); err != nil {
 		return err
 	}
 	routes := registrar.Routes()
@@ -2539,6 +2700,7 @@ func bindRouteControllers(
 					customerAccess.Middleware, initialPasswordGuard.Middleware, middlewares.PageBridge())
 				group.Bind(directoryAccountController)
 				group.Bind(accountController)
+				group.Bind(upgradeController)
 				group.Bind(customerAccountController)
 				group.Bind(supportAccountController)
 				group.Bind(contentAccountController)

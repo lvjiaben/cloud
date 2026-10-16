@@ -103,7 +103,7 @@ WHERE tenant_id = ? AND creation_idempotency_digest = ? FOR UPDATE`, idccap.Defa
 		if _, validateErr = tx.Model(do.AutoSignAuthTemplate{}).Ctx(ctx).Data(relations).Insert(); validateErr != nil {
 			return validateErr
 		}
-		return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"authorization_no": ""},
 			IdempotencyScope: "compliance.contract-auto-sign.create", IdempotencyKey: digest,
 			OperationCode: "compliance.contract-auto-sign.create", TargetType: "contract_auto_sign_authorization",
 			TargetNo: authorizationNo, ResultCode: "succeeded", ReasonCode: "enterprise_auto_sign_enabled",

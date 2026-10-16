@@ -1,6 +1,6 @@
 id: idc-ai
 name: IDC AI
-version: v0.1.0
+version: v0.1.2
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -23,10 +23,6 @@ dependencies:
       version: ">=0.1.0 <1.0.0"
     - id: idc-resource
       version: ">=0.1.0 <1.0.0"
-
-public_assets:
-  - source: frontend/dist
-    mount: /
 
 menus:
   - key: plugin:idc-ai:copilot

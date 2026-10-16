@@ -15,6 +15,21 @@ import (
 	"lina-plugin-idc-core/backend/cap/secretcap"
 )
 
+// Address literals bypass prose decoding only for the host; endpoint secrets
+// and runtime private-network checks remain separate mandatory gates.
+func TestProviderEndpointAcceptsIPv6WithoutAcceptingSecrets(t *testing.T) {
+	for _, endpoint := range []string{"https://[2001:db8:1:2:3:4:5:6]:6430/api", "https://[240e:3af:8a5:4e0:1f86:b274:d76a:4fd]:6430"} {
+		if err := validateEndpoint(endpoint); err != nil {
+			t.Fatalf("valid address literal rejected: %v", err)
+		}
+	}
+	for _, endpoint := range []string{"https://user:secret@[2001:db8::1]/", "https://[2001:db8::1]/api_key/secret", "https://[2001:db8::1]/?token=secret", "https://[2001:db8::1]/#secret"} {
+		if err := validateEndpoint(endpoint); err == nil {
+			t.Fatal("credential-bearing endpoint accepted")
+		}
+	}
+}
+
 func TestValidateChannelRefAcceptsOpaqueHostIdentifier(t *testing.T) {
 	for _, value := range []string{
 		"CHN_b3c8eb85a062feafb09e",

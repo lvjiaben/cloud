@@ -202,7 +202,7 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 	if utf8.RuneCountInString(password) < 8 || utf8.RuneCountInString(password) > 128 {
 		return nil, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
-	value, err := normalizeCreate(CreateInput{
+	value, err := normalizeDirectCreate(CreateInput{
 		CustomerType: input.CustomerType, DisplayName: input.DisplayName, CountryCode: input.CountryCode,
 		PreferredLocale: input.PreferredLocale, Email: input.Email, PhoneCountryCode: input.PhoneCountryCode,
 		Phone: input.Phone, Reason: input.Reason, IdempotencyKey: input.IdempotencyKey,
@@ -211,7 +211,7 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 		return nil, err
 	}
 	requestDigest := digest(value.IdempotencyKey)
-	requestFingerprint := createFingerprint(value)
+	requestFingerprint := value.fingerprint
 	var result *DirectAccount
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
 		var replay *struct {
@@ -230,12 +230,14 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 			return nil
 		}
 
-		destinationDigest := s.destinationDigest(value.contactKind, value.contactValue)
-		column := "email_lookup_digest"
-		if value.contactKind == "sms" {
-			column = "phone_lookup_digest"
+		emailDigest, phoneDigest := "", ""
+		if value.Email != "" {
+			emailDigest = s.destinationDigest("email", value.Email)
 		}
-		duplicate, txErr := s.database.GetValue(ctx, `SELECT COUNT(1) FROM plugin_idc_core_customer_contact WHERE tenant_id=0 AND status_code='active' AND `+column+`=?`, destinationDigest)
+		if value.Phone != "" {
+			phoneDigest = s.destinationDigest("sms", value.PhoneCountryCode+value.Phone)
+		}
+		duplicate, txErr := s.database.GetValue(ctx, `SELECT COUNT(1) FROM plugin_idc_core_customer_contact WHERE tenant_id=0 AND status_code='active' AND ((email_lookup_digest<>'' AND email_lookup_digest=?) OR (phone_lookup_digest<>'' AND phone_lookup_digest=?))`, emailDigest, phoneDigest)
 		if txErr != nil {
 			return txErr
 		}
@@ -281,13 +283,8 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_enterprise_profile (tenant_id,customer_no,customer_type_code,created_at,updated_at) VALUES (0,?,'enterprise',?,?)`, customerNo, now, now); txErr != nil {
 			return txErr
 		}
-		email, emailDigest, callingCode, phone, phoneDigest := "", "", "", "", ""
-		if value.contactKind == "email" {
-			email, emailDigest = value.Email, destinationDigest
-		} else {
-			callingCode, phone, phoneDigest = value.PhoneCountryCode, value.Phone, destinationDigest
-		}
-		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_contact (tenant_id,contact_no,customer_no,display_name,email,email_lookup_digest,phone_country_code,phone,phone_lookup_digest,preferred_locale,status_code,version,created_by,updated_by,created_at,updated_at) VALUES (0,?,?,?,?,?,?,?,?,?,'active',1,?,?,?,?)`, contactNo, customerNo, value.DisplayName, email, emailDigest, callingCode, phone, phoneDigest, value.PreferredLocale, staffID, staffID, now, now); txErr != nil {
+
+		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_contact (tenant_id,contact_no,customer_no,display_name,email,email_lookup_digest,phone_country_code,phone,phone_lookup_digest,preferred_locale,status_code,version,created_by,updated_by,created_at,updated_at) VALUES (0,?,?,?,?,?,?,?,?,?,'active',1,?,?,?,?)`, contactNo, customerNo, value.DisplayName, value.Email, emailDigest, value.PhoneCountryCode, value.Phone, phoneDigest, value.PreferredLocale, staffID, staffID, now, now); txErr != nil {
 			return txErr
 		}
 		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_contact_role (tenant_id,customer_no,contact_no,role_code,status_code,assigned_by,assigned_at,created_at,updated_at) VALUES (0,?,?,'primary','active',?,?,?,?)`, customerNo, contactNo, staffID, now, now, now); txErr != nil {
@@ -296,10 +293,10 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_principal_audience (tenant_id,sys_user_id,audience_code,status_code,created_by,updated_by,created_at,updated_at) VALUES (0,?,'customer','active',?,?,?,?)`, userID, staffID, staffID, now, now); txErr != nil {
 			return txErr
 		}
-		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_identity_binding (tenant_id,binding_no,sys_user_id,customer_no,source_code,source_reference_no,status_code,activated_at,must_change_password,idempotency_key_digest,request_fingerprint,version,created_by,updated_by,created_at,updated_at) VALUES (0,?,?,?,'admin_direct',?,'active',?,TRUE,?,?,1,?,?,?,?)`, bindingNo, userID, customerNo, bindingNo, now, requestDigest, requestFingerprint, staffID, staffID, now, now); txErr != nil {
+		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_identity_binding (tenant_id,binding_no,sys_user_id,customer_no,source_code,source_reference_no,status_code,activated_at,must_change_password,idempotency_key_digest,request_fingerprint,version,created_by,updated_by,created_at,updated_at) VALUES (0,?,?,?,'admin_direct',?,'active',?,FALSE,?,?,1,?,?,?,?)`, bindingNo, userID, customerNo, bindingNo, now, requestDigest, requestFingerprint, staffID, staffID, now, now); txErr != nil {
 			return txErr
 		}
-		if txErr = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "customer.direct.create", IdempotencyKey: bindingNo, OperationCode: "customer.direct.create", TargetType: "customer", TargetNo: customerNo, CustomerNo: customerNo, ResultCode: "succeeded", ReasonCode: "admin_direct", RiskCode: "medium", RequiredPermission: PermissionCustomerCreate, CorrelationNo: bindingNo, BeforeSnapshot: map[string]any{}, AfterSnapshot: map[string]any{"customer_type": value.CustomerType, "status": "active", "login_kind": value.contactKind, "must_change_password": true}}); txErr != nil {
+		if txErr = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "customer.direct.create", IdempotencyKey: bindingNo, OperationCode: "customer.direct.create", TargetType: "customer", TargetNo: customerNo, CustomerNo: customerNo, ResultCode: "succeeded", ReasonCode: "admin_direct", RiskCode: "medium", RequiredPermission: PermissionCustomerCreate, CorrelationNo: bindingNo, BeforeSnapshot: map[string]any{}, AfterSnapshot: map[string]any{"customer_type": value.CustomerType, "status": "active", "login_kind": value.contactKind, "must_change_password": false}}); txErr != nil {
 			return txErr
 		}
 		result = &DirectAccount{CustomerNo: customerNo, UserID: userID, Status: "active"}
@@ -312,8 +309,8 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 	return result, nil
 }
 
-// ResetPassword replaces an active customer's host password and requires the
-// customer to choose a private password after the next successful login.
+// ResetPassword replaces an active customer's host password without a first-login gate.
+// The host owns the password hash; business audit never receives the plaintext.
 func (s *serviceImpl) ResetPassword(ctx context.Context, input PasswordResetInput) error {
 	staffID, err := s.authorizeStaff(ctx, PermissionCustomerUpdate)
 	if err != nil {
@@ -345,10 +342,10 @@ func (s *serviceImpl) ResetPassword(ctx context.Context, input PasswordResetInpu
 		if txErr != nil {
 			return txErr
 		}
-		if _, txErr = s.database.Exec(ctx, `UPDATE plugin_idc_core_customer_identity_binding SET must_change_password=TRUE,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND customer_no=? AND sys_user_id=? AND status_code='active'`, staffID, now, input.CustomerNo, row.UserID); txErr != nil {
+		if _, txErr = s.database.Exec(ctx, `UPDATE plugin_idc_core_customer_identity_binding SET must_change_password=FALSE,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND customer_no=? AND sys_user_id=? AND status_code='active'`, staffID, now, input.CustomerNo, row.UserID); txErr != nil {
 			return txErr
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "customer.password.reset", IdempotencyKey: input.IdempotencyKey, OperationCode: "customer.password.reset", TargetType: "customer", TargetNo: input.CustomerNo, CustomerNo: input.CustomerNo, ResultCode: "succeeded", ReasonCode: "staff_reset", RiskCode: "high", RequiredPermission: PermissionCustomerUpdate, CorrelationNo: input.IdempotencyKey, BeforeSnapshot: map[string]any{"must_change_password": row.MustChangePassword}, AfterSnapshot: map[string]any{"must_change_password": true, "reason": input.Reason}})
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "customer.password.reset", IdempotencyKey: input.IdempotencyKey, OperationCode: "customer.password.reset", TargetType: "customer", TargetNo: input.CustomerNo, CustomerNo: input.CustomerNo, ResultCode: "succeeded", ReasonCode: "staff_reset", RiskCode: "high", RequiredPermission: PermissionCustomerUpdate, CorrelationNo: input.IdempotencyKey, BeforeSnapshot: map[string]any{"must_change_password": row.MustChangePassword}, AfterSnapshot: map[string]any{"must_change_password": false, "reason": input.Reason}})
 	})
 	password = ""
 	if err != nil {

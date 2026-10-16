@@ -9,6 +9,24 @@ gfcli:
       - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
         path: "internal"
         tables: >-
+          plugin_idc_core_entitlement_upgrade,
+          plugin_idc_core_merchant_currency,
+          plugin_idc_core_peer_purchase_file,
+          plugin_idc_core_catalog_import_candidate,
+          plugin_idc_core_service_entitlement,
+          plugin_idc_core_product_fulfillment_task,
+          plugin_idc_core_catalog_import_contract,
+          plugin_idc_core_catalog_import_term,
+          plugin_idc_core_sales_payment_fact,
+          plugin_idc_core_sales_payment_owner,
+          plugin_idc_core_sales_commission_recovery_offset,
+          plugin_idc_core_sales_commission_recovery,
+          plugin_idc_core_sales_commission_offline_payout_item,
+          plugin_idc_core_commission_refund_receipt,
+          plugin_idc_core_commission_refund_reversal,
+          plugin_idc_core_commission_accrual,
+          plugin_idc_core_sales_commission_offline_payout,
+          plugin_idc_core_commission_order_receipt,
           plugin_idc_core_merchant_profile,
           plugin_idc_core_principal_audience,
           plugin_idc_core_customer_subject,
@@ -160,6 +178,9 @@ gfcli:
           plugin_idc_core_financial_export_request,
           plugin_idc_core_financial_export_artifact,
           plugin_idc_core_financial_export_ticket,
+          plugin_idc_core_sales_level_price,
+          plugin_idc_core_sales_purchase_price,
+          plugin_idc_core_sales_customer_referrer,
           plugin_idc_core_sales_agent_level,
           plugin_idc_core_sales_agent_application,
           plugin_idc_core_sales_agent_qualification,
@@ -201,7 +222,6 @@ gfcli:
           plugin_idc_core_commerce_assisted_quote_request,
           plugin_idc_core_commerce_assisted_quote_request_item,
           plugin_idc_core_support_department,
-          plugin_idc_core_support_department_member,
           plugin_idc_core_support_issue_category,
           plugin_idc_core_support_custom_status,
           plugin_idc_core_support_custom_field_definition,
@@ -330,6 +350,14 @@ gfcli:
             type: "*time.Time"
           plugin_idc_core_sales_commission_rule.product_no:
             type: "*string"
+          plugin_idc_core_sales_payment_fact.order_no:
+            type: "*string"
+          plugin_idc_core_sales_payment_owner.sales_assignment_no:
+            type: "*string"
+          plugin_idc_core_sales_payment_owner.affiliate_attribution_no:
+            type: "*string"
+          plugin_idc_core_sales_payment_owner.manual_referrer_id:
+            type: "*int64"
           plugin_idc_core_sales_commission_rule.fixed_amount_minor:
             type: "*int64"
           plugin_idc_core_sales_commission_rule.rate_basis_points:

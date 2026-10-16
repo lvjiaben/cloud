@@ -83,6 +83,9 @@ type Service interface {
 	// store as runtime-owned state because it may include cluster hot-state
 	// coordination.
 	SessionStore() session.Store
+	// SessionTimeout returns the same runtime inactivity timeout used during
+	// token authentication, so governed presence reads share its expiry boundary.
+	SessionTimeout(ctx context.Context) (time.Duration, error)
 	// Login verifies credentials, applies login IP policy, resolves tenant
 	// candidates, and either issues a token pair or returns a pre-login token
 	// for tenant selection. It persists session state and dispatches auth hooks;

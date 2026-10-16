@@ -21,7 +21,7 @@ test.describe("TC-5 公开销售目录", () => {
 
     await expect(catalog.products).toContainText("日常手机套餐");
     await expect(catalog.products).toContainText("库存可用");
-    await expect(catalog.catalog).toContainText("商品购买能力将在对应插件提供通用配置声明后开放");
+    await expect(catalog.catalog).toContainText("请进入商品详情选择配置并确认报价");
     await expect(catalog.products).not.toContainText("opaque");
     await expect(catalog.products).not.toContainText("Provider");
     await expect(catalog.products).not.toContainText("¥");
@@ -80,4 +80,25 @@ test.describe("TC-5 公开销售目录", () => {
     expect(await catalog.hasHorizontalOverflow()).toBe(false);
     await capturePublicScreenshot(page, "public-catalog-mobile");
   });
+  test("TC-5f: 停用币种从筛选和详情移除，恢复后重新可选", async ({ page }) => {
+    const catalog = new PublicCatalogPage(page);
+    mockState.availableCurrencies = ["CNY"];
+    await catalog.goto();
+    await expect(catalog.products).toContainText("日常手机套餐");
+    await expect(catalog.products).not.toContainText("USD");
+    await catalog.openCurrencyChoices();
+    await expect(catalog.currencyChoices).toContainText("CNY");
+    await expect(catalog.currencyChoices).not.toContainText("USD");
+    await capturePublicScreenshot(page,"public-currency-disabled");
+    await catalog.goto("/products/everyday-phone");
+    await expect(catalog.detail).toContainText("CNY");
+    await expect(catalog.detail).not.toContainText("USD");
+    mockState.availableCurrencies = ["CNY","USD"];
+    await catalog.goto();
+    await catalog.chooseCurrency("USD");
+    await expect(catalog.products).toContainText("USD");
+    await expect(catalog.products).not.toContainText("托管 SSL 证书");
+    await capturePublicScreenshot(page,"public-currency-restored");
+  });
+
 });

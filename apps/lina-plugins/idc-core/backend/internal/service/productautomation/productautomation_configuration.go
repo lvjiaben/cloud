@@ -22,7 +22,16 @@ func (s *serviceImpl) compileConfigurationResolved(
 	if err != nil {
 		return nil, err
 	}
-	return configurationcontract.CompileResolved(schema, values, surface, exact.AuthorizedMethods, resolved)
+	compiled, err := configurationcontract.CompileResolved(schema, values, surface, exact.AuthorizedMethods, resolved)
+	if err != nil {
+		return nil, err
+	}
+	if surface == configurationSurfaceProduct {
+		if err = s.validateProviderProductConfiguration(ctx, exact, compiled.ValuesJSON); err != nil {
+			return nil, err
+		}
+	}
+	return compiled, nil
 }
 
 func compileConfigurationWithResolved(

@@ -1,0 +1,10 @@
+{
+  "plugin.idc-core.supportOrganization.department": "关联组织部门",
+  "plugin.idc-core.supportOrganization.choose": "搜索并选择组织部门",
+  "plugin.idc-core.supportOrganization.required": "请选择一个组织部门",
+  "plugin.idc-core.supportOrganization.unlinked": "此历史队列尚未关联组织部门，请先关联后保存。历史工单仍会保留。",
+  "plugin.idc-core.supportOrganization.loadFailed": "组织部门加载失败，请重试。",
+  "plugin.idc-core.supportOrganization.retry": "重试",
+  "plugin.idc-core.supportOrganization.total": "共 {total} 个部门",
+  "plugin.idc-core.supportOrganization.manualClaim": "工单进入部门待领取队列，由有处理权限的部门员工自行领取。"
+}

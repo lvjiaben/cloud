@@ -10,7 +10,6 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 )
@@ -76,6 +75,9 @@ type ChannelHealth struct {
 
 // ListChannels pages the same platform account collection as the staff list.
 func (s *service) ListChannels(ctx context.Context, query PageQuery) (PageResult[ChannelSummary], error) {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return PageResult[ChannelSummary]{}, err
+	}
 	query, err := normalizePage(query)
 	if err != nil {
 		return PageResult[ChannelSummary]{}, err
@@ -93,6 +95,9 @@ func (s *service) ListChannels(ctx context.Context, query PageQuery) (PageResult
 }
 
 func (s *service) SaveChannel(ctx context.Context, input ChannelInput) (ChannelSummary, error) {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return ChannelSummary{}, err
+	}
 	input.ChannelID = strings.TrimSpace(input.ChannelID)
 	input.CustomerNo = strings.TrimSpace(input.CustomerNo)
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
@@ -119,6 +124,9 @@ func (s *service) SaveChannel(ctx context.Context, input ChannelInput) (ChannelS
 }
 
 func (s *service) SetChannelStatus(ctx context.Context, channelID, action string) (ChannelSummary, error) {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return ChannelSummary{}, err
+	}
 	channelID = strings.TrimSpace(channelID)
 	action = strings.ToLower(strings.TrimSpace(action))
 	account, err := s.loadChannel(ctx, channelID)
@@ -210,6 +218,9 @@ func (s *service) SavePublication(ctx context.Context, input PublicationInput) (
 
 // ListRequestAudit pages immutable requests without leaking other channels' totals.
 func (s *service) ListRequestAudit(ctx context.Context, channelID string, query PageQuery) (PageResult[RequestAudit], error) {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return PageResult[RequestAudit]{}, err
+	}
 	if _, err := s.loadChannel(ctx, channelID); err != nil {
 		return PageResult[RequestAudit]{}, err
 	}
@@ -242,55 +253,4 @@ func (s *service) Health(ctx context.Context, channelID string) (ChannelHealth, 
 		return ChannelHealth{}, err
 	}
 	return ChannelHealth{ChannelID: account.ChannelID, StatusCode: account.StatusCode, NewSalesEnabled: account.NewSalesEnable, ActiveTokenCount: row.ActiveTokenCount, PublicationCount: row.PublicationCount, PendingWebhookCount: row.PendingWebhookCount, LastRequestAt: row.LastRequestAt}, nil
-}
-
-func (s *service) currentApprovedChannel(ctx context.Context) (*channelAccountRow, error) {
-	current, err := s.core.CurrentCustomer(ctx)
-	if err != nil || current.CustomerTypeCode != "enterprise" || current.Status != "active" || current.IdentityStatus != "verified" {
-		return nil, gerror.New("current customer is not an approved enterprise channel")
-	}
-	var row *channelAccountRow
-	err = s.db.Model("plugin_idc_channel_account").Ctx(ctx).
-		Fields("channel_id,customer_no,display_name,status_code,new_sales_enabled").
-		Where("customer_no=? AND status_code='approved' AND new_sales_enabled=TRUE", current.CustomerNo).Scan(&row)
-	if err != nil || row == nil {
-		if err == nil {
-			err = gerror.New("current customer is not an approved enterprise channel")
-		}
-		return nil, err
-	}
-	return row, nil
-}
-
-func (s *service) CreateOwnToken(ctx context.Context, input TokenInput) (TokenResult, error) {
-	channel, err := s.currentApprovedChannel(ctx)
-	if err != nil {
-		return TokenResult{}, err
-	}
-	input.ChannelID = channel.ChannelID
-	return s.CreateToken(ctx, input)
-}
-
-func (s *service) ListOwnTokens(ctx context.Context) ([]TokenSummary, error) {
-	channel, err := s.currentApprovedChannel(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return s.ListTokens(ctx, channel.ChannelID)
-}
-
-func (s *service) RevokeOwnToken(ctx context.Context, id int64) error {
-	channel, err := s.currentApprovedChannel(ctx)
-	if err != nil {
-		return err
-	}
-	result, err := s.db.Model("plugin_idc_channel_token").Ctx(ctx).Data(g.Map{"revoked_at": time.Now()}).Where("id=? AND channel_id=? AND revoked_at IS NULL", id, channel.ChannelID).Update()
-	if err != nil {
-		return err
-	}
-	count, err := result.RowsAffected()
-	if err != nil || count != 1 {
-		return gerror.New("token not found or already revoked")
-	}
-	return nil
 }

@@ -17,6 +17,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
 	contracttemplatespi "lina-plugin-idc-core/backend/cap/contracttemplatecap/spi"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/identitycap"
 	"lina-plugin-idc-core/backend/cap/lifecycleresourcecap"
 	lifecycleresourcespi "lina-plugin-idc-core/backend/cap/lifecycleresourcecap/spi"
 	"lina-plugin-idc-core/backend/cap/serveroperationresourcecap"
@@ -26,6 +27,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/billing"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/commerce"
+	"lina-plugin-idc-core/backend/internal/service/currency"
 	"lina-plugin-idc-core/backend/internal/service/customer"
 	"lina-plugin-idc-core/backend/internal/service/customeractivation"
 	"lina-plugin-idc-core/backend/internal/service/notificationpolicy"
@@ -33,6 +35,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 	"lina-plugin-idc-core/backend/internal/service/renewal"
+	"lina-plugin-idc-core/backend/internal/service/salesmanagement"
 )
 
 type channelExternalActorResolver struct{}
@@ -49,18 +52,13 @@ type channelCommerceRuntime struct {
 	settlements     billing.FinancialSettlementService
 	invoices        billing.InvoiceService
 	catalog         catalog.CatalogReader
+	pricing         salesmanagement.PriceRuleReader
+	purchaseFiles   purchaseconfigurationfile.Service
 	contractSource  contracttemplatecap.Source
 	renewals        renewal.RuntimeService
 	serverSource    serveroperationresourcecap.Source
 	lifecycleSource lifecycleresourcecap.Source
 	audit           idccap.BusinessAuditWriter
-}
-
-type fixedChannelPrincipal struct{ audience principal.Audience }
-
-func (reader fixedChannelPrincipal) Current(context.Context) (*principal.Audience, error) {
-	value := reader.audience
-	return &value, nil
 }
 
 type channelCustomerRow struct {
@@ -149,7 +147,7 @@ func newChannelCommerceRuntime(
 		return nil, err
 	}
 	purchaseFiles, err := purchaseconfigurationfile.New(
-		g.DB(), principalReader, services.Storage(), purchaseTargets, scanner,
+		g.DB(), channelFilePrincipal{}, services.Storage(), purchaseTargets, scanner,
 	)
 	if err != nil {
 		return nil, err
@@ -158,7 +156,7 @@ func newChannelCommerceRuntime(
 	if err != nil {
 		return nil, err
 	}
-	catalogReader, err := catalog.NewPublicCatalogReaderConfigured(
+	catalogReader, err := newChannelCurrencyCatalogReader(
 		g.DB(), cursorKey, supplierRuntimeCapabilityInvoker, purchaseFiles,
 	)
 	clear(cursorKey)
@@ -183,8 +181,12 @@ func newChannelCommerceRuntime(
 			return nil, err
 		}
 	}
-	commerceService, err := commerce.NewWithContractTemplates(
-		g.DB(), purchaseResolver, principalReader, settlements, templates,
+	adjustments, err := newChannelQuoteAdjustments(ctx, services)
+	if err != nil {
+		return nil, err
+	}
+	commerceService, err := commerce.NewWithQuoteAdjustmentsAndContractTemplates(
+		g.DB(), purchaseResolver, channelFilePrincipal{}, adjustments, settlements, templates,
 	)
 	if err != nil {
 		return nil, err
@@ -193,7 +195,7 @@ func newChannelCommerceRuntime(
 	if err != nil {
 		return nil, err
 	}
-	if err = commerce.BindStructuredConfigurationSnapshots(commerceService, freezer, purchaseFiles); err != nil {
+	if err = bindChannelCheckoutCapabilities(commerceService, g.DB(), freezer, purchaseFiles); err != nil {
 		return nil, err
 	}
 	channelOrders, err := commerce.NewChannelOrderService(g.DB(), purchaseResolver, commerceService)
@@ -216,7 +218,7 @@ func newChannelCommerceRuntime(
 	if err != nil {
 		return nil, err
 	}
-	renewals, err := renewal.New(ctx, g.DB(), principalReader, catalogReader)
+	renewals, err := renewal.NewWithQuoteAdjustments(ctx, g.DB(), principalReader, catalogReader, adjustments)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +236,12 @@ func newChannelCommerceRuntime(
 			return nil, gerror.Wrap(err, "construct channel lifecycle source")
 		}
 	}
+	pricing, err := salesmanagement.NewPriceRuleReader(g.DB())
+	if err != nil {
+		return nil, err
+	}
 	return &channelCommerceRuntime{
+		pricing: pricing, purchaseFiles: purchaseFiles,
 		database: g.DB(), current: principalReader, activation: activation,
 		orders: channelOrders, settlements: settlements, invoices: invoices,
 		catalog: catalogReader, contractSource: templates,
@@ -266,9 +273,14 @@ func (runtime *channelCommerceRuntime) ValidatePayer(
 	ctx context.Context,
 	customerNo string,
 ) (*channelcommercecap.CustomerSubject, error) {
-	row, err := runtime.requirePayer(ctx, customerNo)
+	// Issuing a credential is not a purchase. Keep identity evidence available
+	// to transaction owners without requiring verification at authorization time.
+	row, err := runtime.loadCustomer(ctx, customerNo)
 	if err != nil {
 		return nil, err
+	}
+	if row.StatusCode != string(customer.StatusActive) || row.ActorUserID < 1 {
+		return nil, bizerr.NewCode(customer.CodeStateDenied)
 	}
 	return &channelcommercecap.CustomerSubject{
 		CustomerNo: row.CustomerNo, CustomerTypeCode: row.CustomerTypeCode,
@@ -298,58 +310,80 @@ func (runtime *channelCommerceRuntime) Quote(
 	ctx context.Context,
 	input channelcommercecap.QuoteInput,
 ) (*channelcommercecap.Quote, error) {
+	ctx, contextErr := runtime.fileCustomerContext(ctx, input.PayerCustomerNo)
+	if contextErr != nil {
+		return nil, contextErr
+	}
 	purchase, quantity, err := channelPurchase(input.Purchase)
 	if err != nil {
 		return nil, err
 	}
-	quote, err := runtime.orders.Quote(ctx, input.PayerCustomerNo, purchase, quantity)
+	var quote *commerce.Quote
+	if input.IdempotencyKey != "" {
+		quote, err = runtime.orders.CreateQuote(ctx, input.ChannelID, input.PayerCustomerNo, input.IdempotencyKey, purchase, quantity)
+	} else {
+		quote, err = runtime.orders.Quote(ctx, input.PayerCustomerNo, purchase, quantity)
+	}
 	if err != nil {
 		return nil, err
 	}
 	return &channelcommercecap.Quote{
-		CurrencyCode: quote.CurrencyCode, SubtotalMinor: quote.SubtotalMinor,
+		QuoteNo: quote.QuoteNo, CurrencyCode: quote.CurrencyCode, SubtotalMinor: quote.SubtotalMinor,
 		DiscountMinor: quote.DiscountMinor, TaxAmountMinor: quote.TaxAmountMinor,
 		TotalAmountMinor: quote.TotalAmountMinor, ExpiresAt: quote.ExpiresAt,
 	}, nil
 }
 
+// CreateOrder commits the core checkout and same-currency balance payment together.
+// A rejected payment rolls back the quote, order, invoice, reservations and outbox.
 func (runtime *channelCommerceRuntime) CreateOrder(
 	ctx context.Context,
 	input channelcommercecap.CreateOrderInput,
 ) (*channelcommercecap.Order, error) {
-	if _, err := runtime.requirePayer(ctx, input.PayerCustomerNo); err != nil {
-		return nil, err
+	if input.OwnershipMode != "channel_owned" || input.ExternalCustomerID != "" ||
+		input.PayerCustomerNo != input.ServiceOwnerCustomerNo ||
+		(input.SettlementMethod != "" && input.SettlementMethod != "balance") {
+		return nil, bizerr.NewCode(commerce.CodeInvalid)
 	}
-	owner, err := runtime.loadCustomer(ctx, input.ServiceOwnerCustomerNo)
+	ctx, contextErr := runtime.fileCustomerContext(ctx, input.PayerCustomerNo)
+	if contextErr != nil {
+		return nil, contextErr
+	}
+	var purchase catalog.PurchaseConfigurationInput
+	var quantity int
+	var err error
+	if input.QuoteNo == "" {
+		purchase, quantity, err = channelPurchase(input.Purchase)
+	}
 	if err != nil {
 		return nil, err
 	}
-	purchase, quantity, err := channelPurchase(input.Purchase)
-	if err != nil {
-		return nil, err
-	}
-	checkout, err := runtime.orders.Checkout(ctx, commerce.ChannelOrderInput{
-		ChannelID: input.ChannelID, ExternalCustomerID: input.ExternalCustomerID,
-		OwnershipMode: input.OwnershipMode, PayerCustomerNo: input.PayerCustomerNo,
-		ServiceOwnerCustomerNo: input.ServiceOwnerCustomerNo, IdempotencyKey: input.IdempotencyKey,
-		Purchase: purchase, Quantity: quantity,
+	var result *channelcommercecap.Order
+	err = runtime.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		checkout, checkoutErr := runtime.orders.Checkout(ctx, commerce.ChannelOrderInput{
+			QuoteNo:   input.QuoteNo,
+			ChannelID: input.ChannelID, OwnershipMode: "channel_owned", PayerCustomerNo: input.PayerCustomerNo,
+			ServiceOwnerCustomerNo: input.PayerCustomerNo, IdempotencyKey: input.IdempotencyKey,
+			Purchase: purchase, Quantity: quantity,
+		})
+		if checkoutErr != nil {
+			return checkoutErr
+		}
+		if checkout.TotalAmountMinor == 0 {
+			if _, settleErr := runtime.settlements.SettleOrder(ctx, checkout.OrderNo); settleErr != nil {
+				return settleErr
+			}
+		} else if _, settleErr := runtime.settle(ctx, input.PayerCustomerNo, checkout.InvoiceNo, checkout.OrderNo, input.IdempotencyKey, "balance"); settleErr != nil {
+			return settleErr
+		}
+		var projectErr error
+		result, projectErr = runtime.projectOrder(ctx, input.ChannelID, checkout.OrderNo, checkout.Reused)
+		return projectErr
 	})
 	if err != nil {
 		return nil, err
 	}
-	ready := owner.StatusCode == "active" && owner.IdentityStatus == "verified"
-	if ready {
-		if checkout.TotalAmountMinor == 0 {
-			if _, err = runtime.settlements.SettleOrder(ctx, checkout.OrderNo); err != nil {
-				return nil, err
-			}
-		} else if input.SettlementMethod != "" && input.SettlementMethod != "deferred" {
-			if _, err = runtime.settle(ctx, input.PayerCustomerNo, checkout.InvoiceNo, checkout.OrderNo, input.IdempotencyKey, input.SettlementMethod); err != nil {
-				return nil, err
-			}
-		}
-	}
-	return runtime.projectOrder(ctx, input.ChannelID, checkout.OrderNo, checkout.Reused)
+	return result, nil
 }
 
 func (runtime *channelCommerceRuntime) SettleOrder(
@@ -659,7 +693,15 @@ WHERE entitlement.tenant_id=0 AND attribution.channel_id=? AND attribution.payer
 		query += " AND entitlement.entitlement_no=?"
 		arguments = append(arguments, input.ServiceNo)
 	}
-	query += " ORDER BY entitlement.updated_at DESC,entitlement.id DESC LIMIT ?"
+	if input.OrderNo != "" {
+		query += " AND entitlement.order_no=?"
+		arguments = append(arguments, input.OrderNo)
+	}
+	if input.AfterServiceNo != "" {
+		query += " AND entitlement.entitlement_no>?"
+		arguments = append(arguments, input.AfterServiceNo)
+	}
+	query += " ORDER BY entitlement.entitlement_no ASC LIMIT ?"
 	arguments = append(arguments, limit)
 	items := make([]channelcommercecap.ServiceItem, 0)
 	if err := runtime.database.GetScan(ctx, &items, query, arguments...); err != nil {
@@ -685,36 +727,46 @@ func (runtime *channelCommerceRuntime) settle(
 	idempotencyKey string,
 	method string,
 ) (bool, error) {
-	payer, err := runtime.requirePayer(ctx, payerCustomerNo)
-	if err != nil {
-		return false, err
-	}
-	commands, err := billing.NewAccountFinanceCommandService(runtime.database, fixedChannelPrincipal{audience: principal.Audience{
-		UserID: payer.ActorUserID, Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive,
-		CustomerNo: payer.CustomerNo,
-	}}, runtime.settlements)
-	if err != nil {
-		return false, err
-	}
-	switch strings.TrimSpace(method) {
-	case "balance":
-		paid, payErr := commands.PayAccountInvoiceFromBalance(ctx, billing.AccountBalancePaymentInput{
-			InvoiceNo: invoiceNo, IdempotencyKey: idempotencyKey,
-		})
-		return paid != nil && paid.Reused, payErr
-	case "credit":
-		paid, payErr := commands.PayAccountInvoiceFromCredit(ctx, invoiceNo)
-		return paid != nil && paid.Reused, payErr
-	default:
+	if strings.TrimSpace(method) != "balance" {
 		return false, bizerr.NewCode(billing.CodeDirectoryInvalid)
 	}
+	if _, err := runtime.requirePayer(ctx, payerCustomerNo); err != nil {
+		return false, err
+	}
+	var owned bool
+	ownership, err := runtime.database.GetValue(ctx, `SELECT EXISTS(SELECT 1 FROM plugin_idc_core_billing_invoice WHERE tenant_id=0 AND invoice_no=? AND order_no=? AND customer_no=?)`, invoiceNo, orderNo, payerCustomerNo)
+	if err != nil {
+		return false, err
+	}
+	owned = ownership.Bool()
+	if !owned {
+		return false, bizerr.NewCode(billing.CodeDirectoryNotAccessible)
+	}
+	digest := sha256.Sum256([]byte(payerCustomerNo + ":" + invoiceNo + ":" + idempotencyKey))
+	fingerprint := hex.EncodeToString(digest[:])
+	paid, err := runtime.invoices.PayFromBalance(ctx, billing.InvoiceBalancePaymentInput{InvoiceNo: invoiceNo, SourceReference: "channel:" + fingerprint, SourceSnapshotDigest: fingerprint})
+	if err != nil {
+		return false, err
+	}
+	if paid == nil || paid.Invoice == nil || paid.Posting == nil || paid.Invoice.CustomerNo != payerCustomerNo || paid.Invoice.OrderNo != orderNo || paid.Posting.CustomerNo != payerCustomerNo || paid.Invoice.CurrencyCode != paid.Posting.CurrencyCode {
+		return false, bizerr.NewCode(billing.CodeDirectoryIntegrity)
+	}
+	if _, err = runtime.settlements.SettleOrder(ctx, orderNo); err != nil {
+		return false, err
+	}
+	return paid.Reused, nil
 }
 
 func (runtime *channelCommerceRuntime) requirePayer(ctx context.Context, customerNo string) (*channelCustomerRow, error) {
 	row, err := runtime.loadCustomer(ctx, customerNo)
-	if err != nil || row.CustomerTypeCode != "enterprise" || row.StatusCode != "active" ||
-		row.IdentityStatus != "verified" || row.ActorUserID < 1 {
-		return nil, bizerr.NewCode(billing.CodeDirectoryNotAccessible)
+	if err != nil {
+		return nil, err
+	}
+	if row.StatusCode != string(customer.StatusActive) || row.ActorUserID < 1 {
+		return nil, bizerr.NewCode(customer.CodeStateDenied)
+	}
+	if row.IdentityStatus != string(identitycap.StatusVerified) {
+		return nil, bizerr.NewCode(customer.CodeVerificationRequired)
 	}
 	return row, nil
 }
@@ -810,4 +862,46 @@ func channelPurchase(input channelcommercecap.Purchase) (catalog.PurchaseConfigu
 		BillingTermToken: input.BillingTermToken, CurrencyCode: input.CurrencyCode,
 		PurchaseCycles: input.PurchaseCycles, Values: values,
 	}, quantity, nil
+}
+
+// BrowseCatalog exposes only published product projections, bounded by the
+// catalog owner's cursor and page size rules. No cost or provider data escapes.
+func (runtime *channelCommerceRuntime) BrowseCatalog(ctx context.Context, input channelcommercecap.CatalogQuery) (*channelcommercecap.CatalogPage, error) {
+	page, err := runtime.catalog.Search(ctx, catalog.PublicCatalogSearchInput{NamePrefix: input.NamePrefix, Currency: input.Currency, Cursor: input.Cursor, Limit: input.Limit})
+	if err != nil {
+		return nil, err
+	}
+	result := &channelcommercecap.CatalogPage{Products: make([]channelcommercecap.CatalogProduct, 0, len(page.Products)), AvailableCurrencies: page.AvailableCurrencies, NextCursor: page.NextCursor}
+	for _, row := range page.Products {
+		result.Products = append(result.Products, channelcommercecap.CatalogProduct{PublicSlug: row.PublicSlug, NameZhCN: row.NameZhCN, NameEnUS: row.NameEnUS, SummaryZhCN: row.SummaryZhCN, SummaryEnUS: row.SummaryEnUS, Currencies: row.Currencies, Availability: row.Availability})
+	}
+	return result, nil
+}
+
+// newChannelCurrencyCatalogReader constructs a public reader with authoritative currency admission.
+func newChannelCurrencyCatalogReader(database gdb.DB, key []byte, runtime catalog.PublicPurchaseConfigurationRuntime, files purchaseconfigurationfile.Service) (catalog.CatalogReader, error) {
+	reader, err := catalog.NewPublicCatalogReaderConfigured(database, key, runtime, files)
+	if err != nil {
+		return nil, err
+	}
+	source, err := currency.NewReader(database)
+	if err != nil {
+		return nil, err
+	}
+	if err = catalog.BindCurrencies(reader, source); err != nil {
+		return nil, err
+	}
+	return reader, nil
+}
+
+// bindChannelCheckoutCapabilities attaches currency and configuration admission before channel checkout routes.
+func bindChannelCheckoutCapabilities(owner commerce.Service, database gdb.DB, freezer catalog.PurchaseConfigurationFreezer, files purchaseconfigurationfile.OrderFileConsumer) error {
+	reader, err := currency.NewReader(database)
+	if err != nil {
+		return err
+	}
+	if err = commerce.BindCheckoutCurrencies(owner, reader); err != nil {
+		return err
+	}
+	return commerce.BindStructuredConfigurationSnapshots(owner, freezer, files)
 }

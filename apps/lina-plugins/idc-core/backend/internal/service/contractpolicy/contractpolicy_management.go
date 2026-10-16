@@ -261,7 +261,7 @@ func (s *managementService) updateEnterpriseRule(
 			IdempotencyKey:   customer.CustomerNo + ":" + strconv.FormatInt(customer.Version+1, 10),
 			OperationCode:    "contract-policy.enterprise.update", TargetType: "customer",
 			TargetNo: customer.CustomerNo, CustomerNo: customer.CustomerNo,
-			ResultCode: "updated", ReasonCode: "staff_contract_policy_update",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "staff_contract_policy_update",
 			RiskCode: "medium", RequiredPermission: PermissionEnterpriseWrite,
 			BeforeSnapshot: map[string]any{
 				"policyCode": customer.EnterpriseContractPolicyCode,
@@ -336,7 +336,7 @@ func (s *managementService) UpdateProductRule(
 			IdempotencyScope: "contract-policy.product.update",
 			IdempotencyKey:   version.VersionNo + ":" + strconv.FormatInt(version.ContractPolicyVersion+1, 10),
 			OperationCode:    "contract-policy.product.update", TargetType: "catalog_product_version",
-			TargetNo: version.VersionNo, ResultCode: "updated",
+			TargetNo: version.VersionNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "staff_contract_policy_update", RiskCode: "medium",
 			RequiredPermission: PermissionProductWrite,
 			BeforeSnapshot: map[string]any{
@@ -470,7 +470,7 @@ func (s *managementService) UpdateOrderRule(
 			IdempotencyKey:   order.OrderNo + ":" + strconv.FormatInt(order.Version+1, 10),
 			OperationCode:    "contract-policy.order.update", TargetType: "commerce_order",
 			TargetNo: order.OrderNo, CustomerNo: order.CustomerNo,
-			ResultCode: "updated", ReasonCode: "staff_contract_policy_update",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "staff_contract_policy_update",
 			RiskCode: "high", RequiredPermission: PermissionOrderWrite,
 			BeforeSnapshot: map[string]any{
 				"policyCode":       order.ContractOverridePolicyCode,

@@ -40,9 +40,23 @@ func (s *serviceImpl) CreateInterface(ctx context.Context, input CreateInterface
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
-	if !validProviderEvidence(selected) {
+	if !validFrozenEvidence(selected) {
 		return nil, bizerr.NewCode(catalog.CodeManagementUnavailable)
 	}
+	// The bounded session token carries immutable identity, not executable
+	// schemas. Reload the exact public declaration before compiling any input.
+	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
+		PluginID: selected.PluginID, ReleaseVersion: selected.ReleaseVersion, Point: selected.Point,
+		ContractVersion: selected.ContractVersion, ReleaseDigest: selected.ReleaseDigest,
+		DeclarationDigest: selected.DeclarationDigest,
+	})
+	if err != nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	}
+	if !sameExactEvidence(selected, exact) {
+		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	selected = exact
 	interfaceNo, err := newInterfaceNo(s.random)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
@@ -217,6 +231,9 @@ func (s *serviceImpl) DeleteInterface(ctx context.Context, input DeleteInterface
 				return bizerr.NewCode(CodeInterfaceEverReferenced)
 			}
 			return bizerr.NewCode(catalog.CodeManagementConflict)
+		}
+		if revokeErr := s.revokeUnusedInterfaceSecrets(txCtx, row.InterfaceInstanceNo); revokeErr != nil {
+			return revokeErr
 		}
 		result, deleteErr := s.database.Model(do.ProductAutomationInterfaceInstance{}).Ctx(txCtx).Where(do.ProductAutomationInterfaceInstance{TenantId: idccap.DefaultTenantID, InterfaceInstanceNo: row.InterfaceInstanceNo, Version: row.Version, EverReferenced: false}).Delete()
 		if deleteErr != nil {
@@ -789,7 +806,8 @@ func normalizeManagementWriteError(err error) error {
 	if err == nil || bizerr.Is(err, catalog.CodeManagementNotAccessible) || bizerr.Is(err, catalog.CodeManagementConflict) ||
 		bizerr.Is(err, catalog.CodeManagementInvalid) || bizerr.Is(err, catalog.CodeFulfillmentPolicyBindingRequired) ||
 		bizerr.Is(err, catalog.CodeFulfillmentPolicyContractChanged) || bizerr.Is(err, catalog.CodeFulfillmentPolicyImmutable) ||
-		bizerr.Is(err, CodeInterfaceEverReferenced) || bizerr.Is(err, CodeEvidenceUnavailable) {
+		bizerr.Is(err, catalog.CodeTrialFulfillmentUnavailable) || bizerr.Is(err, codeSupplierCapabilitiesUnconfirmed) ||
+		bizerr.Is(err, codeCustomerOptionPricesRequired) || bizerr.Is(err, CodeInterfaceEverReferenced) || bizerr.Is(err, CodeEvidenceUnavailable) {
 		return err
 	}
 	return bizerr.WrapCode(err, catalog.CodeManagementUnavailable)

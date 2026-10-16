@@ -50,10 +50,11 @@ type currencyPricingRule struct {
 }
 
 type CurrencyPricingIndex struct {
-	rules       []currencyPricingRule
-	definitions map[string]BillingRuleDefinition
-	schedules   map[currencyPriceDimension][]PriceTierDefinition
-	currencies  map[string]struct{}
+	rules              []currencyPricingRule
+	definitions        map[string]BillingRuleDefinition
+	schedules          map[currencyPriceDimension][]PriceTierDefinition
+	currencies         map[string]struct{}
+	configurationModes map[string]ConfigurationPriceMode
 }
 
 var currencyCodePattern = regexp.MustCompile(`^[A-Z]{3}$`)
@@ -201,7 +202,7 @@ func (i *CurrencyPricingIndex) ExplicitSchedule(
 	schedule, exists := i.schedules[currencyPriceDimension{
 		billingRuleNo: billingRuleNo, currencyCode: currencyCode, optionNo: optionNo,
 	}]
-	if !exists || ValidatePriceSchedule(definition, schedule) != nil {
+	if !exists || validateConfigurationPriceSchedule(definition, i.configurationModes[optionNo], schedule) != nil {
 		return nil, false
 	}
 	return clonePriceSchedule(schedule), true
@@ -223,7 +224,7 @@ func (i *CurrencyPricingIndex) appendDimensionIssue(
 			OptionNo: optionNo, Reason: CurrencyPriceIssueMissing,
 		})
 	}
-	if ValidatePriceSchedule(rule.definition, schedule) != nil {
+	if validateConfigurationPriceSchedule(rule.definition, i.configurationModes[optionNo], schedule) != nil {
 		return append(issues, CurrencyPriceIssue{
 			BillingRuleNo: rule.billingRuleNo, Kind: kind,
 			OptionNo: optionNo, Reason: CurrencyPriceIssueInvalid,

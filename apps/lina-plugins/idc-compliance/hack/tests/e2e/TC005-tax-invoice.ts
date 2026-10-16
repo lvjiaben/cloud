@@ -19,7 +19,7 @@ test.describe("TC-5 税务发票", () => {
     const invoices = new TaxInvoicePage(adminPage);
     await invoices.goto();
 
-    await expect(invoices.root).toContainText("真实开票通道当前保持关闭");
+    await expect(invoices.root).toContainText("请先配置并验证开票服务");
     await invoices.openInvoice("TINV_PENDING_001");
     await expect(invoices.buyerProfile).toContainText("示例购买方有限公司");
     await expect(invoices.buyerProfile).toContainText("91310000123456789X");
@@ -279,7 +279,7 @@ test.describe("TC-5 税务发票", () => {
     await adminPage.setViewportSize({ height: 844, width: 390 });
 
     await expect(invoices.root).toContainText("Tax invoices and red-letter corrections");
-    await expect(invoices.root).toContainText("Live invoice issuance is currently closed");
+    await expect(invoices.root).toContainText("Set up and verify the invoicing service first");
     await expect(invoices.root.getByRole("tab", { name: "Red-letter tasks" })).toBeVisible();
     const hasPageOverflow = await adminPage.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

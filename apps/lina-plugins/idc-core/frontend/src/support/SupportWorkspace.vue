@@ -26,7 +26,8 @@ const currentContext = () => props.context;
 const api = createSupportAPI(currentContext);
 const tr = createTranslator(currentContext, supportMessages);
 
-const filters = reactive<TicketListQuery>({ limit: 30 });
+const filters = reactive<TicketListQuery>({ limit: 30, query: '', stage: '', status: '', departmentNo: '', priority: '' });
+const showMoreFilters = ref(false);
 const tickets = ref<TicketSummary[]>([]);
 const selected = ref<TicketDetail | null>(null);
 const selectedTicketNo = ref('');
@@ -341,6 +342,11 @@ async function selectTicket(ticketNo: string) {
   }
 }
 
+function resetFilters() {
+  Object.assign(filters, { query: '', stage: '', status: '', departmentNo: '', priority: '', followUp: undefined });
+  applyFilters();
+}
+
 function applyFilters() {
   cursorHistory.value = [];
   filters.cursor = '';
@@ -430,6 +436,7 @@ function requiresReason(kind: string) {
   }
   return [
     'closures',
+    'escalations',
     'hidden-content',
     'global-merges',
     'merges',
@@ -567,11 +574,20 @@ async function submitAction() {
         };
         break;
       case 'transfers':
-        body = {
-          ...body,
+        await api.transfer(ticketNo, {
+          ticketVersion,
           departmentNo: composer.departmentNo,
           reason: composer.reason,
-        };
+        });
+        detailRequestSequence += 1;
+        selected.value = null;
+        selectedTicketNo.value = '';
+        composer.kind = '';
+        await loadTickets(filters.cursor ?? '');
+        success.value = tr('support.success.saved');
+        return;
+      case 'escalations':
+        body = { ...body, reason: composer.reason, toUserId: 0 };
         break;
       case 'status-transitions':
         if (!selectedStatusTransition.value) {
@@ -749,7 +765,9 @@ onMounted(async () => {
   try {
     await Promise.all([loadDirectories(), loadTickets()]);
     const requestedTicketNo = new URL(globalThis.location.href).searchParams.get('ticket') ?? '';
-    if (requestedTicketNo && tickets.value.some((item) => item.ticketNo === requestedTicketNo)) {
+    // A dashboard deep link may refer to a ticket outside the first list page.
+    // The detail endpoint applies the same ticket visibility authorization.
+    if (requestedTicketNo && pageActions.value.includes('query')) {
       await selectTicket(requestedTicketNo);
     }
   } catch {
@@ -781,21 +799,28 @@ onMounted(async () => {
       <article class="metric-card accent-blue"><span>{{ tr('support.metric.publicQueue') }}</span><strong>{{ metrics.publicQueue }}</strong></article>
       <article class="metric-card accent-teal"><span>{{ tr('support.metric.departmentQueue') }}</span><strong>{{ metrics.departmentQueue }}</strong></article>
       <article class="metric-card accent-amber"><span>{{ tr('support.metric.slaRisk') }}</span><strong>{{ metrics.slaRisk }}</strong></article>
-      <article class="metric-card accent-rose"><span>{{ tr('support.metric.followUp') }}</span><strong>{{ metrics.followUp }}</strong></article>
+      <button class="metric-card accent-rose" type="button" @click="filters.followUp = true; applyFilters()"><span>{{ tr('support.metric.followUp') }}</span><strong>{{ metrics.followUp }}</strong></button>
     </section>
 
     <section class="filter-panel" :aria-label="tr('support.section.tickets')">
-      <label class="field wide"><span>{{ tr('support.field.keyword') }}</span><input v-model.trim="filters.query" data-testid="support-filter-keyword" type="search" @keyup.enter="applyFilters" /></label>
-      <label class="field"><span>{{ tr('support.field.stage') }}</span><select v-model="filters.stage" data-testid="support-filter-stage"><option value="">{{ tr('support.value.all') }}</option><option v-for="stage in baseStages" :key="stage" :value="stage">{{ translatedCode('support.stage', stage) }}</option></select></label>
-      <label class="field"><span>{{ tr('support.field.status') }}</span><select v-model="filters.status"><option value="">{{ tr('support.value.all') }}</option><option v-for="item in statuses" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
-      <label class="field"><span>{{ tr('support.field.department') }}</span><select v-model="filters.departmentNo" data-testid="support-filter-department"><option value="">{{ tr('support.value.all') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
-      <label class="field"><span>{{ tr('support.field.priority') }}</span><select v-model="filters.priority"><option value="">{{ tr('support.value.all') }}</option><option value="low">{{ tr('support.priority.low') }}</option><option value="normal">{{ tr('support.priority.normal') }}</option><option value="high">{{ tr('support.priority.high') }}</option><option value="urgent">{{ tr('support.priority.urgent') }}</option></select></label>
-      <button class="button primary filter-submit" type="button" @click="applyFilters">{{ tr('support.action.refresh') }}</button>
+      <label class="field wide"><span>{{ tr('support.field.keyword') }}</span><input :aria-label="tr('support.field.keyword')" v-model.trim="filters.query" data-testid="support-filter-keyword" type="search" @keyup.enter="applyFilters" /></label>
+      <label class="field"><span>{{ tr('support.field.stage') }}</span><select :aria-label="tr('support.field.stage')" v-model="filters.stage" data-testid="support-filter-stage"><option value="">{{ tr('support.value.all') }}</option><option v-for="stage in baseStages" :key="stage" :value="stage">{{ translatedCode('support.stage', stage) }}</option></select></label>
+      <label class="field"><span>{{ tr('support.field.department') }}</span><select :aria-label="tr('support.field.department')" v-model="filters.departmentNo" data-testid="support-filter-department"><option value="">{{ tr('support.value.all') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
+      <label class="field"><span>{{ tr('support.followUp.filter') }}</span><select v-model="filters.followUp" :aria-label="tr('support.followUp.filter')"><option :value="undefined">{{ tr('support.value.all') }}</option><option :value="true">{{ tr('support.followUp.required') }}</option><option :value="false">{{ tr('support.followUp.notRequired') }}</option></select></label>
+      <div class="filter-actions">
+        <button class="button primary" type="button" @click="applyFilters">{{ tr('support.action.search') }}</button>
+        <button class="button secondary" type="button" @click="resetFilters">{{ tr('support.action.reset') }}</button>
+        <button class="button ghost" type="button" :aria-expanded="showMoreFilters" @click="showMoreFilters = !showMoreFilters">{{ tr(showMoreFilters ? 'support.action.lessFilters' : 'support.action.moreFilters') }}</button>
+      </div>
+      <div v-if="showMoreFilters" class="advanced-filters">
+      <label class="field"><span>{{ tr('support.field.status') }}</span><select :aria-label="tr('support.field.status')" v-model="filters.status"><option value="">{{ tr('support.value.all') }}</option><option v-for="item in statuses" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
+      <label class="field"><span>{{ tr('support.field.priority') }}</span><select :aria-label="tr('support.field.priority')" v-model="filters.priority"><option value="">{{ tr('support.value.all') }}</option><option value="low">{{ tr('support.priority.low') }}</option><option value="normal">{{ tr('support.priority.normal') }}</option><option value="high">{{ tr('support.priority.high') }}</option><option value="urgent">{{ tr('support.priority.urgent') }}</option></select></label>
+      </div>
     </section>
 
     <section class="split-workspace">
       <div class="panel ticket-directory">
-        <div class="panel-heading"><div><p class="panel-kicker">{{ tr('support.queue.label') }}</p><h2>{{ tr('support.section.tickets') }}</h2></div><span class="count-pill">{{ tickets.length }}</span></div>
+        <div class="panel-heading"><div><h2>{{ tr('support.section.tickets') }}</h2></div><span class="count-pill">{{ tickets.length }}</span></div>
         <div v-if="loading" class="empty-state">{{ tr('support.state.loading') }}</div>
         <div v-else-if="tickets.length === 0" class="empty-state">{{ tr('support.empty') }}</div>
         <button v-for="ticket in tickets" v-else :key="ticket.ticketNo" class="ticket-row" :class="{ active: selectedTicketNo === ticket.ticketNo }" :data-testid="`support-ticket-${ticket.ticketNo}`" :disabled="!pageActions.includes('query')" type="button" @click="selectTicket(ticket.ticketNo)">
@@ -804,7 +829,7 @@ onMounted(async () => {
           <div class="ticket-meta"><span>{{ categoryLabel(ticket) }}</span><span>{{ translatedCode('support.priority', ticket.priority) }}</span><span v-if="!ticket.slaConfigured" class="risk-dot">{{ tr('support.sla.notConfigured') }}</span><span v-else-if="ticket.slaRisk !== 'none'" class="risk-dot">{{ translatedCode('support.risk', ticket.slaRisk) }}</span></div>
           <time>{{ formatTime(ticket.updatedAt) }}</time>
         </button>
-        <footer class="pagination"><button class="button ghost" :aria-label="tr('support.pagination.previous')" :disabled="cursorHistory.length === 0 || loading" type="button" @click="previousPage">←</button><button class="button ghost" :aria-label="tr('support.pagination.next')" :disabled="!nextCursor || loading" type="button" @click="nextPage">→</button></footer>
+        <footer v-if="nextCursor || cursorHistory.length" class="pagination"><button class="button ghost" :aria-label="tr('support.pagination.previous')" :disabled="cursorHistory.length === 0 || loading" type="button" @click="previousPage">←</button><button class="button ghost" :aria-label="tr('support.pagination.next')" :disabled="!nextCursor || loading" type="button" @click="nextPage">→</button></footer>
       </div>
 
       <div class="panel ticket-detail">
@@ -849,6 +874,7 @@ onMounted(async () => {
               <button v-if="can('public_reply')" class="button secondary" data-testid="support-action-public-reply" type="button" @click="openComposer('public-replies')">{{ tr('support.action.publicReply') }}</button>
               <button v-if="can('internal_note')" class="button secondary" data-testid="support-action-internal-note" type="button" @click="openComposer('internal-notes')">{{ tr('support.action.internalNote') }}</button>
               <button v-if="can('transfer')" class="button secondary" data-testid="support-action-transfer" type="button" @click="openComposer('transfers')">{{ tr('support.action.transfer') }}</button>
+              <button v-if="can('escalate')" class="button secondary" data-testid="support-action-escalate" type="button" @click="openComposer('escalations')">{{ tr('support.action.markFollowUp') }}</button>
               <button v-if="can('resolve')" class="button secondary" data-testid="support-action-resolve" type="button" @click="openComposer('resolutions')">{{ tr('support.action.resolve') }}</button>
               <button v-if="can('close')" class="button secondary" data-testid="support-action-close" type="button" @click="openComposer('closures')">{{ tr('support.action.close') }}</button>
               <button v-if="can('reopen')" class="button secondary" data-testid="support-action-reopen" type="button" @click="openComposer('reopenings')">{{ tr('support.action.reopen') }}</button>
@@ -861,13 +887,15 @@ onMounted(async () => {
           </section>
 
           <form v-if="composer.kind" class="composer" data-testid="support-action-composer" @submit.prevent="submitAction">
-            <label v-if="['public-replies', 'internal-notes'].includes(composer.kind) && replyPresets.length" class="field"><span>{{ tr('support.field.replyPreset') }}</span><select v-model="composer.presetNo" @change="applyPreset"><option value="">{{ tr('support.value.none') }}</option><option v-for="item in replyPresets" :key="item.presetNo" :value="item.presetNo">{{ item.title }}</option></select></label>
+            <label v-if="['public-replies', 'internal-notes'].includes(composer.kind) && replyPresets.length" class="field"><span>{{ tr('support.field.replyPreset') }}</span><select :aria-label="tr('support.field.replyPreset')" v-model="composer.presetNo" @change="applyPreset"><option value="">{{ tr('support.value.none') }}</option><option v-for="item in replyPresets" :key="item.presetNo" :value="item.presetNo">{{ item.title }}</option></select></label>
             <label v-if="['public-replies', 'internal-notes'].includes(composer.kind)" class="field wide"><span>{{ tr('support.field.body') }}</span><textarea v-model="composer.body" required rows="5" /></label>
-            <label v-if="['public-replies', 'internal-notes'].includes(composer.kind)" class="field wide"><span>{{ tr('support.field.attachments') }}</span><input accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" multiple type="file" @change="chooseFiles" /><small>{{ tr('support.field.attachmentsHelp') }}</small></label>
-            <label v-if="composer.kind === 'status-transitions'" class="field wide"><span>{{ tr('support.field.statusTarget') }}</span><select v-model="composer.customStatusNo" data-testid="support-status-transition-target" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in selected.availableStatusTransitions" :key="`${item.statusNo}:${item.version}`" :value="item.statusNo">{{ localizedName(item) }} · {{ translatedCode('support.stage', item.baseStage) }}</option></select><small>{{ tr('support.statusTransition.help') }}</small></label>
+            <label v-if="['public-replies', 'internal-notes'].includes(composer.kind)" class="field wide"><span>{{ tr('support.field.attachments') }}</span><input :aria-label="tr('support.field.attachments')" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" multiple type="file" @change="chooseFiles" /><small>{{ tr('support.field.attachmentsHelp') }}</small></label>
+            <label v-if="composer.kind === 'status-transitions'" class="field wide"><span>{{ tr('support.field.statusTarget') }}</span><select :aria-label="tr('support.field.statusTarget')" v-model="composer.customStatusNo" data-testid="support-status-transition-target" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in selected.availableStatusTransitions" :key="`${item.statusNo}:${item.version}`" :value="item.statusNo">{{ localizedName(item) }} · {{ translatedCode('support.stage', item.baseStage) }}</option></select><small>{{ tr('support.statusTransition.help') }}</small></label>
             <label v-if="requiresReason(composer.kind) || composer.kind === 'status-transitions'" class="field wide"><span>{{ tr(requiresReason(composer.kind) ? 'support.field.reason' : 'support.field.reasonOptional') }}</span><textarea v-model="composer.reason" :required="requiresReason(composer.kind)" rows="3" /></label>
-            <label v-if="composer.kind === 'splits'" class="field"><span>{{ tr('support.target.category') }}</span><select v-model="composer.categoryNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in categories" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
-            <label v-if="composer.kind === 'transfers'" class="field"><span>{{ tr('support.field.department') }}</span><select v-model="composer.departmentNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
+            <label v-if="composer.kind === 'splits'" class="field"><span>{{ tr('support.target.category') }}</span><select :aria-label="tr('support.target.category')" v-model="composer.categoryNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in categories" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
+            <p v-if="composer.kind === 'transfers'" class="notice info wide">{{ tr('support.transfer.queueHelp') }}</p>
+            <p v-if="composer.kind === 'escalations'" class="notice info wide">{{ tr('support.followUp.help') }}</p>
+            <label v-if="composer.kind === 'transfers'" class="field"><span>{{ tr('support.field.department') }}</span><select v-model="composer.departmentNo" :aria-label="tr('support.field.department')" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label>
             <fieldset v-if="['global-merges', 'merges'].includes(composer.kind)" class="selection-field wide" data-testid="support-merge-candidates"><legend>{{ tr(composer.kind === 'global-merges' ? 'support.merge.globalCandidates' : 'support.merge.candidates') }}</legend><p class="field-help">{{ tr(composer.kind === 'global-merges' ? 'support.merge.globalHelp' : 'support.merge.help') }}</p><p v-if="mergeCandidatesLoading && !mergeCandidates.length">{{ tr('support.state.loading') }}</p><p v-else-if="mergeCandidates.length === 0">{{ tr('support.merge.empty') }}</p><label v-for="candidate in mergeCandidates" v-else :key="candidate.ticketNo" class="selection-option"><input v-model="composer.selectedMergeTicketNos" :data-testid="`support-merge-candidate-${candidate.ticketNo}`" :disabled="composer.selectedMergeTicketNos.length >= 20 && !composer.selectedMergeTicketNos.includes(candidate.ticketNo)" :value="candidate.ticketNo" type="checkbox" /><span><strong>{{ candidate.subject }}</strong><small>{{ candidate.ticketNo }} · {{ translatedCode('support.stage', candidate.stage) }}</small></span></label><small v-if="mergeCandidates.length">{{ tr('support.merge.limit') }}</small><button v-if="mergeCandidatesNextCursor" class="button secondary" :disabled="mergeCandidatesLoading" type="button" @click="loadMergeCandidates(true)">{{ tr('support.merge.more') }}</button></fieldset>
             <fieldset v-if="['splits', 'upstream'].includes(composer.kind) && !upstreamPreview" class="selection-field wide"><legend>{{ tr('support.selection.messages') }}</legend><p v-if="selected.publicMessages.filter((item) => !item.hidden).length === 0">{{ tr('support.selection.emptyMessages') }}</p><label v-for="message in selected.publicMessages.filter((item) => !item.hidden)" v-else :key="message.messageNo" class="selection-option"><input v-model="composer.selectedMessageNos" :data-testid="`support-selection-message-${message.messageNo}`" :value="message.messageNo" type="checkbox" /><span><strong>{{ messageAuthor(message) }}</strong><small>{{ message.body }}</small></span></label></fieldset>
             <fieldset v-if="['splits', 'upstream'].includes(composer.kind) && !upstreamPreview" class="selection-field wide"><legend>{{ tr('support.selection.attachments') }}</legend><p v-if="selectableAttachments.length === 0">{{ tr('support.selection.emptyAttachments') }}</p><label v-for="attachment in selectableAttachments" v-else :key="attachment.attachmentNo" class="selection-option"><input v-model="composer.selectedAttachmentNos" :data-testid="`support-selection-attachment-${attachment.attachmentNo}`" :value="attachment.attachmentNo" type="checkbox" /><span><strong>{{ attachment.fileName }}</strong><small>{{ formatBytes(attachment.sizeBytes) }} · {{ fileTypeLabel(attachment.fileName) }}</small></span></label></fieldset>
@@ -938,11 +966,11 @@ onMounted(async () => {
     <div v-if="createOpen" class="modal-backdrop" role="presentation" @click.self="closeCreate" @keydown.esc="closeCreate">
       <form aria-labelledby="support-create-title" aria-modal="true" class="modal-card" data-testid="support-create-modal" role="dialog" @submit.prevent="createTicket">
         <div class="modal-heading"><div><p class="panel-kicker">{{ tr('support.work.internal') }}</p><h2 id="support-create-title">{{ tr('support.action.create') }}</h2></div><button class="icon-button" :aria-label="tr('support.action.cancel')" type="button" @click="closeCreate">×</button></div>
-        <label class="field wide"><span>{{ tr('support.field.subject') }}</span><input ref="createSubjectInput" v-model.trim="createForm.subject" required maxlength="180" /></label>
+        <label class="field wide"><span>{{ tr('support.field.subject') }}</span><input :aria-label="tr('support.field.subject')" ref="createSubjectInput" v-model.trim="createForm.subject" required maxlength="180" /></label>
         <label class="field wide"><span>{{ tr('support.field.body') }}</span><textarea v-model="createForm.body" required rows="7" /></label>
-        <label class="field wide"><span>{{ tr('support.field.attachments') }}</span><input accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" multiple type="file" @change="chooseCreateFiles" /><small>{{ tr('support.field.internalAttachmentsHelp') }}</small></label>
-        <div class="form-grid"><label class="field"><span>{{ tr('support.field.category') }}</span><select v-model="createForm.categoryNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in categories" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label><label class="field"><span>{{ tr('support.field.department') }}</span><select v-model="createForm.departmentNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label></div>
-        <label class="field"><span>{{ tr('support.field.priority') }}</span><select v-model="createForm.priority"><option value="low">{{ tr('support.priority.low') }}</option><option value="normal">{{ tr('support.priority.normal') }}</option><option value="high">{{ tr('support.priority.high') }}</option><option value="urgent">{{ tr('support.priority.urgent') }}</option></select></label>
+        <label class="field wide"><span>{{ tr('support.field.attachments') }}</span><input :aria-label="tr('support.field.attachments')" accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.log,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" multiple type="file" @change="chooseCreateFiles" /><small>{{ tr('support.field.internalAttachmentsHelp') }}</small></label>
+        <div class="form-grid"><label class="field"><span>{{ tr('support.field.category') }}</span><select :aria-label="tr('support.field.category')" v-model="createForm.categoryNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in categories" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label><label class="field"><span>{{ tr('support.field.department') }}</span><select :aria-label="tr('support.field.department')" v-model="createForm.departmentNo" required><option value="">{{ tr('support.value.choose') }}</option><option v-for="item in departments" :key="directoryValue(item)" :value="directoryValue(item)">{{ localizedName(item) }}</option></select></label></div>
+        <label class="field"><span>{{ tr('support.field.priority') }}</span><select :aria-label="tr('support.field.priority')" v-model="createForm.priority"><option value="low">{{ tr('support.priority.low') }}</option><option value="normal">{{ tr('support.priority.normal') }}</option><option value="high">{{ tr('support.priority.high') }}</option><option value="urgent">{{ tr('support.priority.urgent') }}</option></select></label>
         <section class="selection-field wide" data-testid="support-internal-custom-fields">
           <h3>{{ tr('support.field.additionalInformation') }}</h3>
           <p v-if="createFieldsLoading">{{ tr('support.state.loading') }}</p>

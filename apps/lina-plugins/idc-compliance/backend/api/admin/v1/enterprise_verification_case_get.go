@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // EnterpriseVerificationCaseGetReq reads one masked case detail.
 type EnterpriseVerificationCaseGetReq struct {
-	g.Meta `path:"/admin/compliance/enterprise-verifications/{caseNo}" method:"get" tags:"IDC Compliance Enterprise Review" summary:"Get an enterprise verification case" dc:"Return one masked legal profile and one bounded material metadata batch. Original bytes require the separate recent-login one-time access flow." permission:"idc:admin:compliance:enterprise-verification:query"`
+	g.Meta `path:"/admin/compliance/enterprise-verifications/{caseNo}" method:"get" tags:"IDC Compliance Enterprise Review" summary:"Get an enterprise verification case" dc:"Return one masked legal profile and one bounded material metadata batch. Original bytes require the separate current-session one-time access flow." permission:"idc:admin:compliance:enterprise-verification:query"`
 	CaseNo string `json:"caseNo" v:"required|max-length:64" dc:"Enterprise verification case number" eg:"ent_0123456789abcdef0123456789abcdef"`
 }
 

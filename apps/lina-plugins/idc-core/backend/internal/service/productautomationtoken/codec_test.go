@@ -85,6 +85,23 @@ func TestCodecRoundTripEncryptsEvidenceAndKeepsEmptyMethodsNonNil(t *testing.T) 
 	}
 }
 
+func TestSelectionTokenKeepsIdentityWithoutEmbeddingProviderSchemas(t *testing.T) {
+	codec, _, _ := newTestCodec(t)
+	value := validEvidence([]string{"provision", "query.status"})
+	value.ProductConfiguration = &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "large", Type: capmodel.ConfigurationFieldSingleLine, Label: &capmodel.LocalizedText{EnUS: strings.Repeat("x", 10000)}}}}
+	value.InterfaceConfiguration = value.ProductConfiguration
+	value.CustomerConfiguration = value.ProductConfiguration
+	value.InterfaceConfigurationCardinality = capmodel.InterfaceConfigurationCardinalityMultiple
+	token := mustEncode(t, codec, value)
+	decoded, err := codec.DecodeProviderSelection(context.Background(), token)
+	if err != nil || decoded.PluginID != value.PluginID || decoded.ReleaseDigest != value.ReleaseDigest || decoded.DeclarationDigest != value.DeclarationDigest || len(token) > maximumTokenLength {
+		t.Fatalf("identity token failed: %v", err)
+	}
+	if decoded.ProviderMetadata != nil || decoded.ProductConfiguration != nil || decoded.InterfaceConfiguration != nil || decoded.CustomerConfiguration != nil || decoded.InterfaceConfigurationCardinality != "" {
+		t.Fatal("bounded selection embedded executable declarations")
+	}
+}
+
 func TestCodecRejectsExternalInvalidTokens(t *testing.T) {
 	codec, clock, audience := newTestCodec(t)
 	evidence := validEvidence([]string{"provision", "query.status"})

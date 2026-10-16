@@ -146,43 +146,55 @@ func (runtime *channelCommerceRuntime) renewChannelService(
 	decoder.DisallowUnknownFields()
 	if len(input.Parameters) == 0 || decoder.Decode(&parameters) != nil ||
 		parameters.RenewalCycles < 1 || parameters.RenewalCycles > 120 ||
-		(parameters.SettlementMethod != "balance" && parameters.SettlementMethod != "credit") {
+		(parameters.SettlementMethod != "" && parameters.SettlementMethod != "balance") {
 		return nil, bizerr.NewCode(renewal.CodeInvalid)
 	}
-	quote, err := runtime.renewals.QuoteForChannel(ctx, service.ServiceOwnerCustomerNo, renewal.QuoteInput{
-		EntitlementNo: service.ServiceNo, RenewalCycles: parameters.RenewalCycles,
-		IdempotencyKey: input.IdempotencyKey + ":quote",
+	// The outer transaction binds quote, renewal operation, invoice and balance
+	// posting. No unpaid renewal survives an insufficient-balance response.
+	var result *channelcommercecap.LifecycleResult
+	err := runtime.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		quote, err := runtime.renewals.QuoteForChannel(ctx, service.ServiceOwnerCustomerNo, renewal.QuoteInput{
+			EntitlementNo: service.ServiceNo, RenewalCycles: parameters.RenewalCycles,
+			IdempotencyKey: input.IdempotencyKey + ":quote",
+		})
+		if err != nil {
+			return err
+		}
+		operation, err := runtime.renewals.ConfirmForChannel(
+			ctx, service.ServiceOwnerCustomerNo, service.PayerCustomerNo,
+			renewal.ConfirmInput{QuoteNo: quote.QuoteNo, IdempotencyKey: input.IdempotencyKey + ":confirm"},
+			channelActorReference(input.ChannelID),
+		)
+		if err != nil {
+			return err
+		}
+		reused := quote.Reused || operation.Reused
+		if operation.TotalAmountMinor > 0 && operation.Status == "awaiting_financial_settlement" {
+			settled, settleErr := runtime.renewals.PayForChannel(
+				ctx, service.ServiceOwnerCustomerNo, service.PayerCustomerNo,
+				renewal.PayInput{OperationNo: operation.OperationNo}, "balance",
+				channelActorReference(input.ChannelID),
+			)
+			if settleErr != nil {
+				return settleErr
+			}
+			if settled == nil || settled.Operation == nil {
+				return bizerr.NewCode(renewal.CodeConflict)
+			}
+			operation = settled.Operation
+			reused = reused || settled.Reused
+		}
+		result = &channelcommercecap.LifecycleResult{
+			OperationNo: operation.OperationNo, QuoteNo: operation.QuoteNo, Status: operation.Status,
+			CurrencyCode: operation.CurrencyCode, AmountMinor: operation.TotalAmountMinor,
+			PaymentRequired: operation.Status == "awaiting_financial_settlement", Reused: reused,
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	operation, err := runtime.renewals.ConfirmForChannel(
-		ctx, service.ServiceOwnerCustomerNo, service.PayerCustomerNo,
-		renewal.ConfirmInput{QuoteNo: quote.QuoteNo, IdempotencyKey: input.IdempotencyKey + ":confirm"},
-		channelActorReference(input.ChannelID),
-	)
-	if err != nil {
-		return nil, err
-	}
-	reused := quote.Reused || operation.Reused
-	if operation.TotalAmountMinor > 0 && operation.Status == "awaiting_financial_settlement" {
-		settled, settleErr := runtime.renewals.PayForChannel(
-			ctx, service.ServiceOwnerCustomerNo, service.PayerCustomerNo,
-			renewal.PayInput{OperationNo: operation.OperationNo}, parameters.SettlementMethod,
-			channelActorReference(input.ChannelID),
-		)
-		if settleErr != nil {
-			return nil, settleErr
-		}
-		if settled == nil || settled.Operation == nil {
-			return nil, bizerr.NewCode(renewal.CodeConflict)
-		}
-		operation = settled.Operation
-		reused = reused || settled.Reused
-	}
-	return &channelcommercecap.LifecycleResult{
-		OperationNo: operation.OperationNo, Status: operation.Status, Reused: reused,
-	}, nil
+	return result, nil
 }
 
 func (runtime *channelCommerceRuntime) submitChannelResourceOperation(
@@ -513,7 +525,7 @@ VALUES(0,?,?,'entitlement',?,1,NULL,?,'channel.operation.accepted','system',?,?,
 			IdempotencyScope: "channel.lifecycle.create", IdempotencyKey: operationNo,
 			OperationCode: "channel.lifecycle." + operation,
 			TargetType:    "service_entitlement", TargetNo: service.ServiceNo,
-			CustomerNo: service.ServiceOwnerCustomerNo, ResultCode: businessStatus,
+			CustomerNo: service.ServiceOwnerCustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "approved_channel_request", RiskCode: "high",
 			CorrelationNo:  operationNo,
 			BeforeSnapshot: map[string]any{"serviceVersion": service.Version},
@@ -724,7 +736,7 @@ VALUES(0,?,?,'entitlement',?,?,?,?, 'channel.operation.reconciled','system',?,?,
 			IdempotencyKey:   row.OperationNo + ":" + strconv.Itoa(current.MaximumSequence+1),
 			OperationCode:    "channel.lifecycle.reconcile", TargetType: "service_entitlement",
 			TargetNo: row.ServiceNo, CustomerNo: row.ServiceOwnerCustomerNo,
-			ResultCode: businessStatus, ReasonCode: "provider_task_reconciled",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "provider_task_reconciled",
 			RiskCode: "high", CorrelationNo: row.OperationNo,
 			BeforeSnapshot: map[string]any{"status": current.StatusCode},
 			AfterSnapshot:  map[string]any{"status": businessStatus, "taskEvidenceDigest": task.EvidenceDigest},

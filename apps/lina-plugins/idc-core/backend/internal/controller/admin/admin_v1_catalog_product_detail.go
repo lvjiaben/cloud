@@ -45,6 +45,7 @@ func mapFulfillmentPolicySummary(
 		return nil
 	}
 	result := &v1.CatalogFulfillmentPolicySummary{StrategyCode: evidence.StrategyCode}
+	result.TrialSupported = evidence.StrategyCode != catalog.FulfillmentStrategyManual && contract != nil && contract.TrialPauseResume
 	if evidence.StrategyCode != catalog.FulfillmentStrategyManual && contract != nil && contract.Capability != nil {
 		result.CapabilityZhCn = contract.Capability.ZhCN
 		result.CapabilityEnUs = contract.Capability.EnUS
@@ -63,6 +64,7 @@ func toAPICatalogProductDetail(detail *catalog.ProductManagementDetail) *v1.Cata
 	version := detail.Version
 	res := &v1.CatalogProductDetailRes{
 		Product: &v1.CatalogProductDetailProduct{
+			DirectoryNo: product.DirectoryNo, DescriptionVersion: product.DescriptionVersion,
 			ProductNo: product.ProductNo, CategoryNo: product.CategoryNo,
 			CategoryNameZhCn: product.CategoryNameZhCN, CategoryNameEnUs: product.CategoryNameEnUS,
 			Status: product.Status, PublicSlug: product.PublicSlug, NameZhCn: product.NameZhCN,

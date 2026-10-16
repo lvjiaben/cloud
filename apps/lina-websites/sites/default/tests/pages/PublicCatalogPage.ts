@@ -24,16 +24,29 @@ export class PublicCatalogPage {
   async goto(path = "/products") {
     const baseURL = `${testRuntime.baseURL.replace(/\/+$/u, "")}/`;
     const relativePath = path.replace(/^\/+/, "");
+    const suffix = /\/products(\/[^/]+)?$/u.exec(new URL(relativePath, baseURL).pathname)?.[1] ?? "";
+    const loaded = this.page.waitForResponse(response =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname.endsWith(`/public/catalog/products${suffix}`),
+    );
     await this.page.goto(new URL(relativePath, baseURL).toString(), {
       // Vite keeps its HMR connection open in local validation, so the page's
       // own visible catalog boundary is the deterministic readiness signal.
       waitUntil: "domcontentloaded",
     });
+    await loaded;
     await this.catalog.waitFor({ state: "visible" });
+    await (suffix ? this.detail : this.products).waitFor({ state: "visible" });
   }
 
-  async chooseCurrency(currency: string) {
+  async openCurrencyChoices() {
     await this.filters.locator(".ant-select").nth(1).click();
+  }
+
+  get currencyChoices() { return this.page.locator(".ant-select-dropdown:visible"); }
+
+  async chooseCurrency(currency: string) {
+    await this.openCurrencyChoices();
     await this.page
       .locator(".ant-select-item-option", { hasText: currency })
       .click();
@@ -50,6 +63,14 @@ export class PublicCatalogPage {
     await this.configurator
       .getByRole("button", { name: /准确价格|exact price/u })
       .click();
+  }
+
+  async setConfigurationQuantity(label: string, quantity: string) {
+    await this.configurator
+      .locator(".ant-form-item")
+      .filter({ hasText: label })
+      .getByRole("textbox")
+      .fill(quantity);
   }
 
   async addQuotedProductToCart() {

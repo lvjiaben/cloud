@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -21,12 +22,38 @@ import (
 )
 
 type Service interface {
+	// OwnPlatform reads only the logged-in active customer's authorization, including disabled history.
+	OwnPlatform(context.Context) (PlatformOverview, error)
+	// StaffPlatform reads one customer-bound application after staff scope checks.
+	StaffPlatform(context.Context, string) (PlatformOverview, error)
+	// StaffCalls pages all calls belonging to the selected customer.
+	StaffCalls(context.Context, string, PageQuery) (PageResult[APICall], error)
+	// RotateStaffSecret preserves the displayed credential policy and rejects stale versions.
+	RotateStaffSecret(context.Context, string, int64) (TokenResult, error)
+	// RotateOwnSecret preserves the administrator policy and rejects stale concurrent rotations.
+	RotateOwnSecret(context.Context, int64) (TokenResult, error)
+	// OwnCalls returns a bounded page and exact total under the same customer scope.
+	OwnCalls(context.Context, PageQuery) (PageResult[APICall], error)
+	// RecordCall appends sanitized HTTP metadata without credentials or payloads.
+	RecordCall(context.Context, APICall) error
+	ReservePurchaseFile(context.Context, string, channelcommercecap.PurchaseFileInput) (*channelcommercecap.PurchaseFileReservation, error)
+	UploadPurchaseFile(context.Context, string, string, string, io.Reader) (*channelcommercecap.PurchaseFile, error)
 	AuthenticateToken(context.Context, string, string, string) (TokenCredential, error)
 	CreateToken(context.Context, TokenInput) (TokenResult, error)
 	ListTokens(context.Context, string) ([]TokenSummary, error)
 	ListTokenPage(context.Context, string, PageQuery) (PageResult[TokenSummary], error)
 	RevokeToken(context.Context, int64) error
 	Catalog(context.Context, string) ([]CatalogItem, error)
+	BrowseCatalog(context.Context, string, channelcommercecap.CatalogQuery) (*channelcommercecap.CatalogPage, error)
+	BrowseCatalogNumbered(context.Context, string, channelcommercecap.CatalogNumberedQuery) (*channelcommercecap.CatalogNumberedPage, error)
+	ReadCatalogConfiguration(context.Context, string, string) (*channelcommercecap.Configuration, error)
+	ReadProductSnapshot(context.Context, string, string) (*channelcommercecap.ProductSnapshot, error)
+	ReadImportCandidates(context.Context, string, channelcommercecap.ImportCandidatesInput) (*channelcommercecap.ImportCandidates, error)
+	ReadCatalogImportSnapshot(context.Context, string, string) (*channelcommercecap.ImportSnapshot, error)
+	ReadOrderDeliveries(context.Context, string, int64) (*channelcommercecap.OrderDeliveries, error)
+	GetOrderByRequest(context.Context, string, string) (*Order, error)
+	EvaluateCatalogConfiguration(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.ConfigurationEvaluation, error)
+	PreviewCatalogTerms(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.BillingTerms, error)
 	CatalogPage(context.Context, string, PageQuery) (PageResult[CatalogItem], error)
 	Quote(context.Context, QuoteInput) (QuoteResult, error)
 	CreateOrder(context.Context, OrderInput) (OrderResult, error)
@@ -43,7 +70,9 @@ type Service interface {
 	Capabilities(context.Context) Capabilities
 	Finance(context.Context, string, ...channelcommercecap.FinancePages) (channelcommercecap.FinanceOverview, error)
 	RepayCredit(context.Context, CreditRepaymentInput) (channelcommercecap.RepayCreditResult, error)
-	ListServices(context.Context, string, string) ([]channelcommercecap.ServiceItem, error)
+	ListServices(context.Context, string, string, ...channelcommercecap.ServiceListInput) ([]channelcommercecap.ServiceItem, error)
+	GetLifecycle(context.Context, string, string, string) (*channelcommercecap.LifecycleResult, error)
+	ReadRenewalByRequest(context.Context, string, string, string) (*channelcommercecap.RenewalRequestResult, error)
 	ListChannels(context.Context, PageQuery) (PageResult[ChannelSummary], error)
 	SaveChannel(context.Context, ChannelInput) (ChannelSummary, error)
 	SetChannelStatus(context.Context, string, string) (ChannelSummary, error)
@@ -51,9 +80,6 @@ type Service interface {
 	SavePublication(context.Context, PublicationInput) (PublicationSummary, error)
 	ListRequestAudit(context.Context, string, PageQuery) (PageResult[RequestAudit], error)
 	Health(context.Context, string) (ChannelHealth, error)
-	CreateOwnToken(context.Context, TokenInput) (TokenResult, error)
-	ListOwnTokens(context.Context) ([]TokenSummary, error)
-	RevokeOwnToken(context.Context, int64) error
 }
 
 const TokenScopeAll = "*"
@@ -65,7 +91,7 @@ var supportedTokenScopes = map[string]struct{}{
 	"service.renew": {}, "service.reconfigure": {}, "service.reinstall": {},
 	"service.console": {}, "service.change_ip": {}, "service.terminate": {},
 	"service.output": {},
-	"service.read":   {}, "settlement.read": {}, "settlement.repay": {}, "webhook.read": {},
+	"service.read":   {}, "settlement.read": {}, "webhook.read": {},
 }
 
 type tokenCredentialContextKey struct{}
@@ -94,12 +120,35 @@ func withTokenCredential(ctx context.Context, credential TokenCredential) contex
 	return context.WithValue(ctx, tokenCredentialContextKey{}, credential)
 }
 
+// PlatformOverview contains only safe metadata for the current customer.
+type PlatformOverview struct {
+	ResetEnabled bool           `json:"-"`
+	Authorized   bool           `json:"authorized"`
+	AppID        string         `json:"appId"`
+	DisplayName  string         `json:"displayName"`
+	Status       string         `json:"status"`
+	Tokens       []TokenSummary `json:"-"`
+}
+
+// APICall is immutable metadata; no query, body or authentication value is persisted.
+type APICall struct {
+	ID             int64     `json:"id"`
+	ChannelID      string    `json:"-"`
+	Method         string    `json:"method"`
+	Path           string    `json:"path"`
+	Succeeded      bool      `json:"succeeded"`
+	DurationMillis int64     `json:"durationMillis"`
+	CreatedAt      time.Time `json:"-"`
+}
+
 type TokenInput struct {
-	ChannelID           string
-	Scopes, SourceCIDRs []string
-	ExpiresAt           *time.Time
+	CustomerNo, DisplayName string
+	ChannelID               string
+	Scopes, SourceCIDRs     []string
+	ExpiresAt               *time.Time
 }
 type TokenResult struct {
+	AppID     string
 	ID        int64
 	Token     string
 	ExpiresAt *time.Time
@@ -120,11 +169,15 @@ type CatalogItem struct {
 	Stock            int
 }
 type QuoteInput struct {
+	RequestID        string
+	Purchase         channelcommercecap.Purchase
 	ChannelID        string
 	ProductVersionID int64
 	Currency         string
 }
 type QuoteResult struct {
+	QuoteNo          string
+	ExpiresAt        int64
 	ProductVersionID int64
 	Currency         string
 	Price            string
@@ -143,6 +196,8 @@ type DelegatedCustomerInput struct {
 	Phone            string
 }
 type OrderInput struct {
+	QuoteNo                                                 string
+	Purchase                                                channelcommercecap.Purchase
 	ChannelID, RequestID, ExternalCustomerID, OwnershipMode string
 	ProductVersionID                                        int64
 	Currency                                                string
@@ -242,6 +297,9 @@ func (s *service) actorID(ctx context.Context) int64 {
 
 func (s *service) CreateToken(ctx context.Context, in TokenInput) (TokenResult, error) {
 	in.ChannelID = strings.TrimSpace(in.ChannelID)
+	if in.CustomerNo != "" {
+		return s.createCustomerToken(ctx, in)
+	}
 	if strings.TrimSpace(in.ChannelID) == "" {
 		return TokenResult{}, gerror.New("channel id is required")
 	}
@@ -267,6 +325,9 @@ func (s *service) CreateToken(ctx context.Context, in TokenInput) (TokenResult, 
 		if _, _, err := net.ParseCIDR(in.SourceCIDRs[i]); err != nil {
 			return TokenResult{}, gerror.New("token source restriction is invalid")
 		}
+	}
+	if err := s.authorizeStaff(ctx); err != nil {
+		return TokenResult{}, err
 	}
 	if _, err := s.requireChannel(ctx, in.ChannelID, true); err != nil {
 		return TokenResult{}, err
@@ -298,7 +359,7 @@ func (s *service) CreateToken(ctx context.Context, in TokenInput) (TokenResult, 
 	if e != nil {
 		return TokenResult{}, e
 	}
-	return TokenResult{ID: r, Token: plain, ExpiresAt: in.ExpiresAt}, nil
+	return TokenResult{ID: r, AppID: in.ChannelID, Token: plain, ExpiresAt: in.ExpiresAt}, nil
 }
 
 // AuthenticateToken resolves one high-entropy bearer token, enforces its
@@ -313,9 +374,6 @@ func (s *service) AuthenticateToken(
 	rawToken = strings.TrimSpace(rawToken)
 	requiredScope = strings.TrimSpace(requiredScope)
 	if s == nil || s.db == nil || len(rawToken) != 64 {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
-	}
-	if _, supported := supportedTokenScopes[requiredScope]; !supported || requiredScope == TokenScopeAll {
 		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
 	}
 	hash := sha256.Sum256([]byte(rawToken))
@@ -333,25 +391,27 @@ func (s *service) AuthenticateToken(
 		Where("token_hash=?", hex.EncodeToString(hash[:])).Scan(&row); err != nil {
 		return TokenCredential{}, err
 	}
+	credential := TokenCredential{TokenID: row.ID, ChannelID: strings.TrimSpace(row.ChannelID)}
+	if _, supported := supportedTokenScopes[requiredScope]; !supported || requiredScope == TokenScopeAll {
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
+	}
 	if row.ID <= 0 || strings.TrimSpace(row.ChannelID) == "" || row.RevokedAt != nil ||
 		(row.ExpiresAt != nil && !row.ExpiresAt.After(time.Now())) || row.RateLimit <= 0 {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
 	}
 	account, err := s.requireChannel(ctx, row.ChannelID, false)
-	if err != nil || account.StatusCode == "pending_approval" ||
-		(account.StatusCode == "paused" && !pausedChannelScopeAllowed(requiredScope)) {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
+	if err != nil || account.StatusCode != "approved" {
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
 	}
 	var scopes []string
 	if err := json.Unmarshal([]byte(row.Scopes), &scopes); err != nil || !tokenScopeAllows(scopes, requiredScope) {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
 	}
 	var sourceCIDRs []string
 	if err := json.Unmarshal([]byte(row.SourceCIDRs), &sourceCIDRs); err != nil || !tokenSourceAllows(sourceCIDRs, clientIP) {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
 	}
-	var requestCount int
-	if err := s.db.GetScan(ctx, &requestCount, `
+	count, err := s.db.GetValue(ctx, `
 WITH accepted AS (
     INSERT INTO plugin_idc_channel_token_rate_window (
         token_id, window_started_at, request_count, updated_at
@@ -367,22 +427,14 @@ WITH accepted AS (
        OR plugin_idc_channel_token_rate_window.request_count < ?
     RETURNING request_count
 )
-SELECT request_count FROM accepted`, row.ID, row.RateLimit); err != nil {
-		return TokenCredential{}, err
+SELECT request_count FROM accepted`, row.ID, row.RateLimit)
+	if err != nil {
+		return credential, err
 	}
-	if requestCount <= 0 || requestCount > row.RateLimit {
-		return TokenCredential{}, bizerr.NewCode(codeTokenNotAccepted)
+	if count.Int() <= 0 || count.Int() > row.RateLimit {
+		return credential, bizerr.NewCode(codeTokenNotAccepted)
 	}
 	return TokenCredential{TokenID: row.ID, ChannelID: strings.TrimSpace(row.ChannelID)}, nil
-}
-
-func pausedChannelScopeAllowed(scope string) bool {
-	switch scope {
-	case "capability.read", "order.read", "service.read", "settlement.read", "settlement.repay", "webhook.read":
-		return true
-	default:
-		return false
-	}
 }
 
 func tokenScopeAllows(scopes []string, required string) bool {
@@ -411,6 +463,9 @@ func tokenSourceAllows(cidrs []string, clientIP string) bool {
 	return false
 }
 func (s *service) RevokeToken(ctx context.Context, id int64) error {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return err
+	}
 	r, e := s.db.Model("plugin_idc_channel_token").Ctx(ctx).Data(struct {
 		RevokedAt time.Time `json:"revoked_at"`
 	}{time.Now()}).Where("id=? AND revoked_at IS NULL", id).Update()
@@ -483,39 +538,22 @@ func (s *service) Catalog(ctx context.Context, channelID string) ([]CatalogItem,
 	}
 	return out, nil
 }
-func (s *service) Quote(ctx context.Context, in QuoteInput) (QuoteResult, error) {
-	in = normalizeQuoteInput(in)
-	if in.ChannelID == "" || in.ProductVersionID <= 0 || in.Currency == "" {
-		return QuoteResult{}, gerror.New("channel, product version and currency are required")
+func (s *service) BrowseCatalog(ctx context.Context, appID string, input channelcommercecap.CatalogQuery) (*channelcommercecap.CatalogPage, error) {
+	if _, err := s.requireChannel(ctx, appID, true); err != nil {
+		return nil, err
 	}
+	return s.core.BrowseCatalog(ctx, input)
+}
+func (s *service) Quote(ctx context.Context, in QuoteInput) (QuoteResult, error) {
 	account, err := s.requireChannel(ctx, in.ChannelID, true)
 	if err != nil {
 		return QuoteResult{}, err
 	}
-	publication, err := s.loadPublication(ctx, in.ChannelID, in.ProductVersionID, in.Currency)
+	quote, err := s.core.Quote(ctx, channelcommercecap.QuoteInput{ChannelID: in.ChannelID, IdempotencyKey: in.RequestID, PayerCustomerNo: account.CustomerNo, Purchase: in.Purchase})
 	if err != nil {
 		return QuoteResult{}, err
 	}
-	quote, err := s.core.Quote(ctx, channelcommercecap.QuoteInput{
-		PayerCustomerNo: account.CustomerNo, Purchase: publication.Purchase(),
-	})
-	if err != nil {
-		return QuoteResult{}, err
-	}
-	if quote.CurrencyCode != publication.Currency || quote.TotalAmountMinor != publication.PriceMinor {
-		return QuoteResult{}, gerror.New("published channel price is stale")
-	}
-	return QuoteResult{
-		ProductVersionID: publication.ProductVersionID, Currency: publication.Currency,
-		Price: publication.Price, TotalAmountMinor: quote.TotalAmountMinor,
-		Stock: publication.Stock, Status: publication.Status,
-	}, nil
-}
-
-func normalizeQuoteInput(in QuoteInput) QuoteInput {
-	in.ChannelID = strings.TrimSpace(in.ChannelID)
-	in.Currency = strings.ToUpper(strings.TrimSpace(in.Currency))
-	return in
+	return QuoteResult{QuoteNo: quote.QuoteNo, ExpiresAt: quote.ExpiresAt.UnixMilli(), Currency: quote.CurrencyCode, TotalAmountMinor: quote.TotalAmountMinor, Price: fmt.Sprint(quote.TotalAmountMinor), Status: "available"}, nil
 }
 
 func normalizeOrderInput(in OrderInput) OrderInput {
@@ -530,20 +568,36 @@ func normalizeOrderInput(in OrderInput) OrderInput {
 
 func validateOrderInput(in OrderInput) error {
 	if in.ChannelID == "" || in.RequestID == "" || len(in.RequestID) < 8 || len(in.RequestID) > 120 ||
-		in.ProductVersionID <= 0 || in.Currency == "" ||
-		(in.SettlementMethod != "" && in.SettlementMethod != "deferred" && in.SettlementMethod != "balance" && in.SettlementMethod != "credit") {
+		in.QuoteNo == "" ||
+		(in.SettlementMethod != "" && in.SettlementMethod != "balance") {
 		return gerror.New("channel, request, product version and currency are required")
 	}
-	if (in.OwnershipMode != "channel_owned" && in.OwnershipMode != "delegated_customer") ||
-		(in.OwnershipMode == "channel_owned" && (in.ExternalCustomerID != "" || in.DelegatedCustomer != nil)) ||
-		(in.OwnershipMode == "delegated_customer" && in.ExternalCustomerID == "") {
-		return gerror.New("unsupported ownership mode")
+	if (in.OwnershipMode != "" && in.OwnershipMode != "channel_owned") || in.ExternalCustomerID != "" || in.DelegatedCustomer != nil {
+		return bizerr.NewCode(codeLifecycleInvalid)
 	}
+
 	return nil
 }
 
 func (s *service) CreateOrder(ctx context.Context, in OrderInput) (OrderResult, error) {
+	var result OrderResult
+	err := s.db.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		if _, err := s.db.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended(?,0))`, in.ChannelID+":"+in.RequestID); err != nil {
+			return err
+		}
+		var err error
+		result, err = s.createOrder(ctx, in)
+		return err
+	})
+	return result, err
+}
+
+// createOrder runs under the channel request lock; core calls share the transaction context.
+func (s *service) createOrder(ctx context.Context, in OrderInput) (OrderResult, error) {
 	in = normalizeOrderInput(in)
+	if in.OwnershipMode == "" {
+		in.OwnershipMode = "channel_owned"
+	}
 	if err := validateOrderInput(in); err != nil {
 		return OrderResult{}, err
 	}
@@ -566,35 +620,21 @@ func (s *service) CreateOrder(ctx context.Context, in OrderInput) (OrderResult, 
 	if err != nil {
 		return OrderResult{}, err
 	}
-	publication, err := s.loadPublication(ctx, in.ChannelID, in.ProductVersionID, in.Currency)
-	if err != nil {
-		return OrderResult{}, err
-	}
-	serviceOwner := account.CustomerNo
-	if in.OwnershipMode == "delegated_customer" {
-		serviceOwner, err = s.resolveDelegatedCustomer(ctx, in)
-		if err != nil {
-			return OrderResult{}, err
-		}
-	}
 	coreOrder, err := s.core.CreateOrder(ctx, channelcommercecap.CreateOrderInput{
-		ChannelID: in.ChannelID, ExternalCustomerID: in.ExternalCustomerID,
-		OwnershipMode: in.OwnershipMode, PayerCustomerNo: account.CustomerNo,
-		ServiceOwnerCustomerNo: serviceOwner, IdempotencyKey: in.RequestID,
-		SettlementMethod: in.SettlementMethod, Purchase: publication.Purchase(),
+		QuoteNo:   in.QuoteNo,
+		ChannelID: in.ChannelID, OwnershipMode: "channel_owned", PayerCustomerNo: account.CustomerNo,
+		ServiceOwnerCustomerNo: account.CustomerNo, IdempotencyKey: in.RequestID,
+		SettlementMethod: "balance", Purchase: in.Purchase,
 	})
 	if err != nil {
 		return OrderResult{}, err
-	}
-	if coreOrder.CurrencyCode != publication.Currency || coreOrder.TotalAmountMinor != publication.PriceMinor {
-		return OrderResult{}, gerror.New("core order does not match the published channel price")
 	}
 	var id int64
 	e := s.db.Transaction(ctx, func(txCtx context.Context, tx gdb.TX) error {
 		id, err = tx.Model("plugin_idc_channel_order").Ctx(txCtx).Data(g.Map{
 			"channel_id": in.ChannelID, "external_customer_id": in.ExternalCustomerID,
-			"ownership_mode": in.OwnershipMode, "product_version_id": in.ProductVersionID,
-			"currency": in.Currency, "amount": publication.Price, "status": coreOrder.Status,
+			"ownership_mode": "channel_owned", "product_version_id": 0,
+			"currency": coreOrder.CurrencyCode, "amount": coreOrder.TotalAmountMinor, "status": coreOrder.Status,
 			"financially_settled": coreOrder.FinanciallySettled, "core_order_no": coreOrder.OrderNo,
 			"core_invoice_no": coreOrder.InvoiceNo, "payer_customer_no": coreOrder.PayerCustomerNo,
 			"service_owner_customer_no": coreOrder.ServiceOwnerCustomerNo,
@@ -780,13 +820,6 @@ func (s *service) GetOrder(ctx context.Context, id int64, channelID string) (Ord
 	if err != nil {
 		return Order{}, err
 	}
-	_, err = s.db.Model("plugin_idc_channel_order").Ctx(ctx).Data(g.Map{
-		"status": coreOrder.Status, "financially_settled": coreOrder.FinanciallySettled,
-		"identity_ready": coreOrder.IdentityReady, "updated_at": time.Now(),
-	}).Where("id=? AND channel_id=?", id, channelID).Update()
-	if err != nil {
-		return Order{}, err
-	}
 	return projectLocalOrder(local, coreOrder), nil
 }
 
@@ -852,7 +885,7 @@ func (s *service) Capabilities(context.Context) Capabilities {
 			"catalog":      "enabled",
 			"quote":        "enabled",
 			"create_order": "enabled",
-			"settle_order": "enabled_balance_credit",
+			"settle_order": "disabled",
 			"cancel_order": "enabled_core_guarded",
 			"renew":        "enabled_core_guarded",
 			"reconfigure":  "enabled_core_guarded",
@@ -906,15 +939,18 @@ func (s *service) ListServices(
 	ctx context.Context,
 	channelID string,
 	serviceNo string,
+	options ...channelcommercecap.ServiceListInput,
 ) ([]channelcommercecap.ServiceItem, error) {
 	account, err := s.loadChannel(ctx, channelID)
 	if err != nil {
 		return nil, err
 	}
-	return s.core.ListServices(ctx, channelcommercecap.ServiceListInput{
-		ChannelID: strings.TrimSpace(channelID), PayerCustomerNo: account.CustomerNo,
-		ServiceNo: strings.TrimSpace(serviceNo), Limit: 100,
-	})
+	input := channelcommercecap.ServiceListInput{Limit: 100}
+	if len(options) > 0 {
+		input = options[0]
+	}
+	input.ChannelID, input.PayerCustomerNo, input.ServiceNo = strings.TrimSpace(channelID), account.CustomerNo, strings.TrimSpace(serviceNo)
+	return s.core.ListServices(ctx, input)
 }
 
 type channelAccountRow struct {
@@ -923,31 +959,6 @@ type channelAccountRow struct {
 	DisplayName    string `orm:"display_name"`
 	StatusCode     string `orm:"status_code"`
 	NewSalesEnable bool   `orm:"new_sales_enabled"`
-}
-
-type publicationRow struct {
-	ProductVersionID      int64  `orm:"product_version_id"`
-	Currency              string `orm:"currency"`
-	Price                 string `orm:"price"`
-	PriceMinor            int64  `orm:"price_minor"`
-	Stock                 int    `orm:"stock"`
-	Status                string `orm:"status"`
-	PublicSlug            string `orm:"public_slug"`
-	ConfigurationRevision string `orm:"configuration_revision"`
-	BillingTermToken      string `orm:"billing_term_token"`
-	PurchaseCycles        int    `orm:"purchase_cycles"`
-	Quantity              int    `orm:"quantity"`
-	PurchaseValues        string `orm:"purchase_values"`
-}
-
-func (row publicationRow) Purchase() channelcommercecap.Purchase {
-	var values []channelcommercecap.PurchaseValue
-	_ = json.Unmarshal([]byte(row.PurchaseValues), &values)
-	return channelcommercecap.Purchase{
-		PublicSlug: row.PublicSlug, ConfigurationRevision: row.ConfigurationRevision,
-		BillingTermToken: row.BillingTermToken, CurrencyCode: row.Currency,
-		PurchaseCycles: row.PurchaseCycles, Quantity: row.Quantity, Values: values,
-	}
 }
 
 type localOrderRow struct {
@@ -987,58 +998,6 @@ func (s *service) loadChannel(ctx context.Context, channelID string) (*channelAc
 		return nil, gerror.New("channel is not available")
 	}
 	return row, nil
-}
-
-func (s *service) loadPublication(ctx context.Context, channelID string, productVersionID int64, currency string) (*publicationRow, error) {
-	var row *publicationRow
-	err := s.db.Model("plugin_idc_channel_publication").Ctx(ctx).
-		Fields("product_version_id,currency,price,price_minor,stock,status,public_slug,configuration_revision,billing_term_token,purchase_cycles,quantity,purchase_values").
-		Where("channel_id=? AND product_version_id=? AND currency=? AND status='published'", channelID, productVersionID, currency).Scan(&row)
-	if err != nil {
-		return nil, err
-	}
-	if row == nil || row.ProductVersionID <= 0 || row.PublicSlug == "" || row.ConfigurationRevision == "" || row.BillingTermToken == "" {
-		return nil, gerror.New("published product not found")
-	}
-	var values []channelcommercecap.PurchaseValue
-	if json.Unmarshal([]byte(row.PurchaseValues), &values) != nil {
-		return nil, gerror.New("published product configuration is invalid")
-	}
-	return row, nil
-}
-
-func (s *service) resolveDelegatedCustomer(ctx context.Context, in OrderInput) (string, error) {
-	var existing string
-	if err := s.db.GetScan(ctx, &existing, `SELECT customer_no FROM plugin_idc_channel_external_customer WHERE channel_id=? AND external_customer_id=?`, in.ChannelID, in.ExternalCustomerID); err != nil {
-		return "", err
-	}
-	if existing != "" {
-		return existing, nil
-	}
-	if in.DelegatedCustomer == nil {
-		return "", gerror.New("delegated customer details are required for the first order")
-	}
-	input := in.DelegatedCustomer
-	created, err := s.core.CreateDelegatedCustomer(ctx, channelcommercecap.DelegatedCustomerInput{
-		ChannelID: in.ChannelID, ExternalID: in.ExternalCustomerID,
-		CustomerType: input.CustomerType, DisplayName: input.DisplayName, CountryCode: input.CountryCode,
-		PreferredLocale: input.PreferredLocale, Email: input.Email, PhoneCountryCode: input.PhoneCountryCode,
-		Phone: input.Phone, IdempotencyKey: in.RequestID,
-	})
-	if err != nil {
-		return "", err
-	}
-	_, err = s.db.Exec(ctx, `INSERT INTO plugin_idc_channel_external_customer(channel_id,external_customer_id,customer_no,invitation_no,status_code,identity_status_code) VALUES(?,?,?,?,?,?) ON CONFLICT(channel_id,external_customer_id) DO NOTHING`, in.ChannelID, in.ExternalCustomerID, created.CustomerNo, created.InvitationNo, created.Status, created.IdentityStatus)
-	if err != nil {
-		return "", err
-	}
-	if err = s.db.GetScan(ctx, &existing, `SELECT customer_no FROM plugin_idc_channel_external_customer WHERE channel_id=? AND external_customer_id=?`, in.ChannelID, in.ExternalCustomerID); err != nil {
-		return "", err
-	}
-	if existing != created.CustomerNo {
-		return "", gerror.New("external customer id is already bound")
-	}
-	return existing, nil
 }
 
 func (s *service) localOrder(ctx context.Context, id int64, channelID string) (*localOrderRow, error) {

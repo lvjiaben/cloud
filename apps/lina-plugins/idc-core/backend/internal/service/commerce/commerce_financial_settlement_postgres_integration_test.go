@@ -27,6 +27,15 @@ import (
 )
 
 type failingFinancialSettlementEventWriter struct{}
+type commissionFailureEventWriter struct{ events outbox.Enqueuer }
+
+func (w commissionFailureEventWriter) Enqueue(ctx context.Context, input outbox.EnqueueInput) (*outbox.Event, error) {
+	if input.EventType == "commerce.order.commission_requested" {
+		return nil, errors.New("injected commission outbox failure")
+	}
+	return w.events.Enqueue(ctx, input)
+}
+
 type paymentClosureOwnerTestStub struct{}
 
 func (paymentClosureOwnerTestStub) ClaimPaymentClosure(context.Context) (*billingcap.PaymentClosureWork, error) {
@@ -78,7 +87,6 @@ func (failingFinancialSettlementEventWriter) Enqueue(
 ) (*outbox.Event, error) {
 	return nil, errors.New("injected financial settlement outbox failure")
 }
-
 
 func TestFinancialSettlementPostgreSQLSerializesBalanceFunding(t *testing.T) {
 	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
@@ -1049,6 +1057,69 @@ WHERE version_no = 'version-commerce-service-1'`); err != nil {
 	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-2")
 	settlements, err := billingservice.NewFinancialSettlementService(
 		scenario.database, failingFinancialSettlementEventWriter{},
+		newFinancialSettlementCreditService(t, scenario),
+	)
+	if err != nil {
+		t.Fatalf("create failing settlement service: %v", err)
+	}
+	service.settlements = settlements
+	if _, err = service.CheckoutAccountQuote(scenario.ctx, CheckoutRequest{
+		QuoteNo: quote.QuoteNo, IdempotencyKey: "settlement-outbox-rollback-0001",
+	}); !bizerr.Is(
+		err, billingservice.CodeSettlementUnavailable,
+	) {
+		t.Fatalf("automatic settlement outbox failure error=%v", err)
+	}
+	var state struct {
+		OrderNo         string `orm:"order_no"`
+		OrderStatus     string `orm:"order_status"`
+		InvoiceStatus   string `orm:"invoice_status"`
+		SettlementCount int64  `orm:"settlement_count"`
+		SourceCount     int64  `orm:"source_count"`
+		EventCount      int64  `orm:"event_count"`
+	}
+	if err = scenario.database.GetScan(scenario.ctx, &state, `
+SELECT order_row.order_no, order_row.status_code AS order_status,
+       invoice.status_code AS invoice_status,
+       (SELECT COUNT(*) FROM plugin_idc_core_financial_settlement
+         WHERE order_no = order_row.order_no) AS settlement_count,
+       (SELECT COUNT(*) FROM plugin_idc_core_financial_settlement_source
+         WHERE order_no = order_row.order_no) AS source_count,
+       (SELECT COUNT(*) FROM plugin_idc_core_outbox_event
+         WHERE event_type = 'commerce.order.financially_settled'
+           AND aggregate_no = order_row.order_no) AS event_count
+FROM plugin_idc_core_commerce_order order_row
+JOIN plugin_idc_core_billing_invoice invoice
+  ON invoice.order_no = order_row.order_no
+WHERE order_row.quote_no = ?`, quote.QuoteNo); err != nil {
+		t.Fatalf("load rolled-back settlement state: %v", err)
+	}
+	if state.OrderStatus != "pending_payment" || state.InvoiceStatus != "pending_payment" ||
+		state.OrderNo == "" || state.SettlementCount != 0 ||
+		state.SourceCount != 0 || state.EventCount != 0 {
+		t.Fatalf("financial settlement outbox failure did not roll back: %+v", state)
+	}
+}
+
+func TestFinancialSettlementPostgreSQLRollsBackWhenCommissionEventFails(t *testing.T) {
+	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
+	if _, err := scenario.database.Exec(scenario.ctx, `
+UPDATE plugin_idc_core_catalog_price
+SET amount_minor = 0, setup_fee_minor = 0, renewal_amount_minor = 0
+WHERE version_no = 'version-commerce-service-1'`); err != nil {
+		t.Fatalf("configure rollback zero price: %v", err)
+	}
+	service, quote := newCheckoutCustomer(
+		t, scenario.ctx, scenario.database, scenario.resolver, scenario.purchase,
+		"customer-commerce-service-2", 202, 1, false,
+	)
+	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-2")
+	events, err := outbox.NewEnqueuer(scenario.database, outbox.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	settlements, err := billingservice.NewFinancialSettlementService(
+		scenario.database, commissionFailureEventWriter{events: events},
 		newFinancialSettlementCreditService(t, scenario),
 	)
 	if err != nil {

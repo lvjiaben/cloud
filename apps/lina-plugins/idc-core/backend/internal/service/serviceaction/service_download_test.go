@@ -88,6 +88,31 @@ func TestSanitizeCertificateArchiveAcceptsDERCertificate(t *testing.T) {
 	}
 }
 
+// The archive sanitizer parses public certificates; it does not validate a CA
+// signature. Altering its final signature byte gives deterministic DER fixtures
+// for every whitespace byte without relying on randomized key signatures.
+func TestPublicCertificatePEMPreservesBinarySignatureBytes(t *testing.T) {
+	der, _ := testCertificate(t)
+	for _, last := range []byte{' ', '\t', '\n', '\r', '\v', '\f'} {
+		binary := bytes.Clone(der)
+		binary[len(binary)-1] = last
+		if _, err := x509.ParseCertificate(binary); err != nil {
+			t.Fatalf("invalid DER fixture: %v", err)
+		}
+		encoded, err := publicCertificatePEM(binary)
+		if err != nil {
+			t.Fatalf("valid binary certificate ending in %x rejected: %v", last, err)
+		}
+		block, rest := pem.Decode(encoded)
+		if block == nil || len(rest) != 0 || !bytes.Equal(block.Bytes, binary) {
+			t.Fatal("binary certificate bytes were changed")
+		}
+		if _, err = publicCertificatePEM(append(bytes.Clone(binary), ' ')); err == nil {
+			t.Fatal("trailing bytes outside the DER certificate were accepted")
+		}
+	}
+}
+
 func certificateArchive(t *testing.T, entries map[string]string) []byte {
 	converted := make(map[string][]byte, len(entries))
 	for name, content := range entries {

@@ -1,5 +1,5 @@
 // This file defines the staff-assisted quote contract. Manual pricing is
-// represented only as an approved discount over an authoritative fresh quote.
+// represented only as a fixed discount over an authoritative fresh quote.
 
 package commerce
 
@@ -38,6 +38,7 @@ const (
 type AssistedQuoteStatus string
 
 const (
+	assistedQuoteStatusDirectReady     AssistedQuoteStatus = "direct_ready"
 	AssistedQuoteStatusPendingApproval AssistedQuoteStatus = "pending_approval"
 	AssistedQuoteStatusApproved        AssistedQuoteStatus = "approved"
 	AssistedQuoteStatusRejected        AssistedQuoteStatus = "rejected"
@@ -68,11 +69,6 @@ var (
 		"The assisted quote changed; reload it and try again",
 		gcode.CodeInvalidOperation,
 	)
-	CodeAssistedQuoteApprovalRequired = bizerr.MustDefine(
-		"IDC_COMMERCE_ASSISTED_QUOTE_APPROVAL_REQUIRED",
-		"A different authorized staff member must approve the assisted quote",
-		gcode.CodeInvalidOperation,
-	)
 	CodeAssistedQuoteUnavailable = bizerr.MustDefine(
 		"IDC_COMMERCE_ASSISTED_QUOTE_UNAVAILABLE",
 		"The assisted quote service is temporarily unavailable",
@@ -91,30 +87,13 @@ type AssistedQuoteCreateInput struct {
 	CustomerNo          string
 	CurrencyCode        string
 	ManualDiscountMinor int64
-	PaymentTermCode     AssistedPaymentTerm
-	PaymentDueSeconds   int
+	PaymentDueAt        int64
 	Reason              string
 	InternalNote        string
-	ValiditySeconds     int
 	IdempotencyKey      string
 	ContractPolicyCode  contractpolicy.Policy
 	ContractTemplateNo  string
 	Items               []AssistedQuoteItemInput
-}
-
-// AssistedQuoteDecisionInput contains bounded staff intent only. The service
-// derives the immutable evidence digest from authoritative state.
-type AssistedQuoteDecisionInput struct {
-	RequestNo      string
-	DecisionCode   AssistedQuoteDecision
-	DecisionReason string
-	IdempotencyKey string
-}
-
-// AssistedQuoteCheckoutInput converts one approved staff quote through normal checkout.
-type AssistedQuoteCheckoutInput struct {
-	RequestNo      string
-	IdempotencyKey string
 }
 
 // AssistedQuoteFilter is a bounded, encrypted-cursor management query.
@@ -184,21 +163,20 @@ type AssistedQuoteAuthorizer interface {
 	AuthorizeAssistedQuoteCreate(context.Context, string) (int, error)
 	AuthorizeAssistedQuoteList(context.Context) (int, error)
 	AuthorizeAssistedQuoteDetail(context.Context, string) (int, error)
-	AuthorizeAssistedQuoteApprove(context.Context, string) (int, error)
-	AuthorizeAssistedQuoteReject(context.Context, string) (int, error)
-	AuthorizeAssistedQuoteCheckout(context.Context, string) (int, error)
 }
 
-// AssistedQuoteService owns staff intent, approval, immutable quote, and safe checkout.
+// AssistedQuoteService owns direct staff assistance, immutable pricing and safe checkout.
 type AssistedQuoteService interface {
+	// CreateAssistedQuote atomically creates an order for an active customer; exact retries return the existing order. It never debits customer funds.
 	CreateAssistedQuote(context.Context, AssistedQuoteCreateInput) (*AssistedQuoteRequest, error)
+	// AssistedOrderCurrencies returns the configured merchant currency without relying on published product rows.
+	AssistedOrderCurrencies(context.Context, string) ([]string, error)
 	ListAssistedQuotes(context.Context, AssistedQuoteFilter) (*AssistedQuotePage, error)
 	GetAssistedQuote(context.Context, string) (*AssistedQuoteRequest, error)
-	DecideAssistedQuote(context.Context, AssistedQuoteDecisionInput) (*AssistedQuoteRequest, error)
-	CheckoutAssistedQuote(context.Context, AssistedQuoteCheckoutInput) (*AssistedQuoteRequest, error)
 }
 
 type assistedQuoteServiceImpl struct {
+	currencies AssistedCurrencyReader
 	database   gdb.DB
 	catalog    catalog.PurchaseConfigurationResolver
 	assembler  catalog.PurchaseQuoteAssembler

@@ -12,7 +12,7 @@ type CreditBalanceRepaymentIntent struct {
 
 // CreditBalanceRepaymentProofReq requests a proof bound to one owned statement repayment.
 type CreditBalanceRepaymentProofReq struct {
-	g.Meta      `path:"/account/billing/credit/statements/{statementNo}/balance-repayment-proofs" method:"post" tags:"IDC Customer Credit" summary:"Issue my credit repayment proof" dc:"Verify statement ownership and a recent full login before issuing an exact-preview single-use proof."`
+	g.Meta      `path:"/account/billing/credit/statements/{statementNo}/balance-repayment-proofs" method:"post" tags:"IDC Customer Credit" summary:"Issue my credit repayment proof" dc:"Verify statement ownership and a current active session before issuing an exact-preview single-use proof."`
 	StatementNo string `json:"statementNo" in:"path" v:"required|max-length:40" dc:"Stable current-customer credit statement number" eg:"CST_01J2ABCDEF"`
 	CreditBalanceRepaymentIntent
 }

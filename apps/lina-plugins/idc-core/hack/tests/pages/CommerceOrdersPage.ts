@@ -46,6 +46,10 @@ export class CommerceOrdersPage {
       const bodyRect = body.getBoundingClientRect();
       return {
         viewport: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        rootBottom: root.getBoundingClientRect().bottom,
+        gridBottom: grid.getBoundingClientRect().bottom,
+        pagerBottom: pager.getBoundingClientRect().bottom,
         rootRight: root.getBoundingClientRect().right,
         gridRight: grid.getBoundingClientRect().right,
         gridWidth: grid.getBoundingClientRect().width,
@@ -138,7 +142,7 @@ export class CommerceOrdersPage {
     const directory = resolve(process.cwd(), "../../temp", day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
-    await this.page.screenshot({ fullPage: false, path });
+    await this.page.screenshot({ animations: "disabled", fullPage: false, path });
     return path;
   }
 }

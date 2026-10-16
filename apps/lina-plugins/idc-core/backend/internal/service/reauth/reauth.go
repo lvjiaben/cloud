@@ -101,11 +101,10 @@ type Proof struct {
 	SessionDigest string
 }
 
-// Service defines recent-login proof issuance and single-use consumption.
+// Service defines active-session proof issuance and single-use consumption.
 type Service interface {
-	// Issue verifies the current host session was created by a sufficiently
-	// recent full login. Refreshing an old access token does not change LoginAt
-	// and therefore cannot satisfy this check.
+	// Issue binds an exact action to the current valid host session without
+	// imposing an additional login-age limit.
 	Issue(ctx context.Context, binding Binding) (*ProofContext, error)
 	// Consume authenticates, session-binds, purpose-binds, target-binds, and
 	// atomically consumes one proof. Replay-store or session failures reject the call;

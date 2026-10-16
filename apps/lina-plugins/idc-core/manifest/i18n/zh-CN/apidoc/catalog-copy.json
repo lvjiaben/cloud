@@ -1,0 +1,11 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.meta.tags": "商品管理",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.meta.summary": "复制商品草稿",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.meta.dc": "完整复制价格、配置和交付设置，生成未发布且库存为零的新商品；原商品及历史交易不变。",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.schema.dc": "选择原商品版本并填写新商品名称和地址。",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.fields.productNo.dc": "有权查看的原商品编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.fields.sourceVersionNo.dc": "原商品所属的具体版本编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.fields.publicSlug.dc": "新商品的公开地址，不可与已有商品重复",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.fields.nameZhCn.dc": "新商品的中文名称",
+  "plugins.idc_core.api.admin.v1.CatalogProductCopyReq.fields.nameEnUs.dc": "新商品的英文名称"
+}

@@ -2,7 +2,13 @@
 
 这是按需导航，不是业务规范。先根据错误、页面、插件或业务词定位源码，再检索相关偏好、OpenSpec能力和任务；读取命中条款全文，不读无关历史。
 
+需要了解全局结构时，查看[项目源码与业务定位地图](memory/project-source-map.md)。该记录包含源码阅读范围、关键链路及插件服务和页面索引，不替代当前源码或业务规范。
+
 ## 常用入口
+
+官网、用户中心和首次启动的交接入口：[开发与协作指南](../DEVELOPMENT.zh-CN.md)及[安装说明](../INSTALL.zh-CN.md)。后续`AI`先定位目标插件，不在旧官网或已移除的宿主客户应用开发。
+
+跨模块定位可先查[项目结构与业务链路地图](../localdocs/project-code-map.md)和[源码定位清单](../localdocs/project-source-index.md)。它们是`2026-10-10`的结构快照，不是业务规范或全量正确性审查结论；按目标模块展开，不默认全读。
 
 ```bash
 # 规范与偏好，只输出少量命中位置。
@@ -24,9 +30,10 @@ rg -n '具体错误或函数名' apps/lina-plugins/idc-payment
 
 | 问题领域 | 优先代码目录 | 偏好检索词 | 能力检索词 |
 | --- | --- | --- | --- |
-| 客户、账号、权限、组织 | `idc-core`、`staff-access`、`org-core`、`tenant-core` | 客户、账号、员工、数据范围 | `idc-customer-account`、`user-auth` |
+| 客户、账号、权限、组织 | `idc-core`、`org-core`、`tenant-core` | 客户、账号、员工、数据范围 | `idc-customer-account`、`user-auth` |
+| 商品工作区、配置与插件交付 | `idc-core/frontend/pages/catalog-management.vue`、`idc-core/backend/internal/service/catalog`及交付插件 | `75-product-commerce.md` | `product-commerce-workspace` |
 | 商品、定价、库存、营销 | `idc-core`及资源拥有插件 | 商品、报价、优惠、库存 | `idc-catalog-pricing`、`idc-marketing-engagement` |
-| 用户中心服务菜单、购买销售分类 | `idc-core/backend/internal/service/productdirectory`、`idc-core/frontend/pages/product-directories.vue`、`apps/lina-vben/apps/web-customer/src/views/account/product-directories` | 商家菜单、商品关联、自动选中分类 | `customer-product-directory` |
+| 会员导航、商品菜单归属 | `idc-core/backend/internal/service/productdirectory`、`idc-core/frontend/pages/product-directories.vue`、`customer-default/frontend/customer/src/layouts/basic.vue` | 商家菜单、商品关联、默认系统菜单 | `customer-product-directory` |
 | 购物车、订单、结账 | `idc-core` | 订单、结账、实名、履约 | `idc-checkout-order`、`idc-product-fulfillment` |
 | 账单、余额、授信、续费 | `idc-core` | 账本、授信、续费、结清 | `idc-billing-ledger`、`idc-credit-account` |
 | 支付和在线退款 | `idc-payment`及`idc-payment-*` | 支付、退款、渠道 | `idc-payment-refund`及账本能力 |
@@ -34,8 +41,10 @@ rg -n '具体错误或函数名' apps/lina-plugins/idc-payment
 | 实名、合同、发票、合规网关 | `idc-compliance`、`idc-compliance/central-gateway` | 个人、企业、合同、发票、网关 | `idc-compliance-center` |
 | 工单、知识库、内容 | `idc-core`、`content-notice` | 工单、SLA、内容、下载 | `idc-support-notification` |
 | 短信、邮件、通知 | `idc-notify` | 通知、短信、退订 | `idc-support-notification` |
-| AI、官网、客户中心 | `idc-ai`、`idc-portal`、`apps/lina-websites`、`apps/lina-vben/apps/web-customer` | AI、官网、用户中心、视觉 | `idc-ai-copilot`、`idc-merchant-portal` |
-| 渠道、代理、迁移 | `idc-channel`、`idc-zjmfmigrate`等适配器 | 渠道、代理、迁移 | `idc-sales-channel`、`idc-migration-reconciliation` |
+| AI、官网、客户中心模板 | `idc-ai`、`idc-portal`、`website-{default,minimal}/frontend/site`、`website-html`、`customer-default` | `72-customer-website-visual.md`、框架无关、开发文档 | `idc-ai-copilot`、`idc-merchant-portal`、`customer-template` |
+| 客户业务、代理价格、佣金、开放 API | `idc-core`、`idc-channel` | `76-customer-business-openapi.md`、`32-assisted-orders.md` | `idc-sales-channel`、`idc-downstream-channel`、`idc-checkout-order` |
+| 渠道、代理、迁移 | `idc-channel`、`idc-zjmfmigrate`等适配器 | 客户业务、代理价格、佣金、开放 API | `idc-core`、`idc-channel` | `76-customer-business-openapi.md`、`32-assisted-orders.md` | `idc-sales-channel`、`idc-downstream-channel`、`idc-checkout-order` |
+| 渠道、代理、迁移 | `idc-sales-channel`、`idc-migration-reconciliation` |
 | 宿主通用能力 | `apps/lina-core`、`apps/lina-vben` | 具体接口或模块名 | 在`openspec/specs/`按能力名查 |
 | AI规则、技能、上下文与流程 | `AGENTS.md`、`.agents/rules`、`.agents/skills`、`.agents/prompts` | 上下文、流程、规则 | `agent-context-navigation` |
 
@@ -54,3 +63,5 @@ rg -n '^### Requirement:|^#### Scenario:' openspec/changes/<change>/specs/<能�
 ## 维护
 
 新增插件、能力或偏好主题时更新对应入口；代码与业务正文优先于导航提示。主题原文迁移记录在`memory/preferences/migration-manifest.json`，不默认读取。当前读取和复用约束见`rules/context-loading.md`，流程门槛见`rules/openspec.md`。
+
+当前官网源码与SSR/gateway由各`website-*`插件自带；旧`apps/lina-websites/sites/default`不参与当前构建或运行。客户模板源码在`apps/lina-plugins/customer-default/frontend/customer`，旧`apps/lina-vben/apps/web-customer`已按精确授权备份删除。其他宿主目录仍严格禁止修改。

@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import { computed, onMounted, ref } from "vue";
 
 import { useAccess } from "@vben/access";
@@ -317,10 +318,9 @@ onMounted(async () => {
   <Page
     :description="tr('description')"
     :title="tr('title')"
-    class="ai-copilot-page"
+    class="plugin-admin-page ai-copilot-page"
   >
     <Alert
-      :description="tr('readonlyDescription')"
       :message="tr('readonlyTitle')"
       banner
       class="mb-4 rounded-none"

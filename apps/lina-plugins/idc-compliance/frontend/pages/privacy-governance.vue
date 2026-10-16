@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import type {
   AssessmentItem,
   DeletionItem,
@@ -254,14 +255,9 @@ onMounted(load);
 <template>
   <Page
     :auto-content-height="true"
-    class="privacy-page"
+    class="plugin-admin-page privacy-page"
     data-testid="privacy-governance-page"
     ><div class="privacy-admin">
-      <header class="page-heading">
-        <span>{{ $t("plugin.idc-compliance.privacy.eyebrow") }}</span>
-        <h1>{{ $t("plugin.idc-compliance.privacy.title") }}</h1>
-        <p>{{ $t("plugin.idc-compliance.privacy.subtitle") }}</p>
-      </header>
       <section class="governance-panel">
         <div class="status-toolbar">
           <Tag color="green">{{

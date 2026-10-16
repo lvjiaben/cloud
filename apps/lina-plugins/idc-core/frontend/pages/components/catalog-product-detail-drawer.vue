@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  CatalogBillingRule,
   CatalogProductDetail,
   CatalogProductVersionCost,
   CatalogProductVersionConfiguration,
@@ -11,20 +12,25 @@ import { computed, ref } from "vue";
 import { useVbenDrawer, useVbenModal } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
 import {
+  Alert,
   Badge,
   Button,
   Card,
   Descriptions,
   Empty,
+	Input,
   message,
   Popconfirm,
   Space,
+  Select,
   Tag,
+  Tabs,
 } from "ant-design-vue";
 
 import { $t } from "#/locales";
 import { formatTimestamp } from "#/utils/time";
 
+import { listProductDirectoryOptions, type ProductDirectory } from "../product-directory-client";
 import { useAccess } from "../plugin-access";
 import { productFulfillmentBindingDelete } from "../catalog-automation-client";
 import { canWriteCatalogFulfillmentBinding } from "../catalog-automation-state";
@@ -32,6 +38,7 @@ import {
   catalogProductVersionConfigurationGet,
   catalogProductVersionCostList,
   catalogProductDetail,
+	 catalogProductDescriptionUpdate,
   catalogProductVersionConfigurationEvaluate,
   catalogProductVersionConfigurationUpdate,
   catalogProductVersionConfigurationFileUpload,
@@ -43,17 +50,49 @@ import {
 } from "../catalog-configuration-state";
 import CatalogFulfillmentBindingModal from "./catalog-fulfillment-binding-modal.vue";
 import CatalogFulfillmentPolicyModal from "./catalog-fulfillment-policy-modal.vue";
+import CatalogCustomerOptionsModal from "./catalog-customer-options-modal.vue";
 import CatalogConfigurationSection from "./catalog-configuration-section.vue";
 import CatalogConfigurationPriceModal from "./catalog-configuration-price-modal.vue";
 import CatalogProductCostModal from "./catalog-product-cost-modal.vue";
 import CatalogProductInventoryModal from "./catalog-product-inventory-modal.vue";
 import ContractPolicyEditor from "./contract-policy-editor.vue";
+import CatalogPricesDrawer from "./catalog-prices-drawer.vue";
+import CatalogBillingRuleModal from "./catalog-billing-rule-modal.vue";
+import CatalogBasePriceModal from "./catalog-base-price-modal.vue";
+import CatalogTaxPolicyModal from "./catalog-tax-policy-modal.vue";
+import CatalogProductAddons from "./catalog-product-addons.vue";
 
 const detail = ref<CatalogProductDetail>();
+const activeSection = ref("basic");
 const versionConfiguration = ref<CatalogProductVersionConfiguration>();
 const versionCosts = ref<CatalogProductVersionCost[]>([]);
 const { hasAccessByCodes } = useAccess();
 let requestSequence = 0;
+const canManageAgentPrices = computed(() => hasAccessByCodes(["idc:admin:sales-channel:pricing:manage"]));
+const canAddBilling = computed(() => detail.value?.version.status === "draft" && hasAccessByCodes(["idc:admin:catalog:billing:write"]));
+const canAddBasePrice = computed(() => detail.value?.version.status === "draft" && hasAccessByCodes(["idc:admin:catalog:price:write"]));
+const [BillingModal, billingModalApi] = useVbenModal({ connectedComponent: CatalogBillingRuleModal });
+const [BasePriceModal, basePriceModalApi] = useVbenModal({ connectedComponent: CatalogBasePriceModal });
+const [TaxPolicyModal, taxPolicyModalApi] = useVbenModal({ connectedComponent: CatalogTaxPolicyModal });
+const missingTaxCurrencies = computed(() => [...new Set(detail.value?.prices.map(price => price.currencyCode) ?? [])].filter(currency => !detail.value?.taxPolicies.some(policy => policy.currencyCode === currency)));
+const canAddTax = computed(() => detail.value?.version.status === "draft" && hasAccessByCodes(["idc:admin:catalog:tax:write"]));
+function openTaxPolicy() {
+  if (detail.value && canAddTax.value && missingTaxCurrencies.value.length) taxPolicyModalApi.setData({ versionNo: detail.value.version.versionNo, currencies: missingTaxCurrencies.value }).open();
+}
+function openBilling(trial = false) {
+  if (!detail.value || !canAddBilling.value || (trial && !detail.value.fulfillmentPolicy?.trialSupported)) return;
+  billingModalApi.setData({ versionNo: detail.value.version.versionNo, trial }).open();
+}
+function openBasePrice(rule: CatalogBillingRule) {
+  if (!detail.value || !canAddBasePrice.value) return;
+  basePriceModalApi.setData({ versionNo: detail.value.version.versionNo, rule, existingCurrencies: detail.value.prices.filter(price => price.billingRuleNo === rule.billingRuleNo && !price.configurationPriceDimensionNo).map(price => price.currencyCode) }).open();
+}
+const [AgentPricesDrawer, agentPricesApi] = useVbenDrawer({ connectedComponent: CatalogPricesDrawer });
+function openAgentPrices() {
+  if (!detail.value || !canManageAgentPrices.value) return;
+  agentPricesApi.setData({ target: "level", product: { productNo: detail.value.product.productNo, name: localizedName(detail.value.product) } });
+  agentPricesApi.open();
+}
 
 const canEditContractPolicy = computed(
   () =>
@@ -71,6 +110,7 @@ const bindingActionInFlight = ref(false);
 const canEditConfiguration = computed(
   () =>
     detail.value?.version.status === "draft" &&
+    !versionConfiguration.value?.importedConfiguration &&
     hasAccessByCodes(["idc:admin:catalog:configuration:write"]),
 );
 const canViewConfiguration = computed(() =>
@@ -91,6 +131,43 @@ const title = computed(() => {
   if (!detail.value) return $t("plugin.idc-core.catalog.detail.title");
   return `${$t("plugin.idc-core.catalog.detail.title")} · ${localizedName(detail.value.product)}`;
 });
+
+const memberMenus = ref<ProductDirectory[]>([]);
+const selectedMemberMenu = ref("");
+const editingDescription = ref(false);
+const savingDescription = ref(false);
+const descriptionDraft = ref({ nameZhCn: "", nameEnUs: "", summaryZhCn: "", summaryEnUs: "" });
+const canEditDescription = computed(() => hasAccessByCodes(["idc:admin:catalog:product:update"]));
+
+async function openDescriptionEditor() {
+  if (!detail.value) return;
+  if (hasAccessByCodes(["idc:admin:product-directory:list"])) { memberMenus.value = await listProductDirectoryOptions(); }
+  selectedMemberMenu.value = detail.value.product.directoryNo ?? "";
+  activeSection.value = "basic";
+  const p = detail.value.product;
+  descriptionDraft.value = { nameZhCn: p.nameZhCn, nameEnUs: p.nameEnUs, summaryZhCn: p.summaryZhCn, summaryEnUs: p.summaryEnUs };
+  editingDescription.value = true;
+}
+
+async function saveDescription() {
+  if (!detail.value || savingDescription.value) return;
+  if (Object.values(descriptionDraft.value).some((value) => !value.trim())) {
+    message.warning($t("plugin.idc-core.catalog.description.required"));
+    return;
+  }
+  savingDescription.value = true;
+  try {
+    const product = detail.value.product;
+    const sequence = requestSequence;
+    const copy = { ...descriptionDraft.value };
+    const saved = await catalogProductDescriptionUpdate(product.productNo, { ...(hasAccessByCodes(["idc:admin:product-directory:list"]) ? {directoryNo: selectedMemberMenu.value ?? ""} : {}), version: product.descriptionVersion ?? 0, ...copy });
+    if (sequence !== requestSequence || !detail.value) return;
+    detail.value.product = { ...product, ...copy, directoryNo: selectedMemberMenu.value, descriptionVersion: saved.version };
+    editingDescription.value = false;
+    message.success($t("plugin.idc-core.catalog.description.saved"));
+    await reloadDetail();
+  } finally { savingDescription.value = false; }
+}
 
 const pricesByRule = computed(() => {
   const result = new Map<string, CatalogProductDetail["prices"]>();
@@ -208,6 +285,11 @@ const [PolicyModal, policyModalApi] = useVbenModal({
 
 const [CostModal, costModalApi] = useVbenModal({ connectedComponent: CatalogProductCostModal });
 const [InventoryModal, inventoryModalApi] = useVbenModal({ connectedComponent: CatalogProductInventoryModal });
+const [CustomerOptionsModal, customerOptionsModalApi] = useVbenModal({ connectedComponent: CatalogCustomerOptionsModal });
+function editCustomerOptions() {
+ if (detail.value && versionConfiguration.value) customerOptionsModalApi.setData({ versionNo: detail.value.version.versionNo, configuration: versionConfiguration.value }).open();
+}
+
 const [ConfigurationPriceModal, configurationPriceModalApi] = useVbenModal({ connectedComponent: CatalogConfigurationPriceModal });
 
 function openConfigurationPrice() {
@@ -299,6 +381,7 @@ async function saveConfiguration(values: CatalogConfigurationValues) {
         "product",
         values,
       ),
+      customerFieldSelections: versionConfiguration.value.customerFieldSelections ?? [],
       expectedVersion: versionConfiguration.value.version,
     },
   );
@@ -371,11 +454,17 @@ const [Drawer, drawerApi] = useVbenDrawer({
   async onOpenChange(open) {
     const sequence = ++requestSequence;
     if (!open) {
+	  billingModalApi.close();
+	  basePriceModalApi.close();
+	  taxPolicyModalApi.close();
+	  agentPricesApi.close();
+	  editingDescription.value = false;
       detail.value = undefined;
       versionConfiguration.value = undefined;
       versionCosts.value = [];
       return;
     }
+    activeSection.value = "basic";
     const data = drawerApi.getData<{ productNo?: string }>();
     if (!data?.productNo) return;
     drawerApi.setState({ loading: true });
@@ -426,8 +515,28 @@ const [Drawer, drawerApi] = useVbenDrawer({
               "
             />
             <Tag color="blue">v{{ detail.version.versionNumber }}</Tag>
+			<Button v-if="canEditDescription" :disabled="savingDescription" data-testid="catalog-description-edit" @click="openDescriptionEditor">{{ $t("plugin.idc-core.catalog.description.edit") }}</Button>
           </div>
         </div>
+      </Card>
+
+      <Tabs v-model:active-key="activeSection" data-testid="catalog-edit-sections">
+        <Tabs.TabPane key="addons" :tab="$t('plugin.idc-core.addons.adminTitle')"><CatalogProductAddons :product-no="detail.product.productNo" :version="detail.product.descriptionVersion || 1" :writable="canEditDescription" @saved="reloadDetail" /></Tabs.TabPane>
+        <Tabs.TabPane key="basic" :tab="$t('plugin.idc-core.catalog.commerce.sectionBasic')">
+          <div class="grid gap-4">
+      <Card v-if="editingDescription" :title="$t('plugin.idc-core.catalog.description.edit')" data-testid="catalog-description-editor">
+        <Alert :message="$t('plugin.idc-core.catalog.description.help')" type="info" class="mb-4" />
+        <div class="grid gap-4 md:grid-cols-2">
+          <label v-if="hasAccessByCodes(['idc:admin:product-directory:list'])">{{ $t('plugin.idc-core.productDirectory.productMenu') }}<Select v-model:value="selectedMemberMenu" allow-clear :placeholder="$t('plugin.idc-core.productDirectory.unclassified')" :options="memberMenus.filter(item => (item.statusCode === 'enabled' && (!item.navigationType || item.navigationType === 'product')) || item.directoryNo === selectedMemberMenu).map(item => ({value: item.directoryNo,label: localizedName(item)}))" data-testid="catalog-description-member-menu" /></label>
+          <label>{{ $t('plugin.idc-core.catalog.description.nameZhCn') }}<Input v-model:value="descriptionDraft.nameZhCn" :maxlength="256" data-testid="catalog-description-name-zh" :disabled="savingDescription" /></label>
+          <label>{{ $t('plugin.idc-core.catalog.description.nameEnUs') }}<Input v-model:value="descriptionDraft.nameEnUs" :maxlength="256" data-testid="catalog-description-name-en" :disabled="savingDescription" /></label>
+          <label>{{ $t('plugin.idc-core.catalog.description.summaryZhCn') }}<Input.TextArea v-model:value="descriptionDraft.summaryZhCn" :maxlength="1024" :rows="3" data-testid="catalog-description-summary-zh" :disabled="savingDescription" /></label>
+          <label>{{ $t('plugin.idc-core.catalog.description.summaryEnUs') }}<Input.TextArea v-model:value="descriptionDraft.summaryEnUs" :maxlength="1024" :rows="3" data-testid="catalog-description-summary-en" :disabled="savingDescription" /></label>
+        </div>
+        <Space class="mt-4">
+          <Button type="primary" :loading="savingDescription" data-testid="catalog-description-save" @click="saveDescription">{{ $t('plugin.idc-core.catalog.description.save') }}</Button>
+          <Button :disabled="savingDescription" @click="editingDescription = false">{{ $t('plugin.idc-core.catalog.description.cancel') }}</Button>
+        </Space>
       </Card>
 
       <Descriptions bordered :column="2" size="small">
@@ -484,6 +593,157 @@ const [Drawer, drawerApi] = useVbenDrawer({
         @updated="applyContractPolicy"
       />
 
+      <Card :bordered="true" :title="$t('plugin.idc-core.catalog.inventory.title')" size="small" data-testid="catalog-product-inventory">
+        <template v-if="canEditInventory" #extra><Button @click="openInventory">{{ $t("plugin.idc-core.catalog.inventory.edit") }}</Button></template>
+        <Descriptions :column="2" size="small">
+          <Descriptions.Item :label="$t('plugin.idc-core.catalog.inventory.trackingEnabled')">{{ $t(detail.inventory.trackingEnabled ? "plugin.idc-core.catalog.detail.yes" : "plugin.idc-core.catalog.detail.no") }}</Descriptions.Item>
+          <Descriptions.Item :label="$t('plugin.idc-core.catalog.inventory.sellableQuantity')">{{ detail.inventory.trackingEnabled ? detail.inventory.sellableQuantity : $t("plugin.idc-core.catalog.inventory.unlimited") }}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane key="pricing" :tab="$t('plugin.idc-core.catalog.commerce.sectionPricing')">
+          <div class="grid gap-4">
+      <Card
+        :bordered="true"
+        :title="$t('plugin.idc-core.catalog.detail.pricing')"
+        data-testid="catalog-detail-pricing"
+        size="small"
+      >
+        <template #extra>
+          <Space>
+          <Button v-if="canAddBilling" data-testid="catalog-billing-add" @click="openBilling()">{{ $t('plugin.idc-core.catalog.commerce.addPeriod') }}</Button>
+          <Button v-if="canAddBilling && detail.fulfillmentPolicy?.trialSupported" data-testid="catalog-trial-add" @click="openBilling(true)">{{ $t('plugin.idc-core.catalog.commerce.addTrial') }}</Button>
+          <Button v-if="canManageConfigurationPrices && detail.billingRules.length" data-testid="catalog-configuration-price-add" type="primary" @click="openConfigurationPrice">
+            {{ $t("plugin.idc-core.catalog.configurationPrice.add") }}
+          </Button>
+          </Space>
+        </template>
+        <div v-if="detail.billingRules.length" class="grid gap-3">
+          <div
+            v-for="rule in detail.billingRules"
+            :key="rule.billingRuleNo"
+            class="rounded-md border p-3"
+          >
+            <div class="mb-2 flex flex-wrap items-center gap-2">
+              <Tag color="blue">{{ codeLabel("charge", rule.chargeType) }}</Tag>
+              <span class="text-muted-foreground">
+                {{ rule.periodCount }} ×
+                {{ codeLabel("period", rule.periodUnit) }}
+              </span>
+              <span class="text-muted-foreground">{{
+                codeLabel("pricePhase", rule.pricePhase)
+              }}</span>
+              <Button v-if="canAddBasePrice && ['one_time', 'recurring', 'trial'].includes(rule.chargeType) && rule.quantityMode === 'fixed'" size="small" :data-testid="`catalog-base-price-add-${rule.billingRuleNo}`" @click="openBasePrice(rule)">{{ $t('plugin.idc-core.catalog.commerce.addBasePrice') }}</Button>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div
+                v-for="price in pricesFor(rule.billingRuleNo)"
+                :key="price.priceNo"
+                class="bg-muted/30 rounded-md px-3 py-2"
+              >
+                <span class="text-muted-foreground block text-xs">
+                  {{ configurationPriceLabel(price) }}
+                </span>
+                <strong>{{
+                  formatMoney(price.amountMinor, price.currencyCode)
+                }}</strong>
+                <span class="ml-2 text-xs">
+                  {{ $t("plugin.idc-core.catalog.configurationPrice.setupFee") }}
+                  {{ formatMoney(price.setupFeeMinor, price.currencyCode) }}
+                </span>
+                <span
+                  v-if="price.renewalAmountMinor !== null"
+                  class="ml-2 text-xs"
+                >
+                  {{ $t("plugin.idc-core.catalog.detail.renewal") }}
+                  {{
+                    formatMoney(price.renewalAmountMinor, price.currencyCode)
+                  }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+      </Card>
+
+      <Card v-if="canManageCosts" :bordered="true" :title="$t('plugin.idc-core.catalog.cost.title')" size="small" data-testid="catalog-product-costs">
+        <template #extra><Button type="primary" @click="openCost()">{{ $t("plugin.idc-core.catalog.cost.add") }}</Button></template>
+        <div v-if="versionCosts.length" class="grid gap-2">
+          <div v-for="cost in versionCosts" :key="cost.costNo" class="flex items-center justify-between gap-4 rounded-md border p-3">
+            <div class="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.currency") }}</span><strong>{{ cost.currencyCode }}</strong></div>
+              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.period") }}</span><span>{{ cost.periodCount }} × {{ codeLabel("period", cost.periodUnit) }}</span></div>
+              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.unitCost") }}</span><span>{{ formatMoney(cost.unitCostMinor, cost.currencyCode) }}</span></div>
+              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.validity") }}</span><span>{{ formatTimestamp(cost.effectiveFrom) }}<template v-if="cost.effectiveUntil"> — {{ formatTimestamp(cost.effectiveUntil) }}</template></span></div>
+            </div>
+            <Button class="shrink-0" @click="openCost(cost)">{{ $t("plugin.idc-core.catalog.cost.edit") }}</Button>
+          </div>
+        </div>
+        <Empty v-else :description="$t('plugin.idc-core.catalog.cost.empty')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+      </Card>
+
+      <Card
+        :bordered="true"
+        :title="$t('plugin.idc-core.catalog.detail.tax')"
+        data-testid="catalog-detail-tax"
+        size="small"
+      >
+        <template #extra><Button v-if="canAddTax && missingTaxCurrencies.length" data-testid="catalog-tax-add" @click="openTaxPolicy">{{ $t('plugin.idc-core.catalog.commerce.addTax') }}</Button></template>
+        <div v-if="detail.taxPolicies.length" class="grid gap-3 sm:grid-cols-2">
+          <div
+            v-for="policy in detail.taxPolicies"
+            :key="policy.taxPolicyNo"
+            class="rounded-md border p-3"
+          >
+            <div class="mb-2 flex items-center justify-between">
+              <strong>{{ policy.currencyCode }}</strong>
+              <Tag>{{ codeLabel("taxTreatment", policy.taxTreatment) }}</Tag>
+            </div>
+            <div class="text-muted-foreground flex justify-between text-sm">
+              <span>{{ $t("plugin.idc-core.catalog.detail.taxRate") }}</span>
+              <span>{{ formatTaxRate(policy.taxRateBasisPoints) }}</span>
+            </div>
+            <div
+              class="text-muted-foreground mt-1 flex justify-between text-sm"
+            >
+              <span>{{
+                $t("plugin.idc-core.catalog.detail.priceIncludesTax")
+              }}</span>
+              <span>{{
+                $t(
+                  policy.priceIncludesTax
+                    ? "plugin.idc-core.catalog.detail.yes"
+                    : "plugin.idc-core.catalog.detail.no",
+                )
+              }}</span>
+            </div>
+          </div>
+        </div>
+        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+      </Card>
+      <Card v-if="canManageAgentPrices" :title="$t('plugin.idc-core.salesManagement.levelPrices')" size="small">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-muted-foreground">{{ $t('plugin.idc-core.salesManagement.productAgentPriceHint') }}</span>
+          <Button data-testid="catalog-edit-agent-prices" @click="openAgentPrices">{{ $t('plugin.idc-core.salesManagement.configureAgentPrices') }}</Button>
+        </div>
+      </Card>
+
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane key="configuration" :tab="$t('plugin.idc-core.catalog.commerce.sectionConfiguration')">
+          <div class="grid gap-4">
+      <CustomerOptionsModal @saved="reloadDetail" />
+      <Button v-if="canEditConfiguration && versionConfiguration?.customerConfigurableFields?.length" class="justify-self-start" data-testid="catalog-customer-options-edit" @click="editCustomerOptions">{{ preferences.app.locale === 'zh-CN' ? '设置客户可选配置' : 'Set purchase options' }}</Button>
+      <Empty v-if="!versionConfiguration?.productDeclaration && !versionConfiguration?.customerDeclaration" :description="$t('plugin.idc-core.catalog.commerce.noConfiguration')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+      <Alert
+        v-if="versionConfiguration?.importedConfiguration"
+        data-testid="catalog-imported-configuration-notice"
+        :message="$t('plugin.idc-core.catalog.configuration.importedNotice')"
+        show-icon
+        type="info"
+      />
       <CatalogConfigurationSection
         v-if="versionConfiguration?.productDeclaration"
         :can-edit="canEditConfiguration"
@@ -511,6 +771,10 @@ const [Drawer, drawerApi] = useVbenDrawer({
         :title="configurationTitle('customer')"
       />
 
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane key="fulfillment" :tab="$t('plugin.idc-core.catalog.commerce.sectionFulfillment')">
+          <div class="grid gap-4">
       <Card
         :bordered="true"
         :title="$t('plugin.idc-core.catalogFulfillment.summaryTitle')"
@@ -577,13 +841,6 @@ const [Drawer, drawerApi] = useVbenDrawer({
         />
       </Card>
 
-      <Card :bordered="true" :title="$t('plugin.idc-core.catalog.inventory.title')" size="small" data-testid="catalog-product-inventory">
-        <template v-if="canEditInventory" #extra><Button @click="openInventory">{{ $t("plugin.idc-core.catalog.inventory.edit") }}</Button></template>
-        <Descriptions :column="2" size="small">
-          <Descriptions.Item :label="$t('plugin.idc-core.catalog.inventory.trackingEnabled')">{{ $t(detail.inventory.trackingEnabled ? "plugin.idc-core.catalog.detail.yes" : "plugin.idc-core.catalog.detail.no") }}</Descriptions.Item>
-          <Descriptions.Item :label="$t('plugin.idc-core.catalog.inventory.sellableQuantity')">{{ detail.inventory.trackingEnabled ? detail.inventory.sellableQuantity : $t("plugin.idc-core.catalog.inventory.unlimited") }}</Descriptions.Item>
-        </Descriptions>
-      </Card>
 
       <Card
         :bordered="true"
@@ -700,124 +957,18 @@ const [Drawer, drawerApi] = useVbenDrawer({
         </div>
       </Card>
 
-      <Card
-        :bordered="true"
-        :title="$t('plugin.idc-core.catalog.detail.pricing')"
-        data-testid="catalog-detail-pricing"
-        size="small"
-      >
-        <template v-if="canManageConfigurationPrices" #extra>
-          <Button type="primary" @click="openConfigurationPrice">
-            {{ $t("plugin.idc-core.catalog.configurationPrice.add") }}
-          </Button>
-        </template>
-        <div v-if="detail.billingRules.length" class="grid gap-3">
-          <div
-            v-for="rule in detail.billingRules"
-            :key="rule.billingRuleNo"
-            class="rounded-md border p-3"
-          >
-            <div class="mb-2 flex flex-wrap items-center gap-2">
-              <Tag color="blue">{{ codeLabel("charge", rule.chargeType) }}</Tag>
-              <span class="text-muted-foreground">
-                {{ rule.periodCount }} ×
-                {{ codeLabel("period", rule.periodUnit) }}
-              </span>
-              <span class="text-muted-foreground">{{
-                codeLabel("pricePhase", rule.pricePhase)
-              }}</span>
-            </div>
-            <div class="grid gap-2 sm:grid-cols-2">
-              <div
-                v-for="price in pricesFor(rule.billingRuleNo)"
-                :key="price.priceNo"
-                class="bg-muted/30 rounded-md px-3 py-2"
-              >
-                <span class="text-muted-foreground block text-xs">
-                  {{ configurationPriceLabel(price) }}
-                </span>
-                <strong>{{
-                  formatMoney(price.amountMinor, price.currencyCode)
-                }}</strong>
-                <span class="ml-2 text-xs">
-                  {{ $t("plugin.idc-core.catalog.configurationPrice.setupFee") }}
-                  {{ formatMoney(price.setupFeeMinor, price.currencyCode) }}
-                </span>
-                <span
-                  v-if="price.renewalAmountMinor !== null"
-                  class="ml-2 text-xs"
-                >
-                  {{ $t("plugin.idc-core.catalog.detail.renewal") }}
-                  {{
-                    formatMoney(price.renewalAmountMinor, price.currencyCode)
-                  }}
-                </span>
-              </div>
-            </div>
           </div>
-        </div>
-        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-      </Card>
-
-      <Card v-if="canManageCosts" :bordered="true" :title="$t('plugin.idc-core.catalog.cost.title')" size="small" data-testid="catalog-product-costs">
-        <template #extra><Button type="primary" @click="openCost()">{{ $t("plugin.idc-core.catalog.cost.add") }}</Button></template>
-        <div v-if="versionCosts.length" class="grid gap-2">
-          <div v-for="cost in versionCosts" :key="cost.costNo" class="flex items-center justify-between gap-4 rounded-md border p-3">
-            <div class="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
-              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.currency") }}</span><strong>{{ cost.currencyCode }}</strong></div>
-              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.period") }}</span><span>{{ cost.periodCount }} × {{ codeLabel("period", cost.periodUnit) }}</span></div>
-              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.unitCost") }}</span><span>{{ formatMoney(cost.unitCostMinor, cost.currencyCode) }}</span></div>
-              <div><span class="text-muted-foreground block text-xs">{{ $t("plugin.idc-core.catalog.cost.validity") }}</span><span>{{ formatTimestamp(cost.effectiveFrom) }}<template v-if="cost.effectiveUntil"> — {{ formatTimestamp(cost.effectiveUntil) }}</template></span></div>
-            </div>
-            <Button class="shrink-0" @click="openCost(cost)">{{ $t("plugin.idc-core.catalog.cost.edit") }}</Button>
-          </div>
-        </div>
-        <Empty v-else :description="$t('plugin.idc-core.catalog.cost.empty')" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-      </Card>
-
-      <Card
-        :bordered="true"
-        :title="$t('plugin.idc-core.catalog.detail.tax')"
-        data-testid="catalog-detail-tax"
-        size="small"
-      >
-        <div v-if="detail.taxPolicies.length" class="grid gap-3 sm:grid-cols-2">
-          <div
-            v-for="policy in detail.taxPolicies"
-            :key="policy.taxPolicyNo"
-            class="rounded-md border p-3"
-          >
-            <div class="mb-2 flex items-center justify-between">
-              <strong>{{ policy.currencyCode }}</strong>
-              <Tag>{{ codeLabel("taxTreatment", policy.taxTreatment) }}</Tag>
-            </div>
-            <div class="text-muted-foreground flex justify-between text-sm">
-              <span>{{ $t("plugin.idc-core.catalog.detail.taxRate") }}</span>
-              <span>{{ formatTaxRate(policy.taxRateBasisPoints) }}</span>
-            </div>
-            <div
-              class="text-muted-foreground mt-1 flex justify-between text-sm"
-            >
-              <span>{{
-                $t("plugin.idc-core.catalog.detail.priceIncludesTax")
-              }}</span>
-              <span>{{
-                $t(
-                  policy.priceIncludesTax
-                    ? "plugin.idc-core.catalog.detail.yes"
-                    : "plugin.idc-core.catalog.detail.no",
-                )
-              }}</span>
-            </div>
-          </div>
-        </div>
-        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-      </Card>
+        </Tabs.TabPane>
+      </Tabs>
+      <AgentPricesDrawer />
       <BindingModal @success="reloadDetail" />
       <PolicyModal @success="reloadDetail" />
   <CostModal @success="reloadCosts" />
       <InventoryModal @success="applyInventory" />
       <ConfigurationPriceModal @success="reloadDetail" />
+      <BillingModal @success="reloadDetail" />
+      <BasePriceModal @success="reloadDetail" />
+      <TaxPolicyModal @success="reloadDetail" />
     </div>
   </Drawer>
 </template>

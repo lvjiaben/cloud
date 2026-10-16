@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import type {
   ProviderConfiguration,
   ProviderConfigurationStatus,
@@ -93,7 +94,7 @@ function configurationStatusLabel(status: ProviderConfigurationStatus) {
 }
 
 function validationStatusLabel(status: ProviderValidationStatus) {
-  return $t(validationStatusKeys[status]);
+  return $t(validationStatusKeys[status || "untested"]);
 }
 
 function configurationStatusDescription(status: ProviderConfigurationStatus) {
@@ -101,7 +102,7 @@ function configurationStatusDescription(status: ProviderConfigurationStatus) {
 }
 
 function validationStatusDescription(status: ProviderValidationStatus) {
-  return $t(validationDescriptionKeys[status]);
+  return $t(validationDescriptionKeys[status || "untested"]);
 }
 
 function configurationTagColor(status: ProviderConfigurationStatus) {
@@ -154,10 +155,8 @@ onMounted(loadConfiguration);
 </script>
 
 <template>
-  <Page
+  <Page class="plugin-admin-page"
     :auto-content-height="true"
-    :description="$t('plugin.idc-compliance.provider.subtitle')"
-    :title="$t('plugin.idc-compliance.provider.title')"
     data-testid="aliyun-provider-page"
   >
     <div class="provider-shell" :class="{ loading }">
@@ -208,12 +207,6 @@ onMounted(loadConfiguration);
                     : $t("plugin.idc-compliance.provider.fields.notStored")
                 }}
               </dd>
-            </div>
-            <div>
-              <dt>
-                {{ $t("plugin.idc-compliance.provider.fields.generation") }}
-              </dt>
-              <dd>{{ configuration.credentialGeneration }}</dd>
             </div>
             <div>
               <dt>

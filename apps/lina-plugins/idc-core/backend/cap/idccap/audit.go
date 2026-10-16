@@ -4,6 +4,10 @@ package idccap
 
 import "context"
 
+// BusinessAuditResultSucceeded records successful execution; domain workflow
+// states belong in snapshots rather than the audit result field.
+const BusinessAuditResultSucceeded = "succeeded"
+
 // BusinessAuditTransition contains caller-owned business semantics only. Actor
 // identity and request metadata are resolved by the audit owner from trusted context.
 type BusinessAuditTransition struct {

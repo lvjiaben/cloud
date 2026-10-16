@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import type { TableColumnsType } from "ant-design-vue";
 
 import type {
@@ -972,13 +973,9 @@ onMounted(() => void loadOverview());
 </script>
 
 <template>
-  <Page auto-content-height>
+  <Page class="plugin-admin-page" auto-content-height>
     <div class="marketing-shell" data-testid="marketing-overview-page">
       <header class="marketing-page-header">
-        <div>
-          <h1>{{ $t("plugin.idc-core.marketing.title") }}</h1>
-          <p>{{ $t("plugin.idc-core.marketing.pageDescription") }}</p>
-        </div>
         <Space>
           <span v-if="data" class="snapshot-time">
             {{ $t("plugin.idc-core.marketing.generatedAt") }}
@@ -1004,7 +1001,7 @@ onMounted(() => void loadOverview());
 
       <Tabs
         v-model:active-key="activeTab"
-        class="marketing-tabs"
+        class="marketing-tabs plugin-admin-tabs"
         @change="handleTabChange"
       >
         <TabPane v-for="tab in marketingTabs" :key="tab.key" :tab="tab.label" />

@@ -1,0 +1,76 @@
+{
+  "name": "@lina/customer-default",
+  "version": "5.6.0",
+  "homepage": "https://vben.pro",
+  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vbenjs/vue-vben-admin.git",
+    "directory": "apps/web-customer"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "vben",
+    "email": "ann.vben@gmail.com",
+    "url": "https://github.com/anncwb"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "vite build --mode production",
+    "build:analyze": "vite build --mode analyze",
+    "dev": "vite --mode development",
+    "preview": "vite preview",
+    "i18n:check": "node ./scripts/check-i18n-keys.mjs",
+    "typecheck": "vue-tsc --noEmit --skipLibCheck"
+  },
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "dependencies": {
+    "@tiptap/extension-image": "3.31.4",
+    "@tiptap/extension-link": "3.31.4",
+    "@tiptap/extension-placeholder": "3.31.4",
+    "@tiptap/extension-underline": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4",
+    "@tiptap/vue-3": "3.31.4",
+    "@vben/access": "workspace:*",
+    "@vben/common-ui": "workspace:*",
+    "@vben/constants": "workspace:*",
+    "@vben/hooks": "workspace:*",
+    "@vben/icons": "workspace:*",
+    "@vben/layouts": "workspace:*",
+    "@vben/locales": "workspace:*",
+    "@vben/plugins": "workspace:*",
+    "@vben/preferences": "workspace:*",
+    "@vben/request": "workspace:*",
+    "@vben/stores": "workspace:*",
+    "@vben/styles": "workspace:*",
+    "@vben/types": "workspace:*",
+    "@vben/utils": "workspace:*",
+    "@vueuse/core": "14.2.1",
+    "ant-design-vue": "4.2.6",
+    "area-data": "5.0.6",
+    "cropperjs": "1.6.2",
+    "dayjs": "1.11.19",
+    "mitt": "3.0.1",
+    "pinia": "3.0.4",
+    "qrcode": "1.5.4",
+    "vue": "3.5.29",
+    "vue-json-pretty": "2.4.0",
+    "vue-router": "5.0.3",
+    "vxe-pc-ui": "4.13.0"
+  },
+  "devDependencies": {
+    "@types/qrcode": "1.5.6",
+    "@vben/vite-config": "workspace:*",
+    "@vben/tsconfig": "workspace:*",
+    "vite": "^7.3.7",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.5",
+    "@types/node": "^22.15.30",
+    "vitest": "4.1.11"
+  },
+  "private": true,
+  "description": "Independent customer center dynamic template",
+  "packageManager": "pnpm@10.30.3"
+}

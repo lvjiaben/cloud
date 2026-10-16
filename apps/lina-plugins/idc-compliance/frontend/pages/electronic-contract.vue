@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import type {
   ElectronicContractOnboarding,
   OnboardingCapability,
@@ -273,10 +274,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <Page :auto-content-height="true" class="min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="electronic-contract-page">
+  <Page :auto-content-height="true" class="plugin-admin-page min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="electronic-contract-page">
     <Tabs
       v-model:active-key="activeTab"
-      class="contract-tabs"
+      class="contract-tabs plugin-admin-tabs"
       data-testid="electronic-contract-tabs"
     >
       <TabPane
@@ -611,7 +612,7 @@ onMounted(() => {
 .contract-shell {
   --cyan: 14 165 233;
   display: grid;
-  gap: 18px;
+  gap: 16px;
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -622,17 +623,17 @@ onMounted(() => {
   opacity: 0.55;
 }
 .contract-toolbar :deep(.ant-card-head) {
-  min-height: 48px;
+  min-height: 36px;
 }
 .step-rail {
   background: hsl(var(--card));
   border: 1px solid rgb(148 163 184 / 22%);
   border-radius: 0;
-  padding: 22px 26px;
+  padding: 16px;
 }
 .onboarding-grid {
   display: grid;
-  gap: 18px;
+  gap: 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .step-card {
@@ -642,8 +643,8 @@ onMounted(() => {
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  min-height: 350px;
-  padding: 24px;
+  min-height: 0;
+  padding: 16px;
 }
 .step-card--accent {
   background: hsl(var(--card));
@@ -669,14 +670,14 @@ onMounted(() => {
 }
 .step-heading h2 {
   color: hsl(var(--foreground));
-  font-size: 18px;
+  font-size: 15px;
   margin: 2px 0 0;
 }
 .step-description {
   color: hsl(var(--muted-foreground));
   font-size: 13px;
-  line-height: 1.75;
-  margin: 20px 0;
+  line-height: 1.6;
+  margin: 8px 0;
 }
 .profile-list,
 .readiness-list,
@@ -691,9 +692,9 @@ onMounted(() => {
   align-items: center;
   border-bottom: 1px dashed rgb(148 163 184 / 25%);
   display: flex;
-  gap: 18px;
+  gap: 16px;
   justify-content: space-between;
-  min-height: 48px;
+  min-height: 36px;
 }
 .profile-list dt,
 .readiness-list span,
@@ -711,7 +712,7 @@ onMounted(() => {
 .privacy-note,
 .owner-note {
   background: hsl(var(--muted) / 74%);
-  border-radius: 10px;
+  border-radius: 0;
   color: hsl(var(--muted-foreground));
   font-size: 11px;
   line-height: 1.65;

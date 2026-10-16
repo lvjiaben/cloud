@@ -284,8 +284,8 @@ func projectAssistedQuoteRequest(
 	items []AssistedQuoteItem,
 	quotes map[string]entity.CommerceQuoteSnapshot,
 	orders map[string]entity.CommerceOrder,
-	now time.Time,
-	actor int,
+	_ time.Time,
+	_ int,
 	reused bool,
 ) (AssistedQuoteRequest, error) {
 	if request.ExpiresAt == nil || request.CreatedAt == nil || len(items) != request.ItemCount {
@@ -310,11 +310,6 @@ func projectAssistedQuoteRequest(
 	if err := projectAssistedOrder(&view, request, orders); err != nil {
 		return AssistedQuoteRequest{}, err
 	}
-	pending := view.StatusCode == AssistedQuoteStatusPendingApproval && view.ExpiresAt.After(now)
-	view.CanApprove = pending && actor > 0 && actor != view.RequestedBy
-	view.CanReject = view.CanApprove
-	view.CanCheckout = view.StatusCode == AssistedQuoteStatusApproved &&
-		view.ExpiresAt.After(now) && view.QuoteNo != "" && view.OrderNo == ""
 	return view, nil
 }
 

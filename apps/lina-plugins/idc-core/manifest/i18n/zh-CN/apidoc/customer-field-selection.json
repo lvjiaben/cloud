@@ -1,0 +1,9 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.fieldKey.dc": "插件声明的客户配置标识。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.minimum.dc": "整数可选范围下限，不得小于插件技术边界。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.maximum.dc": "整数可选范围上限，不得大于插件技术边界。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.candidateValues.dc": "允许购买的静态选项，必须是插件声明选项的子集。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.customerConfigurableFields.dc": "可由商家开启的客户配置。技术边界不代表上游实际可售套餐。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.customerFieldSelections.dc": "商家明确开启的客户配置及可售范围。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfigurationUpdateReq.fields.customerFieldSelections.dc": "明确开启的可选客户配置；不传则关闭全部需商家开启的字段。"
+}

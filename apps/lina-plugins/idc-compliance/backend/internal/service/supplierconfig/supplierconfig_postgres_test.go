@@ -125,6 +125,15 @@ func (a *supplierAuditRecorder) AppendBusinessTransition(
 	_ context.Context,
 	transition idccap.BusinessAuditTransition,
 ) error {
+	if transition.BeforeSnapshot == nil || transition.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch transition.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
+
 	a.transitions = append(a.transitions, transition)
 	return nil
 }

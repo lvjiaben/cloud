@@ -30,6 +30,8 @@ var (
 )
 
 const (
+	// taskConflictCode identifies a lost state/version/lease or frozen-evidence fence.
+	taskConflictCode               = "product_fulfillment_task_conflict"
 	StrategyManual                 = "manual"
 	StrategyApprovalThenPlugin     = "approval_then_plugin"
 	StrategyPaymentConfirmedPlugin = "payment_confirmed_plugin"
@@ -146,6 +148,7 @@ type ManualConclusionInput struct {
 }
 
 type IntentDetail struct {
+	TargetEntitlementNo                                     string
 	IntentNo, OrderNo, OrderItemNo, CustomerNo              string
 	CustomerCode, CustomerDisplayName, CustomerPrimaryPhone string
 	ProductNameZhCN, ProductNameEnUS                        string
@@ -272,6 +275,7 @@ type settlementAuthority struct {
 }
 
 type frozenItem struct {
+	TargetEntitlementNo            string    `orm:"target_entitlement_no"`
 	OrderItemNo                    string    `orm:"order_item_no"`
 	OrderNo                        string    `orm:"order_no"`
 	CustomerNo                     string    `orm:"customer_no"`

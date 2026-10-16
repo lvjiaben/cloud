@@ -1,4 +1,11 @@
 {
   "owner": "idc-channel",
-  "installSql": ["001-channel-core.sql", "002-channel-webhook-delivery.sql", "003-channel-token-security.sql", "004-channel-commerce-management.sql", "005-channel-list-pagination.sql"]
+  "installSql": [
+    "001-channel-core.sql",
+    "002-channel-webhook-delivery.sql",
+    "003-channel-token-security.sql",
+    "004-channel-commerce-management.sql",
+    "005-channel-list-pagination.sql",
+    "006-customer-open-platform.sql"
+  ]
 }

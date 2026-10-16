@@ -102,7 +102,7 @@ func validInvocation(invocation *capmodel.BusinessExtensionBridgeRequest) bool {
 	switch invocation.Method {
 	case candidateMethod:
 		return invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeNewBusiness || invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeExistingBusiness
-	case validationMethod:
+	case validationMethod, productfulfillmentcap.MethodValidateProductConfiguration:
 		return invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeNewBusiness || invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeExistingBusiness
 	case provisionMethod, queryMethod, serviceDetailMethod, serviceSyncMethod,
 		serviceUpdateValidationMethod, serviceRevalidateMethod, serviceCancelMethod:
@@ -116,6 +116,8 @@ func executeInvocation(interfaces supplierinterfacecap.Service, invocation *capm
 	switch invocation.Method {
 	case candidateMethod:
 		return executeCandidates(interfaces, invocation)
+	case productfulfillmentcap.MethodValidateProductConfiguration:
+		return executeProductConfigurationValidation(invocation.Payload)
 	case validationMethod, provisionMethod, queryMethod:
 		var request productfulfillmentcap.Request
 		if strictJSON(invocation.Payload, &request) != nil || productfulfillmentcap.ValidateRequest(&request) != nil {

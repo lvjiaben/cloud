@@ -1,0 +1,24 @@
+{
+  "snapshot": "2026-10-16",
+  "files": [
+    "apps/lina-plugins/idc-channel/frontend/pages/channel-i18n.ts",
+    "apps/lina-plugins/idc-channel/frontend/pages/components/open-api-guide.vue",
+    "apps/lina-plugins/idc-channel/frontend/pages/customer/channel-tokens.vue",
+    "apps/lina-plugins/idc-channel/frontend/pages/customer/open-platform-menu.ts",
+    "apps/lina-plugins/idc-channel/frontend/slots/layout/header/actions/open-platform-menu.vue",
+    "apps/lina-plugins/idc-channel/manifest/i18n/en-US/plugin.json",
+    "apps/lina-plugins/idc-channel/manifest/i18n/zh-CN/plugin.json",
+    "apps/lina-plugins/idc-core/frontend/pages/assisted-purchase-client.ts",
+    "apps/lina-plugins/idc-core/frontend/pages/assisted-quote-client.ts",
+    "apps/lina-plugins/idc-core/frontend/pages/catalog-configuration-i18n.ts",
+    "apps/lina-plugins/idc-core/frontend/pages/catalog-configuration-state.ts",
+    "apps/lina-plugins/idc-core/frontend/pages/catalog-money.ts",
+    "apps/lina-plugins/idc-core/frontend/pages/components/assisted-quote-item.vue",
+    "apps/lina-plugins/idc-core/frontend/pages/components/catalog-configuration-form.vue",
+    "apps/lina-plugins/idc-core/frontend/pages/customer-addons.vue",
+    "apps/lina-plugins/idc-core/frontend/pages/customer-entitlement-upgrades.vue",
+    "apps/lina-plugins/idc-core/frontend/pages/customer-trial-conversions.vue"
+  ],
+  "license": "Original project copyright and license retained",
+  "maintenance": "Independent copies in customer-default; public HTTP interfaces only"
+}

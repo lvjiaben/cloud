@@ -7,9 +7,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 	"testing"
 
+	"gopkg.in/yaml.v3"
+
+	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/billingcap"
 	billingspi "lina-plugin-idc-core/backend/cap/billingcap/spi"
@@ -87,7 +91,7 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 		t.Fatalf("embedded manifest does not identify %s", pluginID)
 	}
 	for _, fragment := range []string{
-		"version: v0.1.94",
+		"version: v0.1.101",
 		"      - provision",
 		"      - query",
 		"key: plugin:idc-core:catalog-automation-interfaces",
@@ -99,6 +103,26 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 	}
 	if strings.Contains(string(manifest), "fulfillment_contract:") {
 		t.Fatal("product-fulfillment owner must not declare a provider fulfillment contract")
+	}
+	var declaration struct {
+		BusinessExtensions []*capmodel.BusinessExtensionDeclaration `yaml:"business_extensions"`
+	}
+	if err := yaml.Unmarshal(manifest, &declaration); err != nil {
+		t.Fatalf("decode embedded owner manifest: %v", err)
+	}
+	var ownerCount int
+	for _, extension := range declaration.BusinessExtensions {
+		if extension == nil || extension.Point != capmodel.BusinessExtensionProductFulfillment {
+			continue
+		}
+		ownerCount++
+		if extension.Role != capmodel.BusinessExtensionRoleOwner || extension.Owner != pluginID ||
+			extension.Version != "v1" || !slices.Contains(extension.Methods, "product.configuration.validate") {
+			t.Fatalf("product validation must be published by the v1 fulfillment owner: %+v", extension)
+		}
+	}
+	if ownerCount != 1 {
+		t.Fatalf("expected one product fulfillment owner declaration, got %d", ownerCount)
 	}
 }
 

@@ -185,7 +185,7 @@ type ClosureRequestRes struct {
 }
 
 type DataExportProofReq struct {
-	g.Meta          `path:"/account/customer/data-exports/proof" method:"post" tags:"IDC Customer Account" summary:"Prove a recent login for my data export"`
+	g.Meta          `path:"/account/customer/data-exports/proof" method:"post" tags:"IDC Customer Account" summary:"Prove a current session for my data export"`
 	ExpectedVersion int64  `json:"expectedVersion" v:"required|min:1"`
 	IdempotencyKey  string `json:"idempotencyKey" v:"required|min-length:16|max-length:128"`
 	Confirmed       bool   `json:"confirmed" v:"required"`

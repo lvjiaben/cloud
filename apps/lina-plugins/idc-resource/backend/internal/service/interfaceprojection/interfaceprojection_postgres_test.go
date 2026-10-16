@@ -285,3 +285,99 @@ func appendProjectionDSNParameter(dsn, parameter string) string {
 	}
 	return dsn + separator + parameter
 }
+
+// TestEnsureTargetsOrderedProjection verifies fresh import admission does not
+// drain other interfaces and cannot skip leases, backoff, or a newer revision.
+func TestEnsureTargetsOrderedProjectionPostgreSQL(t *testing.T) {
+	ctx, db := newInterfaceProjectionDatabase(t)
+	projection := testProjection()
+	seedProjectionBinding(t, ctx, db, projection)
+	other := projection
+	other.InterfaceInstanceNo = "pfi_22222222222222222222222222222222"
+	other.ResourceChannelRef = "CHN_projection00000002"
+	seedProjectionBinding(t, ctx, db, other)
+	newer := projection
+	newer.InterfaceConfigurationRevision = "rci_22222222222222222222222222222222"
+	if err := db.Transaction(ctx, func(c context.Context, tx gdb.TX) error {
+		if err := Enqueue(c, tx, other, 1); err != nil {
+			return err
+		}
+		if err := Enqueue(c, tx, projection, 1); err != nil {
+			return err
+		}
+		return Enqueue(c, tx, newer, 2)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	sink := &recordingSink{}
+	worker, err := NewWorker(db, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(ctx, `UPDATE plugin_idc_resource_interface_projection_outbox SET available_at=CURRENT_TIMESTAMP+INTERVAL '1 hour' WHERE interface_instance_no=? AND projection_sequence=1`, projection.InterfaceInstanceNo); err != nil {
+		t.Fatal(err)
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, newer.InterfaceConfigurationRevision); err == nil {
+		t.Fatal("backoff predecessor was skipped")
+	}
+	if sink.calls != 0 {
+		t.Fatal("unrelated interface was delivered")
+	}
+	if _, err = db.Exec(ctx, `UPDATE plugin_idc_resource_interface_projection_outbox SET available_at=CURRENT_TIMESTAMP WHERE interface_instance_no=?`, projection.InterfaceInstanceNo); err != nil {
+		t.Fatal(err)
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, newer.InterfaceConfigurationRevision); err != nil {
+		t.Fatal(err)
+	}
+	if sink.calls != 2 || sink.values[0].InterfaceConfigurationRevision != projection.InterfaceConfigurationRevision || sink.values[1].InterfaceConfigurationRevision != newer.InterfaceConfigurationRevision {
+		t.Fatal("delivery order or target isolation failed")
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, newer.InterfaceConfigurationRevision); err != nil || sink.calls != 2 {
+		t.Fatal("ensure replay was not idempotent")
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, projection.InterfaceConfigurationRevision); err == nil {
+		t.Fatal("stale revision accepted after newer delivery")
+	}
+}
+
+// TestEnsureBoundedSameRevision verifies state events sharing a revision are
+// still delivered and bounded; retry resumes the durable prefix.
+func TestEnsureBoundedSameRevisionPostgreSQL(t *testing.T) {
+	ctx, db := newInterfaceProjectionDatabase(t)
+	projection := testProjection()
+	seedProjectionBinding(t, ctx, db, projection)
+	if err := db.Transaction(ctx, func(c context.Context, tx gdb.TX) error {
+		for sequence := int64(1); sequence <= 21; sequence++ {
+			if err := Enqueue(c, tx, projection, sequence); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	sink := &recordingSink{}
+	worker, err := NewWorker(db, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, projection.InterfaceConfigurationRevision); err == nil {
+		t.Fatal("unbounded backlog was accepted")
+	}
+	if sink.calls != 20 {
+		t.Fatalf("delivery limit = %d", sink.calls)
+	}
+	if err = worker.Ensure(ctx, projection.InterfaceInstanceNo, projection.InterfaceConfigurationRevision); err != nil {
+		t.Fatal(err)
+	}
+	if sink.calls != 21 {
+		t.Fatal("same-revision latest state event skipped")
+	}
+}
+
+func (sink *recordingSink) RefreshUnused(ctx context.Context, projection resourceinterfaceprojectioncap.Projection, apply func(context.Context) error) error {
+	if err := apply(ctx); err != nil {
+		return err
+	}
+	return sink.Upsert(ctx, projection)
+}

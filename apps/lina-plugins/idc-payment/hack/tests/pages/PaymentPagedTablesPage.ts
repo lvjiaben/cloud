@@ -22,20 +22,35 @@ export class PaymentPagedTablesPage {
   async open(kind: PaymentDirectory) {
     const route = kind === 'channels' ? '/idc/payment-channels' : kind === 'funds' ? '/idc/payment-exception-funds' : '/idc/payment-reconciliation';
     await this.page.goto(workspacePath(route), { waitUntil: 'domcontentloaded' });
+    await this.selectDirectory(kind);
     await this.table(kind).waitFor({ state: 'visible' });
   }
-  async last(kind: PaymentDirectory) { await this.pager(kind).locator('.vxe-pager--end-btn').click(); }
-  async first(kind: PaymentDirectory) { await this.pager(kind).locator('.vxe-pager--home-btn').click(); }
-  async next(kind: PaymentDirectory) { await this.pager(kind).locator('.vxe-pager--next-btn').click(); }
-  async previous(kind: PaymentDirectory) { await this.pager(kind).locator('.vxe-pager--prev-btn').click(); }
+  async selectDirectory(kind: PaymentDirectory) {
+    if (!this.standalone && ['health', 'batches', 'differences'].includes(kind)) {
+      await this.page.getByTestId('payment-reconciliation-tabs').locator(`[role="tab"][aria-controls$="-panel-${kind}"]`).click();
+      await this.table(kind).waitFor({ state: 'visible' });
+    }
+  }
+  async viewDifferences() {
+    await this.selectDirectory('batches');
+    await this.rows('batches').first().getByRole('button', { name: '差异明细', exact: true }).click();
+    await this.table('differences').waitFor({ state: 'visible' });
+  }
+  async last(kind: PaymentDirectory) { await this.selectDirectory(kind); await this.pager(kind).locator('.vxe-pager--end-btn').click(); }
+  async first(kind: PaymentDirectory) { await this.selectDirectory(kind); await this.pager(kind).locator('.vxe-pager--home-btn').click(); }
+  async next(kind: PaymentDirectory) { await this.selectDirectory(kind); await this.pager(kind).locator('.vxe-pager--next-btn').click(); }
+  async previous(kind: PaymentDirectory) { await this.selectDirectory(kind); await this.pager(kind).locator('.vxe-pager--prev-btn').click(); }
   async size(kind: PaymentDirectory, size: number) {
+    await this.selectDirectory(kind);
     await this.pager(kind).locator('.vxe-select').click();
     await this.page.locator('.vxe-select-option').filter({ hasText: new RegExp(`^${size}\\s*(条/页|/page)$`, 'u') }).click();
   }
   async refresh(kind: PaymentDirectory) {
+    await this.selectDirectory(kind);
     await this.table(kind).locator('.vxe-toolbar').getByRole('button', { name: /^(刷\s*新|Refresh)$/u }).click();
   }
   async selectChannel(label: string) {
+    await this.selectDirectory('batches');
     await this.table('batches').locator('.ant-select').first().click();
     const popup = this.page.locator('.ant-select-dropdown:visible');
     await popup.getByText(label, { exact: true }).click();
@@ -71,6 +86,7 @@ export class PaymentPagedTablesPage {
     });
   }
   async screenshot(kind: PaymentDirectory, name: string) {
+    await this.selectDirectory(kind);
     await this.pager(kind).scrollIntoViewIfNeeded();
     return capturePaymentScreenshot(this.page, name);
   }

@@ -2,7 +2,9 @@
   "error": {
     "idc": {
       "channel": {
-        "page": { "invalid": "The channel pagination request is invalid" },
+        "page": {
+          "invalid": "The channel pagination request is invalid"
+        },
         "token": {
           "not": {
             "accepted": "The channel credential is not accepted"
@@ -10,6 +12,9 @@
         },
         "lifecycle": {
           "invalid": "The channel lifecycle request is invalid"
+        },
+        "catalog": {
+          "unavailable": "The product configuration is unavailable"
         }
       }
     }

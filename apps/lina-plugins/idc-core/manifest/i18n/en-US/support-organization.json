@@ -1,0 +1,10 @@
+{
+  "plugin.idc-core.supportOrganization.department": "Organization department",
+  "plugin.idc-core.supportOrganization.choose": "Search and select an organization department",
+  "plugin.idc-core.supportOrganization.required": "Choose an organization department",
+  "plugin.idc-core.supportOrganization.unlinked": "This existing queue is not linked. Select an organization department before saving. Ticket history is retained.",
+  "plugin.idc-core.supportOrganization.loadFailed": "Could not load organization departments. Please retry.",
+  "plugin.idc-core.supportOrganization.retry": "Retry",
+  "plugin.idc-core.supportOrganization.total": "{total} departments",
+  "plugin.idc-core.supportOrganization.manualClaim": "Tickets wait in the department queue for a department member with handling permissions to claim."
+}

@@ -51,3 +51,25 @@ func TestDecidePaymentPreparationTerminalStates(t *testing.T) {
 		t.Fatalf("closed decision=%+v", decision)
 	}
 }
+
+// Explicit staff approval satisfies the identity gate without fabricated case evidence.
+func TestDecidePaymentPreparationManualVerification(t *testing.T) {
+	now := time.Now().UTC()
+	future := now.Add(time.Hour)
+	order := &entity.CommerceOrder{StatusCode: "pending_payment", PaymentDueAt: &future, TotalAmountMinor: 100}
+	invoice := &entity.BillingInvoice{StatusCode: "pending_payment", TotalAmountMinor: 100}
+	identity := paymentIdentityProjection{StatusCode: "verified", Version: 2, VerifiedAt: &now, ManualVerification: true}
+	decision := decidePaymentPreparation(order, invoice, identity, 0, now)
+	if decision.status != PaymentPreparationReady {
+		t.Fatalf("manual approval blocked: %+v", decision)
+	}
+	identity.ManualVerification = false
+	if decision = decidePaymentPreparation(order, invoice, identity, 0, now); decision.status != PaymentPreparationAwaitingIdentity {
+		t.Fatalf("missing supplier evidence accepted: %+v", decision)
+	}
+	identity.ManualVerification = true
+	identity.StatusCode = "unverified"
+	if decision = decidePaymentPreparation(order, invoice, identity, 0, now); decision.status != PaymentPreparationAwaitingIdentity {
+		t.Fatalf("cleared identity accepted: %+v", decision)
+	}
+}

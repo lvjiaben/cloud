@@ -7,22 +7,22 @@
       "title": "管理上游渠道与资源池"
     },
     "plugin:idc-resource:overview": {
-      "title": "资源运营总览"
+      "title": "概况"
     },
     "plugin:idc-resource:provider-capacity": {
-      "title": "供应商容量观测"
+      "title": "资源更新"
     },
     "plugin:idc-resource:provider-capacity:refresh": {
       "title": "采集供应商容量"
     },
     "plugin:idc-resource:health": {
-      "title": "上游渠道健康"
+      "title": "连接状态"
     },
     "plugin:idc-resource:health:policy": {
       "title": "调整健康策略"
     },
     "plugin:idc-resource:tasks": {
-      "title": "上游任务核对"
+      "title": "操作记录"
     },
     "plugin:idc-resource:tasks:query": {
       "title": "查看 Provider 任务证据"
@@ -77,6 +77,12 @@
     },
     "plugin:idc-resource:server-renewals:safe": {
       "title": "确认服务器续费"
+    },
+    "plugin:idc-resource:provider-operations": {
+      "title": "供应商运维"
+    },
+    "plugin:idc-resource:server-management": {
+      "title": "服务器管理"
     }
   }
 }

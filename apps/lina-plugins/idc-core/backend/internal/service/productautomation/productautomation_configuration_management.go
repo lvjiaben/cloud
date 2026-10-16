@@ -223,8 +223,12 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 		}
 		interfaceRevision = latest.Revision
 	}
-	scope := dynamicCandidateScope{interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: interfaceRevision}
+	scope := dynamicCandidateScope{versionNo: versionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: interfaceRevision}
 	if row == nil {
+		defaultCustomer, schemaErr := selectCustomerSchema(exact, nil)
+		if schemaErr != nil {
+			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+		}
 		product, productCandidates, presentationErr := s.materializeConfiguration(
 			ctx, exact, exact.ProductConfiguration, nil, configurationSurfaceProduct, scope,
 		)
@@ -232,13 +236,14 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 		}
 		customer, customerCandidates, presentationErr := s.materializeConfiguration(
-			ctx, exact, exact.CustomerConfiguration, nil, configurationSurfaceCustomer, scope,
+			ctx, exact, defaultCustomer, nil, configurationSurfaceCustomer, scope,
 		)
 		if presentationErr != nil {
 			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 		}
 		return &VersionConfiguration{
-			ProductDeclaration: product, CustomerDeclaration: customer,
+			CustomerConfigurableFields: configurableCustomerFields(exact),
+			ProductDeclaration:         product, CustomerDeclaration: customer,
 			MerchantValues: []ConfigurationValue{}, ProductResolvedCandidates: productCandidates,
 			CustomerResolvedCandidates: customerCandidates, Version: 0,
 		}, nil
@@ -251,8 +256,19 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
+	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, row, exact)
+	if schemaErr != nil {
+		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+	}
+	imported := false
+	if exact.PluginID == portableImportProviderID {
+		imported, err = s.database.Model(do.CatalogImportContract{}).Ctx(ctx).Where(do.CatalogImportContract{TenantId: 0, VersionNo: versionNo, InterfaceInstanceNo: binding.InterfaceInstanceNo}).Exist()
+		if err != nil {
+			return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+		}
+	}
 	if !sameExactConfiguration(product, exact.ProductConfiguration) ||
-		!sameExactConfiguration(customer, exact.CustomerConfiguration) {
+		!sameExactConfiguration(customer, customerSchema) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	values, err := configurationValuesFromJSON(product, []byte(row.MerchantValueSnapshot))
@@ -271,8 +287,14 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementUnavailable)
 	}
+	selections, selectionErr := frozenCustomerSelections(exact, customer)
+	if selectionErr != nil && !imported {
+		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+	}
 	return &VersionConfiguration{
-		ProductDeclaration: productPresentation, CustomerDeclaration: customerPresentation,
+		CustomerConfigurableFields: configurableCustomerFields(exact), CustomerFieldSelections: selections,
+		ImportedConfiguration: imported,
+		ProductDeclaration:    productPresentation, CustomerDeclaration: customerPresentation,
 		MerchantValues: values, ProductResolvedCandidates: productCandidates,
 		CustomerResolvedCandidates: customerCandidates, Version: row.Version,
 	}, nil

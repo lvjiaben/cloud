@@ -16,7 +16,11 @@ type IAdminV1 interface {
 	BrandPreview(ctx context.Context, req *v1.BrandPreviewReq) (res *v1.BrandPreviewRes, err error)
 	BrandPublish(ctx context.Context, req *v1.BrandPublishReq) (res *v1.BrandPublishRes, err error)
 	BrandRollback(ctx context.Context, req *v1.BrandRollbackReq) (res *v1.BrandRollbackRes, err error)
+	CustomerCenterConfigurationGet(ctx context.Context, req *v1.CustomerCenterConfigurationGetReq) (res *v1.CustomerCenterConfigurationGetRes, err error)
+	CustomerCenterConfigurationSave(ctx context.Context, req *v1.CustomerCenterConfigurationSaveReq) (res *v1.CustomerCenterConfigurationSaveRes, err error)
 	ExternalMenuList(ctx context.Context, req *v1.ExternalMenuListReq) (res *v1.ExternalMenuListRes, err error)
 	ExternalMenuSave(ctx context.Context, req *v1.ExternalMenuSaveReq) (res *v1.ExternalMenuSaveRes, err error)
 	ExternalMenuStatus(ctx context.Context, req *v1.ExternalMenuStatusReq) (res *v1.ExternalMenuStatusRes, err error)
+	SiteConfigurationGet(ctx context.Context, req *v1.SiteConfigurationGetReq) (res *v1.SiteConfigurationGetRes, err error)
+	SiteConfigurationSave(ctx context.Context, req *v1.SiteConfigurationSaveReq) (res *v1.SiteConfigurationSaveRes, err error)
 }

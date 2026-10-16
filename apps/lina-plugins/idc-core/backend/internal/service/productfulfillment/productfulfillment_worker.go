@@ -1,3 +1,6 @@
+// This file claims durable fulfillment tasks and invokes their frozen provider
+// contracts. Purchase terms come from immutable order items, never live prices.
+
 package productfulfillment
 
 import (
@@ -15,8 +18,10 @@ import (
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
+	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 )
 
 const maximumWorkerBatch = 64
@@ -28,6 +33,8 @@ type fulfillmentWorker struct {
 	evidence       providerEvidenceSealer
 	systemReasons  SystemTransitionReasonCatalog
 	resourceSource provisionresourcecap.Source
+	peerOutbound   resourceinterfaceprojectioncap.ExistingBusinessOutboundSource
+	consumedFiles  purchaseconfigurationfile.ConsumedFileReader
 	random         io.Reader
 }
 
@@ -44,6 +51,9 @@ type claimedFulfillment struct {
 	CustomerConfiguration                                       json.RawMessage
 	ProductConfiguration                                        json.RawMessage
 	ProductConfigurationDigest                                  string
+	CurrencyCode, ChargeTypeCode, PeriodUnitCode                string
+	BillingRuleNo                                               string
+	PeriodCount, PurchaseCycles                                 int
 	InterfaceConfigurationRevision                              int64
 	ResourceInterfaceConfigurationRevision                      string
 	UnitSequence, Quantity, AttemptNo                           int
@@ -52,11 +62,11 @@ type claimedFulfillment struct {
 	Action                                                      productfulfillmentcap.Action
 }
 
-func NewWorker(database gdb.DB, extensions pluginhost.BusinessExtensionRegistrar, contexts productautomation.ExistingBusinessRuntimeContextIssuer, evidence providerEvidenceSealer, systemReasons SystemTransitionReasonCatalog, resourceSource provisionresourcecap.Source) (Worker, error) {
+func NewWorker(database gdb.DB, extensions pluginhost.BusinessExtensionRegistrar, contexts productautomation.ExistingBusinessRuntimeContextIssuer, evidence providerEvidenceSealer, systemReasons SystemTransitionReasonCatalog, resourceSource provisionresourcecap.Source, peerOutbound resourceinterfaceprojectioncap.ExistingBusinessOutboundSource, consumedFiles purchaseconfigurationfile.ConsumedFileReader) (Worker, error) {
 	if database == nil || extensions == nil || contexts == nil || evidence == nil || systemReasons == nil {
 		return nil, errors.New("product fulfillment worker dependencies are unavailable")
 	}
-	return &fulfillmentWorker{database: database, extensions: extensions, contexts: contexts, evidence: evidence, systemReasons: systemReasons, resourceSource: resourceSource, random: rand.Reader}, nil
+	return &fulfillmentWorker{database: database, extensions: extensions, contexts: contexts, evidence: evidence, systemReasons: systemReasons, resourceSource: resourceSource, peerOutbound: peerOutbound, consumedFiles: consumedFiles, random: rand.Reader}, nil
 }
 
 func (w *fulfillmentWorker) Run(ctx context.Context, limit int) (*WorkerBatch, error) {
@@ -96,8 +106,8 @@ func (w *fulfillmentWorker) Run(ctx context.Context, limit int) (*WorkerBatch, e
 
 func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 	return w.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
-		var candidate *struct{ TaskNo, IntentNo string }
-		if err := w.database.GetScan(txCtx, &candidate, `SELECT task.task_no,task.intent_no FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.status_code IN ('querying','submitting') AND task.lease_expires_at<=CURRENT_TIMESTAMP ORDER BY task.lease_expires_at,task.task_no LIMIT 1 FOR UPDATE OF intent SKIP LOCKED`); err != nil || candidate == nil {
+		var candidate *struct{ TaskNo, IntentNo, PluginID string }
+		if err := w.database.GetScan(txCtx, &candidate, `SELECT task.task_no,task.intent_no,intent.plugin_id FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.status_code IN ('querying','submitting') AND task.lease_expires_at<=CURRENT_TIMESTAMP ORDER BY task.lease_expires_at,task.task_no LIMIT 1 FOR UPDATE OF intent SKIP LOCKED`); err != nil || candidate == nil {
 			return err
 		}
 		var expired *struct {
@@ -112,7 +122,7 @@ func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 		safeEvidence := []byte(`{"status":"result_unknown","recovery":"lease_expired"}`)
 		closed, err := w.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_attempt SET finished_at=CURRENT_TIMESTAMP,result_code='worker_interrupted',result_evidence_digest=?,result_status_code='result_unknown',safe_result_evidence=?::jsonb,safe_summary='Worker interrupted before a durable provider result' WHERE tenant_id=0 AND task_no=? AND attempt_no=? AND finished_at IS NULL`, sha256Hex(safeEvidence), safeEvidence, expired.TaskNo, expired.AttemptCount)
 		if err != nil || affected(closed) != 1 {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		nextStatus, nextPhase := "retry_wait", expired.PhaseCode
 		if expired.StatusCode == "submitting" {
@@ -120,7 +130,7 @@ func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 			// provider boundary. A frozen provider reference permits query-only
 			// recovery. Without one, fail closed as an unknown result and require
 			// an explicitly authorized takeover; never submit again.
-			if expired.ExternalReference == "" {
+			if expired.ExternalReference == "" && candidate.PluginID != "idc-peer" {
 				nextStatus, nextPhase = "result_unknown", "frozen_unknown"
 			} else {
 				nextPhase = "post_submit_query"
@@ -133,7 +143,7 @@ func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 		}
 		updated, err := w.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,phase_code=?,lease_token='',lease_expires_at=NULL,next_attempt_at=CURRENT_TIMESTAMP,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND version=? AND status_code=?`, nextStatus, nextPhase, expired.TaskNo, expired.Version, expired.StatusCode)
 		if err != nil || affected(updated) != 1 {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		if expired.CancelRequested && nextStatus == "cancellation_attention" {
 			reason, reasonErr := w.systemReasons.ResolveSystemTransitionReason(SystemReasonCancellationRequiresAttention)
@@ -147,7 +157,7 @@ func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 		if expired.TakeoverRequested || nextStatus == "cancellation_attention" {
 			intentResult, updateErr := w.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_intent SET status_code='manual_pending',version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND intent_no=? AND status_code='processing'`, expired.IntentNo)
 			if updateErr != nil || affected(intentResult) != 1 {
-				return errorsNew("product_fulfillment_task_conflict")
+				return errorsNew(taskConflictCode)
 			}
 		}
 		return nil
@@ -167,6 +177,7 @@ intent.plugin_id,intent.plugin_release_version AS release_version,intent.contrac
 intent.interface_instance_no,intent.interface_configuration_revision,interface_configuration.resource_owner_configuration_revision AS resource_interface_configuration_revision,intent.provision_method,intent.query_method,
 intent.order_no,intent.order_item_no,intent.product_no,intent.version_no,intent.configuration_snapshot_no,
 intent.customer_no,intent.entitlement_owner_id,
+order_item.currency_code,order_item.billing_rule_no,order_item.charge_type_code,order_item.period_unit_code,order_item.period_count,order_item.purchase_cycles,
 snapshot.configuration_revision,version_configuration.customer_declaration_snapshot::text AS customer_declaration,
 snapshot.typed_value_snapshot AS customer_configuration,
 version_configuration.merchant_value_snapshot AS product_configuration,version_configuration.merchant_value_digest AS product_configuration_digest,
@@ -174,6 +185,7 @@ intent.unit_sequence,intent.quantity,task.attempt_count+1 AS attempt_no,task.que
 		task.maximum_attempts,task.retry_base_seconds,task.external_reference AS previous_external_reference
 FROM plugin_idc_core_product_fulfillment_task task
 JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no
+JOIN plugin_idc_core_commerce_order_item order_item ON order_item.tenant_id=intent.tenant_id AND order_item.order_no=intent.order_no AND order_item.order_item_no=intent.order_item_no
 JOIN plugin_idc_core_commerce_structured_configuration_snapshot snapshot ON snapshot.tenant_id=intent.tenant_id AND snapshot.snapshot_no=intent.configuration_snapshot_no AND snapshot.order_no=intent.order_no AND snapshot.order_item_no=intent.order_item_no
 JOIN plugin_idc_core_catalog_product_version_configuration version_configuration ON version_configuration.tenant_id=intent.tenant_id AND version_configuration.version_no=intent.version_no AND version_configuration.interface_instance_no=intent.interface_instance_no AND version_configuration.interface_configuration_revision=intent.interface_configuration_revision
 JOIN plugin_idc_core_product_automation_interface_configuration_revision interface_configuration ON interface_configuration.tenant_id=intent.tenant_id AND interface_configuration.interface_instance_no=intent.interface_instance_no AND interface_configuration.revision=intent.interface_configuration_revision
@@ -204,7 +216,7 @@ LIMIT 1 FOR UPDATE OF task`, candidate.TaskNo, candidate.IntentNo)
 		evidenceDigest := sha256Hex(requestRaw)
 		result, err := w.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,lease_token=?,lease_expires_at=CURRENT_TIMESTAMP+INTERVAL '60 seconds',attempt_count=attempt_count+1,query_attempt_count=query_attempt_count+CASE WHEN ?='query' THEN 1 ELSE 0 END,submit_attempt_count=submit_attempt_count+CASE WHEN ?='submit' THEN 1 ELSE 0 END,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND lease_token='' AND status_code=?`, claimStatus, row.LeaseToken, row.Action, row.Action, row.TaskNo, row.PreviousStatus)
 		if err != nil || affected(result) != 1 {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		if _, err = w.database.Exec(txCtx, `INSERT INTO plugin_idc_core_product_fulfillment_attempt(tenant_id,task_no,attempt_no,action_code,started_at,evidence_digest) VALUES(0,?,?,?,CURRENT_TIMESTAMP,?)`, row.TaskNo, row.AttemptNo, row.Action, evidenceDigest); err != nil {
 			return err
@@ -233,9 +245,13 @@ func (row *claimedFulfillment) request() (*productfulfillmentcap.Request, error)
 		Quantity: row.Quantity, ProductNo: row.ProductNo, ProductVersionNo: row.VersionNo,
 		ConfigurationRevision: row.ConfigurationRevision, CustomerConfiguration: customerConfiguration,
 		ProductConfiguration: row.ProductConfiguration, ProductConfigurationDigest: row.ProductConfigurationDigest,
-		CustomerConfigurationID: row.ConfigurationSnapshotNo}
+		CustomerConfigurationID: row.ConfigurationSnapshotNo,
+		Billing: &productfulfillmentcap.BillingSchedule{
+			CurrencyCode: row.CurrencyCode, ChargeType: productfulfillmentcap.BillingChargeType(row.ChargeTypeCode),
+			PeriodUnit: productfulfillmentcap.BillingPeriodUnit(row.PeriodUnitCode), PeriodCount: row.PeriodCount, PurchaseCycles: row.PurchaseCycles,
+		}}
 	request.PreviousExternalReference = row.PreviousExternalReference
-	if row.PreviousPhase == "post_submit_query" && row.PreviousExternalReference == "" {
+	if row.PreviousPhase == "post_submit_query" && row.PreviousExternalReference == "" && row.PluginID != "idc-peer" {
 		return nil, errors.New("post-submit fulfillment query requires an external reference")
 	}
 	return request, productfulfillmentcap.ValidateRequest(request)
@@ -250,9 +266,11 @@ func safeProviderCustomerConfiguration(declarationRaw string, valuesRaw json.Raw
 	if err = json.Unmarshal(valuesRaw, &values); err != nil || values == nil {
 		return nil, errors.New("customer configuration is unavailable")
 	}
-	for _, field := range declaration.Fields {
-		if field != nil && field.Type == "file" {
-			delete(values, field.Key)
+	if declaration != nil {
+		for _, field := range declaration.Fields {
+			if field != nil && field.Type == "file" {
+				delete(values, field.Key)
+			}
 		}
 	}
 	result, err := json.Marshal(values)
@@ -263,6 +281,12 @@ func safeProviderCustomerConfiguration(declarationRaw string, valuesRaw json.Raw
 }
 
 func (w *fulfillmentWorker) invokeAndFinalize(ctx context.Context, claimed *claimedFulfillment) (workerDecision, error) {
+	invokeCtx := ctx
+	var stopPeerLease func()
+	if claimed.PluginID == "idc-peer" {
+		invokeCtx, stopPeerLease = w.keepPeerLease(ctx, claimed)
+		defer stopPeerLease()
+	}
 	request, err := claimed.request()
 	if err != nil {
 		return workerDecision{}, err
@@ -276,7 +300,7 @@ func (w *fulfillmentWorker) invokeAndFinalize(ctx context.Context, claimed *clai
 		resourceOutcome         *resourceInvocation
 	)
 	if claimed.EntitlementOwnerID == provisionresourcecap.OwnerID {
-		invocation := w.invokeResourceOwner(ctx, claimed, request)
+		invocation := w.invokeResourceOwner(invokeCtx, claimed, request)
 		result, rawResult = invocation.result, invocation.rawResult
 		providerBoundaryCrossed, resourceManualReview = invocation.providerBoundaryCrossed, invocation.manualReview
 		resourceOutcome = &invocation
@@ -284,7 +308,10 @@ func (w *fulfillmentWorker) invokeAndFinalize(ctx context.Context, claimed *clai
 			invokeErr = errors.New("resource owner fulfillment invocation failed")
 		}
 	} else {
-		result, rawResult, providerBoundaryCrossed, invokeErr = w.invokeDynamicProvider(ctx, claimed, request)
+		result, rawResult, providerBoundaryCrossed, invokeErr = w.invokeDynamicProvider(invokeCtx, claimed, request)
+	}
+	if stopPeerLease != nil {
+		stopPeerLease()
 	}
 	defer clear(rawResult)
 	var protectedEvidence *sealedProviderEvidence
@@ -307,6 +334,11 @@ func (w *fulfillmentWorker) invokeDynamicProvider(ctx context.Context, claimed *
 	method := claimed.QueryMethod
 	if claimed.Action == productfulfillmentcap.ActionSubmit {
 		method = claimed.ProvisionMethod
+	}
+	// Resource-backed peer imports use the resource owner's frozen read
+	// evidence and confidential context, not the managed interface schema.
+	if claimed.PluginID == "idc-peer" {
+		return w.invokePeerProvider(ctx, claimed, request, method)
 	}
 	runtimeContext, invokeErr := w.contexts.IssueExistingBusinessRuntimeContext(ctx, productautomation.ExistingBusinessRuntimeContextInput{
 		PluginID: claimed.PluginID, ReleaseVersion: claimed.ReleaseVersion, Point: capmodel.BusinessExtensionProductFulfillment,
@@ -350,7 +382,7 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 			Version    int64
 		}
 		if err := w.database.GetScan(txCtx, &intent, `SELECT status_code,version FROM plugin_idc_core_product_fulfillment_intent WHERE tenant_id=0 AND intent_no=? LIMIT 1 FOR UPDATE`, claimed.IntentNo); err != nil || intent == nil {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		var current *struct {
 			StatusCode, PhaseCode, LeaseToken string
@@ -359,9 +391,10 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 			Version                           int64
 		}
 		if err := w.database.GetScan(txCtx, &current, `SELECT status_code,phase_code,lease_token,takeover_requested,cancel_requested,version FROM plugin_idc_core_product_fulfillment_task WHERE tenant_id=0 AND task_no=? LIMIT 1 FOR UPDATE`, claimed.TaskNo); err != nil || current == nil || current.LeaseToken != claimed.LeaseToken {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		decision = decideWorkerResult(claimed.PreviousStatus, claimed.PreviousPhase, claimed.Action, result, invokeFailed, providerBoundaryCrossed, current.TakeoverRequested, current.CancelRequested, claimed.QueryAttempts, claimed.SubmitAttempts)
+		decision = peerRecoveryDecision(claimed, decision, current.TakeoverRequested, current.CancelRequested)
 		if resourceManualReview {
 			decision = workerDecision{TaskStatus: "manual_takeover", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 		}
@@ -386,7 +419,7 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 			if err != nil {
 				return err
 			}
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		if err = w.storeProtectedProviderEvidence(txCtx, claimed, protectedEvidence); err != nil {
 			return err
@@ -394,13 +427,17 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 		if err = w.enqueueResourceOutcome(txCtx, claimed, stored, resourceManualReview, resourceOutcome, resultDigest); err != nil {
 			return err
 		}
+		if decision.TaskStatus == "succeeded" {
+			if err = w.storePeerDeliveries(txCtx, claimed, stored); err != nil {
+				return err
+			}
+		}
 		nextExternalReference := claimed.PreviousExternalReference
 		if stored.ExternalReference != "" {
 			nextExternalReference = stored.ExternalReference
 		}
-		taskResult, err := w.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,phase_code=?,next_attempt_at=CURRENT_TIMESTAMP+INTERVAL '30 seconds',lease_token='',lease_expires_at=NULL,external_reference=?,last_result_code=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND version=? AND lease_token=? AND status_code IN ('querying','submitting')`, decision.TaskStatus, decision.PhaseCode, nextExternalReference, resultCode, claimed.TaskNo, current.Version, claimed.LeaseToken)
-		if err != nil || affected(taskResult) != 1 {
-			return errorsNew("product_fulfillment_task_conflict")
+		if err = w.finalizeTaskState(txCtx, claimed, current.Version, decision, nextExternalReference, resultCode, stored); err != nil {
+			return errorsNew(taskConflictCode)
 		}
 		if err = w.recordCancellationTransition(txCtx, claimed.IntentNo, current.CancelRequested, decision); err != nil {
 			return err
@@ -408,6 +445,27 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 		return w.updateIntentStatus(txCtx, claimed.IntentNo, intent.StatusCode, intent.Version, decision.IntentStatus)
 	})
 	return decision, err
+}
+
+// finalizeTaskState freezes peer deliveries in the same guarded state advance;
+// a separate snapshot-only update is rejected by the durable task state machine.
+func (w *fulfillmentWorker) finalizeTaskState(ctx context.Context, claimed *claimedFulfillment, version int64, decision workerDecision, externalReference, resultCode string, result *productfulfillmentcap.Result) error {
+	var deliveries any
+	if claimed.PluginID == "idc-peer" && decision.TaskStatus == "succeeded" {
+		raw, err := json.Marshal(result.Deliveries)
+		if err != nil {
+			return err
+		}
+		deliveries = string(raw)
+	}
+	taskResult, err := w.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,phase_code=?,next_attempt_at=CURRENT_TIMESTAMP+INTERVAL '30 seconds',lease_token='',lease_expires_at=NULL,external_reference=?,last_result_code=?,upstream_deliveries=COALESCE(?::jsonb,upstream_deliveries),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND version=? AND lease_token=? AND status_code IN ('querying','submitting') AND (?::jsonb IS NULL OR upstream_deliveries='[]'::jsonb OR upstream_deliveries=?::jsonb)`, decision.TaskStatus, decision.PhaseCode, externalReference, resultCode, deliveries, claimed.TaskNo, version, claimed.LeaseToken, deliveries, deliveries)
+	if err != nil {
+		return err
+	}
+	if affected(taskResult) != 1 {
+		return errorsNew(taskConflictCode)
+	}
+	return nil
 }
 
 func (w *fulfillmentWorker) storeProtectedProviderEvidence(ctx context.Context, claimed *claimedFulfillment, evidence *sealedProviderEvidence) error {
@@ -472,7 +530,7 @@ func (w *fulfillmentWorker) updateIntentStatus(ctx context.Context, intentNo, cu
 	}
 	result, err := w.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_intent SET status_code=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND intent_no=? AND version=?`, nextStatus, intentNo, version)
 	if err != nil || affected(result) != 1 {
-		return errorsNew("product_fulfillment_task_conflict")
+		return errorsNew(taskConflictCode)
 	}
 	return nil
 }

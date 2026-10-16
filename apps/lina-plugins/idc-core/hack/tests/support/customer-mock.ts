@@ -1,6 +1,9 @@
 import type { Page, Route } from "@host-tests/support/playwright";
 
 const firstCustomer = {
+  customerCode: "10000",
+  primaryPhone: "13800138000",
+  primaryEmail: "customer@example.test",
   countryCode: "CN",
   createdAt: 1_786_161_600_000,
   customerNo: "CUS_0123456789abcdef0123456789abcdef",
@@ -37,27 +40,42 @@ function apiEnvelope(data: unknown) {
 }
 
 export interface CustomerMockState {
+ overviewExtras:Record<string,unknown>;
+ listExtras:Record<string,unknown>;
   activationRequests: Array<Record<string, unknown>>;
   directRequests: Array<Record<string, unknown>>;
   batchRequests: Array<Record<string, unknown>>;
+  batchFailures: number;
   listRequests: URL[];
   passwordResetRequests: Array<Record<string, unknown>>;
   resendRequests: Array<Record<string, unknown>>;
   segmentRequests: URL[];
+  statusRequests: Array<Record<string, unknown>>;
+  segmentMutations: Array<Record<string, unknown>>;
+  noteRequests: Array<Record<string, unknown>>;
+  auditRequests: URL[];
+  directFailures: number;
 }
 
 export async function installCustomerManagementMock(
   page: Page,
 ): Promise<CustomerMockState> {
   const state: CustomerMockState = {
+ overviewExtras:{},listExtras:{},
     activationRequests: [],
     directRequests: [],
     batchRequests: [],
+    batchFailures: 0,
     listRequests: [],
     passwordResetRequests: [],
     resendRequests: [],
     segmentRequests: [],
+    statusRequests: [], segmentMutations: [], noteRequests: [], auditRequests: [], directFailures: 0,
   };
+  const currentCustomer = {...firstCustomer};
+  const notes: Array<Record<string, unknown>> = [];
+  const addedTags: Array<Record<string, unknown>> = [];
+  const addedGroups: Array<Record<string, unknown>> = [];
   const pendingCustomers: Array<Record<string, unknown>> = [];
   const activationReplays = new Map<string, Record<string, unknown>>();
   await page.route(
@@ -69,6 +87,7 @@ export async function installCustomerManagementMock(
       await route.fulfill({
         json: apiEnvelope({
           items: [
+            ...(isGroup ? addedGroups : addedTags),
             isGroup
               ? {
                   code: "managed",
@@ -109,6 +128,27 @@ export async function installCustomerManagementMock(
     async (route: Route) => {
       const url = new URL(route.request().url());
       const method = route.request().method();
+      if (method === "PUT" && url.pathname.endsWith("/account-status")) {
+        const body=route.request().postDataJSON(); state.statusRequests.push(body); currentCustomer.status=body.toStatus; currentCustomer.version+=1;
+        await route.fulfill({json:apiEnvelope({customerNo:currentCustomer.customerNo,status:currentCustomer.status,version:currentCustomer.version})});return;
+      }
+      if (url.pathname.endsWith("/audit-records")) {state.auditRequests.push(url);await route.fulfill({json:apiEnvelope({items:[{auditNo:"AUD_0123456789abcdef0123456789abcdef",occurredAt:1780000000000,operationCode:"customer.password.reset",result:"succeeded"}]})});return;}
+      if (url.pathname.endsWith("/activities")) {await route.fulfill({json:apiEnvelope({items:notes,nextCursor:""})});return;}
+      if (method==="POST" && url.pathname.endsWith("/notes")) {const body=route.request().postDataJSON();state.noteRequests.push(body);notes.unshift({number:"NTE_0123456789abcdef0123456789abcdef",kind:"note",title:body.content,detail:body.content,status:"active",category:body.category,createdAt:Date.now(),updatedAt:Date.now()});await route.fulfill({json:apiEnvelope({})});return;}
+      if (method === "POST" && url.pathname.endsWith("/segments")) {
+        const body = route.request().postDataJSON(); state.segmentMutations.push(body);
+        const number = body.segmentNo || `${body.kind === "tag" ? "TAG" : "GRP"}_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`;
+        const items = body.kind === "tag" ? addedTags : addedGroups;
+        if (!items.some(item => item.number === number)) items.push({number,code:"test",nameZhCn:body.name,nameEnUs:body.name,status:"active"});
+        await route.fulfill({json:apiEnvelope({segmentNo:number})}); return;
+      }
+      if (method === "DELETE" && url.pathname.includes("/segments/")) {
+        const body = route.request().postDataJSON(); const number = url.pathname.split("/").at(-1);
+        state.segmentMutations.push({...body, segmentNo:number, removed:true});
+        const items = body.kind === "tag" ? addedTags : addedGroups;
+        const index = items.findIndex(item => item.number === number); if (index >= 0) items.splice(index,1);
+        await route.fulfill({json:apiEnvelope({})}); return;
+      }
       if (method === "PUT" && url.pathname.endsWith("/password")) {
         state.passwordResetRequests.push(
           route.request().postDataJSON() as Record<string, unknown>,
@@ -124,11 +164,14 @@ export async function installCustomerManagementMock(
       ) {
         const body = route.request().postDataJSON() as Record<string, unknown>;
         state.directRequests.push(body);
+        if(state.directFailures>0){state.directFailures-=1;await route.fulfill({status:409,json:{code:409,message:"账号已存在，请换一个"}});return;}
         const index = pendingCustomers.length + 10;
         const customerNo = `CUS_${String(index).padStart(32, "0")}`;
         pendingCustomers.push({
           ...firstCustomer,
           customerNo,
+          primaryEmail: body.email || "",
+          primaryPhone: body.phone || "",
           displayName: body.displayName,
           preferredLocale: body.preferredLocale,
           status: "active",
@@ -140,7 +183,7 @@ export async function installCustomerManagementMock(
         await route.fulfill({
           json: apiEnvelope({
             customerNo,
-            mustChangePassword: true,
+            mustChangePassword: false,
             reused: false,
             status: "active",
             userId: 99,
@@ -196,6 +239,8 @@ export async function installCustomerManagementMock(
           invitationNo: `INV_${String(index).padStart(32, "0")}`,
           customerNo,
           customerType: body.customerType,
+          primaryEmail: body.email || "",
+          primaryPhone: body.phone || "",
           displayName: body.displayName,
           destinationHint: body.email ? "b***@example.com" : "+86 ***8000",
           targetUserId: body.bindExistingIdentity ? 88 : 0,
@@ -208,6 +253,8 @@ export async function installCustomerManagementMock(
         pendingCustomers.push({
           ...firstCustomer,
           customerNo,
+          primaryEmail: body.email || "",
+          primaryPhone: body.phone || "",
           displayName: body.displayName,
           preferredLocale: body.preferredLocale,
           status: "pending_activation",
@@ -222,7 +269,8 @@ export async function installCustomerManagementMock(
       if (url.pathname.endsWith(`/${firstCustomer.customerNo}`)) {
         await route.fulfill({
           json: apiEnvelope({
-            balances: [],
+            ...state.overviewExtras,
+            balances: (state.overviewExtras.balances||[]),
             business: {
               audits: 8,
               bills: 3,
@@ -246,10 +294,10 @@ export async function installCustomerManagementMock(
               openRisks: 1,
               plannedFollowUps: 1,
             },
-            customer: firstCustomer,
+            customer: currentCustomer,
             groups: {
               hasMore: false,
-              items: [
+              items: [...addedGroups,
                 {
                   code: "managed",
                   colorToken: "",
@@ -262,7 +310,7 @@ export async function installCustomerManagementMock(
             },
             tags: {
               hasMore: false,
-              items: [
+              items: [...addedTags,
                 {
                   code: "priority",
                   colorToken: "warning",
@@ -298,7 +346,7 @@ export async function installCustomerManagementMock(
           displayName: `分页客户 ${index + 1}`,
         }))];
       const offset = (pageNumber - 1) * size;
-      await route.fulfill({ json: apiEnvelope({ customers: directory.slice(offset, offset + size), nextCursor: "", total: directory.length }) });
+      await route.fulfill({ json: apiEnvelope({ customers: directory.slice(offset, offset + size).map(item=>({...item,...state.listExtras})), nextCursor: "", total: directory.length }) });
     },
   );
   await page.route(
@@ -307,6 +355,10 @@ export async function installCustomerManagementMock(
       state.batchRequests.push(
         route.request().postDataJSON() as Record<string, unknown>,
       );
+      if (state.batchFailures > 0) {
+        state.batchFailures--;
+        await route.fulfill({status:500,json:{code:51,message:"保存失败，请重试"}});return;
+      }
       await route.fulfill({
         json: apiEnvelope({
           auditNo: "AUD_0123456789abcdef0123456789abcdef",

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 )
 
 // TestImportMarkupPriceMinor verifies that a markup increases the upstream
@@ -127,5 +128,21 @@ func TestImportPricingRejectsOverflow(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestPortableImportResaleMarkup applies markup to every fixed source while
+// retaining downstream discounts and leaving the received snapshot untouched.
+func TestPortableImportResaleMarkup(t *testing.T) {
+	snapshot := portableImportTestSource().ImportSnapshot
+	bps := 2000
+	snapshot.Prices[0].WholeItemRule = &channelcommercecap.ImportWholeItemRule{Kind: "discount", DiscountBasisPoints: &bps, Prior: snapshot.Prices[0].WholeItemRule}
+	prices, err := calculatePortableImportPrices(snapshot, "10")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rule := prices[0].portable.WholeItemRule
+	if *rule.Prior.FixedAmountMinor != 220 || *rule.DiscountBasisPoints != 2000 || *snapshot.Prices[0].WholeItemRule.Prior.FixedAmountMinor != 200 {
+		t.Fatalf("resale markup or immutability: %+v", rule)
 	}
 }

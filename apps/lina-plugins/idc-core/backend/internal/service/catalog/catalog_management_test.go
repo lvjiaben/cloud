@@ -69,6 +69,11 @@ func (a *managementTestAuthorizer) AuthorizeProductCreate(context.Context) (int,
 	return a.actor, a.err
 }
 
+func (a *managementTestAuthorizer) AuthorizeProductUpdate(context.Context, string) (int, error) {
+	a.calls.Add(1)
+	return a.actor, a.err
+}
+
 func (a *managementTestAuthorizer) AuthorizeBillingWrite(context.Context, string) (int, error) {
 	a.calls.Add(1)
 	return a.actor, a.err

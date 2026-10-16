@@ -1,6 +1,11 @@
+// This file declares secret-free confidential HTTP instructions. Secret field
+// names cross governed boundaries as values, never credential-named JSON keys.
 package resourcecap
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"sort"
+)
 
 const (
 	ConfidentialHTTPKindAuthenticate = "authenticate"
@@ -10,15 +15,19 @@ const (
 // ConfidentialHTTPRequest is the dynamic-provider-visible, secret-free
 // instruction for one host-confidential HTTP step.
 type ConfidentialHTTPRequest struct {
-	Kind             string              `json:"kind"`
-	Method           string              `json:"method"`
-	Path             string              `json:"path"`
-	Query            map[string][]string `json:"query,omitempty"`
-	Form             map[string]string   `json:"form,omitempty"`
-	CredentialFields map[string]string   `json:"credentialFields,omitempty"`
-	// SecretFormFields maps an upstream form field to an operation secret slot.
-	// Only the slot name crosses the WASM boundary; the host resolves its handle.
-	SecretFormFields map[string]string `json:"secretFormFields,omitempty"`
+	Kind   string              `json:"kind"`
+	Method string              `json:"method"`
+	Path   string              `json:"path"`
+	Query  map[string][]string `json:"query,omitempty"`
+	Form   map[string]string   `json:"form,omitempty"`
+	// JSONBody carries public configuration in an object request body. It cannot
+	// be combined with forms or secret form bindings; credentials remain host-owned.
+	JSONBody         json.RawMessage   `json:"jsonBody,omitempty"`
+	CredentialFields map[string]string `json:"credentialFields,omitempty"`
+	// SecretFormFields is retained for trusted-owner internal instructions.
+	// Guests use SecretFormBindings so sensitive field names are JSON values.
+	SecretFormFields   map[string]string               `json:"secretFormFields,omitempty"`
+	SecretFormBindings []ConfidentialSecretFormBinding `json:"secretFormBindings,omitempty"`
 	// ResponseFields is the complete supplier JSON field allowlist for this step.
 	// Container keys must also be listed.
 	ResponseFields    []string `json:"responseFields,omitempty"`
@@ -34,4 +43,29 @@ type ConfidentialHTTPResponse struct {
 	StatusCode    int             `json:"StatusCode"`
 	Data          json.RawMessage `json:"Data,omitempty"`
 	Authenticated bool            `json:"Authenticated,omitempty"`
+}
+
+// ConfidentialSecretFormBinding names an upstream field and an existing operation
+// secret slot. It contains no plaintext credential or secret handle.
+type ConfidentialSecretFormBinding struct {
+	Field string `json:"field"`
+	Slot  string `json:"slot"`
+}
+
+// NewConfidentialSecretFormBindings creates a deterministic secret-free wire
+// projection. The resource owner validates and resolves every slot on receipt.
+func NewConfidentialSecretFormBindings(fields map[string]string) []ConfidentialSecretFormBinding {
+	if len(fields) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(fields))
+	for field := range fields {
+		keys = append(keys, field)
+	}
+	sort.Strings(keys)
+	bindings := make([]ConfidentialSecretFormBinding, 0, len(keys))
+	for _, field := range keys {
+		bindings = append(bindings, ConfidentialSecretFormBinding{Field: field, Slot: fields[field]})
+	}
+	return bindings
 }

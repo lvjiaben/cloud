@@ -43,6 +43,26 @@ export class CatalogManagementPage {
     this.publicationPreview = page.getByTestId("catalog-publication-preview");
   }
 
+  async saveAddons() { await this.page.getByTestId('catalog-addons-save').click(); }
+
+  async openCategoryParentChoices() {
+    await this.page.getByTestId('catalog-category-create-inline').click();
+    await this.page.getByTestId('catalog-category-create-parent').click();
+    return this.page.locator('.ant-select-dropdown:visible');
+  }
+
+  async writeAddons(productNo: string, productNos: string[], version: number) {
+    return this.page.evaluate(async ({ productNo, productNos, version }) => {
+      const key = Object.keys(localStorage).find(key => key.endsWith('core-access'));
+      const token = key ? JSON.parse(localStorage.getItem(key)!).accessToken : '';
+      const response = await fetch('/x/idc-core/api/v1/admin/catalog/products/' + productNo + '/addons', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ productNos, version }),
+      });
+      return response.json();
+    }, { productNo, productNos, version });
+  }
+
   async goto() {
     await this.page.goto(workspacePath("/idc/catalog"), {
       waitUntil: "domcontentloaded",
@@ -54,6 +74,31 @@ export class CatalogManagementPage {
       timeout: 15_000,
     });
     await this.waitForDataSettled();
+  }
+
+  async openMerchantConfiguration() {
+    await this.selectEditSection("购买配置");
+    await this.detailDrawer.locator(".ant-card").filter({ hasText: "后台商品配置" }).first()
+      .getByRole("button", { name: "编辑配置", exact: true }).click();
+  }
+
+  merchantConfigurationDialog() {
+    return this.page.getByRole("dialog", { name: "后台商品配置", exact: true });
+  }
+
+  async fillMerchantField(label: string, value: string) {
+    await this.merchantConfigurationDialog().getByLabel(label, { exact: true }).fill(value);
+  }
+
+  async selectMerchantCharacter(label: string) {
+    const dialog = this.merchantConfigurationDialog();
+    await dialog.getByLabel("密码字符规则", { exact: true }).locator("xpath=../..").click();
+    await dialog.locator(".ant-select-dropdown:visible").getByText(label, { exact: true }).click();
+    await dialog.getByText("主机名前缀", { exact: true }).click();
+  }
+
+  async saveMerchantConfiguration() {
+    await this.merchantConfigurationDialog().getByRole("button", { name: /保\s*存/u }).click();
   }
 
   productRow(productNo: string) {
@@ -85,6 +130,7 @@ export class CatalogManagementPage {
   }
 
   async openFulfillmentPolicy() {
+    await this.selectEditSection(/交付设置|Delivery settings/u);
     await this.detailDrawer
       .getByRole("button", {
         name: /设置履约方式|Modify fulfillment mode/iu,
@@ -162,7 +208,12 @@ export class CatalogManagementPage {
   }
 
   async revealFulfillmentPolicySummary() {
+    await this.selectEditSection(/交付设置|Delivery settings/u);
     await this.fulfillmentPolicySummary.scrollIntoViewIfNeeded();
+  }
+
+  async selectEditSection(label: string | RegExp) {
+    await this.page.getByTestId('catalog-edit-sections').getByRole('tab', { name: label, exact: true }).click();
   }
 
   async openPublicationPreview(productNo: string) {
@@ -178,7 +229,7 @@ export class CatalogManagementPage {
     const directory = resolve(process.cwd(), "../../temp", day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
-    await this.page.screenshot({ fullPage: false, path });
+    await this.page.screenshot({ animations: "disabled", fullPage: false, path });
     return path;
   }
 

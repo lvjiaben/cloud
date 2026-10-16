@@ -90,7 +90,10 @@ func (s *financeOperationsAuthorizerStub) AuthorizeFinancialExport(context.Conte
 
 type financeOperationsAuditStub struct{}
 
-func (financeOperationsAuditStub) AppendBusinessTransition(context.Context, idccap.BusinessAuditTransition) error {
+func (financeOperationsAuditStub) AppendBusinessTransition(_ context.Context, input idccap.BusinessAuditTransition) error {
+ if input.BeforeSnapshot == nil || input.AfterSnapshot == nil { return errors.New("missing audit snapshots") }
+ switch input.ResultCode { case "succeeded", "denied", "failed", "result_unknown": default: return errors.New("invalid audit result") }
+
 	return nil
 }
 func (financeOperationsAuditStub) AppendBusinessBatchTransition(context.Context, idccap.BusinessAuditBatchTransition) (idccap.BusinessAuditAppendResult, error) {

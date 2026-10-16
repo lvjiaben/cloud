@@ -290,7 +290,8 @@ func (s *publicationServiceImpl) appendPublicationAudit(
 		OperationCode: "catalog.product-version.publish",
 		TargetType:    "catalog_product_version", TargetNo: target.VersionNo,
 		ResultCode: "succeeded", ReasonCode: target.SourceCode, RiskCode: "high",
-		CorrelationNo: target.SourceVersion,
+		CorrelationNo:      target.SourceVersion,
+		RequiredPermission: PermissionCatalogProductPublish,
 		BeforeSnapshot: map[string]any{
 			"state": target.StatusCode, "product_no": target.ProductNo,
 			"superseded_version_no": result.SupersededVersionNo,

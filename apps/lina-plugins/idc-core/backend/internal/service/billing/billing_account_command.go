@@ -89,6 +89,7 @@ type accountFinanceCommandImpl struct {
 	invoices    InvoiceService
 	transforms  InvoiceTransformService
 	settlements FinancialSettlementService
+	renewals    RenewalInvoicePayment
 }
 
 var _ AccountFinanceCommandService = (*accountFinanceCommandImpl)(nil)
@@ -130,6 +131,12 @@ func (s *accountFinanceCommandImpl) PayAccountInvoiceFromBalance(
 	invoiceNo, err := normalizeAccountBalancePayment(input)
 	if err != nil {
 		return nil, err
+	}
+	if s.renewals != nil {
+		paid, handled, payErr := s.renewals.PayOwnedRenewalInvoice(ctx, input)
+		if handled || payErr != nil {
+			return paid, payErr
+		}
 	}
 	keyDigest := accountFinanceIdempotencyDigest(audience.CustomerNo, input.IdempotencyKey)
 	if err = s.requireOwnedInvoices(ctx, audience.CustomerNo, []string{invoiceNo}); err != nil {
@@ -328,4 +335,31 @@ func (s *accountFinanceCommandImpl) requireOwnedInvoices(
 		return bizerr.NewCode(CodeDirectoryNotAccessible)
 	}
 	return nil
+}
+
+// RenewalInvoicePayment routes renewal invoices through their business owner so
+// generic financial payment also advances the entitlement and queues recovery.
+type RenewalInvoicePayment interface {
+	// PayOwnedRenewalInvoice returns handled=false only for another invoice source.
+	// Renewal failures never fall back to a financial-only debit.
+	PayOwnedRenewalInvoice(context.Context, AccountBalancePaymentInput) (*AccountBalancePayment, bool, error)
+}
+
+// NewAccountFinanceCommandServiceWithRenewals keeps the same startup renewal
+// instance for both the trial page and generic invoice payment entry points.
+func NewAccountFinanceCommandServiceWithRenewals(database gdb.DB, principalReader principal.Reader,
+	settlements FinancialSettlementService, renewals RenewalInvoicePayment) (AccountFinanceCommandService, error) {
+	if renewals == nil {
+		return nil, gerror.New("renewal invoice payment owner is required")
+	}
+	service, err := NewAccountFinanceCommandService(database, principalReader, settlements)
+	if err != nil {
+		return nil, err
+	}
+	impl, ok := service.(*accountFinanceCommandImpl)
+	if !ok {
+		return nil, gerror.New("unexpected financial command implementation")
+	}
+	impl.renewals = renewals
+	return service, nil
 }

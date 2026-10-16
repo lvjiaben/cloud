@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
@@ -153,9 +152,6 @@ func (s *serviceImpl) RateAnonymous(ctx context.Context, token string, input Rat
 	if input.Stars < 1 || input.Stars > 5 || input.RoundNo <= 0 || input.TicketVersion <= 0 || len([]byte(feedback)) > 2000 {
 		return nil, bizInvalid()
 	}
-	if input.Stars <= 3 && (s.staffAccess == nil || s.notifications == nil) {
-		return nil, bizerr.NewCode(CodeUnavailable)
-	}
 	ratingNo, err := s.newNo("RAT_")
 	if err != nil {
 		return nil, wrapUnavailable(err, "generate anonymous ticket rating")
@@ -182,22 +178,6 @@ func (s *serviceImpl) RateAnonymous(ctx context.Context, token string, input Rat
 		if existing != 0 {
 			return bizerr.NewCode(CodeConflict)
 		}
-		recipients := []int64{}
-		if input.Stars <= 3 {
-			recipients, err = s.eligibleRatingRecipients(ctx, ticket)
-			if err != nil {
-				return err
-			}
-			if len(recipients) == 0 {
-				return bizerr.NewCode(CodeUnavailable)
-			}
-			if input.Stars == 3 {
-				recipients = onlyRecipient(recipients, ticket.AssigneeUserID)
-				if len(recipients) == 0 {
-					return bizerr.NewCode(CodeUnavailable)
-				}
-			}
-		}
 		if _, err = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket_rating (tenant_id,rating_no,ticket_no,round_no,score,comment,author_type,created_at) VALUES (0,?,?,?,?,?,'anonymous',?)`, ratingNo, ticket.TicketNo, input.RoundNo, input.Stars, nullable(feedback), now); err != nil {
 			return err
 		}
@@ -208,17 +188,6 @@ func (s *serviceImpl) RateAnonymous(ctx context.Context, token string, input Rat
 			}
 			if changed, _ := result.RowsAffected(); changed != 1 {
 				return bizerr.NewCode(CodeConflict)
-			}
-			for _, recipient := range recipients {
-				if eventErr := s.enqueueStaffTicketEvent(ctx, ticket, supportEventTicketRatingLow, recipient, ticket.Version+1, map[string]string{"rating": strconv.Itoa(input.Stars)}); eventErr != nil {
-					return eventErr
-				}
-			}
-		} else if input.Stars == 3 {
-			for _, recipient := range recipients {
-				if eventErr := s.enqueueStaffTicketEvent(ctx, ticket, supportEventTicketRatingNeutral, recipient, ticket.Version, map[string]string{"rating": strconv.Itoa(input.Stars)}); eventErr != nil {
-					return eventErr
-				}
 			}
 		}
 		return nil
@@ -249,15 +218,8 @@ func (s *serviceImpl) transitionAnonymous(ctx context.Context, token string, tic
 			if !allowed {
 				return bizerr.NewCode(CodeConflict)
 			}
-			if ticket.AssigneeUserID != 0 {
-				allowed, allowErr := s.targetStaffAllowed(ctx, ticket.AssigneeUserID, staffCapabilityHandle, ticket.DepartmentNo, false)
-				if allowErr != nil {
-					return allowErr
-				}
-				if !allowed {
-					ticket.AssigneeUserID = 0
-				}
-			}
+			// The new round belongs to the original queue, never a stale assignee.
+			ticket.AssigneeUserID = 0
 		}
 		now, err := databaseNow(ctx, s.database)
 		if err != nil {

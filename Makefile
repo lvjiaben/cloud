@@ -14,11 +14,15 @@ FRONTEND_PID  := $(PID_DIR)/lina-vben.pid
 LINA_CORE_PORT ?= 6030
 LINA_VBEN_PORT ?= 6031
 LINA_CUSTOMER_PORT ?= 6032
+LINA_WEBSITE_PORT ?= 6680
 BACKEND_LOG   := $(TEMP_DIR)/lina-core.log
 FRONTEND_LOG  := $(TEMP_DIR)/lina-vben.log
 EMBED_DIR     := $(BACKEND_DIR)/internal/packed/public
 OUTPUT_DIR    := $(TEMP_DIR)/output
 LINACTL       := cd hack/tools/linactl && go run .
+
+# Project entrypoints live in the business plugin; host tooling remains unchanged.
+env.setup dev build db.init: LINACTL = go run ./apps/lina-plugins/idc-compliance/hack/tools/installation/main.go
 
 # Include split makefile targets.
 # 引入拆分后的 Makefile 目标文件。
@@ -34,3 +38,9 @@ include hack/makefiles/test.mk
 include hack/makefiles/i18n.mk
 include hack/makefiles/database.mk
 include hack/makefiles/agents.mk
+
+# Website renderers use the next two ports after this gateway.
+DEV_ARGS += website_port=$(LINA_WEBSITE_PORT)
+ifneq ($(origin plan), undefined)
+DEV_ARGS += plan=$(plan)
+endif

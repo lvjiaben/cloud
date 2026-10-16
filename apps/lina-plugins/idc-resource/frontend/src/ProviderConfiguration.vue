@@ -33,12 +33,14 @@ const candidates = ref<
   Awaited<ReturnType<typeof api.list>>["providerCandidates"]
 >([]);
 const loading = ref(false);
+const showDeletedChannels = ref(false);
 const channelPage = ref({ currentPage: 1, pageSize: 20, total: 0 });
 const poolPage = ref({ currentPage: 1, pageSize: 20, total: 0 });
 let generation = 0;
 const error = ref("");
 const notice = ref("");
 const testingChannels = ref<string[]>([]);
+const refreshingChannels = ref<string[]>([]);
 const channelModal = ref(false);
 const poolModal = ref(false);
 const editingChannel = ref<Channel>();
@@ -131,6 +133,7 @@ function channelFields(): IsolatedFormField[] {
   const fields: IsolatedFormField[] = [];
   if (!editingChannel.value) fields.push({ name: "providerPluginId", label: tr("connector"), component: "Select", required: true, props: { options: candidates.value.map(item => ({label: `${item.displayName} · ${item.releaseVersion}`, value: item.pluginId})) } });
   fields.push({ name: "displayName", label: tr("channelName"), component: "Input", required: true }, { name: "endpoint", label: tr("apiEndpoint"), component: "Input", required: true, props: { type: "url" } });
+  fields.push({name:"tlsCertificateSha256",label:tr("tlsCertificateSha256"),component:"Input",props:{placeholder:tr("tlsCertificateHint"),maxlength:64}});
   for (const field of schema.value.fields.filter(item => item.key !== "endpoint")) {
     let component: IsolatedFormField["component"] = "Input";
     const props: Record<string, unknown> = { placeholder: field.type === "secret" && readyMap(editingChannel.value)[field.key] ? tr("secretConfiguredHint") : interfaceFieldDescription(field, locale()) };
@@ -176,7 +179,7 @@ async function loadPoolChannels(keyword = "", append = false) {
 }
 
 function openDetails(item: Channel) {
-  const values = { displayName: item.displayName, endpoint: item.endpoint, apiProducts: item.usage ? `${item.usage.activeInstances} / ${item.usage.totalInstances}` : "—", configuredProducts: String(item.usage?.configuredProducts ?? "—"), accountStatus: tr(secretsComplete(item) ? "configured" : "incomplete"), runtimeStatus: tr(`status.${item.status}`), connectionStatus: connectionStatus(item) };
+  const values = { displayName: item.displayName, endpoint: item.endpoint, apiProducts: item.usage ? `${item.usage.activeInstances} / ${item.usage.totalInstances}` : "—", configuredProducts: String(item.usage?.configuredProducts ?? "—"), accountStatus: tr(providerUpdateNeeded(item) ? "providerUpdateNeeded" : secretsComplete(item) ? "configured" : "incomplete"), runtimeStatus: tr(`status.${item.status}`), connectionStatus: connectionStatus(item) };
   showDrawer({ title: tr("detailTitle"), description: tr("usageHint"), readOnly: true, values: {}, fields: [],
     mountContent: (container) => {
       const app = createApp({ render: () => h(ProviderInterfaceDetails, { context: props.context, channel: item, summary: values }) });
@@ -193,7 +196,7 @@ async function load(channel?: { currentPage: number; pageSize: number }, pool?: 
   if (nextPool.pageSize !== poolPage.value.pageSize) nextPool.currentPage = 1;
   loading.value = true;
   try {
-    const data = await api.list({ channelPage: nextChannel.currentPage, channelPageSize: nextChannel.pageSize, poolPage: nextPool.currentPage, poolPageSize: nextPool.pageSize });
+    const data = await api.list({ channelPage: nextChannel.currentPage, channelPageSize: nextChannel.pageSize, poolPage: nextPool.currentPage, poolPageSize: nextPool.pageSize, availableChannelsOnly: !showDeletedChannels.value });
     if (current !== generation) return;
     if (![data.channelTotal, data.poolTotal].every((total) => Number.isSafeInteger(total) && total >= 0)) throw new Error(tr("operationFailed"));
     channels.value = data.channels || [];
@@ -228,6 +231,7 @@ function openChannel(item?: Channel) {
   Object.assign(channelForm, {
     displayName: item?.displayName || "",
     endpoint: item?.endpoint || "",
+    tlsCertificateSha256: item?.tlsCertificateSha256 || "",
     providerPluginId: item?.providerPluginId || candidate?.pluginId || "",
     status:
       item?.status === "deleted" ? "disabled" : item?.status || "disabled",
@@ -238,7 +242,7 @@ function openChannel(item?: Channel) {
   );
   channelModal.value = true;
   showDrawer({ title: tr(item ? "editChannel" : "newChannel"), fields: channelFields(), values: { ...channelForm },
-    onValuesChange: values => { const previous = channelForm.providerPluginId; Object.assign(channelForm, values); if (values.providerPluginId && values.providerPluginId !== previous) { for (const key of Object.keys(channelForm)) if (!["providerPluginId", "displayName", "endpoint", "status"].includes(key)) delete channelForm[key]; chooseConnector(String(values.providerPluginId)); formDrawer?.update({ fields: channelFields(), values: { ...channelForm } }); } },
+    onValuesChange: values => { const previous = channelForm.providerPluginId; Object.assign(channelForm, values); if (values.providerPluginId && values.providerPluginId !== previous) { for (const key of Object.keys(channelForm)) if (!["providerPluginId", "displayName", "endpoint", "status", "tlsCertificateSha256"].includes(key)) delete channelForm[key]; chooseConnector(String(values.providerPluginId)); formDrawer?.update({ fields: channelFields(), values: { ...channelForm } }); } },
     onSubmit: async values => { Object.assign(channelForm, values); formDrawer?.update({ errorText: "" }); const saved = await saveChannel(); if (!saved) formDrawer?.update({ errorText: error.value }); return saved; },
   });
 }
@@ -290,6 +294,11 @@ async function saveSecret(
   else await api.createSecret(channelNo, body);
 }
 async function saveChannel() {
+  if (!/^(?:[a-fA-F0-9]{64})?$/.test(String(channelForm.tlsCertificateSha256 || "").trim())) {
+    error.value = tr("tlsCertificateInvalid");
+    return false;
+  }
+
   const revision = formRevision;
   const values = splitInterfaceConfigurationValues(schema.value, channelForm);
   const ready = readyMap(editingChannel.value);
@@ -309,6 +318,7 @@ async function saveChannel() {
     const body = {
       displayName: String(channelForm.displayName || ""),
       endpoint: String(channelForm.endpoint || ""),
+      tlsCertificateSha256: String(channelForm.tlsCertificateSha256 || "").trim().toLowerCase(),
       providerPluginId: String(channelForm.providerPluginId || ""),
       status: String(channelForm.status || "disabled"),
       nonSecretSettings: values.nonSecretSettings,
@@ -341,11 +351,24 @@ async function saveChannel() {
     return false;
   }
 }
+function providerUpdateNeeded(item: Channel) {
+ const candidate = candidates.value.find((value) => value.pluginId === item.providerPluginId);
+ return !!item.providerReleaseVersion && !!candidate && candidate.releaseVersion !== item.providerReleaseVersion;
+}
+async function refreshChannelProvider(item: Channel) {
+ if (refreshingChannels.value.includes(item.channelNo)) return;
+ refreshingChannels.value = [...refreshingChannels.value, item.channelNo];
+ try {
+  await api.updateChannel(item,{displayName:item.displayName,endpoint:item.endpoint,status:item.status,refreshProvider:true});
+  notice.value = tr("providerUpdated"); await load();
+ } catch(value) {error.value=failure(value);} finally {refreshingChannels.value=refreshingChannels.value.filter((value)=>value!==item.channelNo);}
+}
 async function setChannelStatus(item: Channel, status: string) {
   try {
     await api.updateChannel(item, {
       displayName: item.displayName,
       endpoint: item.endpoint,
+      tlsCertificateSha256: item.tlsCertificateSha256 || "",
       nonSecretSettings: item.nonSecretSettings || {},
       status,
     });
@@ -362,7 +385,7 @@ async function verifyChannel(item: Channel) {
   try {
     const result = await api.verifyChannel(item.channelNo);
     if (result.verified) notice.value = tr("connectionVerified");
-    else error.value = tr(`verification.${result.statusCode}`);
+    else error.value = verificationMessage(result.statusCode);
     await load();
   } catch (value) {
     error.value = failure(value);
@@ -372,7 +395,12 @@ async function verifyChannel(item: Channel) {
     );
   }
 }
+function verificationMessage(status: string) {
+ const supported = ["configuration_incomplete", "verification_unsupported", "connection_failed", "tls_untrusted", "timeout", "dns", "network", "endpoint_not_found", "invalid_response", "auth_rejected", "local_auth_policy"];
+ return tr("verification." + (supported.includes(status) ? status : "connection_failed"));
+}
 function connectionStatus(item: Channel) {
+ if(providerUpdateNeeded(item)) return tr("providerUpdateNeeded");
   if (item.connectionStatus === "healthy") return tr("connectionHealthy");
   if (item.connectionStatus === "degraded") return tr("connectionDegraded");
   return tr("connectionUnknown");
@@ -440,15 +468,16 @@ const channelColumns = computed<IsolatedTableColumn<Channel>[]>(() => {
     { field: "endpoint", title: tr("endpoint"), minWidth: 240 },
     { field: "usage", title: tr("apiProducts"), width: 170, cell: (item) => item.usage ? `${item.usage.activeInstances} / ${item.usage.totalInstances}` : "—" },
     { field: "usage.configuredProducts", title: tr("configuredProducts"), width: 130, cell: (item) => String(item.usage?.configuredProducts ?? "—") },
-    { field: "secretFields", title: tr("accountStatus"), width: 130, cell: (item) => tr(secretsComplete(item) ? "configured" : "incomplete") },
+    { field: "secretFields", title: tr("accountStatus"), width: 130, cell: (item) => tr(providerUpdateNeeded(item) ? "providerUpdateNeeded" : secretsComplete(item) ? "configured" : "incomplete") },
     { field: "status", title: tr("runtimeStatus"), width: 120, cell: (item) => tr(`status.${item.status}`) },
     { field: "connectionStatus", title: tr("connectionStatus"), width: 140, cell: connectionStatus },
     { field: "actions", title: tr("actions"), width: 330, fixed: "right", cell: (item) => {
       const buttons = [
         rowButton(tr("details"), () => openDetails(item)),
         rowButton(tr("edit"), () => openChannel(item)),
-        rowButton(tr("testConnection"), () => verifyChannel(item), item.status === "deleted" || !secretsComplete(item) || testing.has(item.channelNo)),
+        rowButton(tr("testConnection"), () => verifyChannel(item), item.status === "deleted" || providerUpdateNeeded(item) || !secretsComplete(item) || testing.has(item.channelNo)),
       ];
+      if(providerUpdateNeeded(item) && item.status !== "deleted") buttons.unshift(rowButton(tr("updateProvider"),()=>refreshChannelProvider(item),refreshingChannels.value.includes(item.channelNo)));
       if (item.status === "disabled") buttons.push(rowButton(tr("enable"), () => setChannelStatus(item, "enabled"), !secretsComplete(item)));
       if (item.status === "enabled") buttons.push(rowButton(tr("disable"), () => setChannelStatus(item, "disabled")));
       buttons.push(item.status !== "deleted"
@@ -507,6 +536,9 @@ onBeforeUnmount(() => { formRevision++; candidateRevision++; formDrawer?.destroy
           <h3>{{ tr("channels") }}</h3>
           <p>{{ tr("channelHint") }}</p>
         </div>
+        <button class="button" data-testid="provider-show-deleted" @click="showDeletedChannels = !showDeletedChannels; load({ currentPage: 1, pageSize: channelPage.pageSize })">
+          {{ tr(showDeletedChannels ? "hideDeleted" : "showDeleted") }}
+        </button>
         <button
           class="button primary"
           :disabled="candidates.length === 0"

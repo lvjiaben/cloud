@@ -5,6 +5,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
@@ -129,7 +131,11 @@ const [Grid, gridApi] = useVbenVxeGrid<AutomationInterface>({
   formOptions: {
     commonConfig: { componentProps: { allowClear: true }, labelWidth: 90 },
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-2",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: [],
@@ -239,10 +245,11 @@ onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page
+  <Page :ref="layoutRoot" class="plugin-admin-page"
     :auto-content-height="true"
     data-testid="catalog-automation-interface-page"
   >

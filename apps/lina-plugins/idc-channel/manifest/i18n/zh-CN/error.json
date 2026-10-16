@@ -2,7 +2,9 @@
   "error": {
     "idc": {
       "channel": {
-        "page": { "invalid": "渠道分页参数无效，请刷新后重试" },
+        "page": {
+          "invalid": "渠道分页参数无效，请刷新后重试"
+        },
         "token": {
           "not": {
             "accepted": "渠道访问凭据无效、已过期或无权执行此操作"
@@ -10,6 +12,9 @@
         },
         "lifecycle": {
           "invalid": "渠道生命周期请求无效"
+        },
+        "catalog": {
+          "unavailable": "商品配置暂时不可用，请稍后重试"
         }
       }
     }

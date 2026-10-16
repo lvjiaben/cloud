@@ -3,7 +3,7 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ServerOperationPolicy struct {
-	RequireHighRiskReauth bool   `json:"requireHighRiskReauth" dc:"Whether dangerous customer server operations require a fresh login confirmation"`
+	RequireHighRiskReauth bool   `json:"requireHighRiskReauth" dc:"Whether dangerous customer server operations require a current-session confirmation"`
 	AllowCustomerTransfer bool   `json:"allowCustomerTransfer" dc:"Whether customers may request bilateral server ownership transfers"`
 	Version               int64  `json:"version" dc:"Optimistic concurrency version"`
 	UpdatedAt             string `json:"updatedAt" dc:"Last committed policy update time"`

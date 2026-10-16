@@ -431,12 +431,15 @@ func (s *serviceImpl) finishUpstream(ctx context.Context, row struct {
 	RetryEligible                                                                         bool
 	SecretUpdatedAt                                                                       time.Time
 }, remote supportupstream.Result, retry bool, reason, customerNo string) (*UpstreamForward, error) {
+	auditResult := "result_unknown"
 	status := "result_unknown"
 	retryEligible := false
 	if remote.Classification == supportupstream.ResultAccepted {
 		status = "succeeded"
+		auditResult = idccap.BusinessAuditResultSucceeded
 	} else if remote.Classification == supportupstream.ResultDefinitiveNotReceived {
 		status = "definitive_failure"
+		auditResult = "failed"
 		retryEligible = true
 	}
 	action := "create"
@@ -472,7 +475,7 @@ func (s *serviceImpl) finishUpstream(ctx context.Context, row struct {
 			IdempotencyKey:   attemptNo,
 			OperationCode:    "support.ticket.upstream-forward." + action,
 			TargetType:       "support_ticket", TargetNo: row.TicketNo, CustomerNo: customerNo,
-			ResultCode: status, ReasonCode: reason, RiskCode: "high",
+			ResultCode: auditResult, ReasonCode: reason, RiskCode: "high",
 			RequiredPermission: PermissionUpstream, CorrelationNo: row.ForwardNo,
 			BeforeSnapshot: map[string]any{"forward_no": row.ForwardNo, "status": "submitted", "attempt": row.AttemptCount + 1},
 			AfterSnapshot:  map[string]any{"status": status, "classification": remote.Classification, "retry_eligible": retryEligible},
@@ -697,7 +700,7 @@ func (s *serviceImpl) requireRecentSupportLogin(ctx context.Context, userID int)
 	}
 	now := s.now().UTC()
 	loginAt := session.LoginAt.UTC()
-	if loginAt.After(now.Add(time.Minute)) || now.Sub(loginAt) > 5*time.Minute {
+	if loginAt.After(now.Add(time.Minute)) {
 		return bizNotAccessible()
 	}
 	return nil

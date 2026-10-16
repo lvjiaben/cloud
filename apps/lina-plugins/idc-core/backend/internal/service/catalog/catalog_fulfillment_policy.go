@@ -39,6 +39,7 @@ var (
 // exact bound plugin release. Technical fields are persisted internally and
 // must never be accepted from merchant-facing requests.
 type FrozenFulfillmentContract struct {
+	TrialPauseResume   bool
 	Capability         *capmodel.LocalizedText
 	Granularity        string
 	OngoingManagement  bool

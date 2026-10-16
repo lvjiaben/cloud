@@ -1,0 +1,58 @@
+{
+  "en-US": {
+    "browse": "Browse products",
+    "description": "Explore products, compare available options, and find clear help before continuing to the secure customer center.",
+    "discover": "What you can find here",
+    "intro": "Public product and service information",
+    "learnMore": "Learn more",
+    "items": [
+      {
+        "title": "Products",
+        "description": "Browse merchant-defined categories and products without assuming every product is a server.",
+        "href": "/products"
+      },
+      {
+        "title": "Updates",
+        "description": "Read public news and announcements from the service operator.",
+        "href": "/pages/announcements"
+      },
+      {
+        "title": "Guides",
+        "description": "Find knowledge articles, downloads, and practical help.",
+        "href": "/pages/knowledge"
+      }
+    ],
+    "latest": "Read announcements",
+    "operator": "From the operator",
+    "terms": "Terms",
+    "title": "Choose the service that fits your needs"
+  },
+  "zh-CN": {
+    "browse": "浏览商品",
+    "description": "先查看商品、比较可选配置并找到清楚的帮助，再进入安全的客户中心继续购买。",
+    "discover": "你可以在这里找到",
+    "intro": "公开商品与服务信息",
+    "learnMore": "了解更多",
+    "items": [
+      {
+        "title": "商品",
+        "description": "按商家自定义分类浏览商品，不再假设所有商品都是服务器。",
+        "href": "/products"
+      },
+      {
+        "title": "动态",
+        "description": "查看服务商公开发布的新闻和公告。",
+        "href": "/pages/announcements"
+      },
+      {
+        "title": "指南",
+        "description": "查找知识文章、下载资料和使用帮助。",
+        "href": "/pages/knowledge"
+      }
+    ],
+    "latest": "查看公告",
+    "operator": "服务商信息",
+    "terms": "服务条款",
+    "title": "找到适合你的商品和服务"
+  }
+}

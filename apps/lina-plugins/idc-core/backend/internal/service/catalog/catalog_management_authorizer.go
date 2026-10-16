@@ -36,6 +36,7 @@ var managementPermissions = map[string]struct{}{
 	permissionCatalogCategoryDelete:  {},
 	permissionCatalogCategoryRestore: {},
 	permissionCatalogProductCreate:   {},
+	permissionCatalogProductUpdate:   {},
 	permissionCatalogBillingWrite:    {},
 	permissionCatalogPriceWrite:      {},
 	permissionCatalogTaxWrite:        {},
@@ -127,6 +128,13 @@ func (a *managementAuthorizerImpl) AuthorizeProductQuery(
 
 func (a *managementAuthorizerImpl) AuthorizeProductCreate(ctx context.Context) (int, error) {
 	return a.authorize(ctx, permissionCatalogProductCreate)
+}
+
+func (a *managementAuthorizerImpl) AuthorizeProductUpdate(ctx context.Context, productNo string) (int, error) {
+	if !existingCatalogReferencePattern.MatchString(productNo) {
+		return 0, bizerr.NewCode(CodeManagementNotAccessible)
+	}
+	return a.authorize(ctx, permissionCatalogProductUpdate)
 }
 
 func (a *managementAuthorizerImpl) AuthorizeBillingWrite(

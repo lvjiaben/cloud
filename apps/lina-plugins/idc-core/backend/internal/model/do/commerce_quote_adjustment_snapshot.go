@@ -12,18 +12,20 @@ import (
 
 // CommerceQuoteAdjustmentSnapshot is the golang structure of table plugin_idc_core_commerce_quote_adjustment_snapshot for DAO operations like Where/Data.
 type CommerceQuoteAdjustmentSnapshot struct {
-	g.Meta               `orm:"table:plugin_idc_core_commerce_quote_adjustment_snapshot, do:true"`
-	Id                   any        //
-	TenantId             any        //
-	QuoteAdjustmentNo    any        //
-	QuoteItemNo          any        //
-	CurrencyCode         any        //
-	ApplicationOrder     any        //
-	AdjustmentTypeCode   any        //
-	SourceReference      any        //
-	SourceVersionDigest  any        //
-	ReservationReference *string    //
-	AmountMinor          any        //
-	ContentDigest        any        //
-	CreatedAt            *time.Time //
+	g.Meta                    `orm:"table:plugin_idc_core_commerce_quote_adjustment_snapshot, do:true"`
+	Id                        any        //
+	TenantId                  any        //
+	QuoteAdjustmentNo         any        //
+	QuoteItemNo               any        //
+	CurrencyCode              any        //
+	ApplicationOrder          any        //
+	AdjustmentTypeCode        any        //
+	SourceReference           any        //
+	SourceVersionDigest       any        //
+	ReservationReference      *string    //
+	AmountMinor               any        //
+	ContentDigest             any        //
+	CreatedAt                 *time.Time //
+	OriginalPeriodAmountMinor any        //
+	TargetPeriodAmountMinor   any        //
 }

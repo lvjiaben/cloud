@@ -55,6 +55,7 @@ func (s *serviceImpl) validateFrozenFulfillmentPolicy(
 			return bizerr.NewCode(catalog.CodeFulfillmentPolicyContractChanged)
 		}
 		contract = &catalog.FrozenFulfillmentContract{
+			TrialPauseResume:  declaration.TrialPauseResume,
 			Capability:        fulfillmentCapability(declaration),
 			Granularity:       declaration.Granularity,
 			OngoingManagement: declaration.OngoingManagement,
@@ -64,8 +65,14 @@ func (s *serviceImpl) validateFrozenFulfillmentPolicy(
 			QueryMethod:        declaration.MethodRoles.Query,
 			DeclarationDigest:  exact.DeclarationDigest,
 		}
+		if err = s.applyImportedFulfillmentContract(ctx, versionNo, exact, contract); err != nil {
+			return err
+		}
 	}
-	return catalog.ValidateFulfillmentPolicyEvidence(stored, contract)
+	if err := catalog.ValidateFulfillmentPolicyEvidence(stored, contract); err != nil {
+		return err
+	}
+	return s.validateTrialFulfillment(ctx, versionNo, stored.StrategyCode, contract)
 }
 
 // clearDraftFulfillmentPolicy makes a changed or removed binding require one
@@ -75,6 +82,26 @@ func (s *serviceImpl) clearDraftFulfillmentPolicy(ctx context.Context, versionNo
 	if _, err := s.database.Exec(ctx, `DELETE FROM plugin_idc_core_catalog_product_version_fulfillment_policy
 		WHERE tenant_id=? AND version_no=?`, idccap.DefaultTenantID, versionNo); err != nil {
 		return gerror.Wrap(err, "clear fulfillment policy after binding change")
+	}
+	return nil
+}
+
+const trialRuleStatusActive = "active"
+
+// validateTrialFulfillment rejects unsuspendable trials before publication. A
+// single indexed version lookup checks all active trial rules, including imports.
+func (s *serviceImpl) validateTrialFulfillment(ctx context.Context, versionNo, strategy string, contract *catalog.FrozenFulfillmentContract) error {
+	if strategy != catalog.FulfillmentStrategyManual && contract != nil && contract.TrialPauseResume {
+		return nil
+	}
+	count, err := s.database.GetCount(ctx, `SELECT 1 FROM plugin_idc_core_catalog_billing_rule
+        WHERE tenant_id=? AND version_no=? AND charge_type_code=? AND status_code=? LIMIT 1`,
+		idccap.DefaultTenantID, versionNo, catalog.ChargeTypeTrial, trialRuleStatusActive)
+	if err != nil {
+		return gerror.Wrap(err, "check trial fulfillment capability")
+	}
+	if count > 0 {
+		return bizerr.NewCode(catalog.CodeTrialFulfillmentUnavailable)
 	}
 	return nil
 }

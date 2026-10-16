@@ -1,24 +1,50 @@
 {
   "menu": {
-    "plugin:idc-core:customer-sales": { "title": "Customers and Sales" },
-    "plugin:idc-core:catalog-products": { "title": "Catalog and Pricing" },
-    "plugin:idc-core:resource-operations": { "title": "Servers and Resources" },
-    "plugin:idc-core:orders-finance": { "title": "Orders and Finance" },
-    "plugin:idc-core:support-content": { "title": "Support and Content" },
+    "plugin:idc-core:customer-sales": {
+      "title": "Customer Business"
+    },
+    "plugin:idc-core:catalog-products": {
+      "title": "Catalog and Pricing"
+    },
+    "plugin:idc-core:resource-operations": {
+      "title": "Servers and Resources"
+    },
+    "plugin:idc-core:orders-finance": {
+      "title": "Orders and Finance"
+    },
+    "plugin:idc-core:support-content": {
+      "title": "Customer Support"
+    },
     "plugin:idc-core:notification-marketing": {
       "title": "Notifications and Marketing"
     },
     "plugin:idc-core:compliance-governance": {
       "title": "Compliance and Governance"
     },
-    "plugin:idc-core:operations-workbench": { "title": "Operations Workbench" },
-    "plugin:idc-core:operations-workbench:view": { "title": "View Operations Workbench" },
-    "plugin:idc-core:sales-channel": { "title": "Sales Channel Operations" },
-    "plugin:idc-core:sales-channel:overview": { "title": "View Sales Channel Overview" },
-    "plugin:idc-core:sales-channel:qualification": { "title": "Manage Agent Qualifications" },
-    "plugin:idc-core:sales-channel:commission:review": { "title": "Review Commission Settlements" },
-    "plugin:idc-core:sales-channel:commission:payout": { "title": "Process Commission Payouts" },
-    "plugin:idc-core:server-batches": { "title": "Server Batch Control" },
+    "plugin:idc-core:operations-workbench": {
+      "title": "Operations Data"
+    },
+    "plugin:idc-core:operations-workbench:view": {
+      "title": "View Operations Data"
+    },
+    "plugin:idc-core:sales-channel": {
+      "title": "Agent Sales"
+    },
+    "plugin:idc-core:sales-channel:overview": {
+      "title": "View Agent Sales"
+    },
+    "plugin:idc-core:sales-channel:qualification": {
+      "title": "Manage Agent Qualifications"
+    },
+    "plugin:idc-core:sales-channel:commission:review": {
+      "title": "Review Commission Settlements"
+    },
+    "plugin:idc-core:sales-channel:commission:payout": {
+      "title": "Process Commission Payouts"
+    },
+    "plugin:idc-core:server-batches": {
+      "title": "Server Batch Control"
+    },
     "plugin:idc-core:server-batches:safe": {
       "title": "Run Safe Server Batches"
     },
@@ -133,26 +159,14 @@
     "plugin:idc-core:commerce:contract-policy-write": {
       "title": "Edit Order Contract Rules"
     },
-    "plugin:idc-core:assisted-quotes": {
-      "title": "Assisted Quotes"
-    },
     "plugin:idc-core:assisted-quotes:list": {
-      "title": "View Assisted Quotes"
+      "title": "View Assisted Order History"
     },
     "plugin:idc-core:assisted-quotes:query": {
-      "title": "View Assisted Quote Details"
+      "title": "View Assisted Order Details"
     },
     "plugin:idc-core:assisted-quotes:create": {
-      "title": "Request Assisted Quote"
-    },
-    "plugin:idc-core:assisted-quotes:approve": {
-      "title": "Approve Assisted Quote"
-    },
-    "plugin:idc-core:assisted-quotes:reject": {
-      "title": "Reject Assisted Quote"
-    },
-    "plugin:idc-core:assisted-quotes:checkout": {
-      "title": "Checkout Assisted Quote"
+      "title": "Create Assisted Order"
     },
     "plugin:idc-core:financial-management": {
       "title": "Financial Management"
@@ -261,6 +275,25 @@
     },
     "plugin:idc-core:content": {
       "title": "Content Management"
+    },
+    "plugin:idc-core:support:lead": {
+      "title": "Manage Department Tickets"
+    },
+    "plugin:idc-core:sales-channel:assignment": {
+      "title": "Manage Sales Assignments"
+    },
+    "plugin:idc-core:sales-channel:pricing": {
+      "title": "Manage Product and Custom Prices"
+    },
+    "plugin:idc-core:sales-channel:commission:manage": {
+      "title": "Manage Commission Rules"
+    },
+    "plugin:idc-core:catalog:product-update": {
+      "title": "Edit Product Description"
+    },
+    "plugin:idc-core:customers:product-edit": {
+      "title": "Edit Customer Products"
     }
-  }
+  },
+  "plugin:idc-core:customers:audit": "Customer Operation Records"
 }

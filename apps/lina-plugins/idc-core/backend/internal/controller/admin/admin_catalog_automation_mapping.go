@@ -82,7 +82,9 @@ func mapProductVersionConfiguration(value *productautomation.VersionConfiguratio
 		return nil
 	}
 	return &v1.CatalogProductVersionConfiguration{
-		ProductDeclaration: value.ProductDeclaration, CustomerDeclaration: value.CustomerDeclaration,
+		CustomerConfigurableFields: value.CustomerConfigurableFields, CustomerFieldSelections: mapCustomerFieldSelectionOutput(value.CustomerFieldSelections),
+		ImportedConfiguration: value.ImportedConfiguration,
+		ProductDeclaration:    value.ProductDeclaration, CustomerDeclaration: value.CustomerDeclaration,
 		MerchantValues:             mapConfigurationValues(value.MerchantValues),
 		ProductResolvedCandidates:  mapResolvedCandidates(value.ProductResolvedCandidates),
 		CustomerResolvedCandidates: mapResolvedCandidates(value.CustomerResolvedCandidates), Version: value.Version,
@@ -114,6 +116,23 @@ func mapResolvedCandidates(value map[string][]*capmodel.ConfigurationCandidate) 
 	result := make(map[string][]*capmodel.ConfigurationCandidate, len(value))
 	for fieldKey, candidates := range value {
 		result[fieldKey] = candidates
+	}
+	return result
+}
+
+func mapCustomerFieldSelections(values []*v1.CatalogCustomerFieldSelection) []productautomation.CustomerFieldSelection {
+	result := make([]productautomation.CustomerFieldSelection, 0, len(values))
+	for _, value := range values {
+		if value != nil {
+			result = append(result, productautomation.CustomerFieldSelection{FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues})
+		}
+	}
+	return result
+}
+func mapCustomerFieldSelectionOutput(values []productautomation.CustomerFieldSelection) []*v1.CatalogCustomerFieldSelection {
+	result := make([]*v1.CatalogCustomerFieldSelection, 0, len(values))
+	for _, value := range values {
+		result = append(result, &v1.CatalogCustomerFieldSelection{FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues})
 	}
 	return result
 }

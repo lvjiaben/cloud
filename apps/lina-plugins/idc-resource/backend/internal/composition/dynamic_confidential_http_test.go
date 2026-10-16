@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -127,7 +128,7 @@ func TestConfidentialHTTPHandlerKeepsLoginTokenAndCredentialsOutOfGuest(t *testi
 	}
 	operationResult := executeConfidentialHTTPStep(t, handler, 3, resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindRequest, Method: http.MethodPut, Path: "/clouds/41", ResponseFields: []string{"data", "taskid"}, UseAuthentication: true,
-		SecretFormFields: map[string]string{"password": "password"},
+		SecretFormBindings: []resourcecap.ConfidentialSecretFormBinding{{Field: "password", Slot: "password"}},
 	})
 	if strings.Contains(string(operationResult), "operation-value") || strings.Contains(string(operationResult), "supplier-leak") || !strings.Contains(string(operationResult), `"taskid":71`) {
 		t.Fatalf("operation result leaked the host-only input or lost its acknowledgement: %s", operationResult)
@@ -414,4 +415,74 @@ func executeConfidentialHTTPStep(t *testing.T, handler *confidentialHTTPHandler,
 		t.Fatalf("execute confidential HTTP step %d: %v", sequence, err)
 	}
 	return result.Payload
+}
+
+// A warm business session cannot make an explicit connection test succeed while
+// the supplier is unreachable or rejects credentials; probes leave it intact.
+func TestConfidentialConnectionProbeBypassesWarmSession(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		fresh    bool
+		status   int
+		calls    int
+		accepted bool
+	}{
+		{"ordinary authentication reuses session", false, http.StatusUnauthorized, 0, true},
+		{"connection probe performs fresh login", true, http.StatusOK, 1, true},
+		{"cached session cannot hide rejection", true, http.StatusUnauthorized, 1, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			calls := 0
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.URL.Path != "/api/v1/login" || r.Method != http.MethodPost {
+					t.Errorf("unexpected probe destination")
+				}
+				w.WriteHeader(tc.status)
+				if _, err := w.Write([]byte(`"fresh-private-token"`)); err != nil {
+					t.Error(err)
+				}
+			}))
+			defer server.Close()
+			username, err := secretcap.NewHandle("secret_username")
+			if err != nil {
+				t.Fatal(err)
+			}
+			password, err := secretcap.NewHandle("secret_password")
+			if err != nil {
+				t.Fatal(err)
+			}
+			sessions := &confidentialHTTPSessions{token: []byte("existing-business-token"), generation: 7}
+			h := &confidentialHTTPHandler{
+				forceFreshAuthentication: tc.fresh,
+				configuration: channelconfig.Configuration{Config: resourcecap.ProviderConfig{
+					ChannelRef: "probe_channel", Endpoint: server.URL + "/api/v1",
+					Settings:       json.RawMessage(`{"__host":{"policy":{"mode":"login_session","mappings":[{"role":"password","slot":"password"},{"role":"username","slot":"username"}],"path":"/login","readPath":["$"],"header":"Access-Token","ttlSeconds":3600}}}`),
+					SecretBindings: []resourcecap.SecretBinding{{Name: "username", Handle: username}, {Name: "password", Handle: password}},
+				}},
+				environment: resourcecap.ProviderEnv{HTTPClient: confidentialHTTPClient{server.Client()}, Secrets: confidentialHTTPAccessor{"secret_username": []byte("probe-user"), "secret_password": []byte("probe-password")}, AuthenticationSessions: sessions},
+			}
+			payload, err := json.Marshal(resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindAuthenticate, Method: http.MethodPost, Path: "/login", CredentialFields: map[string]string{"username": "username", "password": "password"}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := h.Execute(context.Background(), &pluginhost.ConfidentialOutboundRequest{Sequence: 1, Payload: payload})
+			if calls != tc.calls || string(sessions.token) != "existing-business-token" || sessions.generation != 7 {
+				t.Fatalf("probe changed session or skipped supplier: calls=%d generation=%d", calls, sessions.generation)
+			}
+			if !tc.accepted {
+				if !bizerr.Is(err, resourcecap.CodeProviderAuthRejected) || result != nil {
+					t.Fatalf("cached session hid rejection: %v", err)
+				}
+				return
+			}
+			if err != nil || result == nil {
+				t.Fatalf("authentication failed: %v", err)
+			}
+			var response resourcecap.ConfidentialHTTPResponse
+			if json.Unmarshal(result.Payload, &response) != nil || !response.Authenticated || strings.Contains(string(result.Payload), "private-token") || strings.Contains(string(result.Payload), "probe-password") {
+				t.Fatalf("probe response invalid or confidential")
+			}
+		})
+	}
 }

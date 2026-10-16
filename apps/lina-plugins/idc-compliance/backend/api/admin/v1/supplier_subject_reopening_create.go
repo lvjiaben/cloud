@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // SupplierSubjectReopeningCreateReq starts a distinct reauthorization flow.
 type SupplierSubjectReopeningCreateReq struct {
-	g.Meta       `path:"/admin/compliance/suppliers/{providerCode}/subject-reopenings" method:"post" tags:"IDC Compliance Local Supplier" summary:"Start local supplier subject reopening" dc:"Require exact permission and a recent full sign-in. Until genuine supplier recognition evidence is archived, return external-confirmation-required without creating a proof or changing state." permission:"idc:admin:compliance:supplier:subject:reopen"`
+	g.Meta       `path:"/admin/compliance/suppliers/{providerCode}/subject-reopenings" method:"post" tags:"IDC Compliance Local Supplier" summary:"Start local supplier subject reopening" dc:"Require exact permission and a current active session. Until genuine supplier recognition evidence is archived, return external-confirmation-required without creating a proof or changing state." permission:"idc:admin:compliance:supplier:subject:reopen"`
 	ProviderCode string `json:"providerCode" in:"path" v:"required|in:tencent_essbasic,nuonuo_invoice" dc:"Local supplier code" eg:"nuonuo_invoice"`
 }
 

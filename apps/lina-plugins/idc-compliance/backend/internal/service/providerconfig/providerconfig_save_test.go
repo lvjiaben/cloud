@@ -41,7 +41,7 @@ func (s *providerConfigSessions) Current(context.Context) (*sessioncap.SessionIn
 }
 
 func newProviderConfigSessions(actorUserID string) *providerConfigSessions {
-	loginAt := time.Now().UTC().Add(-time.Minute)
+	loginAt := time.Now().UTC().Add(-30 * 24 * time.Hour)
 	return &providerConfigSessions{current: &sessioncap.SessionInfo{
 		ID: "provider-config-session", TenantID: "0", UserID: actorUserID, LoginAt: &loginAt,
 	}}
@@ -67,6 +67,15 @@ func (a *providerConfigAudit) AppendBusinessTransition(
 	_ context.Context,
 	transition idccap.BusinessAuditTransition,
 ) error {
+	if transition.BeforeSnapshot == nil || transition.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch transition.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
+
 	a.transitions = append(a.transitions, transition)
 	if transition.IdempotencyScope == a.failScope {
 		return errors.New("synthetic audit failure")
@@ -497,11 +506,10 @@ func TestProviderConfigurationPostgreSQLDeniesBeforeMutation(t *testing.T) {
 	}
 }
 
-func TestProviderConfigurationRejectsStaleLoginBeforeMutation(t *testing.T) {
+func TestProviderConfigurationRejectsMissingSessionBeforeMutation(t *testing.T) {
 	manager := newProviderConfigSecretManager()
 	sessions := newProviderConfigSessions("7001")
-	stale := time.Now().UTC().Add(-freshLoginWindow - time.Second)
-	sessions.current.LoginAt = &stale
+	sessions.current.LoginAt = nil
 	service, err := New(
 		manager,
 		managementcap.Runtime{

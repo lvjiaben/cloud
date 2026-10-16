@@ -110,6 +110,11 @@ type ManagedServiceProjection struct {
 
 // ProviderDeclaration is the typed contract owned by idc-core.
 type ProviderDeclaration struct {
+	// MerchantCustomerFields are optional paid fields that remain hidden until the merchant explicitly enables them.
+	MerchantCustomerFields []string `json:"merchantCustomerFields,omitempty"`
+	// TrialPauseResume explicitly attests real system-owned pause and resume support.
+	// Omitted or false closes trial entry points; ongoing management alone is insufficient.
+	TrialPauseResume   bool                      `json:"trialPauseResume,omitempty"`
 	Capability         ProviderCapability        `json:"capability"`
 	Granularity        string                    `json:"granularity"`
 	OngoingManagement  bool                      `json:"ongoingManagement"`
@@ -176,6 +181,9 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 		declaration.MethodRoles.Provision == declaration.MethodRoles.Query {
 		return gerror.New("product fulfillment provision and query roles require distinct methods")
 	}
+	if err := validateMerchantCustomerFields(declaration.MerchantCustomerFields); err != nil {
+		return err
+	}
 	allowed := make(map[string]struct{}, len(authorizedMethods))
 	for _, method := range authorizedMethods {
 		allowed[method] = struct{}{}
@@ -189,6 +197,9 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 	mode, err := RenewalMode(declaration)
 	if err != nil {
 		return err
+	}
+	if declaration.TrialPauseResume && (!declaration.OngoingManagement || mode == RenewalModeUnavailable) {
+		return gerror.New("trial fulfillment requires pause, resume and formal renewal support")
 	}
 	if mode == RenewalModeProviderConfirmed {
 		if declaration.MethodRoles.Renewal == "" || declaration.MethodRoles.Renewal == declaration.MethodRoles.Provision ||
@@ -214,8 +225,13 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 	if err := validateManagedServiceDownloads(declaration, allowed); err != nil {
 		return err
 	}
-	if declaration.ServiceProjection != nil {
-		values := []string{declaration.ServiceProjection.PrimaryReferenceCustomerField, declaration.ServiceProjection.ValidationMethodCustomerField, declaration.ServiceProjection.StatusField, declaration.ServiceProjection.IssuedAtField, declaration.ServiceProjection.ExpiresAtField, declaration.ServiceProjection.ValidationField}
+	return validateServiceProjection(declaration.ServiceProjection)
+}
+
+// validateServiceProjection checks the optional managed-service field mapping.
+func validateServiceProjection(projection *ManagedServiceProjection) error {
+	if projection != nil {
+		values := []string{projection.PrimaryReferenceCustomerField, projection.ValidationMethodCustomerField, projection.StatusField, projection.IssuedAtField, projection.ExpiresAtField, projection.ValidationField}
 		for _, value := range values {
 			if !managedServiceProjectionFieldPattern.MatchString(value) {
 				return gerror.New("product fulfillment managed service projection is invalid")
@@ -406,4 +422,19 @@ func NewProviderMetadata(declaration *ProviderDeclaration) (*capmodel.BusinessEx
 		return nil, gerror.Wrap(err, "normalize product fulfillment provider declaration")
 	}
 	return &capmodel.BusinessExtensionProviderMetadata{Type: ProviderMetadataType, Version: ProviderMetadataVersion, Values: values}, nil
+}
+
+// validateMerchantCustomerFields validates the bounded administrator-selectable field set.
+func validateMerchantCustomerFields(fields []string) error {
+	seenFields := make(map[string]bool, len(fields))
+	if len(fields) > 64 {
+		return gerror.New("too many merchant-configurable customer fields")
+	}
+	for _, field := range fields {
+		if !managedServiceActionKeyPattern.MatchString(field) || len(field) > 64 || seenFields[field] {
+			return gerror.New("merchant-configurable customer field is invalid")
+		}
+		seenFields[field] = true
+	}
+	return nil
 }

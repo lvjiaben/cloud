@@ -8,11 +8,19 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./isolated": { "types": "./src/isolated/index.d.ts", "import": "./dist/isolated/index.js" },
-    "./isolated.css": "./dist/isolated/vben-plugin-adapter.css"
+    "./isolated": {
+      "types": "./src/isolated/index.d.ts",
+      "import": "./dist/isolated/index.js"
+    },
+    "./isolated.css": "./dist/isolated/vben-plugin-adapter.css",
+    "./admin.css": "./admin.css"
   },
   "files": [
-    "dist", "src/isolated/index.d.ts", "src/isolated/types.ts"
+    "dist",
+    "src/isolated/index.d.ts",
+    "src/isolated/types.ts",
+    "admin.css",
+    "use-admin-grid-layout.ts"
   ],
   "scripts": {
     "test": "node --experimental-strip-types --experimental-vm-modules --test src/isolated/form-schema.test.ts src/isolated/loader.test.mjs src/isolated/runtime.test.mjs",

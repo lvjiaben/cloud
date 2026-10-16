@@ -46,4 +46,5 @@ type BusinessOperation struct {
 	SubjectTypeCode             string     `json:"subjectTypeCode"             orm:"subject_type_code"             description:""`
 	SubjectNo                   string     `json:"subjectNo"                   orm:"subject_no"                    description:""`
 	ExpectedSubjectVersion      int64      `json:"expectedSubjectVersion"      orm:"expected_subject_version"      description:""`
+	PayerCustomerNo             string     `json:"payerCustomerNo"             orm:"payer_customer_no"             description:""`
 }

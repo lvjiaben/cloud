@@ -6,8 +6,9 @@ type CustomerTagBatchReq struct {
 	g.Meta         `path:"/admin/customers/tags/batch" method:"post" tags:"IDC Customer Management" summary:"Batch update customer tags" dc:"Assign or revoke at most twenty active tags for at most one hundred visible customers in one idempotent, audited transaction." permission:"idc:admin:customer:tag:batch"`
 	Action         string   `json:"action" v:"required|in:assign,revoke" dc:"Relationship action: assign adds active tag links; revoke closes active links" eg:"assign"`
 	CustomerNos    []string `json:"customerNos" v:"required" dc:"Unique customer business numbers; one to one hundred entries" eg:"[\"CUS_0123456789abcdef0123456789abcdef\"]"`
-	TagNos         []string `json:"tagNos" v:"required" dc:"Unique active tag business numbers; one to twenty entries" eg:"[\"TAG_0123456789abcdef0123456789abcdef\"]"`
-	Reason         string   `json:"reason" v:"required|max-length:256" dc:"Required normalized business reason recorded in sealed audit evidence" eg:"Quarterly account classification"`
+	TagNos         []string `json:"tagNos" dc:"Optional existing active tag numbers; at most twenty tags including new names" eg:"[\"TAG_0123456789abcdef0123456789abcdef\"]"`
+	TagNames       []string `json:"tagNames" dc:"Optional new tag names for assign; matching existing names are reused atomically" eg:"[\"VIP\"]"`
+	Reason         string   `json:"reason" v:"max-length:256" dc:"Optional audit note; omitted uses the automatic administrator tag update description" eg:"Quarterly account classification"`
 	IdempotencyKey string   `json:"idempotencyKey" v:"required|min-length:8|max-length:128" dc:"Stable client request key used to safely replay the same batch submission" eg:"customer-tag-batch-20260808-0001"`
 }
 

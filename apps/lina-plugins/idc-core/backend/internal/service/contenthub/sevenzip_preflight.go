@@ -103,7 +103,11 @@ func validSevenZipEntry(name string, mode fs.FileMode) bool {
 	}
 	normalized := strings.ReplaceAll(name, "\\", "/")
 	cleaned := path.Clean(normalized)
-	if strings.HasPrefix(normalized, "/") || cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, "../") || filepath.VolumeName(name) != "" {
+	// Archive paths are portable: Unix filepath.VolumeName does not detect
+	// Windows drives, including drive-relative paths such as C:payload.
+	windowsDrive := len(normalized) >= 2 && normalized[1] == ':' &&
+		((normalized[0] >= 'A' && normalized[0] <= 'Z') || (normalized[0] >= 'a' && normalized[0] <= 'z'))
+	if windowsDrive || strings.HasPrefix(normalized, "/") || cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, "../") || filepath.VolumeName(name) != "" {
 		return false
 	}
 	entryType := mode.Type()

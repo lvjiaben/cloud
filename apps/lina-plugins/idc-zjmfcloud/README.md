@@ -18,6 +18,10 @@ The artifact declares the `product-fulfillment@v1` provider contract owned by `i
 
 `endpoint`, `username`, and `password` are managed only on the resource channel page and are never copied into product automation. Server-only fields belong to this connector rather than the generic product model: region, network line, CPU, memory, operating system, system disk, data disk, and bandwidth. Region, line, and operating-system choices are loaded through the versioned `configuration.candidates` method.
 
+Optional hostname and password generation rules are configured on the product. The pure `product.configuration.validate` method checks their combined limits during form evaluation, saving, and publication; it receives no supplier credentials or outbound context. The resource owner generates hostnames deterministically and passwords inside the existing secret consumer boundary from the frozen rules. Products without these rules retain their previous generation behavior.
+
+Provisioning parameters accept resource-owner backup, snapshot, NAT forwarding and shared-website quotas: disabled maps to `-1`, unlimited maps to `0`, and limited quotas retain their positive count. Duplicate or contradictory quotas are rejected; legacy tasks without these facts gain no implicit parameters. This describes parameter conversion only; purchase options, supplier limits and corresponding prices must be configured before sale.
+
 ## Governed supplier boundary
 
 Candidate discovery, server provisioning, querying, and ongoing operations accept only the `resource-provider@v1` context issued by `idc-resource`. They use the one-use `confidentialoutbound.execute` service. Candidate discovery logs in and reads only `/areas`, `/nodes`, and `/image`, then returns bounded bilingual labels and values. Provisioning fails before any supplier request when the resource owner has not bound the generated server password. Supplier URLs, credentials, password values, request headers, login tokens, and raw confidential failures never enter the guest request, response, page, log, or evidence payload. Final supplier execution remains asynchronous and resource-owner controlled.

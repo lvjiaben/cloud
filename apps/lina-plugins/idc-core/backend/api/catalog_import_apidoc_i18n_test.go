@@ -12,10 +12,12 @@ import (
 func TestCatalogImportAPIDocTranslations(t *testing.T) {
 	t.Parallel()
 	bundle := readFinancialAPIDocBundle(t, "manifest/i18n/zh-CN/apidoc")
-	path := filepath.Join(financialAPIDocPluginRoot(t), "backend", "api", "admin", "v1", "catalog_product_import.go")
-	for _, key := range collectFinancialAPIDocKeys(t, path, "admin") {
-		if strings.TrimSpace(bundle[key]) == "" {
-			t.Errorf("missing catalog import translation: %s", key)
+	for _, name := range []string{"catalog_product_copy.go", "catalog_product_import.go", "catalog_product_description.go", "catalog_product_detail_types.go"} {
+		path := filepath.Join(financialAPIDocPluginRoot(t), "backend", "api", "admin", "v1", name)
+		for _, key := range collectFinancialAPIDocKeys(t, path, "admin") {
+			if strings.TrimSpace(bundle[key]) == "" {
+				t.Errorf("missing catalog import translation: %s", key)
+			}
 		}
 	}
 }

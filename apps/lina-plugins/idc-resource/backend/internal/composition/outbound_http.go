@@ -3,7 +3,6 @@ package composition
 
 import (
 	"context"
-	"crypto/tls"
 	"net"
 	"net/http"
 	"net/netip"
@@ -49,7 +48,17 @@ var _ resourcecap.HTTPClient = (*outboundHTTPClient)(nil)
 // NewOutboundHTTPClient constructs a Provider HTTP client with exact-origin,
 // TLS, redirect, DNS, and destination-address enforcement.
 func NewOutboundHTTPClient(endpoint string) (resourcecap.HTTPClient, func(), error) {
+	return newOutboundHTTPClient(endpoint, "")
+}
+
+// newOutboundHTTPClient accepts an optional exact leaf-certificate pin for a
+// supplier with a self-signed certificate; it never disables verification globally.
+func newOutboundHTTPClient(endpoint, certificateFingerprint string) (resourcecap.HTTPClient, func(), error) {
 	origin, err := parseOutboundOrigin(endpoint)
+	if err != nil {
+		return nil, nil, err
+	}
+	tlsPolicy, err := providerTLSConfig(origin.Hostname(), certificateFingerprint)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -67,10 +76,7 @@ func NewOutboundHTTPClient(endpoint string) (resourcecap.HTTPClient, func(), err
 		TLSHandshakeTimeout:   providerTLSHandshakeTimeout,
 		ResponseHeaderTimeout: providerResponseHeaderTimeout,
 		ExpectContinueTimeout: time.Second,
-		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-			ServerName: origin.Hostname(),
-		},
+		TLSClientConfig:       tlsPolicy,
 	}
 	client := &http.Client{
 		Transport: transport,

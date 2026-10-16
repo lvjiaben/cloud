@@ -25,7 +25,7 @@ import type {
   CustomerActivityKind,
 } from "../customer-client";
 
-const props = defineProps<{ customerNo: string }>();
+const props = defineProps<{ customerNo: string; notesOnly?: boolean }>();
 const emit = defineEmits<{ changed: [] }>();
 const { hasAccessByCodes } = useAccess();
 const canQuery = computed(() => hasAccessByCodes(["idc:admin:customer:query"]));
@@ -43,7 +43,7 @@ const historyCursors = reactive<Record<CustomerActivityKind, string>>({
   follow_up: "",
   note: "",
 });
-const historyKinds: CustomerActivityKind[] = ["note", "follow_up", "blacklist"];
+const historyKinds = computed<CustomerActivityKind[]>(() => props.notesOnly ? ["note"] : ["note", "follow_up", "blacklist"]);
 const activityOpen = computed({
   get: () => Boolean(active.value),
   set: (open: boolean) => {
@@ -61,6 +61,9 @@ function translatedOptions(prefix: string, values: string[]) {
 function activitySchema(
   kind: "blacklist" | "followUp" | "note",
 ): VbenFormSchema[] {
+  if (kind === "note" && props.notesOnly) {
+    return [{ component: "Textarea", componentProps: { "data-testid": "customer-note-content", maxlength: 8192, rows: 5 }, fieldName: "content", label: $t("plugin.idc-core.customer.activity.content"), rules: z.string().trim().min(1).max(8192) }];
+  }
   if (kind === "note") {
     return [
       {
@@ -340,7 +343,7 @@ watch(
     historyCursors.note = "";
     historyCursors.follow_up = "";
     historyCursors.blacklist = "";
-    for (const kind of ["note", "follow_up", "blacklist"] as const) {
+    for (const kind of historyKinds.value) {
       await loadHistory(kind, true);
     }
   },
@@ -358,7 +361,7 @@ async function save() {
   try {
     if (active.value === "note") {
       await customerNoteCreate(props.customerNo, {
-        category: String(values.category) as "general",
+        category: props.notesOnly ? "general" : String(values.category) as "general",
         content: String(values.content).trim(),
         supersedesNo: String(values.supersedesNo || "").trim() || undefined,
         idempotencyKey: `customer-note-${crypto.randomUUID()}`,
@@ -423,16 +426,16 @@ async function save() {
       <Button @click="openActivity('note')">{{
         $t("plugin.idc-core.customer.activity.addNote")
       }}</Button>
-      <Button @click="openActivity('followUp')">{{
+      <Button v-if="!notesOnly" @click="openActivity('followUp')">{{
         $t("plugin.idc-core.customer.activity.planFollowUp")
       }}</Button>
-      <Button danger @click="openActivity('blacklist')">{{
+      <Button v-if="!notesOnly" danger @click="openActivity('blacklist')">{{
         $t("plugin.idc-core.customer.activity.proposeBlacklist")
       }}</Button>
     </div>
   </section>
 
-  <section v-if="canQuery" class="history-grid">
+  <section v-if="canQuery" class="history-grid" :class="{ 'notes-only': notesOnly }">
     <article v-for="kind in historyKinds" :key="kind" class="history-column">
       <header>
         {{ $t(`plugin.idc-core.customer.activity.history.${kind}`) }}
@@ -448,7 +451,7 @@ async function save() {
             <Tag :color="statusColor(item)">{{ activityStatus(item) }}</Tag>
           </div>
           <strong>{{ activityTitle(item) }}</strong>
-          <p v-if="item.detail">{{ item.detail }}</p>
+          <p v-if="item.detail && !(notesOnly && kind === 'note')">{{ item.detail }}</p>
           <time>{{ activityTime(item.updatedAt || item.createdAt) }}</time>
           <div
             v-if="
@@ -617,4 +620,8 @@ async function save() {
     grid-template-columns: 1fr;
   }
 }
+</style>
+
+<style scoped>
+.notes-only { grid-template-columns: minmax(0, 1fr); }
 </style>

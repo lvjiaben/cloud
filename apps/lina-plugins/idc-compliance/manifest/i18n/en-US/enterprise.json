@@ -1,7 +1,7 @@
 {
   "plugin.idc-compliance.enterprise.eyebrow": "COMPLIANCE DESK · EVIDENCE CONTROL",
   "plugin.idc-compliance.enterprise.title": "Enterprise verification desk",
-  "plugin.idc-compliance.enterprise.subtitle": "Review masked legal profiles, open originals only through a recent-login one-time audit trail, and make server-authoritative decisions.",
+  "plugin.idc-compliance.enterprise.subtitle": "Review company information. Sign in again when asked to view originals.",
   "plugin.idc-compliance.enterprise.page": "Queue page",
   "plugin.idc-compliance.enterprise.view": "Review",
   "plugin.idc-compliance.enterprise.previous": "Previous",

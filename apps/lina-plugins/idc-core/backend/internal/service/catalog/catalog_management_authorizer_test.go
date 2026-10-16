@@ -156,6 +156,19 @@ func TestManagementAuthorizerUsesDistinctDirectStaffPermissions(t *testing.T) {
 	if actor, err = productAuthorizer.AuthorizeProductCreate(context.Background()); err != nil || actor != 7 {
 		t.Fatalf("authorize product create actor=%d err=%v", actor, err)
 	}
+	if _, err = productAuthorizer.AuthorizeProductUpdate(context.Background(), "product-route"); !bizerr.Is(err, CodeManagementNotAccessible) {
+		t.Fatalf("create permission authorized metadata update: %v", err)
+	}
+	updateAuthorizer, err := NewManagementAuthorizer(managementTestBizCtx{current: current}, newPrincipal(), &managementTestAuthz{grants: map[authz.PermissionKey]bool{authz.PermissionKey(permissionCatalogProductUpdate): true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actor, err = updateAuthorizer.AuthorizeProductUpdate(context.Background(), "product-route"); err != nil || actor != 7 {
+		t.Fatalf("metadata update actor=%d err=%v", actor, err)
+	}
+	if _, err = updateAuthorizer.AuthorizeProductCreate(context.Background()); !bizerr.Is(err, CodeManagementNotAccessible) {
+		t.Fatal("metadata update authorized product creation")
+	}
 	billingAuthorizer, err := NewManagementAuthorizer(
 		managementTestBizCtx{current: current}, newPrincipal(),
 		&managementTestAuthz{grants: map[authz.PermissionKey]bool{

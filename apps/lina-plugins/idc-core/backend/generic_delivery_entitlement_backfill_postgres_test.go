@@ -146,7 +146,7 @@ CREATE TABLE plugin_idc_core_product_delivery_record (
  version INT,content_digest TEXT,created_at TIMESTAMPTZ,updated_at TIMESTAMPTZ
 );
 CREATE TABLE plugin_idc_core_service_entitlement (
- tenant_id INT,entitlement_no TEXT,delivery_no TEXT,source_intent_no TEXT UNIQUE,customer_no TEXT,order_no TEXT,order_item_no TEXT,
+ tenant_id INT,entitlement_no TEXT UNIQUE,delivery_no TEXT,source_intent_no TEXT UNIQUE,customer_no TEXT,order_no TEXT,order_item_no TEXT,
  product_no TEXT,version_no TEXT,unit_sequence INT,configuration_snapshot_no TEXT,interface_instance_no TEXT,plugin_id TEXT,
  plugin_release_version TEXT,contract_version TEXT,declaration_digest TEXT,status_code TEXT,started_at TIMESTAMPTZ,expires_at TIMESTAMPTZ,
  renewal_mode_code TEXT,renewal_method TEXT,entitlement_owner_id TEXT,currency_code TEXT,billing_rule_no TEXT,

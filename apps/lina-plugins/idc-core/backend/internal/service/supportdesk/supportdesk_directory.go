@@ -13,7 +13,7 @@ func (s *serviceImpl) Departments(ctx context.Context) ([]DepartmentOption, erro
 	if err != nil {
 		return nil, err
 	}
-	query := `SELECT department_no,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 AND status_code='active'`
+	query := `SELECT department_no,org_dept_id,name_zh_cn,name_en_us,COALESCE(parent_department_no,'') AS parent_department_no,assignment_mode,status_code AS status,version FROM plugin_idc_core_support_department WHERE tenant_id=0 AND status_code='active' AND org_dept_id>0`
 	args := []any{}
 	if !a.Global {
 		if len(a.Departments) == 0 {

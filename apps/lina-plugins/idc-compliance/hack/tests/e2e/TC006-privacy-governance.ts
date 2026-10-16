@@ -4,7 +4,7 @@ import { PrivacyGovernancePage } from "../pages/PrivacyGovernancePage";
 import { installPrivacyGovernanceMock } from "../support/privacy-governance-mock";
 
 test.describe("TC-6 隐私治理", () => {
-  test("TC-6a: 影响评估明确确认后发布且跨境始终关闭", async ({
+  test("TC-6a: 资料用途明确确认后发布且跨境始终关闭", async ({
     adminPage,
     mainLayout,
   }) => {
@@ -13,7 +13,7 @@ test.describe("TC-6 隐私治理", () => {
     const privacy = new PrivacyGovernancePage(adminPage);
     await privacy.goto();
 
-    await expect(privacy.root).toContainText("跨境处理已硬关闭");
+    await expect(privacy.root).toContainText("数据仅在本地处理");
     const aiCard = privacy.root.locator(".ant-card").filter({
       hasText: "AI 安全投影",
     });
@@ -63,7 +63,7 @@ test.describe("TC-6 隐私治理", () => {
       nextStageCode: "contained",
     });
 
-    await adminPage.getByRole("button", { name: "生成本地脱敏支持包" }).click();
+    await adminPage.getByRole("button", { name: "导出脱敏资料" }).click();
     await expect(adminPage.getByRole("dialog").last()).toContainText(
       "不会开启远程登录",
     );
@@ -77,15 +77,15 @@ test.describe("TC-6 隐私治理", () => {
     adminPage,
     mainLayout,
   }) => {
-    await adminPage.setViewportSize({ height: 844, width: 390 });
     await mainLayout.switchLanguage("English");
+    await adminPage.setViewportSize({ height: 844, width: 390 });
     await installPrivacyGovernanceMock(adminPage, { locale: "en-US" });
     const privacy = new PrivacyGovernancePage(adminPage);
     await privacy.goto();
 
-    await expect(privacy.root).toContainText("Privacy governance desk");
+    await expect(privacy.root).toContainText("Privacy and data management");
     await expect(privacy.root).toContainText(
-      "Cross-border processing is hard-disabled",
+      "Data is processed locally",
     );
     await expect(privacy.root).not.toContainText(
       "plugin.idc-compliance",

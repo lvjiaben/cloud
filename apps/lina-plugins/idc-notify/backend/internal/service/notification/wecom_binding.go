@@ -453,7 +453,7 @@ func (s *serviceImpl) currentWeComStaffSession(
 		}
 		now := s.now().UTC()
 		loginAt := current.LoginAt.UTC()
-		if loginAt.After(now.Add(15*time.Second)) || now.Sub(loginAt) > 5*time.Minute {
+		if loginAt.After(now.Add(15 * time.Second)) {
 			return notificationcap.CurrentStaffProjection{}, nil, "", bizerr.NewCode(CodeRecentAuthenticationRequired)
 		}
 	}

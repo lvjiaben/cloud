@@ -1,20 +1,35 @@
 {
   "error": {
     "idc": {
-      "interface": { "usage": {
-        "not": { "accessible": "无权查看该接口使用统计" },
-        "invalid": "接口使用统计请求无效",
-        "unavailable": "接口使用统计暂时不可用，请稍后重试"
-      } },
-	  "ip": {
-		"change": {
-		  "not": { "accessible": "无权访问服务器换 IP 设置或服务" },
-		  "invalid": "换 IP 请求填写内容无效，请检查后重试",
-		  "unavailable": "当前暂时不能更换 IP，请刷新资源后重试",
-		  "conflict": "换 IP 报价或服务器状态已经变化，请刷新后重试",
-		  "frequency": { "exceeded": "这台服务器已达到换 IP 次数上限" }
-		}
-	  },
+      "operations": {
+        "data": {
+          "denied": "无权查看这些运营记录",
+          "invalid": "运营数据筛选条件无效",
+          "unavailable": "运营数据加载失败，请稍后重试"
+        }
+      },
+      "interface": {
+        "usage": {
+          "not": {
+            "accessible": "无权查看该接口使用统计"
+          },
+          "invalid": "接口使用统计请求无效",
+          "unavailable": "接口使用统计暂时不可用，请稍后重试"
+        }
+      },
+      "ip": {
+        "change": {
+          "not": {
+            "accessible": "无权访问服务器换 IP 设置或服务"
+          },
+          "invalid": "换 IP 请求填写内容无效，请检查后重试",
+          "unavailable": "当前暂时不能更换 IP，请刷新资源后重试",
+          "conflict": "换 IP 报价或服务器状态已经变化，请刷新后重试",
+          "frequency": {
+            "exceeded": "这台服务器已达到换 IP 次数上限"
+          }
+        }
+      },
       "identity": {
         "required": "需要先登录"
       },
@@ -33,7 +48,9 @@
         "configuration": {
           "file": {
             "invalid": "购买配置文件无效，请检查文件要求后重试",
-            "not": { "accessible": "无权访问该购买配置文件" },
+            "not": {
+              "accessible": "无权访问该购买配置文件"
+            },
             "conflict": "购买配置文件状态已经变化，请刷新后重试",
             "rejected": "文件类型、大小或安全检查结果不符合要求",
             "unavailable": "购买配置文件服务暂时不可用，请稍后重试"
@@ -141,12 +158,12 @@
         "unavailable": "审计服务暂时不可用"
       },
       "customer": {
-		"phone": {
-		  "exists": "该手机号已经存在，请直接查找对应客户"
-		},
-		"email": {
-		  "exists": "该邮箱已经存在，请直接查找对应客户"
-		},
+        "phone": {
+          "exists": "该手机号已经存在，请直接查找对应客户"
+        },
+        "email": {
+          "exists": "该邮箱已经存在，请直接查找对应客户"
+        },
         "profile": {
           "invalid": "客户资料请求无效"
         },
@@ -206,7 +223,10 @@
           },
           "unavailable": "地址服务暂时不可用"
         },
-        "unavailable": "客户资料服务暂时不可用"
+        "unavailable": "客户资料服务暂时不可用",
+        "verification": {
+          "required": "该客户尚未完成实名，请先在客户管理中完成实名后重试"
+        }
       },
       "reauth": {
         "invalid": "重新认证请求无效",
@@ -254,6 +274,18 @@
           },
           "evidence": {
             "unavailable": "当前无法验证自动化插件的发布版本、履约扩展点、契约或可用方法，请检查插件状态后重试"
+          },
+          "supplier": {
+            "capabilities": {
+              "unconfirmed": "尚未确认供应商支持的域名类型与数量，暂不能自动发布，请改用人工交付。"
+            }
+          },
+          "customer": {
+            "option": {
+              "prices": {
+                "required": "请先在价格页为每个已开启的客户配置设置各币种、各周期的价格；免费项目也要明确填0。"
+              }
+            }
           }
         }
       },
@@ -265,6 +297,9 @@
           "invalid": "服务器商品配置图无效"
         },
         "category": {
+          "depth": {
+            "exceeded": "商品分类最多支持二级，请选择一级分类作为上级；已有下级的分类不能移到其他分类下面"
+          },
           "parent": {
             "cycle": "不能把分类移动到自己或下级分类中"
           }
@@ -325,6 +360,11 @@
             "invalid": "本地库存路由请求无效",
             "unavailable": "本地库存路由暂时不可用"
           }
+        },
+        "trial": {
+          "fulfillment": {
+            "unavailable": "试用商品需要支持暂停、恢复和转正式的自动交付接口。请先删除试用套餐，或更换支持试用的接口。"
+          }
         }
       },
       "public": {
@@ -379,6 +419,9 @@
         },
         "assisted": {
           "quote": {
+            "configuration": {
+              "missing": "该报价未保存商品配置，请重新发起协助报价"
+            },
             "invalid": "协助报价请求无效",
             "not": {
               "accessible": "无权访问该协助报价请求"
@@ -535,6 +578,11 @@
             "insufficient": "同币种余额不足，续费账单已保留为待付款"
           },
           "unavailable": "权益续费暂时不可用"
+        },
+        "upgrade": {
+          "invalid": "当前选择无法升级，请检查配置和服务有效期",
+          "unavailable": "该服务暂不支持自动升级，请联系管理员",
+          "conflict": "服务或报价已变化，请刷新后重新报价"
         }
       },
       "marketing": {
@@ -683,36 +731,52 @@
         "public": {
           "key": {
             "invalid": "SSH 公钥内容无效，请检查后重试",
-            "not": { "accessible": "无权访问这把 SSH 公钥" },
+            "not": {
+              "accessible": "无权访问这把 SSH 公钥"
+            },
             "duplicate": "同名或相同指纹的可用 SSH 公钥已经存在",
-            "version": { "conflict": "SSH 公钥已经发生变化，请刷新后重试" },
-            "idempotency": { "conflict": "本次请求与之前使用相同请求编号的内容不一致" },
+            "version": {
+              "conflict": "SSH 公钥已经发生变化，请刷新后重试"
+            },
+            "idempotency": {
+              "conflict": "本次请求与之前使用相同请求编号的内容不一致"
+            },
             "unavailable": "SSH 公钥服务暂时不可用"
           }
         },
-        "private": { "key": { "rejected": "不能提交或保存 SSH 私钥" } }
+        "private": {
+          "key": {
+            "rejected": "不能提交或保存 SSH 私钥"
+          }
+        }
       },
       "server": {
-		"resize": {
-		  "disk": { "shrink": { "not": { "allowed": "变更配置时不能缩小磁盘容量" } } }
-		},
-		"batch": {
-		  "invalid": "请选择服务器并检查操作内容后重试",
-		  "not": {
-			"accessible": "无权查看或执行这次服务器批量操作"
-		  },
-		  "conflict": "这次批量操作的预览内容已经变化，请重新预览后再继续",
-		  "unavailable": "服务器批量操作暂时不可用，请稍后重试"
-		},
-		"accessory": {
-		  "management": {
-			"invalid": "服务器附属操作填写内容无效，请检查后重试",
-			"not": {
-			  "accessible": "无权查看或操作这台服务器的附属资源"
-			},
-			"unavailable": "服务器附属操作暂时不可用，请刷新后重试"
-		  }
-		},
+        "resize": {
+          "disk": {
+            "shrink": {
+              "not": {
+                "allowed": "变更配置时不能缩小磁盘容量"
+              }
+            }
+          }
+        },
+        "batch": {
+          "invalid": "请选择服务器并检查操作内容后重试",
+          "not": {
+            "accessible": "无权查看或执行这次服务器批量操作"
+          },
+          "conflict": "这次批量操作的预览内容已经变化，请重新预览后再继续",
+          "unavailable": "服务器批量操作暂时不可用，请稍后重试"
+        },
+        "accessory": {
+          "management": {
+            "invalid": "服务器附属操作填写内容无效，请检查后重试",
+            "not": {
+              "accessible": "无权查看或操作这台服务器的附属资源"
+            },
+            "unavailable": "服务器附属操作暂时不可用，请刷新后重试"
+          }
+        },
         "operation": {
           "invalid": "服务器操作请求无效，请检查后重试",
           "unavailable": "服务器操作服务暂时不可用",
@@ -740,6 +804,45 @@
           "unavailable": "快照缓存协调暂时不可用",
           "authority": {
             "unavailable": "权威快照暂时不可用"
+          }
+        }
+      },
+      "sales": {
+        "management": {
+          "denied": "无权管理这些代理或销售记录",
+          "invalid": "请检查所选客户、代理等级及输入内容",
+          "conflict": "记录已被修改，请刷新后重新操作",
+          "unavailable": "代理销售操作未完成，请稍后重试",
+          "staff": {
+            "search": {
+              "broad": "匹配员工太多，请输入更具体的员工姓名，再重新搜索"
+            }
+          },
+          "recovery": {
+            "due": "还有退款产生的佣金需要扣回，后续佣金抵扣完后才能登记新的打款"
+          }
+        },
+        "settlement": {
+          "retired": "佣金由管理员登记线下打款，不再使用结算申请和批量打款，请联系管理员。",
+          "denied": "无权释放这笔历史佣金结算，请联系有权限的管理员。",
+          "release": {
+            "failed": "无法释放这笔历史佣金，请检查记录状态和凭证。"
+          }
+        }
+      },
+      "currency": {
+        "denied": "没有管理货币的权限，请联系管理员。",
+        "invalid": "请选择有效货币，并刷新后再修改。",
+        "conflict": "货币已存在或已被修改，请刷新后重试。",
+        "default": {
+          "required": "请先设置其他已启用货币为默认，再停用或删除此货币。"
+        },
+        "unavailable": "货币配置暂时不可用，请稍后重试。"
+      },
+      "resource": {
+        "interface": {
+          "refresh": {
+            "referenced": "接口曾被商品或服务使用，不能更换版本，请新建接口"
           }
         }
       }

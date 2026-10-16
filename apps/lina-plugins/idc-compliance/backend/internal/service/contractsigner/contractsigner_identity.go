@@ -121,7 +121,7 @@ WHERE tenant_id=? AND attempt_no=? AND status_code='preparing'`, initiation.Cert
 		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.contract-signer.identity-start",
 			IdempotencyKey: attemptNo, OperationCode: "compliance.contract-signer.identity-start", TargetType: "contract_signer", TargetNo: signerNo,
 			CustomerNo: subject.CustomerNo, ResultCode: "succeeded", ReasonCode: "enterprise_signer_identity_started", RiskCode: "high",
-			AfterSnapshot: map[string]any{"attempt_no": attemptNo, "status": "verifying"}})
+			BeforeSnapshot: map[string]any{"attempt_status": "preparing", "identity_status": row.IdentityStatusCode}, AfterSnapshot: map[string]any{"attempt_no": attemptNo, "status": "verifying"}})
 	})
 	if err != nil {
 		persistenceErr := s.markIdentityReview(ctx, signerNo, attemptNo, "provider_result_persistence_failed")
@@ -235,7 +235,7 @@ func (s *serviceImpl) markIdentityPassed(ctx context.Context, row signerRow, att
 		if count != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
-		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.contract-signer.identity-verified", IdempotencyKey: attempt.AttemptNo, OperationCode: "compliance.contract-signer.identity-verify", TargetType: "contract_signer", TargetNo: row.SignerNo, CustomerNo: row.CustomerNo, ResultCode: "succeeded", ReasonCode: "aliyun_authoritative_passed", RiskCode: "high", AfterSnapshot: map[string]any{"identity_status": "verified", "identity_verification_version": row.IdentityVerificationVersion + 1}})
+		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.contract-signer.identity-verified", IdempotencyKey: attempt.AttemptNo, OperationCode: "compliance.contract-signer.identity-verify", TargetType: "contract_signer", TargetNo: row.SignerNo, CustomerNo: row.CustomerNo, ResultCode: "succeeded", ReasonCode: "aliyun_authoritative_passed", RiskCode: "high", BeforeSnapshot: map[string]any{"identity_status": row.IdentityStatusCode, "identity_verification_version": row.IdentityVerificationVersion}, AfterSnapshot: map[string]any{"identity_status": "verified", "identity_verification_version": row.IdentityVerificationVersion + 1}})
 	})
 }
 

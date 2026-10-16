@@ -15,6 +15,7 @@ type IPublicV1 interface {
 	CatalogProductList(ctx context.Context, req *v1.CatalogProductListReq) (res *v1.CatalogProductListRes, err error)
 	GuestCartOpen(ctx context.Context, req *v1.GuestCartOpenReq) (res *v1.GuestCartOpenRes, err error)
 	GuestCartItemAdd(ctx context.Context, req *v1.GuestCartItemAddReq) (res *v1.GuestCartItemAddRes, err error)
+	CurrencyOptions(ctx context.Context, req *v1.CurrencyOptionsReq) (res *v1.CurrencyOptionsRes, err error)
 	MarketingCampaignExposureCreate(ctx context.Context, req *v1.MarketingCampaignExposureCreateReq) (res *v1.MarketingCampaignExposureCreateRes, err error)
 	MarketingCampaignList(ctx context.Context, req *v1.MarketingCampaignListReq) (res *v1.MarketingCampaignListRes, err error)
 	PurchaseConfigurationEvaluate(ctx context.Context, req *v1.PurchaseConfigurationEvaluateReq) (res *v1.PurchaseConfigurationEvaluateRes, err error)

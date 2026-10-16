@@ -47,7 +47,7 @@ func (s *service) List(ctx context.Context, input ListInput) (*Snapshot, error) 
 			"interface_binding.tenant_id=c.tenant_id AND interface_binding.channel_no=c.channel_no").
 		LeftJoin("plugin_idc_resource_channel_health_state health",
 			"health.tenant_id=c.tenant_id AND health.channel_no=c.channel_no").
-		Fields("c.channel_no,interface_binding.interface_instance_no,c.provider_id,c.provider_plugin_id,c.provider_runtime_type,c.display_name,c.endpoint,c.non_secret_settings::TEXT AS non_secret_settings,c.status_code,c.version",
+		Fields("c.channel_no,interface_binding.interface_instance_no,c.provider_id,c.provider_plugin_id,c.provider_runtime_type,c.display_name,c.endpoint,c.tls_certificate_sha256,c.non_secret_settings::TEXT AS non_secret_settings,c.status_code,c.version",
 			"interface_binding.resource_authorized_methods",
 			"interface_binding.resource_contract_version,interface_binding.resource_plugin_release_version AS resource_release_version,interface_binding.resource_release_digest,interface_binding.resource_declaration_digest",
 			"COALESCE(health.last_authentication_health_code,'unknown') AS verification_health_code,COALESCE(health.last_authentication_summary_code,'') AS verification_summary_code,health.last_authentication_observed_at AS verification_observed_at").
@@ -92,7 +92,7 @@ func (s *service) List(ctx context.Context, input ListInput) (*Snapshot, error) 
 		if projectionErr != nil {
 			return nil, bizerr.WrapCode(projectionErr, CodeUnavailable)
 		}
-		result.Channels[i] = Channel{ChannelNo: row.ChannelNo, InterfaceInstanceNo: row.InterfaceInstanceNo, ProviderID: row.ProviderID, ProviderPluginID: row.ProviderPluginID, DisplayName: row.DisplayName, Endpoint: row.Endpoint, NonSecretSettings: publicSettings, Status: row.StatusCode, SecretFields: configuration.SecretFields, InterfaceConfiguration: configuration.InterfaceConfiguration, ProviderContractVersion: row.ResourceContractVersion, ProviderReleaseVersion: row.ResourceReleaseVersion, ProviderReleaseDigest: row.ResourceReleaseDigest, ProviderDeclarationDigest: row.ResourceDeclarationDigest, VerificationHealthCode: row.VerificationHealthCode, VerificationSummaryCode: row.VerificationSummaryCode, VerificationObservedAt: row.VerificationObservedAt, Version: row.Version}
+		result.Channels[i] = Channel{ChannelNo: row.ChannelNo, InterfaceInstanceNo: row.InterfaceInstanceNo, ProviderID: row.ProviderID, ProviderPluginID: row.ProviderPluginID, DisplayName: row.DisplayName, Endpoint: row.Endpoint, TLSCertificateSHA256: row.TLSCertificateSHA256, NonSecretSettings: publicSettings, Status: row.StatusCode, SecretFields: configuration.SecretFields, InterfaceConfiguration: configuration.InterfaceConfiguration, ProviderContractVersion: row.ResourceContractVersion, ProviderReleaseVersion: row.ResourceReleaseVersion, ProviderReleaseDigest: row.ResourceReleaseDigest, ProviderDeclarationDigest: row.ResourceDeclarationDigest, VerificationHealthCode: row.VerificationHealthCode, VerificationSummaryCode: row.VerificationSummaryCode, VerificationObservedAt: row.VerificationObservedAt, Version: row.Version}
 		result.Channels[i].CatalogAvailable = slices.Contains(row.ResourceAuthorizedMethods, resourcecap.DynamicProviderMethodListCatalog) && slices.Contains(row.ResourceAuthorizedMethods, resourcecap.DynamicProviderMethodReadCatalogProduct)
 	}
 	for i, row := range pools {

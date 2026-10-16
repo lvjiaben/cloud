@@ -1,0 +1,4 @@
+{
+  "plugin.idc-peer.name": "同系统连接器",
+  "plugin.idc-peer.description": "使用客户绑定的开放 API 连接另一套同款系统。"
+}

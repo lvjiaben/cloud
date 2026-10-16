@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VbenFormSchema } from "#/adapter/form";
 
@@ -22,21 +24,25 @@ import type {
 
 import {
   computed,
+  h,
   nextTick,
   onBeforeUnmount,
   onMounted,
   reactive,
   ref,
+  watch,
 } from "vue";
 
 import { useAccess } from "./plugin-access";
+import { useRoute } from "vue-router";
+import OperationsDetailPanel from "./components/operations-detail-panel.vue";
+import { minorToMajorAmount } from "./catalog-money";
 import { createNumberedPage } from "./numbered-page";
 import { Page, useVbenDrawer, useVbenModal } from "@vben/common-ui";
 import { $te } from "@vben/locales";
 import { preferences } from "@vben/preferences";
 
 import {
-  Alert as AAlert,
   Badge,
   Button as AButton,
   Modal,
@@ -46,7 +52,7 @@ import {
 } from "ant-design-vue";
 
 import { useVbenForm, z } from "#/adapter/form";
-import { useVbenVxeGrid, vxeCheckboxChecked } from "#/adapter/vxe-table";
+import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { $t } from "#/locales";
 import { formatTimestamp } from "#/utils/time";
 
@@ -54,17 +60,16 @@ import { fixedRightActionColumn } from "../../../vben-adapter/frontend/src";
 
 import enPluginMessages from "../../manifest/i18n/en-US/plugin.json";
 import zhPluginMessages from "../../manifest/i18n/zh-CN/plugin.json";
+import AssistedQuoteCreateDrawer from "./components/assisted-quote-create-drawer.vue";
 import CustomerOverviewDrawer from "./components/customer-overview-drawer.vue";
 import CustomerTagBatchModal from "./components/customer-tag-batch-modal.vue";
 import {
-  customerActivationCreate,
-  customerActivationResend,
   customerDirectCreate,
   customerList,
   customerPasswordReset,
   customerSegments,
 } from "./customer-client";
-import { buildCountryOptions, callingCodeOptions } from "./country-options";
+
 
 const accessCodes = {
   create: "idc:admin:customer:create",
@@ -85,366 +90,49 @@ const segmentSearchTimers: Partial<
   Record<"group" | "tag", ReturnType<typeof setTimeout>>
 > = {};
 
+const canAssist = computed(() => hasAccessByCodes(["idc:admin:commerce:assisted-quote:create"]));
 const canViewOverview = computed(() => hasAccessByCodes([accessCodes.query]));
 const canBatchTags = computed(() => hasAccessByCodes([accessCodes.tagBatch]));
 const canCreateCustomer = computed(() =>
   hasAccessByCodes([accessCodes.create]),
 );
 const canResetPassword = computed(() => hasAccessByCodes([accessCodes.update]));
-const countryOptions = computed(() =>
-  buildCountryOptions(preferences.app.locale || "zh-CN"),
-);
-const activationSaving = ref(false);
-const activationResending = ref("");
-const activationRequestKey = ref("");
 const directSaving = ref(false);
+const selectedCustomerCount = ref(0);
 const directRequestKey = ref("");
-const passwordResetSaving = ref(false);
-const passwordResetCustomer = ref<CustomerSummary | null>(null);
+const initialPassword = ref("");
 
-function baseCustomerFormSchema(
-  mode: "activation" | "direct",
-): VbenFormSchema[] {
-  return [
-    {
-      component: "Input",
-      componentProps: {
-        "data-testid":
-          mode === "activation"
-            ? "customer-activation-name"
-            : "customer-direct-name",
-        maxlength: 256,
-      },
-      fieldName: "displayName",
-      label: $t("plugin.idc-core.customer.activation.displayName"),
-      rules: z
-        .string()
-        .trim()
-        .min(1, {
-          message: $t(
-            "plugin.idc-core.customer.validation.displayNameRequired",
-          ),
-        })
-        .max(256, {
-          message: $t("plugin.idc-core.customer.validation.displayNameTooLong"),
-        }),
-    },
-    {
-      component: "Select",
-      componentProps: {
-        "data-testid":
-          mode === "activation" ? "customer-activation-country" : undefined,
-        optionFilterProp: "label",
-        options: countryOptions.value,
-        showSearch: true,
-      },
-      defaultValue: "CN",
-      fieldName: "countryCode",
-      label: $t("plugin.idc-core.customer.activation.country"),
-      rules: z.string().length(2, {
-        message: $t("plugin.idc-core.customer.validation.countryRequired"),
-      }),
-    },
-    {
-      component: "Select",
-      componentProps: {
-        "data-testid":
-          mode === "activation" ? "customer-activation-locale" : undefined,
-        options: [
-          {
-            label: $t("plugin.idc-core.customer.activation.localeZhCN"),
-            value: "zh-CN",
-          },
-          {
-            label: $t("plugin.idc-core.customer.activation.localeEnUS"),
-            value: "en-US",
-          },
-        ],
-      },
-      defaultValue: "zh-CN",
-      fieldName: "preferredLocale",
-      label: $t("plugin.idc-core.customer.activation.locale"),
-      rules: z.enum(["zh-CN", "en-US"]),
-    },
-    {
-      component: "RadioGroup",
-      componentProps: {
-        "data-testid":
-          mode === "activation"
-            ? "customer-activation-destination-kind"
-            : undefined,
-        buttonStyle: "solid",
-        optionType: "button",
-        options: [
-          {
-            label: $t("plugin.idc-core.customer.activation.email"),
-            value: "email",
-          },
-          {
-            label: $t("plugin.idc-core.customer.activation.sms"),
-            value: "sms",
-          },
-        ],
-      },
-      defaultValue: "email",
-      fieldName: "destinationKind",
-      label:
-        mode === "activation"
-          ? $t("plugin.idc-core.customer.activation.destination")
-          : directText("login"),
-      rules: z.enum(["email", "sms"]),
-    },
-    {
-      component: "Input",
-      componentProps: {
-        "data-testid":
-          mode === "activation"
-            ? "customer-activation-email"
-            : "customer-direct-email",
-      },
-      dependencies: {
-        show: (values) => values.destinationKind === "email",
-        triggerFields: ["destinationKind"],
-      },
-      fieldName: "email",
-      label: $t("plugin.idc-core.customer.activation.email"),
-      rules: z
-        .string()
-        .trim()
-        .email({
-          message: $t("plugin.idc-core.customer.validation.emailInvalid"),
-        })
-        .optional()
-        .or(z.literal("")),
-    },
-    {
-      component: "Select",
-      componentProps: {
-        "data-testid":
-          mode === "activation" ? "customer-activation-phone-code" : undefined,
-        optionFilterProp: "label",
-        options: callingCodeOptions,
-        showSearch: true,
-      },
-      defaultValue: "+86",
-      dependencies: {
-        show: (values) => values.destinationKind === "sms",
-        triggerFields: ["destinationKind"],
-      },
-      fieldName: "phoneCountryCode",
-      label: directText("phone"),
-    },
-    {
-      component: "Input",
-      componentProps: {
-        "data-testid":
-          mode === "activation"
-            ? "customer-activation-phone"
-            : "customer-direct-phone",
-      },
-      dependencies: {
-        show: (values) => values.destinationKind === "sms",
-        triggerFields: ["destinationKind"],
-      },
-      fieldName: "phone",
-      label: $t("plugin.idc-core.customer.activation.sms"),
-    },
-  ];
+function randomPassword() {
+  const bytes = crypto.getRandomValues(new Uint8Array(20));
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  return "Aa7!" + Array.from(bytes, value => alphabet[value % alphabet.length]).join("");
 }
-
-function activationFormSchema(): VbenFormSchema[] {
-  return [
-    ...baseCustomerFormSchema("activation"),
-    {
-      component: "Textarea",
-      componentProps: {
-        "data-testid": "customer-activation-reason",
-        maxlength: 512,
-        rows: 3,
-        showCount: true,
-      },
-      fieldName: "reason",
-      label: $t("plugin.idc-core.customer.activation.reason"),
-      rules: z
-        .string()
-        .trim()
-        .min(10, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        })
-        .max(512, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        }),
-    },
-    {
-      component: "Checkbox",
-      componentProps: { "data-testid": "customer-activation-bind-existing" },
-      defaultValue: false,
-      fieldName: "bindExistingIdentity",
-      label: $t("plugin.idc-core.customer.activation.bindExisting"),
-    },
-  ];
+function showPassword(password: string) {
+  Modal.success({ title: directText("password"), okText: $t("plugin.idc-core.customer.password.done"), content: () => h("div", { class: "space-y-3" }, [h("code", { "data-testid": "customer-generated-password", class: "block break-all text-base" }, password), h(AButton, { "data-testid": "customer-password-copy", onClick: async () => { try { await navigator.clipboard.writeText(password); message.success($t("plugin.idc-core.customer.overview.copied")); } catch { message.warning($t("plugin.idc-core.customer.overview.copyFailed")); } } }, () => $t("plugin.idc-core.customer.password.copy"))]), maskClosable: false });
 }
-
 function directFormSchema(): VbenFormSchema[] {
-  const schema = baseCustomerFormSchema("direct");
-  schema.push(
-    {
-      component: "InputPassword",
-      componentProps: {
-        "data-testid": "customer-direct-password",
-        autocomplete: "new-password",
-        maxlength: 128,
-      },
-      fieldName: "initialPassword",
-      label: directText("password"),
-      rules: z
-        .string()
-        .min(8, {
-          message: $t("plugin.idc-core.customer.validation.passwordLength"),
-        })
-        .max(128, {
-          message: $t("plugin.idc-core.customer.validation.passwordLength"),
-        }),
-    },
-    {
-      component: "Textarea",
-      componentProps: {
-        "data-testid": "customer-direct-reason",
-        maxlength: 512,
-        rows: 3,
-        showCount: true,
-      },
-      fieldName: "reason",
-      label: $t("plugin.idc-core.customer.activation.reason"),
-      rules: z
-        .string()
-        .trim()
-        .min(10, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        })
-        .max(512, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        }),
-    },
-  );
-  return schema;
-}
-
-function passwordResetFormSchema(): VbenFormSchema[] {
   return [
-    {
-      component: "InputPassword",
-      componentProps: {
-        "data-testid": "customer-password-reset-password",
-        autocomplete: "new-password",
-        maxlength: 128,
-      },
-      fieldName: "newPassword",
-      label: $t("plugin.idc-core.customer.password.new"),
-      rules: z
-        .string()
-        .min(8, {
-          message: $t("plugin.idc-core.customer.validation.passwordLength"),
-        })
-        .max(128, {
-          message: $t("plugin.idc-core.customer.validation.passwordLength"),
-        }),
-    },
-    {
-      component: "Textarea",
-      componentProps: {
-        "data-testid": "customer-password-reset-reason",
-        maxlength: 512,
-        rows: 3,
-        showCount: true,
-      },
-      fieldName: "reason",
-      label: $t("plugin.idc-core.customer.password.reason"),
-      rules: z
-        .string()
-        .trim()
-        .min(10, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        })
-        .max(512, {
-          message: $t("plugin.idc-core.customer.validation.reasonLength"),
-        }),
-    },
+    { component: "Input", componentProps: { "data-testid": "customer-direct-email", autocomplete: "off", maxlength: 320 }, fieldName: "email", label: $t("plugin.idc-core.customer.activation.email"), rules: z.string().trim().email({ message: $t("plugin.idc-core.customer.validation.emailInvalid") }).optional().or(z.literal("")) },
+    { component: "Input", componentProps: { "data-testid": "customer-direct-phone", autocomplete: "off", maxlength: 32 }, fieldName: "phone", label: directText("phone") },
   ];
 }
-
-const [CustomerActivationForm, activationFormApi] = useVbenForm({
-  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 120 },
-  schema: [],
-  showDefaultActions: false,
-});
 const [DirectCustomerForm, directFormApi] = useVbenForm({
-  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 120 },
-  schema: [],
-  showDefaultActions: false,
-});
-const [CustomerPasswordResetForm, passwordResetFormApi] = useVbenForm({
-  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 120 },
-  schema: [],
-  showDefaultActions: false,
-});
-
-const [ActivationModal, activationModalApi] = useVbenModal({
-  class: "w-[min(96vw,620px)]",
-  onConfirm: createCustomerActivation,
-  title: $t("plugin.idc-core.customer.activation.title"),
+  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 80 }, schema: [], showDefaultActions: false,
 });
 const [DirectModal, directModalApi] = useVbenModal({
-  class: "w-[min(96vw,680px)]",
-  onConfirm: createDirectCustomer,
-  title: directText("title"),
+  class: "w-[min(96vw,480px)]", onConfirm: createDirectCustomer,
 });
-const [PasswordResetModal, passwordResetModalApi] = useVbenModal({
-  class: "w-[min(96vw,560px)]",
-  onConfirm: resetCustomerPassword,
-  title: $t("plugin.idc-core.customer.password.title"),
-});
-
-async function openPasswordReset(row: CustomerSummary) {
-  passwordResetCustomer.value = row;
-  passwordResetModalApi.open();
-  await nextTick();
-  try {
-    await passwordResetFormApi.setState({ schema: passwordResetFormSchema() });
-    await passwordResetFormApi.resetForm();
-  } catch (error) {
-    passwordResetModalApi.close();
-    throw error;
-  }
-}
-
-async function resetCustomerPassword() {
-  const row = passwordResetCustomer.value;
-  if (!row) return false;
-  const { valid } = await passwordResetFormApi.validate();
-  if (!valid) {
-    message.warning($t("plugin.idc-core.customer.password.required"));
-    return false;
-  }
-  const values = await passwordResetFormApi.getValues<{
-    newPassword: string;
-    reason: string;
-  }>();
-  passwordResetSaving.value = true;
-  passwordResetModalApi.lock(true);
-  try {
-    await customerPasswordReset(row.customerNo, {
-      idempotencyKey: `customer-password-reset-${crypto.randomUUID()}`,
-      newPassword: values.newPassword,
-      reason: values.reason.trim(),
-    });
-    passwordResetModalApi.close();
-    message.success($t("plugin.idc-core.customer.password.saved"));
-  } finally {
-    await passwordResetFormApi.resetForm();
-    passwordResetSaving.value = false;
-    passwordResetModalApi.lock(false);
-  }
+function openPasswordReset(row: CustomerSummary) {
+  const password = randomPassword();
+  const key = `customer-password-reset-${crypto.randomUUID()}`;
+  Modal.confirm({
+    title: $t("plugin.idc-core.customer.password.title"),
+    content: $t("plugin.idc-core.customer.password.confirm", { account: row.primaryPhone || row.primaryEmail || row.displayName }),
+    async onOk() {
+      await customerPasswordReset(row.customerNo, { idempotencyKey: key, newPassword: password, reason: "Administrator confirmed customer password reset." });
+      showPassword(password);
+    },
+  });
 }
 
 type DirectMessageKey =
@@ -471,182 +159,32 @@ function directText(key: DirectMessageKey) {
 
 async function openDirectCustomer() {
   directRequestKey.value = `customer-direct-${crypto.randomUUID()}`;
-  directModalApi.open();
+  initialPassword.value = randomPassword();
+  directModalApi.setState({ title: directText("title"), confirmText: directText("open") }).open();
   await nextTick();
-  try {
-    await directFormApi.setState({ schema: directFormSchema() });
-    await directFormApi.resetForm();
-    await directFormApi.setValues({
-      countryCode: "CN",
-      destinationKind: "email",
-      displayName: "",
-      email: "",
-      initialPassword: "",
-      phone: "",
-      phoneCountryCode: "+86",
-      preferredLocale: "zh-CN",
-      reason: "",
-    });
-  } catch (error) {
-    directModalApi.close();
-    throw error;
-  }
+  await directFormApi.setState({ schema: directFormSchema() });
+  await directFormApi.resetForm();
+  await directFormApi.setValues({ email: "", phone: "" });
 }
-
 async function createDirectCustomer() {
   if (directSaving.value) return false;
   const { valid } = await directFormApi.validate();
-  const values = await directFormApi.getValues<{
-    countryCode: string;
-    destinationKind: "email" | "sms";
-    displayName: string;
-    email?: string;
-    initialPassword: string;
-    phone?: string;
-    phoneCountryCode?: string;
-    preferredLocale: "en-US" | "zh-CN";
-    reason: string;
-  }>();
-  if (
-    !valid ||
-    (values.destinationKind === "email"
-      ? !values.email?.trim()
-      : !values.phone?.trim())
-  ) {
-    message.warning(directText("required"));
-    return false;
-  }
+  const values = await directFormApi.getValues<{ email?: string; phone?: string }>();
+  const email = values.email?.trim() || "";
+  const phone = values.phone?.trim() || "";
+  if (!valid || (!email && !phone)) { message.warning(directText("required")); return false; }
   directSaving.value = true;
   directModalApi.lock(true);
   try {
-    await customerDirectCreate({
-      countryCode: values.countryCode.trim().toUpperCase(),
-      customerType: "individual",
-      displayName: values.displayName.trim(),
-      email:
-        values.destinationKind === "email" ? values.email?.trim() : undefined,
-      idempotencyKey: directRequestKey.value,
-      initialPassword: values.initialPassword,
-      phone:
-        values.destinationKind === "sms" ? values.phone?.trim() : undefined,
-      phoneCountryCode:
-        values.destinationKind === "sms" ? values.phoneCountryCode : undefined,
-      preferredLocale: values.preferredLocale,
-      reason: values.reason.trim(),
-    });
+    await customerDirectCreate({ countryCode: "CN", customerType: "individual", displayName: phone || email,
+      email: email || undefined, phone: phone || undefined, phoneCountryCode: phone ? "+86" : undefined,
+      idempotencyKey: directRequestKey.value, initialPassword: initialPassword.value,
+      preferredLocale: "zh-CN", reason: "Administrator created a customer login account." });
     directModalApi.close();
-    message.success(directText("created"));
+    showPassword(initialPassword.value);
+    initialPassword.value = "";
     await gridApi.query();
-  } finally {
-    await directFormApi.setFieldValue("initialPassword", "");
-    directSaving.value = false;
-    directModalApi.lock(false);
-  }
-}
-
-async function openCustomerActivation() {
-  activationRequestKey.value = `customer-activation-${crypto.randomUUID()}`;
-  activationModalApi.open();
-  await nextTick();
-  try {
-    await activationFormApi.setState({ schema: activationFormSchema() });
-    await activationFormApi.resetForm();
-    await activationFormApi.setValues({
-      bindExistingIdentity: false,
-      countryCode: "CN",
-      destinationKind: "email",
-      displayName: "",
-      email: "",
-      phone: "",
-      phoneCountryCode: "+86",
-      preferredLocale: "zh-CN",
-      reason: "",
-    });
-  } catch (error) {
-    activationModalApi.close();
-    throw error;
-  }
-}
-
-async function createCustomerActivation() {
-  if (activationSaving.value) return false;
-  const { valid } = await activationFormApi.validate();
-  const values = await activationFormApi.getValues<{
-    bindExistingIdentity?: boolean;
-    countryCode: string;
-    destinationKind: "email" | "sms";
-    displayName: string;
-    email?: string;
-    phone?: string;
-    phoneCountryCode?: string;
-    preferredLocale: "en-US" | "zh-CN";
-    reason: string;
-  }>();
-  if (
-    !valid ||
-    (values.destinationKind === "email"
-      ? !values.email?.trim()
-      : !values.phone?.trim())
-  ) {
-    message.warning($t("plugin.idc-core.customer.activation.required"));
-    return false;
-  }
-  activationSaving.value = true;
-  activationModalApi.lock(true);
-  try {
-    const result = await customerActivationCreate({
-      bindExistingIdentity: Boolean(values.bindExistingIdentity),
-      countryCode: values.countryCode.trim().toUpperCase(),
-      customerType: "individual",
-      displayName: values.displayName.trim(),
-      email:
-        values.destinationKind === "email" ? values.email?.trim() : undefined,
-      idempotencyKey: activationRequestKey.value,
-      phone:
-        values.destinationKind === "sms" ? values.phone?.trim() : undefined,
-      phoneCountryCode:
-        values.destinationKind === "sms"
-          ? values.phoneCountryCode?.trim()
-          : undefined,
-      preferredLocale: values.preferredLocale,
-      reason: values.reason.trim(),
-    });
-    activationModalApi.close();
-    message.success(
-      $t("plugin.idc-core.customer.activation.sent", {
-        destination: result.destinationHint,
-      }),
-    );
-    await gridApi.query();
-  } finally {
-    activationSaving.value = false;
-    activationModalApi.lock(false);
-  }
-}
-
-function resendCustomerActivation(row: CustomerSummary) {
-  if (activationResending.value) return;
-  Modal.confirm({
-    content: $t("plugin.idc-core.customer.activation.resendDescription"),
-    okText: $t("plugin.idc-core.customer.activation.resendConfirm"),
-    title: $t("plugin.idc-core.customer.activation.resendTitle"),
-    async onOk() {
-      activationResending.value = row.customerNo;
-      try {
-        const result = await customerActivationResend(row.customerNo, {
-          idempotencyKey: `customer-activation-resend-${crypto.randomUUID()}`,
-          reason: $t("plugin.idc-core.customer.activation.resendReason"),
-        });
-        message.success(
-          $t("plugin.idc-core.customer.activation.resent", {
-            destination: result.destinationHint,
-          }),
-        );
-      } finally {
-        activationResending.value = "";
-      }
-    },
-  });
+  } finally { directSaving.value = false; directModalApi.lock(false); }
 }
 
 function buildSearchSchema(): VbenFormProps["schema"] {
@@ -810,7 +348,8 @@ function buildColumns(): VxeGridProps["columns"] {
     },
     {
       field: "primaryPhone",
-      width: 150,
+      slots: { default: "account" },
+      minWidth: 200,
       title: $t("plugin.idc-core.customer.table.phone"),
     },
     {
@@ -818,17 +357,18 @@ function buildColumns(): VxeGridProps["columns"] {
       minWidth: 160,
       title: $t("plugin.idc-core.customer.table.customer"),
     },
+    { field:"balances",slots:{default:"wallet"},title:$t("plugin.idc-core.customer.workspace.wallet"),minWidth:170 },
     {
       field: "type",
       slots: { default: "type" },
       title: $t("plugin.idc-core.customer.table.type"),
-      width: 220,
+      width: 90,
     },
     {
       field: "status",
       slots: { default: "status" },
       title: $t("plugin.idc-core.customer.table.status"),
-      width: 142,
+      width: 110,
     },
     {
       field: "verification",
@@ -843,12 +383,6 @@ function buildColumns(): VxeGridProps["columns"] {
       width: 150,
     },
     {
-      field: "tagCount",
-      slots: { default: "tagCount" },
-      title: $t("plugin.idc-core.customer.table.tags"),
-      width: 100,
-    },
-    {
       field: "createdAt",
       formatter: ({ cellValue }) => formatTimestamp(cellValue),
       minWidth: 180,
@@ -858,7 +392,7 @@ function buildColumns(): VxeGridProps["columns"] {
       field: "action",
       slots: { default: "action" },
       title: $t("plugin.idc-core.customer.table.actions"),
-      width: 220,
+      width: 300,
     }),
   ];
 }
@@ -888,6 +422,10 @@ function filterSignature(filters: CustomerListParams) {
 }
 
 const [Grid, gridApi] = useVbenVxeGrid({
+  gridEvents: {
+    checkboxChange: () => { selectedCustomerCount.value = gridApi.grid.getCheckboxRecords().length; },
+    checkboxAll: () => { selectedCustomerCount.value = gridApi.grid.getCheckboxRecords().length; },
+  },
   formOptions: {
     commonConfig: {
       componentProps: { allowClear: true },
@@ -930,6 +468,8 @@ const [Grid, gridApi] = useVbenVxeGrid({
   },
 });
 
+const [AssistedOrderDrawer, assistedOrderDrawerApi] = useVbenDrawer({ connectedComponent: AssistedQuoteCreateDrawer });
+
 const [CustomerOverviewDrawerRef, customerOverviewDrawerApi] = useVbenDrawer({
   connectedComponent: CustomerOverviewDrawer,
 });
@@ -964,6 +504,13 @@ function openOverview(row: CustomerSummary) {
   customerOverviewDrawerApi.open();
 }
 
+const route = useRoute();
+const operationsDetail = computed(() => route.query.operationsMetric === 'customers');
+function openOperationsCustomer(customerNo: string) {
+  customerOverviewDrawerApi.setData({ customerNo });
+  customerOverviewDrawerApi.open();
+}
+
 function openTagBatch() {
   const rows = (gridApi.grid?.getCheckboxRecords?.() ??
     []) as CustomerSummary[];
@@ -979,6 +526,7 @@ function openTagBatch() {
 }
 
 async function handleTagBatchSuccess() {
+  selectedCustomerCount.value = 0;
   await gridApi.grid?.clearCheckboxRow?.();
   await gridApi.query();
 }
@@ -987,33 +535,29 @@ async function handleTagBatchSuccess() {
 onMounted(async () => {
   gridApi.formApi.setState({ schema: buildSearchSchema() });
   gridApi.setGridOptions({ columns: buildColumns() });
-  await gridApi.query();
+  if (!operationsDetail.value) await gridApi.query();
 });
+watch(operationsDetail, (active) => { if (!active) void gridApi.query(); });
 
 onBeforeUnmount(() => {
   pagination.invalidate();
   Object.values(segmentSearchTimers).forEach((timer) => clearTimeout(timer));
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="customer-management-page">
-    <div class="customer-shell">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true" data-testid="customer-management-page">
+    <OperationsDetailPanel v-if="operationsDetail" :can-open="canViewOverview" @open="openOperationsCustomer($event.id)" />
+    <div v-show="!operationsDetail" class="customer-shell">
       <div class="customer-grid">
         <Grid>
-          <template #toolbar-tools>
-            <Space wrap>
-              <a-button
-                v-if="canCreateCustomer"
-                data-testid="customer-activation-open"
-                type="primary"
-                @click="openCustomerActivation"
-              >
-                {{ $t("plugin.idc-core.customer.activation.open") }}
-              </a-button>
+          <template #toolbar-actions>
+            <div class="customer-toolbar-actions">
               <a-button
                 v-if="canCreateCustomer"
                 data-testid="customer-direct-open"
+                type="primary"
                 @click="openDirectCustomer"
               >
                 {{ directText("open") }}
@@ -1021,12 +565,12 @@ onBeforeUnmount(() => {
               <a-button
                 v-if="canBatchTags"
                 data-testid="customer-tag-batch-open"
-                :disabled="!vxeCheckboxChecked(gridApi)"
+                :disabled="selectedCustomerCount === 0"
                 @click="openTagBatch"
               >
                 {{ $t("plugin.idc-core.customer.actions.batchTags") }}
               </a-button>
-            </Space>
+            </div>
           </template>
 
           <template #type="{ row }">
@@ -1052,12 +596,24 @@ onBeforeUnmount(() => {
             <span class="level-name">{{ localizedLevelName(row) }}</span>
           </template>
 
-          <template #tagCount="{ row }">
-            <span class="tag-count">{{ row.tagCount }}</span>
+          <template #account="{ row }">
+            <div class="account-lines"><span v-if="row.primaryPhone">{{ row.primaryPhone }}</span><span v-if="row.primaryEmail">{{ row.primaryEmail }}</span><span v-if="!row.primaryPhone && !row.primaryEmail">—</span></div>
+          </template>
+
+          <template #wallet="{ row }">
+            <div class="wallet-lines" data-testid="customer-wallet">
+              <div v-for="balance in row.balances || []" :key="`${balance.accountTypeCode}-${balance.currencyCode}`">
+                <small>{{ $t(`plugin.idc-core.customer.workspace.walletTypes.${["customer_balance","customer_credit","customer_gift","customer_commission"].includes(balance.accountTypeCode)?balance.accountTypeCode:"customer_balance"}`) }}</small>
+                <strong>{{ balance.currencyCode }} {{ minorToMajorAmount(balance.availableBalanceMinor, balance.currencyCode) }}</strong>
+                <small v-if="balance.heldBalanceMinor !== '0'">{{ $t('plugin.idc-core.customer.workspace.held') }} {{ minorToMajorAmount(balance.heldBalanceMinor, balance.currencyCode) }}</small>
+              </div>
+              <span v-if="!row.balances?.length">—</span>
+            </div>
           </template>
 
           <template #action="{ row }">
             <Space>
+              <ghost-button v-if="canAssist && row.status === 'active'" :data-testid="`customer-assist-${row.customerNo}`" @click="assistedOrderDrawerApi.setData(row).open()">{{ $t("plugin.idc-core.assistedCreate.title") }}</ghost-button>
               <ghost-button
                 v-if="canViewOverview"
                 :data-testid="`customer-overview-${row.customerNo}`"
@@ -1065,16 +621,6 @@ onBeforeUnmount(() => {
               >
                 {{ $t("plugin.idc-core.customer.actions.overview") }}
               </ghost-button>
-              <a-button
-                v-if="canCreateCustomer && row.status === 'pending_activation'"
-                :data-testid="`customer-activation-resend-${row.customerNo}`"
-                :loading="activationResending === row.customerNo"
-                size="small"
-                type="link"
-                @click="resendCustomerActivation(row)"
-              >
-                {{ $t("plugin.idc-core.customer.activation.resend") }}
-              </a-button>
               <a-button
                 v-if="canResetPassword && row.status === 'active'"
                 :data-testid="`customer-password-reset-${row.customerNo}`"
@@ -1089,40 +635,13 @@ onBeforeUnmount(() => {
         </Grid>
       </div>
     </div>
-    <CustomerOverviewDrawerRef />
+    <AssistedOrderDrawer />
+    <CustomerOverviewDrawerRef @updated="gridApi.query()" />
     <CustomerTagBatchModalRef @success="handleTagBatchSuccess" />
-    <ActivationModal>
-      <a-alert
-        class="mb-4"
-        :description="$t('plugin.idc-core.customer.activation.description')"
-        :message="$t('plugin.idc-core.customer.activation.noPassword')"
-        show-icon
-        type="info"
-      />
-      <CustomerActivationForm />
-      <p class="activation-help">
-        {{ $t("plugin.idc-core.customer.activation.separateIdentity") }}
-      </p>
-    </ActivationModal>
     <DirectModal>
-      <a-alert
-        class="mb-4"
-        :description="directText('description')"
-        :message="directText('notice')"
-        show-icon
-        type="warning"
-      />
+      <p class="mb-5 text-muted-foreground">{{ directText('description') }}</p>
       <DirectCustomerForm />
     </DirectModal>
-    <PasswordResetModal>
-      <a-alert
-        class="mb-4"
-        :message="$t('plugin.idc-core.customer.password.notice')"
-        show-icon
-        type="warning"
-      />
-      <CustomerPasswordResetForm />
-    </PasswordResetModal>
   </Page>
 </template>
 
@@ -1205,4 +724,20 @@ onBeforeUnmount(() => {
 .idc-plugin-form-surface .ant-form-item-required::before {
   flex: 0 0 auto;
 }
+</style>
+
+<style scoped>
+.account-lines { display: grid; gap: 4px; line-height: 1.4; padding: 6px 0; }
+</style>
+
+<style scoped>
+.customer-toolbar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.customer-grid :deep(.vxe-toolbar) { display: flex; align-items: center; gap: 8px; min-height: 48px; padding-block: 8px; }
+.customer-grid :deep(.vxe-buttons--wrapper), .customer-grid :deep(.vxe-tools--wrapper) { display: flex; align-items: center; padding-block: 0; }
+</style>
+
+<style scoped>
+.wallet-lines { display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
+.wallet-lines strong { font-variant-numeric: tabular-nums; font-weight: 500; }
+.wallet-lines small { display: block; color: hsl(var(--muted-foreground)); }
 </style>

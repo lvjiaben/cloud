@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
-  CustomerAccountTransitionReason,
   CustomerOverview,
   CustomerReferrer,
   CustomerSegment,
@@ -13,6 +12,7 @@ import type {
 } from "../financial-client";
 
 import { computed, nextTick, onBeforeUnmount, ref } from "vue";
+import { useRouter } from "vue-router";
 import { createNumberedPage } from "../numbered-page";
 
 import { useAccess } from "../plugin-access";
@@ -21,24 +21,28 @@ import { useVbenVxeGrid } from "#/adapter/vxe-table";
 
 import {
   Alert,
-  Badge,
   Button,
-  Card,
-  Checkbox,
   Descriptions,
   Empty,
   TabPane,
   Tag,
   Tabs,
+  Modal,
+  Select,
   message,
 } from "ant-design-vue";
 
-import { useVbenForm, z } from "#/adapter/form";
+import { useVbenForm } from "#/adapter/form";
 import { $t } from "#/locales";
 import { formatTimestamp } from "#/utils/time";
 
 import {
   customerAccountTransition,
+  customerVerificationUpdate,
+  customerSegmentAdd,
+  customerSegmentRemove,
+  customerSegments,
+  customerAuditRecords,
   customerAssignments,
   customerAssistanceEnd,
   customerAssistanceStart,
@@ -47,23 +51,42 @@ import {
 } from "../customer-client";
 import { commerceOrders } from "../commerce-client";
 import { financialInvoices, financialTransactions } from "../financial-client";
-import type { CustomerAssistanceSession } from "../customer-client";
+import type { CustomerAuditRecord, CustomerAssistanceSession } from "../customer-client";
 import type { ContractPolicyRule } from "../contract-policy-client";
+import CustomerStatisticsPanel from "./customer-statistics-panel.vue";
+import CustomerProductsPanel from "./customer-products-panel.vue";
+import CustomerApiPanel from "./customer-api-panel.vue";
+import { requestClient } from "#/api/request";
+import { getPluginStateMap } from "#/plugins/slot-registry";
+import { AssistanceLaunchError, assistanceLaunchURL } from "../../assistance-launch";
 import ContractPolicyEditor from "./contract-policy-editor.vue";
 import CustomerActivityPanel from "./customer-activity-panel.vue";
 import VbenModalCompat from "./vben-modal-compat.vue";
+import { preferences } from "@vben/preferences";
 
 const overview = ref<CustomerOverview>();
+const apiAvailable=ref(false);
+const emit = defineEmits<{ updated: [] }>();
+const segmentKind = ref<"group" | "tag" | null>(null);
+const segmentSaving = ref(false);
+const segmentOptions = ref<{ label: string; value: string }[]>([]);
+const tagOptions = ref<{ label: string; value: string }[]>([]);
+const tagInput = ref<string[]>([]);
+let tagSearchSequence = 0;
+let segmentKey = "";
+let segmentSearchSequence = 0;
+const auditRows = ref<CustomerAuditRecord[]>([]);
+const auditLoading = ref(false);
+const auditFailed = ref(false);
+
 const groupCursor = ref("");
 const tagCursor = ref("");
 const assignmentLoading = ref<"group" | "tag" | "">("");
-const assistanceOpen = ref(false);
 const assistanceSaving = ref(false);
-const assistanceConfirmed = ref(false);
 const assistanceSession = ref<CustomerAssistanceSession>();
 const referrer = ref<CustomerReferrer>();
-const statusOpen = ref(false);
 const statusSaving = ref(false);
+const verificationSaving = ref(false);
 const activeTab = ref("summary");
 const loadedTabs = ref(new Set<string>());
 const orderLoading = ref(false);
@@ -127,6 +150,15 @@ const transactionPagination = createNumberedPage<FinancialTransaction>(
 );
 let overviewSequence = 0;
 const { hasAccessByCodes } = useAccess();
+const router = useRouter();
+const canOpenOrder = computed(() => ["idc:admin:commerce:order:list", "idc:admin:commerce:order:query"].every(code => hasAccessByCodes([code])));
+const canOpenInvoice = computed(() => ["idc:admin:billing:invoice:list", "idc:admin:billing:invoice:query"].every(code => hasAccessByCodes([code])));
+
+async function openBusinessDetail(kind: "invoice" | "order", reference: string) {
+  if (!(kind === "order" ? canOpenOrder.value : canOpenInvoice.value)) return;
+  await router.push({ path: kind === "order" ? "/idc/orders" : "/idc/finance", query: { [kind === "order" ? "orderNo" : "invoiceNo"]: reference } });
+  drawerApi.close();
+}
 const canEditContractPolicy = computed(() =>
   hasAccessByCodes(["idc:admin:customer:contract-policy:write"]),
 );
@@ -143,7 +175,7 @@ function tr(key: string) {
 
 function orderColumns(): VxeGridProps<CommerceOrderSummary>["columns"] {
   return [
-    { field: "orderNo", title: tr("table.orderNo"), width: 210 },
+    { field: "orderNo", slots: { default: "copyNo" }, title: tr("table.orderNo"), width: 290 },
     {
       field: "productSummary",
       slots: { default: "product" },
@@ -191,7 +223,7 @@ function orderColumns(): VxeGridProps<CommerceOrderSummary>["columns"] {
 
 function invoiceColumns(): VxeGridProps<FinancialInvoice>["columns"] {
   return [
-    { field: "invoiceNo", title: tr("table.billNo"), width: 210 },
+    { field: "invoiceNo", slots: { default: "copyNo" }, title: tr("table.billNo"), width: 290 },
     {
       field: "orderNo",
       slots: { default: "plain" },
@@ -227,7 +259,7 @@ function invoiceColumns(): VxeGridProps<FinancialInvoice>["columns"] {
 
 function transactionColumns(): VxeGridProps<FinancialTransaction>["columns"] {
   return [
-    { field: "transactionNo", title: tr("table.transactionNo"), width: 230 },
+    { field: "transactionNo", slots: { default: "copyNo" }, title: tr("table.transactionNo"), width: 230 },
     {
       field: "transactionTypeCode",
       slots: { default: "transactionType" },
@@ -455,6 +487,7 @@ async function loadTransactions(
 
 function changeTab(key: string | number) {
   const target = String(key);
+  if (target === "records") void loadAudit();
   if (loadedTabs.value.has(target)) return;
   if (target === "orders") void loadOrders();
   if (target === "invoices") void loadInvoices();
@@ -471,160 +504,8 @@ onBeforeUnmount(() => {
   transactionPagination.invalidate();
 });
 
-function assistanceFormSchema() {
-  return [
-    {
-      component: "Textarea",
-      componentProps: {
-        "data-testid": "customer-assistance-reason",
-        maxlength: 512,
-        rows: 4,
-        showCount: true,
-      },
-      fieldName: "reason",
-      label: $t("plugin.idc-core.customer.assistance.reason"),
-      rules: z.string().trim().min(10).max(512),
-    },
-    {
-      component: "Input",
-      componentProps: {
-        "data-testid": "customer-assistance-ticket",
-        maxlength: 64,
-      },
-      fieldName: "ticketNo",
-      label: $t("plugin.idc-core.customer.assistance.ticketNo"),
-      rules: z.string().max(64).optional(),
-    },
-  ];
-}
-
-const [AssistanceForm, assistanceFormApi] = useVbenForm({
-  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 110 },
-  schema: [],
-  showDefaultActions: false,
-  wrapperClass: "grid-cols-1",
-});
-
-const [StatusForm, statusFormApi] = useVbenForm({
-  commonConfig: { componentProps: { class: "w-full" }, labelWidth: 110 },
-  schema: [],
-  showDefaultActions: false,
-  wrapperClass: "grid-cols-1",
-});
-
-function statusTransitionOptions() {
-  switch (overview.value?.customer.status) {
-    case "pending_activation":
-      return [
-        {
-          label: tr("statusAction.activate"),
-          value: "active:activation_completed",
-        },
-        {
-          label: tr("statusAction.requireVerification"),
-          value: "restricted:verification_required",
-        },
-        { label: tr("statusAction.disable"), value: "disabled:manual_disable" },
-      ];
-    case "active":
-      return [
-        {
-          label: tr("statusAction.restrictRisk"),
-          value: "restricted:risk_restriction",
-        },
-        {
-          label: tr("statusAction.requireVerification"),
-          value: "restricted:verification_required",
-        },
-        { label: tr("statusAction.disable"), value: "disabled:manual_disable" },
-      ];
-    case "restricted":
-      return [
-        {
-          label: tr("statusAction.resolveRestriction"),
-          value: "active:restriction_resolved",
-        },
-        { label: tr("statusAction.disable"), value: "disabled:manual_disable" },
-      ];
-    case "disabled":
-      return [
-        {
-          label: tr("statusAction.reactivate"),
-          value: "active:account_reactivated",
-        },
-      ];
-    default:
-      return [];
-  }
-}
-
-async function openStatusEditor() {
-  if (!overview.value) return;
-  statusOpen.value = true;
-  await nextTick();
-  await statusFormApi.setState({
-    schema: [
-      {
-        component: "Select",
-        componentProps: {
-          "data-testid": "customer-status-transition",
-          options: statusTransitionOptions(),
-          placeholder: tr("statusSelectPlaceholder"),
-        },
-        fieldName: "transition",
-        label: tr("statusActionLabel"),
-        rules: "required",
-      },
-    ],
-  });
-  await statusFormApi.resetForm();
-}
-
-async function saveStatus() {
-  if (!overview.value || statusSaving.value) return;
-  const { valid } = await statusFormApi.validate();
-  if (!valid) return;
-  const values = await statusFormApi.getValues<{ transition: string }>();
-  const [toStatus, reason] = values.transition.split(":") as [
-    "active" | "disabled" | "restricted",
-    CustomerAccountTransitionReason,
-  ];
-  statusSaving.value = true;
-  try {
-    await customerAccountTransition(overview.value.customer.customerNo, {
-      expectedVersion: overview.value.customer.version,
-      idempotencyKey: `customer-status-${crypto.randomUUID()}`,
-      reason,
-      toStatus,
-    });
-    statusOpen.value = false;
-    await refreshOverview();
-    message.success(tr("statusUpdated"));
-  } finally {
-    statusSaving.value = false;
-  }
-}
-
-async function openAssistance() {
-  assistanceConfirmed.value = false;
-  assistanceOpen.value = true;
-  await nextTick();
-  await assistanceFormApi.setState({ schema: assistanceFormSchema() });
-  await assistanceFormApi.resetForm();
-}
-
 async function startAssistance() {
   if (!overview.value || assistanceSaving.value) return;
-  const { valid } = await assistanceFormApi.validate();
-  if (!valid || !assistanceConfirmed.value) {
-    message.warning($t("plugin.idc-core.customer.assistance.completeRequired"));
-    return;
-  }
-  const values = await assistanceFormApi.getValues<{
-    reason: string;
-    ticketNo?: string;
-  }>();
-  const reason = values.reason.trim();
   const targetWindow = window.open("about:blank", "_blank");
   if (!targetWindow) {
     message.warning($t("plugin.idc-core.customer.assistance.popupBlocked"));
@@ -632,27 +513,29 @@ async function startAssistance() {
   }
   assistanceSaving.value = true;
   try {
+    const plugin = (await getPluginStateMap()).get("idc-core");
+    if (!plugin?.version) throw new AssistanceLaunchError("Customer assistance plugin version is unavailable");
     const result = await customerAssistanceStart(
       overview.value.customer.customerNo,
       {
         idempotencyKey: `customer-assistance-${crypto.randomUUID()}`,
-        reason,
-        ticketNo: values.ticketNo?.trim() || undefined,
+        reason: "Administrator started customer assistance from customer details.",
       },
     );
     assistanceSession.value = result;
-    assistanceOpen.value = false;
     if (result.launchUrl) {
-      targetWindow.location.replace(result.launchUrl);
+      targetWindow.location.replace(assistanceLaunchURL(result.launchUrl, result.sessionNo, plugin.version));
     } else {
-      targetWindow.close();
-      message.warning($t("plugin.idc-core.customer.assistance.popupBlocked"));
-      return;
+      throw new AssistanceLaunchError("Customer assistance launch URL is unavailable");
     }
     message.success($t("plugin.idc-core.customer.assistance.started"));
   } catch (error) {
     targetWindow.close();
-    throw error;
+    if (error instanceof AssistanceLaunchError) {
+      message.error($t("plugin.idc-core.customer.assistance.unavailable"));
+    } else {
+      throw error;
+    }
   } finally {
     assistanceSaving.value = false;
   }
@@ -687,43 +570,6 @@ const title = computed(() =>
     : $t("plugin.idc-core.customer.overview.title"),
 );
 
-const countCards = computed(() => {
-  const counts = overview.value?.counts;
-  if (!counts) return [];
-  return [
-    ["activeContacts", counts.activeContacts],
-    ["activeAddresses", counts.activeAddresses],
-    ["activeCustomFields", counts.activeCustomFields],
-    ["activeNotes", counts.activeNotes],
-    ["plannedFollowUps", counts.plannedFollowUps],
-    ["availableAttachments", counts.availableAttachments],
-    ["activeBlacklist", counts.activeBlacklist],
-    ["openRisks", counts.openRisks],
-    ["activeGroups", counts.activeGroups],
-    ["activeTags", counts.activeTags],
-  ] as const;
-});
-
-const businessCards = computed(() => {
-  const business = overview.value?.business;
-  if (!business) return [];
-  return [
-    ["Orders", business.orders, "/admin/idc/orders"],
-    ["Bills", business.bills, "/admin/idc/finance"],
-    ["Transactions", business.transactions, "/admin/idc/finance"],
-    ["Servers", business.servers, "/admin/idc/resource/overview"],
-    [
-      "Contracts",
-      business.contracts,
-      "/admin/idc/compliance/electronic-contract",
-    ],
-    ["TaxInvoices", business.taxInvoices, "/admin/idc/compliance/tax-invoices"],
-    ["Tickets", business.tickets, "/admin/idc/support"],
-    ["Notifications", business.notifications, "/admin/system/message/notice"],
-    ["Audits", business.audits, "/admin/system/log/operation"],
-  ] as const;
-});
-
 const customerBusinessSurfaces = computed(() => {
   const business = overview.value?.business;
   if (!business) return [];
@@ -756,13 +602,13 @@ const customerBusinessSurfaces = computed(() => {
       count: business.notifications,
       key: "notifications",
       label: tr("businessNotifications"),
-      path: "/admin/system/message/notice",
+      path: "/admin/idc/notifications/deliveries",
     },
     {
       count: business.audits,
       key: "audits",
       label: tr("businessAudits"),
-      path: "/admin/system/log/operation",
+      path: "",
     },
   ];
 });
@@ -820,14 +666,115 @@ function referrerLabel() {
     .join(" · ");
 }
 
-function verificationColor(status = "") {
-  return status === "verified"
-    ? "success"
-    : status === "pending"
-      ? "processing"
-      : status === "unverified"
-        ? "default"
-        : "error";
+const canReadAudit = computed(() => hasAccessByCodes(["idc:admin:audit:list"]));
+const [AuditGrid, auditGridApi] = useVbenVxeGrid({ gridOptions: { columns: [], data: [], height: 430, pagerConfig: { enabled: false }, toolbarConfig: { enabled: false }, rowConfig: { keyField: "auditNo" } } });
+async function loadAudit() {
+  if (!overview.value || auditLoading.value) return;
+  const customerNo = overview.value.customer.customerNo;
+  auditLoading.value = true; auditFailed.value = false;
+  try {
+    const result = await customerAuditRecords(customerNo);
+    if (overview.value?.customer.customerNo !== customerNo) return;
+    auditRows.value = result.items;
+    auditGridApi.setGridOptions({ data: result.items, columns: [
+      { field: "auditNo", title: tr("recordId"), minWidth: 230, slots: { default: "auditNo" } },
+      { field: "operationCode", title: tr("operation"), minWidth: 180, slots: { default: "operation" } },
+      { field: "result", title: tr("table.status"), width: 110, slots: { default: "auditResult" } },
+      { field: "occurredAt", title: tr("table.time"), width: 175, formatter: ({ cellValue }: { cellValue: number }) => formatTimestamp(cellValue) },
+    ] });
+  } catch { if (overview.value?.customer.customerNo === customerNo) auditFailed.value = true; }
+  finally { auditLoading.value = false; }
+}
+function operationLabel(code: string) {
+  const known: Record<string, string> = { "customer.direct.create": "accountCreated", "customer.password.reset": "passwordReset", "customer.segment.assign": "segmentAdded", "customer.segment.revoke": "segmentRemoved", "customer.note.create": "noteAdded", "customer.verification.update": "verificationUpdated" };
+  if (known[code]) return tr(known[code]);
+  if (code.includes("account") && code.includes("status")) return tr("statusChanged");
+  return tr("customerOperation");
+}
+async function copyNumber(value: string) {
+  try { await navigator.clipboard.writeText(value); message.success(tr("copied")); }
+  catch { message.warning(tr("copyFailed")); }
+}
+function accountColor(status: string) { return status === "active" ? "success" : status === "disabled" ? "error" : status === "restricted" ? "warning" : "default"; }
+function confirmVerification(action: "approve" | "clear") {
+ const target = overview.value?.customer;
+ if (!target || verificationSaving.value) return;
+ const key = crypto.randomUUID();
+ Modal.confirm({ title: tr(action === "approve" ? "verifyConfirm" : "clearVerifyConfirm"), content: tr(action === "approve" ? "verifyHint" : "clearVerifyHint"), async onOk() {
+  verificationSaving.value = true;
+  try {
+   await customerVerificationUpdate(target.customerNo, {action,expectedVersion:target.version,idempotencyKey:key});
+   if (overview.value?.customer.customerNo === target.customerNo) await refreshOverview();
+   emit("updated"); message.success(tr(action === "approve" ? "verifyDone" : "clearVerifyDone"));
+  } finally { verificationSaving.value = false; }
+ } });
+}
+function confirmStatusToggle() {
+  const target = overview.value?.customer;
+  if (!target || statusSaving.value) return;
+  const unban = target.status === "disabled";
+  const key = `customer-status-${crypto.randomUUID()}`;
+  Modal.confirm({ title: tr(unban ? "unbanConfirm" : "banConfirm"), content: tr(unban ? "unbanHint" : "banHint"), async onOk() {
+    statusSaving.value = true;
+    try {
+      await customerAccountTransition(target.customerNo, { expectedVersion: target.version, idempotencyKey: key, reason: unban ? "account_reactivated" : "manual_disable", toStatus: unban ? "active" : "disabled" });
+      await refreshOverview(); emit("updated"); message.success(tr("statusUpdated"));
+    } finally { statusSaving.value = false; }
+  } });
+}
+const [SegmentForm, segmentFormApi] = useVbenForm({ commonConfig: { componentProps: { class: "w-full" }, labelWidth: 90 }, schema: [], showDefaultActions: false });
+async function searchSegments(namePrefix = "") {
+  const current = ++segmentSearchSequence;
+  if (!segmentKind.value) return;
+  const result = await customerSegments({ kind: segmentKind.value, locale: "zh-CN", namePrefix, limit: 25 });
+  if (current !== segmentSearchSequence) return;
+  segmentOptions.value = result.items.map(item => ({ value: item.number, label: localizedSegmentName(item) }));
+  await segmentFormApi.updateSchema([{ fieldName: "segmentNo", componentProps: { options: segmentOptions.value } }]);
+}
+async function openSegment(kind: "group" | "tag") {
+  segmentKind.value = kind; segmentKey = crypto.randomUUID();
+  await nextTick();
+  await segmentFormApi.setState({ schema: [
+    { fieldName: "segmentNo", component: "Select", label: tr("existingSegment"), componentProps: { "data-testid": "customer-segment-select", allowClear: true, showSearch: true, filterOption: false, onSearch: searchSegments, options: [] } },
+    { fieldName: "name", component: "Input", label: tr("newSegment"), componentProps: { "data-testid": "customer-segment-name", maxlength: 128 }, dependencies: { triggerFields: ["segmentNo"], show: values => !values.segmentNo } },
+  ] });
+  await segmentFormApi.resetForm(); await searchSegments();
+}
+async function searchTags(namePrefix = "") {
+  const sequence = ++tagSearchSequence;
+  const result = await customerSegments({kind:"tag",locale:preferences.app.locale === "zh-CN" ? "zh-CN" : "en-US",namePrefix,limit:25});
+  if (sequence !== tagSearchSequence) return;
+  tagOptions.value = result.items.map(item => ({value:item.number,label:localizedSegmentName(item)}));
+}
+async function addEnteredTag(selection: unknown) {
+  const values = Array.isArray(selection) ? selection.filter((value): value is string => typeof value === "string") : [];
+  if (!overview.value || segmentSaving.value || values.length === 0) return;
+  const value = values[0]!.trim();
+  if (!value || value.length > 128) { tagInput.value = []; return; }
+  const existing = tagOptions.value.find(item => item.value === value || item.label === value);
+  segmentSaving.value = true;
+  try {
+    await customerSegmentAdd(overview.value.customer.customerNo,{kind:"tag",segmentNo:existing?.value,name:existing ? undefined : value,idempotencyKey:crypto.randomUUID()});
+    tagInput.value = [];await refreshOverview();await searchTags();message.success(tr("segmentSaved"));
+  } finally { segmentSaving.value = false; }
+}
+async function saveSegment() {
+  if (!overview.value || !segmentKind.value || segmentSaving.value) return;
+  const values = await segmentFormApi.getValues<{ segmentNo?: string; name?: string }>();
+  if (!values.segmentNo && !values.name?.trim()) { message.warning(tr("segmentRequired")); return; }
+  segmentSaving.value = true;
+  try {
+    await customerSegmentAdd(overview.value.customer.customerNo, { kind: segmentKind.value, segmentNo: values.segmentNo || undefined, name: values.segmentNo ? undefined : values.name!.trim(), idempotencyKey: segmentKey });
+    segmentKind.value = null; await refreshOverview(); message.success(tr("segmentSaved"));
+  } finally { segmentSaving.value = false; }
+}
+function removeSegment(kind: "group" | "tag", item: CustomerSegment) {
+  const customerNo = overview.value?.customer.customerNo;
+  if (!customerNo) return;
+  const key = crypto.randomUUID();
+  Modal.confirm({ title: tr("removeSegment"), content: localizedSegmentName(item), async onOk() {
+    await customerSegmentRemove(customerNo, item.number, { kind, idempotencyKey: key }); await refreshOverview(); message.success(tr("segmentSaved"));
+  } });
 }
 
 const [Drawer, drawerApi] = useVbenDrawer({
@@ -840,6 +787,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
       assistanceSession.value = undefined;
       groupCursor.value = "";
       tagCursor.value = "";
+      auditRows.value = []; auditFailed.value = false;
       activeTab.value = "summary";
       loadedTabs.value = new Set();
       orderRows.value = [];
@@ -863,6 +811,10 @@ const [Drawer, drawerApi] = useVbenDrawer({
       const result = await customerOverview(data.customerNo);
       if (sequence !== overviewSequence) return;
       overview.value = result;
+      apiAvailable.value=false;
+      void requestClient.get<{list:{id:string;installed:number;enabled:number}[]}>("/plugins/dynamic").then(plugins=>{if(sequence===overviewSequence)apiAvailable.value=plugins.list.some(item=>item.id==="idc-channel"&&item.installed===1&&item.enabled===1);}).catch(()=>{if(sequence===overviewSequence)apiAvailable.value=false;});
+      tagInput.value = [];
+      if (canManageStatus.value) void searchTags();
       try {
         const ownerReferrer = await customerReferrer(data.customerNo);
         if (sequence === overviewSequence) referrer.value = ownerReferrer;
@@ -877,60 +829,25 @@ const [Drawer, drawerApi] = useVbenDrawer({
 </script>
 
 <template>
-  <Drawer :title="title" class="w-[min(1180px,calc(100vw-24px))]">
+  <Drawer :title="title" class="w-[min(1180px,calc(100vw-24px))] max-w-[calc(100vw-24px)]">
     <div
       v-if="overview"
       class="customer-overview"
       data-testid="customer-overview-drawer"
     >
-      <Card size="small" :title="overview.customer.displayName">
-        <template #extra>
-          <div class="overview-state">
-            <Badge
-              :status="
-                overview.customer.status === 'active' ? 'success' : 'warning'
-              "
-              :text="
-                $t(
-                  `plugin.idc-core.customer.status.${overview.customer.status}`,
-                )
-              "
-            />
-            <Tag :color="verificationColor(overview.customer.verification)">{{
-              $t(
-                `plugin.idc-core.customer.verification.${overview.customer.verification}`,
-              )
-            }}</Tag>
-            <Button
-              v-if="
-                canManageStatus && overview.customer.status !== 'anonymized'
-              "
-              data-testid="customer-status-open"
-              size="small"
-              @click="openStatusEditor"
-              >{{ tr("editStatus") }}</Button
-            >
-            <Button
-              v-if="canAssist"
-              data-testid="customer-assistance-open"
-              size="small"
-              @click="openAssistance"
-              >{{ $t("plugin.idc-core.customer.assistance.open") }}</Button
-            >
-          </div>
-        </template>
-        <span class="customer-number">{{
-          overview.customer.customerCode || overview.customer.customerNo
-        }}</span>
-      </Card>
+      <header class="detail-header">
+        <div><h2>{{ overview.customer.displayName }}</h2>
+          <button class="copy-number" data-testid="customer-id-copy" @click="copyNumber(overview.customer.customerCode || overview.customer.customerNo)">{{ overview.customer.customerCode || overview.customer.customerNo }}</button>
+        </div>
+        <div class="detail-actions">
+          <Button v-if="canManageStatus && ['active','restricted','disabled'].includes(overview.customer.status)" :danger="overview.customer.status !== 'disabled'" :loading="statusSaving" data-testid="customer-ban-toggle" @click="confirmStatusToggle">{{ tr(overview.customer.status === 'disabled' ? 'unban' : 'ban') }}</Button>
+          <Button v-if="canAssist" data-testid="customer-assistance-open"  :loading="assistanceSaving" @click="startAssistance">{{ $t('plugin.idc-core.customer.assistance.open') }}</Button>
+        </div>
+      </header>
 
       <Descriptions bordered :column="2" size="small">
-        <Descriptions.Item :label="tr('customerId')">{{
-          overview.customer.customerCode || "—"
-        }}</Descriptions.Item>
-        <Descriptions.Item :label="tr('phone')">{{
-          overview.customer.primaryPhone || "—"
-        }}</Descriptions.Item>
+        <Descriptions.Item :label="tr('customerId')"><button class="copy-number" @click="copyNumber(overview.customer.customerCode || overview.customer.customerNo)">{{ overview.customer.customerCode || overview.customer.customerNo }}</button></Descriptions.Item>
+        <Descriptions.Item :label="$t('plugin.idc-core.customer.table.phone')"><div class="account-lines"><span v-if="overview.customer.primaryPhone">{{ overview.customer.primaryPhone }}</span><span v-if="overview.customer.primaryEmail">{{ overview.customer.primaryEmail }}</span><span v-if="!overview.customer.primaryPhone && !overview.customer.primaryEmail">—</span></div></Descriptions.Item>
         <Descriptions.Item :label="$t('plugin.idc-core.customer.table.type')">{{
           $t(`plugin.idc-core.customer.type.${overview.customer.type}`)
         }}</Descriptions.Item>
@@ -942,14 +859,14 @@ const [Drawer, drawerApi] = useVbenDrawer({
             "—"
           }}</Descriptions.Item
         >
-        <Descriptions.Item :label="tr('accountStatus')">{{
-          $t(`plugin.idc-core.customer.status.${overview.customer.status}`)
-        }}</Descriptions.Item>
-        <Descriptions.Item :label="tr('verificationStatus')">{{
-          $t(
-            `plugin.idc-core.customer.verification.${overview.customer.verification}`,
-          )
-        }}</Descriptions.Item>
+        <Descriptions.Item :label="tr('accountStatus')"><Tag :color="accountColor(overview.customer.status)">{{ $t(`plugin.idc-core.customer.status.${overview.customer.status}`) }}</Tag></Descriptions.Item>
+        <Descriptions.Item :label="tr('verificationStatus')"><div class="verification-actions">
+          <Tag :color="overview.customer.verification === 'verified' ? 'success' : 'default'">{{ $t(`plugin.idc-core.customer.verification.${overview.customer.verification}`) }}</Tag>
+          <template v-if="canManageStatus">
+            <Button size="small" data-testid="customer-verification-approve" :loading="verificationSaving" :disabled="overview.customer.verification === 'verified'" @click="confirmVerification('approve')">{{ tr('verify') }}</Button>
+            <Button size="small" data-testid="customer-verification-clear" :loading="verificationSaving" @click="confirmVerification('clear')">{{ tr('clearVerify') }}</Button>
+          </template>
+        </div></Descriptions.Item>
         <Descriptions.Item :label="tr('referrer')">{{
           referrerLabel()
         }}</Descriptions.Item>
@@ -991,6 +908,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
       <Tabs v-model:active-key="activeTab" @change="changeTab">
         <TabPane key="summary" :tab="tr('tabs.summary')">
           <div class="tab-panel">
+            <CustomerStatisticsPanel v-if="overview.statistics" :statistics="overview.statistics" @view-products="activeTab = 'services'; changeTab('services')" />
             <ContractPolicyEditor
               v-if="
                 overview.customer.type === 'enterprise' && canEditContractPolicy
@@ -1059,48 +977,13 @@ const [Drawer, drawerApi] = useVbenDrawer({
               />
             </section>
 
-            <section class="overview-section">
-              <div class="section-title">{{ tr("counts") }}</div>
-              <div class="count-grid">
-                <article
-                  v-for="[key, value] in countCards"
-                  :key="key"
-                  class="count-card"
-                >
-                  <strong>{{ value }}</strong
-                  ><span>{{ tr(key) }}</span>
-                </article>
-              </div>
-            </section>
-
-            <section class="overview-section">
-              <div class="section-title">{{ tr("business") }}</div>
-              <div class="count-grid">
-                <article
-                  v-for="[key, value, path] in businessCards"
-                  :key="key"
-                  class="count-card"
-                >
-                  <strong>{{ value }}</strong
-                  ><span>{{ tr(`business${key}`) }}</span>
-                  <Button
-                    :href="`${path}?customerNo=${encodeURIComponent(overview.customer.customerNo)}`"
-                    size="small"
-                    target="_blank"
-                    type="link"
-                    >{{ tr("manage") }}</Button
-                  >
-                </article>
-              </div>
-            </section>
-
             <section class="overview-section segment-grid">
               <div>
-                <div class="section-title">{{ tr("groups") }}</div>
+                <div class="segment-heading"><span class="section-title">{{ tr("groups") }}</span><Button v-if="canManageStatus" size="small" data-testid="customer-group-add" @click="openSegment('group')">{{ tr('add') }}</Button></div>
                 <div v-if="overview.groups.items.length" class="segment-list">
                   <Tag
                     v-for="item in overview.groups.items"
-                    :key="item.number"
+                    :key="item.number" :closable="canManageStatus" @close.prevent="removeSegment('group', item)"
                     >{{ localizedSegmentName(item) }}</Tag
                   >
                 </div>
@@ -1116,12 +999,13 @@ const [Drawer, drawerApi] = useVbenDrawer({
                 >
               </div>
               <div>
-                <div class="section-title">{{ tr("tags") }}</div>
+                <div class="segment-heading"><span class="section-title">{{ tr("tags") }}</span></div>
+                <Select v-if="canManageStatus" v-model:value="tagInput" data-testid="customer-tag-input" class="mb-3 w-full" mode="tags" :options="tagOptions" :filter-option="false" :disabled="segmentSaving" :loading="segmentSaving" :placeholder="$t('plugin.idc-core.customer.tagBatch.tagsPlaceholder')" @search="searchTags" @change="addEnteredTag" />
                 <div v-if="overview.tags.items.length" class="segment-list">
                   <Tag
                     v-for="item in overview.tags.items"
                     :key="item.number"
-                    :color="item.colorToken || 'blue'"
+                    :color="item.colorToken || 'blue'" :closable="canManageStatus" @close.prevent="removeSegment('tag', item)"
                     >{{ localizedSegmentName(item) }}</Tag
                   >
                 </div>
@@ -1146,6 +1030,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
         >
           <div class="business-table">
             <OrderGrid>
+              <template #copyNo="{ row, column }"><div class="flex items-center gap-2"><button class="copy-number" @click="copyNumber(row[column.field])">{{ row[column.field] }}</button><Button v-if="canOpenOrder" size="small" type="link" :data-testid="`customer-order-detail-${row.orderNo}`" @click="openBusinessDetail('order', row.orderNo)">{{ $t('plugin.idc-core.commerce.orders.detail') }}</Button></div></template>
               <template #product="{ row }">{{
                 orderProductLabel(row)
               }}</template>
@@ -1176,6 +1061,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
         >
           <div class="business-table">
             <InvoiceGrid>
+              <template #copyNo="{ row, column }"><div class="flex items-center gap-2"><button class="copy-number" @click="copyNumber(row[column.field])">{{ row[column.field] }}</button><Button v-if="canOpenInvoice" size="small" type="link" :data-testid="`customer-invoice-detail-${row.invoiceNo}`" @click="openBusinessDetail('invoice', row.invoiceNo)">{{ $t('plugin.idc-core.commerce.orders.detail') }}</Button></div></template>
               <template #plain="{ row, column }">{{
                 row[column.field] || "—"
               }}</template>
@@ -1203,6 +1089,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
         >
           <div class="business-table">
             <TransactionGrid>
+              <template #copyNo="{ row, column }"><button class="copy-number" @click="copyNumber(row[column.field])">{{ row[column.field] }}</button></template>
               <template #plain="{ row, column }">{{
                 row[column.field] || "—"
               }}</template>
@@ -1219,33 +1106,11 @@ const [Drawer, drawerApi] = useVbenDrawer({
           </div>
         </TabPane>
 
-        <TabPane key="services">
-          <template #tab
-            ><span data-testid="customer-360-tab-services"
-              >{{ tr("businessServers") }} ({{
-                overview.business.servers
-              }})</span
-            ></template
-          >
-          <div class="business-surface" data-testid="customer-360-services">
-            <div class="business-surface-grid">
-              <article
-                v-for="item in customerBusinessSurface(['servers'])"
-                :key="item.key"
-              >
-                <div>
-                  <strong>{{ item.count }}</strong
-                  ><span>{{ item.label }}</span>
-                </div>
-                <Button
-                  :href="`${item.path}?customerNo=${encodeURIComponent(overview.customer.customerNo)}`"
-                  target="_blank"
-                  type="primary"
-                  >{{ tr("manage") }}</Button
-                >
-              </article>
-            </div>
-          </div>
+        <TabPane key="services" :tab="$t('plugin.idc-core.customer.workspace.products')">
+          <CustomerProductsPanel v-if="activeTab === 'services'" :customer-no="overview.customer.customerNo" />
+        </TabPane>
+        <TabPane v-if="apiAvailable && hasAccessByCodes(['idc:admin:channel:token'])" key="api" :tab="$t('plugin.idc-core.customer.workspace.apiOverview')">
+          <CustomerApiPanel v-if="activeTab === 'api'" :customer-no="overview.customer.customerNo" />
         </TabPane>
 
         <TabPane key="tickets">
@@ -1310,83 +1175,23 @@ const [Drawer, drawerApi] = useVbenDrawer({
           </div>
         </TabPane>
 
-        <TabPane key="records">
-          <template #tab
-            ><span data-testid="customer-360-tab-records"
-              >{{ tr("businessNotifications") }} /
-              {{ tr("businessAudits") }} ({{
-                overview.business.notifications + overview.business.audits
-              }})</span
-            ></template
-          >
-          <div class="business-surface" data-testid="customer-360-records">
-            <div class="business-surface-grid">
-              <article
-                v-for="item in customerBusinessSurface([
-                  'notifications',
-                  'audits',
-                ])"
-                :key="item.key"
-              >
-                <div>
-                  <strong>{{ item.count }}</strong
-                  ><span>{{ item.label }}</span>
-                </div>
-                <Button
-                  :href="`${item.path}?customerNo=${encodeURIComponent(overview.customer.customerNo)}`"
-                  target="_blank"
-                  type="primary"
-                  >{{ tr("manage") }}</Button
-                >
-              </article>
-            </div>
+        <TabPane key="notes" :tab="tr('notes')"><CustomerActivityPanel notes-only :customer-no="overview.customer.customerNo" @changed="refreshOverview" /></TabPane>
+        <TabPane v-if="canReadAudit" key="records" :tab="tr('records')">
+          <div class="audit-panel">
+            <div class="segment-heading"><span class="text-muted-foreground">{{ tr('recentRecords') }}</span><Button :loading="auditLoading" @click="loadAudit">{{ tr('refresh') }}</Button></div>
+            <Alert v-if="auditFailed" type="error" :message="tr('recordsFailed')" show-icon />
+            <AuditGrid>
+              <template #auditNo="{ row }"><button class="copy-number" @click="copyNumber(row.auditNo)">{{ row.auditNo }}</button></template>
+              <template #operation="{ row }">{{ operationLabel(row.operationCode) }}</template>
+              <template #auditResult="{ row }"><Tag :color="row.result === 'succeeded' ? 'success' : 'error'">{{ tr(row.result === 'succeeded' ? 'done' : 'notDone') }}</Tag></template>
+            </AuditGrid>
           </div>
         </TabPane>
-
-        <TabPane key="activity" :tab="tr('tabs.activity')"
-          ><CustomerActivityPanel
-            :customer-no="overview.customer.customerNo"
-            @changed="refreshOverview"
-        /></TabPane>
       </Tabs>
     </div>
 
-    <VbenModalCompat
-      v-model:open="assistanceOpen"
-      :confirm-loading="assistanceSaving"
-      :title="$t('plugin.idc-core.customer.assistance.title')"
-      @ok="startAssistance"
-    >
-      <Alert
-        :message="$t('plugin.idc-core.customer.assistance.warningTitle')"
-        :description="
-          $t('plugin.idc-core.customer.assistance.warningDescription')
-        "
-        class="mb-4"
-        show-icon
-        type="warning"
-      />
-      <AssistanceForm />
-      <Checkbox
-        v-model:checked="assistanceConfirmed"
-        data-testid="customer-assistance-confirm"
-        >{{ $t("plugin.idc-core.customer.assistance.confirm") }}</Checkbox
-      >
-    </VbenModalCompat>
-    <VbenModalCompat
-      v-model:open="statusOpen"
-      :confirm-loading="statusSaving"
-      :title="tr('editStatusTitle')"
-      @ok="saveStatus"
-    >
-      <Alert
-        :message="tr('statusWarning')"
-        class="mb-4"
-        show-icon
-        type="warning"
-      />
-      <StatusForm />
-    </VbenModalCompat>
+    <VbenModalCompat :open="!!segmentKind" :confirm-loading="segmentSaving" :title="tr(segmentKind === 'group' ? 'addGroup' : 'addTag')" @update:open="value => { if (!value) { segmentKind = null; ++segmentSearchSequence; } }" @ok="saveSegment"><SegmentForm /></VbenModalCompat>
+
   </Drawer>
 </template>
 
@@ -1569,4 +1374,23 @@ const [Drawer, drawerApi] = useVbenDrawer({
     grid-template-columns: 1fr;
   }
 }
+</style>
+
+<style scoped>
+.customer-overview { width: 100%; min-width: 0; gap: 20px; }
+.customer-overview :deep(.ant-tabs), .customer-overview :deep(.ant-tabs-content-holder), .customer-overview :deep(.ant-tabs-content), .customer-overview :deep(.ant-tabs-tabpane) { width: 100%; min-width: 0; max-width: 100%; }
+.customer-overview :deep(.ant-tabs-content-holder) { overflow: hidden; }
+.business-table, .audit-panel, .tab-panel { width: 100%; min-width: 0; max-width: 100%; }
+.detail-header, .detail-actions, .segment-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.detail-actions { flex-wrap: wrap; justify-content: flex-end; }
+.detail-header h2 { margin: 0 0 6px; font-size: 18px; font-weight: 600; }
+.copy-number { padding: 0; color: #1677ff; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; cursor: pointer; }
+.account-lines, .audit-panel { display: grid; gap: 8px; }
+.business-surface-grid { grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+@media (width <= 720px) { .detail-header { align-items: flex-start; flex-direction: column; } }
+</style>
+
+<style scoped>
+.verification-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.verification-actions .ant-tag { margin: 0; }
 </style>

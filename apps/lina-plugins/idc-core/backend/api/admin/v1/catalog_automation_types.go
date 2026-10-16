@@ -41,7 +41,17 @@ type CatalogAutomationInterfaceConfiguration struct {
 	Revision           int64                                         `json:"revision" dc:"Latest immutable configuration revision" eg:"2"`
 }
 
+type CatalogCustomerFieldSelection struct {
+	FieldKey        string   `json:"fieldKey" dc:"Declared customer field identity" eg:"cpu"`
+	Minimum         string   `json:"minimum,omitempty" dc:"Enabled integer minimum within provider technical bounds" eg:"1"`
+	Maximum         string   `json:"maximum,omitempty" dc:"Enabled integer maximum within provider technical bounds" eg:"16"`
+	CandidateValues []string `json:"candidateValues,omitempty" dc:"Explicit subset of declared static candidate values" eg:"unlimited"`
+}
+
 type CatalogProductVersionConfiguration struct {
+	CustomerConfigurableFields []*capmodel.ConfigurationFieldDeclaration     `json:"customerConfigurableFields" dc:"Optional customer fields; technical limits are not upstream sale packages"`
+	CustomerFieldSelections    []*CatalogCustomerFieldSelection              `json:"customerFieldSelections" dc:"Merchant-enabled customer fields and sale bounds"`
+	ImportedConfiguration      bool                                          `json:"importedConfiguration" dc:"Whether an immutable imported configuration exists; reimport to change upstream configuration while local sale prices remain editable" eg:"true"`
 	ProductDeclaration         *capmodel.ConfigurationSchemaDeclaration      `json:"productDeclaration,omitempty" dc:"Presentation-only frozen merchant declaration with dynamic methods removed"`
 	CustomerDeclaration        *capmodel.ConfigurationSchemaDeclaration      `json:"customerDeclaration,omitempty" dc:"Presentation-only frozen customer declaration with dynamic methods removed"`
 	MerchantValues             []*CatalogStructuredConfigurationValue        `json:"merchantValues" dc:"Safe typed merchant values"`

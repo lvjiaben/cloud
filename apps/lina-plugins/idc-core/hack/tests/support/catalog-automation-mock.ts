@@ -1,3 +1,4 @@
+import { config } from "@host-tests/fixtures/config";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -129,7 +130,7 @@ export async function installCatalogAutomationMock(
 
   if (options.permissions) {
     await page.route("**/api/v1/user/info", async (route: Route) => {
-      const response = await route.fetch();
+      const response = await route.fetch({ url: new URL(new URL(route.request().url()).pathname + new URL(route.request().url()).search, config.backendBaseURL).href });
       const payload = (await response.json()) as {
         data?: { permissions?: string[] };
       };
@@ -151,7 +152,7 @@ export async function installCatalogAutomationMock(
   await page.route(
     "**/api/v1/i18n/runtime/messages**",
     async (route: Route) => {
-      const response = await route.fetch();
+      const response = await route.fetch({ url: new URL(new URL(route.request().url()).pathname + new URL(route.request().url()).search, config.backendBaseURL).href });
       const payload = (await response.json()) as {
         data?: { messages?: Record<string, unknown> };
       };
@@ -173,7 +174,7 @@ export async function installCatalogAutomationMock(
     },
   );
   await page.route("**/api/v1/menus/all", async (route: Route) => {
-    const response = await route.fetch();
+    const response = await route.fetch({ url: new URL(new URL(route.request().url()).pathname + new URL(route.request().url()).search, config.backendBaseURL).href });
     const payload = (await response.json()) as {
       data?: { list?: Array<Record<string, unknown>> };
     };

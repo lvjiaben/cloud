@@ -1,5 +1,7 @@
 {
   "menu": {
-    "plugin:idc-channel:tokens": { "title": "下游渠道管理" }
+    "plugin:idc-channel:tokens": {
+      "title": "开放API"
+    }
   }
 }

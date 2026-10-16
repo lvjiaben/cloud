@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	PermissionServerEdit          = "idc:admin:resource:server:edit"
 	PermissionServerAccessoryView = "idc:admin:resource:server-accessory:view"
 	PermissionSnapshotCreate      = "idc:admin:resource:server-accessory:snapshot:create"
 	PermissionSnapshotDelete      = "idc:admin:resource:server-accessory:snapshot:delete"
@@ -79,6 +80,10 @@ type ManagementResult struct {
 }
 
 type ManagementService interface {
+	// Metadata reads safe alias, note and version after staff view and customer scope checks.
+	Metadata(context.Context, string) (*CustomerMetadata, error)
+	// UpdateMetadata checks the edit grant and resolves customer ownership before versioned update.
+	UpdateMetadata(context.Context, string, string, string, int64) (*CustomerMetadata, error)
 	// TrafficPackages exposes applicable packages only after staff view/add grants
 	// and merchant data-scope checks; it never accepts a caller-supplied customer.
 	TrafficPackages(context.Context, string, TrafficPackageSearch) (*TrafficPackagePage, error)
@@ -360,13 +365,18 @@ func (s *managementServiceImpl) detail(ctx context.Context, customerNo, serviceN
 }
 
 func (s *managementServiceImpl) authorize(ctx context.Context, permissions []string) (int, map[string]bool, error) {
-	current := s.bizCtx.Current(ctx)
+	return authorizeManagement(ctx, s.bizCtx, s.principal, s.authorization, permissions)
+}
+
+// authorizeManagement is the shared employee, merchant-scope and exact permission gate.
+func authorizeManagement(ctx context.Context, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, permissions []string) (int, map[string]bool, error) {
+	current := bizCtx.Current(ctx)
 	if current.UserID <= 0 || current.TenantID != idccap.DefaultTenantID || current.ActingUserID != 0 ||
 		current.IsImpersonation || current.ActingAsTenant || current.DataScopeUnsupported ||
 		(current.DataScope != 1 && current.DataScope != 2) {
 		return 0, nil, bizerr.NewCode(CodeAccessoryManagementNotAccessible)
 	}
-	audience, err := s.principal.Current(ctx)
+	audience, err := principalReader.Current(ctx)
 	if err != nil || audience == nil || audience.UserID != current.UserID ||
 		audience.Code != principal.AudienceStaff || audience.Status != principal.AudienceStatusActive || audience.CustomerNo != "" {
 		return 0, nil, bizerr.NewCode(CodeAccessoryManagementNotAccessible)
@@ -379,11 +389,11 @@ func (s *managementServiceImpl) authorize(ctx context.Context, permissions []str
 		keys = append(keys, authz.PermissionKey(permission))
 	}
 	keys = append(keys, authz.PermissionKey(idccap.HostPermissionWildcard))
-	granted, err := s.authorization.BatchHasPermissions(ctx, keys)
+	granted, err := authorization.BatchHasPermissions(ctx, keys)
 	if err != nil {
 		return 0, nil, bizerr.WrapCode(err, CodeAccessoryManagementNotAccessible)
 	}
-	platformAdmin, err := s.authorization.IsPlatformAdmin(ctx, authz.UserID(strconv.Itoa(current.UserID)))
+	platformAdmin, err := authorization.IsPlatformAdmin(ctx, authz.UserID(strconv.Itoa(current.UserID)))
 	if err != nil {
 		return 0, nil, bizerr.WrapCode(err, CodeAccessoryManagementNotAccessible)
 	}

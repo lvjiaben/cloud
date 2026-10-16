@@ -101,6 +101,34 @@ func TestBatchTagMutationPostgresIsSetBasedAuditedAndReplaySafe(t *testing.T) {
 	if err != nil || activeCount != 2 {
 		t.Fatalf("replayed tag assignments=%d err=%v", activeCount, err)
 	}
+	// New names and existing numbers commit together; retry and another
+	// customer using the same name reuse the shared definition.
+	named := TagBatchInput{Action: TagBatchAssign, CustomerNos: customers, TagNos: []string{tagNo}, TagNames: []string{"输入回车标签"}, IdempotencyKey: "entered-tag-batch-0001"}
+	result, namedErr := service.BatchUpdateTags(ctx, named)
+	if namedErr != nil || result.TagCount != 2 {
+		t.Fatalf("named batch result=%+v err=%v", result, namedErr)
+	}
+	if _, namedErr = service.BatchUpdateTags(ctx, named); namedErr != nil {
+		t.Fatal(namedErr)
+	}
+	named.IdempotencyKey = "entered-tag-batch-0002"
+	if _, namedErr = service.BatchUpdateTags(ctx, named); namedErr != nil {
+		t.Fatal(namedErr)
+	}
+	namedCount, namedErr := dao.CustomerTag.Ctx(ctx).Where(do.CustomerTag{TenantId: 0, NameZhCn: "输入回车标签"}).Count()
+	if namedErr != nil || namedCount != 1 {
+		t.Fatalf("shared definition count=%d err=%v", namedCount, namedErr)
+	}
+	named.CustomerNos = []string{"CUS_ffffffffffffffffffffffffffffffff"}
+	named.TagNames = []string{"失败不留标签"}
+	named.IdempotencyKey = "entered-tag-batch-0003"
+	if _, namedErr = service.BatchUpdateTags(ctx, named); namedErr == nil {
+		t.Fatal("missing customer accepted")
+	}
+	namedCount, namedErr = dao.CustomerTag.Ctx(ctx).Where(do.CustomerTag{TenantId: 0, NameZhCn: "失败不留标签"}).Count()
+	if namedErr != nil || namedCount != 0 {
+		t.Fatalf("failed definition count=%d err=%v", namedCount, namedErr)
+	}
 	if _, err = dao.CustomerSubject.Ctx(ctx).
 		Where(do.CustomerSubject{TenantId: 0, CustomerNo: customers[0]}).
 		Data(do.CustomerSubject{StatusCode: "anonymized"}).Update(); err != nil {
@@ -140,15 +168,15 @@ func TestBatchTagMutationPostgresIsSetBasedAuditedAndReplaySafe(t *testing.T) {
 		t.Fatalf("revoked tag assignments=%d err=%v", revokedCount, err)
 	}
 	auditCount, err := dao.BusinessAuditEvent.Ctx(ctx).Count()
-	if err != nil || auditCount != 2 {
+	if err != nil || auditCount != 4 {
 		t.Fatalf("batch audit events=%d err=%v", auditCount, err)
 	}
 	linkCount, err := dao.BusinessAuditCustomerLink.Ctx(ctx).Count()
-	if err != nil || linkCount != 4 {
+	if err != nil || linkCount != 8 {
 		t.Fatalf("batch audit customer links=%d err=%v", linkCount, err)
 	}
 	page, err := auditService.Search(ctx, audit.SearchInput{CustomerNo: customers[0], Limit: 10})
-	if err != nil || len(page.Events) != 2 {
+	if err != nil || len(page.Events) != 4 {
 		t.Fatalf("customer batch audit timeline=%+v err=%v", page, err)
 	}
 }

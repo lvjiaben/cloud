@@ -33,8 +33,10 @@ const (
 	DynamicProviderMethodQueryResource            = "resource.query"
 	// Catalog methods are an optional, paired read-only extension. They grant
 	// no create/update/publish permission to the supplier connector.
-	DynamicProviderMethodListCatalog        = "catalog.products.list"
-	DynamicProviderMethodReadCatalogProduct = "catalog.products.detail"
+	DynamicProviderMethodListCatalog                  = "catalog.products.list"
+	DynamicProviderMethodReadCatalogProduct           = "catalog.products.detail"
+	DynamicProviderMethodEvaluateCatalogConfiguration = "catalog.configuration.evaluate"
+	DynamicProviderMethodCatalogBillingTerms          = "catalog.billing-terms"
 )
 
 // ConnectionVerification is the deliberately small, non-sensitive proof
@@ -142,6 +144,10 @@ func ValidateDynamicProviderDeclarations(declarations []*capmodel.BusinessExtens
 	sort.Strings(got)
 	if len(got) == len(want)+2 {
 		want = append(want, DynamicProviderMethodListCatalog, DynamicProviderMethodReadCatalogProduct)
+		sort.Strings(want)
+	}
+	if len(got) == len(want)+4 {
+		want = append(want, DynamicProviderMethodListCatalog, DynamicProviderMethodReadCatalogProduct, DynamicProviderMethodEvaluateCatalogConfiguration, DynamicProviderMethodCatalogBillingTerms)
 		sort.Strings(want)
 	}
 	if len(got) != len(want) {

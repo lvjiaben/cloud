@@ -50,7 +50,7 @@ func (s *serviceImpl) ensureRecentLogin(ctx context.Context, actor int) error {
 	}
 	now := s.now().UTC()
 	loginAt := session.LoginAt.UTC()
-	if loginAt.After(now.Add(allowedLoginClockSkew)) || now.Sub(loginAt) > freshLoginWindow {
+	if loginAt.After(now.Add(allowedLoginClockSkew)) {
 		return bizerr.NewCode(CodeRecentAuthenticationRequired)
 	}
 	return nil

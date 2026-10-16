@@ -15,7 +15,7 @@ func (c *ControllerV1) CatalogProductCreate(
 	req *v1.CatalogProductCreateReq,
 ) (*v1.CatalogProductCreateRes, error) {
 	created, err := c.catalogWriter.CreateProductDraft(ctx, catalog.ProductCreateInput{
-		CategoryNo: req.CategoryNo, PublicSlug: req.PublicSlug,
+		DirectoryNo: req.DirectoryNo, CategoryNo: req.CategoryNo, PublicSlug: req.PublicSlug,
 		NameZhCN: req.NameZhCn, NameEnUS: req.NameEnUs,
 		SummaryZhCN: req.SummaryZhCn, SummaryEnUS: req.SummaryEnUs,
 		SortOrder: req.SortOrder, ContractPolicyCode: contractpolicy.Policy(req.ContractPolicyCode),

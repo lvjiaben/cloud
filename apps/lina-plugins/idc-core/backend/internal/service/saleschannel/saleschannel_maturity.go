@@ -1,3 +1,4 @@
+// This file matures due commissions under database time and account ledger locks.
 package saleschannel
 
 import (
@@ -27,9 +28,9 @@ SELECT commission_no,beneficiary_type_code,beneficiary_reference,currency_code,
   FROM plugin_idc_core_commission_accrual
  WHERE tenant_id=0 AND pending_amount_minor>0
    AND status_code IN ('pending_maturity','partially_reversed')
-   AND matures_at<=?
+   AND matures_at<=CURRENT_TIMESTAMP
  ORDER BY matures_at,id
- LIMIT ? FOR UPDATE`, now, limit)
+ LIMIT ? FOR UPDATE`, limit)
 		if err != nil {
 			return err
 		}
@@ -72,15 +73,18 @@ SELECT account_no,credited_amount_minor,pending_amount_minor,available_amount_mi
 			maturityNo := "MAT_" + digest[:32]
 			if _, insertErr := tx.Exec(`INSERT INTO plugin_idc_core_sales_commission_maturity
  (tenant_id,maturity_no,commission_no,attempt_no,account_no,currency_code,beneficiary_type_code,beneficiary_reference,amount_minor,status_code,reason_code,evidence_digest)
- VALUES (0,?,?,?,?,?,?,?,?,?,'matured','maturity_due',?)`, maturityNo, commissionNo, attempt, account["account_no"].String(), currency, beneficiaryType, beneficiary, amount, digest); insertErr != nil {
+ VALUES (0,?,?,?,?,?,?,?,?,'matured','maturity_due',?)`, maturityNo, commissionNo, attempt, account["account_no"].String(), currency, beneficiaryType, beneficiary, amount, digest); insertErr != nil {
 				return insertErr
 			}
-			beforeVersion := account["version"].Int64()
+			sequence, queryErr := tx.GetValue(`SELECT COALESCE(MAX(entry_sequence),0)+1 FROM plugin_idc_core_sales_commission_account_entry WHERE account_no=?`, account["account_no"].String())
+			if queryErr != nil {
+				return queryErr
+			}
 			if _, insertErr := tx.Exec(`INSERT INTO plugin_idc_core_sales_commission_account_entry
  (tenant_id,entry_no,account_no,currency_code,entry_sequence,entry_type_code,source_type_code,source_reference,source_digest,
   delta_credited_minor,delta_pending_minor,delta_available_minor,delta_frozen_minor,delta_paid_minor,delta_reversed_minor,
   after_credited_minor,after_pending_minor,after_available_minor,after_frozen_minor,after_paid_minor,after_reversed_minor)
- VALUES (0,?,?,?,?,?,?,?,?,0,?,?,0,0,0,?,?,?,?,?,?)`, "CENT_"+digest[:33], account["account_no"].String(), currency, beforeVersion+1,
+ VALUES (0,?,?,?,?,?,?,?,?,0,?,?,0,0,0,?,?,?,?,?,?)`, "CENT_"+digest[:33], account["account_no"].String(), currency, sequence.Int64(),
 				"maturity", "commission_maturity", maturityNo, digest, -amount, amount,
 				account["credited_amount_minor"].Int64(), availablePending-amount, account["available_amount_minor"].Int64()+amount,
 				account["frozen_amount_minor"].Int64(), account["paid_amount_minor"].Int64(), account["reversed_amount_minor"].Int64()); insertErr != nil {

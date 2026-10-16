@@ -1,7 +1,16 @@
 {
   "menu": {
-    "plugin:idc-portal:brand": { "title": "官网品牌设置" },
-    "plugin:idc-portal:customer-external-menus": { "title": "用户中心菜单" },
-    "plugin:idc-portal:customer-external-menus:manage": { "title": "管理用户中心菜单" }
+    "plugin:idc-portal:brand": {
+      "title": "官网配置"
+    },
+    "plugin:idc-portal:customer-external-menus": {
+      "title": "用户中心菜单"
+    },
+    "plugin:idc-portal:customer-external-menus:manage": {
+      "title": "管理用户中心菜单"
+    },
+    "plugin:idc-portal:customer-template": {
+      "title": "用户中心配置"
+    }
   }
 }

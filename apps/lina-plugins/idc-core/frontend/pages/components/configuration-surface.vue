@@ -161,6 +161,16 @@ const sandboxBinding = computed(() => {
   min-height: 0;
 }
 
+/* The drawer already names the selected configuration. Keep its actions. */
+.configuration-surface :deep(.workspace-toolbar h1),
+.configuration-surface :deep(.workspace-toolbar h2) {
+  display: none;
+}
+
+.configuration-surface :deep(.workspace-toolbar) {
+  padding: 12px;
+}
+
 .configuration-surface__loading {
   display: grid;
   min-height: 320px;

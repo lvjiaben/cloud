@@ -294,7 +294,7 @@ func (s *serviceImpl) GenerateSupportExport(ctx context.Context, input SupportEx
 		if _, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_compliance_privacy_action (tenant_id, action_no, action_code, target_no, idempotency_digest, request_fingerprint, result_reference, actor_user_id) VALUES (?, ?, 'generate_support_export', 'privacy-support-export', ?, ?, ?, ?)`, idccap.DefaultTenantID, actionNo, idempotencyDigest, fingerprint, exportNo, actor); insertErr != nil {
 			return insertErr
 		}
-		return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"export_no": ""},
 			IdempotencyScope: "compliance.privacy.support-export", IdempotencyKey: idempotencyDigest,
 			OperationCode: "compliance.privacy.support-export", TargetType: "local_sensitive_export", TargetNo: exportNo,
 			ResultCode: "succeeded", ReasonCode: "separate_support_agreement_confirmed", RiskCode: "high",

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	publiccontroller "lina-plugin-idc-core/backend/internal/controller/public"
 	"strconv"
 
 	v1 "lina-plugin-idc-core/backend/api/admin/v1"
@@ -46,21 +47,25 @@ func toAPICommerceAssistedQuote(input *commerce.AssistedQuoteRequest) *v1.Commer
 func toCommerceAssistedQuoteItems(
 	input []*v1.CommerceAssistedQuoteItemInput,
 	currencyCode string,
-) []commerce.AssistedQuoteItemInput {
+) ([]commerce.AssistedQuoteItemInput, error) {
 	result := make([]commerce.AssistedQuoteItemInput, 0, len(input))
 	for _, item := range input {
 		if item == nil {
 			result = append(result, commerce.AssistedQuoteItemInput{})
 			continue
 		}
+		values, err := publiccontroller.MapPurchaseConfigurationInput(item.Values)
+		if err != nil {
+			return nil, err
+		}
 		result = append(result, commerce.AssistedQuoteItemInput{
 			Quantity: item.Quantity,
 			Purchase: catalog.PurchaseConfigurationInput{
 				PublicSlug: item.PublicSlug, ConfigurationRevision: item.ConfigurationRevision,
 				BillingTermToken: item.BillingTermToken, CurrencyCode: currencyCode,
-				PurchaseCycles: item.PurchaseCycles,
+				PurchaseCycles: item.PurchaseCycles, Values: values,
 			},
 		})
 	}
-	return result
+	return result, nil
 }

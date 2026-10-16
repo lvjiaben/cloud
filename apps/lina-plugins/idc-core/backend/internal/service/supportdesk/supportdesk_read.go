@@ -12,7 +12,6 @@ import (
 
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/authcap/authz"
-	"lina-plugin-idc-core/backend/cap/idccap"
 )
 
 func (s *serviceImpl) SearchStaff(ctx context.Context, input SearchInput) (*Page, error) {
@@ -153,20 +152,19 @@ func (s *serviceImpl) staffPageActions(ctx context.Context, staff *actor) []stri
 	if staff == nil {
 		return []string{}
 	}
-	keys := []authz.PermissionKey{PermissionQuery, PermissionCreate, PermissionConfigure, idccap.HostPermissionWildcard}
+	keys := []authz.PermissionKey{PermissionQuery, PermissionCreate, PermissionConfigure}
 	grants, err := s.authorization.BatchHasPermissions(ctx, keys)
 	if err != nil {
 		return []string{}
 	}
-	wildcard := grants[authz.PermissionKey(idccap.HostPermissionWildcard)]
 	actions := make([]string, 0, 3)
-	if wildcard || grants[authz.PermissionKey(PermissionQuery)] {
+	if grants[authz.PermissionKey(PermissionQuery)] {
 		actions = append(actions, "query")
 	}
-	if wildcard || grants[authz.PermissionKey(PermissionCreate)] {
+	if grants[authz.PermissionKey(PermissionCreate)] {
 		actions = append(actions, "create")
 	}
-	if wildcard || grants[authz.PermissionKey(PermissionConfigure)] {
+	if staff.DataScope <= 2 && grants[authz.PermissionKey(PermissionConfigure)] {
 		actions = append(actions, "configure")
 	}
 	return actions
@@ -299,19 +297,18 @@ func (s *serviceImpl) staffAvailableActions(ctx context.Context, ticket *Ticket,
 	if ticket == nil {
 		return []string{}
 	}
-	permissions := []authz.PermissionKey{PermissionReply, PermissionNote, PermissionClaim, PermissionTransfer, PermissionResolve, PermissionClose, PermissionReopen, PermissionMerge, PermissionMergeAll, PermissionSplit, PermissionEscalate, PermissionHide, PermissionUpstream, idccap.HostPermissionWildcard}
+	permissions := []authz.PermissionKey{PermissionList, PermissionQuery, PermissionReply, PermissionNote, PermissionClaim, PermissionTransfer, PermissionResolve, PermissionClose, PermissionReopen, PermissionMerge, PermissionMergeAll, PermissionSplit, PermissionEscalate, PermissionHide, PermissionUpstream}
 	grants, err := s.authorization.BatchHasPermissions(ctx, permissions)
 	if err != nil {
 		return []string{}
 	}
-	wildcard := grants[authz.PermissionKey(idccap.HostPermissionWildcard)]
-	has := func(permission string) bool { return wildcard || grants[authz.PermissionKey(permission)] }
+	has := func(permission string) bool { return grants[authz.PermissionKey(permission)] }
 	leader := s.isDepartmentLeader(ctx, staff.UserID, ticket.DepartmentNo)
 	canManageAssigned := ticket.AssigneeUserID == int64(staff.UserID) || staff.Global || leader
 	canLead := staff.Global || leader
 	actions := make([]string, 0, 8)
 	if ticket.BaseStage != "closed" {
-		if ticket.AssigneeUserID == 0 && ticket.DepartmentNo != "" && contains(staff.Departments, ticket.DepartmentNo) && has(PermissionClaim) {
+		if canClaimTicket(ticket, staff, grants) {
 			actions = append(actions, "claim")
 		}
 		if has(PermissionReply) {
@@ -322,6 +319,9 @@ func (s *serviceImpl) staffAvailableActions(ctx context.Context, ticket *Ticket,
 		}
 		if has(PermissionTransfer) && canManageAssigned {
 			actions = append(actions, "transfer")
+		}
+		if has(PermissionEscalate) && canManageAssigned {
+			actions = append(actions, "escalate")
 		}
 		if has(PermissionSplit) && canManageAssigned {
 			actions = append(actions, "split")
@@ -343,10 +343,24 @@ func (s *serviceImpl) staffAvailableActions(ctx context.Context, ticket *Ticket,
 		if has(PermissionClose) && canLead {
 			actions = append(actions, "close")
 		}
-	} else if ticket.AssigneeUserID == 0 && has(PermissionReopen) && canLead {
+	} else if has(PermissionReopen) && canLead {
 		actions = append(actions, "reopen")
 	}
 	return actions
+}
+
+// canClaimTicket mirrors the write guard: a pending queue ticket, live direct
+// membership, and all four permissions needed to see and handle the claim.
+func canClaimTicket(ticket *Ticket, staff *actor, grants map[authz.PermissionKey]bool) bool {
+	if ticket.BaseStage == StageClosed || ticket.BaseStage == StageResolved || ticket.AssigneeUserID != 0 || ticket.DepartmentNo == "" || !contains(staff.Departments, ticket.DepartmentNo) {
+		return false
+	}
+	for _, key := range []authz.PermissionKey{PermissionList, PermissionQuery, PermissionReply, PermissionClaim} {
+		if !grants[key] {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *serviceImpl) loadCustomerActionState(ctx context.Context, detail *Detail) error {
@@ -376,7 +390,7 @@ func (s *serviceImpl) loadCustomerActionState(ctx context.Context, detail *Detai
 		}
 		deadline := ticket.ClosedAt.Add(time.Duration(daysValue.Int()) * 24 * time.Hour)
 		detail.ReopenDeadline = &deadline
-		if ticket.AssigneeUserID == 0 && !now.After(deadline) {
+		if !now.After(deadline) {
 			actions = append(actions, "reopen")
 		}
 	}

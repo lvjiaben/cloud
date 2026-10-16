@@ -40,7 +40,7 @@ export class ProviderConfigurationPage {
   async createChannel(input: RealProviderChannelInput) {
     await this.root.getByRole("button", { name: "新增接口" }).click();
     const dialog = await waitForDialogReady(
-      this.page.getByRole("dialog").filter({ hasText: "新增接口" }),
+      this.page.getByRole("dialog", { name: "新增接口", exact: true }),
     );
 
     // Vben renders Select as a div-based control; the field name is not

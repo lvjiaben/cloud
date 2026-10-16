@@ -21,7 +21,10 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 )
 
-const maximumConfigurationPriceCandidates = 4096
+const (
+	maximumConfigurationPriceCandidates = 4096
+	configurationQuantityPriceIdentity  = "quantity"
+)
 
 type configurationPriceCandidatePrivate struct {
 	ConfigurationPriceCandidate
@@ -30,13 +33,14 @@ type configurationPriceCandidatePrivate struct {
 }
 
 type configurationPriceDimensionRow struct {
-	DimensionNo        string `orm:"dimension_no"`
-	FieldKey           string `orm:"field_key"`
-	CandidateValue     string `orm:"candidate_value"`
-	FieldLabelZhCN     string `orm:"field_label_zh_cn"`
-	FieldLabelEnUS     string `orm:"field_label_en_us"`
-	CandidateLabelZhCN string `orm:"candidate_label_zh_cn"`
-	CandidateLabelEnUS string `orm:"candidate_label_en_us"`
+	DimensionNo        string                         `orm:"dimension_no"`
+	FieldKey           string                         `orm:"field_key"`
+	CandidateValue     string                         `orm:"candidate_value"`
+	FieldLabelZhCN     string                         `orm:"field_label_zh_cn"`
+	FieldLabelEnUS     string                         `orm:"field_label_en_us"`
+	CandidateLabelZhCN string                         `orm:"candidate_label_zh_cn"`
+	CandidateLabelEnUS string                         `orm:"candidate_label_en_us"`
+	PricingMode        catalog.ConfigurationPriceMode `orm:"pricing_mode_code"`
 }
 
 func (s *serviceImpl) ListConfigurationPriceCandidates(ctx context.Context, versionNo string) ([]ConfigurationPriceCandidate, error) {
@@ -53,7 +57,7 @@ func (s *serviceImpl) ListConfigurationPriceCandidates(ctx context.Context, vers
 	}
 	var rows []configurationPriceDimensionRow
 	if err = s.database.GetScan(ctx, &rows, `SELECT dimension_no,field_key,candidate_value,
-field_label_zh_cn,field_label_en_us,candidate_label_zh_cn,candidate_label_en_us
+field_label_zh_cn,field_label_en_us,candidate_label_zh_cn,candidate_label_en_us,pricing_mode_code
 FROM plugin_idc_core_catalog_configuration_price_dimension
 WHERE tenant_id=0 AND version_no=? AND status_code='active'
 ORDER BY field_key,candidate_value,id LIMIT ?`, versionNo, maximumConfigurationPriceCandidates+1); err != nil {
@@ -62,13 +66,14 @@ ORDER BY field_key,candidate_value,id LIMIT ?`, versionNo, maximumConfigurationP
 	if len(rows) > maximumConfigurationPriceCandidates {
 		return nil, bizerr.NewCode(catalog.CodeManagementUnavailable)
 	}
-	dimensionByIdentity := make(map[string]string, len(rows))
+	dimensionByIdentity := make(map[string]configurationPriceDimensionRow, len(rows))
 	for _, row := range rows {
-		dimensionByIdentity[row.FieldKey+"\x00"+row.CandidateValue] = row.DimensionNo
+		dimensionByIdentity[row.FieldKey+"\x00"+row.CandidateValue] = row
 	}
 	result := make([]ConfigurationPriceCandidate, 0, len(private))
 	for _, candidate := range private {
-		candidate.DimensionNo = dimensionByIdentity[candidate.fieldKey+"\x00"+candidate.candidateValue]
+		dimension := dimensionByIdentity[candidate.fieldKey+"\x00"+candidate.candidateValue]
+		candidate.DimensionNo, candidate.PricingMode = dimension.DimensionNo, dimension.PricingMode
 		result = append(result, candidate.ConfigurationPriceCandidate)
 	}
 	return result, nil
@@ -100,12 +105,23 @@ func (s *serviceImpl) CreateConfigurationPriceDimension(ctx context.Context, inp
 	if selected == nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
+	mode := input.PricingMode
+	if mode == "" {
+		mode = catalog.ConfigurationPriceFixed
+	}
+	if selected.Quantity {
+		if mode != catalog.ConfigurationPricePerUnit && mode != catalog.ConfigurationPriceBandTotal {
+			return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+		}
+	} else if mode != catalog.ConfigurationPriceFixed {
+		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
 	dimensionNo, err := newConfigurationPriceDimensionNo(s.random)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
 	result := &ConfigurationPriceDimension{
-		DimensionNo: dimensionNo, FieldLabel: selected.FieldLabel, CandidateLabel: selected.CandidateLabel,
+		DimensionNo: dimensionNo, PricingMode: mode, FieldLabel: selected.FieldLabel, CandidateLabel: selected.CandidateLabel,
 	}
 	err = s.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
 		var locked struct {
@@ -125,10 +141,10 @@ WHERE tenant_id=0 AND version_no=? FOR SHARE`, input.VersionNo); lockErr != nil 
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		insert, insertErr := s.database.Exec(txCtx, `INSERT INTO plugin_idc_core_catalog_configuration_price_dimension
-(tenant_id,dimension_no,version_no,configuration_version,field_key,candidate_value,field_label_zh_cn,field_label_en_us,candidate_label_zh_cn,candidate_label_en_us,status_code)
-VALUES(0,?,?,?,?,?,?,?,?,?,'active') ON CONFLICT(version_no,field_key,candidate_value) DO NOTHING`,
+(tenant_id,dimension_no,version_no,configuration_version,field_key,candidate_value,field_label_zh_cn,field_label_en_us,candidate_label_zh_cn,candidate_label_en_us,pricing_mode_code,status_code)
+VALUES(0,?,?,?,?,?,?,?,?,?,?,'active') ON CONFLICT(version_no,field_key,candidate_value) DO NOTHING`,
 			dimensionNo, input.VersionNo, selected.configurationVersion, selected.fieldKey, selected.candidateValue,
-			selected.FieldLabel.ZhCN, selected.FieldLabel.EnUS, selected.CandidateLabel.ZhCN, selected.CandidateLabel.EnUS)
+			selected.FieldLabel.ZhCN, selected.FieldLabel.EnUS, selected.CandidateLabel.ZhCN, selected.CandidateLabel.EnUS, mode)
 		if insertErr != nil {
 			return gerror.Wrap(insertErr, "insert configuration price dimension")
 		}
@@ -141,6 +157,7 @@ VALUES(0,?,?,?,?,?,?,?,?,?,'active') ON CONFLICT(version_no,field_key,candidate_
 			OperationCode: "catalog.configuration-price-dimension.create", TargetType: "catalog_product_version",
 			TargetNo: input.VersionNo, ResultCode: "succeeded", ReasonCode: "manual_create", RiskCode: "medium",
 			RequiredPermission: authorization.RequiredPermission,
+			BeforeSnapshot:     map[string]any{"dimension_no": ""},
 			AfterSnapshot:      map[string]any{"dimension_no": dimensionNo},
 		})
 	})
@@ -156,10 +173,21 @@ func configurationPriceCandidates(versionNo string, configuration *VersionConfig
 	}
 	result := make([]configurationPriceCandidatePrivate, 0)
 	for _, field := range configuration.CustomerDeclaration.Fields {
-		if field == nil || !configurationPriceCandidateField(field.Type) || field.Label == nil {
+		if field == nil || (!configurationPriceCandidateField(field.Type) && field.Type != capmodel.ConfigurationFieldInteger) || field.Label == nil {
 			continue
 		}
 		candidates := field.StaticCandidates
+		if field.Type == capmodel.ConfigurationFieldInteger {
+			token := configurationPriceCandidateToken(versionNo, configuration.Version, field.Key, configurationQuantityPriceIdentity)
+			result = append(result, configurationPriceCandidatePrivate{
+				ConfigurationPriceCandidate: ConfigurationPriceCandidate{CandidateToken: token, FieldLabel: *field.Label, CandidateLabel: *field.Label, Quantity: true},
+				fieldKey:                    field.Key, candidateValue: configurationQuantityPriceIdentity, configurationVersion: configuration.Version,
+			})
+			if len(result) > maximumConfigurationPriceCandidates {
+				return nil, gerror.New("configuration price candidate bound exceeded")
+			}
+			continue
+		}
 		if len(candidates) == 0 {
 			candidates = configuration.CustomerResolvedCandidates[field.Key]
 		}

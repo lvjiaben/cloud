@@ -7,6 +7,7 @@ type ProductFulfillmentReasonOption struct {
 }
 
 type ProductFulfillmentTaskSummary struct {
+	TargetEntitlementNo  string `json:"targetEntitlementNo,omitempty" dc:"Owned target service number for an add-on; empty for an ordinary purchase" eg:"ent_service"`
 	IntentNo             string `json:"intentNo" dc:"Stable merchant-side fulfillment intent number"`
 	OrderNo              string `json:"orderNo" dc:"Stable order number"`
 	OrderItemNo          string `json:"orderItemNo" dc:"Frozen order item number"`

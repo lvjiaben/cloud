@@ -1,6 +1,6 @@
 id: idc-core
 name: LinaPro IDC Core
-version: v0.1.94
+version: v0.1.102
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -25,8 +25,6 @@ dependencies:
       version: "=0.1.0"
     - id: shared-services
       version: ">=0.1.0 <1.0.0"
-    - id: staff-access
-      version: ">=0.1.0 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -36,8 +34,12 @@ business_extensions:
     methods:
       - configuration.candidates
       - configuration.validate
+      - product.configuration.validate
       - provision
       - query
+      - renew
+      - renew.query
+      - peer.configuration.candidates
       - service.detail
       - service.sync
       - service.validation.update
@@ -51,12 +53,12 @@ public_assets:
 
 menus:
   - key: plugin:idc-core:customer-sales
-    name: Customer and Sales
+    name: Customer Business
     path: idc-customer-sales
     icon: lucide:users-round
     type: D
     sort: 4
-    remark: Customer, sales, and assisted quote workspaces
+    remark: Customers, agent pricing, sales commissions, and Open API
   - key: plugin:idc-core:catalog-products
     name: Catalog and Products
     path: idc-catalog-products
@@ -79,7 +81,7 @@ menus:
     sort: 7
     remark: Orders, payments, reconciliation, and finance
   - key: plugin:idc-core:support-content
-    name: Support and Content
+    name: Customer Support
     path: idc-support-content
     icon: lucide:messages-square
     type: D
@@ -100,25 +102,24 @@ menus:
     sort: 10
     remark: Compliance, contracts, and governance workspaces
   - key: plugin:idc-core:operations-workbench
-    parent_key: dashboard
-    name: Operations Workbench
+    name: Operations Data
     path: /idc/operations/workbench
     component: system/plugin/dynamic-page
     perms: idc:admin:operations:workbench:view
     icon: lucide:activity
     type: M
     sort: 0
-    remark: Bounded operational queues and original-currency metrics
+    remark: Actual receipts, paid orders, customers, servers, and support metrics
   - key: plugin:idc-core:sales-channel
     parent_key: plugin:idc-core:customer-sales
-    name: Sales Channel Operations
+    name: Agent Sales
     path: /idc/sales-channel
     component: system/plugin/dynamic-page
     perms: idc:admin:sales-channel:overview:view
     icon: lucide:handshake
     type: M
     sort: 32
-    remark: Agent, affiliate, sales ownership, and commission overview
+    remark: Agent pricing, sales ownership, performance, and commission settlement
   - key: plugin:idc-core:sales-channel:overview
     parent_key: plugin:idc-core:sales-channel
     name: View Sales Channel Overview
@@ -168,9 +169,30 @@ menus:
     type: B
     visible: 0
     sort: 7
+  - key: plugin:idc-core:sales-channel:assignment
+    parent_key: plugin:idc-core:sales-channel
+    name: Manage Sales Assignments
+    perms: idc:admin:sales-channel:assignment:manage
+    type: B
+    visible: 0
+    sort: 8
+  - key: plugin:idc-core:sales-channel:pricing
+    parent_key: plugin:idc-core:catalog
+    name: Manage Product and Custom Prices
+    perms: idc:admin:sales-channel:pricing:manage
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:sales-channel:commission:manage
+    parent_key: plugin:idc-core:sales-channel
+    name: Manage Commission Rules
+    perms: idc:admin:sales-channel:commission:manage
+    type: B
+    visible: 0
+    sort: 10
   - key: plugin:idc-core:operations-workbench:view
     parent_key: plugin:idc-core:operations-workbench
-    name: View Operations Workbench
+    name: View Operations Data
     perms: idc:admin:operations:workbench:view
     type: B
     visible: 0
@@ -220,6 +242,20 @@ menus:
     type: B
     visible: 0
     sort: 1
+  - key: plugin:idc-core:customers:product-edit
+    parent_key: plugin:idc-core:customers
+    name: Edit Customer Products
+    perms: idc:admin:resource:server:edit
+    type: B
+    visible: 0
+    sort: 2
+  - key: plugin:idc-core:customers:audit
+    parent_key: plugin:idc-core:customers
+    name: Customer Operation Records
+    perms: idc:admin:audit:list
+    type: B
+    visible: 0
+    sort: 3
   - key: plugin:idc-core:customers:tag-batch
     parent_key: plugin:idc-core:customers
     name: Batch Customer Tags
@@ -255,6 +291,24 @@ menus:
     type: B
     visible: 0
     sort: 6
+  - key: plugin:idc-core:currencies
+    parent_key: plugin:idc-core:orders-finance
+    name: Merchant Currencies
+    path: /idc/currencies
+    component: system/plugin/dynamic-page
+    perms: idc:admin:currency:read
+    icon: lucide:coins
+    type: M
+    visible: 0
+    sort: 39
+    remark: Merchant denominations and new quote admission without currency conversion
+  - key: plugin:idc-core:currencies:write
+    parent_key: plugin:idc-core:currencies
+    name: Configure Merchant Currencies
+    perms: idc:admin:currency:write
+    type: B
+    visible: 0
+    sort: 1
   - key: plugin:idc-core:catalog
     parent_key: plugin:idc-core:catalog-products
     name: Catalog Management
@@ -265,26 +319,16 @@ menus:
     type: M
     sort: 20
     remark: General products, versions, pricing, and publication readiness
-  - key: plugin:idc-core:catalog-categories
-    parent_key: plugin:idc-core:catalog-products
-    name: Catalog Categories
-    path: /idc/catalog/categories
-    component: system/plugin/dynamic-page
-    perms: idc:admin:catalog:category:list
-    icon: lucide:folder-tree
-    type: M
-    sort: 21
-    remark: Search, create, edit, soft-delete, and restore catalog categories
   - key: plugin:idc-core:product-directories
     parent_key: plugin:idc-core:catalog-products
-    name: Product Directories
-    path: /idc/catalog/product-directories
+    name: Member Navigation
+    path: /idc/member-navigation
     component: system/plugin/dynamic-page
     perms: idc:admin:product-directory:list
     icon: lucide:folders
     type: M
     sort: 23
-    remark: Configure purchased-service navigation independently of sales categories
+    remark: Configure member product navigation independently of sales categories
   - key: plugin:idc-core:product-directories:create
     parent_key: plugin:idc-core:product-directories
     name: Create Product Directory
@@ -352,35 +396,35 @@ menus:
     visible: 0
     sort: 2
   - key: plugin:idc-core:catalog:category-list
-    parent_key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog
     name: List Catalog Categories
     perms: idc:admin:catalog:category:list
     type: B
     visible: 0
     sort: 3
   - key: plugin:idc-core:catalog:category-create
-    parent_key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog
     name: Create Catalog Category
     perms: idc:admin:catalog:category:create
     type: B
     visible: 0
     sort: 4
   - key: plugin:idc-core:catalog:category-update
-    parent_key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog
     name: Edit Catalog Category
     perms: idc:admin:catalog:category:update
     type: B
     visible: 0
     sort: 5
   - key: plugin:idc-core:catalog:category-delete
-    parent_key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog
     name: Delete Catalog Category
     perms: idc:admin:catalog:category:delete
     type: B
     visible: 0
     sort: 6
   - key: plugin:idc-core:catalog:category-restore
-    parent_key: plugin:idc-core:catalog-categories
+    parent_key: plugin:idc-core:catalog
     name: Restore Catalog Category
     perms: idc:admin:catalog:category:restore
     type: B
@@ -397,6 +441,13 @@ menus:
     parent_key: plugin:idc-core:catalog
     name: Edit Catalog Billing Rules
     perms: idc:admin:catalog:billing:write
+    type: B
+    visible: 0
+    sort: 9
+  - key: plugin:idc-core:catalog:product-update
+    parent_key: plugin:idc-core:catalog
+    name: Edit Catalog Product Description
+    perms: idc:admin:catalog:product:update
     type: B
     visible: 0
     sort: 8
@@ -598,6 +649,13 @@ menus:
     type: B
     visible: 0
     sort: 13
+  - key: plugin:idc-core:support:lead
+    parent_key: plugin:idc-core:support
+    name: Manage Department Tickets
+    perms: idc:admin:support:ticket:lead
+    type: B
+    visible: 0
+    sort: 17
   - key: plugin:idc-core:support:view-all
     parent_key: plugin:idc-core:support
     name: View All Support Tickets
@@ -630,7 +688,7 @@ menus:
     sort: 25
     remark: Support automation policy and governed support configuration
   - key: plugin:idc-core:content
-    parent_key: plugin:idc-core:support-content
+    parent_key: content
     name: Content Management
     path: /idc/content
     component: system/plugin/dynamic-page
@@ -942,58 +1000,27 @@ menus:
     type: B
     visible: 0
     sort: 44
-  - key: plugin:idc-core:assisted-quotes
-    parent_key: plugin:idc-core:customer-sales
-    name: Assisted Quotes
-    path: /idc/assisted-quotes
-    component: system/plugin/dynamic-page
-    perms: idc:admin:commerce:assisted-quote:list
-    icon: lucide:badge-dollar-sign
-    type: M
-    sort: 31
-    remark: Independently approved staff-assisted quotes and safe order checkout
   - key: plugin:idc-core:assisted-quotes:list
-    parent_key: plugin:idc-core:assisted-quotes
-    name: View Assisted Quotes
+    parent_key: plugin:idc-core:customers
+    name: View Assisted Order History
     perms: idc:admin:commerce:assisted-quote:list
     type: B
     visible: 0
     sort: 1
   - key: plugin:idc-core:assisted-quotes:query
-    parent_key: plugin:idc-core:assisted-quotes
-    name: View Assisted Quote Details
+    parent_key: plugin:idc-core:customers
+    name: View Assisted Order Details
     perms: idc:admin:commerce:assisted-quote:query
     type: B
     visible: 0
     sort: 2
   - key: plugin:idc-core:assisted-quotes:create
-    parent_key: plugin:idc-core:assisted-quotes
-    name: Request Assisted Quote
+    parent_key: plugin:idc-core:customers
+    name: Create Assisted Order
     perms: idc:admin:commerce:assisted-quote:create
     type: B
     visible: 0
     sort: 3
-  - key: plugin:idc-core:assisted-quotes:approve
-    parent_key: plugin:idc-core:assisted-quotes
-    name: Approve Assisted Quote
-    perms: idc:admin:commerce:assisted-quote:approve
-    type: B
-    visible: 0
-    sort: 4
-  - key: plugin:idc-core:assisted-quotes:reject
-    parent_key: plugin:idc-core:assisted-quotes
-    name: Reject Assisted Quote
-    perms: idc:admin:commerce:assisted-quote:reject
-    type: B
-    visible: 0
-    sort: 5
-  - key: plugin:idc-core:assisted-quotes:checkout
-    parent_key: plugin:idc-core:assisted-quotes
-    name: Checkout Assisted Quote
-    perms: idc:admin:commerce:assisted-quote:checkout
-    type: B
-    visible: 0
-    sort: 6
   - key: plugin:idc-core:financial-management
     parent_key: plugin:idc-core:orders-finance
     name: Financial Management
@@ -1193,3 +1220,35 @@ menus:
     type: B
     visible: 0
     sort: 28
+
+customer_surfaces:
+  - key: trial-conversions
+    version: v1
+    title: plugin.idc-core.trials.title
+    icon: lucide:clock
+    slot: customer.products
+    route: trial-conversions
+    entry: customer-trial-conversions.vue
+    bridge_capabilities:
+      - trial-conversions.customer.v1
+    status: active
+  - key: entitlement-upgrades
+    version: v1
+    title: plugin.idc-core.upgrades.title
+    icon: lucide:arrow-up-circle
+    slot: customer.products
+    route: entitlement-upgrades
+    entry: customer-entitlement-upgrades.vue
+    bridge_capabilities:
+      - entitlement-upgrades.customer.v1
+    status: active
+  - key: addons
+    version: v1
+    title: plugin.idc-core.addons.title
+    icon: lucide:puzzle
+    slot: customer.products
+    route: addons
+    entry: customer-addons.vue
+    bridge_capabilities:
+      - addons.customer.v1
+    status: active

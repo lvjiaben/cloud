@@ -14,6 +14,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
+	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 )
 
 const catalogReadPermission = "idc:admin:resource:configuration:list"
@@ -21,15 +22,16 @@ const catalogReadPermission = "idc:admin:resource:configuration:list"
 type catalogSource struct {
 	reader     *LazySource
 	authorizer managementcap.Authorizer
+	projection *interfaceprojection.Worker
 }
 
 // NewCatalogSource binds the direct-staff authorizer supplied at startup. The
 // shared runtime may be bound later; all reads fail closed until it is ready.
-func NewCatalogSource(reader *LazySource, authorizer managementcap.Authorizer) (resourceinterfaceprojectioncap.CatalogSource, error) {
-	if reader == nil || authorizer == nil {
+func NewCatalogSource(reader *LazySource, authorizer managementcap.Authorizer, projection *interfaceprojection.Worker) (resourceinterfaceprojectioncap.CatalogSource, error) {
+	if reader == nil || authorizer == nil || projection == nil {
 		return nil, gerror.New("upstream catalog source dependencies are required")
 	}
-	return &catalogSource{reader: reader, authorizer: authorizer}, nil
+	return &catalogSource{reader: reader, authorizer: authorizer, projection: projection}, nil
 }
 
 func (s *catalogSource) ListCatalog(ctx context.Context, interfaceNo string, query resourceinterfaceprojectioncap.CatalogQuery) (*resourceinterfaceprojectioncap.CatalogPage, error) {
@@ -86,6 +88,12 @@ func (s *catalogSource) read(ctx context.Context, interfaceNo, method string, qu
 	}
 	if err = decodeCatalogResponse(response, target); err != nil {
 		return nil, bizerr.WrapCode(err, CodeCatalogUnavailable)
+	}
+	if evidence == nil || evidence.Validate() != nil || evidence.InterfaceInstanceNo != interfaceNo {
+		return nil, bizerr.NewCode(CodeCatalogUnavailable)
+	}
+	if err = s.projection.Ensure(ctx, interfaceNo, evidence.InterfaceConfigurationRevision); err != nil {
+		return nil, bizerr.WrapCode(err, CodeCatalogProjectionPending)
 	}
 	return evidence, nil
 }

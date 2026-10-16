@@ -1,0 +1,3 @@
+{
+  "plugins.idc_core.api.account.v1.ServerCustomerMetadataUpdateRes.fields.metadata.dc": "安全的服务器别名、备注及版本信息"
+}

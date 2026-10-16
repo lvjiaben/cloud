@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/gogf/gf/v2/database/gdb"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	providerspi "lina-plugin-idc-resource/backend/cap/resourcecap/spi"
+	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 )
 
 // testUsageReader supplies explicit zero facts to unrelated configuration tests.
@@ -53,7 +55,7 @@ func TestProviderConfigurationPagesPostgreSQL(t *testing.T) {
 	}
 	usage := &recordingUsageReader{}
 	service, err := New(database, managementcap.Runtime{Authorizer: providerConfigurationAuthorizer{}, Audit: providerConfigurationAudit{}},
-		[]providerspi.Declaration{{Key: resourcecap.ProviderKey{PluginID: "server-connector", ProviderID: "server-api", ContractVersion: resourcecap.ContractVersion}, ProvisionParameters: testProviderConfigurationParameters}}, usage)
+		[]providerspi.Declaration{{Key: resourcecap.ProviderKey{PluginID: "server-connector", ProviderID: "server-api", ContractVersion: resourcecap.ContractVersion}, ProvisionParameters: testProviderConfigurationParameters}}, usage, testConfigurationProjection(t, database))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,4 +103,23 @@ func TestNormalizeConfigurationPages(t *testing.T) {
 			t.Fatalf("accepted invalid page %+v", input)
 		}
 	}
+}
+
+// testProjectionSink keeps unrelated configuration tests explicit and stateless.
+type testProjectionSink struct{}
+
+func (testProjectionSink) Upsert(context.Context, resourceinterfaceprojectioncap.Projection) error {
+	return nil
+}
+func (testProjectionSink) RefreshUnused(ctx context.Context, _ resourceinterfaceprojectioncap.Projection, apply func(context.Context) error) error {
+	return apply(ctx)
+}
+
+func testConfigurationProjection(t *testing.T, database gdb.DB) *interfaceprojection.Worker {
+	t.Helper()
+	worker, err := interfaceprojection.NewWorker(database, testProjectionSink{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return worker
 }

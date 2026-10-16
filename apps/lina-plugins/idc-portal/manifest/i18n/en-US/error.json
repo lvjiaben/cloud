@@ -1,0 +1,30 @@
+{
+  "error": {
+    "websiteconfigurationunavailable": "Install and enable a website plugin first.",
+    "websiteconfigurationnamerequired": "Enter the website name.",
+    "websiteconfigurationtoolong": "Website content is too long.",
+    "websiteconfigurationimageinvalid": "Enter a valid image URL.",
+    "websiteconfigurationschemainvalid": "Website plugin settings are incomplete.",
+    "websiteconfigurationrequired": "Fill in the required settings.",
+    "websiteconfigurationtextinvalid": "Website content is invalid or too long.",
+    "websiteconfigurationoptioninvalid": "Website option is invalid.",
+    "websiteconfigurationintegerinvalid": "Enter a whole number.",
+    "websiteconfigurationcolorinvalid": "Use a color such as #1677ff.",
+    "websiteconfigurationfieldschanged": "Website settings changed. Refresh and try again.",
+    "websiteconfigurationfailure": "Website settings are unavailable. Try again.",
+    "websiteconfigurationnavigationinvalid": "Check the navigation labels, pages, links and parent items.",
+    "customerconfigurationunavailable": "Install and enable a customer center plugin first.",
+    "customerconfigurationnamerequired": "Enter the customer center name.",
+    "customerconfigurationtoolong": "Customer center content is too long.",
+    "customerconfigurationimageinvalid": "Enter a valid image URL.",
+    "customerconfigurationschemainvalid": "Customer center plugin settings are incomplete.",
+    "customerconfigurationrequired": "Fill in the required settings.",
+    "customerconfigurationtextinvalid": "Customer center content is invalid or too long.",
+    "customerconfigurationoptioninvalid": "Customer center option is invalid.",
+    "customerconfigurationintegerinvalid": "Enter a whole number.",
+    "customerconfigurationcolorinvalid": "Use a color such as #1677ff.",
+    "customerconfigurationfieldschanged": "Customer center settings changed. Refresh and try again.",
+    "customerconfigurationfailure": "Customer center settings are unavailable. Try again.",
+    "customerconfigurationnavigationinvalid": "Check the navigation labels, pages, links and parent items."
+  }
+}

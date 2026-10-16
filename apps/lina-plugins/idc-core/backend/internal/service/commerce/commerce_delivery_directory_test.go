@@ -113,7 +113,7 @@ func TestDeliveryDirectoryReadsOngoingServiceEntitlementPostgreSQL(t *testing.T)
 	}
 	worker, err := productfulfillmentservice.NewWorker(
 		prepared.checkout.database, &fulfillmentWorkerExtensions{},
-		&fulfillmentWorkerContexts{}, sealer, fulfillmentSystemReasons(t), nil,
+		&fulfillmentWorkerContexts{}, sealer, fulfillmentSystemReasons(t), nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatalf("create fulfillment worker: %v", err)

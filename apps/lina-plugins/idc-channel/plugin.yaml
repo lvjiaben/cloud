@@ -29,26 +29,24 @@ public_assets:
     mount: /
     index: index.html
 
-customer_surfaces:
-  - key: channel-tokens
-    version: v1
-    title: 渠道访问令牌
-    icon: lucide:key-round
-    slot: customer.products
-    route: channel-tokens
-    entry: customer/channel-tokens/index.html
-    bridge_capabilities:
-      - channel.account.v1
-    status: active
-
 menus:
   - key: plugin:idc-channel:tokens
     parent_key: plugin:idc-core:customer-sales
-    name: Downstream channel tokens
+    name: Open API
     path: /idc/channel
     component: system/plugin/dynamic-page
     perms: idc:admin:channel:token
     type: M
     sort: 90
     icon: lucide:network
-    remark: Manage downstream channel tokens and verified capabilities
+    remark: Customer API credentials, interface permissions, and integration documentation
+
+customer_surfaces:
+  - key: open-platform
+    version: v1
+    title: plugin.idc-channel.workspace.platform.title
+    icon: lucide:code
+    slot: customer.products
+    route: open-platform
+    entry: customer/channel-tokens.vue
+    status: active

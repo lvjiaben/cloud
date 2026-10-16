@@ -259,7 +259,7 @@ WHERE tenant_id=0 AND service_no=? AND customer_no=? AND version=?`, operationNo
 	if err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 		IdempotencyScope: "server.accessory.checkout", IdempotencyKey: idempotencyKey,
 		OperationCode: "server.accessory.checkout", TargetType: "server_service", TargetNo: row.ServiceNo,
-		CustomerNo: row.CustomerNo, ResultCode: status, ReasonCode: reasonCode,
+		CustomerNo: row.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: reasonCode,
 		RiskCode: "medium", RequiredPermission: requiredPermission, CorrelationNo: operationNo,
 		BeforeSnapshot: map[string]any{"serviceVersion": row.CurrentServiceVersion},
 		AfterSnapshot: map[string]any{"serviceVersion": nextVersion, "action": row.ActionCode,

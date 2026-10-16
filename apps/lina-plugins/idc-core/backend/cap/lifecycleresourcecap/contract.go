@@ -48,16 +48,22 @@ var (
 	// ErrTaskConflict means a task reference conflicts with its immutable request.
 	ErrTaskConflict = errors.New("resource lifecycle task conflicts with its frozen request")
 
-	referencePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`)
-	digestPattern    = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	errorCodePattern = regexp.MustCompile(`^[a-z][a-z0-9_.-]{0,127}$`)
+	referencePattern   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$`)
+	digestPattern      = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	entitlementPattern = regexp.MustCompile(`^ent_[0-9a-f]{32}$`)
+	errorCodePattern   = regexp.MustCompile(`^[a-z][a-z0-9_.-]{0,127}$`)
 )
 
 // TaskRequest freezes the exact local service fact and Provider route. It
 // contains no customer amount, credential, or caller-supplied Provider ID.
 type TaskRequest struct {
-	LifecycleTaskNo        string
-	ServiceNo              string
+	LifecycleTaskNo string
+	ServiceNo       string
+	// CustomerNo selects entitlement-owned suspension/recovery. ServiceNo is
+	// then the entitlement number and ChannelNo/PoolNo must be empty: the
+	// resource owner resolves them from its authoritative ownership projection.
+	// Empty preserves the existing legacy service route contract.
+	CustomerNo             string `json:",omitempty"`
 	ChannelNo              string
 	PoolNo                 string
 	Action                 Action
@@ -105,10 +111,17 @@ type Source interface {
 // ValidateTaskRequest rejects malformed or unfenced lifecycle requests.
 func ValidateTaskRequest(request TaskRequest) error {
 	if !validReference(request.LifecycleTaskNo, 40) || !validReference(request.ServiceNo, 64) ||
-		!validReference(request.ChannelNo, 64) || !validReference(request.PoolNo, 64) ||
 		!validAction(request.Action) || request.ExpectedServiceVersion <= 0 ||
 		request.ExpectedExpiresAt.IsZero() || !digestPattern.MatchString(request.IdempotencyDigest) {
 		return gerror.New("resource lifecycle task request is invalid")
+	}
+	if request.CustomerNo != "" {
+		if !validReference(request.CustomerNo, 40) || !entitlementPattern.MatchString(request.ServiceNo) ||
+			request.ChannelNo != "" || request.PoolNo != "" || request.Action == ActionTerminate {
+			return gerror.New("resource entitlement lifecycle task request is invalid")
+		}
+	} else if entitlementPattern.MatchString(request.ServiceNo) || !validReference(request.ChannelNo, 64) || !validReference(request.PoolNo, 64) {
+		return gerror.New("resource legacy lifecycle task route is invalid")
 	}
 	return nil
 }

@@ -39,7 +39,7 @@ func TestNativeAuthenticationAndProductCandidatesUseOnlyVerifiedRoutes(t *testin
 	if len(executor.requests) != 2 || executor.requests[0].Path != "/zjmf_api_login" || executor.requests[1].Path != "/cart/all" {
 		t.Fatalf("unexpected native routes: %#v", executor.requests)
 	}
-	if executor.requests[0].CredentialFields["username"] != "username" || executor.requests[0].CredentialFields["password"] != "password" {
+	if len(executor.requests[0].CredentialFields) != 0 {
 		t.Fatal("login does not use the resource-owned credential slots")
 	}
 	if string(result) == "" {

@@ -16,7 +16,7 @@ func (c *ControllerV1) SupportDepartmentSettingList(ctx context.Context, _ *v1.S
 }
 
 func (c *ControllerV1) SupportDepartmentSettingCreate(ctx context.Context, req *v1.SupportDepartmentSettingCreateReq) (*v1.SupportDepartmentSettingCreateRes, error) {
-	item, err := c.service.CreateDepartmentSetting(ctx, departmentSettingInput(req.NameZhCN, req.NameEnUS, req.ParentDepartmentNo, req.AssignmentMode, req.Status, 0))
+	item, err := c.service.CreateDepartmentSetting(ctx, departmentSettingInput(req.OrgDeptID, req.NameZhCN, req.NameEnUS, req.ParentDepartmentNo, req.AssignmentMode, req.Status, 0))
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func (c *ControllerV1) SupportDepartmentSettingCreate(ctx context.Context, req *
 }
 
 func (c *ControllerV1) SupportDepartmentSettingUpdate(ctx context.Context, req *v1.SupportDepartmentSettingUpdateReq) (*v1.SupportDepartmentSettingUpdateRes, error) {
-	item, err := c.service.UpdateDepartmentSetting(ctx, req.DepartmentNo, departmentSettingInput(req.NameZhCN, req.NameEnUS, req.ParentDepartmentNo, req.AssignmentMode, req.Status, req.ExpectedVersion))
+	item, err := c.service.UpdateDepartmentSetting(ctx, req.DepartmentNo, departmentSettingInput(req.OrgDeptID, req.NameZhCN, req.NameEnUS, req.ParentDepartmentNo, req.AssignmentMode, req.Status, req.ExpectedVersion))
 	if err != nil {
 		return nil, err
 	}
@@ -246,8 +246,8 @@ func (c *ControllerV1) SupportSLARuleSettingDelete(ctx context.Context, req *v1.
 	return &v1.SupportSLARuleSettingDeleteRes{Item: toSLARuleSetting(*item)}, nil
 }
 
-func departmentSettingInput(nameZhCN, nameEnUS, parentDepartmentNo, assignmentMode, status string, expectedVersion int64) supportdesk.DepartmentSettingInput {
-	return supportdesk.DepartmentSettingInput{NameZhCN: nameZhCN, NameEnUS: nameEnUS, ParentDepartmentNo: parentDepartmentNo, AssignmentMode: supportdesk.AssignmentMode(assignmentMode), Status: supportdesk.SettingStatus(status), ExpectedVersion: expectedVersion}
+func departmentSettingInput(orgDeptID int, nameZhCN, nameEnUS, parentDepartmentNo, assignmentMode, status string, expectedVersion int64) supportdesk.DepartmentSettingInput {
+	return supportdesk.DepartmentSettingInput{OrgDeptID: orgDeptID, NameZhCN: nameZhCN, NameEnUS: nameEnUS, ParentDepartmentNo: parentDepartmentNo, AssignmentMode: supportdesk.AssignmentMode(assignmentMode), Status: supportdesk.SettingStatus(status), ExpectedVersion: expectedVersion}
 }
 
 func issueCategorySettingInput(nameZhCN, nameEnUS, departmentNo, priority string, sortOrder int, status string, expectedVersion int64) supportdesk.IssueCategorySettingInput {
@@ -279,7 +279,7 @@ func toDepartmentSettings(items []supportdesk.DepartmentOption) []v1.SupportDepa
 }
 
 func toDepartmentSetting(item supportdesk.DepartmentOption) *v1.SupportDepartmentSetting {
-	return &v1.SupportDepartmentSetting{DepartmentNo: item.DepartmentNo, NameZhCN: item.NameZhCN, NameEnUS: item.NameEnUS, ParentDepartmentNo: item.ParentDepartmentNo, AssignmentMode: item.AssignmentMode, Status: item.Status, Version: item.Version}
+	return &v1.SupportDepartmentSetting{OrgDeptID: item.OrgDeptID, OrgDeptName: item.OrgDeptName, DepartmentNo: item.DepartmentNo, NameZhCN: item.NameZhCN, NameEnUS: item.NameEnUS, ParentDepartmentNo: item.ParentDepartmentNo, AssignmentMode: item.AssignmentMode, Status: item.Status, Version: item.Version}
 }
 
 func toIssueCategorySetting(item supportdesk.IssueCategorySetting) *v1.SupportIssueCategorySetting {

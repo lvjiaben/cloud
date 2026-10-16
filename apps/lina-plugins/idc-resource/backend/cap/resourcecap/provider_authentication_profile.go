@@ -204,6 +204,7 @@ func validateAuthenticationFields(profile ProviderAuthenticationProfile, fields 
 	allowedTargets := map[string]map[string]struct{}{
 		"login_session":       {"username": {}, "password": {}},
 		"per_request_form":    {"username": {}, "password": {}},
+		"per_request_basic":   {"username": {}, "password": {}},
 		"per_request_headers": {"access-user": {}, "access-token": {}},
 		"bt_panel_double_md5": {"material": {}},
 	}
@@ -216,6 +217,9 @@ func validateAuthenticationFields(profile ProviderAuthenticationProfile, fields 
 		if _, ok = targets[target]; !ok || field == nil || field.Type != capmodel.ConfigurationFieldSecret {
 			return gerror.New("resource Provider authentication field mapping is invalid")
 		}
+	}
+	if profile.Strategy == "per_request_basic" && (len(profile.Fields) != 2 || profile.Fields["username"] == "" || profile.Fields["password"] == "") {
+		return gerror.New("resource Provider Basic authentication requires both credential bindings")
 	}
 	if profile.Strategy == "bt_panel_double_md5" && (len(profile.Fields) != 1 || profile.Fields["material"] == "") {
 		return gerror.New("resource Provider BT Panel authentication field mapping is invalid")

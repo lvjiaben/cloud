@@ -1,27 +1,18 @@
 # Public website APIs
 
-## Available now
+The default Nuxt website uses a restricted same-origin `/x/` proxy targeting `NUXT_API_ORIGIN` (default `http://127.0.0.1:6030`). Development and production share this proxy. Only HTTP(S) origins are accepted; administrative APIs are excluded.
 
-The anonymous catalog already exists under the same-origin prefix `/x/idc-core/api/v1`:
+| Plugin | Public path | Purpose |
+| --- | --- | --- |
+| `idc-portal` | `GET /api/v1/public/brand` | Active website common information, renderer and template fields |
+| `idc-core` | `GET /api/v1/public/catalog/*` | Published products and purchase configuration |
+| `idc-core` | `GET /api/v1/public/content/*` | Public content and download information |
+| `idc-core` | `GET /api/v1/public/commerce/*` | Public cart and handoff information |
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/public/catalog/products` | Bounded page of published products |
-| `GET` | `/public/catalog/products/{publicSlug}` | One published product |
-| `GET` | `/public/catalog/products/{publicSlug}/configuration` | Current configuration graph |
-| `POST` | `/public/catalog/products/{publicSlug}/configuration-validations` | Server validation of a complete selection |
-| `POST` | `/public/catalog/products/{publicSlug}/configuration-quotes` | Current authoritative quote |
+The complete brand URL is `/x/idc-portal/api/v1/public/brand`. Responses use the `{ code, message, data }` envelope, with brand content in `data.brand`.
 
-Use the returned currency and minor-unit strings. Timestamps are Unix milliseconds. Website requests need a timeout and server-side failure handling; an API failure must never produce a guessed price.
+Anonymous POST operations are limited to cart `carts` and `cart-items`; product `purchase-configuration/evaluate`, `purchase-configuration/quote` and `campaign-exposures`; and content `download-tickets`. Other write methods return 405; administrative and other plugin paths return 404. Authorization headers are not forwarded. Cart ownership remains controlled by the backend's protected cookie.
 
-The published website brand projection is available under the portal plugin:
+Administrators select an installed and enabled website plugin in System settings → Website configuration, then save common information and that template's own fields. Disabled plugins do not expose their configuration. Public pages do not cache the brand projection; refresh after saving to see changes. Legacy brand revision APIs remain available, but the public website reads only the new configuration.
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/x/idc-portal/api/v1/public/brand` | Published bilingual site name, logo, color, navigation, footer and SEO projection |
-
-Administrators stage and publish code-free brand revisions through protected portal routes. Revisions are immutable and the last published revision can be rolled back.
-
-## Not implemented yet
-
-Navigation, news, announcement, knowledge-base, download, agreement, SEO content projection, and cart-handoff APIs remain Phase 15 work. They will enter `site-sdk` only after backend DTOs, permissions, cache rules, and tests exist. Developers must not invent paths or present hard-coded data as authoritative.
+The default website supports `public-standard-v1` and `public-minimal-v1`. Third-party layouts can publish a framework-neutral HTML entry through the template declaration and formal public_assets. The gateway uses the active release entry and supports SPA deep links; no frontend framework is required. Sign-in, purchase and account pages remain in the customer application. Use server-returned currencies and minor-unit strings; timestamps are Unix milliseconds. API failures must never produce guessed prices or hard-coded content presented as authoritative.

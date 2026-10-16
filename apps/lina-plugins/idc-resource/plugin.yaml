@@ -1,6 +1,6 @@
 id: idc-resource
 name: LinaPro IDC Resource
-version: v0.1.26
+version: v0.1.33
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -36,6 +36,8 @@ business_extensions:
       - configuration.candidates
       - catalog.products.list
       - catalog.products.detail
+      - catalog.configuration.evaluate
+      - catalog.billing-terms
       - provision.parameters.build
       - provider-capacity.list
       - operation.execute
@@ -45,6 +47,24 @@ public_assets:
   - source: frontend/dist
     mount: /
 menus:
+  - key: plugin:idc-resource:server-management
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Management
+    path: /idc/resource/servers
+    component: system/plugin/dynamic-page
+    icon: lucide:server-cog
+    type: M
+    sort: 20
+    remark: Permission-filtered server list and renewals; access inherited from existing child grants
+  - key: plugin:idc-resource:provider-operations
+    parent_key: plugin:idc-core:resource-operations
+    name: Supplier Operations
+    path: /idc/resource/providers
+    component: system/plugin/dynamic-page
+    icon: lucide:cloud-cog
+    type: M
+    sort: 29
+    remark: Permission-filtered supplier overview, connections, operations, and available resources
   - key: plugin:idc-resource:provider-configuration
     parent_key: plugin:idc-core:resource-operations
     name: Server Provider Configuration
@@ -63,23 +83,27 @@ menus:
     visible: 0
     sort: 1
   - key: plugin:idc-resource:overview
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:provider-operations
     name: Resource Overview
     path: /idc/resource/overview
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"overview"}'
     perms: idc:admin:resource:overview:list
     icon: lucide:layout-dashboard
     type: M
+    visible: 0
     sort: 29
     remark: Local resource pools, Provider capacity observations, finance, expiry, and task overview
   - key: plugin:idc-resource:provider-capacity
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:provider-operations
     name: Provider Capacity Observations
     path: /idc/resource/provider-capacity
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"capacity"}'
     perms: idc:admin:resource:provider-capacity:list
     icon: lucide:database-zap
     type: M
+    visible: 0
     sort: 30
     remark: Provider capacity collection status; never creates or synchronizes generic product inventory
   - key: plugin:idc-resource:provider-capacity:refresh
@@ -90,13 +114,15 @@ menus:
     visible: 0
     sort: 1
   - key: plugin:idc-resource:health
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:provider-operations
     name: Provider Health
     path: /idc/resource/health
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"health"}'
     perms: idc:admin:resource:health:list
     icon: lucide:activity
     type: M
+    visible: 0
     sort: 31
     remark: Provider health signals, automatic write protection, and safe threshold policy
   - key: plugin:idc-resource:health:policy
@@ -107,13 +133,15 @@ menus:
     visible: 0
     sort: 1
   - key: plugin:idc-resource:tasks
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:provider-operations
     name: Provider Tasks
     path: /idc/resource/tasks
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"tasks"}'
     perms: idc:admin:resource:task:list
     icon: lucide:list-checks
     type: M
+    visible: 0
     sort: 32
     remark: Bounded Provider task queue, redacted evidence, and safe manual takeover
   - key: plugin:idc-resource:tasks:query
@@ -139,23 +167,27 @@ menus:
     sort: 99
 
   - key: plugin:idc-resource:server-accessories
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:server-management
     name: Server Management
     path: /idc/resource/server-accessories
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/servers","resourceTab":"servers"}'
     perms: idc:admin:resource:server-accessory:view
     icon: lucide:server-cog
     type: M
+    visible: 0
     sort: 33
     remark: Server list, safe batch operations, and capability-driven accessory management
   - key: plugin:idc-resource:server-renewals
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:server-management
     name: Server Renewals
     path: /idc/resource/server-renewals
     component: system/plugin/dynamic-page
+    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/servers","resourceTab":"renewals"}'
     perms: idc:admin:resource:server-batch:view
     icon: lucide:calendar-sync
     type: M
+    visible: 0
     sort: 34
     remark: Preview and confirm renewals selected from resource-owned server entitlements
   - key: plugin:idc-resource:server-renewals:safe

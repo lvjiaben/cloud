@@ -104,6 +104,7 @@ func (s *serviceImpl) loadFrozenItems(ctx context.Context, authority *settlement
 	var rows []frozenItem
 	err = s.database.GetScan(ctx, &rows, `
 SELECT item.order_item_no,item.order_no,
+       COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=item.tenant_id AND target.order_no=item.order_no),'') AS target_entitlement_no,
        COALESCE(attribution.service_owner_customer_no,orders.customer_no) AS customer_no,
        item.product_no,item.version_no,
        item.product_name_zh_cn,item.product_name_en_us,item.inventory_decision_code,
@@ -165,6 +166,12 @@ FOR UPDATE OF item,quantity,policy`, authority.SettledAt, authority.OrderNo, raw
 	for i := range rows {
 		if err := validateFrozenItem(&rows[i], authority); err != nil {
 			return nil, err
+		}
+		// No installed contract currently declares target-service provisioning.
+		// Ordinary provision methods create a new resource and must never run
+		// for an add-on; keep its paid evidence in the manual delivery queue.
+		if rows[i].TargetEntitlementNo != "" {
+			makeAddonManual(&rows[i])
 		}
 	}
 	return rows, nil
@@ -590,7 +597,7 @@ func (s *serviceImpl) verifyMaterializedIntents(ctx context.Context, authority *
 		}
 		verifiedValue, verifyErr := s.database.GetValue(ctx, `WITH expected AS (SELECT * FROM jsonb_to_recordset(?::jsonb) AS x(task_no text,intent_no text,maximum_attempts int,retry_base_seconds int)) SELECT count(*) FROM expected JOIN plugin_idc_core_product_fulfillment_task task ON task.tenant_id=0 AND task.task_no=expected.task_no AND task.intent_no=expected.intent_no AND task.status_code='pending_query' AND task.attempt_count=0 AND task.maximum_attempts=expected.maximum_attempts AND task.retry_base_seconds=expected.retry_base_seconds`, taskRaw)
 		if verifyErr != nil || verifiedValue.Int() != len(tasks) {
-			return nil, errorsNew("product_fulfillment_task_conflict")
+			return nil, errorsNew(taskConflictCode)
 		}
 	}
 	var taskEvidence []struct {
@@ -608,12 +615,12 @@ func (s *serviceImpl) verifyMaterializedIntents(ctx context.Context, authority *
 		}
 	}
 	if len(taskEvidence) != expectedTaskCount {
-		return nil, errorsNew("product_fulfillment_task_conflict")
+		return nil, errorsNew(taskConflictCode)
 	}
 	for _, task := range taskEvidence {
 		plan, ok := expected[task.IntentNo]
 		if !ok || plan.InitialStatusCode != "queued" || task.TaskNo != deterministicNo("pfk_", task.IntentNo) || task.MaximumAttempts != plan.MaximumAttempts || task.RetryBaseSeconds != plan.RetryBaseSeconds {
-			return nil, errorsNew("product_fulfillment_task_conflict")
+			return nil, errorsNew(taskConflictCode)
 		}
 	}
 	result.IntentCount = len(created)
@@ -630,7 +637,7 @@ func errorsNew(code string) error {
 		return bizerr.NewCode(CodeManagementUnavailable)
 	case "product_fulfillment_action_invalid":
 		return bizerr.NewCode(CodeActionInvalid)
-	case "product_fulfillment_action_conflict", "product_fulfillment_idempotency_conflict", "product_fulfillment_task_conflict":
+	case "product_fulfillment_action_conflict", "product_fulfillment_idempotency_conflict", taskConflictCode:
 		return bizerr.NewCode(CodeActionConflict)
 	case "product_fulfillment_not_accessible":
 		return bizerr.NewCode(CodeNotAccessible)
@@ -660,4 +667,22 @@ func digestJSON(value any) (string, error) {
 	}
 	sum := sha256.Sum256(raw)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+func makeAddonManual(item *frozenItem) {
+	item.StrategyCode = StrategyManual
+	item.OngoingManagement = false
+	item.RenewalMode = productfulfillmentcap.RenewalModeUnavailable
+	item.RenewalMethod = ""
+	item.EntitlementOwnerID = ""
+	item.ProvisionMethod = ""
+	item.QueryMethod = ""
+	item.InterfaceInstanceNo = ""
+	item.InterfaceConfigurationRevision = 0
+	item.PluginID = ""
+	item.PluginReleaseVersion = ""
+	item.ContractVersion = ""
+	item.ReleaseDigest = ""
+	item.DeclarationDigest = ""
+	item.AuthorizedMethods = nil
 }

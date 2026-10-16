@@ -54,7 +54,7 @@ func TestPaidServerSettlementCrossesResourcePluginAndProjectsEntitlementPostgreS
 	}
 	worker, err := productfulfillmentservice.NewWorker(
 		database, extensions, &fulfillmentWorkerContexts{}, sealer,
-		fulfillmentSystemReasons(t), source,
+		fulfillmentSystemReasons(t), source, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -647,4 +647,11 @@ WHERE version_no='version-commerce-service-1'`},
 			t.Fatalf("freeze server-owned fulfillment evidence: %v", err)
 		}
 	}
+}
+
+func (sink crossPluginProjectionSink) RefreshUnused(ctx context.Context, projection resourceinterfaceprojectioncap.Projection, apply func(context.Context) error) error {
+	if err := apply(ctx); err != nil {
+		return err
+	}
+	return sink.Upsert(ctx, projection)
 }

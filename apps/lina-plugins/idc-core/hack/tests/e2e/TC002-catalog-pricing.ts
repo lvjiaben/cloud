@@ -1,4 +1,4 @@
-import { test, expect } from "../../../../../../hack/tests/fixtures/auth";
+import { test, expect } from "../support/catalog-auth";
 
 import { workspacePath } from "../../../../../../hack/tests/fixtures/config";
 import { CatalogManagementPage } from "../pages/CatalogManagementPage";
@@ -273,6 +273,7 @@ test.describe("TC-2 通用商品目录", () => {
     await catalog.openProductDetail("product-ssl");
     await expect(catalog.detailDrawer).toContainText("通配符 SSL 证书");
     await expect(catalog.detailDrawer).toContainText("证书服务");
+    await catalog.selectEditSection("价格与税务");
     await expect(
       catalog.detailDrawer.getByTestId("catalog-detail-pricing"),
     ).toContainText("¥199.00");
@@ -384,6 +385,7 @@ test.describe("TC-2 通用商品目录", () => {
     const catalog = new CatalogManagementPage(adminPage);
     await catalog.goto();
     await catalog.openProductDetail("product-ssl");
+    await catalog.selectEditSection("价格与税务");
     await expect(
       catalog.detailDrawer.getByTestId("catalog-detail-pricing"),
     ).toContainText("¥9,007,199,254,740,993,123.45");
@@ -397,6 +399,7 @@ test.describe("TC-2 通用商品目录", () => {
     await catalog.goto();
     await catalog.openProductDetail("product-phone");
 
+    await catalog.selectEditSection('价格与税务');
     const costs = catalog.detailDrawer.getByTestId("catalog-product-costs");
     await expect(costs).toContainText("商品版本成本");
     await expect(costs).toContainText("CNY");

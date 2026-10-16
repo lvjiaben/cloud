@@ -313,6 +313,10 @@ func (s *managementActionServiceImpl) CreditPoints(
 		if activeErr := requireManagedCustomer(ctx, s.database, normalized.CustomerNo, true); activeErr != nil {
 			return activeErr
 		}
+		before, loadErr := lockPointsAccount(ctx, s.database, normalized.CustomerNo, true)
+		if loadErr != nil {
+			return loadErr
+		}
 		mutation, mutationErr := s.points.Award(ctx, PointsAwardInput{
 			CustomerNo: normalized.CustomerNo, SourceType: "manual", SourceReference: normalized.RequestNo,
 			Points: normalized.Points, ExpiresAt: normalized.ExpiresAt,
@@ -321,9 +325,12 @@ func (s *managementActionServiceImpl) CreditPoints(
 			return mutationErr
 		}
 		result = managedPointsMutation(mutation)
+		if result.Reused {
+			return nil
+		}
 		return s.appendPointsAudit(
 			ctx, "credit", normalized.RequestNo, normalized.CustomerNo,
-			normalized.ReasonCode, normalized.Points, result,
+			normalized.ReasonCode, normalized.Points, result, map[string]any{"available_points": before.AvailablePoints, "frozen_points": before.FrozenPoints, "debt_points": before.DebtPoints},
 		)
 	})
 	return managementActionResult(result, err)
@@ -346,6 +353,10 @@ func (s *managementActionServiceImpl) ReversePointsAward(
 		if activeErr := requireManagedCustomer(ctx, s.database, normalized.CustomerNo, false); activeErr != nil {
 			return activeErr
 		}
+		before, loadErr := lockPointsAccount(ctx, s.database, normalized.CustomerNo, true)
+		if loadErr != nil {
+			return loadErr
+		}
 		mutation, mutationErr := s.points.ReverseAward(ctx, PointsReverseInput{
 			CustomerNo: normalized.CustomerNo, AwardSourceType: normalized.AwardSourceType,
 			AwardSourceReference: normalized.AwardSourceReference, ReversalSourceType: "manual",
@@ -355,9 +366,12 @@ func (s *managementActionServiceImpl) ReversePointsAward(
 			return mutationErr
 		}
 		result = managedPointsMutation(mutation)
+		if result.Reused {
+			return nil
+		}
 		return s.appendPointsAudit(
 			ctx, "reverse", normalized.RequestNo, normalized.CustomerNo,
-			normalized.ReasonCode, normalized.Points, result,
+			normalized.ReasonCode, normalized.Points, result, map[string]any{"available_points": before.AvailablePoints, "frozen_points": before.FrozenPoints, "debt_points": before.DebtPoints},
 		)
 	})
 	return managementActionResult(result, err)
@@ -542,7 +556,7 @@ ON CONFLICT DO NOTHING`, caseNo, input.CampaignNo, input.CustomerNo,
 	if err := s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 		IdempotencyScope: "marketing.asset.issue", IdempotencyKey: input.RequestNo,
 		OperationCode: "marketing.asset.issue", TargetType: "marketing_campaign", TargetNo: input.CampaignNo,
-		CustomerNo: input.CustomerNo, ResultCode: "rejected", ReasonCode: "duplicate_newcomer_claim",
+		CustomerNo: input.CustomerNo, ResultCode: "denied", ReasonCode: "duplicate_newcomer_claim",
 		RiskCode: "high", RequiredPermission: permissionMarketingAssetIssue, CorrelationNo: caseNo,
 		BeforeSnapshot: map[string]any{"prior_newcomer_claims": history.PriorClaimCount},
 		AfterSnapshot:  map[string]any{"blocked": true, "case_no": caseNo},
@@ -655,7 +669,7 @@ func (s *managementActionServiceImpl) appendAssetIssueAudit(
 	input AssetIssueInput,
 	result *ManagedAssetMutation,
 ) error {
-	return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"asset_no": ""},
 		IdempotencyScope: "marketing.asset.issue", IdempotencyKey: input.RequestNo,
 		OperationCode: "marketing.asset.issue", TargetType: "marketing_promotion_asset",
 		TargetNo: result.AssetNo, CustomerNo: result.CustomerNo, ResultCode: "succeeded",
@@ -693,6 +707,7 @@ func (s *managementActionServiceImpl) appendPointsAudit(
 	reason string,
 	points int64,
 	result *ManagedPointsMutation,
+	before map[string]any,
 ) error {
 	requiredPermission := permissionMarketingPointsCredit
 	if operation == "reverse" {
@@ -704,6 +719,7 @@ func (s *managementActionServiceImpl) appendPointsAudit(
 		TargetNo: customerNo, CustomerNo: customerNo, ResultCode: "succeeded",
 		ReasonCode: reason, RiskCode: "high", CorrelationNo: result.LotNo,
 		RequiredPermission: requiredPermission,
+		BeforeSnapshot:     before,
 		AfterSnapshot: map[string]any{
 			"state": "recorded", "lot_no": result.LotNo, "points": points,
 		},

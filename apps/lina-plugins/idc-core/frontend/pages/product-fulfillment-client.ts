@@ -4,6 +4,7 @@ import { requestPreservingHttpStatus } from "./commerce-request";
 const pluginID = "idc-core";
 
 export interface ProductFulfillmentTaskSummary {
+  targetEntitlementNo?: string;
   canManualConclude: boolean;
   canReviewApprove: boolean;
   canReviewReject: boolean;

@@ -1,0 +1,30 @@
+{
+  "error": {
+    "websiteconfigurationunavailable": "请先安装并启用官网插件",
+    "websiteconfigurationnamerequired": "请填写网站名称",
+    "websiteconfigurationtoolong": "官网内容太长，请精简后保存",
+    "websiteconfigurationimageinvalid": "请填写正确的图片地址",
+    "websiteconfigurationschemainvalid": "官网插件配置不完整",
+    "websiteconfigurationrequired": "请填写必填内容",
+    "websiteconfigurationtextinvalid": "官网内容格式不正确或太长",
+    "websiteconfigurationoptioninvalid": "官网选项格式不正确",
+    "websiteconfigurationintegerinvalid": "请填写整数",
+    "websiteconfigurationcolorinvalid": "颜色格式如 #1677ff",
+    "websiteconfigurationfieldschanged": "官网配置已更新，请刷新页面后重试",
+    "websiteconfigurationfailure": "官网配置暂时不可用，请重试",
+    "websiteconfigurationnavigationinvalid": "请检查导航名称、页面、网址和上级导航。",
+    "customerconfigurationunavailable": "请先安装并启用用户中心插件",
+    "customerconfigurationnamerequired": "请填写网站名称",
+    "customerconfigurationtoolong": "用户中心内容太长，请精简后保存",
+    "customerconfigurationimageinvalid": "请填写正确的图片地址",
+    "customerconfigurationschemainvalid": "用户中心插件配置不完整",
+    "customerconfigurationrequired": "请填写必填内容",
+    "customerconfigurationtextinvalid": "用户中心内容格式不正确或太长",
+    "customerconfigurationoptioninvalid": "用户中心选项格式不正确",
+    "customerconfigurationintegerinvalid": "请填写整数",
+    "customerconfigurationcolorinvalid": "颜色格式如 #1677ff",
+    "customerconfigurationfieldschanged": "用户中心配置已更新，请刷新页面后重试",
+    "customerconfigurationfailure": "用户中心配置暂时不可用，请重试",
+    "customerconfigurationnavigationinvalid": "请检查导航名称、页面、网址和上级导航。"
+  }
+}

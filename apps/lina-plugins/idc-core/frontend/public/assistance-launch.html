@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f2f3f5; }
+      .loading { width: 28px; height: 28px; border: 3px solid #dbeafe; border-top-color: #1677ff; border-radius: 50%; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .loading { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <div class="loading"></div>
+    <script>
+      // Only the opaque, single-use plugin handoff is persisted, never a bearer token.
+      const values = new URLSearchParams(location.hash.slice(1));
+      const token = values.get("token") || "";
+      const sessionNo = values.get("sessionNo") || "";
+      history.replaceState(null, "", location.pathname);
+      if (/^[A-Za-z0-9_-]{32,128}$/.test(token) && sessionNo) {
+        try {
+          sessionStorage.removeItem("idc-core:resumed-assistance");
+          sessionStorage.setItem("idc-core:pending-assistance", JSON.stringify({
+            token, sessionNo, expiresAt: Date.now() + 60000,
+          }));
+        } catch { /* The ordinary single-use exchange remains available. */ }
+        location.replace("/account/assistance?token=" + encodeURIComponent(token));
+      } else {
+        location.replace("/account/assistance");
+      }
+    </script>
+  </body>
+</html>

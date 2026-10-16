@@ -25,6 +25,7 @@ type attemptStatusCode string
 type verificationReasonCode string
 
 const (
+	caseStatusCanceled                            caseStatusCode         = "canceled"
 	caseStatusDraft                               caseStatusCode         = "draft"
 	caseStatusPending                             caseStatusCode         = "pending"
 	caseStatusVerifying                           caseStatusCode         = "verifying"
@@ -39,6 +40,7 @@ const (
 	attemptStatusPassed                           attemptStatusCode      = "passed"
 	attemptStatusExpired                          attemptStatusCode      = "expired"
 	attemptStatusCanceled                         attemptStatusCode      = "canceled"
+	reasonManualClear                             verificationReasonCode = "manual_identity_clear"
 	reasonSnapshotInvalid                         verificationReasonCode = "identity_snapshot_invalid"
 	reasonSnapshotUnavailable                     verificationReasonCode = "identity_snapshot_unavailable"
 	reasonSnapshotPersistenceFailed               verificationReasonCode = "identity_snapshot_persistence_failed"
@@ -96,6 +98,11 @@ func (s *serviceImpl) createInitiationStage(
 		outerOrder: outerOrder, configuration: configuration,
 		startedAt:  s.now().UTC().Truncate(time.Microsecond),
 		maskedName: maskedName, maskedIdentity: maskedIdentity,
+	}
+	if subject.ManualVerification && subject.VerificationStatus == identitycap.StatusUnverified && subject.VerificationUpdatedAt != nil {
+		if err := s.cancelClearedCases(ctx, subject); err != nil {
+			return initiationStage{}, err
+		}
 	}
 	active, err := s.database.Model(dao.VerificationCase.Table()).Ctx(ctx).
 		Where(do.VerificationCase{
@@ -249,4 +256,22 @@ func requireOneRow(result sql.Result, operation string) error {
 		return gerror.New(operation + " lost its version fence")
 	}
 	return nil
+}
+
+// cancelClearedCases retires only cases older than the staff reset, retaining all materials and attempts.
+func (s *serviceImpl) cancelClearedCases(ctx context.Context, subject identitycap.PersonalSubject) error {
+	return dao.VerificationCase.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		result, err := s.database.Model(dao.VerificationCase.Table()).Ctx(ctx).Where(do.VerificationCase{TenantId: idccap.DefaultTenantID, CustomerNo: subject.CustomerNo, SubjectTypeCode: personalSubjectType}).WhereIn("status_code", []caseStatusCode{caseStatusDraft, caseStatusPending, caseStatusVerifying, caseStatusReviewRequired}).WhereLT("created_at", subject.VerificationUpdatedAt).Data(do.VerificationCase{StatusCode: caseStatusCanceled, Version: gdb.Raw("version + 1")}).Update()
+		if err != nil {
+			return bizerr.WrapCode(err, CodeUnavailable)
+		}
+		count, err := result.RowsAffected()
+		if err != nil {
+			return bizerr.WrapCode(err, CodeUnavailable)
+		}
+		if count == 0 {
+			return nil
+		}
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.personal-verification.clear", IdempotencyKey: subject.CustomerNo + subject.VerificationUpdatedAt.UTC().Format(time.RFC3339Nano), OperationCode: "compliance.personal-verification.clear", TargetType: "customer", TargetNo: subject.CustomerNo, CustomerNo: subject.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: string(reasonManualClear), RiskCode: "low", CorrelationNo: subject.CustomerNo, BeforeSnapshot: struct{ Count int64 }{count}, AfterSnapshot: struct{ Status caseStatusCode }{caseStatusCanceled}})
+	})
 }

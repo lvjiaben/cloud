@@ -124,6 +124,9 @@ func TestDAOAccountTransitionIsAtomicAndMatrixBounded(t *testing.T) {
 		transition.ToStatus != StatusRestricted || transition.SubjectVersion != 2 {
 		t.Fatalf("account transition result=%+v err=%v", transition, err)
 	}
+	if fields := writer.transitionSnapshot()[0].Fields; fields.RequiredPermission != permissionCustomerAccountUpdate {
+		t.Fatalf("account audit missing exact permission: %q", fields.RequiredPermission)
+	}
 	var subject *entity.CustomerSubject
 	if err = dao.CustomerSubject.Ctx(ctx).Where(do.CustomerSubject{
 		TenantId: idccap.DefaultTenantID, CustomerNo: testCustomerNo,

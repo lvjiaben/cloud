@@ -1100,7 +1100,7 @@ func decodeParameters(raw json.RawMessage) (rawObject, error) {
 func provisionForm(parameters rawObject) (url.Values, error) {
 	allowed := map[string]struct{}{
 		"area": {}, "node": {}, "node_group": {}, "node_priority": {}, "os": {}, "cpu": {}, "memory": {},
-		"system_disk_size": {}, "network_type": {}, "vpc": {}, "client": {}, "hostname": {}, "ip_group": {},
+		"system_disk_size": {}, "data_disk_size": {}, "network_type": {}, "vpc": {}, "client": {}, "hostname": {}, "ip_group": {},
 		"ip_num": {}, "traffic_type": {}, "in_bw": {}, "out_bw": {}, "traffic_quota": {}, "backup_num": {},
 		"snap_num": {}, "nat_acl_limit": {}, "nat_web_limit": {}, "advanced_cpu": {}, "advanced_bw": {}, "num": {},
 	}
@@ -1122,6 +1122,22 @@ func provisionForm(parameters rawObject) (url.Values, error) {
 	}
 	if number := form.Get("num"); number != "" && number != "1" {
 		return nil, errInvalidConfig
+	}
+	if value := form.Get("data_disk_size"); value != "" {
+		capacity, parseErr := strconv.ParseUint(value, 10, 63)
+		if parseErr != nil || capacity > 1048576 || value != strconv.FormatUint(capacity, 10) {
+			return nil, errInvalidConfig
+		}
+	}
+	// These quota fields use supplier sentinel values, not capacities:
+	// -1 disables the feature, 0 is unlimited, positive integers are quotas.
+	for _, key := range []string{"backup_num", "snap_num", "nat_acl_limit", "nat_web_limit"} {
+		if value, present := form[key]; present {
+			quota, parseErr := strconv.ParseInt(value[0], 10, 64)
+			if parseErr != nil || quota < -1 || value[0] != strconv.FormatInt(quota, 10) {
+				return nil, errInvalidConfig
+			}
+		}
 	}
 	form.Set("num", "1")
 	for _, key := range []string{"area", "node", "node_group", "vpc", "ip_group"} {

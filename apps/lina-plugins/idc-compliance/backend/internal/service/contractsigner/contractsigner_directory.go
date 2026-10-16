@@ -115,7 +115,7 @@ VALUES (?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,'unverified','unverified','active',1
 		if insertErr != nil {
 			return insertErr
 		}
-		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.contract-signer.create",
+		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"signer_no": ""}, IdempotencyScope: "compliance.contract-signer.create",
 			IdempotencyKey: input.IdempotencyKey, OperationCode: "compliance.contract-signer.create", TargetType: "contract_signer",
 			TargetNo: signerNo, CustomerNo: subject.CustomerNo, ResultCode: "succeeded", ReasonCode: "enterprise_admin_created",
 			RiskCode: "high", AfterSnapshot: map[string]any{"identity_status": "unverified", "phone_status": "unverified", "authorization_version": 1}})

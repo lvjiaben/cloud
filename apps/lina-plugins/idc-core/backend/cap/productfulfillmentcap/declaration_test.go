@@ -220,3 +220,30 @@ func testProviderDeclaration() *ProviderDeclaration {
 		MethodRoles:      ProviderMethodRoles{Provision: "provision", Query: "query"},
 	}
 }
+
+// TestTrialSupportRequiresExplicitLifecycleAndRenewal checks that ordinary
+// ongoing management cannot silently make a certificate or manual good trialable.
+func TestTrialSupportRequiresExplicitLifecycleAndRenewal(t *testing.T) {
+	declaration := testProviderDeclaration()
+	declaration.TrialPauseResume = true
+	if err := ValidateProviderDeclaration(declaration, []string{"provision", "query"}); err == nil {
+		t.Fatal("one-time provider claimed trial lifecycle")
+	}
+	declaration.OngoingManagement = true
+	declaration.EntitlementOwnerID = "trial-owner"
+	if err := ValidateProviderDeclaration(declaration, []string{"provision", "query"}); err != nil {
+		t.Fatal(err)
+	}
+	metadata, err := NewProviderMetadata(declaration)
+	if err != nil {
+		t.Fatal(err)
+	}
+	frozen, err := ParseProviderDeclaration(metadata, []string{"provision", "query"})
+	if err != nil || !frozen.TrialPauseResume {
+		t.Fatalf("trial capability lost: %+v %v", frozen, err)
+	}
+	declaration.ExpiryManagement = ExpiryManagementProvider
+	if err = ValidateProviderDeclaration(declaration, []string{"provision", "query"}); err == nil {
+		t.Fatal("trial without a usable formal renewal path was accepted")
+	}
+}

@@ -10,6 +10,7 @@ import (
 	"lina-plugin-idc-compliance/backend/internal/model/do"
 	"lina-plugin-idc-compliance/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/identitycap"
 )
 
 // Current returns at most one customer-owned case ordered by immutable creation
@@ -22,8 +23,17 @@ func (s *serviceImpl) Current(ctx context.Context) (*CustomerCase, error) {
 	if err != nil || subject == nil {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
+	if subject.ManualVerification {
+		if subject.VerificationStatus == identitycap.StatusVerified {
+			return &CustomerCase{StatusCode: caseStatusVerified, Materials: []Material{}}, nil
+		}
+	}
 	var row *entity.VerificationCase
-	err = dao.VerificationCase.Ctx(ctx).Fields(
+	query := dao.VerificationCase.Ctx(ctx)
+	if subject.ManualVerification && subject.VerificationStatus == identitycap.StatusUnverified && subject.VerificationUpdatedAt != nil {
+		query = query.WhereGT("created_at", subject.VerificationUpdatedAt)
+	}
+	err = query.Fields(
 		"id", "tenant_id", "case_no", "customer_no", "subject_type_code", "status_code",
 		"decision_reason_code", "legal_change_request_no", "submitted_at", "verified_at",
 		"rejected_at", "expires_at", "updated_at", "version",

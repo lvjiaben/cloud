@@ -1,0 +1,190 @@
+/* Opt-in layout for plugin-owned admin pages. Customer and host pages do not
+ * carry this class and keep their independent layouts. */
+.plugin-admin-page {
+  min-width: 0;
+  color: hsl(var(--foreground));
+}
+/* Customer candidates keep their name, phone and short ID readable together. */
+.plugin-customer-options {
+  max-width: min(420px, calc(100vw - 24px));
+}
+.plugin-customer-options .ant-select-item-option-content {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.plugin-admin-page > .h-full {
+  min-width: 0;
+}
+.plugin-admin-page :where(.vxe-grid, .ant-tabs-content-holder, .ant-tabs-tabpane) {
+  min-width: 0;
+  max-width: 100%;
+}
+.plugin-admin-page .ant-card .ant-card-body {
+  min-width: 0;
+  padding: 16px;
+}
+.plugin-admin-page > .h-full :is(.workspace-toolbar, .marketing-page-header, .page-heading, .operations-heading) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+}
+.plugin-admin-page > .h-full :is(.workspace-toolbar, .marketing-page-header, .page-heading, .operations-heading) :where(h1, h2) {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.plugin-admin-page > .h-full :is(.workspace-toolbar, .marketing-page-header, .page-heading, .operations-heading) p {
+  margin: 4px 0 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.6;
+}
+.plugin-admin-page .plugin-admin-tabs > .ant-tabs-nav {
+  padding: 0 16px;
+  margin: 0 0 12px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+.plugin-admin-page :where(.toolbar-actions, .page-toolbar, .notify-toolbar) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.plugin-admin-page :where(input, select, textarea, button, a):focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+@media (max-width: 768px) {
+  .plugin-admin-page > .h-full :is(.workspace-toolbar, .marketing-page-header, .page-heading, .operations-heading) {
+    padding: 12px;
+  }
+  .plugin-admin-page .plugin-admin-tabs > .ant-tabs-nav {
+    padding: 0 12px;
+  }
+}
+
+/* Tabs own the available workspace height. Embedded Pages must use that
+ * height, rather than calculating a second full viewport below the tabs. */
+.plugin-admin-page.plugin-admin-workspace > .h-full {
+  min-height: 0;
+  overflow: hidden !important;
+}
+.plugin-admin-workspace .plugin-admin-tabs {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.plugin-admin-workspace .plugin-admin-tabs > .ant-tabs-nav {
+  flex: 0 0 auto;
+  margin: 0 0 12px;
+}
+.plugin-admin-workspace .plugin-admin-tabs > .ant-tabs-content-holder {
+  min-height: 0;
+  overflow: auto;
+}
+.plugin-admin-workspace .plugin-admin-tabs > .ant-tabs-content-holder > .ant-tabs-content,
+.plugin-admin-workspace .plugin-admin-tabs > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+  height: 100%;
+  min-height: 0;
+}
+.plugin-admin-workspace .plugin-admin-page {
+  height: 100%;
+  min-height: 0;
+}
+.plugin-admin-workspace .plugin-admin-page > .h-full {
+  height: 100% !important;
+  min-height: 0;
+  padding: 0;
+}
+/* Vben's grid has its own outer div. Stretch that div as well as the grid. */
+.plugin-admin-page .h-full.bg-card:has(> .vxe-grid) {
+  min-width: 0;
+  width: 100%;
+  border-radius: 0;
+}
+.plugin-admin-page .vxe-grid {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+}
+.plugin-admin-page .vxe-grid--form-wrapper > .relative {
+  padding: 12px 8px 4px;
+}
+.plugin-admin-page .vxe-grid .vxe-toolbar {
+  min-height: 40px;
+  padding: 0 8px;
+}
+.plugin-admin-page .vxe-grid .vxe-pager {
+  padding: 0 8px;
+  margin-top: 0;
+  border-top: 1px solid hsl(var(--border));
+}
+@media (max-width: 768px) {
+  .plugin-admin-page > .h-full :is(.workspace-toolbar, .marketing-page-header, .page-heading, .operations-heading) {
+    padding: 0;
+  }
+}
+
+.plugin-admin-page .vxe-grid[style*="height: 100%"] {
+  height: 100% !important;
+}
+.plugin-admin-page .vxe-grid .vxe-toolbar :is(.vxe-buttons--wrapper, .vxe-tools--wrapper, .vxe-tools--operate) {
+  padding-block: 4px;
+}
+
+.plugin-admin-page .ant-card .plugin-admin-tabs > .ant-tabs-nav {
+  margin-bottom: 0;
+  border: 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.plugin-admin-page .plugin-admin-search {
+  gap: 8px 12px;
+}
+.plugin-admin-page .plugin-admin-search > [data-form-render-field] {
+  width: min(100%, 300px);
+  padding-bottom: 0;
+}
+.plugin-admin-page .plugin-admin-search > .flex.items-center {
+  padding-bottom: 0;
+}
+.plugin-admin-page .vxe-grid .vxe-toolbar .vxe-tools--wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .plugin-admin-page .vxe-grid .vxe-pager {
+    height: auto;
+    min-height: 40px;
+  }
+  .plugin-admin-page .vxe-pager .vxe-pager--wrapper {
+    display: flex;
+    height: auto;
+    min-height: 40px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-block: 4px;
+  }
+  .plugin-admin-page .vxe-pager--wrapper > * {
+    flex-shrink: 0;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .plugin-admin-page .vxe-pager .vxe-pager--total {
+    margin-right: auto;
+  }
+}

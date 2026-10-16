@@ -5,11 +5,93 @@
 package catalog
 
 import (
+	"encoding/json"
 	"math/big"
 	"regexp"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 )
+
+// calculatePortableImportPrices freezes each explicit upstream component after
+// markup. Whole-item fixed prices remain replacements, including prices above
+// the ordinary configuration total; discounts remain whole-item percentages.
+func calculatePortableImportPrices(snapshot *channelcommercecap.ImportSnapshot, percent string) ([]importPrice, error) {
+	if snapshot == nil || snapshot.Validate() != nil {
+		return nil, bizerr.NewCode(CodeManagementInvalid)
+	}
+	encoded, err := json.Marshal(snapshot.Prices)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, CodeManagementInvalid)
+	}
+	var schedules []channelcommercecap.ImportPriceSchedule
+	if err = json.Unmarshal(encoded, &schedules); err != nil {
+		return nil, bizerr.WrapCode(err, CodeManagementInvalid)
+	}
+	result := make([]importPrice, 0, len(schedules))
+	for index := range schedules {
+		schedule := &schedules[index]
+		if _, err = importCurrencyMinorUnit(schedule.CurrencyCode); err != nil {
+			return nil, err
+		}
+		if err = markupImportBands(schedule.Base, percent); err != nil {
+			return nil, err
+		}
+		for option := range schedule.Options {
+			if err = markupImportBands(schedule.Options[option].Bands, percent); err != nil {
+				return nil, err
+			}
+		}
+		for rule := schedule.WholeItemRule; rule != nil; rule = rule.Prior {
+			if rule.FixedAmountMinor == nil {
+				continue
+			}
+			amount, amountErr := markupImportMinor(*rule.FixedAmountMinor, percent)
+			if amountErr != nil {
+				return nil, amountErr
+			}
+			rule.FixedAmountMinor = &amount
+		}
+		result = append(result, importPrice{portable: schedule})
+	}
+	return result, nil
+}
+
+func markupImportBands(bands []channelcommercecap.ImportPriceBand, percent string) error {
+	for index := range bands {
+		band := &bands[index]
+		var err error
+		band.AmountMinor, err = markupImportMinor(band.AmountMinor, percent)
+		if err != nil {
+			return err
+		}
+		band.SetupAmountMinor, err = markupImportMinor(band.SetupAmountMinor, percent)
+		if err != nil {
+			return err
+		}
+		if band.RenewalAmountMinor != nil {
+			renewal, renewalErr := markupImportMinor(*band.RenewalAmountMinor, percent)
+			if renewalErr != nil {
+				return renewalErr
+			}
+			band.RenewalAmountMinor = &renewal
+		}
+	}
+	return nil
+}
+
+func markupImportMinor(amount int64, percent string) (int64, error) {
+	if amount < 0 {
+		return 0, bizerr.NewCode(CodeManagementInvalid)
+	}
+	markup, err := parseImportPriceDecimal(percent)
+	if err != nil {
+		return 0, err
+	}
+	markup.Quo(markup, big.NewRat(100, 1)).Add(markup, big.NewRat(1, 1))
+	markup.Mul(markup, new(big.Rat).SetInt64(amount))
+	return roundImportPriceMinor(markup, 0)
+}
 
 // importPriceDecimalPattern restricts math/big's parser to unsigned decimal
 // amounts, excluding signs, exponents, fractions, separators and special values.

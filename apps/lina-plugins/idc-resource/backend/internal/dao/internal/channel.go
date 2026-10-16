@@ -41,6 +41,7 @@ type ChannelColumns struct {
 	ProviderReleaseVersion    string // Exact managed plugin release version frozen when a dynamic Provider channel is created
 	ProviderReleaseDigest     string // Exact managed plugin release digest frozen when a dynamic Provider channel is created
 	ProviderDeclarationDigest string // Exact resource-provider declaration digest frozen when a dynamic Provider channel is created
+	TlsCertificateSha256      string // Optional administrator-trusted exact leaf certificate SHA-256; empty uses system trust
 }
 
 // channelColumns holds the columns for the table plugin_idc_resource_channel.
@@ -65,6 +66,7 @@ var channelColumns = ChannelColumns{
 	ProviderReleaseVersion:    "provider_release_version",
 	ProviderReleaseDigest:     "provider_release_digest",
 	ProviderDeclarationDigest: "provider_declaration_digest",
+	TlsCertificateSha256:      "tls_certificate_sha256",
 }
 
 // NewChannelDao creates and returns a new DAO object for table data access.

@@ -931,11 +931,15 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="notify-workspace">
-    <div class="notify-toolbar">
+    <header class="workspace-toolbar">
+      <div>
+        <h1>{{ title }}</h1>
+        <p>{{ subtitle }}</p>
+      </div>
       <button class="button secondary" :disabled="loading" @click="load">
         {{ tr("refresh") }}
       </button>
-    </div>
+    </header>
     <p v-if="error" class="notice error" role="alert">{{ error }}</p>
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
     <p v-if="loading" class="notice info">{{ tr("loading") }}</p>

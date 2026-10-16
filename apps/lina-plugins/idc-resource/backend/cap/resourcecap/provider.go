@@ -69,6 +69,8 @@ type ProviderConfig struct {
 	ChannelRef string
 	// Endpoint is the administrator-approved upstream API endpoint.
 	Endpoint string
+	// TLSCertificateSHA256 is resource-owned channel transport trust, never a guest setting.
+	TLSCertificateSHA256 string
 	// Settings contains adapter-owned non-secret JSON configuration.
 	Settings json.RawMessage
 	// SecretBindings maps adapter setting names to authorized secret references.

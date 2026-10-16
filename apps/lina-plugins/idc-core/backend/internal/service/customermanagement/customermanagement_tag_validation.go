@@ -24,6 +24,7 @@ type normalizedTagBatch struct {
 	action         TagBatchAction
 	customerNos    []string
 	tagNos         []string
+	tagNames       []string
 	reason         string
 	idempotencyKey string
 	targetNo       string
@@ -31,6 +32,9 @@ type normalizedTagBatch struct {
 }
 
 func normalizeTagBatch(input TagBatchInput) (normalizedTagBatch, error) {
+	if len(input.TagNames) > maximumTagBatchTags {
+		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
+	}
 	if input.Action != TagBatchAssign && input.Action != TagBatchRevoke {
 		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
@@ -42,21 +46,44 @@ func normalizeTagBatch(input TagBatchInput) (normalizedTagBatch, error) {
 	if !valid {
 		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
-	tags, valid := canonicalUniqueReferences(input.TagNos, maximumTagBatchTags, func(value string) bool {
-		return value != "" && validOptionalSegmentNo(value, "TAG_")
-	})
+	tags := []string{}
+	if len(input.TagNos) > 0 {
+		tags, valid = canonicalUniqueReferences(input.TagNos, maximumTagBatchTags, func(value string) bool {
+			return value != "" && validOptionalSegmentNo(value, "TAG_")
+		})
+	}
 	if !valid {
 		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
+	names := append([]string(nil), input.TagNames...)
+	for i, name := range names {
+		name = strings.TrimSpace(name)
+		if !utf8.ValidString(name) || utf8.RuneCountInString(name) < 1 || utf8.RuneCountInString(name) > 128 {
+			return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
+		}
+		names[i] = name
+	}
+	sort.Strings(names)
+	for i := 1; i < len(names); i++ {
+		if names[i] == names[i-1] {
+			return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
+		}
+	}
+	if len(tags)+len(names) == 0 || len(tags)+len(names) > maximumTagBatchTags || (input.Action == TagBatchRevoke && len(names) > 0) {
+		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
+	}
 	reason := strings.Join(strings.Fields(input.Reason), " ")
-	if reason == "" || !utf8.ValidString(reason) ||
+	if reason == "" {
+		reason = "Customer tags updated by administrator."
+	}
+	if !utf8.ValidString(reason) ||
 		utf8.RuneCountInString(reason) > maximumTagBatchReasonRunes ||
 		!validTagBatchIdempotencyKey(input.IdempotencyKey) {
 		return normalizedTagBatch{}, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
-	digest := sha256.Sum256([]byte(string(input.Action) + "\x00" + strings.Join(tags, "\x00")))
+	digest := sha256.Sum256([]byte(string(input.Action) + "\x00" + strings.Join(tags, "\x00") + "\x01" + strings.Join(names, "\x00")))
 	return normalizedTagBatch{
-		action: input.Action, customerNos: customers, tagNos: tags, reason: reason,
+		action: input.Action, customerNos: customers, tagNos: tags, tagNames: names, reason: reason,
 		idempotencyKey: input.IdempotencyKey,
 		targetNo:       "TGB_" + hex.EncodeToString(digest[:16]),
 	}, nil

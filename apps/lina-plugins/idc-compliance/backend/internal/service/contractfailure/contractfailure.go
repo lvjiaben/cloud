@@ -403,7 +403,7 @@ WHERE tenant_id = 0 AND case_no = ? AND status_code = 'processing'
 			OperationCode:    "compliance.contract-failure-case",
 			TargetType:       "contract",
 			TargetNo:         row.ContractNo,
-			ResultCode:       statusCode,
+			ResultCode:       idccap.BusinessAuditResultSucceeded,
 			ReasonCode:       result.ReasonCode,
 			RiskCode:         "critical",
 			CorrelationNo:    result.CompensationNo,

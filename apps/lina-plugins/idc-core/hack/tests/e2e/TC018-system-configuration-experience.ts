@@ -9,7 +9,7 @@ test.describe("TC018 系统配置真实页面体验", () => {
     const root = adminPage.getByTestId("system-configuration-center");
     await expect(root).toBeVisible();
     for (const tab of [
-      "业务与品牌",
+      "业务设置",
       "自动化接口",
       "认证与合同",
       "短信与通知",
@@ -18,14 +18,14 @@ test.describe("TC018 系统配置真实页面体验", () => {
     ]) {
       await expect(root.getByRole("tab", { name: tab })).toBeVisible();
     }
-    await expect(root).toContainText("官网与用户中心品牌");
+    await expect(root).not.toContainText("官网与用户中心品牌");
     await root.getByRole("tab", { name: "支付方式" }).click();
     await expect(root).toContainText("支付渠道");
     await root.getByRole("tab", { name: "数据迁移" }).click();
     await expect(root).toContainText("迁移检查");
   });
 
-  test("TC018-2: 工单与官网品牌配置使用紧凑方角页面", async ({ adminPage }) => {
+  test("TC018-2: 工单配置使用紧凑方角页面", async ({ adminPage }) => {
     await adminPage.goto("/admin/idc/support/settings", {
       waitUntil: "domcontentloaded",
     });
@@ -40,30 +40,7 @@ test.describe("TC018 系统配置真实页面体验", () => {
       });
     expect(supportStyle).toEqual({ borderRadius: "0px", boxShadow: "none" });
 
-    await adminPage.goto("/admin/idc/portal-brand", {
-      waitUntil: "domcontentloaded",
-    });
-    const portal = adminPage.locator(
-      '[data-plugin-frontend-root="idc-portal"]',
-    );
-    await expect(portal).toBeVisible();
-    await expect(
-      portal.getByRole("heading", { name: "官网品牌设置" }),
-    ).toBeVisible();
-    await expect(portal.locator(".portal-brand-error")).toHaveCount(0);
-    const portalStyle = await portal.locator("section").evaluate((node) => {
-      const style = getComputedStyle(node);
-      const inputStyle = getComputedStyle(node.querySelector("input")!);
-      const headingStyle = getComputedStyle(node.querySelector("h1")!);
-      return {
-        borderRadius: inputStyle.borderRadius,
-        fontSize: Number.parseFloat(headingStyle.fontSize),
-        maxWidth: style.maxWidth,
-      };
-    });
-    expect(portalStyle.borderRadius).toBe("0px");
-    expect(portalStyle.fontSize).toBeLessThanOrEqual(22);
-    expect(portalStyle.maxWidth).toBe("none");
+
   });
 
   test("TC018-3: 四类动态支付插件都能进入统一配置表单", async ({

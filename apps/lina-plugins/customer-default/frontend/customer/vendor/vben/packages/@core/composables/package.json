@@ -1,0 +1,45 @@
+{
+  "name": "@vben-core/composables",
+  "version": "5.6.0",
+  "homepage": "https://github.com/vbenjs/vue-vben-admin",
+  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vbenjs/vue-vben-admin.git",
+    "directory": "packages/@core/composables"
+  },
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      }
+    }
+  },
+  "dependencies": {
+    "@vben-core/shared": "workspace:*",
+    "@vueuse/core": "14.2.1",
+    "reka-ui": "2.9.0",
+    "sortablejs": "1.15.7",
+    "vue": "3.5.29",
+    "jiti": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/sortablejs": "1.15.9"
+  }
+}

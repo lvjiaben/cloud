@@ -1,0 +1,14 @@
+{
+  "name": "@lina/customer-default-package",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "package": "node scripts/package.mjs",
+    "build": "node hack/build.mjs",
+    "test": "node --test frontend/server.test.mjs"
+  },
+  "devDependencies": {
+    "yaml": "2.8.3"
+  },
+  "packageManager": "pnpm@10.30.3"
+}

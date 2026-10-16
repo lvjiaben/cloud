@@ -600,6 +600,16 @@ func (s *financialSettlementServiceImpl) enqueueFinancialSettlement(
 	if err != nil {
 		return gerror.Wrap(err, "enqueue financially settled order event")
 	}
+	_, err = s.events.Enqueue(ctx, outbox.EnqueueInput{
+		EventType: "commerce.order.commission_requested", EventVersion: 1,
+		Topic: "commerce.order.commission_requested", AggregateType: "commerce_order",
+		AggregateNo: prepared.orderNo, CorrelationNo: prepared.settlementNo,
+		DeduplicationKey: "commerce-order-commission:" + prepared.orderNo,
+		Payload:          payload, Metadata: metadata, AvailableAt: availableAt,
+	})
+	if err != nil {
+		return gerror.Wrap(err, "enqueue commission accrual")
+	}
 	return nil
 }
 

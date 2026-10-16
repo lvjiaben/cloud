@@ -4,11 +4,23 @@ package channelsecret
 
 import (
 	"context"
+	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"strconv"
 )
+
+// Log only a registered machine code and fixed stage. SQL errors, causes and
+// secret handles must never escape the channel secret boundary into logs.
+func logCommitFailure(ctx context.Context, stage string, err error) {
+	code := "unclassified"
+	if businessErr, ok := bizerr.As(err); ok {
+		code = businessErr.RuntimeCode()
+	}
+	logger.Errorf(ctx, "channel secret commit rejected stage=%s code=%s", stage, code)
+}
 
 const (
 	auditScopePrefix         = "resource.channel-secret."

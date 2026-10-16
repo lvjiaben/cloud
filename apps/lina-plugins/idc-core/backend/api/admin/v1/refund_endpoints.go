@@ -13,7 +13,7 @@ type RefundManagementReviewIntent struct {
 }
 
 type RefundManagementReviewProofReq struct {
-	g.Meta   `path:"/admin/billing/refunds/{refundNo}/review-proofs" method:"post" tags:"IDC Refund Management" summary:"Issue a high-amount refund review proof" dc:"Issue an exact single-use proof after a recent full login only when this pending refund is high amount and the requested decision is approval." permission:"idc:admin:billing:refund:review"`
+	g.Meta   `path:"/admin/billing/refunds/{refundNo}/review-proofs" method:"post" tags:"IDC Refund Management" summary:"Issue a high-amount refund review proof" dc:"Issue an exact single-use proof after a current active session only when this pending refund is high amount and the requested decision is approval." permission:"idc:admin:billing:refund:review"`
 	RefundNo string `json:"refundNo" in:"path" v:"required|max-length:40" dc:"Stable pending refund number" eg:"rfd_01J2ABCDEF"`
 	RefundManagementReviewIntent
 }
@@ -36,7 +36,7 @@ type RefundManagementReviewRes struct {
 type RefundManagementPolicyConfigureReq struct {
 	g.Meta                   `path:"/admin/billing/refund-policies" method:"post" tags:"IDC Refund Management" summary:"Configure a currency refund policy" dc:"Append one immutable currency-local policy version using optimistic concurrency." permission:"idc:admin:billing:refund-policy:write"`
 	CurrencyCode             string `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Exact configured currency" eg:"CNY"`
-	HighAmountThresholdMinor string `json:"highAmountThresholdMinor" v:"required|regex:^[1-9][0-9]{0,18}$" dc:"Amount at or above which approval requires a recent full login" eg:"500000"`
+	HighAmountThresholdMinor string `json:"highAmountThresholdMinor" v:"required|regex:^[1-9][0-9]{0,18}$" dc:"Amount at or above which approval requires a current active session" eg:"500000"`
 	AutomaticApprovalEnabled bool   `json:"automaticApprovalEnabled" dc:"Allow only clear unprovisioned and risk-free requests to be approved automatically" eg:"true"`
 	ExpectedVersion          int64  `json:"expectedVersion" v:"min:0" dc:"Latest currency policy version observed before editing; zero creates the first version" eg:"0"`
 }

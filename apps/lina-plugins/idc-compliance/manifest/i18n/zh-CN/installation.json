@@ -1,0 +1,5 @@
+{
+  "installation": {
+    "missingPacked": "官方内嵌资源生成后仍有文件缺失，请恢复 manifest 中的配置模板、元数据、SQL 和语言资源后重新构建。独立模板仍可用 target=templates 构建。"
+  }
+}

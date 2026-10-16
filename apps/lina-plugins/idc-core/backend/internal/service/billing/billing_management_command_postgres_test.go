@@ -101,6 +101,15 @@ func (s *managementCommandAuditStub) AppendBusinessTransition(
 	_ context.Context,
 	input idccap.BusinessAuditTransition,
 ) error {
+	if input.BeforeSnapshot == nil || input.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch input.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
+
 	s.transitions = append(s.transitions, input)
 	return s.err
 }

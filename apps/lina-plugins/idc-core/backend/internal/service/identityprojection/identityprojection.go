@@ -114,7 +114,12 @@ func (s *serviceImpl) CurrentPersonal(ctx context.Context) (*identitycap.Persona
 		!eligibleCustomerStatus(subject.StatusCode) {
 		return nil, gerror.New("personal identity preparation is not accessible")
 	}
+	var profile *entity.CustomerIndividualProfile
+	if err := s.database.Model(dao.CustomerIndividualProfile.Table()).Ctx(ctx).Fields("manual_verification", "identity_status_code", "updated_at").Where(do.CustomerIndividualProfile{TenantId: idccap.DefaultTenantID, CustomerNo: audience.CustomerNo}).Limit(1).Scan(&profile); err != nil || profile == nil {
+		return nil, gerror.New("personal identity projection is unavailable")
+	}
 	return &identitycap.PersonalSubject{
+		ManualVerification: profile.ManualVerification, VerificationStatus: identitycap.Status(profile.IdentityStatusCode), VerificationUpdatedAt: profile.UpdatedAt,
 		CustomerNo:         audience.CustomerNo,
 		PrincipalReference: "usr:" + strconv.Itoa(audience.UserID),
 		ActorUserID:        audience.UserID,
@@ -212,6 +217,9 @@ func (s *serviceImpl) applyProjection(
 	if profile == nil || profile.CustomerTypeCode != individualType || profile.Version <= 0 {
 		return nil, nil, gerror.New("personal identity projection is unavailable")
 	}
+	if profile.ManualVerification && profile.IdentityStatusCode == string(identitycap.StatusVerified) {
+		return nil, nil, gerror.New("personal identity was manually approved; clear verification before starting another case")
+	}
 	currentStatus := identitycap.Status(profile.IdentityStatusCode)
 	if profile.IdentityCaseNo != "" && profile.IdentityCaseNo != input.CaseNo &&
 		(currentStatus == identitycap.StatusPending || currentStatus == identitycap.StatusVerified) {
@@ -229,7 +237,7 @@ func (s *serviceImpl) applyProjection(
 	nextVersion := profile.Version + 1
 	update := do.CustomerIndividualProfile{
 		IdentityCaseNo: input.CaseNo, IdentityStatusCode: string(input.Status),
-		Version: nextVersion,
+		Version: nextVersion, ManualVerification: false,
 	}
 	projection := &identitycap.PersonalProjection{Status: input.Status, Version: nextVersion}
 	var duplicateFallback *identitycap.PersonalProjection

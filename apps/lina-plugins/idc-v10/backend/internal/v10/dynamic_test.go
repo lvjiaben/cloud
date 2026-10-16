@@ -96,9 +96,9 @@ func TestProvisionUsesQueryFirstConsoleCartWorkflow(t *testing.T) {
 			t.Fatalf("unexpected V10 provision sequence: %v", paths)
 		}
 	}
-	if executor.steps[1].request.Method != "DELETE" || executor.steps[1].request.SecretFormFields["downstream_token"] != "downstream_token" ||
+	if executor.steps[1].request.Method != "DELETE" || len(executor.steps[1].request.SecretFormFields) != 0 || len(executor.steps[1].request.SecretFormBindings) != 1 || executor.steps[1].request.SecretFormBindings[0] != (resourcecap.ConfidentialSecretFormBinding{Field: "downstream_token", Slot: "downstream_token"}) ||
 		executor.steps[2].request.Form["config_options[configoption][1001]"] != "2001" ||
-		executor.steps[3].request.SecretFormFields["downstream_token"] != "downstream_token" {
+		len(executor.steps[3].request.SecretFormBindings) != 1 || executor.steps[3].request.SecretFormBindings[0] != (resourcecap.ConfidentialSecretFormBinding{Field: "downstream_token", Slot: "downstream_token"}) {
 		t.Fatalf("V10 query-first or confidential form binding is incomplete: %+v", executor.steps)
 	}
 	var operation resourcecap.OperationResult

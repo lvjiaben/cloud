@@ -21,6 +21,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/commerce"
 	"lina-plugin-idc-core/backend/internal/service/marketing"
 	"lina-plugin-idc-core/backend/internal/service/principal"
+	"lina-plugin-idc-core/backend/internal/service/triallifecycle"
 )
 
 const (
@@ -74,10 +75,12 @@ var (
 // QuoteInput requests a current-price renewal quote for one owned service.
 // The raw idempotency key is hashed in memory and is never persisted.
 type QuoteInput struct {
-	EntitlementNo  string
-	RenewalCycles  int
-	IdempotencyKey string
-	AssetNumbers   []string
+	// FormalBillingRuleNo selects a current recurring period for a trial. Empty means ordinary renewal.
+	FormalBillingRuleNo string
+	EntitlementNo       string
+	RenewalCycles       int
+	IdempotencyKey      string
+	AssetNumbers        []string
 }
 
 // Quote is the bounded customer-visible immutable renewal quote projection.
@@ -144,6 +147,7 @@ type Operation struct {
 // Settlement is the bounded result of an atomic invoice balance payment and
 // the replay-safe business-operation convergence that follows it.
 type Settlement struct {
+	balancePayment      *billing.InvoiceBalancePayment
 	Operation           *Operation
 	LedgerTransactionNo string
 	CreditExposureNo    string
@@ -199,6 +203,8 @@ type Policy struct {
 // Service exposes only customer-owned renewal commands. System automatic
 // renewal uses a separate trusted scheduler boundary added below this interface.
 type Service interface {
+	// ListTrialConversions returns one owned, bounded trial page and formal period choices.
+	ListTrialConversions(context.Context, int, int) (*TrialConversionPage, error)
 	QuoteCurrentCustomer(context.Context, QuoteInput) (*Quote, error)
 	ConfirmCurrentCustomer(context.Context, ConfirmInput) (*Operation, error)
 	PayCurrentCustomer(context.Context, PayInput) (*Settlement, error)
@@ -239,6 +245,7 @@ type ProviderService interface {
 
 // RuntimeService is the complete local renewal runtime used by HTTP and jobs.
 type RuntimeService interface {
+	billing.RenewalInvoicePayment
 	Service
 	ManagementService
 	ChannelService
@@ -255,6 +262,7 @@ type serviceImpl struct {
 	reservations commerce.QuoteReservationFinalizer
 	invoices     billing.InvoiceService
 	owners       renewalownercap.Router
+	recovery     triallifecycle.RecoveryScheduler
 	random       io.Reader
 }
 
@@ -265,20 +273,24 @@ var _ AutomaticService = (*serviceImpl)(nil)
 var _ ProviderService = (*serviceImpl)(nil)
 
 // New constructs the production renewal service from local core-owned dependencies.
-func New(
-	ctx context.Context,
-	database gdb.DB,
-	principalReader principal.Reader,
-	catalogReader catalog.CatalogReader,
-) (RuntimeService, error) {
-	if ctx == nil || ctx.Err() != nil || database == nil || principalReader == nil || catalogReader == nil {
-		return nil, gerror.New("renewal service requires database, principal, and catalog")
+func New(ctx context.Context, database gdb.DB, principalReader principal.Reader, catalogReader catalog.CatalogReader) (RuntimeService, error) {
+	evaluator, err := newDefaultQuoteAdjustments(database)
+	if err != nil {
+		return nil, err
+	}
+	return NewWithQuoteAdjustments(ctx, database, principalReader, catalogReader, evaluator)
+}
+
+// NewWithQuoteAdjustments injects the same customer pricing policy used by checkout.
+func NewWithQuoteAdjustments(ctx context.Context, database gdb.DB, principalReader principal.Reader, catalogReader catalog.CatalogReader, evaluator commerce.QuoteAdjustmentEvaluator) (RuntimeService, error) {
+	if ctx == nil || ctx.Err() != nil || database == nil || principalReader == nil || catalogReader == nil || evaluator == nil {
+		return nil, gerror.New("renewal service requires database, principal, catalog and pricing")
 	}
 	owners, err := renewalownerspi.Freeze().Build(ctx)
 	if err != nil {
 		return nil, gerror.Wrap(err, "construct renewal owner router")
 	}
-	service, err := newRenewalWorkerService(database, catalogReader, owners)
+	service, err := newRenewalWorkerService(database, catalogReader, owners, evaluator)
 	if err != nil {
 		return nil, err
 	}
@@ -289,40 +301,45 @@ func New(
 // NewWorkers constructs the trusted automatic and Provider renewal workers.
 // The returned service has no customer-principal dependency and is not exposed
 // through HTTP routes.
-func NewWorkers(
-	ctx context.Context,
-	database gdb.DB,
-	catalogReader catalog.CatalogReader,
-	owners renewalownercap.Router,
-) (AutomaticService, ProviderService, error) {
-	if ctx == nil || ctx.Err() != nil || database == nil || catalogReader == nil || owners == nil {
-		return nil, nil, gerror.New("renewal workers require database, catalog, and resource source")
+func NewWorkers(ctx context.Context, database gdb.DB, catalogReader catalog.CatalogReader, owners renewalownercap.Router) (AutomaticService, ProviderService, error) {
+	evaluator, err := newDefaultQuoteAdjustments(database)
+	if err != nil {
+		return nil, nil, err
 	}
-	service, err := newRenewalWorkerService(database, catalogReader, owners)
+	return NewWorkersWithQuoteAdjustments(ctx, database, catalogReader, owners, evaluator)
+}
+
+// NewWorkersWithQuoteAdjustments gives automatic renewals the customer pricing policy.
+func NewWorkersWithQuoteAdjustments(ctx context.Context, database gdb.DB, catalogReader catalog.CatalogReader, owners renewalownercap.Router, evaluator commerce.QuoteAdjustmentEvaluator) (AutomaticService, ProviderService, error) {
+	if ctx == nil || ctx.Err() != nil || database == nil || catalogReader == nil || owners == nil || evaluator == nil {
+		return nil, nil, gerror.New("renewal workers require database, catalog, pricing and resource source")
+	}
+	service, err := newRenewalWorkerService(database, catalogReader, owners, evaluator)
 	if err != nil {
 		return nil, nil, err
 	}
 	return service, service, nil
 }
 
+func newDefaultQuoteAdjustments(database gdb.DB) (commerce.QuoteAdjustmentEvaluator, error) {
+	marketingService, err := marketing.New(database, marketing.Config{})
+	if err != nil {
+		return nil, gerror.Wrap(err, "create renewal marketing service")
+	}
+	return commerce.NewMarketingQuoteAdjustmentEvaluator(marketingService)
+}
+
 func newRenewalWorkerService(
 	database gdb.DB,
 	catalogReader catalog.CatalogReader,
 	owners renewalownercap.Router,
+	evaluator commerce.QuoteAdjustmentEvaluator,
 ) (*serviceImpl, error) {
 	assembler, err := catalog.RenewalQuoteAssemblerFromPublicReader(catalogReader)
 	if err != nil {
 		return nil, err
 	}
 	priceChoices, err := catalog.ConfigurationPriceSelectionReaderFromPublicReader(catalogReader)
-	if err != nil {
-		return nil, err
-	}
-	marketingService, err := marketing.New(database, marketing.Config{})
-	if err != nil {
-		return nil, gerror.Wrap(err, "create renewal marketing service")
-	}
-	evaluator, err := commerce.NewMarketingQuoteAdjustmentEvaluator(marketingService)
 	if err != nil {
 		return nil, err
 	}
@@ -339,4 +356,24 @@ func newRenewalWorkerService(
 		reservations: reservations, invoices: invoiceService,
 		owners: owners, random: rand.Reader,
 	}, nil
+}
+
+// TrialConversionPeriod is one current formal billing schedule, never a client price.
+type TrialConversionPeriod struct {
+	BillingRuleNo  string
+	PeriodUnitCode string
+	PeriodCount    int
+}
+
+// TrialConversionItem presents a current customer's local trial and safe choices.
+type TrialConversionItem struct {
+	EntitlementNo, ProductNameZhCN, ProductNameEnUS, CurrencyCode, StatusCode string
+	ExpiresAt                                                                 *time.Time
+	Periods                                                                   []TrialConversionPeriod
+}
+
+// TrialConversionPage includes the exact owned count and a page of at most 100.
+type TrialConversionPage struct {
+	Items []TrialConversionItem
+	Total int
 }

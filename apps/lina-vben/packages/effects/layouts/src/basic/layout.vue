@@ -15,7 +15,7 @@ import {
   usePreferences,
 } from '@vben/preferences';
 import { useAccessStore, useTabbarStore, useTimezoneStore } from '@vben/stores';
-import { cloneDeep, mapTree } from '@vben/utils';
+import { mapTree } from '@vben/utils';
 
 import { VbenAdminLayout } from '@vben-core/layout-ui';
 import { VbenBackTop, VbenLogo } from '@vben-core/shadcn-ui';
@@ -159,6 +159,14 @@ const {
   sidebarExtraVisible,
 } = useExtraMenu(mixHeaderMenus);
 
+// 菜单数据和翻译资源变化时重新投影，侧栏显示状态变化时复用结果。
+const translatedHeaderMenus = computed(() => wrapperMenus(headerMenus.value));
+const translatedSidebarMenus = computed(() => wrapperMenus(sidebarMenus.value));
+const translatedMixHeaderMenus = computed(() =>
+  wrapperMenus(mixHeaderMenus.value, false),
+);
+const translatedExtraMenus = computed(() => wrapperMenus(extraMenus.value));
+
 /**
  * 包装菜单，翻译菜单名称
  * @param menus 原始菜单数据
@@ -167,10 +175,10 @@ const {
 function wrapperMenus(menus: MenuRecordRaw[], deep: boolean = true) {
   return deep
     ? mapTree(menus, (item) => {
-        return { ...cloneDeep(item), name: translateMenuName(item) };
+        return { ...item, name: translateMenuName(item) };
       })
     : menus.map((item) => {
-        return { ...cloneDeep(item), name: translateMenuName(item) };
+        return { ...item, name: translateMenuName(item) };
       });
 }
 
@@ -344,7 +352,7 @@ const headerSlots = computed(() => {
         <template v-if="showHeaderNav" #menu>
           <LayoutMenu
             :default-active="headerActive"
-            :menus="wrapperMenus(headerMenus)"
+            :menus="translatedHeaderMenus"
             :rounded="isMenuRounded"
             :theme="headerTheme"
             class="w-full"
@@ -374,7 +382,7 @@ const headerSlots = computed(() => {
         :collapse-show-title="preferences.sidebar.collapsedShowTitle"
         :default-active="sidebarActive"
         :locked-open="layoutProps.lockSidebarMenuOpen"
-        :menus="wrapperMenus(sidebarMenus)"
+        :menus="translatedSidebarMenus"
         :rounded="isMenuRounded"
         :theme="sidebarTheme"
         mode="vertical"
@@ -385,7 +393,7 @@ const headerSlots = computed(() => {
     <template #mixed-menu>
       <LayoutMixedMenu
         :active-path="extraActiveMenu"
-        :menus="wrapperMenus(mixHeaderMenus, false)"
+        :menus="translatedMixHeaderMenus"
         :rounded="isMenuRounded"
         :theme="sidebarTheme"
         @default-select="handleDefaultSelect"
@@ -398,7 +406,7 @@ const headerSlots = computed(() => {
       <LayoutExtraMenu
         :accordion="preferences.navigation.accordion"
         :collapse="preferences.sidebar.extraCollapse"
-        :menus="wrapperMenus(extraMenus)"
+        :menus="translatedExtraMenus"
         :rounded="isMenuRounded"
         :theme="sidebarThemeSub"
       />

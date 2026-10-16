@@ -133,6 +133,12 @@ type AccessoryPricing interface {
 	PublishIPChangePolicy(context.Context, IPChangePolicyInput) (*IPChangePolicy, error)
 	PreviewIPChangeCurrentCustomer(context.Context, IPChangeQuoteInput) (*IPChangeQuote, error)
 	CheckoutIPChangeCurrentCustomer(context.Context, IPChangeCheckoutInput) (*IPChangeCheckout, error)
+	// ResizeOptionsForStaff checks exact edit permission and merchant scope, then reads current choices.
+	ResizeOptionsForStaff(context.Context, string) (*ResizeOptions, error)
+	// PreviewResizeForStaff freezes a quote after staff permission and server ownership checks.
+	PreviewResizeForStaff(context.Context, ResizeQuoteInput) (*ResizeQuote, error)
+	// CheckoutResizeForStaff confirms the quoted server after fresh staff checks; it never edits paid orders.
+	CheckoutResizeForStaff(context.Context, string, ResizeCheckoutInput) (*ResizeCheckout, error)
 	ResizeOptionsCurrentCustomer(context.Context, string) (*ResizeOptions, error)
 	PreviewResizeCurrentCustomer(context.Context, ResizeQuoteInput) (*ResizeQuote, error)
 	CheckoutResizeCurrentCustomer(context.Context, ResizeCheckoutInput) (*ResizeCheckout, error)
@@ -288,7 +294,7 @@ SET current_version=?,updated_at=? WHERE tenant_id=0 AND policy_no=? AND current
 		if auditErr := s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "server.accessory.price.publish", IdempotencyKey: policyNo + ":" + strconv.FormatInt(nextVersion, 10),
 			OperationCode: "server.accessory.price.publish", TargetType: "server_accessory_price", TargetNo: policyNo,
-			ResultCode: "published", ReasonCode: "staff_price_publication", RiskCode: "high",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "staff_price_publication", RiskCode: "high",
 			RequiredPermission: PermissionAccessoryPriceWrite,
 			BeforeSnapshot:     map[string]any{"version": currentVersion}, AfterSnapshot: map[string]any{
 				"version": nextVersion, "kind": input.Kind, "currencyCode": input.CurrencyCode,

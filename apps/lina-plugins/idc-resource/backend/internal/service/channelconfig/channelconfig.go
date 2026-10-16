@@ -78,6 +78,7 @@ func (r *Reader) readCurrent(ctx context.Context, channelRef string, enabledOnly
 			columns.ProviderReleaseDigest,
 			columns.ProviderDeclarationDigest,
 			columns.Endpoint,
+			columns.TlsCertificateSha256,
 			columns.NonSecretSettings,
 		).
 		Where(columns.TenantId, idccap.DefaultTenantID).
@@ -117,10 +118,11 @@ func (r *Reader) readCurrent(ctx context.Context, channelRef string, enabledOnly
 		})
 	}
 	config := resourcecap.ProviderConfig{
-		ChannelRef:     channel.ChannelNo,
-		Endpoint:       channel.Endpoint,
-		Settings:       json.RawMessage(channel.NonSecretSettings),
-		SecretBindings: secretBindings,
+		ChannelRef:           channel.ChannelNo,
+		Endpoint:             channel.Endpoint,
+		TLSCertificateSHA256: channel.TlsCertificateSha256,
+		Settings:             json.RawMessage(channel.NonSecretSettings),
+		SecretBindings:       secretBindings,
 	}
 	if err = config.Validate(); err != nil {
 		return Configuration{}, gerror.New("resource Provider configuration is invalid")
@@ -154,12 +156,13 @@ func (r *Reader) ReadRevision(ctx context.Context, channelRef, revisionNo string
 		ProviderContractVersion, ProviderReleaseVersion              string
 		ProviderReleaseDigest, ProviderDeclarationDigest             string
 		Endpoint, NonSecretSettings, SecretBindings                  string
+		TLSCertificateSHA256                                         string
 	}
 	err := r.database.GetScan(ctx, &row, `
 SELECT channel.channel_no,channel.provider_id,channel.provider_plugin_id,
        channel.provider_runtime_type,channel.provider_contract_version,
        channel.provider_release_version,channel.provider_release_digest,
-       channel.provider_declaration_digest,revision.endpoint,
+       channel.provider_declaration_digest,channel.tls_certificate_sha256,revision.endpoint,
        revision.non_secret_settings::TEXT AS non_secret_settings,
        revision.secret_bindings::TEXT AS secret_bindings
 FROM plugin_idc_resource_channel channel
@@ -183,7 +186,7 @@ LIMIT 1`, idccap.DefaultTenantID, channelRef, revisionNo)
 		}
 		bindings = append(bindings, resourcecap.SecretBinding{Name: name, Handle: handle})
 	}
-	config := resourcecap.ProviderConfig{ChannelRef: row.ChannelNo, Endpoint: row.Endpoint,
+	config := resourcecap.ProviderConfig{ChannelRef: row.ChannelNo, Endpoint: row.Endpoint, TLSCertificateSHA256: row.TLSCertificateSHA256,
 		Settings: json.RawMessage(row.NonSecretSettings), SecretBindings: bindings}
 	if config.Validate() != nil {
 		return Configuration{}, gerror.New("resource channel revision configuration is invalid")

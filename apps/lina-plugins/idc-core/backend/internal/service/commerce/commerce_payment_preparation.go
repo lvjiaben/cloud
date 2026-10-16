@@ -201,11 +201,12 @@ func currentPaymentPreparationAudience(
 }
 
 type paymentIdentityProjection struct {
-	StatusCode string
-	CaseNo     string
-	Version    int64
-	VerifiedAt *time.Time
-	ExpiresAt  *time.Time
+	ManualVerification bool
+	StatusCode         string
+	CaseNo             string
+	Version            int64
+	VerifiedAt         *time.Time
+	ExpiresAt          *time.Time
 }
 
 type paymentPreparationDecision struct {
@@ -294,7 +295,7 @@ func lockPaymentIdentity(
 		var profile *entity.CustomerIndividualProfile
 		if err := tx.Ctx(ctx).GetScan(&profile, `
 SELECT identity_status_code, identity_case_no, identity_verified_at,
-       identity_expires_at, version
+       identity_expires_at, manual_verification, version
 FROM plugin_idc_core_customer_individual_profile
 WHERE tenant_id = 0 AND customer_no = ?
 FOR SHARE`, subject.CustomerNo); err != nil {
@@ -302,7 +303,7 @@ FOR SHARE`, subject.CustomerNo); err != nil {
 		}
 		if profile != nil {
 			identity = paymentIdentityProjection{
-				StatusCode: profile.IdentityStatusCode, CaseNo: profile.IdentityCaseNo,
+				StatusCode: profile.IdentityStatusCode, CaseNo: profile.IdentityCaseNo, ManualVerification: profile.ManualVerification,
 				Version: profile.Version, VerifiedAt: profile.IdentityVerifiedAt,
 				ExpiresAt: profile.IdentityExpiresAt,
 			}
@@ -311,7 +312,7 @@ FOR SHARE`, subject.CustomerNo); err != nil {
 		var profile *entity.CustomerEnterpriseProfile
 		if err := tx.Ctx(ctx).GetScan(&profile, `
 SELECT verification_status_code, verification_case_no, verified_at,
-       expires_at, version
+       expires_at, manual_verification, version
 FROM plugin_idc_core_customer_enterprise_profile
 WHERE tenant_id = 0 AND customer_no = ?
 FOR SHARE`, subject.CustomerNo); err != nil {
@@ -319,7 +320,7 @@ FOR SHARE`, subject.CustomerNo); err != nil {
 		}
 		if profile != nil {
 			identity = paymentIdentityProjection{
-				StatusCode: profile.VerificationStatusCode, CaseNo: profile.VerificationCaseNo,
+				StatusCode: profile.VerificationStatusCode, CaseNo: profile.VerificationCaseNo, ManualVerification: profile.ManualVerification,
 				Version: profile.Version, VerifiedAt: profile.VerifiedAt, ExpiresAt: profile.ExpiresAt,
 			}
 		}
@@ -366,7 +367,7 @@ func decidePaymentPreparation(
 		invoice.RefundedAmountMinor != 0 || allocations != 0 {
 		return paymentPreparationDecision{PaymentPreparationClosed, PaymentPreparationOrderNotPayable}
 	}
-	if identity.StatusCode != "verified" || identity.CaseNo == "" || identity.Version < 1 ||
+	if identity.StatusCode != "verified" || (identity.CaseNo == "" && !identity.ManualVerification) || identity.Version < 1 ||
 		identity.VerifiedAt == nil {
 		return paymentPreparationDecision{
 			PaymentPreparationAwaitingIdentity, paymentIdentityReason(identity.StatusCode),

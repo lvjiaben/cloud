@@ -1,9 +1,13 @@
+// This file resolves bounded configuration price selections and verifies their
+// immutable quantity and algorithm when restoring checkout snapshots.
+
 package catalog
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -28,11 +32,13 @@ var (
 
 type configurationPriceDimensionIdentity struct {
 	DimensionNo, FieldKey, CandidateValue string
+	PricingMode                           ConfigurationPriceMode `orm:"pricing_mode_code"`
 }
 
 type ConfigurationPriceSelection struct {
 	DimensionNo string
 	Quantity    int
+	PricingMode ConfigurationPriceMode
 }
 
 // ConfigurationPriceSelectionReader restores the immutable core-owned price
@@ -56,7 +62,7 @@ func ConfigurationPriceSelectionReaderFromPublicReader(reader PublicCatalogReade
 
 func loadSelectedConfigurationPriceDimensions(ctx context.Context, database gdb.DB, versionNo string, values []configurationcontract.ConfigurationValue) ([]ConfigurationPriceSelection, string, error) {
 	var rows []configurationPriceDimensionIdentity
-	if err := database.GetScan(ctx, &rows, `SELECT dimension_no,field_key,candidate_value
+	if err := database.GetScan(ctx, &rows, `SELECT dimension_no,field_key,candidate_value,pricing_mode_code
 FROM plugin_idc_core_catalog_configuration_price_dimension
 WHERE tenant_id=0 AND version_no=? AND status_code='active'
 ORDER BY field_key,candidate_value,id LIMIT ?`, versionNo, maximumConfigurationPriceDimensions+1); err != nil {
@@ -65,17 +71,9 @@ ORDER BY field_key,candidate_value,id LIMIT ?`, versionNo, maximumConfigurationP
 	if len(rows) > maximumConfigurationPriceDimensions {
 		return nil, "", gerror.New("configuration price dimension bound exceeded")
 	}
-	selectedValues := make(map[string]struct{})
-	for _, value := range values {
-		for _, candidate := range append(append(append([]string{}, value.OptionTokens...), value.TreeOptionTokens...), value.AddressOptionTokens...) {
-			selectedValues[value.FieldKey+"\x00"+candidate] = struct{}{}
-		}
-	}
-	result := make([]ConfigurationPriceSelection, 0)
-	for _, row := range rows {
-		if _, selected := selectedValues[row.FieldKey+"\x00"+row.CandidateValue]; selected {
-			result = append(result, ConfigurationPriceSelection{DimensionNo: row.DimensionNo, Quantity: 1})
-		}
+	result, selectionErr := selectConfigurationPriceDimensions(rows, values)
+	if selectionErr != nil {
+		return nil, "", selectionErr
 	}
 	if len(result) > maximumSelectedConfigurationPriceDimensions {
 		return nil, "", gerror.New("selected configuration price dimension bound exceeded")
@@ -107,13 +105,20 @@ func ConfigurationPriceSelectionDigest(input []ConfigurationPriceSelection) (str
 	digestInput := make([]byte, 0, len(items)*48)
 	previous := ""
 	for _, item := range items {
-		if !configurationPriceDimensionNoPattern.MatchString(item.DimensionNo) || item.Quantity < 1 || item.Quantity > 128 || item.DimensionNo == previous {
+		if !configurationPriceDimensionNoPattern.MatchString(item.DimensionNo) || item.Quantity < 1 || item.Quantity > math.MaxInt32 || item.DimensionNo == previous {
 			return "", gerror.New("invalid configuration price selection")
+		}
+		if !validConfigurationPriceMode(item.PricingMode) {
+			return "", gerror.New("invalid configuration pricing mode")
 		}
 		previous = item.DimensionNo
 		digestInput = append(digestInput, item.DimensionNo...)
 		digestInput = append(digestInput, 0)
 		digestInput = strconv.AppendInt(digestInput, int64(item.Quantity), 10)
+		if item.PricingMode != "" && item.PricingMode != ConfigurationPriceFixed {
+			digestInput = append(digestInput, 0)
+			digestInput = append(digestInput, string(item.PricingMode)...)
+		}
 		digestInput = append(digestInput, 0)
 	}
 	digest := sha256.Sum256(digestInput)
@@ -121,11 +126,12 @@ func ConfigurationPriceSelectionDigest(input []ConfigurationPriceSelection) (str
 }
 
 type configurationPriceSelectionSnapshotRow struct {
-	SnapshotNo          string  `orm:"configuration_snapshot_no"`
-	SelectionDigest     string  `orm:"selection_digest"`
-	SelectedOptionCount int     `orm:"selected_option_count"`
-	DimensionNo         *string `orm:"dimension_no"`
-	Quantity            *int    `orm:"quantity"`
+	SnapshotNo          string                 `orm:"configuration_snapshot_no"`
+	SelectionDigest     string                 `orm:"selection_digest"`
+	SelectedOptionCount int                    `orm:"selected_option_count"`
+	DimensionNo         *string                `orm:"dimension_no"`
+	Quantity            *int                   `orm:"quantity"`
+	PricingMode         ConfigurationPriceMode `orm:"pricing_mode_code"`
 }
 
 // LoadConfigurationPriceSelections restores up to 100 snapshots in one query
@@ -146,11 +152,13 @@ func (s *publicCatalogReaderImpl) LoadConfigurationPriceSelections(ctx context.C
 	}
 	var rows []configurationPriceSelectionSnapshotRow
 	if err := s.database.GetScan(ctx, &rows, `SELECT snapshot.configuration_snapshot_no,snapshot.selection_digest,snapshot.selected_option_count,
-selection.dimension_no,selection.quantity
+selection.dimension_no,selection.quantity,dimension.pricing_mode_code
 FROM plugin_idc_core_commerce_configuration_snapshot snapshot
 LEFT JOIN plugin_idc_core_commerce_configuration_price_selection selection
   ON selection.tenant_id=snapshot.tenant_id
  AND selection.configuration_snapshot_no=snapshot.configuration_snapshot_no
+LEFT JOIN plugin_idc_core_catalog_configuration_price_dimension dimension
+ ON dimension.tenant_id=selection.tenant_id AND dimension.version_no=selection.version_no AND dimension.dimension_no=selection.dimension_no
 WHERE snapshot.tenant_id=0
   AND snapshot.configuration_snapshot_no = ANY(string_to_array(?, ','))
 ORDER BY snapshot.configuration_snapshot_no,selection.dimension_no`, strings.Join(snapshotNos, ",")); err != nil {
@@ -166,7 +174,7 @@ ORDER BY snapshot.configuration_snapshot_no,selection.dimension_no`, strings.Joi
 		digests[row.SnapshotNo] = row.SelectionDigest
 		counts[row.SnapshotNo] = row.SelectedOptionCount
 		if row.DimensionNo != nil && row.Quantity != nil {
-			result[row.SnapshotNo] = append(result[row.SnapshotNo], ConfigurationPriceSelection{DimensionNo: *row.DimensionNo, Quantity: *row.Quantity})
+			result[row.SnapshotNo] = append(result[row.SnapshotNo], ConfigurationPriceSelection{DimensionNo: *row.DimensionNo, Quantity: *row.Quantity, PricingMode: row.PricingMode})
 		}
 	}
 	for _, snapshotNo := range snapshotNos {
@@ -180,4 +188,99 @@ ORDER BY snapshot.configuration_snapshot_no,selection.dimension_no`, strings.Joi
 		}
 	}
 	return result, nil
+}
+
+// selectConfigurationPriceDimensions operates only on values already validated
+// against the frozen provider schema. Zero quantity intentionally has no charge
+// selection, so no configuration setup fee can leak into checkout.
+func selectConfigurationPriceDimensions(rows []configurationPriceDimensionIdentity, values []configurationcontract.ConfigurationValue) ([]ConfigurationPriceSelection, error) {
+	selected := make(map[string]int)
+	quantities := make(map[string]int64)
+	for _, value := range values {
+		for _, candidate := range append(append(append([]string{}, value.OptionTokens...), value.TreeOptionTokens...), value.AddressOptionTokens...) {
+			selected[value.FieldKey+"\x00"+candidate] = 1
+		}
+		if value.IntegerValue != nil && value.IntegerTextValue != nil {
+			return nil, billingInvalid()
+		}
+		if value.IntegerValue != nil {
+			quantities[value.FieldKey] = *value.IntegerValue
+		}
+		if value.IntegerTextValue != nil {
+			parsed, err := strconv.ParseInt(*value.IntegerTextValue, 10, 64)
+			if err != nil || strconv.FormatInt(parsed, 10) != *value.IntegerTextValue {
+				return nil, billingInvalid()
+			}
+			quantities[value.FieldKey] = parsed
+		}
+	}
+	result := make([]ConfigurationPriceSelection, 0, len(rows))
+	for _, row := range rows {
+		quantity, exists := selected[row.FieldKey+"\x00"+row.CandidateValue]
+		if row.PricingMode == ConfigurationPricePerUnit || row.PricingMode == ConfigurationPriceBandTotal {
+			number, supplied := quantities[row.FieldKey]
+			if !supplied {
+				continue
+			}
+			if number < 0 || number > math.MaxInt32 {
+				return nil, billingInvalid()
+			}
+			quantity, exists = int(number), number > 0
+		}
+		if !validConfigurationPriceMode(row.PricingMode) {
+			return nil, billingInvalid()
+		}
+		if exists {
+			result = append(result, ConfigurationPriceSelection{DimensionNo: row.DimensionNo, Quantity: quantity, PricingMode: row.PricingMode})
+		}
+	}
+	return result, nil
+}
+
+func validConfigurationPriceMode(mode ConfigurationPriceMode) bool {
+	return mode == "" || mode == ConfigurationPriceFixed || mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal
+}
+
+// verifyConfigurationPriceModes loads all requested dimensions in one bounded
+// query and rejects a snapshot whose algorithm differs from its frozen owner.
+func verifyConfigurationPriceModes(ctx context.Context, database gdb.DB, lines []PurchaseQuoteLineInput) error {
+	versions := make([]string, 0, len(lines))
+	dimensions := make([]string, 0)
+	for _, line := range lines {
+		versions = append(versions, line.VersionNo)
+		for _, selection := range line.PriceSelections {
+			dimensions = append(dimensions, selection.DimensionNo)
+		}
+	}
+	if len(dimensions) == 0 {
+		return nil
+	}
+	var rows []struct {
+		VersionNo, DimensionNo string
+		PricingMode            ConfigurationPriceMode `orm:"pricing_mode_code"`
+	}
+	if err := database.GetScan(ctx, &rows, `SELECT version_no,dimension_no,pricing_mode_code FROM plugin_idc_core_catalog_configuration_price_dimension
+WHERE tenant_id=0 AND version_no IN(?) AND dimension_no IN(?) AND status_code='active' LIMIT ?`, versions, dimensions, len(dimensions)+1); err != nil {
+		return err
+	}
+	if len(rows) > len(dimensions) {
+		return billingInvalid()
+	}
+	modes := make(map[string]ConfigurationPriceMode, len(rows))
+	for _, row := range rows {
+		modes[row.VersionNo+"\x00"+row.DimensionNo] = row.PricingMode
+	}
+	for _, line := range lines {
+		for _, selection := range line.PriceSelections {
+			mode, exists := modes[line.VersionNo+"\x00"+selection.DimensionNo]
+			requested := selection.PricingMode
+			if requested == "" {
+				requested = ConfigurationPriceFixed
+			}
+			if !exists || mode != requested {
+				return billingInvalid()
+			}
+		}
+	}
+	return nil
 }

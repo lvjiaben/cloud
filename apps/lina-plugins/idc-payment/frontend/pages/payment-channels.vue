@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type {
   PaymentChannel,
   PaymentChannelCreateInput,
@@ -396,17 +398,12 @@ watch(
 
 onMounted(loadChannels);
 onBeforeUnmount(() => directory.invalidate());
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true">
-    <div class="channel-page">
-      <header class="page-heading">
-        <div>
-          <h1>{{ $t("plugin.idc-payment.channels.title") }}</h1>
-          <p>{{ $t("plugin.idc-payment.channels.description") }}</p>
-        </div>
-      </header>
+  <Page class="plugin-admin-page" :auto-content-height="true">
+    <div :ref="layoutRoot" class="channel-page">
 
       <Alert
         v-if="providerCandidates.length === 0"
@@ -414,13 +411,6 @@ onBeforeUnmount(() => directory.invalidate());
         type="warning"
         :message="$t('plugin.idc-payment.channels.noProviderTitle')"
         :description="$t('plugin.idc-payment.channels.noProviderDescription')"
-      />
-      <Alert
-        v-else
-        show-icon
-        type="info"
-        :message="$t('plugin.idc-payment.channels.securityTitle')"
-        :description="$t('plugin.idc-payment.channels.securityDescription')"
       />
 
       <div class="table-surface" data-testid="payment-channels-table">
@@ -500,12 +490,12 @@ onBeforeUnmount(() => directory.invalidate());
 
 <style scoped>
 .channel-page {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
-  grid-template-rows: auto auto minmax(260px, 1fr);
+  min-width: 0;
   gap: 12px;
-  padding: 16px;
 }
 
 .page-heading {
@@ -528,7 +518,10 @@ onBeforeUnmount(() => directory.invalidate());
 }
 
 .table-surface {
+  flex: 1;
+  min-width: 0;
   min-height: 0;
+  overflow: hidden;
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
 }

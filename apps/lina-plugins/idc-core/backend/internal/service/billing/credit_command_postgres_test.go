@@ -177,6 +177,10 @@ func TestAccountCreditBalanceRepaymentCommandRejectsForeignOwnerBeforeProof(t *t
 		len(ownerAudit.transitions) != 1 || ownerAudit.transitions[0].CustomerNo != "customer-ledger" {
 		t.Fatalf("owner credit repayment=%+v audit=%+v err=%v", repaid, ownerAudit.transitions, err)
 	}
+	replayed, replayErr := owner.RepayCreditStatementFromBalance(ctx, intent, proof.Token)
+	if replayErr != nil || replayed == nil || !replayed.Reused || len(ownerAudit.transitions) != 1 {
+		t.Fatalf("repayment replay must reuse the committed audit: result=%+v audits=%d err=%v", replayed, len(ownerAudit.transitions), replayErr)
+	}
 	recentAuth.consumeActor = 78
 	proofCallsBeforeForeign := recentAuth.issueCalls
 	foreign, err := NewAccountCreditCommandService(

@@ -1,0 +1,20 @@
+{
+  "plugin": {
+    "idc-core": {
+      "catalog": {
+        "description": {
+          "edit": "Edit product description",
+          "nameZhCn": "Chinese product name",
+          "nameEnUs": "English product name",
+          "summaryZhCn": "Chinese sales summary",
+          "summaryEnUs": "English sales summary",
+          "help": "Complete the Chinese and English names and summaries, then save. This changes sales copy only; prices, configuration and purchase contracts remain unchanged.",
+          "required": "Complete both names and summaries.",
+          "saved": "Product description saved",
+          "save": "Save",
+          "cancel": "Cancel"
+        }
+      }
+    }
+  }
+}

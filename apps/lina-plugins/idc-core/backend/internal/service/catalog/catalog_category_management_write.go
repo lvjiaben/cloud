@@ -63,6 +63,9 @@ func (s *managementServiceImpl) UpdateCategory(
 			); parentErr != nil {
 				return parentErr
 			}
+			if parentErr := validateCategoryTwoLevels(parentByCategory, normalized.categoryNo, normalized.parentCategoryNo); parentErr != nil {
+				return parentErr
+			}
 		}
 		var parentCategoryNo *string
 		if normalized.parentCategoryNo != "" {
@@ -170,6 +173,27 @@ func validateCategoryParentChain(parentByCategory map[string]string, categoryNo,
 	return bizerr.NewCode(CodeCategoryParentCycle)
 }
 
+// validateCategoryTwoLevels rejects third-level parents and moving a parent
+// with children beneath another category. The caller holds the tree lock.
+func validateCategoryTwoLevels(parents map[string]string, categoryNo, parentNo string) error {
+	if parentNo == "" {
+		return nil
+	}
+	parent, exists := parents[parentNo]
+	if !exists {
+		return bizerr.NewCode(CodeManagementNotAccessible)
+	}
+	if parent != "" {
+		return bizerr.NewCode(CodeCategoryDepthExceeded)
+	}
+	for _, parent := range parents {
+		if parent == categoryNo {
+			return bizerr.NewCode(CodeCategoryDepthExceeded)
+		}
+	}
+	return nil
+}
+
 func (s *managementServiceImpl) DeleteCategory(ctx context.Context, input CategoryStateInput) error {
 	categoryNo := strings.TrimSpace(input.CategoryNo)
 	actorUserID, err := s.authorizer.AuthorizeCategoryDelete(ctx, categoryNo)
@@ -227,6 +251,9 @@ func (s *managementServiceImpl) RestoreCategory(
 	}
 	var result *Category
 	err = dao.CatalogCategory.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		if err := lockCatalogCategoryTree(ctx); err != nil {
+			return err
+		}
 		row, loadErr := loadCategoryForMaintenance(ctx, categoryNo, true)
 		if loadErr != nil {
 			return loadErr
@@ -235,6 +262,13 @@ func (s *managementServiceImpl) RestoreCategory(
 			return bizerr.NewCode(CodeManagementConflict)
 		}
 		if row.ParentCategoryNo != nil && *row.ParentCategoryNo != "" {
+			parents, treeErr := loadCatalogCategoryTreeForUpdate(ctx)
+			if treeErr != nil {
+				return treeErr
+			}
+			if treeErr = validateCategoryTwoLevels(parents, categoryNo, *row.ParentCategoryNo); treeErr != nil {
+				return treeErr
+			}
 			if _, parentErr := loadActiveCategoryForUpdate(ctx, *row.ParentCategoryNo); parentErr != nil {
 				return parentErr
 			}

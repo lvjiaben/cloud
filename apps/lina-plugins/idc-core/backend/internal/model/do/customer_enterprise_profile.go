@@ -30,4 +30,5 @@ type CustomerEnterpriseProfile struct {
 	Version                      any        //
 	CreatedAt                    *time.Time //
 	UpdatedAt                    *time.Time //
+	ManualVerification           any        // Current verification status set by staff; not supplier identity evidence
 }

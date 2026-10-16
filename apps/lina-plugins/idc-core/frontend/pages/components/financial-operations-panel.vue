@@ -315,7 +315,7 @@ watch(
 </script>
 
 <template>
-  <Card :title="t('title')" class="mb-4">
+  <Card :title="t('title')" class="mb-4" data-testid="financial-operations-panel">
     <Alert :message="t('boundary')" show-icon type="info" class="mb-4" />
     <Row :gutter="16">
       <Col v-if="canResend" :lg="12" :xs="24">

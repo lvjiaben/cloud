@@ -5,6 +5,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
@@ -124,8 +126,10 @@ async function searchCustomers(keyword = "") {
   customerLoading.value = true;
   try {
     customerOptions.value = await searchCustomerOptions(keyword);
+  } finally {
+    customerLoading.value = false;
     gridApi.formApi.setState({ schema: searchSchema() });
-  } finally { customerLoading.value = false; }
+  }
 }
 
 function tr(suffix: string) {
@@ -172,6 +176,8 @@ function searchSchema(): VbenFormProps["schema"] {
       component: "Select",
       componentProps: {
         allowClear: true,
+        dropdownMatchSelectWidth: false,
+        popupClassName: "plugin-customer-options",
         filterOption: false,
         loading: customerLoading.value,
         onSearch: searchCustomers,
@@ -253,7 +259,11 @@ const [Grid, gridApi] = useVbenVxeGrid({
     handleReset: handleSearchReset,
     handleSubmit: handleSearchSubmit,
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: [],
@@ -281,7 +291,7 @@ function actionSchema() {
       },
       fieldName: "reasonCode",
       label: tr("action.reason"),
-      rules: z.string().trim().min(1),
+      rules: z.string().trim().min(1, tr("action.reasonPlaceholder")),
     },
     {
       component: "Textarea" as const,
@@ -289,8 +299,8 @@ function actionSchema() {
       fieldName: "note",
       label: tr("action.note"),
       rules: requiresFulfillmentActionNote(actionMode.value)
-        ? z.string().trim().min(10).max(512)
-        : z.string().trim().max(512).optional(),
+        ? z.string().trim().min(10, tr("action.noteLength")).max(512, tr("action.noteLength"))
+        : z.string().trim().max(512, tr("action.noteMaxLength")).optional(),
     },
   ];
 }
@@ -467,10 +477,11 @@ onMounted(async () => {
   await load();
   await searchCustomers();
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="product-fulfillment-page">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true" data-testid="product-fulfillment-page">
     <Card
       v-if="canList"
       :body-style="{ height: '100%' }"
@@ -541,6 +552,7 @@ onMounted(async () => {
             <DescriptionsItem :label="tr('table.customer')">
               {{ customerDisplay(detail) }}
             </DescriptionsItem>
+            <DescriptionsItem v-if="detail?.targetEntitlementNo" :label="$t('plugin.idc-core.addons.service')">{{ detail?.targetEntitlementNo }}</DescriptionsItem>
             <DescriptionsItem :label="tr('table.product')">
               {{ localizedName(detail) }}
             </DescriptionsItem>

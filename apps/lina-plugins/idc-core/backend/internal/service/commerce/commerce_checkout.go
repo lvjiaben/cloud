@@ -70,6 +70,7 @@ type checkoutAuthority struct {
 	sourceCode         string
 	assistedRequestNo  *string
 	paymentTermCode    string
+	paymentDueAt       *time.Time
 	paymentDueSeconds  int
 	contractOverride   contractpolicy.Rule
 	channelAttribution *channelCheckoutAttribution
@@ -236,6 +237,9 @@ func (s *serviceImpl) checkoutInTransaction(
 	} else if existing != nil {
 		return nil, bizerr.NewCode(CodeConflict)
 	}
+	if err := s.admitCheckoutCurrency(ctx, quote.CurrencyCode); err != nil {
+		return nil, err
+	}
 	now, err := checkoutDatabaseNow(ctx, tx)
 	if err != nil {
 		return nil, err
@@ -254,6 +258,9 @@ func (s *serviceImpl) checkoutInTransaction(
 	}
 	items, err := loadCheckoutQuoteItems(ctx, tx, quote)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.validateAddonCheckout(ctx, authority.customerNo, quote.QuoteNo); err != nil {
 		return nil, err
 	}
 	quantities, err := loadCheckoutQuoteItemQuantities(ctx, tx, quote, items)
@@ -280,7 +287,11 @@ func (s *serviceImpl) checkoutInTransaction(
 	if err != nil {
 		return nil, err
 	}
-	paymentDueAt := now.Add(paymentWindow)
+	paymentDueAt, err := checkoutAuthorityDeadline(authority, now, paymentWindow)
+	if err != nil {
+		return nil, err
+	}
+
 	rows, err := s.buildCheckoutRows(
 		quote, items, authority, input, now, paymentDueAt,
 		manualReview, contractDecision, quantities, inventoryFacts,
@@ -291,13 +302,8 @@ func (s *serviceImpl) checkoutInTransaction(
 	if err = insertCheckoutRows(ctx, tx, rows); err != nil {
 		return nil, err
 	}
-	if err = insertChannelCheckoutAttribution(ctx, tx, rows.orderNo, authority); err != nil {
+	if err = s.bindCheckoutReferences(ctx, tx, authority, quote, items, rows); err != nil {
 		return nil, err
-	}
-	if s.structuredConfiguration != nil {
-		if err = s.structuredConfiguration.bindCheckout(ctx, tx, authority, items, rows); err != nil {
-			return nil, err
-		}
 	}
 	if err = s.reserveCheckoutTrialQualifications(
 		ctx, tx, authority.customerNo, quote.CurrencyCode, rows, items, quantities, now,
@@ -1203,4 +1209,30 @@ func projectPersistedCheckout(
 		TotalAmountMinor: order.TotalAmountMinor, RequiresContract: order.RequiresContract,
 		PaymentDueAt: *order.PaymentDueAt, Reused: reused,
 	}, nil
+}
+
+// checkoutAuthorityDeadline preserves an administrator's explicit absolute deadline.
+func checkoutAuthorityDeadline(authority checkoutAuthority, now time.Time, window time.Duration) (time.Time, error) {
+	if authority.paymentDueAt == nil {
+		return now.Add(window), nil
+	}
+	if authority.sourceCode != "admin" || !authority.paymentDueAt.After(now) {
+		return time.Time{}, bizerr.NewCode(CodeInvalid)
+	}
+	return *authority.paymentDueAt, nil
+}
+
+// bindCheckoutReferences binds the paid-order identity to its add-on target,
+// channel attribution and frozen configuration in the checkout transaction.
+func (s *serviceImpl) bindCheckoutReferences(ctx context.Context, tx gdb.TX, authority checkoutAuthority, quote *entity.CommerceQuoteSnapshot, items []entity.CommerceQuoteItemSnapshot, rows checkoutRows) error {
+	if _, err := tx.Exec(`UPDATE plugin_idc_core_commerce_addon_target SET order_no=? WHERE tenant_id=0 AND quote_no=? AND order_no IS NULL`, rows.orderNo, quote.QuoteNo); err != nil {
+		return err
+	}
+	if err := insertChannelCheckoutAttribution(ctx, tx, rows.orderNo, authority); err != nil {
+		return err
+	}
+	if s.structuredConfiguration != nil {
+		return s.structuredConfiguration.bindCheckout(ctx, tx, authority, items, rows)
+	}
+	return nil
 }

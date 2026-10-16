@@ -3,7 +3,10 @@
 // deliberately separates base prices from configurable-option surcharges.
 package resourceinterfaceprojectioncap
 
-import "context"
+import (
+	"context"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+)
 
 // CatalogPeriod is a connector-proven billing interval, never a display label.
 type CatalogPeriod string
@@ -84,6 +87,13 @@ type CatalogConfigurationValue struct {
 // A price preview or an arbitrary module's cycle label is not a complete base
 // schedule and must not be placed in BasePrices.
 type CatalogDetail struct {
+	// ImportSnapshot is the complete authenticated sale contract used for
+	// downstream drafts. It carries no provider credentials and remains absent
+	// for connectors that cannot provide a complete portable declaration.
+	ImportSnapshot *channelcommercecap.ImportSnapshot `json:"importSnapshot,omitempty"`
+	// PeerPurchase retains an upstream evaluated configuration and opaque tokens.
+	// It never implies that its initial field view is a complete static schema.
+	PeerPurchase *channelcommercecap.ProductSnapshot `json:"peerPurchase,omitempty"`
 	// ReadEvidence is attached by the resource owner after decoding the guest
 	// response. It never crosses JSON, so neither a guest nor a browser can claim
 	// the endpoint/account revision that produced the catalog projection.
@@ -119,4 +129,12 @@ type CatalogReadEvidence struct {
 type CatalogSource interface {
 	ListCatalog(context.Context, string, CatalogQuery) (*CatalogPage, error)
 	ReadCatalogProduct(context.Context, string, CatalogProductQuery) (*CatalogDetail, error)
+}
+
+// CatalogConfigurationSource evaluates one selected upstream configuration
+// through its exact installed interface. Callers must authorize the product
+// context; this source additionally applies direct-staff interface scope.
+type CatalogConfigurationSource interface {
+	EvaluateCatalogConfiguration(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.ConfigurationEvaluation, error)
+	ReadCatalogBillingTerms(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.BillingTerms, error)
 }

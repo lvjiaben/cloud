@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // ElectronicContractTerminationCreateReq submits one reviewed Tencent release agreement.
 type ElectronicContractTerminationCreateReq struct {
-	g.Meta                    `path:"/admin/compliance/electronic-contracts/{contractNo}/terminations" method:"post" tags:"IDC Compliance Electronic Contract" summary:"Terminate a completed electronic contract" dc:"Submit one release agreement using the original contract signers after the administrator reviews the content and confirms a second time. No recent-login check is required, and no client-supplied effective time is accepted." permission:"idc:admin:compliance:contract:terminate"`
+	g.Meta                    `path:"/admin/compliance/electronic-contracts/{contractNo}/terminations" method:"post" tags:"IDC Compliance Electronic Contract" summary:"Terminate a completed electronic contract" dc:"Submit one release agreement using the original contract signers after the administrator reviews the content and confirms a second time. No current-session check is required, and no client-supplied effective time is accepted." permission:"idc:admin:compliance:contract:terminate"`
 	ContractNo                string `json:"contractNo" in:"path" v:"required|max-length:64" dc:"Exact completed contract to terminate" eg:"CTR_0123456789ABCDEF"`
 	ExpectedVersion           int64  `json:"expectedVersion" v:"required|min:1" dc:"Completed contract version shown during review" eg:"3"`
 	Reason                    string `json:"reason" v:"required|max-length:200" dc:"Required release reason reviewed by the administrator" eg:"Mutual agreement to terminate"`

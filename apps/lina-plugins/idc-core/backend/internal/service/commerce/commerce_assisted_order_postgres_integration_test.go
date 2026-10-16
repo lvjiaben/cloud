@@ -8,9 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 
@@ -18,6 +18,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/principal"
+	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 )
 
 type assistedQuoteAuthorizerStub struct {
@@ -37,8 +38,11 @@ func TestAssistedQuoteNumberedPagesPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_core_catalog_product_version_inventory SET sellable_quantity=1000`); err != nil {
+		t.Fatal(err)
+	}
 	for n := 0; n < 25; n++ {
-		_, err = service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY", ManualDiscountMinor: 1000, PaymentTermCode: AssistedPaymentTermStandardPrepay, Reason: "numbered pagination test", ValiditySeconds: 3600, IdempotencyKey: fmt.Sprintf("numbered-assisted-%d", n), Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}}})
+		_, err = service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY", ManualDiscountMinor: 1000, PaymentDueAt: time.Now().Add(time.Hour).UnixMilli(), Reason: "numbered pagination test", IdempotencyKey: fmt.Sprintf("numbered-assisted-%d", n), Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}}})
 		if err != nil {
 			t.Fatalf("create quote %d: %v", n, err)
 		}
@@ -115,7 +119,7 @@ func (*assistedQuoteAuditStub) AppendBusinessBatchTransition(
 	return idccap.BusinessAuditAppendResult{}, nil
 }
 
-func TestAssistedQuoteApprovalAndCheckoutPostgreSQL(t *testing.T) {
+func TestAssistedDirectOrderAndConcurrentReplayPostgreSQL(t *testing.T) {
 	ctx, database := newCommerceServiceTestDatabase(t)
 	applyAssistedQuoteTestMigration(t, ctx, database)
 	seedCommerceServiceCatalog(t, ctx, database)
@@ -127,6 +131,18 @@ func TestAssistedQuoteApprovalAndCheckoutPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create assisted commerce service: %v", err)
 	}
+	// Fixed/manual products must remain purchasable with production structured binding enabled.
+	freezer, ok := resolver.(catalog.PurchaseConfigurationFreezer)
+	if !ok {
+		t.Fatal("catalog reader does not implement freezing")
+	}
+	files, err := purchaseconfigurationfile.NewOrderFileConsumer(database, commerceService.principal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = BindStructuredConfigurationSnapshots(commerceService, freezer, files); err != nil {
+		t.Fatal(err)
+	}
 	authorizer := &assistedQuoteAuthorizerStub{actor: 1001}
 	audit := &assistedQuoteAuditStub{}
 	service, err := NewAssistedQuoteService(
@@ -136,168 +152,56 @@ func TestAssistedQuoteApprovalAndCheckoutPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create assisted quote service: %v", err)
 	}
-	created, err := service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
-		CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY",
-		ManualDiscountMinor: 1_000, PaymentTermCode: AssistedPaymentTermStandardPrepay,
-		Reason: "customer retention assisted quotation", InternalNote: "staff only",
-		ValiditySeconds: 3600, IdempotencyKey: "assisted-create-0001",
-		Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
-	})
-	if err != nil || created == nil || created.StatusCode != AssistedQuoteStatusPendingApproval ||
-		created.PaymentDueSeconds < 300 || len(created.Items) != 1 || created.Reused {
-		t.Fatalf("create assisted quote result=%+v err=%v", created, err)
-	}
-	replayed, err := service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
-		CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY",
-		ManualDiscountMinor: 1_000, PaymentTermCode: AssistedPaymentTermStandardPrepay,
-		Reason: "customer retention assisted quotation", InternalNote: "staff only",
-		ValiditySeconds: 3600, IdempotencyKey: "assisted-create-0001",
-		Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
-	})
-	if err != nil || replayed == nil || !replayed.Reused || replayed.RequestNo != created.RequestNo {
-		t.Fatalf("replay assisted quote result=%+v err=%v", replayed, err)
-	}
-	_, err = service.DecideAssistedQuote(ctx, AssistedQuoteDecisionInput{
-		RequestNo: created.RequestNo, DecisionCode: AssistedQuoteDecisionApproved,
-		DecisionReason: "pricing and inventory reviewed", IdempotencyKey: "assisted-approve-0001",
-	})
-	if !bizerr.Is(err, CodeAssistedQuoteApprovalRequired) {
-		t.Fatalf("self approval error=%v", err)
-	}
-	authorizer.actor = 1002
-	approved, err := service.DecideAssistedQuote(ctx, AssistedQuoteDecisionInput{
-		RequestNo: created.RequestNo, DecisionCode: AssistedQuoteDecisionApproved,
-		DecisionReason: "pricing and inventory reviewed", IdempotencyKey: "assisted-approve-0001",
-	})
-	if err != nil || approved == nil || approved.StatusCode != AssistedQuoteStatusApproved ||
-		approved.QuoteNo == "" || approved.DiscountMinor != 1_000 || approved.TotalAmountMinor <= 0 ||
-		approved.DecisionBy != 1002 || !approved.CanCheckout {
-		t.Fatalf("approve assisted quote result=%+v err=%v", approved, err)
-	}
-	decisionEvidence, err := database.GetValue(ctx, `
-SELECT decision_evidence_digest
-FROM plugin_idc_core_commerce_assisted_quote_request
-WHERE request_no = ?`, created.RequestNo)
-	if err != nil || !quoteDigestPattern.MatchString(decisionEvidence.String()) {
-		t.Fatalf("server-derived assisted decision evidence=%q err=%v", decisionEvidence.String(), err)
-	}
-	authorizer.actor = 1003
-	const checkoutWorkers = 8
+	input := AssistedQuoteCreateInput{CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY", ManualDiscountMinor: 1000, PaymentDueAt: time.Now().Add(time.Hour).UnixMilli(), Reason: "", IdempotencyKey: "assisted-direct-create-1", Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}}}
+	const workers = 8
+	results := make([]*AssistedQuoteRequest, workers)
+	failures := make([]error, workers)
 	start := make(chan struct{})
-	checkoutResults := make([]*AssistedQuoteRequest, checkoutWorkers)
-	checkoutErrors := make([]error, checkoutWorkers)
-	var checkoutWait sync.WaitGroup
-	for index := range checkoutWorkers {
-		checkoutWait.Add(1)
+	var wait sync.WaitGroup
+	for index := range workers {
+		wait.Add(1)
 		go func(index int) {
-			defer checkoutWait.Done()
+			defer wait.Done()
 			<-start
-			checkoutResults[index], checkoutErrors[index] = service.CheckoutAssistedQuote(
-				ctx,
-				AssistedQuoteCheckoutInput{
-					RequestNo: created.RequestNo, IdempotencyKey: "assisted-checkout-0001",
-				},
-			)
+			results[index], failures[index] = service.CreateAssistedQuote(ctx, input)
 		}(index)
 	}
 	close(start)
-	checkoutWait.Wait()
-	ordered := checkoutResults[0]
-	for index := range checkoutWorkers {
-		candidate := checkoutResults[index]
-		if checkoutErrors[index] != nil || candidate == nil || candidate.StatusCode != AssistedQuoteStatusOrdered ||
-			candidate.OrderNo == "" || candidate.OrderStatusCode == "paid" || candidate.OrderStatusCode == "active" ||
-			ordered == nil || candidate.OrderNo != ordered.OrderNo {
-			t.Fatalf("concurrent assisted checkout %d result=%+v err=%v", index, candidate, checkoutErrors[index])
+	wait.Wait()
+	created := results[0]
+	for index, result := range results {
+		if failures[index] != nil || result == nil || result.StatusCode != AssistedQuoteStatusOrdered || result.OrderNo == "" || result.OrderNo != created.OrderNo || result.CanApprove || result.CanCheckout || result.DecisionBy != 0 {
+			t.Fatalf("direct result %d=%+v err=%v", index, result, failures[index])
 		}
 	}
-	checkoutReplay, err := service.CheckoutAssistedQuote(ctx, AssistedQuoteCheckoutInput{
-		RequestNo: created.RequestNo, IdempotencyKey: "assisted-checkout-0001",
-	})
-	if err != nil || checkoutReplay == nil || !checkoutReplay.Reused ||
-		checkoutReplay.OrderNo != ordered.OrderNo {
-		t.Fatalf("replay assisted checkout result=%+v err=%v", checkoutReplay, err)
+	var evidence struct {
+		Paid      bool
+		DueAt     int64
+		Decisions int
+		Orders    int
+		Debits    int
 	}
-	var persisted struct {
-		SourceCode        string `orm:"source_code"`
-		StatusCode        string `orm:"status_code"`
-		AssistedRequestNo string `orm:"assisted_request_no"`
-		PaymentTermCode   string `orm:"payment_term_code"`
-		Paid              bool   `orm:"paid"`
+	if err = database.GetScan(ctx, &evidence, `SELECT (o.paid_at IS NOT NULL) AS paid,(extract(epoch FROM o.payment_due_at)*1000)::bigint AS due_at,
+ (SELECT count(*) FROM plugin_idc_core_commerce_assisted_quote_request WHERE decision_by IS NOT NULL)::int AS decisions,
+ (SELECT count(*) FROM plugin_idc_core_commerce_order)::int AS orders,
+ (SELECT count(*) FROM plugin_idc_core_commerce_order WHERE total_amount_minor=0)::int AS debits
+ FROM plugin_idc_core_commerce_order o WHERE o.order_no=?`, created.OrderNo); err != nil {
+		t.Fatal(err)
 	}
-	if err = database.GetScan(ctx, &persisted, `
-SELECT source_code, status_code, assisted_request_no, payment_term_code,
-       (paid_at IS NOT NULL) AS paid
-FROM plugin_idc_core_commerce_order WHERE order_no = ?`, ordered.OrderNo); err != nil {
-		t.Fatalf("load assisted order evidence: %v", err)
+	if evidence.Paid || evidence.DueAt != input.PaymentDueAt || evidence.Decisions != 0 || evidence.Orders != 1 || created.DiscountMinor != 1000 {
+		t.Fatalf("evidence=%+v created=%+v", evidence, created)
 	}
-	if persisted.SourceCode != "admin" || persisted.AssistedRequestNo != created.RequestNo ||
-		persisted.PaymentTermCode != "standard_prepay" || persisted.Paid ||
-		(persisted.StatusCode != "pending_payment" && persisted.StatusCode != "manual_review") {
-		t.Fatalf("unsafe assisted order evidence=%+v", persisted)
+	if len(audit.transitions) != 1 || audit.transitions[0].OperationCode != "commerce.assisted-quote.create" {
+		t.Fatalf("audit=%+v", audit.transitions)
 	}
-	if len(audit.transitions) != 3 || audit.transitions[0].OperationCode != "commerce.assisted-quote.create" ||
-		audit.transitions[1].OperationCode != "commerce.assisted-quote.approve" ||
-		audit.transitions[2].OperationCode != "commerce.assisted-quote.checkout" {
-		t.Fatalf("assisted quote audit transitions=%+v", audit.transitions)
+	input.ManualDiscountMinor++
+	if _, err = service.CreateAssistedQuote(ctx, input); !bizerr.Is(err, CodeAssistedQuoteConflict) {
+		t.Fatalf("changed replay=%v", err)
 	}
-	if _, err = database.Exec(ctx, `
-INSERT INTO plugin_idc_core_commerce_order (
-    order_no, customer_no, quote_no, currency_code, source_code, status_code,
-    risk_decision_code, requires_contract, item_count, subtotal_minor,
-    discount_minor, net_amount_minor, tax_amount_minor, total_amount_minor,
-    checkout_idempotency_digest, checkout_request_digest, payment_due_at
-) SELECT 'unsafe-admin-order', customer_no, quote_no, currency_code, 'admin',
-         'pending_payment', 'approved', FALSE, item_count, subtotal_minor,
-         discount_minor, net_amount_minor, tax_amount_minor, total_amount_minor,
-         repeat('1', 64), repeat('2', 64), CURRENT_TIMESTAMP + INTERVAL '1 hour'
-	  FROM plugin_idc_core_commerce_order WHERE order_no = ?`, ordered.OrderNo); err == nil {
-		t.Fatal("database accepted an admin order without an approved assisted request")
-	} else if !strings.Contains(err.Error(), "ck_idc_com_order_assisted_source") {
-		t.Fatalf("unsafe admin order failed for the wrong reason: %v", err)
-	}
-
-	authorizer.actor = 1004
-	expired, err := service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
-		CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY",
-		PaymentTermCode: AssistedPaymentTermExtendedPrepay, PaymentDueSeconds: 172800,
-		Reason: "expired assisted quotation must fail closed", ValiditySeconds: 900,
-		IdempotencyKey: "assisted-expiry-0001",
-		Items:          []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
-	})
-	if err != nil || expired == nil {
-		t.Fatalf("create expiry fixture result=%+v err=%v", expired, err)
-	}
-	if _, err = database.Exec(ctx, `
-ALTER TABLE plugin_idc_core_commerce_assisted_quote_request
-DISABLE TRIGGER trg_idc_com_assisted_request_identity_immutable`); err != nil {
-		t.Fatalf("disable assisted request identity trigger: %v", err)
-	}
-	if _, err = database.Exec(ctx, `
-UPDATE plugin_idc_core_commerce_assisted_quote_request
-SET created_at = CURRENT_TIMESTAMP - INTERVAL '2 hours',
-    expires_at = CURRENT_TIMESTAMP - INTERVAL '1 hour',
-    updated_at = CURRENT_TIMESTAMP
-WHERE request_no = ?`, expired.RequestNo); err != nil {
-		t.Fatalf("expire assisted quote fixture: %v", err)
-	}
-	if _, err = database.Exec(ctx, `
-ALTER TABLE plugin_idc_core_commerce_assisted_quote_request
-ENABLE TRIGGER trg_idc_com_assisted_request_identity_immutable`); err != nil {
-		t.Fatalf("enable assisted request identity trigger: %v", err)
-	}
-	authorizer.actor = 1005
-	_, err = service.DecideAssistedQuote(ctx, AssistedQuoteDecisionInput{
-		RequestNo: expired.RequestNo, DecisionCode: AssistedQuoteDecisionApproved,
-		DecisionReason: "expired request reviewed", IdempotencyKey: "assisted-expiry-approve-0001",
-	})
-	if !bizerr.Is(err, CodeAssistedQuoteConflict) {
-		t.Fatalf("expired assisted quote approval error=%v", err)
-	}
-	expiredView, err := service.GetAssistedQuote(ctx, expired.RequestNo)
-	if err != nil || expiredView == nil || expiredView.CanApprove || expiredView.CanCheckout ||
-		expiredView.StatusCode != AssistedQuoteStatusPendingApproval {
-		t.Fatalf("expired assisted quote projection=%+v err=%v", expiredView, err)
+	input.IdempotencyKey = "assisted-direct-expired"
+	input.PaymentDueAt = time.Now().Add(-time.Minute).UnixMilli()
+	if _, err = service.CreateAssistedQuote(ctx, input); !bizerr.Is(err, CodeAssistedQuoteInvalid) {
+		t.Fatalf("expired=%v", err)
 	}
 }
 
@@ -322,10 +226,9 @@ func TestAssistedQuoteAuditFailureRollsBackPostgreSQL(t *testing.T) {
 	}
 	_, err = service.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
 		CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY",
-		PaymentTermCode: AssistedPaymentTermStandardPrepay,
-		Reason:          "audit rollback assisted quotation", ValiditySeconds: 3600,
-		IdempotencyKey: "assisted-audit-fail-0001",
-		Items:          []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
+		PaymentDueAt: time.Now().Add(time.Hour).UnixMilli(),
+		Reason:       "audit rollback assisted quotation", IdempotencyKey: "assisted-audit-fail-0001",
+		Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
 	})
 	if !bizerr.Is(err, CodeAssistedQuoteUnavailable) {
 		t.Fatalf("audit failure error=%v", err)
@@ -386,5 +289,14 @@ func applyAssistedQuoteTestMigration(t *testing.T, ctx context.Context, database
 	}
 	if _, err = database.Exec(ctx, string(content)); err != nil {
 		t.Fatalf("execute assisted quote migration: %v", err)
+	}
+	for _, name := range []string{"114-assisted-purchase-configuration.sql", "115-direct-assisted-orders.sql"} {
+		content, err = os.ReadFile(filepath.Join(filepath.Dir(path), name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = database.Exec(ctx, string(content)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

@@ -1,6 +1,6 @@
 id: idc-payment
 name: IDC Payment
-version: v0.1.8
+version: v0.1.9
 type: source
 distribution: builtin
 scope_nature: platform_only

@@ -42,8 +42,10 @@ type SearchInput struct {
 
 // Summary is the non-legal, non-credential customer list projection.
 type Summary struct {
+	Balances                     []BalanceSummary
 	CustomerNo                   string
 	CustomerCode                 string
+	PrimaryEmail                 string
 	PrimaryPhone                 string
 	Type                         customer.Type
 	Status                       customer.Status
@@ -212,16 +214,19 @@ type BalanceSummary struct {
 
 // Overview is the bounded local foundation of the management customer 360.
 type Overview struct {
-	Customer Summary
-	Groups   SegmentPreview
-	Tags     SegmentPreview
-	Counts   OverviewCounts
-	Business BusinessSummary
-	Balances []BalanceSummary
+	Statistics OperationsStatistics
+	Customer   Summary
+	Groups     SegmentPreview
+	Tags       SegmentPreview
+	Counts     OverviewCounts
+	Business   BusinessSummary
+	Balances   []BalanceSummary
 }
 
 // Service defines management customer reads independently from customer self-service.
 type Service interface {
+	// SearchProducts returns all order-backed product types for one visible customer.
+	SearchProducts(context.Context, string, int, int) (*ProductPage, error)
 	// Search requires an existing direct staff audience, exact host-governed
 	// list authority, and a data scope representable by the customer query.
 	// Unsupported or ambiguous scopes fail before persistence access.

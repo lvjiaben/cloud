@@ -17,6 +17,7 @@ import (
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/capmodel"
 	capabilitysessioncap "lina-core/pkg/plugin/capability/sessioncap"
+	"lina-core/pkg/plugin/capability/sessioncap/sessionspi"
 	"lina-core/pkg/plugin/capability/tenantcap"
 	tenantcapsvc "lina-core/pkg/plugin/capability/tenantcap"
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
@@ -224,6 +225,45 @@ func TestSessionCurrentRejectsMissingToken(t *testing.T) {
 	if !bizerr.Is(err, capmodel.CodeCapabilityCurrentUserRequired) {
 		t.Fatalf("expected context-required error, got %v", err)
 	}
+}
+
+// TestSessionPresenceScopeKeepsAuthPolicyAndFailClosed verifies source SPI
+// discovery retains the shared auth policy and rejects unavailable governance.
+func TestSessionPresenceScopeKeepsAuthPolicyAndFailClosed(t *testing.T) {
+	if _, err := sessionspi.Scope(nil); !bizerr.Is(err, capmodel.CodeCapabilityUnavailable) {
+		t.Fatalf("expected unavailable scope, got %v", err)
+	}
+	var calls int
+	svc := newSessionCapabilityAdapter(
+		presenceAuthService{sessionAuthService: sessionAuthService{store: &sessionDataScopeStore{}}, timeoutCalls: &calls},
+		nil, nil, sessionDataScopeService{}, sessionTenantScopeService{},
+	)
+	scope, err := sessionspi.Scope(svc)
+	if err != nil {
+		t.Fatalf("source presence scope: %v", err)
+	}
+	if _, _, err = scope.BuildOnlineUserExists(context.Background(), "a.id; invalid"); !bizerr.Is(err, capmodel.CodeCapabilityDenied) {
+		t.Fatalf("expected invalid column rejected, got %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected shared auth policy, calls=%d", calls)
+	}
+	missing := &sessionCapabilityAdapter{}
+	if _, _, err = missing.BuildOnlineUserExists(context.Background(), "a.id"); !bizerr.Is(err, capmodel.CodeCapabilityUnavailable) {
+		t.Fatalf("missing dependencies did not fail closed: %v", err)
+	}
+}
+
+// presenceAuthService records use of auth's current inactivity timeout.
+type presenceAuthService struct {
+	sessionAuthService
+	timeoutCalls *int
+}
+
+// SessionTimeout returns the test runtime policy and records delegation.
+func (s presenceAuthService) SessionTimeout(context.Context) (time.Duration, error) {
+	*s.timeoutCalls++
+	return time.Hour, nil
 }
 
 // containsSessionID reports whether ids already contains id.

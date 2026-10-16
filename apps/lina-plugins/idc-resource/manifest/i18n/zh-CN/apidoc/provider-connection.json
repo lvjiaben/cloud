@@ -1,0 +1,7 @@
+{
+  "plugins.idc_resource.api.admin.v1.ProviderChannelItem.fields.tlsCertificateSha256.dc": "接口的可信叶证书SHA256指纹；空值表示使用系统证书验证",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelCreateReq.fields.tlsCertificateSha256.dc": "可选的可信叶证书SHA256指纹；空值使用系统证书验证",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelUpdateReq.fields.tlsCertificateSha256.dc": "可信叶证书SHA256指纹；同地址省略保留，换地址省略或显式空值清除",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelVerificationCreateRes.fields.statusCode.dc": "连接结果：verified成功，configuration_incomplete配置不完整，verification_unsupported不支持测试，tls_untrusted证书不可信，timeout超时，dns域名解析失败，network网络失败，endpoint_not_found地址错误，invalid_response返回内容无效，auth_rejected认证拒绝，local_auth_policy登录声明不匹配，connection_failed未分类失败",
+  "plugins.idc_resource.api.admin.v1.ProviderChannelUpdateReq.fields.refreshProvider.dc": "显式更新从未被商品或服务引用的接口到当前已启用插件版本；默认false。保留地址、证书指纹、密钥和启停状态，不修改历史记录"
+}

@@ -43,3 +43,18 @@ func TestValidateCategoryParentChainRejectsMissingParent(t *testing.T) {
 		t.Fatalf("expected inaccessible-parent error, got %v", err)
 	}
 }
+
+func TestValidateCategoryTwoLevels(t *testing.T) {
+	parents := map[string]string{"root": "", "child": "root", "other": ""}
+	if err := validateCategoryTwoLevels(parents, "new", "root"); err != nil {
+		t.Fatalf("second level rejected: %v", err)
+	}
+	for _, target := range [][2]string{{"new", "child"}, {"root", "other"}} {
+		if err := validateCategoryTwoLevels(parents, target[0], target[1]); !bizerr.Is(err, CodeCategoryDepthExceeded) {
+			t.Fatalf("third level accepted: %v", err)
+		}
+	}
+	if err := validateCategoryTwoLevels(parents, "child", ""); err != nil {
+		t.Fatalf("moving to top level rejected: %v", err)
+	}
+}

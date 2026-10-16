@@ -505,13 +505,13 @@ func prepareStructuredCheckoutDatabase(t *testing.T, ctx context.Context, databa
 		t.Fatal("resolve structured checkout test path")
 	}
 	migrationRoot := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "manifest", "sql")
-	for _, name := range []string{"074-product-automation-binding.sql", "075-structured-product-configuration.sql", "094-generic-configuration-pricing.sql", "096-resource-owned-product-fulfillment.sql", "097-resource-interface-configuration-revision.sql"} {
+	for _, name := range []string{"074-product-automation-binding.sql", "075-structured-product-configuration.sql", "094-generic-configuration-pricing.sql", "096-resource-owned-product-fulfillment.sql", "097-resource-interface-configuration-revision.sql", "127-product-commerce-workflow.sql"} {
 		content, err := os.ReadFile(filepath.Join(migrationRoot, name))
 		if err != nil {
 			t.Fatalf("read structured checkout migration %s: %v", name, err)
 		}
 		attempts := 1
-		if name == "075-structured-product-configuration.sql" || name == "094-generic-configuration-pricing.sql" {
+		if name == "075-structured-product-configuration.sql" || name == "094-generic-configuration-pricing.sql" || name == "127-product-commerce-workflow.sql" {
 			attempts = 2
 		}
 		for attempt := 1; attempt <= attempts; attempt++ {

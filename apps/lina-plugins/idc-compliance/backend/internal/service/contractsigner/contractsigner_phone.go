@@ -111,7 +111,7 @@ WHERE tenant_id=? AND signer_no=? AND customer_no=? AND status_code='active' AND
 		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.contract-signer.phone-verified",
 			IdempotencyKey: verificationNo, OperationCode: "compliance.contract-signer.phone-verify", TargetType: "contract_signer", TargetNo: row.SignerNo,
 			CustomerNo: row.CustomerNo, ResultCode: "succeeded", ReasonCode: "notify_security_code_verified", RiskCode: "high",
-			AfterSnapshot: map[string]any{"phone_status": "verified", "phone_verification_version": verified.Version}})
+			BeforeSnapshot: map[string]any{"phone_status": row.PhoneStatusCode, "phone_verification_version": row.PhoneVerificationVersion}, AfterSnapshot: map[string]any{"phone_status": "verified", "phone_verification_version": verified.Version}})
 	})
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeUnavailable)

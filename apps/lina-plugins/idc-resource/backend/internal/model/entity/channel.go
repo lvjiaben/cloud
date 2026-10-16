@@ -30,4 +30,5 @@ type Channel struct {
 	ProviderReleaseVersion    string     `json:"providerReleaseVersion"    orm:"provider_release_version"    description:"Exact managed plugin release version frozen when a dynamic Provider channel is created"`
 	ProviderReleaseDigest     string     `json:"providerReleaseDigest"     orm:"provider_release_digest"     description:"Exact managed plugin release digest frozen when a dynamic Provider channel is created"`
 	ProviderDeclarationDigest string     `json:"providerDeclarationDigest" orm:"provider_declaration_digest" description:"Exact resource-provider declaration digest frozen when a dynamic Provider channel is created"`
+	TlsCertificateSha256      string     `json:"tlsCertificateSha256"      orm:"tls_certificate_sha256"      description:"Optional administrator-trusted exact leaf certificate SHA-256; empty uses system trust"`
 }

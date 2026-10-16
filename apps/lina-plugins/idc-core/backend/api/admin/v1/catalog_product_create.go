@@ -6,6 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 type CatalogProductCreateReq struct {
 	g.Meta                   `path:"/admin/catalog/products" method:"post" tags:"IDC Catalog Management" summary:"Create manual catalog product draft" dc:"Create one product and its first empty manual draft version transactionally." permission:"idc:admin:catalog:product:create"`
+	DirectoryNo              string `json:"directoryNo" dc:"Single product-type member navigation reference; empty keeps services in all services; omitted update preserves the current assignment" eg:"pdr_example"`
 	CategoryNo               string `json:"categoryNo" v:"required|length:36,36" dc:"Stable owning category business number" eg:"ctg_0123456789abcdef0123456789abcdef"`
 	PublicSlug               string `json:"publicSlug" v:"required|max-length:128" dc:"Lowercase public URL slug" eg:"hong-kong-cloud"`
 	NameZhCn                 string `json:"nameZhCn" v:"required|max-length:256" dc:"Simplified Chinese product name" eg:"Hong Kong Cloud zh-CN"`

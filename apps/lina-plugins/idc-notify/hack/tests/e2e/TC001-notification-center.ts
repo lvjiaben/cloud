@@ -288,11 +288,11 @@ test.describe("TC001 通知中心", () => {
 
     const workspaceTabs = notification.pageRoot.getByRole("tablist", {
       exact: true,
-      name: "通知模板 / 事件渠道策略",
+      name: "通知模板 / 发送规则",
     });
     await expect(workspaceTabs.getByRole("tab")).toHaveText([
       "通知模板",
-      "事件渠道策略",
+      "发送规则",
     ]);
     await expect(
       workspaceTabs.getByRole("tab", { name: "通知模板", exact: true }),
@@ -335,7 +335,7 @@ test.describe("TC001 通知中心", () => {
       .click();
 
     await workspaceTabs
-      .getByRole("tab", { name: "事件渠道策略", exact: true })
+      .getByRole("tab", { name: "发送规则", exact: true })
       .click();
     await expect(
       notification.pageRoot.locator(".policy-scroll .row"),
@@ -367,9 +367,9 @@ test.describe("TC001 通知中心", () => {
     await expect(smsOrder.nth(0)).toHaveValue("service_no");
     await expect(smsOrder.nth(1)).toHaveValue("expires_at");
     await editor.getByLabel("服务商模板编号").fill("2299002");
-    await editor.getByRole("button", { name: "保存新版本" }).click();
+    await editor.getByRole("button", { name: "保存" }).click();
     await expect(notification.pageRoot.getByRole("status")).toContainText(
-      "新的模板版本已保存",
+      "模板已保存",
     );
     expect(state?.templateRequests[0]).toMatchObject({
       channelCode: "sms",
@@ -389,7 +389,7 @@ test.describe("TC001 通知中心", () => {
       "wechat-template-public-id",
     );
     await expect(editor.getByPlaceholder("公众号模板字段名")).toHaveCount(3);
-    await editor.getByRole("button", { name: "保存新版本" }).click();
+    await editor.getByRole("button", { name: "保存" }).click();
     expect(state?.templateRequests[1]).toMatchObject({
       channelCode: "wechat_official",
       expectedVersion: 4,
@@ -531,7 +531,7 @@ test.describe("TC001 通知中心", () => {
     await expect(
       notification.pageRoot.getByRole("tablist", {
         exact: true,
-        name: "Notification templates / Event channel policies",
+        name: "Notification templates / Sending rules",
       }),
     ).toBeVisible();
     await expect(notification.pageRoot).toContainText(
@@ -567,12 +567,12 @@ test.describe("TC001 通知中心", () => {
     await expect(
       notification.pageRoot.getByRole("heading", { name: "当前绑定状态" }),
     ).toBeVisible();
-    await expect(notification.pageRoot).toContainText("不能替其他员工绑定");
+    await expect(notification.pageRoot).toContainText("只能绑定你本人的账号");
     await expect(
       notification.pageRoot.getByLabel(/UserID|用户编号|员工账号/iu),
     ).toHaveCount(0);
     await notification.pageRoot
-      .getByRole("button", { name: "开始本人扫码绑定" })
+      .getByRole("button", { name: "扫码绑定" })
       .click();
 
     await expect(
@@ -601,7 +601,7 @@ test.describe("TC001 通知中心", () => {
 
     const wizard = notification.channelWizard();
     await expect(wizard).toContainText(
-      "只发送给当前操作员本人已经生效的企业微信绑定",
+      "测试消息发到你已绑定的企业微信",
     );
     await expect(
       wizard.getByLabel(/UserID|用户编号|员工账号|收件人/iu),
@@ -689,7 +689,7 @@ test.describe("TC001 通知中心", () => {
 
     await notification.gotoTemplates();
     await notification.pageRoot
-      .getByRole("tab", { name: "事件渠道策略" })
+      .getByRole("tab", { name: "发送规则" })
       .click();
     const policy = notification.pageRoot
       .locator(".row")

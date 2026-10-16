@@ -1,20 +1,50 @@
 {
   "menu": {
-    "plugin:idc-core:customer-sales": { "title": "客户与销售" },
-    "plugin:idc-core:catalog-products": { "title": "商品与定价" },
-    "plugin:idc-core:resource-operations": { "title": "服务器与资源" },
-    "plugin:idc-core:orders-finance": { "title": "订单与财务" },
-    "plugin:idc-core:support-content": { "title": "工单与内容" },
-    "plugin:idc-core:notification-marketing": { "title": "通知与营销" },
-    "plugin:idc-core:compliance-governance": { "title": "合规与治理" },
-    "plugin:idc-core:operations-workbench": { "title": "运营工作台" },
-    "plugin:idc-core:operations-workbench:view": { "title": "查看运营工作台" },
-    "plugin:idc-core:sales-channel": { "title": "代理与销售运营" },
-    "plugin:idc-core:sales-channel:overview": { "title": "查看代理与销售汇总" },
-    "plugin:idc-core:sales-channel:qualification": { "title": "管理代理资格" },
-    "plugin:idc-core:sales-channel:commission:review": { "title": "审核佣金结算" },
-    "plugin:idc-core:sales-channel:commission:payout": { "title": "处理佣金打款" },
-    "plugin:idc-core:server-batches": { "title": "服务器批量控制" },
+    "plugin:idc-core:customer-sales": {
+      "title": "客户业务"
+    },
+    "plugin:idc-core:catalog-products": {
+      "title": "商品与定价"
+    },
+    "plugin:idc-core:resource-operations": {
+      "title": "服务器与资源"
+    },
+    "plugin:idc-core:orders-finance": {
+      "title": "订单与财务"
+    },
+    "plugin:idc-core:support-content": {
+      "title": "工单客服"
+    },
+    "plugin:idc-core:notification-marketing": {
+      "title": "通知与营销"
+    },
+    "plugin:idc-core:compliance-governance": {
+      "title": "合规与治理"
+    },
+    "plugin:idc-core:operations-workbench": {
+      "title": "运营数据"
+    },
+    "plugin:idc-core:operations-workbench:view": {
+      "title": "查看运营数据"
+    },
+    "plugin:idc-core:sales-channel": {
+      "title": "代理销售"
+    },
+    "plugin:idc-core:sales-channel:overview": {
+      "title": "查看代理销售"
+    },
+    "plugin:idc-core:sales-channel:qualification": {
+      "title": "管理代理资格"
+    },
+    "plugin:idc-core:sales-channel:commission:review": {
+      "title": "审核佣金结算"
+    },
+    "plugin:idc-core:sales-channel:commission:payout": {
+      "title": "处理佣金打款"
+    },
+    "plugin:idc-core:server-batches": {
+      "title": "服务器批量控制"
+    },
     "plugin:idc-core:server-batches:safe": {
       "title": "执行安全服务器批量操作"
     },
@@ -129,26 +159,14 @@
     "plugin:idc-core:commerce:order-query": {
       "title": "查看订单详情"
     },
-    "plugin:idc-core:assisted-quotes": {
-      "title": "协助报价"
-    },
     "plugin:idc-core:assisted-quotes:list": {
-      "title": "查看协助报价"
+      "title": "查看协助下单历史"
     },
     "plugin:idc-core:assisted-quotes:query": {
-      "title": "查看协助报价详情"
+      "title": "查看协助订单详情"
     },
     "plugin:idc-core:assisted-quotes:create": {
-      "title": "发起协助报价"
-    },
-    "plugin:idc-core:assisted-quotes:approve": {
-      "title": "批准协助报价"
-    },
-    "plugin:idc-core:assisted-quotes:reject": {
-      "title": "驳回协助报价"
-    },
-    "plugin:idc-core:assisted-quotes:checkout": {
-      "title": "协助报价下单"
+      "title": "协助下单"
     },
     "plugin:idc-core:financial-management": {
       "title": "财务工作台"
@@ -257,6 +275,25 @@
     },
     "plugin:idc-core:content": {
       "title": "内容管理"
+    },
+    "plugin:idc-core:support:lead": {
+      "title": "管理本部门工单"
+    },
+    "plugin:idc-core:sales-channel:assignment": {
+      "title": "管理客户销售归属"
+    },
+    "plugin:idc-core:sales-channel:pricing": {
+      "title": "管理商品与定制价格"
+    },
+    "plugin:idc-core:sales-channel:commission:manage": {
+      "title": "管理佣金规则"
+    },
+    "plugin:idc-core:catalog:product-update": {
+      "title": "编辑商品介绍"
+    },
+    "plugin:idc-core:customers:product-edit": {
+      "title": "编辑客户产品"
     }
-  }
+  },
+  "plugin:idc-core:customers:audit": "客户操作记录"
 }

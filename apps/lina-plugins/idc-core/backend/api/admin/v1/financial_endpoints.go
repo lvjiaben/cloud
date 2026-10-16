@@ -143,7 +143,7 @@ type FinancialManagementAdjustmentPolicyMutation struct {
 }
 
 type FinancialManagementManualReceiptProofReq struct {
-	g.Meta `path:"/admin/billing/manual-receipts/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue a manual-receipt action proof" dc:"Authorize the exact immutable receipt preview and issue a short-lived proof only after a recent full login." permission:"idc:admin:billing:manual-receipt:create"`
+	g.Meta `path:"/admin/billing/manual-receipts/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue a manual-receipt action proof" dc:"Authorize the exact immutable receipt preview and issue a short-lived proof only after a current active session." permission:"idc:admin:billing:manual-receipt:create"`
 	FinancialManagementManualReceiptIntent
 }
 type FinancialManagementManualReceiptProofRes struct {
@@ -160,7 +160,7 @@ type FinancialManagementManualReceiptCreateRes struct {
 }
 
 type FinancialManagementInvoiceWaiverProofReq struct {
-	g.Meta `path:"/admin/billing/invoice-waivers/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an invoice-waiver action proof" dc:"Authorize the exact immutable waiver preview and issue a short-lived proof only after a recent full login." permission:"idc:admin:billing:invoice-waiver:create"`
+	g.Meta `path:"/admin/billing/invoice-waivers/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an invoice-waiver action proof" dc:"Authorize the exact immutable waiver preview and issue a short-lived proof only after a current active session." permission:"idc:admin:billing:invoice-waiver:create"`
 	FinancialManagementInvoiceWaiverIntent
 }
 type FinancialManagementInvoiceWaiverProofRes struct {
@@ -177,7 +177,7 @@ type FinancialManagementInvoiceWaiverCreateRes struct {
 }
 
 type FinancialManagementAdjustmentReviewProofReq struct {
-	g.Meta       `path:"/admin/billing/adjustments/{adjustmentNo}/review-proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an adjustment-review action proof" dc:"Authorize the exact independent review preview and issue a short-lived proof after recent login." permission:"idc:admin:billing:adjustment:review"`
+	g.Meta       `path:"/admin/billing/adjustments/{adjustmentNo}/review-proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an adjustment-review action proof" dc:"Authorize the exact independent review preview and issue a short-lived proof after current session." permission:"idc:admin:billing:adjustment:review"`
 	AdjustmentNo string `json:"adjustmentNo" in:"path" v:"required|max-length:40" dc:"Stable pending adjustment number" eg:"BAR_01J2ABCDEF"`
 	FinancialManagementAdjustmentReviewIntent
 }
@@ -196,7 +196,7 @@ type FinancialManagementAdjustmentReviewRes struct {
 }
 
 type FinancialManagementAdjustmentPolicyProofReq struct {
-	g.Meta `path:"/admin/billing/adjustment-policies/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an adjustment-policy action proof" dc:"Authorize the exact currency-local review threshold preview and issue a short-lived proof after recent login." permission:"idc:admin:billing:adjustment-policy:write"`
+	g.Meta `path:"/admin/billing/adjustment-policies/proofs" method:"post" tags:"IDC Financial Management" summary:"Issue an adjustment-policy action proof" dc:"Authorize the exact currency-local review threshold preview and issue a short-lived proof after current session." permission:"idc:admin:billing:adjustment-policy:write"`
 	FinancialManagementAdjustmentPolicyIntent
 }
 type FinancialManagementAdjustmentPolicyProofRes struct {

@@ -89,7 +89,7 @@ func validInvocationEvidence(invocation *capmodel.BusinessExtensionBridgeRequest
 		return false
 	}
 	switch invocation.Method {
-	case candidateMethod:
+	case candidateMethod, productfulfillmentcap.MethodValidateProductConfiguration:
 		return invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeNewBusiness ||
 			invocation.Purpose == capmodel.BusinessExtensionInvocationPurposeExistingBusiness
 	case provisionMethod, queryMethod:
@@ -107,6 +107,16 @@ func executeInvocation(resourceExecutor confidentialoutboundcap.Service, invocat
 		}
 		invocation.Payload = payload
 		return executeResourceProviderInvocation(resourceExecutor, invocation)
+	}
+	if invocation.Method == productfulfillmentcap.MethodValidateProductConfiguration {
+		var request productfulfillmentcap.ConfigurationValidationRequest
+		decoder := json.NewDecoder(bytes.NewReader(invocation.Payload))
+		decoder.DisallowUnknownFields()
+		if decoder.Decode(&request) != nil || decoder.Decode(&struct{}{}) != io.EOF || request.Version != productfulfillmentcap.ContractVersion {
+			return nil, io.ErrUnexpectedEOF
+		}
+		_, validationErr := resourcecap.ParseServerGenerationPolicy(request.ProductConfiguration)
+		return json.Marshal(productfulfillmentcap.ConfigurationValidationResult{Version: productfulfillmentcap.ContractVersion, Valid: validationErr == nil})
 	}
 	return nil, errResourceOwnerRequired
 }

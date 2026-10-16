@@ -58,7 +58,11 @@ func (*daoPersistence) getOverview(ctx context.Context, customerNo string) (*Ove
 	if err != nil {
 		return nil, err
 	}
-	return &Overview{Customer: page.Customers[0], Groups: groups, Tags: tags, Counts: counts}, nil
+	statistics, err := loadOperationsStatistics(ctx, customerNo)
+	if err != nil {
+		return nil, err
+	}
+	return &Overview{Statistics: statistics, Customer: page.Customers[0], Groups: groups, Tags: tags, Counts: counts}, nil
 }
 
 func loadSegmentPreview(ctx context.Context, customerNo string, groups bool) (SegmentPreview, error) {

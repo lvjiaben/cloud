@@ -1,0 +1,95 @@
+id: idc-peer
+name: Same-system connector
+version: v0.1.0
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Connect another installation through customer-bound Open API credentials.
+author: linapro
+license: Proprietary
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+    - id: idc-resource
+      version: ">=0.1.21 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods: [provision, query, renew, renew.query, peer.configuration.candidates]
+    product_configuration:
+      version: v1
+      fields:
+        - key: upstream_public_slug
+          type: single_line
+          label: {en-US: Upstream product, zh-CN: 上游商品}
+          required: true
+        - key: upstream_configuration_revision
+          type: single_line
+          label: {en-US: Upstream configuration revision, zh-CN: 上游配置版本}
+          required: true
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability: {enUS: Same-system customer-bound purchase, zhCN: 同系统客户绑定拿货}
+        granularity: per_quantity_unit
+        ongoingManagement: true
+        renewalSupport: supported
+        expiryManagement: provider
+        entitlementOwnerId: idc-peer
+        methodRoles: {provision: provision, query: query, renewal: renew}
+  - point: resource-provider
+    version: v1
+    role: provider
+    owner: idc-resource
+    interface_configuration_cardinality: multiple
+    interface_configuration:
+      version: v1
+      fields:
+        - key: app_id
+          type: secret
+          label: {en-US: AppID, zh-CN: AppID}
+          required: true
+        - key: app_secret
+          type: secret
+          label: {en-US: AppSecret, zh-CN: AppSecret}
+          required: true
+    methods:
+      - connection.verify
+      - capabilities.discover
+      - configuration.candidates
+      - provision.parameters.build
+      - provider-capacity.list
+      - catalog.products.list
+      - catalog.products.detail
+      - catalog.configuration.evaluate
+      - catalog.billing-terms
+      - operation.execute
+      - task.query
+      - resource.query
+    provider_metadata:
+      type: resource-provider-contract
+      version: v1
+      values:
+        providerId: same-system
+        authenticationProfiles:
+          profiles:
+            default:
+              strategy: per_request_basic
+              fields: {username: app_id, password: app_secret}
+hostServices:
+  - service: confidentialoutbound
+    methods: [execute]

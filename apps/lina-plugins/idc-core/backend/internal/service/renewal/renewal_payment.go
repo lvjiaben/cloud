@@ -14,11 +14,13 @@ import (
 )
 
 type paymentPreflightRow struct {
+	TrialConversion            bool
 	OperationNo                string     `orm:"operation_no"`
 	QuoteNo                    string     `orm:"quote_no"`
 	CustomerNo                 string     `orm:"customer_no"`
 	PayerCustomerNo            string     `orm:"payer_customer_no"`
 	EntitlementNo              string     `orm:"entitlement_no"`
+	ProductNo                  string     `orm:"product_no"`
 	CurrencyCode               string     `orm:"currency_code"`
 	InvoiceNo                  string     `orm:"invoice_no"`
 	PriceSnapshotNo            string     `orm:"price_snapshot_no"`
@@ -42,6 +44,7 @@ type paymentPreflightRow struct {
 }
 
 type convergenceRow struct {
+	TrialConversion            bool
 	OperationNo                string     `orm:"operation_no"`
 	QuoteNo                    string     `orm:"quote_no"`
 	CustomerNo                 string     `orm:"customer_no"`
@@ -148,6 +151,17 @@ func (s *serviceImpl) payOwned(
 		if validateErr := validatePaymentPreflight(ctx, s.database, preflight); validateErr != nil {
 			return validateErr
 		}
+		if preflight.InvoiceStatus == string(billing.InvoiceStatusPendingPayment) {
+			if err := s.requireConversionQuote(ctx, preflight.QuoteNo); err != nil {
+				return err
+			}
+			if err := s.requireConversionQuote(ctx, preflight.QuoteNo); err != nil {
+				return err
+			}
+			if err := s.catalog.RequireRenewalSale(ctx, preflight.ProductNo); err != nil {
+				return bizerr.NewCode(CodePriceUnavailable)
+			}
+		}
 		payment, paymentErr := s.invoices.PayFromBalance(ctx, billing.InvoiceBalancePaymentInput{
 			InvoiceNo: preflight.InvoiceNo, SourceReference: renewalPaymentSource(input.OperationNo),
 			SourceSnapshotDigest: preflight.ContentDigest,
@@ -176,7 +190,8 @@ func (s *serviceImpl) payOwned(
 			return convergeErr
 		}
 		settled = &Settlement{
-			Operation: operation, LedgerTransactionNo: payment.Posting.TransactionNo,
+			balancePayment: payment,
+			Operation:      operation, LedgerTransactionNo: payment.Posting.TransactionNo,
 			Reused: payment.Reused || operationReused,
 		}
 		return nil
@@ -225,6 +240,12 @@ func (s *serviceImpl) payOwnedFromCredit(
 		}
 		if validateErr := validatePaymentPreflight(ctx, s.database, preflight); validateErr != nil {
 			return validateErr
+		}
+		if err := s.requireConversionQuote(ctx, preflight.QuoteNo); err != nil {
+			return err
+		}
+		if err := s.catalog.RequireRenewalSale(ctx, preflight.ProductNo); err != nil {
+			return bizerr.NewCode(CodePriceUnavailable)
 		}
 		snapshotDigest, digestErr := contentDigest(struct {
 			Kind, ChannelID, CustomerNo, PayerCustomerNo, OperationNo, InvoiceNo, CurrencyCode string
@@ -303,15 +324,20 @@ func loadPaymentPreflight(
 	var row *paymentPreflightRow
 	query := `
 SELECT operation.operation_no, operation.quote_no, operation.customer_no, operation.payer_customer_no,
-       operation.subject_no AS entitlement_no,
+       operation.subject_no AS entitlement_no, service.product_no,
        operation.currency_code, operation.invoice_no, operation.price_snapshot_no,
        operation.status_code, operation.execution_mode_code,
        operation.capability_evidence_no, operation.capability_evidence_digest,
        operation.content_digest, operation.expected_subject_version AS expected_entitlement_version,
-       service.version AS entitlement_version,
+       service.charge_type_code='trial' AS trial_conversion,
+ service.version AS entitlement_version,
        service.renewal_mode_code AS entitlement_renewal_mode,
 	   service.status_code AS entitlement_status,
-       service.plugin_id||'@'||service.plugin_release_version AS entitlement_contract_no,
+       CASE WHEN operation.resource_owner_code = service.entitlement_owner_id
+              AND operation.channel_no = service.plugin_release_version
+              AND operation.pool_no = service.contract_version
+            THEN COALESCE(NULLIF(service.renewal_method, ''), service.plugin_id)
+            ELSE NULL END AS entitlement_contract_no,
        service.declaration_digest AS entitlement_contract_digest,
        invoice.payment_due_at AS entitlement_contract_expires_at,
        invoice.status_code AS invoice_status,
@@ -347,7 +373,7 @@ func validatePaymentPreflight(
 	if row == nil || row.InvoiceTotalMinor <= 0 ||
 		(row.ExecutionModeCode != "local_entitlement" && row.ExecutionModeCode != "provider_confirmed") ||
 		row.EntitlementRenewalMode != row.ExecutionModeCode ||
-		(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired") ||
+		(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired" && !(row.EntitlementStatus == "suspended" && (row.TrialConversion || row.StatusCode == "succeeded"))) ||
 		row.EntitlementContractNo == nil || *row.EntitlementContractNo != row.CapabilityEvidenceNo ||
 		row.EntitlementContractDigest == nil || *row.EntitlementContractDigest != row.CapabilityDigest {
 		return bizerr.NewCode(CodeConflict)
@@ -417,7 +443,7 @@ func (s *serviceImpl) convergePaidOperation(
 		if row.StatusCode != "awaiting_financial_settlement" ||
 			row.EntitlementVersion != row.ExpectedEntitlementVersion ||
 			row.EntitlementRenewalMode != row.ExecutionModeCode ||
-			(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired") ||
+			(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired" && !(row.EntitlementStatus == "suspended" && (row.TrialConversion || row.StatusCode == "succeeded"))) ||
 			row.EntitlementContractNo == nil || *row.EntitlementContractNo != row.CapabilityEvidenceNo ||
 			row.EntitlementContractDigest == nil || *row.EntitlementContractDigest != row.CapabilityDigest ||
 			row.CurrentExpiresAt == nil || !row.ProjectedExpiresAt.After(*row.CurrentExpiresAt) {
@@ -453,6 +479,11 @@ WHERE tenant_id = 0 AND entitlement_no = ? AND customer_no = ? AND version = ?
 			affected, affectedErr := updated.RowsAffected()
 			if affectedErr != nil || affected != 1 {
 				return bizerr.NewCode(CodeConflict)
+			}
+		}
+		if row.TrialConversion && row.ExecutionModeCode == "local_entitlement" {
+			if err := s.finishTrialConversion(ctx, row.EntitlementNo, row.CustomerNo, row.OperationNo, row.EntitlementStatus); err != nil {
+				return err
 			}
 		}
 		row.StatusCode = finalStatus
@@ -511,7 +542,7 @@ func (s *serviceImpl) convergeCreditOperation(
 		if row.StatusCode != "awaiting_financial_settlement" ||
 			row.EntitlementVersion != row.ExpectedEntitlementVersion ||
 			row.EntitlementRenewalMode != row.ExecutionModeCode ||
-			(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired") ||
+			(row.EntitlementStatus != "active" && row.EntitlementStatus != "expired" && !(row.EntitlementStatus == "suspended" && (row.TrialConversion || row.StatusCode == "succeeded"))) ||
 			row.EntitlementContractNo == nil || *row.EntitlementContractNo != row.CapabilityEvidenceNo ||
 			row.EntitlementContractDigest == nil || *row.EntitlementContractDigest != row.CapabilityDigest ||
 			row.CurrentExpiresAt == nil || !row.ProjectedExpiresAt.After(*row.CurrentExpiresAt) {
@@ -548,6 +579,11 @@ WHERE tenant_id=0 AND entitlement_no=? AND customer_no=? AND version=?
 				return bizerr.NewCode(CodeConflict)
 			}
 		}
+		if row.TrialConversion && row.ExecutionModeCode == "local_entitlement" {
+			if err := s.finishTrialConversion(ctx, row.EntitlementNo, row.CustomerNo, row.OperationNo, row.EntitlementStatus); err != nil {
+				return err
+			}
+		}
 		row.StatusCode = finalStatus
 		result = projectConvergedOperation(row, false)
 		return nil
@@ -571,10 +607,15 @@ SELECT operation.operation_no,operation.quote_no,operation.customer_no,
        operation.status_code,operation.execution_mode_code,
        operation.capability_evidence_no,operation.capability_evidence_digest,
        operation.content_digest,operation.expected_subject_version AS expected_entitlement_version,
-       operation.version AS operation_version,service.version AS entitlement_version,
+       operation.version AS operation_version,service.charge_type_code='trial' AS trial_conversion,
+ service.version AS entitlement_version,
        service.renewal_mode_code AS entitlement_renewal_mode,
        service.status_code AS entitlement_status,
-       service.plugin_id||'@'||service.plugin_release_version AS entitlement_contract_no,
+       CASE WHEN operation.resource_owner_code = service.entitlement_owner_id
+              AND operation.channel_no = service.plugin_release_version
+              AND operation.pool_no = service.contract_version
+            THEN COALESCE(NULLIF(service.renewal_method, ''), service.plugin_id)
+            ELSE NULL END AS entitlement_contract_no,
        service.declaration_digest AS entitlement_contract_digest,
        invoice.payment_due_at AS entitlement_contract_expires_at,
        service.expires_at AS current_expires_at,invoice.status_code AS invoice_status,
@@ -628,10 +669,15 @@ SELECT operation.operation_no, operation.quote_no, operation.customer_no, operat
        operation.capability_evidence_no, operation.capability_evidence_digest,
        operation.content_digest, operation.expected_subject_version AS expected_entitlement_version,
        operation.version AS operation_version,
-       service.version AS entitlement_version,
+       service.charge_type_code='trial' AS trial_conversion,
+ service.version AS entitlement_version,
        service.renewal_mode_code AS entitlement_renewal_mode,
 	   service.status_code AS entitlement_status,
-       service.plugin_id||'@'||service.plugin_release_version AS entitlement_contract_no,
+       CASE WHEN operation.resource_owner_code = service.entitlement_owner_id
+              AND operation.channel_no = service.plugin_release_version
+              AND operation.pool_no = service.contract_version
+            THEN COALESCE(NULLIF(service.renewal_method, ''), service.plugin_id)
+            ELSE NULL END AS entitlement_contract_no,
        service.declaration_digest AS entitlement_contract_digest,
        invoice.payment_due_at AS entitlement_contract_expires_at,
        service.expires_at AS current_expires_at,

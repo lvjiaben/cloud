@@ -18,7 +18,7 @@ func toAPIProductFulfillmentSummary(input *productfulfillment.IntentDetail) *v1.
 		return nil
 	}
 	return &v1.ProductFulfillmentTaskSummary{
-		IntentNo: input.IntentNo, OrderNo: input.OrderNo, OrderItemNo: input.OrderItemNo,
+		TargetEntitlementNo: input.TargetEntitlementNo, IntentNo: input.IntentNo, OrderNo: input.OrderNo, OrderItemNo: input.OrderItemNo,
 		CustomerNo: input.CustomerNo, ProductNameEnUS: input.ProductNameEnUS,
 		CustomerCode: input.CustomerCode, CustomerDisplayName: input.CustomerDisplayName,
 		CustomerPrimaryPhone: input.CustomerPrimaryPhone,

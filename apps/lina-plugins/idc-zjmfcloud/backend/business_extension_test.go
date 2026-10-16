@@ -45,6 +45,45 @@ func TestManagedGuestRejectsDirectProductFulfillmentBeforeOutbound(t *testing.T)
 	}
 }
 
+// TestGenerationValidationIsPureBeforePayment proves invalid cross-field
+// naming rules fail before payment and never use supplier outbound access.
+func TestGenerationValidationIsPureBeforePayment(t *testing.T) {
+	t.Parallel()
+	for _, configuration := range []string{`{"hostname_prefix":"Xxun","hostname_length":12,"password_length":12}`, `{"hostname_prefix":"longprefix","hostname_length":4}`} {
+		request := productfulfillmentcap.ConfigurationValidationRequest{Version: "v1", ProductConfiguration: json.RawMessage(configuration)}
+		payload, err := json.Marshal(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		envelope := businessExtensionEnvelope(t, productfulfillmentcap.MethodValidateProductConfiguration, payload)
+		var invocation capmodel.BusinessExtensionBridgeRequest
+		if err = json.Unmarshal(envelope.Request.Body, &invocation); err != nil {
+			t.Fatal(err)
+		}
+		invocation.Purpose = capmodel.BusinessExtensionInvocationPurposeNewBusiness
+		envelope.Request.Body, err = json.Marshal(invocation)
+		if err != nil {
+			t.Fatal(err)
+		}
+		executor := &fakeConfidentialOutbound{}
+		response, err := NewBusinessExtensionHandler(executor)(envelope)
+		if err != nil || response.StatusCode != 200 || executor.calls != 0 {
+			t.Fatalf("validation crossed boundary: %#v %v calls=%d", response, err, executor.calls)
+		}
+		var result capmodel.BusinessExtensionBridgeResponse
+		if err = json.Unmarshal(response.Body, &result); err != nil {
+			t.Fatal(err)
+		}
+		expected := strings.Contains(configuration, `"hostname_length":12`)
+		var validation struct {
+			Valid bool `json:"valid"`
+		}
+		if err = json.Unmarshal(result.Payload, &validation); err != nil || validation.Valid != expected {
+			t.Fatalf("wrong validation result: %s %v", result.Payload, err)
+		}
+	}
+}
+
 func TestManagedGuestRejectsInvalidEvidenceBeforeOutbound(t *testing.T) {
 	executor := &fakeConfidentialOutbound{result: json.RawMessage(`{"version":"v1","status":"not_accepted"}`)}
 	envelope := businessExtensionEnvelope(t, provisionMethod, json.RawMessage(`{"version":"v1"}`))

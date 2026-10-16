@@ -1,3 +1,5 @@
+// This file atomically records staff intent, prices it and creates a customer order.
+// It never impersonates the customer or withdraws a balance.
 package commerce
 
 import (
@@ -64,6 +66,7 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 	if existing != nil {
 		return s.projectAssistedCreateReplay(ctx, existing, actor, normalized.requestDigest)
 	}
+
 	resolved, err := s.resolveAssistedQuoteItems(ctx, normalized.Items)
 	if err != nil {
 		return nil, err
@@ -73,6 +76,7 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 		return nil, bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)
 	}
 	var persisted *entity.CommerceAssistedQuoteRequest
+	var checkoutResult *Checkout
 	reused := false
 	err = s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
 		if err := lockAssistedQuoteIdempotency(
@@ -110,25 +114,26 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 				return mapContractPolicyResolveError(contractErr)
 			}
 		}
-		paymentDueSeconds := normalized.PaymentDueSeconds
-		if normalized.PaymentTermCode == AssistedPaymentTermStandardPrepay {
-			window, policyErr := loadCheckoutPaymentWindow(ctx, tx)
-			if policyErr != nil {
-				return policyErr
-			}
-			paymentDueSeconds = int(window / time.Second)
-		}
 		now, nowErr := checkoutDatabaseNow(ctx, tx)
 		if nowErr != nil {
 			return nowErr
 		}
-		expiresAt := now.Add(time.Duration(normalized.ValiditySeconds) * time.Second)
+		expiresAt := time.UnixMilli(normalized.PaymentDueAt)
+		paymentDueSeconds := int(expiresAt.Sub(now) / time.Second)
+		if paymentDueSeconds < 300 || paymentDueSeconds > 604800 {
+			return bizerr.NewCode(CodeAssistedQuoteInvalid)
+		}
+		paymentTerm := AssistedPaymentTermStandardPrepay
+		if paymentDueSeconds > 86400 {
+			paymentTerm = AssistedPaymentTermExtendedPrepay
+		}
+
 		requestRow := do.CommerceAssistedQuoteRequest{
 			TenantId: idccap.DefaultTenantID, RequestNo: requestNo,
 			CustomerNo: normalized.CustomerNo, CurrencyCode: normalized.CurrencyCode,
-			StatusCode: string(AssistedQuoteStatusPendingApproval), ItemCount: len(resolved),
+			StatusCode: string(assistedQuoteStatusDirectReady), ItemCount: len(resolved),
 			ManualDiscountMinor: normalized.ManualDiscountMinor,
-			PaymentTermCode:     string(normalized.PaymentTermCode), PaymentDueSeconds: paymentDueSeconds,
+			PaymentTermCode:     string(paymentTerm), PaymentDueSeconds: paymentDueSeconds,
 			Reason: normalized.Reason, InternalNote: normalized.InternalNote,
 			IdempotencyDigest: normalized.idempotencyDigest, RequestDigest: normalized.requestDigest,
 			ContractOverridePolicyCode: string(normalized.ContractPolicyCode),
@@ -182,28 +187,27 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 			Data(itemRows).Insert(); err != nil {
 			return gerror.Wrap(err, "insert assisted quote request items")
 		}
+		if err = s.storeAssistedConfigurations(ctx, requestNo, resolved); err != nil {
+			return err
+		}
 		if _, err = tx.Model("plugin_idc_core_commerce_assisted_quote_item_quantity").Ctx(ctx).Data(quantityRows).Insert(); err != nil {
 			return gerror.Wrap(err, "insert assisted generic quantities")
 		}
-		if err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
-			IdempotencyScope: "commerce.assisted-quote.create",
-			IdempotencyKey:   normalized.IdempotencyKey,
-			OperationCode:    "commerce.assisted-quote.create", TargetType: "assisted_quote_request",
-			TargetNo: requestNo, CustomerNo: normalized.CustomerNo,
-			ResultCode: "pending_approval", ReasonCode: "staff_assisted_quote_requested",
-			RiskCode: "high", RequiredPermission: permissionAssistedQuoteCreate,
-			AfterSnapshot: map[string]any{
-				"requestNo": requestNo, "currencyCode": normalized.CurrencyCode,
-				"itemCount": len(resolved), "manualDiscountMinor": normalized.ManualDiscountMinor,
-				"paymentTermCode":   normalized.PaymentTermCode,
-				"paymentDueSeconds": paymentDueSeconds, "expiresAt": expiresAt,
-				"contractPolicyCode": normalized.ContractPolicyCode,
-				"contractTemplateNo": normalized.ContractTemplateNo,
-				"customerVersion":    customerRow.Version,
-			},
-		}); err != nil {
+		request, loadErr := loadAssistedQuoteRequest(ctx, s.database, requestNo, true)
+		if loadErr != nil {
+			return loadErr
+		}
+		if request == nil {
+			return bizerr.NewCode(CodeAssistedQuoteUnavailable)
+		}
+		if err = s.prepareAssistedOrderQuote(ctx, tx, request, actor, now); err != nil {
 			return err
 		}
+		checkoutResult, err = s.checkoutDirectAssistedOrder(ctx, tx, requestNo, actor, normalized.IdempotencyKey)
+		if err != nil {
+			return err
+		}
+
 		persisted = &entity.CommerceAssistedQuoteRequest{
 			RequestNo: requestNo, RequestDigest: normalized.requestDigest,
 		}
@@ -218,6 +222,14 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 	if reused {
 		return s.projectAssistedCreateReplay(ctx, persisted, actor, normalized.requestDigest)
 	}
+	if err = s.settleAssistedZeroCheckout(ctx, checkoutResult); err != nil {
+		return nil, err
+	}
+	return s.projectCreatedAssistedRequest(ctx, requestNo, actor)
+}
+
+// projectCreatedAssistedRequest reloads the authoritative, committed customer order.
+func (s *assistedQuoteServiceImpl) projectCreatedAssistedRequest(ctx context.Context, requestNo string, actor int) (*AssistedQuoteRequest, error) {
 	request, err := loadAssistedQuoteRequest(ctx, s.database, requestNo, false)
 	if err != nil {
 		return nil, bizerr.WrapCode(gerror.Wrap(err, "reload assisted quote request"), CodeAssistedQuoteUnavailable)
@@ -250,7 +262,7 @@ func normalizeAssistedQuoteCreate(input AssistedQuoteCreateInput) (normalizedAss
 	}
 	input.ContractPolicyCode = rule.Policy
 	input.ContractTemplateNo = rule.TemplateNo
-	if !validAssistedQuoteCreateHeader(input) || !validAssistedPaymentTerm(input) {
+	if !validAssistedQuoteCreateHeader(input) {
 		return normalizedAssistedQuoteCreate{}, bizerr.NewCode(CodeAssistedQuoteInvalid)
 	}
 	items, err := normalizeAssistedQuoteItems(input.Items, input.CurrencyCode)
@@ -261,18 +273,16 @@ func normalizeAssistedQuoteCreate(input AssistedQuoteCreateInput) (normalizedAss
 	requestDigest, err := quoteContentDigest(struct {
 		CustomerNo, CurrencyCode string
 		ManualDiscountMinor      int64
-		PaymentTermCode          AssistedPaymentTerm
-		PaymentDueSeconds        int
+		PaymentDueAt             int64
 		Reason, InternalNote     string
 		ContractPolicyCode       contractpolicy.Policy
 		ContractTemplateNo       string
-		ValiditySeconds          int
 		Items                    []AssistedQuoteItemInput
 	}{
 		input.CustomerNo, input.CurrencyCode, input.ManualDiscountMinor,
-		input.PaymentTermCode, input.PaymentDueSeconds, input.Reason,
+		input.PaymentDueAt, input.Reason,
 		input.InternalNote, input.ContractPolicyCode, input.ContractTemplateNo,
-		input.ValiditySeconds, input.Items,
+		input.Items,
 	})
 	if err != nil {
 		return normalizedAssistedQuoteCreate{}, bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)
@@ -288,19 +298,11 @@ func validAssistedQuoteCreateHeader(input AssistedQuoteCreateInput) bool {
 	reasonLength := utf8.RuneCountInString(input.Reason)
 	return validAssistedIdentifier(input.CustomerNo) && assistedCurrencyPattern.MatchString(input.CurrencyCode) &&
 		input.ManualDiscountMinor >= 0 && input.ManualDiscountMinor <= maximumAssistedDiscountMinor &&
-		reasonLength >= 10 && reasonLength <= 1000 && utf8.ValidString(input.Reason) &&
+		reasonLength <= 1000 && utf8.ValidString(input.Reason) &&
 		utf8.RuneCountInString(input.InternalNote) <= 2000 && utf8.ValidString(input.InternalNote) &&
 		checkoutIdempotencyPattern.MatchString(input.IdempotencyKey) &&
-		input.ValiditySeconds >= 900 && input.ValiditySeconds <= 604800 &&
+		input.PaymentDueAt > 0 &&
 		len(input.Items) >= 1 && len(input.Items) <= maximumAssistedQuoteItems
-}
-
-func validAssistedPaymentTerm(input AssistedQuoteCreateInput) bool {
-	if input.PaymentTermCode == AssistedPaymentTermStandardPrepay {
-		return input.PaymentDueSeconds == 0
-	}
-	return input.PaymentTermCode == AssistedPaymentTermExtendedPrepay &&
-		input.PaymentDueSeconds >= 86401 && input.PaymentDueSeconds <= 604800
 }
 
 func normalizeAssistedQuoteItems(
@@ -318,6 +320,14 @@ func normalizeAssistedQuoteItems(
 
 func normalizeAssistedQuoteItem(item *AssistedQuoteItemInput, currencyCode string) error {
 	purchase := &item.Purchase
+	if len(purchase.Values) > 128 {
+		return bizerr.NewCode(CodeAssistedQuoteInvalid)
+	}
+	for _, value := range purchase.Values {
+		if len(value.FileTokens) > 0 {
+			return bizerr.NewCode(CodeAssistedQuoteInvalid)
+		}
+	}
 	purchase.PublicSlug = strings.ToLower(strings.TrimSpace(purchase.PublicSlug))
 	purchase.ConfigurationRevision = strings.TrimSpace(purchase.ConfigurationRevision)
 	purchase.BillingTermToken = strings.TrimSpace(purchase.BillingTermToken)
@@ -334,6 +344,11 @@ func (s *assistedQuoteServiceImpl) resolveAssistedQuoteItems(
 	ctx context.Context,
 	inputs []AssistedQuoteItemInput,
 ) ([]resolvedAssistedQuoteItem, error) {
+	if len(inputs) > 0 {
+		if err := s.admitAssistedCurrency(ctx, inputs[0].Purchase.CurrencyCode); err != nil {
+			return nil, err
+		}
+	}
 	result := make([]resolvedAssistedQuoteItem, 0, len(inputs))
 	references := make([]catalog.PurchaseConfigurationReference, 0, len(inputs))
 	for index, input := range inputs {
@@ -450,6 +465,29 @@ func (s *assistedQuoteServiceImpl) projectAssistedCreateReplay(
 	if request.RequestDigest != requestDigest {
 		return nil, bizerr.NewCode(CodeAssistedQuoteConflict)
 	}
+	// A committed zero-total order may need settlement recovery after a transient
+	// post-commit failure. Replays retry only the normal idempotent settlement owner.
+	if request.OrderNo != nil {
+		var checkout *Checkout
+		err := s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
+			var order *entity.CommerceOrder
+			if err := tx.Model(dao.CommerceOrder.Table()).Ctx(ctx).Where(do.CommerceOrder{TenantId: idccap.DefaultTenantID, OrderNo: *request.OrderNo}).Scan(&order); err != nil {
+				return err
+			}
+			if order == nil {
+				return bizerr.NewCode(CodeAssistedQuoteUnavailable)
+			}
+			var err error
+			checkout, err = projectPersistedCheckout(ctx, tx, order, true)
+			return err
+		})
+		if err != nil {
+			return nil, mapAssistedQuoteWriteError(err)
+		}
+		if err = s.settleAssistedZeroCheckout(ctx, checkout); err != nil {
+			return nil, err
+		}
+	}
 	views, err := loadAssistedQuoteProjections(
 		ctx, s.database, []entity.CommerceAssistedQuoteRequest{*request}, actor, true,
 	)
@@ -460,8 +498,8 @@ func (s *assistedQuoteServiceImpl) projectAssistedCreateReplay(
 }
 
 func mapAssistedQuoteWriteError(err error) error {
-	if bizerr.Is(err, CodeAssistedQuoteInvalid) || bizerr.Is(err, CodeAssistedQuoteNotAccessible) ||
-		bizerr.Is(err, CodeAssistedQuoteConflict) || bizerr.Is(err, CodeAssistedQuoteApprovalRequired) ||
+	if bizerr.Is(err, CodeAssistedConfigurationMissing) || bizerr.Is(err, CodeAssistedQuoteInvalid) || bizerr.Is(err, CodeAssistedQuoteNotAccessible) ||
+		bizerr.Is(err, CodeAssistedQuoteConflict) ||
 		bizerr.Is(err, CodeQuoteNotAvailable) || bizerr.Is(err, CodeInvalid) ||
 		bizerr.Is(err, CodeConflict) || bizerr.Is(err, CodeNotAccessible) ||
 		bizerr.Is(err, CodeContractPolicyInvalid) ||
@@ -470,4 +508,30 @@ func mapAssistedQuoteWriteError(err error) error {
 		return err
 	}
 	return bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)
+}
+
+// AssistedOrderCurrencies is scoped to an authorized customer assistance action.
+// A currency option never supplies a price; each product still needs its own configured price.
+func (s *assistedQuoteServiceImpl) AssistedOrderCurrencies(ctx context.Context, customerNo string) ([]string, error) {
+	if _, err := s.authorizer.AuthorizeAssistedQuoteCreate(ctx, customerNo); err != nil {
+		return nil, err
+	}
+	var customerRow *entity.CustomerSubject
+	if err := s.database.Model(dao.CustomerSubject.Table()).Ctx(ctx).Where(do.CustomerSubject{TenantId: idccap.DefaultTenantID, CustomerNo: customerNo}).Scan(&customerRow); err != nil {
+		return nil, bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)
+	}
+	if customerRow == nil {
+		return nil, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
+	}
+	if s.currencies != nil {
+		return s.currencies.Enabled(ctx)
+	}
+	var merchant *entity.MerchantProfile
+	if err := s.database.Model(dao.MerchantProfile.Table()).Ctx(ctx).Fields(dao.MerchantProfile.Columns().DefaultCurrency).Where(do.MerchantProfile{TenantId: idccap.DefaultTenantID, Enabled: true}).Limit(1).Scan(&merchant); err != nil {
+		return nil, bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)
+	}
+	if merchant == nil || !assistedCurrencyPattern.MatchString(merchant.DefaultCurrency) {
+		return nil, bizerr.NewCode(CodeAssistedQuoteUnavailable)
+	}
+	return []string{merchant.DefaultCurrency}, nil
 }

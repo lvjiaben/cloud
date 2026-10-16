@@ -327,13 +327,13 @@ func TestWeComSelfTestUsesOnlyCurrentBindingAndIsIdempotentPostgreSQL(t *testing
 		t.Fatalf("self test operation evidence mismatch: count=%d err=%v", operationCount.Int(), err)
 	}
 
-	staleLogin := now.Add(-6 * time.Minute)
+	staleLogin := now.Add(time.Minute)
 	service.sessions = resendSessionStub{current: &sessioncap.SessionInfo{
 		ID: "wecom-session-707", TenantID: "0", UserID: "707", LoginAt: &staleLogin,
 	}}
 	input.IdempotencyKey = "wecom-self-test-stale-login-0001"
 	if _, err = service.TestOwnWeCom(t.Context(), input); err == nil {
-		t.Fatal("WeCom self test accepted a login older than five minutes")
+		t.Fatal("WeCom self test accepted a future login")
 	}
 	adapter.mu.Lock()
 	deliverCalls = adapter.deliverCalls

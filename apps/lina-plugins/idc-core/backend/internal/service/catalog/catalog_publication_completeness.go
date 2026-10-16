@@ -22,10 +22,11 @@ const (
 )
 
 type catalogPublicationGraph struct {
-	billingRules      []entity.CatalogBillingRule
-	prices            []entity.CatalogPrice
-	taxPolicies       []entity.CatalogTaxPolicy
-	priceDimensionNos []string
+	billingRules       []entity.CatalogBillingRule
+	prices             []entity.CatalogPrice
+	taxPolicies        []entity.CatalogTaxPolicy
+	priceDimensionNos  []string
+	configurationModes map[string]ConfigurationPriceMode
 }
 
 // PublicationCheckCode is one stable, localized-by-the-client readiness dimension.
@@ -127,9 +128,10 @@ ORDER BY id LIMIT ?`, versionNo, maximumPublicationPrices+1).Scan(&graph.prices)
 		return nil, publicationIncomplete()
 	}
 	var dimensionRows []struct {
-		DimensionNo string `orm:"dimension_no"`
+		DimensionNo string                 `orm:"dimension_no"`
+		PricingMode ConfigurationPriceMode `orm:"pricing_mode_code"`
 	}
-	if err := dao.CatalogProductVersion.Ctx(ctx).Raw(`SELECT dimension_no
+	if err := dao.CatalogProductVersion.Ctx(ctx).Raw(`SELECT dimension_no,pricing_mode_code
 FROM plugin_idc_core_catalog_configuration_price_dimension
 WHERE tenant_id=0 AND version_no=? AND status_code='active'
 ORDER BY dimension_no LIMIT ?`, versionNo, maximumConfigurationPriceDimensions+1).Scan(&dimensionRows); err != nil {
@@ -138,8 +140,10 @@ ORDER BY dimension_no LIMIT ?`, versionNo, maximumConfigurationPriceDimensions+1
 	if len(dimensionRows) > maximumConfigurationPriceDimensions {
 		return nil, publicationIncomplete()
 	}
+	graph.configurationModes = make(map[string]ConfigurationPriceMode, len(dimensionRows))
 	graph.priceDimensionNos = make([]string, 0, len(dimensionRows))
 	for _, row := range dimensionRows {
+		graph.configurationModes[row.DimensionNo] = row.PricingMode
 		graph.priceDimensionNos = append(graph.priceDimensionNos, row.DimensionNo)
 	}
 	taxColumns := dao.CatalogTaxPolicy.Columns()
@@ -170,6 +174,7 @@ func completePublicationPricing(graph *catalogPublicationGraph) bool {
 	if err != nil {
 		return false
 	}
+	index.configurationModes = graph.configurationModes
 	currencies := index.ConfiguredCurrencies()
 	if len(currencies) == 0 {
 		return false

@@ -1,0 +1,56 @@
+{
+  "plugin": {
+    "org-core": {
+      "permissionHelp": {
+        "button": "Usage help",
+        "stepsTitle": "Follow these steps",
+        "reminder": "Keep in mind",
+        "user": {
+          "title": "How to manage users",
+          "summary": "A user is a person’s login account. Choose who can sign in, which team they belong to, and what they can do.",
+          "step1": "Create the department first, then create a role, for example “Support” and “Ticket agent”.",
+          "step2": "Click Add, enter the account details, select the department and role, and enable the account.",
+          "step3": "For a person who only handles tickets, assign only the ticket agent role. Do not also assign an administrator role: permissions from multiple roles are combined.",
+          "step4": "Ask the person to sign in with their own account and check which pages are available. A position records their job and does not grant permissions.",
+          "note": "Departments define teams; roles define allowed actions. No separate staff qualification is needed. After changing roles, ask the user to sign in again and check access."
+        },
+        "role": {
+          "title": "How to manage roles",
+          "summary": "A role is a set of permissions. Set it up once and assign it to several users instead of configuring each person separately.",
+          "step1": "Click Add, choose a clear name such as “Ticket agent”, and enter a unique English role code.",
+          "step2": "Select only the pages the person needs, then expand them to select actions. Ticket agents may need to view, reply, add notes, claim, and resolve tickets.",
+          "step3": "For ticket agents, select the department data scope so they can see unclaimed tickets in their team. The own-data scope cannot accept new tickets. Supervisors who need cross-department access require both all-data scope and the view-all-tickets permission.",
+          "step4": "For supervisors, also select “Manage department tickets”, then grant each required action such as transfer, close, or reopen. The supervisor permission does not grant these actions automatically. Save and assign the role in User Management.",
+          "note": "Menu permissions control actions; data scope controls visible records. Permissions from multiple roles are combined, so do not add an administrator role to a restricted account."
+        },
+        "dept": {
+          "title": "How to manage departments",
+          "summary": "Departments group people into teams such as Support or Finance. Use names that colleagues can easily recognize.",
+          "step1": "Click Add, enter a name and unique department code, and select the top level when there is no parent department.",
+          "step2": "Add child departments when needed, for example day and night teams under Support.",
+          "step3": "Create or edit users in User Management and select their department. Creating a department does not add people to it.",
+          "step4": "To handle tickets by team, link the organization department in Ticket Settings and assign suitable ticket roles to its members.",
+          "note": "Joining a department does not grant action permissions; a role is still required. Naming someone department leader does not make them an administrator."
+        },
+        "post": {
+          "title": "How to manage positions",
+          "summary": "Positions record jobs such as Support Agent or Technical Supervisor. They help you keep track of each person’s work.",
+          "step1": "Click Add, enter the position name and unique code, and choose its department.",
+          "step2": "Edit the user in User Management to assign a position. Multiple people can hold the same position.",
+          "step3": "When someone changes jobs, update their department and position, then separately check whether their roles should change.",
+          "step4": "Disable positions that are no longer needed. Before deleting one, check whether users still hold it and follow the page instructions.",
+          "note": "Positions do not grant permissions. Naming a position “Administrator” or “Ticket Supervisor” does not grant administrative access."
+        },
+        "menu": {
+          "title": "How to manage menus",
+          "summary": "This page manages navigation entries and action items. To give an employee access, Role Management is usually enough.",
+          "step1": "First decide whether you are changing navigation or giving someone access. For access, use Role Management and User Management.",
+          "step2": "Directories group navigation entries. Menus open pages. Buttons represent specific actions on a page.",
+          "step3": "System and plugin entries are connected to existing code. Avoid changing their permission codes, routes, or page components, which can break access.",
+          "step4": "After changing a custom menu, sign in with a real account to check it. Hide or disable unused entries before deciding whether to remove them.",
+          "note": "Hiding a menu only removes it from navigation; it does not block access. Use role permissions to restrict actions."
+        }
+      }
+    }
+  }
+}

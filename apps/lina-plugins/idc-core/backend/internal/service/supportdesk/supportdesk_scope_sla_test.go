@@ -16,21 +16,23 @@ func TestAppendStaffAccessHonorsHostDataScope(t *testing.T) {
 		wantArgs          []any
 	}{
 		{
-			name:     "current department fails closed without authoritative mapping",
-			actor:    actor{UserID: 17, DataScope: 3, Leader: true, Departments: []string{"DEP_support"}},
-			wantArgs: []any{17, 17},
+			name:              "current department uses live organization mapping",
+			wantDepartmentSQL: true,
+			actor:             actor{UserID: 17, DataScope: 3, Leader: true, Departments: []string{"DEP_support"}},
+			wantArgs:          []any{17, 17, "DEP_support", "DEP_support"},
 		},
 		{
-			name:     "self scope never expands through plugin department membership",
-			actor:    actor{UserID: 18, DataScope: 4, Leader: true, Departments: []string{"DEP_support"}},
-			wantArgs: []any{18, 18},
+			name:              "self scope requires live department membership",
+			wantDepartmentSQL: true,
+			actor:             actor{UserID: 18, DataScope: 4, Leader: true, Departments: []string{"DEP_support"}},
+			wantArgs:          []any{18, 18, "DEP_support"},
 		},
 		{
 			name:              "tenant scope may use proven support membership and leader queue",
 			actor:             actor{UserID: 19, DataScope: 2, Leader: true, Departments: []string{"DEP_support"}},
 			wantDepartmentSQL: true,
 			wantQueueSQL:      true,
-			wantArgs:          []any{19, 19, "DEP_support"},
+			wantArgs:          []any{19, 19, "DEP_support", "DEP_support"},
 		},
 	}
 	for _, test := range tests {

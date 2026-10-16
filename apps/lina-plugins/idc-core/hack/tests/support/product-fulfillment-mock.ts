@@ -6,11 +6,11 @@ function envelope(data: unknown) {
 
 const now = 1_788_000_000_123;
 
-function taskDetail() {
+function taskDetail(manual = false) {
   return {
-    canManualConclude: false,
-    canReviewApprove: true,
-    canReviewReject: true,
+    canManualConclude: manual,
+    canReviewApprove: !manual,
+    canReviewReject: !manual,
     canTakeover: false,
     customerNo: "CUS_fulfillment_customer_0001",
     customerCode: "10009",
@@ -23,11 +23,11 @@ function taskDetail() {
       },
     ],
     financiallySettled: true,
-    fulfillmentModeCode: "approval_then_plugin",
+    fulfillmentModeCode: manual ? "manual" : "approval_then_plugin",
     granularityCode: "per_quantity_unit",
     intentNo: "PFI-MOCK-1",
-    manualCompletedReasons: [],
-    manualUnableReasons: [],
+    manualCompletedReasons: manual ? [{ code: "manual_fulfillment_completed", labelEnUS: "Delivered", labelZhCN: "人工履约已完成" }] : [],
+    manualUnableReasons: manual ? [{ code: "manual_fulfillment_unable", labelEnUS: "Supplier unavailable", labelZhCN: "无法完成履约" }] : [],
     orderItemNo: "ITEM-MOCK-1",
     orderNo: "ORD-MOCK-1",
     productNameEnUS: "Certificate",
@@ -43,7 +43,7 @@ function taskDetail() {
         labelZhCN: "需要人工处理",
       },
     ],
-    statusCode: "awaiting_review",
+    statusCode: manual ? "processing" : "awaiting_review",
     takeoverReasons: [],
     unitSequence: 1,
     updatedAt: now,
@@ -59,7 +59,7 @@ export interface ProductFulfillmentMockState {
 
 export async function installProductFulfillmentMock(
   page: Page,
-  options: { loseFirstActionResponse?: boolean } = {},
+  options: { loseFirstActionResponse?: boolean; manual?: boolean } = {},
 ) {
   const state: ProductFulfillmentMockState = {
     actionBodies: [],
@@ -67,6 +67,7 @@ export async function installProductFulfillmentMock(
     customerListRequests: [],
   };
   let loseFirstActionResponse = options.loseFirstActionResponse ?? false;
+  let currentTask = taskDetail(options.manual);
 
   await page.route("**/x/idc-core/api/v1/admin/customers**", async (route: Route) => {
     const url = new URL(route.request().url());
@@ -103,12 +104,12 @@ export async function installProductFulfillmentMock(
       if (method === "GET" && suffix === "") {
         state.listRequests.push(url);
         await route.fulfill({
-          json: envelope({ nextCursor: "", tasks: Number(url.searchParams.get("page") || 1) === 1 ? [taskDetail()] : [], total: 1 }),
+          json: envelope({ nextCursor: "", tasks: Number(url.searchParams.get("page") || 1) === 1 ? [currentTask] : [], total: 1 }),
         });
         return;
       }
       if (method === "GET" && suffix === "/PFI-MOCK-1") {
-        await route.fulfill({ json: envelope({ task: taskDetail() }) });
+        await route.fulfill({ json: envelope({ task: currentTask }) });
         return;
       }
       if (method === "POST" && suffix.endsWith("/review-approvals")) {
@@ -132,7 +133,37 @@ export async function installProductFulfillmentMock(
           reasonLabelZhCN: "已核对",
           safeNote: "",
         } as (typeof updated.events)[number]);
+        currentTask = updated;
         await route.fulfill({ json: envelope({ task: updated }) });
+        return;
+      }
+      if (method === "POST" && suffix === "/PFI-MOCK-1/manual-conclusions") {
+        const body = request.postDataJSON() as Record<string, unknown>;
+        state.actionBodies.push(body);
+        // Model a committed result whose first response is lost; replay must
+        // preserve the action identity and must not append a second event.
+        if (currentTask.canManualConclude) {
+          currentTask = {
+            ...currentTask,
+            canManualConclude: false,
+            statusCode: body.outcomeCode === "completed" ? "completed" : "not_completed",
+            version: 4,
+          };
+          currentTask.events.push({
+            eventCode: body.outcomeCode === "completed" ? "manual_completed" : "manual_unable_to_complete",
+            occurredAt: now + 1_000,
+            operatorDisplayName: "运营甲",
+            safeNote: body.note,
+            reasonCode: body.reasonCode,
+            reasonLabelZhCN: body.outcomeCode === "completed" ? "人工履约已完成" : "无法完成履约",
+          } as (typeof currentTask.events)[number]);
+        }
+        if (loseFirstActionResponse) {
+          loseFirstActionResponse = false;
+          await route.abort("connectionreset");
+          return;
+        }
+        await route.fulfill({ json: envelope({ task: currentTask }) });
         return;
       }
       await route.fulfill({ json: { code: 404, message: "not found" }, status: 404 });

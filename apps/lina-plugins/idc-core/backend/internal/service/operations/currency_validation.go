@@ -2,6 +2,8 @@
 // currency validator shared by operations snapshots and report contracts.
 package operations
 
+import "strings"
+
 // validCurrencyCode accepts the canonical uppercase currency representation
 // used by the plugin's PostgreSQL constraints.
 func validCurrencyCode(value string) bool {
@@ -15,3 +17,6 @@ func validCurrencyCode(value string) bool {
 	}
 	return true
 }
+
+// normalizeCurrencyCode canonicalizes an ISO currency filter.
+func normalizeCurrencyCode(value string) string { return strings.ToUpper(strings.TrimSpace(value)) }

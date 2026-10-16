@@ -3,6 +3,7 @@ package supportdesk
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -116,94 +117,44 @@ func TestNotificationFailureRollsBackPublicReplyPostgreSQL(t *testing.T) {
 	}
 }
 
-func TestTargetStaffActionsFailClosedWithoutExactTargetAuthorityPostgreSQL(t *testing.T) {
+// TestPersonalTargetsAreRejected verifies removed personal routing cannot be
+// reached by keeping old request fields in a manually crafted payload.
+func TestPersonalTargetsAreRejectedPostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
-	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_support_department
-        (tenant_id,department_no,name_zh_cn,name_en_us,assignment_mode,status_code,created_by,updated_by)
-        VALUES (0,'DEP_auto','Auto','Auto','round_robin','active',7,7)`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_support_department_member
-        (tenant_id,department_no,user_id,role_code,status_code) VALUES (0,'DEP_auto',77,'leader','active')`); err != nil {
-		t.Fatal(err)
-	}
 	service := newAuthorizedSupportDeskTestService(database)
-	var assignee int64
-	var mode string
-	err := database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
-		var resolveErr error
-		assignee, mode, resolveErr = service.resolveInitialAssignee(txCtx, "DEP_auto")
-		return resolveErr
-	})
-	if err != nil || assignee != 0 || mode != "round_robin" {
-		t.Fatalf("automatic assignment assignee/mode=%d/%s err=%v", assignee, mode, err)
+	if err := service.Transfer(ctx, TransferInput{TicketNo: "TKT_target", DepartmentNo: "DEP_target", AssigneeUserID: 77, TicketVersion: 1, Reason: "handoff"}); !bizerr.Is(err, CodeInvalid) {
+		t.Fatalf("transfer err=%v", err)
 	}
-
-	seedSupportNotificationTicket(t, ctx, database, "TKT_target_staff", "", 7)
-	if _, err = service.Transfer(ctx, TransferInput{
-		TicketNo: "TKT_target_staff", TicketVersion: 1, DepartmentNo: "DEP_auto", AssigneeUserID: 77, Reason: "handoff",
-	}); !bizerr.Is(err, CodeUnavailable) {
-		t.Fatalf("specific transfer error=%v, want unavailable", err)
-	}
-	if _, err = service.Escalate(ctx, EscalateInput{
-		TicketNo: "TKT_target_staff", TicketVersion: 1, ToUserID: 77, Reason: "escalate",
-	}); !bizerr.Is(err, CodeUnavailable) {
-		t.Fatalf("escalation error=%v, want unavailable", err)
-	}
-	if _, err = database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET base_stage='closed',closed_at=CURRENT_TIMESTAMP WHERE ticket_no='TKT_target_staff'`); err != nil {
-		t.Fatal(err)
-	}
-	staffDetail, err := service.DetailStaff(ctx, "TKT_target_staff")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if hasAction(staffDetail.AvailableActions, "reopen") {
-		t.Fatalf("assigned ticket exposed unavailable reopen action: %v", staffDetail.AvailableActions)
-	}
-	if _, err = service.ReopenStaff(ctx, TransitionInput{
-		TicketNo: "TKT_target_staff", TicketVersion: 1, Reason: "reopen",
-	}); !bizerr.Is(err, CodeUnavailable) {
-		t.Fatalf("assigned reopen error=%v, want unavailable", err)
+	if _, err := service.Escalate(ctx, EscalateInput{TicketNo: "TKT_target", ToUserID: 77, TicketVersion: 1, Reason: "escalate"}); !bizerr.Is(err, CodeInvalid) {
+		t.Fatalf("escalate err=%v", err)
 	}
 }
 
-func TestAccountLowAndNeutralRatingsFailBeforeWritingWithoutExactStaffRecipientsPostgreSQL(t *testing.T) {
-	ctx, database := newSupportDeskTestDatabase(t)
-	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_subject
-        (tenant_id,customer_no,display_name) VALUES (0,'CUS_rating','Rating customer')`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket
-        (tenant_id,ticket_no,ticket_type,visibility_code,customer_no,assignee_user_id,
-         subject,base_stage,priority_code,current_round,last_activity_at,created_by,updated_by)
-        VALUES (0,'TKT_rating','customer','customer','CUS_rating',77,
-                'Rate me','resolved','normal',1,CURRENT_TIMESTAMP,8,8)`); err != nil {
-		t.Fatal(err)
-	}
-	service := newCustomerSupportDeskTestService(database, "CUS_rating")
-
-	for _, stars := range []int{1, 2, 3} {
-		_, err := service.RateAccount(ctx, RatingInput{
-			TicketNo: "TKT_rating", RoundNo: 1, Stars: stars,
-			Feedback: "must not partially persist", TicketVersion: 1,
+// TestAccountRatingsPersistWithoutStaffNotifications verifies customers can
+// submit every score while low ratings enter follow-up without changing owner.
+func TestAccountRatingsPersistWithoutStaffNotificationsPostgreSQL(t *testing.T) {
+	for _, stars := range []int{1, 2, 3, 4, 5} {
+		t.Run(strconv.Itoa(stars), func(t *testing.T) {
+			ctx, database := newSupportDeskTestDatabase(t)
+			if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_subject (tenant_id,customer_no,display_name) VALUES (0,'CUS_rating','Rating')`); err != nil {
+				t.Fatal(err)
+			}
+			seedSupportNotificationTicket(t, ctx, database, "TKT_rating", "CUS_rating", 77)
+			if _, err := database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET base_stage='resolved' WHERE ticket_no='TKT_rating'`); err != nil {
+				t.Fatal(err)
+			}
+			service := newCustomerSupportDeskTestService(database, "CUS_rating")
+			detail, err := service.RateAccount(ctx, RatingInput{TicketNo: "TKT_rating", RoundNo: 1, Stars: stars, Feedback: "feedback", TicketVersion: 1})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if detail.Rating == nil || detail.Rating.Stars != stars || detail.Ticket.FollowUpRequired != (stars <= 2) || detail.Ticket.AssigneeUserID != 77 || detail.Ticket.BaseStage != StageResolved {
+				t.Fatalf("unexpected rating: %+v %+v", detail.Rating, detail.Ticket)
+			}
+			if _, err = service.RateAccount(ctx, RatingInput{TicketNo: "TKT_rating", RoundNo: 1, Stars: stars, TicketVersion: detail.Ticket.Version}); !bizerr.Is(err, CodeConflict) {
+				t.Fatalf("duplicate rating=%v", err)
+			}
 		})
-		if !bizerr.Is(err, CodeUnavailable) {
-			t.Fatalf("stars=%d error=%v, want unavailable", stars, err)
-		}
-	}
-	ratings, err := queryCount(ctx, database, `SELECT COUNT(1) FROM plugin_idc_core_support_ticket_rating WHERE ticket_no='TKT_rating'`)
-	if err != nil || ratings != 0 {
-		t.Fatalf("partial rating rows=%d err=%v", ratings, err)
-	}
-	var row struct {
-		FollowUp bool  `orm:"follow_up_required"`
-		Version  int64 `orm:"version"`
-	}
-	if err = database.GetScan(ctx, &row, `SELECT follow_up_required,version FROM plugin_idc_core_support_ticket WHERE ticket_no='TKT_rating'`); err != nil {
-		t.Fatal(err)
-	}
-	if row.FollowUp || row.Version != 1 {
-		t.Fatalf("rating failure changed ticket: %+v", row)
 	}
 }
 

@@ -101,7 +101,7 @@ func TestRequiredContractFailurePreservesCompletedEntitlementPostgreSQL(t *testi
 		t.Fatal(err)
 	}
 	worker, err := productfulfillmentservice.NewWorker(
-		scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil,
+		scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)

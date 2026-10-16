@@ -116,6 +116,7 @@ func queryPublicCatalogProducts(
 		input.currency, input.currency,
 		hasCursor, boundarySort, boundarySort, boundaryID,
 		limit,
+		0,
 	)
 	if err != nil {
 		return nil, gerror.Wrap(err, "load public catalog products")
@@ -150,7 +151,10 @@ FROM (
        AND version.version_no = product.current_version_no AND version.status_code = 'published'
     INNER JOIN plugin_idc_core_catalog_price price
         ON price.tenant_id = product.tenant_id AND price.version_no = version.version_no
-       AND price.option_no IS NULL AND price.status_code = 'active'
+       AND price.option_no IS NULL AND price.configuration_price_dimension_no IS NULL AND price.status_code = 'active'
+    INNER JOIN plugin_idc_core_merchant_currency currency
+        ON currency.tenant_id = price.tenant_id AND currency.currency_code = price.currency_code
+       AND currency.enabled = TRUE AND currency.deleted = FALSE
     INNER JOIN plugin_idc_core_catalog_billing_rule rule
         ON rule.tenant_id = price.tenant_id AND rule.version_no = price.version_no
        AND rule.billing_rule_no = price.billing_rule_no AND rule.status_code = 'active'
@@ -167,8 +171,9 @@ FROM (
 ORDER BY complete.currency_code ASC
 LIMIT ?`
 
-const publicCatalogProductsSQL = `
-WITH page_products AS MATERIALIZED (
+// publicCatalogProductsFilteredSQL is shared by cursor and numbered pages so
+// unpublished, disabled and incompletely priced products have identical scope.
+const publicCatalogProductsFilteredSQL = `
     SELECT
         p.id AS internal_id, p.sort_order, p.public_slug,
         p.category_no, c.name_zh_cn AS category_name_zh_cn,
@@ -198,15 +203,18 @@ WITH page_products AS MATERIALIZED (
       AND (? = '' OR LOWER(p.name_zh_cn) LIKE ? ESCAPE '\'
            OR LOWER(p.name_en_us) LIKE ? ESCAPE '\')
       AND (? = '' OR p.category_no = ?)
-      AND (? = '' OR EXISTS (
+      AND EXISTS (
           SELECT 1
           FROM plugin_idc_core_catalog_price fp
+          INNER JOIN plugin_idc_core_merchant_currency currency
+              ON currency.tenant_id = fp.tenant_id AND currency.currency_code = fp.currency_code
+             AND currency.enabled = TRUE AND currency.deleted = FALSE
           INNER JOIN plugin_idc_core_catalog_billing_rule fr
               ON fr.tenant_id = fp.tenant_id AND fr.version_no = fp.version_no
              AND fr.billing_rule_no = fp.billing_rule_no AND fr.status_code = 'active'
           WHERE fp.tenant_id = p.tenant_id AND fp.version_no = v.version_no
-            AND fp.option_no IS NULL AND fp.status_code = 'active'
-            AND fp.currency_code = ?
+            AND fp.option_no IS NULL AND fp.configuration_price_dimension_no IS NULL AND fp.status_code = 'active'
+            AND (? = '' OR fp.currency_code = ?)
           GROUP BY fp.currency_code
           HAVING COUNT(DISTINCT fp.billing_rule_no) = (
               SELECT COUNT(*)
@@ -215,10 +223,14 @@ WITH page_products AS MATERIALIZED (
                 AND all_rules.version_no = v.version_no
                 AND all_rules.status_code = 'active'
           )
-      ))
+      )`
+
+const publicCatalogProductsSQL = `
+WITH page_products AS MATERIALIZED (` + publicCatalogProductsFilteredSQL + `
       AND (? = 0 OR p.sort_order > ? OR (p.sort_order = ? AND p.id > ?))
     ORDER BY p.sort_order ASC, p.id ASC
     LIMIT ?
+    OFFSET ?
 )
 SELECT
     page.internal_id, page.sort_order, page.public_slug,
@@ -239,11 +251,14 @@ INNER JOIN LATERAL (
     FROM (
         SELECT price.currency_code
         FROM plugin_idc_core_catalog_price price
+        INNER JOIN plugin_idc_core_merchant_currency currency
+            ON currency.tenant_id = price.tenant_id AND currency.currency_code = price.currency_code
+           AND currency.enabled = TRUE AND currency.deleted = FALSE
         INNER JOIN plugin_idc_core_catalog_billing_rule rule
             ON rule.tenant_id = price.tenant_id AND rule.version_no = price.version_no
            AND rule.billing_rule_no = price.billing_rule_no AND rule.status_code = 'active'
         WHERE price.tenant_id = 0 AND price.version_no = page.version_no
-          AND price.option_no IS NULL AND price.status_code = 'active'
+          AND price.option_no IS NULL AND price.configuration_price_dimension_no IS NULL AND price.status_code = 'active'
         GROUP BY price.currency_code
         HAVING COUNT(DISTINCT price.billing_rule_no) = (
             SELECT COUNT(*)

@@ -20,7 +20,7 @@ func TestBuildRenewalQuoteUsesRenewalScheduleWithoutSetupOrInventory(t *testing.
 	products := []purchaseQuoteProductRow{{
 		ProductNo: "product-1", VersionNo: "version-1", CategoryNo: "category-1",
 		NameZhCN: "持续服务", NameEnUS: "Managed service",
-		ProductStatusCode: "inactive", CategoryStatusCode: "active",
+		ProductStatusCode: "active", CategoryStatusCode: "active",
 		VersionStatusCode: "published", FulfillmentStrategy: FulfillmentStrategyPaymentConfirmedPlugin,
 	}}
 	rules := []entity.CatalogBillingRule{{
@@ -52,6 +52,13 @@ func TestBuildRenewalQuoteUsesRenewalScheduleWithoutSetupOrInventory(t *testing.
 	if lines[0].Charges[0].ChargeAmountMinor != 600 || lines[0].Charges[0].SetupFeeMinor != 0 {
 		t.Fatalf("renewal charges=%+v", lines[0].Charges)
 	}
+	for _, status := range []string{"draft", "suspended", "retired", "inactive"} {
+		products[0].ProductStatusCode = status
+		if _, err = buildRenewalQuote(input, products, rules, prices, taxes); !bizerr.Is(err, CodePublicQuoteNotAvailable) {
+			t.Fatalf("stopped status %s accepted renewal: %v", status, err)
+		}
+	}
+	products[0].ProductStatusCode = "active"
 
 	prices[0].RenewalAmountMinor = nil
 	if _, err = buildRenewalQuote(input, products, rules, prices, taxes); !bizerr.Is(err, CodePublicQuoteNotAvailable) {

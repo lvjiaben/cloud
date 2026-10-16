@@ -63,7 +63,6 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 func authenticate(executor confidentialoutboundcap.Service, contextID string) error {
 	request := resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindAuthenticate, Method: http.MethodPost, Path: "/zjmf_api_login",
-		CredentialFields: map[string]string{"username": "username", "password": "password"},
 	}
 	result, err := confidentialCall(executor, contextID, 1, request)
 	if err != nil || !result.Authenticated {
@@ -319,7 +318,7 @@ func businessCall(executor confidentialoutboundcap.Service, contextID string, se
 }
 
 func businessCallWithSecrets(executor confidentialoutboundcap.Service, contextID string, sequence uint8, method, path string, query url.Values, form url.Values, secrets map[string]string) (resourcecap.ConfidentialHTTPResponse, error) {
-	request := resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: firstValues(form), SecretFormFields: secrets, ResponseFields: safeResponseFields, UseAuthentication: true}
+	request := resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: firstValues(form), SecretFormBindings: resourcecap.NewConfidentialSecretFormBindings(secrets), ResponseFields: safeResponseFields, UseAuthentication: true}
 	return confidentialCall(executor, contextID, sequence, request)
 }
 

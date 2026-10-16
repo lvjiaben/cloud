@@ -1,0 +1,19 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.summary": "修改商品介绍",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.dc": "有权限的管理员使用读取时的商品版本修改中英文名称和介绍；冲突时拒绝覆盖，不更改地址、价格、配置或合同。",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.productNo.dc": "商品业务编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.version.dc": "读取时的商品介绍版本，过期版本拒绝覆盖",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.nameZhCn.dc": "中文商品名称",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.nameEnUs.dc": "英文商品名称",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.summaryZhCn.dc": "中文商品介绍",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.summaryEnUs.dc": "英文商品介绍",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateRes.fields.version.dc": "保存后的商品介绍版本",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.descriptionVersion.dc": "中英文商品介绍的乐观并发版本",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.tags": "商品管理",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.schema.dc": "商品中英文介绍修改请求",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.createdAt.dc": "创建时间，Unix毫秒时间戳",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.updatedAt.dc": "修改时间，Unix毫秒时间戳",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailVersion.fields.createdAt.dc": "版本创建时间，Unix毫秒时间戳",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.directoryNo.dc": "单个产品类型会员导航编号；留空取消归属，不传则保持当前归属",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.directoryNo.dc": "当前产品类型会员导航编号；空值表示未分类"
+}

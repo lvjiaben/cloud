@@ -31,7 +31,7 @@ type managedManifest struct {
 
 func TestManagedManifestDeclaresValidatedOngoingCertificateFulfillment(t *testing.T) {
 	manifest := readManagedManifest(t)
-	if manifest.ID != pluginID || manifest.Version != "v0.3.6" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
+	if manifest.ID != pluginID || manifest.Version != "v0.3.7" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
 		t.Fatalf("connector release identity is invalid: %#v", manifest)
 	}
 	if len(manifest.BusinessExtensions) != 1 {
@@ -39,7 +39,7 @@ func TestManagedManifestDeclaresValidatedOngoingCertificateFulfillment(t *testin
 	}
 	declaration := manifest.BusinessExtensions[0]
 	if !slices.Equal(declaration.Methods, []string{
-		candidateMethod, validationMethod, provisionMethod, queryMethod,
+		candidateMethod, validationMethod, productfulfillmentcap.MethodValidateProductConfiguration, provisionMethod, queryMethod,
 		serviceDetailMethod, serviceSyncMethod, serviceUpdateValidationMethod, serviceRevalidateMethod, serviceCancelMethod,
 		serviceDownloadMethod,
 	}) {

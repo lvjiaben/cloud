@@ -118,9 +118,14 @@ WHERE tenant_id = 0 AND id = ? AND version = ? AND status_code IN (?,?)`,
 			return firstError(err, bizerr.NewCode(CodeUnavailable))
 		}
 		if _, revisionErr := interfacerevision.Append(ctx, tx, request.ChannelNo, actor); revisionErr != nil {
+			logCommitFailure(ctx, "configuration_revision", revisionErr)
 			return revisionErr
 		}
-		return s.appendBindingAudit(ctx, OperationCreate, row, completed)
+		auditErr := s.appendBindingAudit(ctx, OperationCreate, row, completed)
+		if auditErr != nil {
+			logCommitFailure(ctx, "audit", auditErr)
+		}
+		return auditErr
 	})
 	return completed, publicError(err)
 }

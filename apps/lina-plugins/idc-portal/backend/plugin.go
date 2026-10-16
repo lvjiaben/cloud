@@ -8,11 +8,15 @@ import (
 
 	"lina-core/pkg/plugin/pluginhost"
 	idcportal "lina-plugin-idc-portal"
+	"lina-plugin-idc-portal/backend/cap/customertemplatecap"
+	"lina-plugin-idc-portal/backend/cap/websitecap"
 	admincontroller "lina-plugin-idc-portal/backend/internal/controller/admin"
 	publiccontroller "lina-plugin-idc-portal/backend/internal/controller/public"
 	"lina-plugin-idc-portal/backend/internal/portalroute"
 	"lina-plugin-idc-portal/backend/internal/service/brand"
+	"lina-plugin-idc-portal/backend/internal/service/customerconfiguration"
 	"lina-plugin-idc-portal/backend/internal/service/externalmenu"
+	"lina-plugin-idc-portal/backend/internal/service/siteconfiguration"
 )
 
 // pluginID is the immutable source-plugin identifier.
@@ -22,6 +26,15 @@ const pluginID = "idc-portal"
 func init() {
 	plugin := pluginhost.NewDeclarations(pluginID)
 	plugin.Assets().UseEmbeddedFiles(idcportal.EmbeddedFiles)
+	if err := plugin.BusinessExtensions().RegisterProviderValidator(websitecap.Point, websitecap.Version, websitecap.ValidateDeclarations); err != nil {
+		panic(err)
+	}
+	if err := plugin.BusinessExtensions().RegisterProviderValidator(customertemplatecap.Point, customertemplatecap.Version, customertemplatecap.ValidateDeclarations); err != nil {
+		panic(err)
+	}
+	if err := plugin.Lifecycle().RegisterBusinessImpactHandler(websitecap.BusinessImpact); err != nil {
+		panic(err)
+	}
 	if err := plugin.HTTP().RegisterRoutes(
 		pluginhost.ExtensionPointHTTPRouteRegister,
 		pluginhost.CallbackExecutionModeBlocking,
@@ -43,6 +56,14 @@ func registerRoutes(_ context.Context, registrar pluginhost.HTTPRegistrar) error
 	if err != nil {
 		return err
 	}
+	sites, err := siteconfiguration.New(registrar.BusinessExtensions(), "")
+	if err != nil {
+		return err
+	}
+	customers, err := customerconfiguration.New(registrar.BusinessExtensions(), "")
+	if err != nil {
+		return err
+	}
 	externalMenus := externalmenu.New()
 	if err := portalroute.Register(registrar); err != nil {
 		return err
@@ -56,11 +77,11 @@ func registerRoutes(_ context.Context, registrar pluginhost.HTTPRegistrar) error
 		group.Group("/api/v1", func(group pluginhost.RouteGroup) {
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(), middlewares.RequestBodyLimit(), middlewares.Ctx())
-				group.Bind(publiccontroller.NewV1(brands, externalMenus))
+				group.Bind(publiccontroller.NewV1(brands, externalMenus, sites, customers))
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(), middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy(), middlewares.Permission())
-				group.Bind(admincontroller.NewV1(brands, externalMenus))
+				group.Bind(admincontroller.NewV1(brands, externalMenus, sites, customers))
 			})
 		})
 	})

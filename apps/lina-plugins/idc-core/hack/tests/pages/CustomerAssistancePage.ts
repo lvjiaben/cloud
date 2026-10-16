@@ -12,7 +12,7 @@ export class CustomerAssistancePage {
 
   async waitUntilReady() {
     await this.page.waitForLoadState("domcontentloaded");
-    await this.page.waitForURL(/127\.0\.0\.1:6032\/account$/u);
+    await this.page.waitForURL(url => url.pathname === "/account");
     await this.page.getByTestId("customer-assistance-banner").waitFor({
       state: "visible",
     });
@@ -22,12 +22,17 @@ export class CustomerAssistancePage {
   }
 
   async gotoOrders() {
-    await this.page.goto("http://127.0.0.1:6032/account/orders", {
+    const loaded = this.page.waitForResponse(response =>
+      new URL(response.url()).pathname.endsWith("/orders") && response.request().method() === "GET"
+      && ["fetch", "xhr"].includes(response.request().resourceType()),
+    );
+    await this.page.goto(new URL("/account/orders", this.page.url()).href, {
       waitUntil: "domcontentloaded",
     });
     await this.page.getByTestId("customer-commerce-page").waitFor({
       state: "visible",
     });
+    return loaded;
   }
 
   async screenshot(description: string) {

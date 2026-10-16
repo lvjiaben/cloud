@@ -63,6 +63,9 @@ func queryPage[T any](model *gdb.Model, query PageQuery, scan func(*gdb.Model) (
 
 // ListTokenPage exposes metadata only and preserves the existing staff channel filter.
 func (s *service) ListTokenPage(ctx context.Context, channelID string, query PageQuery) (PageResult[TokenSummary], error) {
+	if err := s.authorizeStaff(ctx); err != nil {
+		return PageResult[TokenSummary]{}, err
+	}
 	model := s.db.Model("plugin_idc_channel_token").Ctx(ctx).
 		Order("id DESC")
 	if channelID = strings.TrimSpace(channelID); channelID != "" {

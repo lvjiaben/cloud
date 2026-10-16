@@ -72,25 +72,20 @@ onMounted(() => load());
 
 <template>
   <main class="idc-workspace" data-testid="ip-change-policy-page">
-    <section class="panel workspace-toolbar">
-      <div><h2>{{ tr('ipChange.title') }}</h2></div>
-      <button class="button secondary" type="button" @click="load()">{{ tr('ipChange.action.refresh') }}</button>
-    </section>
     <p v-if="error" class="notice danger" role="alert">{{ error }}</p>
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
     <section v-if="loading && !items.length" class="panel empty-state">{{ tr('ipChange.loading') }}</section>
     <section v-else class="panel policy-card">
       <div class="form-grid">
-        <label>{{ tr('ipChange.currency') }}<input v-model="form.currencyCode" maxlength="3" @change="load(form.currencyCode.trim().toUpperCase())" /></label>
-        <label>{{ tr('ipChange.version') }}<input :value="form.expectedVersion" disabled /></label>
-        <label>{{ tr('ipChange.window') }}<input v-model.number="form.windowDays" min="1" max="365" type="number" /></label>
-        <label>{{ tr('ipChange.free') }}<input v-model.number="form.freeChangesPerWindow" min="0" max="100" type="number" /></label>
-        <label>{{ tr('ipChange.maxDaily') }}<input v-model.number="form.maxChangesPerDay" min="1" max="20" type="number" /></label>
-        <label>{{ tr('ipChange.amount') }}<input v-model.number="form.amountMinor" min="0" max="1000000000" type="number" /></label>
-        <label>{{ tr('ipChange.snapshotAge') }}<input v-model.number="form.maximumSnapshotAgeSeconds" min="60" max="86400" type="number" /></label>
+        <label class="field"><span>{{ tr('ipChange.currency') }}</span><input v-model="form.currencyCode" maxlength="3" @change="load(form.currencyCode.trim().toUpperCase())" /></label>
+        <label class="field"><span>{{ tr('ipChange.window') }}</span><input v-model.number="form.windowDays" min="1" max="365" type="number" /></label>
+        <label class="field"><span>{{ tr('ipChange.free') }}</span><input v-model.number="form.freeChangesPerWindow" min="0" max="100" type="number" /></label>
+        <label class="field"><span>{{ tr('ipChange.maxDaily') }}</span><input v-model.number="form.maxChangesPerDay" min="1" max="20" type="number" /></label>
+        <label class="field"><span>{{ tr('ipChange.amount') }}</span><input v-model.number="form.amountMinor" min="0" max="1000000000" type="number" /></label>
+        <label class="field"><span>{{ tr('ipChange.snapshotAge') }}</span><input v-model.number="form.maximumSnapshotAgeSeconds" min="60" max="86400" type="number" /></label>
         <label class="policy-switch-row"><input v-model="form.enabled" type="checkbox" />{{ tr('ipChange.enabled') }}</label>
       </div>
-      <div class="policy-footer"><span class="status-pill" :class="form.enabled ? 'safe' : 'warning'">{{ tr(form.enabled ? 'ipChange.status.enabled' : 'ipChange.status.disabled') }}</span><button class="button primary" :disabled="saving" type="button" @click="publish">{{ tr('ipChange.action.publish') }}</button></div>
+      <div class="policy-footer"><span class="status-pill" :class="form.enabled ? 'safe' : 'warning'">{{ tr(form.enabled ? 'ipChange.status.enabled' : 'ipChange.status.disabled') }}</span><div class="filter-actions"><button class="button secondary" :disabled="loading || saving" type="button" @click="load()">{{ tr('ipChange.action.refresh') }}</button><button class="button primary" :disabled="saving" type="button" @click="publish">{{ tr('ipChange.action.publish') }}</button></div></div>
     </section>
   </main>
 </template>

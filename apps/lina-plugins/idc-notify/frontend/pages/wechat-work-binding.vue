@@ -3,18 +3,18 @@ export const pluginPageMeta = { routePath: 'idc/notifications/wechat-work-bindin
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import { Page } from '@vben/common-ui';
-import { Card } from 'ant-design-vue';
 import App from '../src/App.vue';
 import { useSourcePluginContext } from './source-context';
 
-const context = useSourcePluginContext();
+const context = useSourcePluginContext('/idc/notifications/wechat-work-binding');
 </script>
 
 <template>
-  <Page :auto-content-height="true">
-    <Card :bordered="false" class="h-full notify-plugin-shell" data-plugin-frontend-root="idc-notify">
+  <Page class="plugin-admin-page" :auto-content-height="true">
+    <div class="h-full notify-plugin-shell" data-plugin-frontend-root="idc-notify">
       <App :context="context" />
-    </Card>
+    </div>
   </Page>
 </template>

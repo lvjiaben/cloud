@@ -42,6 +42,10 @@ func TestSevenZipEntryPathAndTypeBounds(t *testing.T) {
 		{name: "../escape", valid: false},
 		{name: "/absolute", valid: false},
 		{name: `C:\absolute`, valid: false},
+		{name: `c:/absolute`, valid: false},
+		{name: `C:relative`, valid: false},
+		{name: `\\server\share\file`, valid: false},
+		{name: `folder/C-not-drive.txt`, valid: true},
 		{name: "folder/\x00file", valid: false},
 		{name: "link", mode: fs.ModeSymlink, valid: false},
 	} {

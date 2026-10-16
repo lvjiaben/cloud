@@ -282,3 +282,45 @@ func TestBuildPurchaseQuoteRequiresAuthoritativeProductScopedTrialUsage(t *testi
 		t.Fatalf("trial quote exceeding product limit error=%v", err)
 	}
 }
+
+// TestConfigurationQuantityPurchaseAndRenewalCharge preserves exact quantities,
+// cycle multiplication, setup fees and historical fixed-price source digests.
+func TestConfigurationQuantityPurchaseAndRenewalCharge(t *testing.T) {
+	maximum, renewal := int64(100), int64(1)
+	definition := BillingRuleDefinition{ChargeType: ChargeTypeRecurring, PeriodUnit: PeriodUnitMonth, PeriodCount: 1, PricePhase: PricePhaseBoth, QuantityMode: QuantityModeFixed, MinimumPurchaseCycles: 1}
+	line := PurchaseQuoteLineInput{VersionNo: "version-demo", BillingRuleNo: "billing-demo", Quantity: 2, PurchaseCycles: 3}
+	prices := map[string][]entity.CatalogPrice{purchaseQuotePriceKey(line.VersionNo, line.BillingRuleNo, "cpd_demo"): {
+		{AmountMinor: 2, SetupFeeMinor: 3, RenewalAmountMinor: &renewal, MaximumQuantity: &maximum},
+		{MinimumQuantity: 100, AmountMinor: 1, SetupFeeMinor: 5, RenewalAmountMinor: &renewal},
+	}}
+	for _, test := range []struct {
+		mode                   ConfigurationPriceMode
+		quantity               int
+		charge, setup, renewal int64
+	}{
+		{ConfigurationPricePerUnit, 100, 1200, 6, 600}, {ConfigurationPricePerUnit, 101, 606, 10, 606},
+		{ConfigurationPriceBandTotal, 100, 12, 6, 6}, {ConfigurationPriceBandTotal, 101, 6, 10, 6},
+	} {
+		charge, err := purchaseQuoteCharge(line, definition, "cpd_demo", true, test.mode, test.quantity, prices, nil)
+		if err != nil || charge.ChargeAmountMinor != test.charge || charge.SetupFeeMinor != test.setup || charge.Quantity != test.quantity {
+			t.Fatalf("purchase %+v got=%+v err=%v", test, charge, err)
+		}
+		renewed, err := renewalQuoteCharge(RenewalQuoteLineInput{VersionNo: line.VersionNo, BillingRuleNo: line.BillingRuleNo, Quantity: 2, PurchaseCycles: 3}, definition, "cpd_demo", true, test.mode, test.quantity, prices)
+		if err != nil || renewed.ChargeAmountMinor != test.renewal || renewed.SetupFeeMinor != 0 {
+			t.Fatalf("renewal %+v got=%+v err=%v", test, renewed, err)
+		}
+	}
+	prices[purchaseQuotePriceKey(line.VersionNo, line.BillingRuleNo, "")] = []entity.CatalogPrice{{AmountMinor: 2, RenewalAmountMinor: &renewal}}
+	fixed, err := purchaseQuoteCharge(line, definition, "", false, ConfigurationPriceFixed, 1, prices, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacyDigest, err := purchaseQuoteDigest(struct {
+		VersionNo, BillingRuleNo, OptionNo string
+		Quantity, PurchaseQuantity, Cycles int
+		Schedule                           []PriceTierDefinition
+	}{line.VersionNo, line.BillingRuleNo, "", 1, line.Quantity, line.PurchaseCycles, []PriceTierDefinition{{AmountMinor: 2, RenewalAmountMinor: &renewal}}})
+	if err != nil || fixed.PriceSourceDigest != legacyDigest {
+		t.Fatalf("historical fixed digest changed: got=%s want=%s err=%v", fixed.PriceSourceDigest, legacyDigest, err)
+	}
+}

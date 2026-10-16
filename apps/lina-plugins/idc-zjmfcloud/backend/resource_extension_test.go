@@ -144,12 +144,12 @@ func TestManagedGuestDispatchesResourceProviderWithoutSecretMaterial(t *testing.
 		t.Fatalf("dispatch resource Provider invocation: response=%#v err=%v", response, err)
 	}
 	guestPayload := strings.ToLower(string(bytes.Join(executor.payloads, nil)))
-	for _, forbidden := range []string{"opaque-encrypted-reference", "access-token", "authorization", "secretref", "secrethandle"} {
+	for _, forbidden := range []string{"opaque-encrypted-reference", "access-token", "authorization", "secretref", "secrethandle", "credentialfields", `"password":`} {
 		if strings.Contains(guestPayload, forbidden) {
 			t.Fatalf("guest payload contains forbidden supplier material %q: %s", forbidden, guestPayload)
 		}
 	}
-	if !strings.Contains(guestPayload, "credentialfields") || !strings.Contains(guestPayload, "password") ||
+	if !strings.Contains(guestPayload, `"kind":"authenticate"`) ||
 		!strings.Contains(guestPayload, "/clouds/41") {
 		t.Fatalf("guest payload lost the governed login or relative business request: %s", guestPayload)
 	}
@@ -198,6 +198,7 @@ func TestManagedGuestBuildsProvisionParametersWithoutOutbound(t *testing.T) {
 			{Type: resourcecap.ServerProvisionComponentCPU, Cores: 2, SelectionQuantity: 1},
 			{Type: resourcecap.ServerProvisionComponentMemory, Megabytes: 2048, SelectionQuantity: 1},
 			{Type: resourcecap.ServerProvisionComponentImage, Code: "debian-12", SelectionQuantity: 1},
+			{Type: resourcecap.ServerProvisionComponentDataDisk, Gigabytes: 100, SelectionQuantity: 1},
 		},
 	}
 	payload, err := json.Marshal(plan)
@@ -227,7 +228,8 @@ func TestManagedGuestBuildsProvisionParametersWithoutOutbound(t *testing.T) {
 	}
 	var bridge capmodel.BusinessExtensionBridgeResponse
 	if json.Unmarshal(response.Body, &bridge) != nil || !strings.Contains(string(bridge.Payload), `"cpu":2`) ||
-		!strings.Contains(string(bridge.Payload), `"os":"5"`) {
+		!strings.Contains(string(bridge.Payload), `"os":"5"`) ||
+		!strings.Contains(string(bridge.Payload), `"data_disk_size":100`) {
 		t.Fatalf("provision mapper projection is invalid: %s", response.Body)
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func (c *ControllerV1) Create(ctx context.Context, req *v1.CreateReq) (*v1.CreateRes, error) {
-	directory, err := c.service.Save(ctx, productdirectory.SaveInput{NameZhCn: req.NameZhCn, NameEnUs: req.NameEnUs, SortOrder: req.SortOrder, ProductNos: req.ProductNos})
+	directory, err := c.service.Save(ctx, productdirectory.SaveInput{NavigationType: productdirectory.NavigationType(req.NavigationType), TargetURL: req.TargetURL, Icon: req.Icon, NameZhCn: req.NameZhCn, NameEnUs: req.NameEnUs, SortOrder: req.SortOrder})
 	if err != nil {
 		return nil, err
 	}

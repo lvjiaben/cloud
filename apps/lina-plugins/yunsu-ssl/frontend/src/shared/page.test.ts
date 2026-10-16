@@ -96,6 +96,21 @@ describe("isolated SSL certificate page", () => {
     stop();
   });
 
+  it("opens the requested staff entitlement through the owner without loading other customer details", async () => {
+    installCertificateShell("admin");
+    const postMessage=vi.fn();Object.defineProperty(window,"parent",{configurable:true,value:{postMessage}});
+    const stop=startCertificatePage({audience:"admin",capability:"service-entitlements.admin.v1",surfaceKey:"certificates"});
+    hostMessage({capability:"host.context.v1",payload:{locale:"zh-CN",route:{path:`entitlements/${certificate.entitlementNo}`},theme:{mode:"light",cssVariables:{}}}});
+    const list=postMessage.mock.calls.map(([m])=>m).find(m=>m.payload?.path==="admin/service-entitlements");
+    hostMessage({capability:list.capability,requestId:list.requestId,ok:true,result:{items:[],nextCursor:""}});
+    await vi.waitFor(()=>expect(postMessage.mock.calls.some(([m])=>m.payload?.path===`admin/service-entitlements/${certificate.entitlementNo}`)).toBe(true));
+    const detail=postMessage.mock.calls.map(([m])=>m).find(m=>m.payload?.path===`admin/service-entitlements/${certificate.entitlementNo}`);
+    hostMessage({capability:detail.capability,requestId:detail.requestId,ok:true,result:{item:certificate}});
+    await vi.waitFor(()=>expect(document.body.textContent).toContain("example.test"));
+    expect(postMessage.mock.calls.every(([m])=>m.payload?.method!=="POST")).toBe(true);
+    stop();
+  });
+
   it("keeps customer and admin owner paths separate and never posts a host token", () => {
     installCertificateShell("admin");
     const postMessage = vi.fn(); Object.defineProperty(window, "parent", { configurable: true, value: { postMessage } });

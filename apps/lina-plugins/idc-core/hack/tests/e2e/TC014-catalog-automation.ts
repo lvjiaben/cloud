@@ -1,4 +1,4 @@
-import { expect, test } from "../../../../../../hack/tests/fixtures/auth";
+import { expect, test } from "../support/catalog-auth";
 
 import { CatalogAutomationPage } from "../pages/CatalogAutomationPage";
 import { CatalogManagementPage } from "../pages/CatalogManagementPage";
@@ -14,6 +14,106 @@ const bindingWritePermission = "idc:admin:catalog:fulfillment-binding:write";
 const productQueryPermission = "idc:admin:catalog:product:query";
 
 test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
+  test("TC-14-ssl-capabilities: 未确认的证书套餐显示人工交付提示并拒绝保存", async ({ adminPage }) => {
+    await installCatalogManagementMock(adminPage, { fulfillmentBinding: {
+      boundAt: 1_787_705_720_000, evidenceVerified: true,
+      interfaceDisplayName: "云速证书接口", interfaceInstanceNo: "hidden-interface-certificate",
+      interfaceNewBusinessState: "accepting",
+    } });
+    await installCatalogAutomationMock(adminPage);
+    let writes = 0;
+    let evaluations = 0;
+    const hint = "尚未确认供应商支持的域名类型与数量，暂不能自动发布，请改用人工交付。";
+    await adminPage.route("**/admin/catalog/product-versions/*/configuration", async route => {
+      if (route.request().method() === "PUT") writes += 1;
+      await route.fulfill({ json: { code: 0, data: { configuration: {
+        version: 0, merchantValues: [{ fieldKey: "plan_id", optionTokens: ["plan-1"] }], productResolvedCandidates: {},
+        customerDeclaration: { version: "v1", fields: [] },
+        productDeclaration: { version: "v1", fields: [{
+          key: "plan_id", type: "single_select", required: true,
+          label: { zhCN: "供应商证书产品", enUS: "Supplier certificate product" },
+          description: { zhCN: hint, enUS: "Automatic publication is blocked; use manual delivery." },
+          staticCandidates: [{ value: "plan-1", label: { zhCN: "测试证书", enUS: "Test certificate" } }],
+        }] },
+      } }, message: "success" } });
+    });
+    await adminPage.route("**/admin/catalog/product-versions/*/configuration/evaluation", async route => {
+      evaluations += 1;
+      await route.fulfill({ json: { code: 400, data: null, message: hint } });
+    });
+    const catalog = new CatalogManagementPage(adminPage);
+    await catalog.goto();
+    await catalog.openProductDetail("product-manual-service");
+    await catalog.openMerchantConfiguration();
+    const dialog = catalog.merchantConfigurationDialog();
+    await expect(dialog).toContainText("供应商证书产品");
+    await expect(dialog).toContainText(hint);
+    await expect.poll(() => evaluations).toBeGreaterThan(0);
+    await expect(dialog).toContainText("暂时无法核对最新配置，核对成功前不能保存。");
+    await dialog.getByRole("button", { name: /确\s*认/u }).click();
+    await expect(dialog).toBeVisible();
+    expect(writes).toBe(0);
+    await expect(dialog).not.toContainText("plugin.idc-core");
+    await catalog.screenshot("ssl-capabilities-blocked");
+  });
+  test("TC-14-generation: 服务器生成规则保存精确配置且越界零写入", async ({ adminPage }) => {
+    await installCatalogManagementMock(adminPage, { fulfillmentBinding: {
+      boundAt: 1_787_705_720_000, evidenceVerified: true,
+      interfaceDisplayName: "服务器接口", interfaceInstanceNo: "hidden-interface-certificate",
+      interfaceNewBusinessState: "accepting",
+    } });
+    await installCatalogAutomationMock(adminPage);
+    const state = await installCatalogConfigurationMock(adminPage);
+    const catalog = new CatalogManagementPage(adminPage);
+    await catalog.goto();
+    await catalog.openProductDetail("product-manual-service");
+    await catalog.openMerchantConfiguration();
+    const dialog = catalog.merchantConfigurationDialog();
+    await expect(dialog).toContainText("主机名总长度");
+    await expect(dialog).toContainText("自动生成密码长度");
+    await catalog.fillMerchantField("商品整数", "1");
+    await catalog.fillMerchantField("商品精确小数", "1.00");
+    await catalog.fillMerchantField("主机名前缀", "Xxun");
+    await catalog.fillMerchantField("主机名总长度", "64");
+    await catalog.fillMerchantField("自动生成密码长度", "12");
+    await catalog.selectMerchantCharacter("大写字母");
+    await catalog.selectMerchantCharacter("数字");
+    await catalog.screenshot("server-generation-rules");
+    await catalog.saveMerchantConfiguration();
+    await expect(dialog).toBeVisible();
+    expect(state.productConfigurationRequests.filter(row => row.method === "PUT")).toHaveLength(0);
+    await catalog.fillMerchantField("主机名总长度", "12");
+    await catalog.saveMerchantConfiguration();
+    await expect(dialog).not.toBeVisible();
+    const writes = state.productConfigurationRequests.filter(row => row.method === "PUT");
+    expect(writes).toHaveLength(1);
+    expect(writes[0]?.body).toMatchObject({ expectedVersion: 0, merchantValues: expect.arrayContaining([
+      { fieldKey: "hostname_prefix", textValue: "Xxun" },
+      { fieldKey: "hostname_length", integerValue: "12" },
+      { fieldKey: "password_length", integerValue: "12" },
+      { fieldKey: "password_characters", optionTokens: ["uppercase", "digits"] },
+    ]) });
+    await catalog.screenshot("server-generation-saved");
+  });
+  test("TC-14-import: 导入配置明确只读且保留本站价格入口", async ({ adminPage }) => {
+    await installCatalogManagementMock(adminPage, { fulfillmentBinding: {
+      boundAt: 1_787_705_720_000, evidenceVerified: true,
+      interfaceDisplayName: "上游商品接口", interfaceInstanceNo: "hidden-interface-certificate",
+      interfaceNewBusinessState: "accepting",
+    }});
+    await installCatalogAutomationMock(adminPage);
+    const state = await installCatalogConfigurationMock(adminPage, true);
+    const catalog = new CatalogManagementPage(adminPage);
+    await catalog.goto();
+    await catalog.openProductDetail("product-manual-service");
+    await catalog.selectEditSection("购买配置");
+    const notice = adminPage.getByTestId("catalog-imported-configuration-notice");
+    await expect(notice).toContainText("需要更新上游配置时，请重新导入商品");
+    await expect(notice).toContainText("本站售价仍可在价格设置中修改");
+    await expect(catalog.detailDrawer.getByRole("button", { name: "编辑配置", exact: true })).toHaveCount(0);
+    expect(state.productConfigurationRequests.every((request) => request.method === "GET")).toBe(true);
+    await catalog.screenshot("catalog-imported-configuration-readonly");
+  });
   test("TC-14a: 模拟前端契约使用业务名称、中文状态和服务端筛选", async ({
     adminPage,
   }) => {
@@ -204,6 +304,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
 
+    await catalog.selectEditSection('交付设置');
     await catalog.detailDrawer
       .getByRole("button", { name: "绑定接口" })
       .click();
@@ -299,6 +400,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     const catalog = new CatalogManagementPage(adminPage);
     await catalog.goto();
     await catalog.openProductDetail("product-ssl");
+    await catalog.selectEditSection("交付设置");
 
     await expect(catalog.detailDrawer).toContainText("历史证书供应商接口");
     await expect(catalog.detailDrawer).toContainText(
@@ -347,6 +449,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     const catalog = new CatalogManagementPage(adminPage);
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
+    await catalog.selectEditSection("交付设置");
 
     await catalog.detailDrawer
       .getByRole("button", { name: "解除绑定" })
@@ -427,6 +530,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     const catalog = new CatalogManagementPage(adminPage);
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
+    await catalog.selectEditSection("交付设置");
 
     await expect(
       catalog.detailDrawer.getByRole("button", { name: "绑定接口" }),
@@ -740,6 +844,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     const catalog = new CatalogManagementPage(adminPage);
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
+    await catalog.selectEditSection("购买配置");
 
     const productCard = catalog.detailDrawer
       .locator(".ant-card")
@@ -1048,6 +1153,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     await catalog.closeProductDetail();
     await mainLayout.switchLanguage("English");
     await catalog.openProductDetail("product-manual-service");
+    await catalog.selectEditSection("Delivery settings");
     await expect(catalog.detailDrawer).toContainText(
       "Call plugin after payment confirmation",
     );

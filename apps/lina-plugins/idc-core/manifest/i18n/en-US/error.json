@@ -1,20 +1,35 @@
 {
   "error": {
     "idc": {
-      "interface": { "usage": {
-        "not": { "accessible": "The interface usage is not accessible" },
-        "invalid": "The interface usage request is invalid",
-        "unavailable": "The interface usage is temporarily unavailable"
-      } },
-	  "ip": {
-		"change": {
-		  "not": { "accessible": "The server IP-change policy or service is not accessible" },
-		  "invalid": "The IP-change request is invalid. Check it and try again.",
-		  "unavailable": "IP change is temporarily unavailable. Refresh the resource inventory and try again.",
-		  "conflict": "The IP-change quote or server state changed. Reload it and try again.",
-		  "frequency": { "exceeded": "This server has reached its IP-change limit" }
-		}
-	  },
+      "operations": {
+        "data": {
+          "denied": "You do not have access to these operating records",
+          "invalid": "The operating data filter is invalid",
+          "unavailable": "Operating data could not be loaded; please retry"
+        }
+      },
+      "interface": {
+        "usage": {
+          "not": {
+            "accessible": "The interface usage is not accessible"
+          },
+          "invalid": "The interface usage request is invalid",
+          "unavailable": "The interface usage is temporarily unavailable"
+        }
+      },
+      "ip": {
+        "change": {
+          "not": {
+            "accessible": "The server IP-change policy or service is not accessible"
+          },
+          "invalid": "The IP-change request is invalid. Check it and try again.",
+          "unavailable": "IP change is temporarily unavailable. Refresh the resource inventory and try again.",
+          "conflict": "The IP-change quote or server state changed. Reload it and try again.",
+          "frequency": {
+            "exceeded": "This server has reached its IP-change limit"
+          }
+        }
+      },
       "identity": {
         "required": "An authenticated identity is required"
       },
@@ -33,7 +48,9 @@
         "configuration": {
           "file": {
             "invalid": "The purchase configuration file is invalid",
-            "not": { "accessible": "The purchase configuration file is not accessible" },
+            "not": {
+              "accessible": "The purchase configuration file is not accessible"
+            },
             "conflict": "The purchase configuration file changed; reload and try again",
             "rejected": "The file type, size, or safety result is not allowed",
             "unavailable": "Purchase configuration file upload is temporarily unavailable"
@@ -141,12 +158,12 @@
         "unavailable": "The audit service is temporarily unavailable"
       },
       "customer": {
-		"phone": {
-		  "exists": "This phone number already belongs to a customer"
-		},
-		"email": {
-		  "exists": "This email address already belongs to a customer"
-		},
+        "phone": {
+          "exists": "This phone number already belongs to a customer"
+        },
+        "email": {
+          "exists": "This email address already belongs to a customer"
+        },
         "profile": {
           "invalid": "The customer profile request is invalid"
         },
@@ -206,7 +223,10 @@
           },
           "unavailable": "The address service is temporarily unavailable"
         },
-        "unavailable": "The customer profile service is temporarily unavailable"
+        "unavailable": "The customer profile service is temporarily unavailable",
+        "verification": {
+          "required": "This customer has not completed identity verification. Verify the customer in Customer Management and try again."
+        }
       },
       "reauth": {
         "invalid": "The recent authentication request is invalid",
@@ -254,6 +274,18 @@
           },
           "evidence": {
             "unavailable": "The automation plugin release, fulfillment extension, contract, or authorized methods cannot be verified right now"
+          },
+          "supplier": {
+            "capabilities": {
+              "unconfirmed": "Supplier domain types and quantity limits are unconfirmed; use manual delivery until the supplier documentation is available"
+            }
+          },
+          "customer": {
+            "option": {
+              "prices": {
+                "required": "Set an explicit price for each enabled purchase option in every sale currency and billing period, including zero for free options"
+              }
+            }
           }
         }
       },
@@ -265,6 +297,9 @@
           "invalid": "The server catalog configuration graph is invalid"
         },
         "category": {
+          "depth": {
+            "exceeded": "Product categories support at most two levels. Select a top-level parent; a category with children cannot be moved under another category"
+          },
           "parent": {
             "cycle": "A category cannot be moved below itself or one of its descendants"
           }
@@ -325,6 +360,11 @@
             "invalid": "The local inventory routing request is invalid",
             "unavailable": "Local inventory routing is temporarily unavailable"
           }
+        },
+        "trial": {
+          "fulfillment": {
+            "unavailable": "Trial products require automatic delivery with pause, resume and formal renewal support. Remove the trial plan or choose a supported interface."
+          }
         }
       },
       "public": {
@@ -379,6 +419,9 @@
         },
         "assisted": {
           "quote": {
+            "configuration": {
+              "missing": "This quote has no saved product configuration; create a new assisted quote"
+            },
             "invalid": "The assisted quote request is invalid",
             "not": {
               "accessible": "The assisted quote request is not accessible"
@@ -535,6 +578,11 @@
             "insufficient": "The same-currency balance is insufficient; the renewal invoice remains pending"
           },
           "unavailable": "Entitlement renewal is temporarily unavailable"
+        },
+        "upgrade": {
+          "invalid": "The service configuration cannot be upgraded with these choices",
+          "unavailable": "This service does not currently support automatic configuration upgrades",
+          "conflict": "The service or quote changed; refresh before upgrading"
         }
       },
       "marketing": {
@@ -683,36 +731,52 @@
         "public": {
           "key": {
             "invalid": "The SSH public key request is invalid",
-            "not": { "accessible": "The SSH public key is not accessible" },
+            "not": {
+              "accessible": "The SSH public key is not accessible"
+            },
             "duplicate": "An active SSH public key with the same name or fingerprint already exists",
-            "version": { "conflict": "The SSH public key has changed" },
-            "idempotency": { "conflict": "The SSH public key request conflicts with an earlier request" },
+            "version": {
+              "conflict": "The SSH public key has changed"
+            },
+            "idempotency": {
+              "conflict": "The SSH public key request conflicts with an earlier request"
+            },
             "unavailable": "The SSH public key service is temporarily unavailable"
           }
         },
-        "private": { "key": { "rejected": "Private keys are not accepted" } }
+        "private": {
+          "key": {
+            "rejected": "Private keys are not accepted"
+          }
+        }
       },
       "server": {
-		"resize": {
-		  "disk": { "shrink": { "not": { "allowed": "Disk capacity cannot be reduced during a configuration change" } } }
-		},
-		"batch": {
-		  "invalid": "Check the selected servers and action, then try again.",
-		  "not": {
-			"accessible": "You do not have permission to view or run this server batch."
-		  },
-		  "conflict": "The server batch preview has changed. Preview it again before continuing.",
-		  "unavailable": "Server batch processing is temporarily unavailable. Try again later."
-		},
-		"accessory": {
-		  "management": {
-			"invalid": "The server accessory operation is invalid. Check the form and try again.",
-			"not": {
-			  "accessible": "You cannot view or operate accessories for this server"
-			},
-			"unavailable": "Server accessory operations are temporarily unavailable. Refresh and try again."
-		  }
-		},
+        "resize": {
+          "disk": {
+            "shrink": {
+              "not": {
+                "allowed": "Disk capacity cannot be reduced during a configuration change"
+              }
+            }
+          }
+        },
+        "batch": {
+          "invalid": "Check the selected servers and action, then try again.",
+          "not": {
+            "accessible": "You do not have permission to view or run this server batch."
+          },
+          "conflict": "The server batch preview has changed. Preview it again before continuing.",
+          "unavailable": "Server batch processing is temporarily unavailable. Try again later."
+        },
+        "accessory": {
+          "management": {
+            "invalid": "The server accessory operation is invalid. Check the form and try again.",
+            "not": {
+              "accessible": "You cannot view or operate accessories for this server"
+            },
+            "unavailable": "Server accessory operations are temporarily unavailable. Refresh and try again."
+          }
+        },
         "operation": {
           "invalid": "The server operation request is invalid",
           "unavailable": "The server operation service is temporarily unavailable",
@@ -740,6 +804,45 @@
           "unavailable": "Snapshot cache coordination is temporarily unavailable",
           "authority": {
             "unavailable": "The authoritative snapshot is temporarily unavailable"
+          }
+        }
+      },
+      "sales": {
+        "management": {
+          "denied": "You do not have access to manage these agents or sales records",
+          "invalid": "Check the selected customer, tier and entered values",
+          "conflict": "This record changed; refresh and try again",
+          "unavailable": "Sales management could not be completed; please retry",
+          "staff": {
+            "search": {
+              "broad": "Too many employees match; enter a more specific employee name and search again"
+            }
+          },
+          "recovery": {
+            "due": "Refunded commission is still owed; wait for future commission to offset it before recording another payment"
+          }
+        },
+        "settlement": {
+          "retired": "Commission payments are recorded offline by an administrator. Settlement applications and payout batches are no longer available; contact your administrator.",
+          "denied": "You do not have access to release this historical commission settlement; contact an authorized administrator.",
+          "release": {
+            "failed": "Unable to release this historical commission. Check its status and evidence."
+          }
+        }
+      },
+      "currency": {
+        "denied": "You do not have permission to configure merchant currencies",
+        "invalid": "Select a valid ISO currency and refresh the record before editing",
+        "conflict": "This currency already exists or changed; refresh and try again",
+        "default": {
+          "required": "Set another enabled currency as default before disabling or deleting this one."
+        },
+        "unavailable": "Currency configuration is unavailable; please retry"
+      },
+      "resource": {
+        "interface": {
+          "refresh": {
+            "referenced": "This interface has historical use; create a new interface for the updated connector"
           }
         }
       }

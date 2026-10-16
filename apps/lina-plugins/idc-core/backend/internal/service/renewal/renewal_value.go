@@ -18,7 +18,8 @@ func normalizeQuoteInput(input QuoteInput) (QuoteInput, error) {
 		input.IdempotencyKey != strings.TrimSpace(input.IdempotencyKey) ||
 		!validReference(input.EntitlementNo, 40) || input.RenewalCycles < 1 ||
 		input.RenewalCycles > 120 || !validReference(input.IdempotencyKey, 128) ||
-		len(input.AssetNumbers) > maximumQuoteAssets {
+		len(input.AssetNumbers) > maximumQuoteAssets ||
+		(input.FormalBillingRuleNo != "" && !validReference(input.FormalBillingRuleNo, 40)) {
 		return QuoteInput{}, bizerr.NewCode(CodeInvalid)
 	}
 	assets := append([]string(nil), input.AssetNumbers...)

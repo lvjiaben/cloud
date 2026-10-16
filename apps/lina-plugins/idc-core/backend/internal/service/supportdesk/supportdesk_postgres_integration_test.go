@@ -384,5 +384,12 @@ func newSupportDeskTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 			t.Fatalf("execute support entitlement migration attempt %d: %v", attempt, err)
 		}
 	}
+	queueMigration, err := os.ReadFile(filepath.Join(root, "113-support-role-organization.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, string(queueMigration)); err != nil {
+		t.Fatal(err)
+	}
 	return ctx, database
 }

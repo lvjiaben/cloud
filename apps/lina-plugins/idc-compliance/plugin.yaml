@@ -1,6 +1,6 @@
 id: idc-compliance
 name: IDC Compliance
-version: v0.1.19
+version: v0.1.22
 type: source
 distribution: builtin
 scope_nature: platform_only

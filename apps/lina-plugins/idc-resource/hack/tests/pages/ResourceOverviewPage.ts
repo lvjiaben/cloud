@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Locator, Page } from "@host-tests/support/playwright";
 
@@ -22,8 +23,10 @@ export class ResourceOverviewPage {
   }
 
   async screenshot(name: string) {
+    await this.page.getByText("加载菜单中...", { exact: true }).waitFor({ state: "hidden" });
+    await this.page.waitForTimeout(400);
     const now = new Date();
-    const directory = resolve(process.cwd(), "temp", now.toISOString().slice(0, 10).replaceAll("-", ""));
+    const directory = resolve(fileURLToPath(new URL("../../../../../../temp/", import.meta.url)), now.toISOString().slice(0, 10).replaceAll("-", ""));
     await mkdir(directory, { recursive: true });
     await this.page.screenshot({ fullPage: false, path: resolve(directory, `${now.toISOString().slice(11, 19).replaceAll(":", "")}-${name}.png`) });
   }

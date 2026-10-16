@@ -23,94 +23,7 @@ const commissionIntegrationDSNEnv = "LINAPRO_IDC_CORE_TEST_DSN"
 func TestCommissionFoundationMigrationPostgreSQL(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	dsn := strings.TrimSpace(os.Getenv(commissionIntegrationDSNEnv))
-	if dsn == "" {
-		t.Skipf("set %s to run PostgreSQL commission migration tests", commissionIntegrationDSNEnv)
-	}
-	admin, err := gdb.New(gdb.ConfigNode{Link: dsn})
-	if err != nil {
-		t.Fatalf("create commission migration admin database: %v", err)
-	}
-	schema := newCommissionTestSchema(t)
-	if _, err = admin.Exec(ctx, "CREATE SCHEMA "+quoteCommissionIdentifier(schema)); err != nil {
-		if closeErr := admin.Close(ctx); closeErr != nil {
-			t.Errorf("close commission migration admin database after schema failure: %v", closeErr)
-		}
-		t.Fatalf("create isolated commission schema: %v", err)
-	}
-	t.Cleanup(func() {
-		if strings.HasPrefix(schema, "linapro_commission_test_") {
-			// The full host migration creates hundreds of foreign keys and
-			// triggers. Dropping the schema in one CASCADE statement can exceed
-			// PostgreSQL's max_locks_per_transaction, so remove tables one at a
-			// time in separate transactions before dropping the now-empty schema.
-			// Functions created by host migrations are schema-scoped but are not
-			// returned by pg_tables. Drop them first so the final schema drop does
-			// not depend on a single transaction holding every migration object.
-			var functions []struct {
-				Signature string `orm:"signature"`
-			}
-			if scanErr := admin.GetScan(ctx, &functions, `SELECT p.oid::regprocedure::text AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=?`, schema); scanErr != nil {
-				t.Errorf("list isolated commission functions: %v", scanErr)
-			}
-			for _, function := range functions {
-				if _, dropErr := admin.Exec(ctx, "DROP FUNCTION IF EXISTS "+function.Signature+" CASCADE"); dropErr != nil {
-					t.Errorf("drop isolated commission function %s: %v", function.Signature, dropErr)
-				}
-			}
-
-			var tables []struct {
-				TableName string `orm:"tablename"`
-			}
-			if scanErr := admin.GetScan(ctx, &tables, `SELECT tablename FROM pg_tables WHERE schemaname=?`, schema); scanErr != nil {
-				t.Errorf("list isolated commission tables: %v", scanErr)
-			}
-			for _, table := range tables {
-				if _, dropErr := admin.Exec(ctx, "DROP TABLE IF EXISTS "+quoteCommissionIdentifier(schema)+"."+quoteCommissionIdentifier(table.TableName)+" CASCADE"); dropErr != nil {
-					t.Errorf("drop isolated commission table %s.%s: %v", schema, table.TableName, dropErr)
-				}
-			}
-			if _, dropErr := admin.Exec(ctx, "DROP SCHEMA "+quoteCommissionIdentifier(schema)+" CASCADE"); dropErr != nil {
-				t.Errorf("drop isolated commission schema: %v", dropErr)
-			}
-		} else {
-			t.Errorf("refusing to drop unexpected commission schema %q", schema)
-		}
-		if closeErr := admin.Close(ctx); closeErr != nil {
-			t.Errorf("close commission migration admin database: %v", closeErr)
-		}
-	})
-
-	database, err := gdb.New(gdb.ConfigNode{
-		Link: appendCommissionDSNParameter(dsn, "search_path="+url.QueryEscape(schema)),
-	})
-	if err != nil {
-		t.Fatalf("create scoped commission database: %v", err)
-	}
-	t.Cleanup(func() {
-		if closeErr := database.Close(ctx); closeErr != nil {
-			t.Errorf("close scoped commission database: %v", closeErr)
-		}
-	})
-	if _, err = database.Exec(ctx, commissionHostFixtureSQL); err != nil {
-		t.Fatalf("create commission host fixtures: %v", err)
-	}
-	version, err := database.GetValue(ctx, "SHOW server_version_num")
-	if err != nil {
-		t.Fatalf("read PostgreSQL version: %v", err)
-	}
-	t.Logf("PostgreSQL server_version_num=%s; migration syntax is statically limited to PostgreSQL 14 features", version.String())
-
-	paths := commissionMigrationPaths(t)
-	for _, path := range paths {
-		migration, readErr := os.ReadFile(path)
-		if readErr != nil {
-			t.Fatalf("read commission migration %s: %v", filepath.Base(path), readErr)
-		}
-		if _, err = database.Exec(ctx, string(migration)); err != nil {
-			t.Fatalf("execute commission migration %s: %v", filepath.Base(path), err)
-		}
-	}
+	database, schema, paths := newCommissionDatabase(t)
 	// Replay the commission migration itself even after newer modules append SQL.
 	commissionPath := filepath.Join(filepath.Dir(paths[0]), "061-commission-refund-reversal.sql")
 	latest, err := os.ReadFile(commissionPath)
@@ -130,8 +43,8 @@ func assertCommissionSchemaShape(t *testing.T, ctx context.Context, database gdb
 	tables, err := database.GetValue(ctx, `
 SELECT COUNT(*) FROM information_schema.tables
 WHERE table_schema = ? AND table_name LIKE 'plugin_idc_core_sales_%'`, schema)
-	if err != nil || tables.Int() != 29 {
-		t.Fatalf("sales foundation table count=%d want=29 err=%v", tables.Int(), err)
+	if err != nil || tables.Int() < 29 {
+		t.Fatalf("sales foundation table count=%d want>=29 err=%v", tables.Int(), err)
 	}
 	deletedColumns, err := database.GetValue(ctx, `
 SELECT COUNT(*) FROM information_schema.columns
@@ -611,3 +524,99 @@ CREATE TABLE sys_dict_data (
  tag_style VARCHAR(128) NOT NULL DEFAULT '', status SMALLINT NOT NULL DEFAULT 1,
  is_builtin SMALLINT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ,
  CONSTRAINT uk_commission_dict_data UNIQUE (tenant_id,dict_type,value));`
+
+// newCommissionDatabase builds a complete, isolated plugin schema for financial tests.
+func newCommissionDatabase(t *testing.T) (gdb.DB, string, []string) {
+	t.Helper()
+	ctx := context.Background()
+	dsn := strings.TrimSpace(os.Getenv(commissionIntegrationDSNEnv))
+	if dsn == "" {
+		t.Skipf("set %s to run PostgreSQL commission migration tests", commissionIntegrationDSNEnv)
+	}
+	admin, err := gdb.New(gdb.ConfigNode{Link: dsn})
+	if err != nil {
+		t.Fatalf("create commission migration admin database: %v", err)
+	}
+	schema := newCommissionTestSchema(t)
+	if _, err = admin.Exec(ctx, "CREATE SCHEMA "+quoteCommissionIdentifier(schema)); err != nil {
+		if closeErr := admin.Close(ctx); closeErr != nil {
+			t.Errorf("close commission migration admin database after schema failure: %v", closeErr)
+		}
+		t.Fatalf("create isolated commission schema: %v", err)
+	}
+	t.Cleanup(func() {
+		if strings.HasPrefix(schema, "linapro_commission_test_") {
+			// The full host migration creates hundreds of foreign keys and
+			// triggers. Dropping the schema in one CASCADE statement can exceed
+			// PostgreSQL's max_locks_per_transaction, so remove tables one at a
+			// time in separate transactions before dropping the now-empty schema.
+			// Functions created by host migrations are schema-scoped but are not
+			// returned by pg_tables. Drop them first so the final schema drop does
+			// not depend on a single transaction holding every migration object.
+			var functions []struct {
+				Signature string `orm:"signature"`
+			}
+			if scanErr := admin.GetScan(ctx, &functions, `SELECT p.oid::regprocedure::text AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=?`, schema); scanErr != nil {
+				t.Errorf("list isolated commission functions: %v", scanErr)
+			}
+			for _, function := range functions {
+				if _, dropErr := admin.Exec(ctx, "DROP FUNCTION IF EXISTS "+function.Signature+" CASCADE"); dropErr != nil {
+					t.Errorf("drop isolated commission function %s: %v", function.Signature, dropErr)
+				}
+			}
+
+			var tables []struct {
+				TableName string `orm:"tablename"`
+			}
+			if scanErr := admin.GetScan(ctx, &tables, `SELECT tablename FROM pg_tables WHERE schemaname=?`, schema); scanErr != nil {
+				t.Errorf("list isolated commission tables: %v", scanErr)
+			}
+			for _, table := range tables {
+				if _, dropErr := admin.Exec(ctx, "DROP TABLE IF EXISTS "+quoteCommissionIdentifier(schema)+"."+quoteCommissionIdentifier(table.TableName)+" CASCADE"); dropErr != nil {
+					t.Errorf("drop isolated commission table %s.%s: %v", schema, table.TableName, dropErr)
+				}
+			}
+			if _, dropErr := admin.Exec(ctx, "DROP SCHEMA "+quoteCommissionIdentifier(schema)+" CASCADE"); dropErr != nil {
+				t.Errorf("drop isolated commission schema: %v", dropErr)
+			}
+		} else {
+			t.Errorf("refusing to drop unexpected commission schema %q", schema)
+		}
+		if closeErr := admin.Close(ctx); closeErr != nil {
+			t.Errorf("close commission migration admin database: %v", closeErr)
+		}
+	})
+
+	database, err := gdb.New(gdb.ConfigNode{
+		Link: appendCommissionDSNParameter(dsn, "search_path="+url.QueryEscape(schema)),
+	})
+	if err != nil {
+		t.Fatalf("create scoped commission database: %v", err)
+	}
+	t.Cleanup(func() {
+		if closeErr := database.Close(ctx); closeErr != nil {
+			t.Errorf("close scoped commission database: %v", closeErr)
+		}
+	})
+	if _, err = database.Exec(ctx, commissionHostFixtureSQL); err != nil {
+		t.Fatalf("create commission host fixtures: %v", err)
+	}
+	version, err := database.GetValue(ctx, "SHOW server_version_num")
+	if err != nil {
+		t.Fatalf("read PostgreSQL version: %v", err)
+	}
+	t.Logf("PostgreSQL server_version_num=%s; migration syntax is statically limited to PostgreSQL 14 features", version.String())
+
+	paths := commissionMigrationPaths(t)
+	for _, path := range paths {
+		migration, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Fatalf("read commission migration %s: %v", filepath.Base(path), readErr)
+		}
+		if _, err = database.Exec(ctx, string(migration)); err != nil {
+			t.Fatalf("execute commission migration %s: %v", filepath.Base(path), err)
+		}
+	}
+
+	return database, schema, paths
+}

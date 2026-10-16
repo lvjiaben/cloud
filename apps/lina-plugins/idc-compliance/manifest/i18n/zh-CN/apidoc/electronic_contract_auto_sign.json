@@ -31,8 +31,8 @@
 
   "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.meta.tags": "IDC 合规电子合同",
   "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.meta.summary": "启用企业自动签授权",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.meta.dc": "最近一次完整登录、主动二次确认和当前腾讯能力检查全部通过后，启用一个当前安装内不可编辑的企业自动签授权。",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.schema.dc": "最近一次完整登录、主动二次确认和当前腾讯能力检查全部通过后，启用一个当前安装内不可编辑的企业自动签授权。",
+  "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.meta.dc": "当前有效登录、主动二次确认和当前腾讯能力检查全部通过后，启用一个当前安装内不可编辑的企业自动签授权。",
+  "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.schema.dc": "当前有效登录、主动二次确认和当前腾讯能力检查全部通过后，启用一个当前安装内不可编辑的企业自动签授权。",
   "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.fields.currencyCode.dc": "本授权唯一使用的 ISO 4217 大写币种代码",
   "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.fields.allowRequiredOrder.dc": "允许必须签署的订单合同",
   "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationCreateReq.fields.allowManualOptional.dc": "允许后台人工创建的可选合同",

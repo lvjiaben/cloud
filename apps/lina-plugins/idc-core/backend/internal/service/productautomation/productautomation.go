@@ -174,9 +174,10 @@ type BindInput struct {
 // SaveVersionConfigurationInput stores merchant values and freezes the exact
 // provider product/customer declarations on one draft product version.
 type SaveVersionConfigurationInput struct {
-	VersionNo       string
-	MerchantValues  []ConfigurationValue
-	ExpectedVersion int64
+	CustomerFieldSelections []CustomerFieldSelection
+	VersionNo               string
+	MerchantValues          []ConfigurationValue
+	ExpectedVersion         int64
 }
 
 type UpdateInterfaceConfigurationInput struct {
@@ -232,7 +233,20 @@ type InterfaceConfiguration struct {
 	Revision           int64
 }
 
+// CustomerFieldSelection explicitly enables one provider-declared customer field.
+// Integer bounds must be supplied; candidates can only select declared values.
+type CustomerFieldSelection struct {
+	FieldKey        string   `json:"fieldKey"`
+	Minimum         string   `json:"minimum,omitempty"`
+	Maximum         string   `json:"maximum,omitempty"`
+	CandidateValues []string `json:"candidateValues,omitempty"`
+}
+
 type VersionConfiguration struct {
+	CustomerConfigurableFields []*capmodel.ConfigurationFieldDeclaration
+	CustomerFieldSelections    []CustomerFieldSelection
+	// ImportedConfiguration is true only when an immutable import contract exists.
+	ImportedConfiguration      bool
 	ProductDeclaration         *capmodel.ConfigurationSchemaDeclaration
 	CustomerDeclaration        *capmodel.ConfigurationSchemaDeclaration
 	MerchantValues             []ConfigurationValue
@@ -244,6 +258,8 @@ type VersionConfiguration struct {
 // ConfigurationPriceCandidate is one safe, currently selectable customer
 // candidate. CandidateToken does not reveal the plugin field key or value.
 type ConfigurationPriceCandidate struct {
+	Quantity       bool
+	PricingMode    catalog.ConfigurationPriceMode
 	CandidateToken string
 	FieldLabel     capmodel.LocalizedText
 	CandidateLabel capmodel.LocalizedText
@@ -253,12 +269,14 @@ type ConfigurationPriceCandidate struct {
 // ConfigurationPriceDimension is the merchant-created, version-frozen price
 // target. Its plugin field identity remains private to the service.
 type ConfigurationPriceDimension struct {
+	PricingMode    catalog.ConfigurationPriceMode
 	DimensionNo    string
 	FieldLabel     capmodel.LocalizedText
 	CandidateLabel capmodel.LocalizedText
 }
 
 type CreateConfigurationPriceDimensionInput struct {
+	PricingMode    catalog.ConfigurationPriceMode
 	VersionNo      string
 	CandidateToken string
 }

@@ -3,6 +3,7 @@ package productautomation
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"lina-core/pkg/plugin/capability/capmodel"
@@ -48,5 +49,20 @@ func (reader *partialEntropyReader) Read(target []byte) (int, error) {
 func TestConfigurationPriceDimensionNumberRequiresCompleteEntropy(t *testing.T) {
 	if _, err := newConfigurationPriceDimensionNo(&partialEntropyReader{}); err == nil {
 		t.Fatal("partial entropy was accepted")
+	}
+}
+
+func TestConfigurationPriceCandidatesExposeQuantityWithoutProviderKeys(t *testing.T) {
+	label := &capmodel.LocalizedText{ZhCN: "数据盘容量", EnUS: "Data disk size"}
+	configuration := &VersionConfiguration{Version: 3, CustomerDeclaration: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "private_disk", Type: capmodel.ConfigurationFieldInteger, Label: label, Minimum: "0", Maximum: "1000"}}}}
+	candidates, err := configurationPriceCandidates("ver_11111111111111111111111111111111", configuration)
+	if err != nil || len(candidates) != 1 || !candidates[0].Quantity || candidates[0].CandidateLabel.ZhCN != "数据盘容量" {
+		t.Fatalf("invalid quantity candidate: %+v %v", candidates, err)
+	}
+	if strings.Contains(candidates[0].CandidateToken, "private_disk") {
+		t.Fatal("provider field key leaked")
+	}
+	if candidates[0].candidateValue != configurationQuantityPriceIdentity {
+		t.Fatal("quantity identity unstable")
 	}
 }

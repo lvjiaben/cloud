@@ -125,7 +125,7 @@ func (s *serviceImpl) markCredentialFailed(
 			IdempotencyScope: auditCompleteOperation,
 			IdempotencyKey:   stage.operationKey + ":failed",
 			OperationCode:    auditCompleteOperation, TargetType: auditTargetType,
-			TargetNo: configurationNo(provider), ResultCode: string(CredentialRetryableFailed),
+			TargetNo: configurationNo(provider), ResultCode: "failed",
 			ReasonCode: "credential_mutation_failed", RiskCode: "high",
 			RequiredPermission: PermissionCredentialWrite,
 			BeforeSnapshot:     auditSnapshot(row), AfterSnapshot: auditSnapshot(after),
@@ -208,7 +208,7 @@ func (s *serviceImpl) prepareMutation(
 		if err = s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: auditPrepareOperation, IdempotencyKey: operationKey,
 			OperationCode: auditPrepareOperation, TargetType: auditTargetType,
-			TargetNo: configurationNo(input.ProviderCode), ResultCode: "accepted",
+			TargetNo: configurationNo(input.ProviderCode), ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "merchant_owned_supplier_credential_update", RiskCode: "high",
 			RequiredPermission: PermissionCredentialWrite,
 			BeforeSnapshot:     auditSnapshot(before), AfterSnapshot: auditSnapshot(row),

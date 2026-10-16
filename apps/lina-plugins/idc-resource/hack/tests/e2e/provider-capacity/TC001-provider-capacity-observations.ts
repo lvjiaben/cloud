@@ -3,14 +3,14 @@ import { expect, test } from "../../../../../../../hack/tests/fixtures/auth";
 import { ProviderCapacityPage } from "../../pages/ProviderCapacityPage";
 import { installProviderCapacityMock } from "../../support/provider-capacity-mock";
 
-test.describe("TC-1 供应商容量观测", () => {
+test.describe("TC-1 供应商资源更新", () => {
   test("TC-1a: 中文页面只展示有界安全投影和本页指标", async ({ adminPage }) => {
     await installProviderCapacityMock(adminPage);
     const capacity = new ProviderCapacityPage(adminPage);
     await capacity.goto();
 
     await expect(
-      capacity.page.getByText("供应商容量观测", { exact: true }).first(),
+      capacity.page.getByText("供应商资源更新", { exact: true }).first(),
     ).toBeVisible();
     await expect(capacity.operationRow("魔方云生产渠道")).toContainText(
       "魔方云生产渠道",
@@ -30,7 +30,7 @@ test.describe("TC-1 供应商容量观测", () => {
     const capacity = new ProviderCapacityPage(adminPage);
     await capacity.goto();
 
-    await expect(capacity.previousButton).toBeDisabled();
+    await expect(capacity.previousButton).toHaveClass(/is--disabled/);
     await capacity.nextPage();
     expect(state.listRequests.at(-1)?.searchParams.get("page")).toBe("2");
     expect(state.listRequests.at(-1)?.searchParams.get("cursor")).toBeNull();
@@ -57,7 +57,7 @@ test.describe("TC-1 供应商容量观测", () => {
     await expect(capacity.pageIndicator).toContainText("1");
   });
 
-  test("TC-1d: 容量弹窗只能选择渠道和观测类型并提交最小请求", async ({
+  test("TC-1d: 容量弹窗只能选择渠道和资源类型并提交最小请求", async ({
     adminPage,
   }) => {
     const state = await installProviderCapacityMock(adminPage);
@@ -66,10 +66,10 @@ test.describe("TC-1 供应商容量观测", () => {
     await capacity.openSync("channel_mofang_prod");
 
     await expect(capacity.syncModal).toContainText(
-      "自动读取供应商容量，不维护商品库存",
+      "更新供应商资源",
     );
-    await expect(capacity.syncModal).toContainText("资源渠道");
-    await expect(capacity.syncModal).toContainText("观测类型");
+    await expect(capacity.syncModal).toContainText("供应商接口");
+    await expect(capacity.syncModal).toContainText("资源类型");
     await expect(
       capacity.syncModal.getByLabel(/库存数量|远端游标|接口地址|密钥/iu),
     ).toHaveCount(0);
@@ -98,7 +98,7 @@ test.describe("TC-1 供应商容量观测", () => {
 
     await expect(
       capacity.page
-        .getByText("Provider Capacity Observations", { exact: true })
+        .getByText("Supplier Resource Updates", { exact: true })
         .first(),
     ).toBeVisible();
     await expect(

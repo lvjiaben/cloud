@@ -44,7 +44,7 @@ type CustomerDirectAccountCreateReq struct {
 	DisplayName      string `json:"displayName" v:"required|max-length:256" dc:"Customer display name" eg:"Taylor Chen"`
 	CountryCode      string `json:"countryCode" v:"required|min-length:2|max-length:2" dc:"Two-letter customer country or region code" eg:"CN"`
 	PreferredLocale  string `json:"preferredLocale" v:"required|in:zh-CN,en-US" dc:"Customer interface language" eg:"zh-CN"`
-	Email            string `json:"email" v:"max-length:320" dc:"Email login; exactly one of email or phone is required" eg:"customer@example.com"`
+	Email            string `json:"email" v:"max-length:320" dc:"Email login; at least one of email or phone is required; both may be provided" eg:"customer@example.com"`
 	PhoneCountryCode string `json:"phoneCountryCode" v:"max-length:8" dc:"International calling code when phone login is used" eg:"+86"`
 	Phone            string `json:"phone" v:"max-length:32" dc:"Phone login without the calling code" eg:"13800138000"`
 	InitialPassword  string `json:"initialPassword" v:"required|min-length:8|max-length:128" dc:"One-time initial password that is hashed only by the host user owner and never returned" eg:"StrongPassw0rd!"`
@@ -61,9 +61,9 @@ type CustomerDirectAccountCreateRes struct {
 }
 
 type CustomerPasswordResetReq struct {
-	g.Meta         `path:"/admin/customers/{customerNo}/password" method:"put" tags:"IDC Customer Management" summary:"Reset an active customer login password" dc:"Replaces the password through the host user owner and requires the customer to choose a private password after the next login." permission:"idc:admin:customer:update"`
+	g.Meta         `path:"/admin/customers/{customerNo}/password" method:"put" tags:"IDC Customer Management" summary:"Reset an active customer login password" dc:"Replaces the password through the host user owner; the customer can log in immediately without a first-login password gate." permission:"idc:admin:customer:update"`
 	CustomerNo     string `json:"customerNo" in:"path" v:"required|max-length:40" dc:"Opaque internal customer number"`
-	NewPassword    string `json:"newPassword" v:"required|min-length:8|max-length:128" dc:"Temporary password that is never returned or audited"`
+	NewPassword    string `json:"newPassword" v:"required|min-length:8|max-length:128" dc:"New password that is never returned or audited"`
 	Reason         string `json:"reason" v:"required|min-length:10|max-length:512" dc:"Audited reason for resetting the password"`
 	IdempotencyKey string `json:"idempotencyKey" v:"required|min-length:16|max-length:128" dc:"Browser-generated operation key"`
 }

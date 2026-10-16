@@ -119,7 +119,7 @@ WHERE tenant_id=0 AND version=?`, requireReauth, allowTransfer, now, expectedVer
 		if auditErr := s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "server.operation.policy.update",
 			IdempotencyKey:   strconv.FormatInt(expectedVersion+1, 10), OperationCode: "server.operation.policy.update",
-			TargetType: "server_operation_policy", TargetNo: "tenant-0", ResultCode: "updated",
+			TargetType: "server_operation_policy", TargetNo: "tenant-0", ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "staff_security_policy_update", RiskCode: "high",
 			RequiredPermission: PermissionServerOperationPolicyWrite,
 			BeforeSnapshot: map[string]any{"requireHighRiskReauth": current.RequireHighRiskReauth,

@@ -157,16 +157,20 @@ func (c *AdminController) Catalog(ctx context.Context, r *adminv1.CatalogReq) (*
 	return &adminv1.CatalogRes{List: out, PageMetadata: adminv1.PageMetadata{Page: page.Page, PageSize: page.PageSize, Total: page.Total}}, nil
 }
 func (c *AdminController) CreateToken(ctx context.Context, r *adminv1.CreateTokenReq) (*adminv1.CreateTokenRes, error) {
+	if request := g.RequestFromCtx(ctx); request != nil {
+		request.Response.Header().Set("Cache-Control", "no-store")
+		request.Response.Header().Set("Pragma", "no-cache")
+	}
 	var exp *time.Time
 	if r.ExpiresAt != nil {
 		t := time.UnixMilli(*r.ExpiresAt)
 		exp = &t
 	}
-	out, e := c.svc.CreateToken(ctx, channel.TokenInput{ChannelID: r.ChannelId, Scopes: r.Scopes, SourceCIDRs: r.SourceCIDRs, ExpiresAt: exp})
+	out, e := c.svc.CreateToken(ctx, channel.TokenInput{CustomerNo: r.CustomerNo, DisplayName: r.DisplayName, ChannelID: r.ChannelId, Scopes: r.Scopes, SourceCIDRs: r.SourceCIDRs, ExpiresAt: exp})
 	if e != nil {
 		return nil, e
 	}
-	return &adminv1.CreateTokenRes{Id: out.ID, Token: out.Token, ExpiresAt: unixMillis(out.ExpiresAt)}, nil
+	return &adminv1.CreateTokenRes{AppID: out.AppID, Id: out.ID, Token: out.Token, ExpiresAt: unixMillis(out.ExpiresAt)}, nil
 }
 func (c *AdminController) ListTokens(ctx context.Context, r *adminv1.ListTokensReq) (*adminv1.ListTokensRes, error) {
 	page, err := c.svc.ListTokenPage(ctx, r.ChannelId, channel.PageQuery{Page: r.Page, PageSize: r.PageSize})
@@ -190,46 +194,26 @@ func (c *AdminController) RevokeToken(ctx context.Context, r *adminv1.RevokeToke
 	return &adminv1.RevokeTokenRes{Id: r.Id, Revoked: true}, nil
 }
 func (c *Controller) Catalog(ctx context.Context, r *v1.CatalogReq) (*v1.CatalogRes, error) {
-	items, e := c.svc.Catalog(ctx, channel.CredentialChannelID(ctx))
-	if e != nil {
-		return nil, e
+	page, err := c.svc.BrowseCatalog(ctx, channel.CredentialChannelID(ctx), channelcommercecap.CatalogQuery{NamePrefix: r.NamePrefix, Currency: r.Currency, Cursor: r.Cursor, Limit: r.Limit})
+	if err != nil {
+		return nil, err
 	}
-	out := make([]*v1.CatalogItem, 0, len(items))
-	for _, x := range items {
-		y := x
-		out = append(out, &v1.CatalogItem{ProductVersionId: y.ProductVersionID, Currency: y.Currency, Price: y.Price, Stock: y.Stock})
-	}
-	return &v1.CatalogRes{List: out}, nil
+	return &v1.CatalogRes{CatalogPage: *page}, nil
 }
 func (c *Controller) Quote(ctx context.Context, r *v1.QuoteReq) (*v1.QuoteRes, error) {
-	o, e := c.svc.Quote(ctx, channel.QuoteInput{ChannelID: channel.CredentialChannelID(ctx), ProductVersionID: r.ProductVersionId, Currency: r.Currency})
-	if e != nil {
-		return nil, e
+	o, err := c.svc.Quote(ctx, channel.QuoteInput{ChannelID: channel.CredentialChannelID(ctx), Purchase: r.Purchase, RequestID: r.RequestId})
+	if err != nil {
+		return nil, err
 	}
-	return &v1.QuoteRes{ProductVersionId: o.ProductVersionID, Currency: o.Currency, Price: o.Price, TotalAmountMinor: o.TotalAmountMinor, Stock: o.Stock, Status: o.Status}, nil
+	return &v1.QuoteRes{QuoteNo: o.QuoteNo, ExpiresAt: o.ExpiresAt, Currency: o.Currency, Price: o.Price, TotalAmountMinor: o.TotalAmountMinor, Status: o.Status}, nil
 }
+
 func (c *Controller) CreateOrder(ctx context.Context, r *v1.CreateOrderReq) (*v1.CreateOrderRes, error) {
-	var delegated *channel.DelegatedCustomerInput
-	if r.DelegatedCustomer != nil {
-		delegated = &channel.DelegatedCustomerInput{
-			CustomerType: r.DelegatedCustomer.CustomerType, DisplayName: r.DelegatedCustomer.DisplayName,
-			CountryCode: r.DelegatedCustomer.CountryCode, PreferredLocale: r.DelegatedCustomer.PreferredLocale,
-			Email: r.DelegatedCustomer.Email, PhoneCountryCode: r.DelegatedCustomer.PhoneCountryCode,
-			Phone: r.DelegatedCustomer.Phone,
-		}
-	}
-	o, e := c.svc.CreateOrder(ctx, channel.OrderInput{ChannelID: channel.CredentialChannelID(ctx), RequestID: r.RequestId, ExternalCustomerID: r.ExternalCustomerId, OwnershipMode: r.OwnershipMode, ProductVersionID: r.ProductVersionId, Currency: r.Currency, SettlementMethod: r.SettlementMethod, DelegatedCustomer: delegated})
+	o, e := c.svc.CreateOrder(ctx, channel.OrderInput{ChannelID: channel.CredentialChannelID(ctx), RequestID: r.RequestId, QuoteNo: r.QuoteNo})
 	if e != nil {
 		return nil, e
 	}
 	return &v1.CreateOrderRes{Id: o.ID, Status: o.Status, Replayed: o.Replayed}, nil
-}
-func (c *Controller) SettleOrder(ctx context.Context, r *v1.SettleOrderReq) (*v1.SettleOrderRes, error) {
-	o, e := c.svc.SettleOrder(ctx, channel.SettleInput{ChannelID: channel.CredentialChannelID(ctx), RequestID: r.RequestId, OrderID: r.Id, SettlementMethod: r.SettlementMethod})
-	if e != nil {
-		return nil, e
-	}
-	return &v1.SettleOrderRes{Id: o.ID, Status: o.Status, Replayed: o.Replayed}, nil
 }
 func (c *Controller) CancelOrder(ctx context.Context, r *v1.CancelOrderReq) (*v1.CancelOrderRes, error) {
 	o, e := c.svc.CancelOrder(ctx, channel.CancelInput{ChannelID: channel.CredentialChannelID(ctx), RequestID: r.RequestId, OrderID: r.Id})
@@ -278,20 +262,6 @@ func (c *Controller) Finance(ctx context.Context, _ *v1.FinanceReq) (*v1.Finance
 		CreditStatements: statements, CreditRepayments: repayments}, nil
 }
 
-func (c *Controller) RepayCredit(ctx context.Context, req *v1.RepayCreditReq) (*v1.RepayCreditRes, error) {
-	result, err := c.svc.RepayCredit(ctx, channel.CreditRepaymentInput{
-		ChannelID: channel.CredentialChannelID(ctx), StatementNo: req.StatementNo,
-		RequestID: req.RequestId, AmountMinor: req.AmountMinor,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &v1.RepayCreditRes{RepaymentNo: result.RepaymentNo, StatementNo: result.StatementNo,
-		CurrencyCode: result.CurrencyCode, Status: result.Status, AmountMinor: result.AmountMinor,
-		OutstandingMinor: result.OutstandingMinor, AvailableBalanceMinor: result.AvailableBalanceMinor,
-		Replayed: result.Reused}, nil
-}
-
 func projectService(item channelcommercecap.ServiceItem) *v1.ServiceItem {
 	return &v1.ServiceItem{ServiceNo: item.ServiceNo, ServiceOwnerCustomerNo: item.ServiceOwnerCustomerNo,
 		OrderNo: item.OrderNo, ProductNo: item.ProductNo, VersionNo: item.VersionNo,
@@ -299,8 +269,8 @@ func projectService(item channelcommercecap.ServiceItem) *v1.ServiceItem {
 		StartedAt: item.StartedAt.UnixMilli(), ExpiresAt: unixMillis(item.ExpiresAt), UpdatedAt: item.UpdatedAt.UnixMilli()}
 }
 
-func (c *Controller) ListServices(ctx context.Context, _ *v1.ListServicesReq) (*v1.ListServicesRes, error) {
-	rows, err := c.svc.ListServices(ctx, channel.CredentialChannelID(ctx), "")
+func (c *Controller) ListServices(ctx context.Context, req *v1.ListServicesReq) (*v1.ListServicesRes, error) {
+	rows, err := c.svc.ListServices(ctx, channel.CredentialChannelID(ctx), "", channelcommercecap.ServiceListInput{OrderNo: req.OrderNo, AfterServiceNo: req.AfterServiceNo, Limit: req.Limit})
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +328,7 @@ func (c *Controller) LifecycleOutput(ctx context.Context, r *v1.LifecycleOutputR
 }
 func (c *Controller) Capabilities(ctx context.Context, r *v1.CapabilitiesReq) (*v1.CapabilitiesRes, error) {
 	o := c.svc.Capabilities(ctx)
-	return &v1.CapabilitiesRes{GenericAPI: o.GenericAPI, WebhookDelivery: o.WebhookDelivery, Adapters: o.Adapters, Operations: o.Operations}, nil
+	return &v1.CapabilitiesRes{ObservedAt: time.Now().UnixMilli(), GenericAPI: o.GenericAPI, WebhookDelivery: o.WebhookDelivery, Adapters: o.Adapters, Operations: o.Operations}, nil
 }
 
 func (c *Controller) GetWebhook(ctx context.Context, r *v1.GetWebhookReq) (*v1.GetWebhookRes, error) {

@@ -1,0 +1,40 @@
+## 1. 首次安装
+
+- [x] 1.1 实现插件侧安全材料准备与公开命令启动入口，验证生成、复用、损坏拒绝和显式配置优先。
+- [x] 1.2 提供跨平台首次安装说明及完整官方源码来源配置。
+- [x] 1.3 隔离验证空白数据库启动及全部动态插件安装启用，修复插件侧失败。
+- [ ] 1.4 完成工具测试、跨平台编译、相关插件测试和静态检查、严格规范校验及本轮审查。
+
+## 最终范围审查
+
+本轮采用`lina-review`核对安装工具、安全材料持久化、公开构建转发、完整交付和空库验收。工具单测、定向静态检查、跨平台编译及公开完整构建证据已通过；13个内建和14个托管插件安装启用及重启证据见[runtime-validation.md](runtime-validation.md)。本轮未新增宿主修改。
+
+仍有阻塞：宿主同步插件清单会丢失`AuthorizedBusinessExtensions`，因此不能承诺所有插件后续停用流程稳定。首次安装结果与此问题分别记录，整体验收1.4暂不勾选；不以重新启用临时补偿冒充修复。
+# 插件客户入口补充：2026-10-16
+
+- [x] 安装工具新增`customer.run`显式启动插件自有客户网关，复用安装环境；`INSTALL.md`与`INSTALL.zh-CN.md`同步模板安装选择、独立进程、端口及代理配置。现有宿主开发命令不改写，不擅自终止冲突进程。
+- 工具测试通过现有`installation`包全量测试；实际网关、模板公开安装及页面验证由用户中心模板交付记录覆盖，未完成前不把本条扩展为全平台空库重验成功。
+
+
+## 独立模板交付入口修复（2026-10-16）
+- [x] 插件安装工具不再把build转发到必需旧客户目录的根构建入口；生成源码外官方聚合模块直接构建未修改宿主，后台产物独立交付。
+- [x] 独立客户和三个官网模板使用自带锁文件/构建器；公开WASM命令构建其他动态插件，输出16个WASM及SSR/网关。
+- [x] 后台独立网关覆盖/admin资源前缀、SPA刷新、API权限头、多Cookie、HEAD、405和上游503；真实交付资源浏览器登录页与硬刷新正常，无pageerror。
+- [x] 补plan/分阶段构建/输出边界/缺少内嵌资源预检，保持prepare/run/customer.run语义；同步INSTALL双语镜像，Go与Node单测、Windows/macOS交叉编译及定向lint通过。
+- [x] 干净拉取完整宿主首次安装：用户2026-10-16精确授权官方`pack.assets`生成资源后，已用不含本机依赖、生成物和私密配置的源码副本、独立数据库及六个隔离端口完成标准入口验收。原先不能调用官方生成器的阻断已解除；完整生命周期问题仍单独保留。
+
+实际本机已有内嵌资源的构建证据：`temp/20261016/installation-backend-delivery-final.log`与`installation-template-delivery-build.log`；工具/网关回归：`installation-independent-test.log`、`installation-admin-gateway-test.log`、`installation-independent-lint.log`、`installation-admin-live-smoke.log`、`installation-admin-browser-smoke.log`。真实登录截图`installation-admin-login.png`。这批证据只证明已有正式内嵌资源可交付，不替代干净拉取验收。
+
+最终定向构建`target=backend`通过（Vite19.17s），源码外Vite配置组合器关闭可选archiver，未复制、回填或覆盖宿主。最新工具Go单测、后台Node单测、Windows/macOS编译、make lint（0 issues）、全仓i18n.check和OpenSpec strict均通过；缺资源中文说明由插件中英文资源维护。交付后台16035临时端口真实浏览器复验通过后关闭。
+
+## 标准开发入口交付修复（2026-10-16）
+
+- [x] 根`make env.setup`、`make db.init confirm=init`、`make dev`与`make build`接入插件安装工具，宿主工具保持原样。
+- [x] 运行依赖安装不再强制准备不受系统支持的测试浏览器；生成源码外私密配置，重启复用且显式配置优先。
+- [x] 官方资源生成、源码插件页面构建、动态插件页面构建与WASM打包、独立模板与SSR纳入完整顺序；修复被忽略的官网源码样式。
+- [x] 干净源码副本、独立空库、隔离六端口完成构建启动、全部动态插件安装启用、官网/用户中心模板选择与真实页面验收。
+- [x] 端口冲突拒绝、子进程失败与中断清理、配置路径等回归及跨平台编译、静态检查、严格校验、定向审查通过。
+
+`hack}`是无Git记录的空目录，本轮确认无文件、无代码引用后删除；没有修改正常的根`hack/`。
+
+标准入口完整验收、真实页面和中断清理证据见[runtime-validation.md](runtime-validation.md)的2026-10-16补充。上述完成项不覆盖仍未完成的1.4宿主生命周期问题。

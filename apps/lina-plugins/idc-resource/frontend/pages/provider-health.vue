@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
   ProviderChannelHealth,
@@ -13,7 +15,7 @@ import type {
   ProviderHealthObservation,
 } from "./health-client";
 
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useAccess } from "./plugin-access";
 import { Page, useVbenModal } from "@vben/common-ui";
@@ -175,11 +177,16 @@ onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
 });
+function refreshLabels() {
+  gridApi.setGridOptions({ columns: columns() });
+}
+watch(() => $t("plugin.idc-resource.health.table.channel"), refreshLabels);
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="provider-health-page">
-    <div class="health-shell">
+  <Page class="plugin-admin-page" :auto-content-height="true" data-testid="provider-health-page">
+    <div :ref="layoutRoot" class="health-shell">
       <section class="health-metrics" aria-live="polite">
         <article class="metric metric--danger">
           <span>{{ $t("plugin.idc-resource.health.metrics.protected") }}</span
@@ -282,7 +289,7 @@ onMounted(async () => {
 .health-shell {
   --cyan: 34 211 238;
   display: grid;
-  gap: 18px;
+  gap: 12px;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
@@ -296,13 +303,13 @@ onMounted(async () => {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0;
-  padding: 17px 20px;
+  padding: 12px 16px;
 }
 .metric span {
   color: hsl(var(--muted-foreground));
   display: block;
   font-size: 12px;
-  margin-bottom: 9px;
+  margin-bottom: 4px;
 }
 .metric strong {
   font-family: ui-monospace, monospace;

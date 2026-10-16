@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
@@ -16,9 +18,10 @@ import type {
   ProviderCapacityStatus,
 } from "./provider-capacity-client";
 
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useAccess } from "./plugin-access";
+import { preferences } from "@vben/preferences";
 import { Page, useVbenModal } from "@vben/common-ui";
 
 import { Badge, Card, Col, Row, Space, Statistic, Tag, message } from "ant-design-vue";
@@ -201,7 +204,11 @@ const [Grid, gridApi] = useVbenVxeGrid({
       labelWidth: 82,
     },
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-3",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: [],
@@ -275,16 +282,22 @@ async function onSyncCreated() {
 onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
-  gridApi.setState({ formOptions: { schema: searchSchema() } });
+  refreshLabels();
 });
+function refreshLabels() {
+  gridApi.setGridOptions({ columns: columns() });
+  gridApi.setState({ formOptions: { schema: searchSchema(), commonConfig: { labelWidth: preferences.app.locale === "en-US" ? 120 : 82 } } });
+}
+watch(() => $t("plugin.idc-resource.providerCapacity.search.status"), refreshLabels);
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page
+  <Page class="plugin-admin-page"
     :auto-content-height="true"
     data-testid="provider-capacity-operations-page"
   >
-    <div class="provider-capacity-shell">
+    <div :ref="layoutRoot" class="provider-capacity-shell">
       <Card size="small">
         <Row :gutter="[16, 16]" aria-live="polite">
           <Col :lg="6" :sm="12" :xs="24">

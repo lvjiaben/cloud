@@ -66,6 +66,10 @@ func (s *Service) prepareProvisionParameters(
 	ctx context.Context,
 	request provisionresourcecap.TaskRequest,
 ) (*routeEvidence, json.RawMessage, string, error) {
+	policy, err := parseServerGenerationPolicy(request.ProductConfiguration)
+	if err != nil {
+		return nil, nil, "", err
+	}
 	components, err := parseFrozenServerConfiguration(
 		request.ProductConfiguration, request.CustomerConfiguration,
 	)
@@ -83,7 +87,11 @@ func (s *Service) prepareProvisionParameters(
 	if !ready {
 		return nil, nil, "", provisionresourcecap.ErrSourceUnavailable
 	}
-	localResourceNo, hostname := frozenServerIdentity(request)
+	localResourceNo, _ := frozenServerIdentity(request)
+	hostname, err := generatedServerHostname(request, policy)
+	if err != nil {
+		return nil, nil, "", err
+	}
 	for _, pool := range pools {
 		route, routeErr := s.resolveRoute(ctx, pool.PoolNo, request.CustomerNo)
 		if routeErr != nil || route.ChannelNo != pool.ChannelNo {

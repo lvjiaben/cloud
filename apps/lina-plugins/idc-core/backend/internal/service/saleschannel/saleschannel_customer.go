@@ -1,3 +1,5 @@
+// This file exposes customer-owned referrals and commission records. Customer
+// queries exclude staff accounts, and the old settlement application is retired.
 package saleschannel
 
 import (
@@ -9,6 +11,7 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-core/pkg/bizerr"
 )
 
 type CustomerService interface {
@@ -105,7 +108,7 @@ func (s *serviceImpl) LoadCustomerSnapshot(ctx context.Context, customerNo strin
 	if err != nil {
 		return CustomerSnapshot{}, gerror.Wrap(err, "load customer referral links")
 	}
-	accountRows, err := s.database.GetAll(ctx, `SELECT currency_code, COALESCE(SUM(pending_amount_minor),0) AS pending_minor, COALESCE(SUM(available_amount_minor),0) AS available_minor, COALESCE(SUM(frozen_amount_minor),0) AS frozen_minor, COALESCE(SUM(paid_amount_minor),0) AS paid_minor FROM plugin_idc_core_sales_commission_account WHERE tenant_id=0 AND beneficiary_reference=? GROUP BY currency_code ORDER BY currency_code`, customerNo)
+	accountRows, err := s.database.GetAll(ctx, `SELECT currency_code, COALESCE(SUM(pending_amount_minor),0) AS pending_minor, COALESCE(SUM(available_amount_minor),0) AS available_minor, COALESCE(SUM(frozen_amount_minor),0) AS frozen_minor, COALESCE(SUM(paid_amount_minor),0) AS paid_minor FROM plugin_idc_core_sales_commission_account WHERE tenant_id=0 AND beneficiary_type_code IN ('agent','affiliate') AND beneficiary_reference=? GROUP BY currency_code ORDER BY currency_code`, customerNo)
 	if err != nil {
 		return CustomerSnapshot{}, gerror.Wrap(err, "load customer commission accounts")
 	}
@@ -186,11 +189,11 @@ func (s *serviceImpl) LoadCustomerCommissionOverview(ctx context.Context, custom
 	if limit < 1 || limit > 50 {
 		limit = 20
 	}
-	accounts, err := s.database.GetAll(ctx, `SELECT currency_code, available_amount_minor, pending_amount_minor, credited_amount_minor - pending_amount_minor - reversed_amount_minor AS matured_amount_minor, paid_amount_minor AS settled_amount_minor, frozen_amount_minor, status_code FROM plugin_idc_core_sales_commission_account WHERE tenant_id=0 AND beneficiary_reference=? AND (?='' OR currency_code=?) ORDER BY currency_code LIMIT ?`, customerNo, currencyCode, currencyCode, limit)
+	accounts, err := s.database.GetAll(ctx, `SELECT currency_code, available_amount_minor, pending_amount_minor, credited_amount_minor - pending_amount_minor - reversed_amount_minor AS matured_amount_minor, paid_amount_minor AS settled_amount_minor, frozen_amount_minor, status_code FROM plugin_idc_core_sales_commission_account WHERE tenant_id=0 AND beneficiary_type_code IN ('agent','affiliate') AND beneficiary_reference=? AND (?='' OR currency_code=?) ORDER BY currency_code LIMIT ?`, customerNo, currencyCode, currencyCode, limit)
 	if err != nil {
 		return CustomerCommissionOverview{}, gerror.Wrap(err, "load customer commission accounts")
 	}
-	entries, err := s.database.GetAll(ctx, `SELECT e.entry_no,e.currency_code,e.entry_type_code,e.source_reference,e.delta_available_minor,e.delta_reversed_minor,e.occurred_at FROM plugin_idc_core_sales_commission_account_entry e JOIN plugin_idc_core_sales_commission_account a ON a.account_no=e.account_no AND a.currency_code=e.currency_code WHERE e.tenant_id=0 AND a.beneficiary_reference=? AND (?='' OR e.currency_code=?) ORDER BY e.id DESC LIMIT ?`, customerNo, currencyCode, currencyCode, limit)
+	entries, err := s.database.GetAll(ctx, `SELECT e.entry_no,e.currency_code,e.entry_type_code,e.source_reference,e.delta_available_minor,e.delta_reversed_minor,e.occurred_at FROM plugin_idc_core_sales_commission_account_entry e JOIN plugin_idc_core_sales_commission_account a ON a.account_no=e.account_no AND a.currency_code=e.currency_code WHERE e.tenant_id=0 AND a.beneficiary_type_code IN ('agent','affiliate') AND a.beneficiary_reference=? AND (?='' OR e.currency_code=?) ORDER BY e.id DESC LIMIT ?`, customerNo, currencyCode, currencyCode, limit)
 	if err != nil {
 		return CustomerCommissionOverview{}, gerror.Wrap(err, "load customer commission entries")
 	}
@@ -211,7 +214,12 @@ func (s *serviceImpl) ListCustomerCommissionSettlements(ctx context.Context, cus
 	if limit < 1 || limit > 50 {
 		limit = 20
 	}
-	rows, err := s.database.GetAll(ctx, `SELECT settlement_no,currency_code,requested_amount_minor,status_code,requested_at,completed_at FROM plugin_idc_core_sales_commission_settlement WHERE tenant_id=0 AND beneficiary_reference=? AND (?='' OR currency_code=?) ORDER BY id DESC LIMIT ?`, customerNo, currencyCode, currencyCode, limit)
+	rows, err := s.database.GetAll(ctx, `SELECT settlement_no,currency_code,status_code,requested_amount_minor,requested_at,completed_at FROM (
+ SELECT settlement_no,currency_code,requested_amount_minor,status_code,requested_at,completed_at FROM plugin_idc_core_sales_commission_settlement WHERE tenant_id=0 AND beneficiary_type_code IN ('agent','affiliate') AND beneficiary_reference=? AND (?='' OR currency_code=?)
+ UNION ALL
+ SELECT p.payout_no,p.currency_code,p.amount_minor,'paid',p.created_at,p.paid_at FROM plugin_idc_core_sales_commission_offline_payout p JOIN plugin_idc_core_sales_commission_account a ON a.account_no=p.account_no WHERE a.tenant_id=0 AND a.beneficiary_type_code IN ('agent','affiliate') AND a.beneficiary_reference=? AND (?='' OR p.currency_code=?)
+ ) history ORDER BY requested_at DESC,settlement_no DESC LIMIT ?`, customerNo, currencyCode, currencyCode, customerNo, currencyCode, currencyCode, limit)
+
 	if err != nil {
 		return CustomerCommissionSettlementPage{}, gerror.Wrap(err, "load customer commission settlements")
 	}
@@ -223,72 +231,7 @@ func (s *serviceImpl) ListCustomerCommissionSettlements(ctx context.Context, cus
 	return result, nil
 }
 
-func (s *serviceImpl) RequestCustomerCommissionSettlement(ctx context.Context, customerNo string, input CustomerCommissionSettlementRequest) (CustomerCommissionSettlementResult, error) {
-	if s.database == nil || ctx == nil || strings.TrimSpace(customerNo) == "" || len(input.CurrencyCode) != 3 || input.AmountMinor < 1 || len(input.IdempotencyKey) < 16 {
-		return CustomerCommissionSettlementResult{}, gerror.New("customer settlement request is invalid")
-	}
-	digestBytes := sha256.Sum256([]byte(input.IdempotencyKey))
-	digest := hex.EncodeToString(digestBytes[:])
-	var result CustomerCommissionSettlementResult
-	err := s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
-		rows, err := tx.GetAll(`SELECT settlement_no,currency_code,requested_amount_minor,status_code,requested_at,completed_at FROM plugin_idc_core_sales_commission_settlement WHERE tenant_id=0 AND beneficiary_reference=? AND request_digest=? LIMIT 1`, customerNo, digest)
-		if err != nil {
-			return err
-		}
-		if len(rows) > 0 {
-			result.Reused = true
-			result.Item = settlementFromRow(rows[0])
-			return nil
-		}
-		accountRows, err := tx.GetAll(`SELECT account_no,beneficiary_type_code,currency_code,credited_amount_minor,pending_amount_minor,available_amount_minor,frozen_amount_minor,paid_amount_minor,reversed_amount_minor,version FROM plugin_idc_core_sales_commission_account WHERE tenant_id=0 AND beneficiary_reference=? AND currency_code=? AND status_code='active' FOR UPDATE`, customerNo, strings.ToUpper(input.CurrencyCode))
-		if err != nil {
-			return err
-		}
-		if len(accountRows) == 0 || accountRows[0]["available_amount_minor"].Int64() < input.AmountMinor {
-			return gerror.New("commission amount unavailable")
-		}
-		account := accountRows[0]
-		payeeRows, err := tx.GetAll(`SELECT profile_no,beneficiary_type_code,beneficiary_reference FROM plugin_idc_core_sales_commission_payee_profile WHERE tenant_id=0 AND beneficiary_reference=? AND status_code='verified' ORDER BY id DESC LIMIT 1`, customerNo)
-		if err != nil {
-			return err
-		}
-		if len(payeeRows) == 0 {
-			return gerror.New("verified commission payee is required")
-		}
-		payee := payeeRows[0]
-		settlementNo := "SETTLE_" + digest[:30]
-		// The append-only account-entry trigger is the sole writer of the
-		// projection columns. Updating the account first would make the entry's
-		// after-values appear to apply twice and the trigger would (correctly)
-		// reject the request.
-		beforeAvailable := account["available_amount_minor"].Int64()
-		beforeFrozen := account["frozen_amount_minor"].Int64()
-		beforeVersion := account["version"].Int64()
-		entryNo := "CENTRY_" + digest[:33]
-		if _, err = tx.Exec(`INSERT INTO plugin_idc_core_sales_commission_account_entry
- (tenant_id,entry_no,account_no,currency_code,entry_sequence,entry_type_code,source_type_code,source_reference,source_digest,
-  delta_credited_minor,delta_pending_minor,delta_available_minor,delta_frozen_minor,delta_paid_minor,delta_reversed_minor,
-  after_credited_minor,after_pending_minor,after_available_minor,after_frozen_minor,after_paid_minor,after_reversed_minor)
-VALUES (0,?,?,?,?,?,?,?,?,0,0,?,?,0,0,?,?,?,?,?,?)`,
-			entryNo, account["account_no"].String(), account["currency_code"].String(), beforeVersion+1,
-			"settlement_freeze", "commission_settlement", settlementNo, digest,
-			-input.AmountMinor, input.AmountMinor,
-			account["credited_amount_minor"].Int64(), account["pending_amount_minor"].Int64(), beforeAvailable-input.AmountMinor,
-			beforeFrozen+input.AmountMinor, account["paid_amount_minor"].Int64(), account["reversed_amount_minor"].Int64()); err != nil {
-			return err
-		}
-		if _, err = tx.Exec(`INSERT INTO plugin_idc_core_sales_commission_settlement (tenant_id,settlement_no,account_no,currency_code,payee_profile_no,beneficiary_type_code,beneficiary_reference,requested_amount_minor,frozen_amount_minor,minimum_amount_minor,status_code,request_digest) VALUES (0,?,?,?,?,?,?,?, ?,0,'pending_review',?)`, settlementNo, account["account_no"].String(), account["currency_code"].String(), payee["profile_no"].String(), payee["beneficiary_type_code"].String(), customerNo, input.AmountMinor, input.AmountMinor, digest); err != nil {
-			return err
-		}
-		result.Item = CustomerCommissionSettlement{SettlementNo: settlementNo, CurrencyCode: account["currency_code"].String(), AmountMinor: input.AmountMinor, StatusCode: "pending_review"}
-		return nil
-	})
-	if err != nil {
-		return CustomerCommissionSettlementResult{}, gerror.Wrap(err, "request customer commission settlement")
-	}
-	return result, nil
-}
-
-func settlementFromRow(row gdb.Record) CustomerCommissionSettlement {
-	return CustomerCommissionSettlement{SettlementNo: row["settlement_no"].String(), CurrencyCode: row["currency_code"].String(), AmountMinor: row["requested_amount_minor"].Int64(), StatusCode: row["status_code"].String(), SubmittedAt: row["requested_at"].Time().UnixMilli(), PaidAt: row["completed_at"].Time().UnixMilli()}
+// RequestCustomerCommissionSettlement rejects the retired customer approval workflow without freezing money.
+func (s *serviceImpl) RequestCustomerCommissionSettlement(context.Context, string, CustomerCommissionSettlementRequest) (CustomerCommissionSettlementResult, error) {
+	return CustomerCommissionSettlementResult{}, bizerr.NewCode(codeSettlementRetired)
 }

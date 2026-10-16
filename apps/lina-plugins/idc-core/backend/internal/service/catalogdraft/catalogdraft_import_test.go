@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
@@ -82,7 +83,7 @@ type importTestAutomation struct {
 	err                       error
 }
 
-func (a *importTestAutomation) PrepareImportBinding(context.Context, string, *resourceinterfaceprojectioncap.CatalogReadEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue) (*productautomation.ImportBinding, error) {
+func (a *importTestAutomation) PrepareImportBinding(context.Context, string, *resourceinterfaceprojectioncap.CatalogReadEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue, *channelcommercecap.ImportSnapshot) (*productautomation.ImportBinding, error) {
 	a.prepareCalls++
 	return &productautomation.ImportBinding{}, a.err
 }

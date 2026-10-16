@@ -5,6 +5,7 @@ package interfacecandidate
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -41,6 +42,7 @@ type dependencies struct {
 	database   gdb.DB
 	extensions pluginhost.BusinessExtensionRegistrar
 	outbound   outboundFactory
+	files      FileTransferFactory
 }
 
 // LazySource can be declared during plugin init and bound when host services
@@ -78,14 +80,24 @@ func (source *LazySource) ResolveCandidates(
 	ctx context.Context,
 	request resourceinterfaceprojectioncap.CandidateRequest,
 ) (*resourceinterfaceprojectioncap.CandidateResult, error) {
+	peer := request.Method == "peer.configuration.candidates"
+	if peer {
+		request.Method = resourcecap.DynamicProviderMethodConfigurationCandidates
+	}
 	if request.Method != resourcecap.DynamicProviderMethodConfigurationCandidates {
 		return nil, gerror.New("resource interface candidate method is unavailable")
 	}
-	response, _, err := source.invokeRead(ctx, request, []string{"StatusCode", "Data", "Authenticated", "Fields", "FieldKey", "Items", "Value", "LabelZhCN", "LabelEnUS"})
+	response, evidence, err := source.invokeRead(ctx, request, []string{"StatusCode", "Data", "Authenticated", "Fields", "FieldKey", "Items", "Value", "ParentValue", "OptionToken", "LabelZhCN", "LabelEnUS"})
 	if err != nil {
 		return nil, err
 	}
-	return projectCandidateResult(response)
+	if peer && (evidence == nil || evidence.PluginID != "idc-peer") {
+		return nil, gerror.New("peer candidate connector is invalid")
+	}
+	if !peer {
+		return projectCandidateResult(response)
+	}
+	return projectCandidates(response, peer)
 }
 
 // invokeRead preserves one exact resource-owner channel/evidence/confidential
@@ -98,7 +110,7 @@ func (source *LazySource) invokeRead(
 		return nil, nil, gerror.New("resource interface candidates are unavailable")
 	}
 	switch request.Method {
-	case resourcecap.DynamicProviderMethodConfigurationCandidates, resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct:
+	case resourcecap.DynamicProviderMethodConfigurationCandidates, resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct, resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration, resourcecap.DynamicProviderMethodCatalogBillingTerms:
 	default:
 		return nil, nil, gerror.New("resource interface read method is unavailable")
 	}
@@ -199,8 +211,12 @@ type binding struct {
 }
 
 func loadBinding(ctx context.Context, database gdb.DB, interfaceNo string) (binding, error) {
+	return loadBusinessBinding(ctx, database, interfaceNo, true)
+}
+
+func loadBusinessBinding(ctx context.Context, database gdb.DB, interfaceNo string, newBusiness bool) (binding, error) {
 	var value binding
-	err := database.Model("plugin_idc_resource_interface_channel_binding b").Safe().Ctx(ctx).
+	model := database.Model("plugin_idc_resource_interface_channel_binding b").Safe().Ctx(ctx).
 		InnerJoin("plugin_idc_resource_channel c", "c.tenant_id=b.tenant_id AND c.channel_no=b.channel_no").
 		Fields("b.channel_no,b.resource_plugin_id AS plugin_id",
 			"b.resource_plugin_release_version AS plugin_release_version",
@@ -212,8 +228,11 @@ func loadBinding(ctx context.Context, database gdb.DB, interfaceNo string) (bind
 			"b.product_plugin_id,b.product_plugin_release_version AS product_release_version,b.product_contract_version,b.product_authorized_methods,b.product_release_digest,b.product_declaration_digest").
 		Where("b.tenant_id", idccap.DefaultTenantID).
 		Where("b.interface_instance_no", interfaceNo).
-		Where("b.new_business_state", resourceinterfaceprojectioncap.StateAccepting).
-		Where("c.status_code", "enabled").WhereNull("c.deleted_at").Limit(1).Scan(&value)
+		Where("c.status_code", "enabled").WhereNull("c.deleted_at").Limit(1)
+	if newBusiness {
+		model = model.Where("b.new_business_state", resourceinterfaceprojectioncap.StateAccepting)
+	}
+	err := model.Scan(&value)
 	if err != nil || value.ChannelNo == "" {
 		return binding{}, gerror.New("resource interface candidates are unavailable")
 	}
@@ -270,9 +289,19 @@ func contains(values []string, wanted string) bool {
 }
 
 func projectCandidateResult(payload []byte) (*resourceinterfaceprojectioncap.CandidateResult, error) {
+	return projectCandidates(payload, false)
+}
+
+var peerCandidateKey = regexp.MustCompile(`^k_[a-f0-9]{48}$`)
+
+func projectCandidates(payload []byte, peer bool) (*resourceinterfaceprojectioncap.CandidateResult, error) {
 	var value resourceinterfaceprojectioncap.CandidateResult
+	fieldLimit := maximumCandidateFields
+	if peer {
+		fieldLimit = 128
+	}
 	if len(payload) == 0 || len(payload) > 1<<20 || json.Unmarshal(payload, &value) != nil ||
-		len(value.Fields) == 0 || len(value.Fields) > maximumCandidateFields {
+		(!peer && len(value.Fields) == 0) || len(value.Fields) > fieldLimit {
 		return nil, gerror.New("resource interface candidate result is invalid")
 	}
 	allowedKeys := make(map[string]struct{}, len(resourcecap.ServerConfigurationKeys()))
@@ -283,7 +312,11 @@ func projectCandidateResult(payload []byte) (*resourceinterfaceprojectioncap.Can
 	total := 0
 	for fieldIndex := range value.Fields {
 		field := &value.Fields[fieldIndex]
-		if _, ok := allowedKeys[field.FieldKey]; !ok || len(field.Items) == 0 {
+		_, ok := allowedKeys[field.FieldKey]
+		if peer {
+			ok = peerCandidateKey.MatchString(field.FieldKey)
+		}
+		if !ok || (!peer && len(field.Items) == 0) {
 			return nil, gerror.New("resource interface candidate field is invalid")
 		}
 		if _, exists := seenFields[field.FieldKey]; exists {
@@ -295,6 +328,9 @@ func projectCandidateResult(payload []byte) (*resourceinterfaceprojectioncap.Can
 			item := &field.Items[itemIndex]
 			if !safeText(item.Value) || !safeText(item.LabelZhCN) || !safeText(item.LabelEnUS) {
 				return nil, gerror.New("resource interface candidate item is invalid")
+			}
+			if peer && (len(item.OptionToken) == 0 || len(item.OptionToken) > 4096 || (item.ParentValue != "" && !safeText(item.ParentValue))) {
+				return nil, gerror.New("peer candidate mapping is invalid")
 			}
 			if _, exists := seenValues[item.Value]; exists {
 				return nil, gerror.New("resource interface candidate items are duplicated")

@@ -27,4 +27,5 @@ type SupportDepartment struct {
 	UpdatedBy          any        //
 	CreatedAt          *time.Time //
 	UpdatedAt          *time.Time //
+	OrgDeptId          any        //
 }

@@ -38,7 +38,7 @@ func productionProviderEnvironment(
 	configuration channelconfig.Configuration,
 	secretSource secretcap.Source,
 ) (resourcecap.ProviderEnv, func(), error) {
-	client, closeClient, err := NewOutboundHTTPClient(configuration.Config.Endpoint)
+	client, closeClient, err := newOutboundHTTPClient(configuration.Config.Endpoint, configuration.Config.TLSCertificateSHA256)
 	if err != nil {
 		return resourcecap.ProviderEnv{}, nil, err
 	}
@@ -64,7 +64,7 @@ func productionProviderEnvironment(
 	return resourcecap.ProviderEnv{
 		HTTPClient: client, Clock: productionClock{},
 		Logger: productionLogger{}, Metrics: productionMetrics{},
-		AuthenticationSessions: sessions,
+		AuthenticationSessions: sessions, Secrets: accessor,
 	}, closeClient, nil
 }
 

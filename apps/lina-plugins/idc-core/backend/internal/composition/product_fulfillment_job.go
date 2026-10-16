@@ -11,6 +11,23 @@ import (
 
 const productFulfillmentBatchLimit = 20
 
+// productFulfillmentGateRecoveryBatchLimit bounds authoritative gate rechecks per pass.
+const productFulfillmentGateRecoveryBatchLimit = 20
+
+// RegisterProductFulfillmentGateRecoveryJob revisits paid intents after risk or contract approval.
+func RegisterProductFulfillmentGateRecoveryJob(ctx context.Context, registrar pluginhost.JobsRegistrar, worker productfulfillment.GateRecoveryWorker) error {
+	if ctx == nil || ctx.Err() != nil || registrar == nil || worker == nil {
+		return gerror.New("product fulfillment gate recovery registrar is unavailable")
+	}
+	if !registrar.IsPrimaryNode() {
+		return nil
+	}
+	return registrar.AddWithMetadata(ctx, "@every 5s", "idc-core-product-fulfillment-gate-recovery", "IDC Product Fulfillment Gate Recovery", "Rechecks frozen owner gates for already-paid generic orders.", func(jobCtx context.Context) error {
+		_, err := worker.Run(jobCtx, productFulfillmentGateRecoveryBatchLimit)
+		return err
+	})
+}
+
 const productFulfillmentCancellationBatchLimit = 20
 
 const productFulfillmentResourceOutcomeBatchLimit = 20

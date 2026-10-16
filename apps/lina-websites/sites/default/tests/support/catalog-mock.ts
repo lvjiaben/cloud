@@ -139,6 +139,7 @@ const publicCampaign = {
 };
 
 export interface PublicCatalogMockState {
+  availableCurrencies: string[];
   configurationEvaluations: Array<Record<string, unknown>>;
   configurationQuotes: Array<Record<string, unknown>>;
   exposureAttempts: Array<{
@@ -155,6 +156,7 @@ export async function mockPublicCatalog(
 ): Promise<PublicCatalogMockState> {
   const exposureKeys = new Set<string>();
   const state: PublicCatalogMockState = {
+    availableCurrencies: ["CNY", "USD"],
     configurationEvaluations: [],
     configurationQuotes: [],
     exposureAttempts: [],
@@ -298,6 +300,10 @@ export async function mockPublicCatalog(
         });
         return;
       }
+      const visibleProducts = [product, sslProduct].map(item => ({
+        ...item, currencies: item.currencies.filter(code => state.availableCurrencies.includes(code)),
+      })).filter(item => item.currencies.length > 0);
+      const selectedCurrency = url.searchParams.get("currency");
       const isPrimaryDetail = url.pathname.endsWith("/everyday-phone");
       const isSSLDetail = url.pathname.endsWith("/managed-ssl");
       await route.fulfill({
@@ -308,9 +314,9 @@ export async function mockPublicCatalog(
           message: "OK",
           data:
             isPrimaryDetail || isSSLDetail
-              ? { product: isSSLDetail ? sslProduct : product }
+              ? { product: visibleProducts.find(item => item.publicSlug === (isSSLDetail ? sslProduct.publicSlug : product.publicSlug)) }
               : {
-                  availableCurrencies: ["CNY", "USD"],
+                  availableCurrencies: state.availableCurrencies,
                   categories: [
                     {
                       categoryNo: product.categoryNo,
@@ -319,7 +325,7 @@ export async function mockPublicCatalog(
                     },
                   ],
                   nextCursor: "",
-                  products: [product, sslProduct],
+                  products: visibleProducts.filter(item => !selectedCurrency || item.currencies.includes(selectedCurrency)),
                 },
         }),
       });

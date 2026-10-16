@@ -1,25 +1,28 @@
 {
   "menu": {
     "plugin:idc-core:product-directories": {
-      "title": "商品服务目录"
+      "title": "会员导航"
     },
     "plugin:idc-core:product-directories:create": {
-      "title": "新增商品服务目录"
+      "title": "新增会员导航"
     },
     "plugin:idc-core:product-directories:update": {
-      "title": "修改商品服务目录"
+      "title": "编辑会员导航"
     }
   },
   "error": {
     "idc": {
       "product": {
         "directory": {
-          "invalid": "商品服务目录配置无效",
+          "invalid": "会员导航配置无效，请检查菜单类型和目标页面",
           "not": {
-            "accessible": "无法访问该商品服务目录"
+            "accessible": "无法访问该会员导航"
           },
-          "conflict": "目录已变更或商品已归属其他目录，请刷新并检查商品关联",
-          "unavailable": "商品服务目录操作暂不可用"
+          "conflict": "菜单已变更或商品已归属其他菜单，请刷新并检查关联商品",
+          "unavailable": "会员导航暂时不可用，请稍后重试",
+          "has": {
+            "products": "这个菜单还有商品，请先到商品编辑中更换或取消会员导航，再修改菜单类型。"
+          }
         }
       }
     }

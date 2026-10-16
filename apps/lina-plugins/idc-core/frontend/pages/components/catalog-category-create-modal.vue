@@ -29,7 +29,7 @@ function localizedName(category: CatalogCategory) {
 
 function categoryTree(categories: CatalogCategory[]) {
   const nodes = new Map<string, CategoryTreeNode>();
-  for (const item of categories) {
+  for (const item of categories.filter(item => !item.parentCategoryNo)) {
     nodes.set(item.categoryNo, {
       children: [],
       label: localizedName(item),
@@ -37,7 +37,7 @@ function categoryTree(categories: CatalogCategory[]) {
     });
   }
   const roots: CategoryTreeNode[] = [];
-  for (const item of categories) {
+  for (const item of categories.filter(item => !item.parentCategoryNo)) {
     const node = nodes.get(item.categoryNo)!;
     const parent = nodes.get(item.parentCategoryNo);
     if (parent) parent.children!.push(node);
@@ -147,7 +147,9 @@ const [Modal, modalApi] = useVbenModal({
     if (!open) return;
     await refreshParentOptions();
     await formApi.setState({ schema: formSchema() });
-    await formApi.setValues({ parentCategoryNo: undefined, sortOrder: 100 });
+    const data = modalApi.getData<{ parentCategoryNo?: string }>();
+    const parentCategoryNo = categories.value.some(item => !item.parentCategoryNo && item.categoryNo === data?.parentCategoryNo) ? data.parentCategoryNo : undefined;
+    await formApi.setValues({ parentCategoryNo, sortOrder: 100 });
   },
 });
 </script>

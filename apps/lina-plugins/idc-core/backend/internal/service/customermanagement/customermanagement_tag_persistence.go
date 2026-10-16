@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -30,6 +31,21 @@ func (*daoTagMutationPersistence) applyTagBatch(
 		if err != nil {
 			return err
 		}
+		if len(input.tagNames) > 0 {
+			resolved, resolveErr := ensureNamedTags(txCtx, input.tagNames, input.actorUserID)
+			if resolveErr != nil {
+				return resolveErr
+			}
+			seen := make(map[string]bool)
+			for _, number := range append(input.tagNos, resolved...) {
+				seen[number] = true
+			}
+			input.tagNos = make([]string, 0, len(seen))
+			for number := range seen {
+				input.tagNos = append(input.tagNos, number)
+			}
+			sort.Strings(input.tagNos)
+		}
 		auditResult, err := auditWriter.AppendBusinessBatchTransition(
 			txCtx,
 			idccap.BusinessAuditBatchTransition{
@@ -46,7 +62,7 @@ func (*daoTagMutationPersistence) applyTagBatch(
 				CorrelationNo:       input.targetNo,
 				BeforeSnapshot: map[string]any{
 					"action": string(input.action), "state": "requested",
-					"customer_count": len(input.customerNos), "tag_nos": input.tagNos,
+					"customer_count": len(input.customerNos), "tag_nos": input.tagNos, "tag_names": input.tagNames,
 				},
 				AfterSnapshot: map[string]any{
 					"reason": input.reason, "state": "applied",

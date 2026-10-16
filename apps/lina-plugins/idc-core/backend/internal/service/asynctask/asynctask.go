@@ -152,6 +152,9 @@ type UnknownInput struct {
 // RecoverExpiredInput bounds one expired-lease recovery batch.
 type RecoverExpiredInput struct {
 	Limit int
+	// TaskTypes restricts recovery to the caller's owned families. Empty keeps
+	// the administrative all-family behavior; values follow ClaimInput rules.
+	TaskTypes []string
 }
 
 // TakeOverInput assigns a terminal automated task to a staff operator. The

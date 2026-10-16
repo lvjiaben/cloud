@@ -208,15 +208,15 @@ func (s *serviceImpl) queueReadyGateItems(ctx context.Context, orderNo string, r
 func (s *serviceImpl) verifyGateRelease(ctx context.Context, orderNo string, rawItems []byte, locked []gateLockedIntent) error {
 	var evidence []gateReleaseEvidence
 	if err := s.database.GetScan(ctx, &evidence, `SELECT intent.intent_no,intent.status_code,intent.maximum_attempts,intent.retry_base_seconds,COALESCE(task.task_no,'') AS task_no,COALESCE(task.maximum_attempts,0) AS task_maximum_attempts,COALESCE(task.retry_base_seconds,0) AS task_retry_base_seconds,(system_event.intent_no IS NOT NULL) AS system_transition FROM plugin_idc_core_product_fulfillment_intent intent LEFT JOIN plugin_idc_core_product_fulfillment_system_transition system_event ON system_event.intent_no=intent.intent_no AND system_event.event_code='moved_to_manual' LEFT JOIN plugin_idc_core_product_fulfillment_task task ON task.intent_no=intent.intent_no WHERE intent.tenant_id=0 AND intent.order_no=? AND intent.order_item_no IN (SELECT jsonb_array_elements_text(?::jsonb)) ORDER BY intent.intent_no LIMIT 1001`, orderNo, rawItems); err != nil || len(evidence) != len(locked) {
-		return errorsNew("product_fulfillment_task_conflict")
+		return errorsNew(taskConflictCode)
 	}
 	for _, row := range evidence {
 		requiresTask := row.StatusCode == "queued" || row.StatusCode == "processing" || row.StatusCode == "completed" || row.StatusCode == "incomplete" || (row.StatusCode == "manual_pending" && !row.SystemTransition)
 		if row.SystemTransition && row.TaskNo != "" {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		if requiresTask && (row.TaskNo != deterministicNo("pfk_", row.IntentNo) || row.TaskMaximumAttempts != row.MaximumAttempts || row.TaskRetryBaseSeconds != row.RetryBaseSeconds) {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 	}
 	return nil

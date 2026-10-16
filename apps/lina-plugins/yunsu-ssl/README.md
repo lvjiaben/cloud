@@ -13,6 +13,7 @@ The connector joins generic commerce through `product-fulfillment@v1` owned by `
 - durable asynchronous issuance through `POST /payment/balance` after payment confirmation or staff approval;
 - issuance-state queries through `POST /order/sync`;
 - pure pre-issuance configuration validation without a supplier request;
+- new automatic publication is blocked until supplier domain types and quantity limits are documented; manual delivery remains available and existing certificates retain their frozen configuration;
 - ordinary, multi-domain, wildcard, and IP certificate constraints, including matching DNS/file validation capabilities;
 - mandatory customer-supplied, signature-checked CSR input that must exactly match the requested identifiers;
 - complete organization and contact information for OV and EV products;

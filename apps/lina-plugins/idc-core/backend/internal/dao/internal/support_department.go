@@ -35,6 +35,7 @@ type SupportDepartmentColumns struct {
 	UpdatedBy          string //
 	CreatedAt          string //
 	UpdatedAt          string //
+	OrgDeptId          string //
 }
 
 // supportDepartmentColumns holds the columns for the table plugin_idc_core_support_department.
@@ -53,6 +54,7 @@ var supportDepartmentColumns = SupportDepartmentColumns{
 	UpdatedBy:          "updated_by",
 	CreatedAt:          "created_at",
 	UpdatedAt:          "updated_at",
+	OrgDeptId:          "org_dept_id",
 }
 
 // NewSupportDepartmentDao creates and returns a new DAO object for table data access.

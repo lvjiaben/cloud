@@ -14,15 +14,31 @@ type operationsBizCtxStub struct{ current bizctxcap.CurrentContext }
 func (s operationsBizCtxStub) Current(context.Context) bizctxcap.CurrentContext { return s.current }
 
 func TestNewRequiresDatabase(t *testing.T) {
-	if _, err := New(nil, operationsBizCtxStub{}); err == nil {
+	if _, err := New(nil, operationsBizCtxStub{}, nil, operationsAuthorizationFixture{allowed: true}); err == nil {
 		t.Fatal("expected database validation")
 	}
 }
 
 func TestNewRequiresBusinessContext(t *testing.T) {
 	var database gdb.DB
-	if _, err := New(database, nil); err == nil {
+	if _, err := New(database, nil, nil, operationsAuthorizationFixture{allowed: true}); err == nil {
 		t.Fatal("expected business context validation")
+	}
+}
+
+// operationsDatabaseFixture is sufficient for constructor dependency checks;
+// no test may execute a query through its nil embedded implementation.
+type operationsDatabaseFixture struct{ gdb.DB }
+
+// TestNewRequiresPresenceAndAuthorization prevents a partially wired service
+// from starting successfully and failing only when a record page is opened.
+func TestNewRequiresPresenceAndAuthorization(t *testing.T) {
+	database := operationsDatabaseFixture{}
+	if _, err := New(database, operationsBizCtxStub{}, nil, operationsAuthorizationFixture{}); err == nil {
+		t.Fatal("expected missing sessions rejection")
+	}
+	if _, err := New(database, operationsBizCtxStub{}, operationsPresenceFixture{}, nil); err == nil {
+		t.Fatal("expected missing authorization rejection")
 	}
 }
 

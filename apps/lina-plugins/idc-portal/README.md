@@ -13,7 +13,7 @@ English | [简体中文](README.zh-CN.md)
 - Exposes the published brand projection at `GET /x/idc-portal/api/v1/public/brand`; administrators stage, preview, publish, and roll back immutable brand revisions through protected routes.
 - Registers only the exact `GET /admin/auth/reset-password` bridge needed by existing host password-reset emails.
 
-The public website source is owned by `apps/lina-websites/`. Authenticated customer pages are owned by `apps/lina-vben/apps/web-customer/`. The brand management page owned by this plugin lives in `frontend/dist/` and is loaded through the plugin frontend mechanism.
+The public website source is owned by `apps/lina-websites/`. Authenticated customer pages are owned by `apps/lina-vben/apps/web-customer/`. The brand management page owned by this plugin lives in `frontend/pages/portal-brand.vue` and is loaded through the source-plugin page registry using the host's Vben form and request adapters.
 
 ## Password-reset bridge
 

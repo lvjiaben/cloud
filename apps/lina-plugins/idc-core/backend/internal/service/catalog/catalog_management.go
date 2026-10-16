@@ -22,6 +22,7 @@ const (
 	permissionCatalogCategoryDelete  = "idc:admin:catalog:category:delete"
 	permissionCatalogCategoryRestore = "idc:admin:catalog:category:restore"
 	permissionCatalogProductCreate   = "idc:admin:catalog:product:create"
+	permissionCatalogProductUpdate   = "idc:admin:catalog:product:update"
 	permissionCatalogProductQuery    = "idc:admin:catalog:product:query"
 	permissionCatalogBillingWrite    = "idc:admin:catalog:billing:write"
 	permissionCatalogPriceWrite      = "idc:admin:catalog:price:write"
@@ -67,6 +68,7 @@ type Category struct {
 
 // ProductCreateInput creates a product and its empty manual draft version.
 type ProductCreateInput struct {
+	DirectoryNo              string
 	CategoryNo               string
 	PublicSlug               string
 	NameZhCN                 string
@@ -101,6 +103,8 @@ type ManagementAuthorizer interface {
 	AuthorizeCategoryDelete(ctx context.Context, categoryNo string) (actorUserID int, err error)
 	AuthorizeCategoryRestore(ctx context.Context, categoryNo string) (actorUserID int, err error)
 	AuthorizeProductCreate(ctx context.Context) (actorUserID int, err error)
+	// AuthorizeProductUpdate checks the exact metadata permission and global merchant scope.
+	AuthorizeProductUpdate(ctx context.Context, productNo string) (actorUserID int, err error)
 	AuthorizeBillingWrite(ctx context.Context, versionNo string) (actorUserID int, err error)
 	AuthorizePriceWrite(ctx context.Context, versionNo string) (actorUserID int, err error)
 	AuthorizeTaxWrite(ctx context.Context, versionNo string) (actorUserID int, err error)
@@ -109,12 +113,18 @@ type ManagementAuthorizer interface {
 
 // ManagementService owns only general category, product, pricing, and tax writes.
 type ManagementService interface {
+	// GetProductAddons returns at most 100 associated products after exact staff visibility checks.
+	GetProductAddons(context.Context, string) ([]ProductAddon, error)
+	// SetProductAddons replaces the bounded allowed offers with optimistic product concurrency and audit.
+	SetProductAddons(context.Context, ProductAddonsInput) (int64, error)
 	ImportWriter
 	CreateCategory(ctx context.Context, input CategoryCreateInput) (*Category, error)
 	UpdateCategory(ctx context.Context, input CategoryUpdateInput) (*Category, error)
 	DeleteCategory(ctx context.Context, input CategoryStateInput) error
 	RestoreCategory(ctx context.Context, input CategoryStateInput) (*Category, error)
 	CreateProductDraft(ctx context.Context, input ProductCreateInput) (*ProductDraft, error)
+	// UpdateProductDescription updates only bilingual sales copy with optimistic concurrency and transactional audit.
+	UpdateProductDescription(ctx context.Context, input ProductDescriptionUpdateInput) (int64, error)
 	CreateBillingRule(ctx context.Context, input BillingRuleCreateInput) (*BillingRule, error)
 	CreatePriceSchedule(ctx context.Context, input PriceScheduleCreateInput) (*PriceSchedule, error)
 	CreateTaxPolicy(ctx context.Context, input TaxPolicyCreateInput) (*TaxPolicy, error)

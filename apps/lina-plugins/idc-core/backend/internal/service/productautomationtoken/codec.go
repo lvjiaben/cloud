@@ -228,7 +228,8 @@ func (c *Codec) EncodeProviderSelection(ctx context.Context, value *capmodel.Bus
 }
 
 // DecodeProviderSelection authenticates, decrypts, and rebinds one selection
-// to the current direct staff session.
+// to the current direct staff session. It returns identity only; executable
+// provider declarations must be reloaded by exact release and digest before use.
 func (c *Codec) DecodeProviderSelection(ctx context.Context, token string) (*capmodel.BusinessExtensionProviderEvidence, error) {
 	if err := c.ensureOpen(); err != nil {
 		return nil, err

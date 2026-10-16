@@ -297,7 +297,7 @@ func (s *serviceImpl) completeChannelTest(ctx context.Context, prepared channelT
 		return s.management.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "notification.channel.test", IdempotencyKey: prepared.OperationNo,
 			OperationCode: "notification.channel.test", TargetType: "notification_channel",
-			TargetNo: prepared.ChannelCode, ResultCode: string(result.Class), ReasonCode: "merchant_test_send", RiskCode: "high",
+			TargetNo: prepared.ChannelCode, ResultCode: channelTestAuditResult(result.Class), ReasonCode: "merchant_test_send", RiskCode: "high",
 			RequiredPermission: PermissionChannelManage,
 			BeforeSnapshot:     map[string]any{"channel_version": prepared.ChannelVersion, "target_mask": prepared.TargetMask},
 			AfterSnapshot:      map[string]any{"result_class": string(result.Class), "crossed_external_boundary": result.CrossedExternalBorder},
@@ -355,3 +355,16 @@ func stringPointer(value string) *string {
 
 func intText(value int) string     { return strconv.Itoa(value) }
 func int64Text(value int64) string { return strconv.FormatInt(value, 10) }
+
+// channelTestAuditResult keeps delivery outcomes in snapshots while classifying
+// the audit result using the sealed writer's finite result vocabulary.
+func channelTestAuditResult(result channelcap.ResultClass) string {
+	switch result {
+	case channelcap.ResultAccepted, channelcap.ResultDelivered:
+		return idccap.BusinessAuditResultSucceeded
+	case channelcap.ResultUnknown:
+		return "result_unknown"
+	default:
+		return "failed"
+	}
+}

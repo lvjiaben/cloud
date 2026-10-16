@@ -21,7 +21,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await support.openTicket(supportTickets.global);
 
     await expect(support.pageRoot).toContainText("等待机房确认");
-    await expect(support.pageRoot).toContainText("这张工单尚未配置 SLA。");
+    await expect(support.pageRoot).toContainText("尚未设置处理时限。");
     await expect(support.pageRoot).toContainText("状态变更");
     await expect(support.pageRoot).toContainText("合并关系");
     await expect(support.pageRoot).toContainText("转交网络组继续处理");
@@ -131,7 +131,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await support.gotoSettings();
 
     await expect(support.settingsRoot).toContainText(
-      "客服人员资格由独立插件管理",
+      "部门管归属，角色管权限。",
     );
     await expect(support.settingsRoot).toContainText("公共待领取队列");
     await expect(support.settingsRoot).not.toContainText("DEP_SUPPORT_CS");
@@ -140,9 +140,8 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await adminPage
       .getByTestId("support-settings-edit-department-DEP_SUPPORT_CS")
       .click();
-    await adminPage
-      .getByTestId("support-settings-department-assignment")
-      .selectOption("round_robin");
+    await expect(adminPage.getByTestId("support-settings-department-assignment")).toHaveCount(0);
+    await expect(adminPage.getByTestId("support-organization-select")).toContainText("客户服务组织部");
     state.failNextSettingsWrite = true;
     await adminPage
       .getByTestId("support-settings-department-form")
@@ -151,9 +150,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await expect(support.settingsRoot).toContainText(
       "操作未完成，请刷新后重试。",
     );
-    await expect(
-      adminPage.getByTestId("support-settings-department-assignment"),
-    ).toHaveValue("round_robin");
+    await expect(adminPage.getByTestId("support-organization-select")).toContainText("客户服务组织部");
     await support.screenshot("support-settings-write-conflict");
     await adminPage
       .getByTestId("support-settings-department-form")
@@ -167,7 +164,8 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
         item.path.endsWith("/settings/departments/DEP_SUPPORT_CS"),
     );
     expect(departmentUpdate?.body).toEqual({
-      assignmentMode: "round_robin",
+      assignmentMode: "manual_claim",
+      orgDeptId: 21,
       expectedVersion: 4,
       nameEnUS: "Customer support",
       nameZhCN: "客户支持部",
@@ -231,7 +229,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await statusForm.getByLabel("中文名称").fill("等待备件");
     await statusForm.getByLabel("英文名称").fill("Waiting for parts");
     await statusForm
-      .getByLabel("对应的工单基础阶段")
+      .getByLabel("处理进度")
       .selectOption("waiting_upstream");
     await statusForm.getByLabel("显示顺序").fill("30");
     await statusForm.getByRole("button", { name: "保存设置" }).click();
@@ -311,7 +309,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
       )?.body,
     ).toEqual({ name: "国庆假期" });
 
-    await adminPage.getByRole("button", { name: "新建 SLA 规则" }).click();
+    await adminPage.getByRole("button", { name: "新建时限规则" }).click();
     const ruleForm = adminPage.getByTestId("support-settings-rule-form");
     await ruleForm.locator("select").first().selectOption("DEP_SUPPORT_CS");
     await ruleForm.getByLabel("优先级").selectOption("high");
@@ -361,7 +359,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     await mainLayout.switchLanguage("English");
     await support.openSettingsSection("routing");
     await expect(support.settingsRoot).toContainText(
-      "Employee qualifications are managed independently.",
+      "Organization departments and roles control support access.",
     );
     await expect(support.settingsRoot).not.toContainText("support.settings.");
     await support.screenshot("support-settings-english");
@@ -534,11 +532,11 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
 
     await expect(
       adminPage.getByTestId("support-action-status-transition"),
-    ).toContainText("切换状态");
+    ).toContainText("修改状态");
     await mainLayout.switchLanguage("English");
     await expect(
       adminPage.getByTestId("support-action-status-transition"),
-    ).toContainText("Change status");
+    ).toContainText("Update status");
 
     await support.openStatusTransition();
     await expect(
@@ -739,7 +737,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
       const customers = new CustomerManagementPage(adminPage);
       await customers.goto();
       await customers.openOverviewByPublicId("10000");
-      popup = await customers.startAssistance("TC007 客户工单表格真实查询验收");
+      popup = await customers.startAssistance();
       await new CustomerAssistancePage(popup).waitUntilReady();
       const support = new CustomerSupportPage(popup);
       const initial = await support.goto();
@@ -802,7 +800,7 @@ test.describe("TC007 后台工单工作台与客户工单", () => {
     const customers = new CustomerManagementPage(adminPage);
     await customers.goto();
     await customers.openOverviewByPublicId("10000");
-    const popup = await customers.startAssistance("TC007 客户工单翻页与失败恢复回归");
+    const popup = await customers.startAssistance();
     try {
       await new CustomerAssistancePage(popup).waitUntilReady();
       const state = await installCustomerSupportListMock(popup);

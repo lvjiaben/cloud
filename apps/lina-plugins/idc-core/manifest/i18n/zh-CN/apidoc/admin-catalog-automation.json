@@ -1,4 +1,5 @@
 {
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedConfiguration.dc": "是否存在不可变的导入配置；更新上游配置需要重新导入，本站售价仍可修改",
   "plugins.idc_core.api.admin.v1.CatalogAutomationProviderListReq.meta.tags": "IDC 商品目录管理",
   "plugins.idc_core.api.admin.v1.CatalogAutomationProviderListReq.meta.summary": "查看可用的自动化插件接口候选",
   "plugins.idc_core.api.admin.v1.CatalogAutomationProviderListReq.meta.dc": "按服务端分页返回当前允许新业务的商品履约插件候选，不暴露插件内部编号和契约证据。",
@@ -71,5 +72,6 @@
   "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.capabilityEnUs.dc": "插件提供的英文业务能力说明；完全人工时为空",
   "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.granularityZhCn.dc": "面向商家的简体中文数量处理说明",
   "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.granularityEnUs.dc": "面向商家的英文数量处理说明",
-  "plugins.idc_core.api.admin.v1.CatalogProductDetailRes.fields.fulfillmentPolicy.dc": "已设置的安全履约方式摘要；尚未设置时为空"
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailRes.fields.fulfillmentPolicy.dc": "已设置的安全履约方式摘要；尚未设置时为空",
+  "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.trialSupported.dc": "当前自动交付插件是否明确支持试用暂停和恢复；不支持时不显示试用设置"
 }

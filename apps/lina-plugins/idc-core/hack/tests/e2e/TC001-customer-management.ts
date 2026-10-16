@@ -1,9 +1,11 @@
-import { test, expect } from "../../../../../../hack/tests/fixtures/auth";
+import { customerTest as test } from "../support/customer-admin-session";
+import { expect } from "../../../../../../hack/tests/fixtures/auth";
 
 import { CustomerManagementPage } from "../pages/CustomerManagementPage";
 import { installCustomerManagementMock } from "../support/customer-mock";
 
-test.describe("TC-1 客户管理列表与客户 360", () => {
+test.describe("TC-1 客户管理列表与客户详情", () => {
+
   test("TC-1a: 中文列表展示真实译文和有界客户投影", async ({ adminPage }) => {
     await installCustomerManagementMock(adminPage);
     const customers = new CustomerManagementPage(adminPage);
@@ -65,7 +67,7 @@ test.describe("TC-1 客户管理列表与客户 360", () => {
     expect(state.listRequests.at(-1)?.searchParams.get("cursor")).toBeNull();
   });
 
-  test("TC-1d: 客户 360 展示分群与运营计数且不暴露法定身份", async ({
+  test("TC-1d: 客户详情 展示分群与运营计数且不暴露法定身份", async ({
     adminPage,
   }) => {
     await installCustomerManagementMock(adminPage);
@@ -77,10 +79,9 @@ test.describe("TC-1 客户管理列表与客户 360", () => {
     await expect(
       drawer.getByText("上海云舟科技", { exact: true }),
     ).toBeVisible();
-    await expect(drawer).toContainText("运营足迹");
+    await expect(drawer).toContainText("备注");
     await expect(drawer).toContainText("重点维护");
     await expect(drawer).toContainText("优先客户");
-    await expect(drawer).toContainText("未关闭风险");
     await expect(drawer).not.toContainText("身份证");
     await expect(drawer).not.toContainText("统一社会信用代码");
     await customers.screenshot("customer-management-overview");
@@ -125,9 +126,11 @@ test.describe("TC-1 客户管理列表与客户 360", () => {
       .locator(".ant-select-dropdown:visible")
       .getByText("优先客户", { exact: true })
       .click();
-    await dialog
-      .getByTestId("customer-tag-batch-reason")
-      .fill("TC-1f bounded batch acceptance");
+    await expect(dialog.getByTestId("customer-tag-batch-reason")).toHaveCount(0);
+    const tagInput = dialog.getByTestId("customer-tag-batch-tags").locator("input");
+    await tagInput.fill("新输入标签");await tagInput.press("Enter");
+    await dialog.getByTestId("customer-tag-batch-summary").click();
+    await customers.screenshot("customer-inline-batch-tags");
     await dialog.getByRole("button", { name: /确\s*认/u }).click();
 
     await expect.poll(() => state.batchRequests.length).toBe(1);
@@ -138,6 +141,8 @@ test.describe("TC-1 客户管理列表与客户 360", () => {
       "CUS_abcdef0123456789abcdef0123456789",
     ]);
     expect(request?.tagNos).toEqual(["TAG_0123456789abcdef0123456789abcdef"]);
+    expect(request?.tagNames).toEqual(["新输入标签"]);
+    expect(request?.reason).toBeUndefined();
     expect(request?.idempotencyKey).toMatch(/^customer-tag-[0-9a-f-]{36}$/);
     await expect(dialog).toBeHidden();
   });

@@ -22,6 +22,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	"lina-plugin-idc-resource/backend/internal/service/channelconfig"
+	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 )
 
 type catalogReadExtensions struct {
@@ -81,7 +82,7 @@ func TestCatalogReadPinsOwnerConfigurationPostgreSQL(t *testing.T) {
 	const revision = "rci_11111111111111111111111111111111"
 	const newerRevision = "rci_22222222222222222222222222222222"
 	digestA, digestB := strings.Repeat("a", 64), strings.Repeat("b", 64)
-	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_resource_channel VALUES(0,'CHN_catalog','server-api','server-connector','dynamic','v1','v1.0.0',?,?,'https://current.example','{}','enabled',NULL)`, digestA, digestB); err != nil {
+	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_resource_channel (tenant_id,channel_no,provider_id,provider_plugin_id,provider_runtime_type,provider_contract_version,provider_release_version,provider_release_digest,provider_declaration_digest,endpoint,non_secret_settings,status_code,deleted_at) VALUES(0,'CHN_catalog','server-api','server-connector','dynamic','v1','v1.0.0',?,?,'https://current.example','{}','enabled',NULL)`, digestA, digestB); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_resource_interface_channel_binding VALUES(0,?,'CHN_catalog','server-connector','v1.0.0','v1',ARRAY['catalog.products.detail'],?,?,'server-connector','v1.0.0','v1',ARRAY['provision','query'],?,?,'accepting',?)`, interfaceNo, digestA, digestB, digestA, digestB, revision); err != nil {
@@ -101,13 +102,27 @@ func TestCatalogReadPinsOwnerConfigurationPostgreSQL(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	source, err := NewCatalogSource(reader, &catalogAuthorizerStub{actor: 101})
+	sink := &catalogProjectionSink{}
+	projectionWorker, err := interfaceprojection.NewWorker(database, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	projection := resourceinterfaceprojectioncap.Projection{InterfaceInstanceNo: interfaceNo, InterfaceConfigurationRevision: revision, DisplayName: "Catalog", ActorUserID: 101, OwnerID: resourceinterfaceprojectioncap.OwnerID, ResourceChannelRef: "CHN_catalog", PluginID: "server-connector", PluginReleaseVersion: "v1.0.0", ContractVersion: "v1", AuthorizedMethods: []string{"provision", "query"}, ReleaseDigest: digestA, DeclarationDigest: digestB, NewBusinessState: resourceinterfaceprojectioncap.StateAccepting}
+	if err = database.Transaction(ctx, func(txCtx context.Context, tx gdb.TX) error {
+		return interfaceprojection.Enqueue(txCtx, tx, projection, 1)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	source, err := NewCatalogSource(reader, &catalogAuthorizerStub{actor: 101}, projectionWorker)
 	if err != nil {
 		t.Fatal(err)
 	}
 	detail, err := source.ReadCatalogProduct(ctx, interfaceNo, resourceinterfaceprojectioncap.CatalogProductQuery{Reference: "101"})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(sink.values) != 1 || sink.values[0].InterfaceInstanceNo != interfaceNo || sink.values[0].InterfaceConfigurationRevision != revision {
+		t.Fatal("catalog read returned before exact interface projection delivery")
 	}
 	if captured.Config.Endpoint != "https://snapshot.example" || len(captured.Config.SecretBindings) != 1 || captured.Config.SecretBindings[0].Handle.OpaqueRef() != "snapshot-secret-ref" {
 		t.Fatal("catalog mixed current channel with snapshot credentials")
@@ -132,6 +147,7 @@ func TestCatalogReadPinsOwnerConfigurationPostgreSQL(t *testing.T) {
 }
 
 const catalogReadFixtureSQL = `
-CREATE TABLE plugin_idc_resource_channel(tenant_id INT,channel_no TEXT,provider_id TEXT,provider_plugin_id TEXT,provider_runtime_type TEXT,provider_contract_version TEXT,provider_release_version TEXT,provider_release_digest TEXT,provider_declaration_digest TEXT,endpoint TEXT,non_secret_settings JSONB,status_code TEXT,deleted_at TIMESTAMPTZ);
+CREATE TABLE plugin_idc_resource_interface_projection_outbox(id BIGSERIAL PRIMARY KEY,tenant_id INT,outbox_no TEXT,interface_instance_no TEXT,projection_sequence BIGINT,projection_payload JSONB,status_code TEXT DEFAULT 'pending',attempt_count INT DEFAULT 0,available_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,locked_by TEXT DEFAULT '',lease_expires_at TIMESTAMPTZ,last_failure_code TEXT DEFAULT '',updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,delivered_at TIMESTAMPTZ,UNIQUE(tenant_id,interface_instance_no,projection_sequence));
+CREATE TABLE plugin_idc_resource_channel(tenant_id INT,channel_no TEXT,provider_id TEXT,provider_plugin_id TEXT,provider_runtime_type TEXT,provider_contract_version TEXT,provider_release_version TEXT,provider_release_digest TEXT,provider_declaration_digest TEXT,endpoint TEXT,non_secret_settings JSONB,status_code TEXT,deleted_at TIMESTAMPTZ,tls_certificate_sha256 TEXT DEFAULT '');
 CREATE TABLE plugin_idc_resource_interface_channel_binding(tenant_id INT,interface_instance_no TEXT,channel_no TEXT,resource_plugin_id TEXT,resource_plugin_release_version TEXT,resource_contract_version TEXT,resource_authorized_methods TEXT[],resource_release_digest TEXT,resource_declaration_digest TEXT,product_plugin_id TEXT,product_plugin_release_version TEXT,product_contract_version TEXT,product_authorized_methods TEXT[],product_release_digest TEXT,product_declaration_digest TEXT,new_business_state TEXT,current_configuration_revision TEXT);
 CREATE TABLE plugin_idc_resource_interface_configuration_revision(tenant_id INT,revision_no TEXT,interface_instance_no TEXT,channel_no TEXT,endpoint TEXT,non_secret_settings JSONB,secret_bindings JSONB);`

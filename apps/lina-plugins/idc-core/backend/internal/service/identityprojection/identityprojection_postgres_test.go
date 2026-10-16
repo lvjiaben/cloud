@@ -687,7 +687,7 @@ func identityProjectionTestDatabase(t *testing.T, ctx context.Context) gdb.DB {
 		t.Fatal(err)
 	}
 	for _, name := range []string{
-		"001-core-foundation.sql", "003-customer-account.sql", "007-customer-account-workflows.sql",
+		"001-core-foundation.sql", "003-customer-account.sql", "125-customer-manual-verification.sql", "007-customer-account-workflows.sql",
 		"040-personal-identity-uniqueness.sql", "041-enterprise-verification-projection.sql",
 		"106-personal-first-enterprise-upgrade.sql",
 	} {

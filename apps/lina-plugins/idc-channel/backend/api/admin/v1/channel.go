@@ -247,12 +247,15 @@ type ListTokensRes struct {
 
 type CreateTokenReq struct {
 	g.Meta      `path:"/admin/channel/tokens" method:"post" tags:"Downstream Channel" summary:"Create one-time channel token" permission:"idc:admin:channel:token"`
-	ChannelId   string   `json:"channelId" v:"required|length:1,80"`
+	ChannelId   string   `json:"channelId" v:"max-length:80"`
+	CustomerNo  string   `json:"customerNo" v:"max-length:40" dc:"Customer receiving API access; required when creating access" eg:"cus_example"`
+	DisplayName string   `json:"displayName" v:"max-length:160" dc:"Human-readable connection name" eg:"Partner shop"`
 	Scopes      []string `json:"scopes"`
 	SourceCIDRs []string `json:"sourceCidrs"`
 	ExpiresAt   *int64   `json:"expiresAt" dc:"Optional future expiry as a Unix timestamp in milliseconds" eg:"1798761600000"`
 }
 type CreateTokenRes struct {
+	AppID     string `json:"appId" dc:"Application identifier paired with the one-time secret" eg:"app_example"`
 	Id        int64  `json:"id"`
 	Token     string `json:"token"`
 	ExpiresAt *int64 `json:"expiresAt" dc:"Optional token expiry as a Unix timestamp in milliseconds" eg:"1798761600000"`

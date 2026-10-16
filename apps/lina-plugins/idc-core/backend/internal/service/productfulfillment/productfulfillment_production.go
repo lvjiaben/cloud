@@ -148,7 +148,7 @@ func (v *productionOwnerGateValidator) EvaluateFulfillmentRelease(ctx context.Co
 		return nil, gerror.New("product fulfillment owner gate input is invalid")
 	}
 	var authority *struct {
-		RiskDecision     string
+		RiskDecision     string `orm:"risk_decision_code"`
 		RequiresContract bool
 		ItemCount        int
 	}

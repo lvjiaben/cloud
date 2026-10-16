@@ -21,10 +21,30 @@ func (a *publicationTestAuthorizer) AuthorizeProductPublication(context.Context,
 	return a.actor, a.err
 }
 
-type publicationTestAuditWriter struct{}
+type publicationTestAuditWriter struct {
+	transition *idccap.BusinessAuditTransition
+}
 
-func (*publicationTestAuditWriter) AppendBusinessTransition(context.Context, idccap.BusinessAuditTransition) error {
+func (a *publicationTestAuditWriter) AppendBusinessTransition(_ context.Context, transition idccap.BusinessAuditTransition) error {
+	a.transition = &transition
 	return nil
+}
+
+// Staff publication must carry the permission and both immutable snapshots
+// required by the real audit writer, rather than relying on a permissive fake.
+func TestPublicationAuditCarriesStaffAuthorization(t *testing.T) {
+	audit := &publicationTestAuditWriter{}
+	service := &publicationServiceImpl{audit: audit}
+	err := service.appendPublicationAudit(context.Background(), &entity.CatalogProductVersion{
+		VersionNo: "ver_11111111111111111111111111111111", ProductNo: "prd_11111111111111111111111111111111",
+		StatusCode: catalogStatusDraft, SourceCode: catalogSourceManual,
+	}, &PublicationResult{})
+	if err != nil || audit.transition == nil {
+		t.Fatalf("publication audit missing: %v", err)
+	}
+	if audit.transition.RequiredPermission != PermissionCatalogProductPublish || audit.transition.BeforeSnapshot == nil || audit.transition.AfterSnapshot == nil {
+		t.Fatalf("publication audit cannot authorize staff or freeze states: %+v", audit.transition)
+	}
 }
 
 func (*publicationTestAuditWriter) AppendBusinessBatchTransition(context.Context, idccap.BusinessAuditBatchTransition) (idccap.BusinessAuditAppendResult, error) {

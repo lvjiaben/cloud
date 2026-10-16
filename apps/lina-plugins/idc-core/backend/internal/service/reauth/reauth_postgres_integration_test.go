@@ -32,15 +32,16 @@ func TestDAOReplayStorePostgreSQLConcurrentClaim(t *testing.T) {
 
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	claim := ReplayClaim{
-		NonceDigest:   digestNonce("database-concurrency-nonce"),
-		Purpose:       PurposeBulkResource,
-		TargetDigest:  DigestTarget([]byte("immutable-batch-preview")),
-		SessionDigest: digestSessionID("opaque-host-session"),
-		UserID:        42,
-		TenantID:      0,
-		LoginAt:       now.Add(-time.Minute),
-		IssuedAt:      now,
-		ExpiresAt:     now.Add(2 * time.Minute),
+		NonceDigest:         digestNonce("database-concurrency-nonce"),
+		Purpose:             PurposeBulkResource,
+		TargetDigest:        DigestTarget([]byte("immutable-batch-preview")),
+		SessionDigest:       digestSessionID("opaque-host-session"),
+		UserID:              42,
+		TenantID:            0,
+		LoginAt:             now.Add(-30 * 24 * time.Hour),
+		SessionConfirmation: true,
+		IssuedAt:            now,
+		ExpiresAt:           now.Add(2 * time.Minute),
 	}
 
 	const workers = 32
@@ -134,6 +135,16 @@ func configureReauthIntegrationDB(t *testing.T, ctx context.Context) {
 	}
 	if _, err = scopedDB.Exec(ctx, string(migration)); err != nil {
 		t.Fatalf("repeat recent-authentication migration idempotently: %v", err)
+	}
+	policy, err := os.ReadFile(filepath.Join(filepath.Dir(reauthMigrationPath(t)), "128-interface-delete-session-operations.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	policySQL := strings.Split(string(policy), "-- Interface configuration cleanup.")[0]
+	for range 2 {
+		if _, err = scopedDB.Exec(ctx, policySQL); err != nil {
+			t.Fatal(err)
+		}
 	}
 	currentSchema, err := scopedDB.GetValue(ctx, "SELECT current_schema()")
 	if err != nil || currentSchema.String() != schema {

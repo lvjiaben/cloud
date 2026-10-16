@@ -1,27 +1,18 @@
 # 官网公开接口说明
 
-## 已有接口
+默认`Nuxt`官网通过受限的同源`/x/`代理访问`NUXT_API_ORIGIN`（默认`http://127.0.0.1:6030`）。开发和生产使用同一个代理，只接受`HTTP(S)`地址，不开放后台接口。
 
-当前仓库已经有匿名商品目录，官网通过同源前缀`/x/idc-core/api/v1`调用：
+| 插件 | 公开路径 | 用途 |
+| --- | --- | --- |
+| `idc-portal` | `GET /api/v1/public/brand` | 当前启用官网的公共信息、渲染器和模板字段 |
+| `idc-core` | `GET /api/v1/public/catalog/*` | 已发布商品和购买配置 |
+| `idc-core` | `GET /api/v1/public/content/*` | 公开内容和下载信息 |
+| `idc-core` | `GET /api/v1/public/commerce/*` | 公开购物车和交接信息 |
 
-| 方法 | 路径 | 用途 |
-|---|---|---|
-| `GET` | `/public/catalog/products` | 有界分页读取已发布商品 |
-| `GET` | `/public/catalog/products/{publicSlug}` | 读取一个商品 |
-| `GET` | `/public/catalog/products/{publicSlug}/configuration` | 读取当前配置图 |
-| `POST` | `/public/catalog/products/{publicSlug}/configuration-validations` | 服务端校验完整选择 |
-| `POST` | `/public/catalog/products/{publicSlug}/configuration-quotes` | 计算当前权威报价 |
+完整品牌地址为`/x/idc-portal/api/v1/public/brand`。响应使用统一的`{ code, message, data }`包裹，品牌在`data.brand`。
 
-金额使用服务端返回的币种和最小单位字符串，时间使用 Unix 毫秒。官网必须设置超时并服务端处理失败，不能因为接口失败输出错误价格。
+匿名`POST`仅开放购物车的`carts`、`cart-items`，商品的`purchase-configuration/evaluate`、`purchase-configuration/quote`、`campaign-exposures`，以及内容的`download-tickets`。其余写入方法返回`405`，后台和其他插件路径返回`404`。授权头不透传；购物车所有权继续由后端保护的`Cookie`控制。
 
-官网已发布品牌投影由`idc-portal`插件提供：
+管理员在“系统设置 → 官网配置”选择已安装且启用的官网插件，保存公共信息和模板自己的字段。停用插件后不输出其配置。公共页面不缓存品牌投影，保存后刷新即可生效。旧品牌修订接口保留，公开官网只读取新的官网配置。
 
-| 方法 | 路径 | 用途 |
-|---|---|---|
-| `GET` | `/x/idc-portal/api/v1/public/brand` | 读取已发布的中英文站点名称、标识、主色、导航、页脚和 SEO 投影 |
-
-管理员通过受保护的后台接口暂存、预览、发布品牌修订，也可以回滚到上一个已发布版本。修订保存后不可覆盖。
-
-## 尚未实现
-
-导航、新闻、公告、知识库、下载、协议、`SEO`内容投影和购物车交接的正式接口仍属于第十五阶段待办。完成后才能加入`site-sdk`。在正式后端 DTO、权限、缓存和测试存在前，开发者不得自行猜测接口路径，也不得用硬编码内容冒充权威数据。
+目前默认官网支持`public-standard-v1`与`public-minimal-v1`，新布局需要实现并注册对应渲染器，不能只声明任意名称。登录、购买和账户交给客户后台。金额使用服务端币种和最小单位字符串，时间为`Unix`毫秒；接口失败时不得猜测价格或用硬编码内容冒充权威数据。

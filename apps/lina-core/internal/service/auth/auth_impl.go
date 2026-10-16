@@ -36,6 +36,11 @@ func (s *serviceImpl) SessionStore() session.Store {
 	return s.sessionStore
 }
 
+// SessionTimeout reads the shared runtime-effective session expiry policy.
+func (s *serviceImpl) SessionTimeout(ctx context.Context) (time.Duration, error) {
+	return s.configSvc.GetSessionTimeout(ctx)
+}
+
 // Login verifies credentials and issues JWT token.
 func (s *serviceImpl) Login(ctx context.Context, in LoginInput) (*LoginOutput, error) {
 	// Extract client info for login log

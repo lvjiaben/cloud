@@ -313,7 +313,11 @@ func utcPointer(value *time.Time) *time.Time {
 }
 
 func idccapTransition(operation, idempotency, requestNo, permission, state, exportType string, dataScope int) idccap.BusinessAuditTransition {
-	return idccap.BusinessAuditTransition{IdempotencyScope: operation, IdempotencyKey: idempotency, OperationCode: operation, TargetType: "financial_export", TargetNo: requestNo, ResultCode: "succeeded", ReasonCode: "staff_financial_export", RiskCode: "medium", RequiredPermission: "idc:admin:billing:export", CorrelationNo: requestNo, AfterSnapshot: map[string]any{"state": state, "export_type": exportType, "source_permission": permission, "data_scope": dataScope, "format": "xlsx"}}
+	before := "not_created"
+	if state == "ready" {
+		before = "generating"
+	}
+	return idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": before}, IdempotencyScope: operation, IdempotencyKey: idempotency, OperationCode: operation, TargetType: "financial_export", TargetNo: requestNo, ResultCode: "succeeded", ReasonCode: "staff_financial_export", RiskCode: "medium", RequiredPermission: "idc:admin:billing:export", CorrelationNo: requestNo, AfterSnapshot: map[string]any{"state": state, "export_type": exportType, "source_permission": permission, "data_scope": dataScope, "format": "xlsx"}}
 }
 
 func (s *serviceImpl) buildExportWorkbook(ctx context.Context, exportType string, filter json.RawMessage) ([]byte, int, error) {

@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type {
   RedLetterCandidate,
   RedLetterDetail,
@@ -320,8 +322,11 @@ const [InvoiceGrid, invoiceGridApi] = useVbenVxeGrid({
       invoiceCustomer.value = invoiceStatus.value = "";
       await loadInvoices(true);
     },
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
     showCollapseButton: false,
-    wrapperClass: "grid-cols-1 md:grid-cols-3",
   },
   gridEvents: { pageChange: ({ currentPage, pageSize }: { currentPage: number; pageSize: number }) => void loadInvoices(false, currentPage, pageSize) },
   gridOptions: {
@@ -349,8 +354,11 @@ const [RedGrid, redGridApi] = useVbenVxeGrid({
       redCustomer.value = redStatus.value = "";
       await loadRed(true);
     },
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
     showCollapseButton: false,
-    wrapperClass: "grid-cols-1 md:grid-cols-3",
   },
   gridEvents: { pageChange: ({ currentPage, pageSize }: { currentPage: number; pageSize: number }) => void loadRed(false, currentPage, pageSize) },
   gridOptions: {
@@ -738,16 +746,12 @@ onMounted(() => {
   loadInvoices(true);
   loadRed(true);
 });
+const layoutRoot = useAdminGridLayout(invoiceGridApi, redGridApi, invoiceAllocationGridApi, invoiceLineGridApi, redAllocationGridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" class="min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="tax-invoice-management-page">
+  <Page :ref="layoutRoot" :auto-content-height="true" class="plugin-admin-page min-w-0 w-full" content-class="flex min-h-0 min-w-0 flex-col" data-testid="tax-invoice-management-page">
     <div class="invoice-shell">
-      <header class="page-heading">
-        <span>{{ t("eyebrow") }}</span>
-        <h1>{{ t("title") }}</h1>
-        <p>{{ t("subtitle") }}</p>
-      </header>
       <Card class="invoice-directory" :title="redLetterRoute ? t('tabs.redLetters') : t('tabs.invoices')">
         <template #extra
           ><Tag color="orange">{{ t("providerClosed") }}</Tag></template
@@ -764,7 +768,7 @@ onMounted(() => {
             key="invoices"
             :tab="t('tabs.invoices')"
           >
-            <InvoiceGrid :loading="invoiceLoading" class="min-h-0 min-w-0">
+            <InvoiceGrid :loading="invoiceLoading" class="min-h-0 min-w-0 flex-1">
               <template #status="{ row }"
                 ><Tag :color="tone(row.statusCode)">{{
                   label("status", row.statusCode)
@@ -792,7 +796,7 @@ onMounted(() => {
             key="redLetters"
             :tab="t('tabs.redLetters')"
           >
-            <RedGrid :loading="redLoading" class="min-h-0 min-w-0">
+            <RedGrid :loading="redLoading" class="min-h-0 min-w-0 flex-1">
               <template #status="{ row }"
                 ><Tag :color="tone(row.statusCode)">{{
                   label("redStatus", row.statusCode)
@@ -1143,6 +1147,7 @@ onMounted(() => {
 <style scoped>
 .invoice-shell {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 12px;
   height: 100%;
@@ -1150,7 +1155,7 @@ onMounted(() => {
   min-width: 0;
   overflow: hidden;
 }
-.invoice-directory { display: flex; flex: 0 0 526px; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
+.invoice-directory { display: flex; flex: 1; flex-direction: column; min-height: 0; min-width: 0; overflow: hidden; }
 .invoice-directory :deep(.ant-card-head) { flex: none; }
 .invoice-directory :deep(.ant-card-body) { display: flex; flex: 1; flex-direction: column; min-height: 0; min-width: 0; padding: 8px; }
 .invoice-directory :deep(.ant-alert) { flex: none; }

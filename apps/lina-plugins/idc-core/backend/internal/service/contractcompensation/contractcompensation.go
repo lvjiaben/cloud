@@ -689,6 +689,9 @@ func (s *serviceImpl) appendAudit(
 	resultCode string,
 	reasonCode string,
 ) error {
+	if resultCode != "failed" && resultCode != "result_unknown" {
+		resultCode = idccap.BusinessAuditResultSucceeded
+	}
 	return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 		IdempotencyScope: "core.contract-failure-compensation",
 		IdempotencyKey:   row.RequestDigest,

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAdminGridLayout } from "../../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
   ExceptionFund,
@@ -16,6 +17,8 @@ import {
   Input,
   Select,
   Tag,
+  Tabs,
+  TabPane,
   Upload,
   message,
 } from "ant-design-vue";
@@ -40,6 +43,7 @@ const props = defineProps<{ mode: "exceptions" | "reconciliation" }>();
 const tr = (key: string) => $t(`plugin.idc-payment.${key}`);
 const channelNo = ref("");
 const batchNo = ref("");
+const activeSection = ref("batches");
 const rejectionReason = ref("evidence_insufficient");
 const targetOrders = ref<Record<string, string>>({});
 const proofFiles = ref<Record<string, File | undefined>>({});
@@ -254,7 +258,7 @@ function fundColumns(): VxeGridProps<ExceptionFund>["columns"] {
 }
 
 const gridBase = {
-  height: 360,
+  height: "100%",
   pagerConfig: { enabled: true, currentPage: 1, pageSize: 20, pageSizes: [10, 20, 50, 100], total: 0 },
   toolbarConfig: { custom: true, refresh: false, zoom: true },
 };
@@ -414,17 +418,17 @@ onBeforeUnmount(() => { choiceSequence += 1; for (const item of [healthDirectory
 onMounted(
   () => void (props.mode === "exceptions" ? loadFunds() : loadReconciliation()),
 );
+const layoutRoot = useAdminGridLayout(healthApi, batchApi, differenceApi, fundApi);
+function viewDifferences(no: string) { batchNo.value = no; activeSection.value = "differences"; }
 </script>
 
 <template>
-  <template v-if="mode === 'reconciliation'">
-    <Card :bordered="false"
-      ><template #title>{{ tr("channelHealth") }}</template
-      ><template #extra
-        ><Button :loading="loading" @click="loadReconciliation">{{
-          tr("refresh")
-        }}</Button></template
+  <div :ref="layoutRoot" class="payment-operations-layout">
+  <Tabs v-if="mode === 'reconciliation'" v-model:active-key="activeSection" class="plugin-admin-tabs payment-operations-tabs" data-testid="payment-reconciliation-tabs">
+  <TabPane key="health" :tab="tr('channelHealth')" force-render>
+    <Card class="payment-directory" size="small" :bordered="false"
       ><HealthGrid data-testid="payment-health-table"
+        ><template #toolbar-actions><Button :loading="loading" @click="loadReconciliation">{{ tr("refresh") }}</Button></template
         ><template #channel="{ row }"
           ><div>{{ row.displayName }}</div>
           <div class="text-xs text-gray-500">
@@ -438,8 +442,9 @@ onMounted(
         }}</template></HealthGrid
       ></Card
     >
-    <Card class="mt-4" :bordered="false"
-      ><template #title>{{ tr("batches") }}</template
+  </TabPane>
+  <TabPane key="batches" :tab="tr('batches')" force-render>
+    <Card class="payment-directory" size="small" :bordered="false"
       ><BatchGrid data-testid="payment-batches-table"
         ><template #date="{ row }">{{ date(row.businessDate) }}</template
         ><template #counts="{ row }"
@@ -448,14 +453,15 @@ onMounted(
         ><template #status="{ row }"
           ><Tag>{{ status(row.statusCode) }}</Tag></template
         ><template #action="{ row }"
-          ><Button size="small" type="link" @click="batchNo = row.batchNo">{{
+          ><Button size="small" type="link" @click="viewDifferences(row.batchNo)">{{
             tr("differences")
           }}</Button></template
         ></BatchGrid
       ></Card
     >
-    <Card class="mt-4" :bordered="false"
-      ><template #title>{{ tr("differences") }}</template
+  </TabPane>
+  <TabPane key="differences" :tab="tr('differences')" force-render>
+    <Card class="payment-directory" size="small" :bordered="false"
       ><DifferenceGrid data-testid="payment-differences-table"
         ><template #status="{ row }"
           ><div>{{ status(row.differenceCode) }}</div>
@@ -512,8 +518,9 @@ onMounted(
         ></DifferenceGrid
       ></Card
     >
-  </template>
-  <Card v-else :bordered="false"
+  </TabPane>
+  </Tabs>
+  <Card v-else class="payment-directory" size="small" :bordered="false"
     ><template #title>{{ tr("exceptionTitle") }}</template
     ><template #extra
       ><Button :loading="loading" @click="loadFunds">{{
@@ -574,4 +581,18 @@ onMounted(
       ></FundGrid
     ></Card
   >
+  </div>
 </template>
+
+<style scoped>
+.payment-operations-layout { height: 100%; min-height: 0; min-width: 0; }
+.payment-operations-tabs { height: 100%; }
+.payment-operations-tabs :deep(.ant-tabs-content-holder),
+.payment-operations-tabs :deep(.ant-tabs-content),
+.payment-operations-tabs :deep(.ant-tabs-tabpane-active) { height: 100%; min-height: 0; }
+.payment-directory { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; }
+.payment-directory :deep(.ant-card-head) { flex: 0 0 auto; }
+.payment-directory :deep(.ant-card-body) { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0; }
+.payment-directory :deep(.ant-card-body > .h-full.bg-card) { flex: 1; min-height: 0; }
+.payment-directory :deep(.ant-alert) { margin: 12px; }
+</style>

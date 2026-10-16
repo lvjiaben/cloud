@@ -284,7 +284,7 @@ func (s *accessoryPricingImpl) SaveTrafficPackage(ctx context.Context, input Tra
 				}
 			}
 		}
-		if err = s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "server.accessory.price.publish", IdempotencyKey: input.PackageNo + ":" + strconv.FormatInt(version, 10), OperationCode: "server.accessory.price.publish", TargetType: "server_accessory_price", TargetNo: input.PackageNo, ResultCode: "published", ReasonCode: "staff_price_publication", RiskCode: "high", RequiredPermission: PermissionAccessoryPriceWrite, BeforeSnapshot: map[string]any{"version": input.ExpectedVersion}, AfterSnapshot: input}); err != nil {
+		if err = s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{IdempotencyScope: "server.accessory.price.publish", IdempotencyKey: input.PackageNo + ":" + strconv.FormatInt(version, 10), OperationCode: "server.accessory.price.publish", TargetType: "server_accessory_price", TargetNo: input.PackageNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "staff_price_publication", RiskCode: "high", RequiredPermission: PermissionAccessoryPriceWrite, BeforeSnapshot: map[string]any{"version": input.ExpectedVersion}, AfterSnapshot: input}); err != nil {
 			return err
 		}
 		result = &TrafficPackage{PackageNo: input.PackageNo, Version: version, NameZhCN: input.NameZhCN, NameEnUS: input.NameEnUS, CurrencyCode: input.CurrencyCode, TrafficGB: input.TrafficGB, AmountMinor: input.AmountMinor, Enabled: input.Enabled, StockQuantity: input.StockQuantity, ProductNos: input.ProductNos, PublishedAt: now}

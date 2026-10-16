@@ -34,7 +34,7 @@ func (s *serviceImpl) Import(ctx context.Context, input catalog.ImportInput) (*c
 	if source == nil || source.Validate(resourceinterfaceprojectioncap.CatalogProductQuery{Reference: input.Reference}) != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	prepared, err := s.automation.PrepareImportBinding(ctx, input.InterfaceInstanceNo, source.ReadEvidence, source.ProductConfiguration)
+	prepared, err := s.automation.PrepareImportBinding(ctx, input.InterfaceInstanceNo, source.ReadEvidence, source.ProductConfiguration, source.ImportSnapshot)
 	if err != nil {
 		return nil, err
 	}

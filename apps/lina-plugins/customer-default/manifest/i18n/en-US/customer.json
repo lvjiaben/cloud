@@ -1,0 +1,3674 @@
+{
+  "plugin": {
+    "customer-default": {
+      "name": "Default customer center",
+      "description": "Independent customer template with services, orders, finance and support."
+    }
+  },
+  "aiAssistant": {
+    "menu": "AI assistant",
+    "title": "Customer AI assistant",
+    "description": "The assistant reads only data visible to your account and links to ordinary billing, server, and ticket pages.",
+    "placeholder": "For example: show my recent bills or unresolved tickets",
+    "ask": "Ask",
+    "openRelated": "Open related page",
+    "dataAsOf": "Data as of: {value}",
+    "disabled": "The AI assistant is not enabled yet. Contact an operator.",
+    "error": "The AI assistant is temporarily unavailable. Please try again later."
+  },
+  "assistance": {
+    "title": "Customer simulation login",
+    "loading": "Entering the customer center securely…",
+    "banner": "Simulating {customer} · {minutes} min remaining · all actions are audited",
+    "bannerMobile": "Simulation · {minutes} min",
+    "close": "Close page",
+    "unavailableTitle": "This assistance session is no longer available",
+    "unavailableDescription": "The link is missing, already used, expired, replaced, or ended by staff. Authorized staff can start a new session."
+  },
+  "commerce": {
+    "eyebrow": "Secure commerce",
+    "cart": {
+      "browse": "Back to account home",
+      "empty": "Your cart is empty",
+      "lead": "Products, pricing, promotions, and inventory are checked again before checkout. Cached amounts never create an order.",
+      "menu": "Cart",
+      "title": "Review product configurations"
+    },
+    "orders": {
+      "empty": "No orders yet",
+      "lead": "Payment, review, provisioning, and cancellation always follow the latest server facts.",
+      "menu": "My orders",
+      "title": "My orders"
+    },
+    "order": {
+      "contractOptional": "Ordinary individual orders do not require a contract. Only orders explicitly marked by staff follow contract gating.",
+      "created": "Created",
+      "delivery": "Product delivery",
+      "services": "Ongoing services",
+      "detailTitle": "Order {orderNo}",
+      "due": "Payment due",
+      "invoice": "Invoice",
+      "requestRefund": "Request refund",
+      "items": "Product items",
+      "label": "Order"
+    },
+    "quote": {
+      "changed": "The price changed. Review the new amount before placing the order.",
+      "expires": "Quote expires",
+      "title": "Checkout quote"
+    },
+    "configuration": {
+      "configure": "Complete purchase configuration",
+      "reconfigure": "Reconfigure",
+      "ready": "Configuration complete",
+      "required": "Complete the purchase configuration for every product before placing the order."
+    },
+    "amount": {
+      "discount": "Discount",
+      "subtotal": "Subtotal",
+      "tax": "Tax",
+      "total": "Amount due"
+    },
+    "payment": {
+      "identityDescription": "Identity verification is required before the first payment. Return here to continue the same order without creating another one.",
+      "ready": "Identity and order checks passed. You can continue to payment methods.",
+      "readyDescription": "The order is never shown as paid before funds are received."
+    },
+    "cancel": {
+      "confirm": "Cancel order",
+      "description": "Payment, funds, and resources are checked again. Unsafe closure moves to manual handling and never releases resources prematurely.",
+      "title": "Cancel this order?"
+    },
+    "actions": {
+      "back": "Back",
+      "backToOrders": "Back to orders",
+      "cancel": "Cancel unpaid order",
+      "checkout": "Confirm and place order",
+      "detail": "View details",
+      "next": "Next",
+      "preparePayment": "Continue to payment",
+      "previous": "Previous",
+      "quote": "Refresh final quote",
+      "quoteAgain": "Refresh again",
+      "recheck": "I have finished — check again",
+      "remove": "Remove",
+      "retry": "Reload",
+      "verify": "Verify identity"
+    },
+    "messages": {
+      "actionFailed": "The action did not finish. Retry from the latest page state.",
+      "cancelled": "The cancellation request was accepted and the page was refreshed.",
+      "checkoutFailed": "The order was not submitted. Keep this page open and try again.",
+      "loadFailed": "This page is temporarily unavailable. Try again shortly.",
+      "mergeFailed": "The website cart was not merged. Keep your browser data and try again shortly.",
+      "orderCreated": "Order created",
+      "quoteFailed": "Pricing did not finish. The cart has been reloaded."
+    },
+    "status": {
+      "active": "Ready",
+      "all": "All statuses",
+      "awaiting_identity": "Identity required",
+      "awaiting_payment": "Awaiting payment",
+      "awaiting_review": "Awaiting merchant review",
+      "awaiting_order_review": "Order review",
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "consumed": "Consumed",
+      "fulfilled": "Fulfilled",
+      "fulfilling": "Fulfilling",
+      "held": "Held",
+      "manual_review": "Manual review",
+      "not_completed": "Not completed",
+      "partially_fulfilled": "Partially fulfilled",
+      "partially_refunded": "Partially refunded",
+      "pending": "Pending",
+      "pending_payment": "Awaiting payment",
+      "payment_processing": "Payment processing",
+      "processing": "Processing",
+      "provisioning": "Provisioning",
+      "ready": "Ready to pay",
+      "refunded": "Refunded",
+      "released": "Released",
+      "rejected": "Rejected",
+      "succeeded": "Completed",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "terminated": "Terminated",
+      "unavailable": "Status unavailable",
+      "unknown": "Status unavailable",
+      "waiting_payment": "Waiting for payment"
+    },
+    "fulfillment": {
+      "ongoing": "Ongoing service included",
+      "once": "One-time delivery",
+      "serviceStarted": "Started",
+      "serviceExpires": "Expires",
+      "noExpiry": "No expiry",
+      "serviceStatusUnavailable": "Service status is temporarily unavailable",
+      "serviceStatus": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "expired": "Expired",
+        "terminated": "Terminated"
+      },
+      "statusUnavailable": "Fulfillment status is temporarily unavailable",
+      "status": {
+        "awaiting_payment": "Awaiting payment",
+        "awaiting_review": "Awaiting merchant review",
+        "processing": "Processing",
+        "completed": "Completed",
+        "not_completed": "Not completed",
+        "cancelled": "Cancelled"
+      }
+    },
+    "units": {
+      "cycles": "billing cycles",
+      "items": "items",
+      "servers": "servers"
+    }
+  },
+  "contracts": {
+    "center": {
+      "menu": "Contracts & signers",
+      "title": "Contracts & signers",
+      "contracts": "My contracts",
+      "signers": "Authorized signers",
+      "enterpriseRequired": "Complete enterprise verification before managing authorized signers."
+    },
+    "mine": {
+      "menu": "My contracts",
+      "title": "My contracts",
+      "eyebrow": "Signing and evidence",
+      "heading": "Review and complete your electronic contracts",
+      "subtitle": "Each contract keeps its frozen order, amount, signer, and seven-day deadline. Returning from Tencent or seeing a browser message never replaces an authoritative server result.",
+      "refresh": "Refresh list",
+      "returnTitle": "You are back—check the result explicitly",
+      "returnDescription": "Returning to this page does not prove completion. Select “Recheck signing result” on the matching contract; only Tencent's authoritative result is accepted.",
+      "authorityTitle": "The server-side provider result is authoritative",
+      "authorityDescription": "Recheck only reads the existing flow. Getting another signing entry creates a new 30-minute link for the same contract and flow; it never creates a second contract or extends the seven-day deadline.",
+      "loadFailed": "Contracts could not be loaded. Please try again later.",
+      "retry": "Reload",
+      "empty": "There are no contracts to show",
+      "loadMore": "Load more contracts",
+      "failedDescription": "The customer cannot launch a new signing flow for this contract. If retry remains available, it only creates another short-lived entry for the same contract and flow.",
+      "status": {
+        "processing": "Processing",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "fields": {
+        "order": "Order number",
+        "amount": "Contract amount",
+        "created": "Created",
+        "deadline": "Signing deadline"
+      },
+      "actions": {
+        "openSigning": "Sign with Tencent",
+        "retrySigning": "Get another signing entry",
+        "recheck": "Recheck signing result"
+      },
+      "messages": {
+        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
+        "invalidSigningLink": "The server did not return a safe HTTPS signing entry, so no external page was opened.",
+        "openFailed": "A signing entry could not be obtained. Please try again later.",
+        "recheckFailed": "The signing result could not be rechecked. Please try again later.",
+        "rechecked": "The latest authoritative state was loaded. The contract is still processing.",
+        "completed": "Tencent's authoritative state confirms that the contract is complete."
+      }
+    },
+    "signers": {
+      "menu": "Contract signers",
+      "title": "Contract signers",
+      "eyebrow": "Enterprise contract security",
+      "heading": "Manage people who may sign contracts for the company",
+      "subtitle": "Only active handlers who have completed both personal identity and phone verification can be selected when staff prepare a new contract.",
+      "add": "Add signer",
+      "separationTitle": "This is not the notification contact list",
+      "separationDescription": "Notification contacts only receive messages and never gain authority to sign. Contract signers must be added here and complete both checks separately.",
+      "returnTitle": "Check the identity result explicitly",
+      "returnDescription": "Returning from the identity page does not prove approval. Find the signer and select “Check identity result”; only the server-side provider check is authoritative.",
+      "loadFailed": "Contract signers could not be loaded. Please try again later.",
+      "enterpriseOnlyTitle": "Contract signers are only needed for enterprise customers",
+      "enterpriseOnlyDescription": "This is an individual customer account, so no enterprise contract signer setup is required. Individual contracts are signed by the account holder.",
+      "retry": "Reload",
+      "empty": "No contract signer has been added",
+      "candidateReady": "Available for new contracts",
+      "fields": {
+        "identity": "Identity document",
+        "phone": "Phone",
+        "updated": "Last updated"
+      },
+      "status": {
+        "identity": {
+          "unverified": "Not verified",
+          "verifying": "Verification in progress",
+          "verified": "Identity verified",
+          "review_required": "Manual review required",
+          "expired": "Identity expired"
+        },
+        "phone": {
+          "unverified": "Not verified",
+          "verifying": "Code requested",
+          "verified": "Phone verified"
+        },
+        "signer": {
+          "active": "Verification incomplete",
+          "disabled": "Disabled"
+        }
+      },
+      "identity": {
+        "title": "Personal identity verification",
+        "pending": "Pending",
+        "done": "Verified",
+        "start": "Verify identity",
+        "check": "Check identity result"
+      },
+      "phone": {
+        "title": "Phone verification",
+        "pending": "Pending",
+        "done": "Verified",
+        "start": "Verify phone",
+        "modalTitle": "Verify the signer's phone",
+        "channelTitle": "The code is sent by the platform-wide SMS channel",
+        "channelDescription": "This feature has no separate SMS account or template. It fails clearly if the administrator has not configured an active channel and a template for this purpose.",
+        "humanCheck": "Complete the human check first",
+        "image": "Image",
+        "accessible": "Text",
+        "imageAlt": "Human verification image",
+        "answer": "Enter the answer",
+        "sendCode": "Verify and send SMS code",
+        "unsupportedChallenge": "This human verification method cannot be completed on this page. Ask an administrator to check the verification provider configuration.",
+        "uncertainTitle": "No safe delivery result was received",
+        "uncertainDescription": "The system will not send again automatically. Check the SMS channel, then explicitly request a new challenge before trying again.",
+        "newChallenge": "Get a new challenge",
+        "codeTitle": "The verification code was requested",
+        "codeDescription": "Enter the six-digit code sent to {destination}. It expires at {expires}.",
+        "codePlaceholder": "Six-digit SMS code",
+        "verifyCode": "Confirm phone"
+      },
+      "create": {
+        "title": "Add a contract signer",
+        "notice": "Enter the signer's own legal details",
+        "description": "Only masked values are shown after submission. The signer must still complete both face identity and phone verification before becoming selectable.",
+        "name": "Legal name",
+        "identityNo": "Identity card number",
+        "phone": "Personal phone",
+        "consent": "I have the signer's consent and confirm these details are used only to verify their contract-signing identity.",
+        "cancel": "Cancel",
+        "submit": "Add signer"
+      },
+      "disable": {
+        "action": "Disable",
+        "title": "Disable this contract signer?",
+        "description": "The signer cannot be used for new contracts. Existing contract snapshots keep their frozen signer and are not rewritten.",
+        "cancel": "Keep active",
+        "confirm": "Disable signer"
+      },
+      "messages": {
+        "created": "The signer was added. Complete both verification steps next.",
+        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
+        "identityVerified": "Personal identity verification passed.",
+        "identityChecked": "The latest identity status was loaded.",
+        "phoneVerified": "Phone verification passed.",
+        "disabled": "The signer was disabled and will not appear for new contracts."
+      }
+    }
+  },
+  "credit": {
+    "menu": "Credit account",
+    "eyebrow": "PAY LATER · CURRENCY-SPECIFIC",
+    "title": "Credit account",
+    "description": "Apply for credit, review limits and statements, and repay safely from the same-currency balance.",
+    "loadFailed": "Credit information is temporarily unavailable. Please try again.",
+    "retry": "Reload",
+    "metrics": {
+      "available": "Total available",
+      "pending": "Applications pending",
+      "open": "Statements due",
+      "overdue": "Overdue statements"
+    },
+    "tabs": {
+      "accounts": "My limits",
+      "applications": "Applications",
+      "statements": "Statements"
+    },
+    "account": {
+      "available": "Available now",
+      "total": "Total limit",
+      "unbilled": "Unbilled",
+      "billed": "Billed",
+      "empty": "No active credit account yet"
+    },
+    "table": {
+      "number": "Number",
+      "currency": "Currency",
+      "requested": "Requested limit",
+      "progress": "Review progress",
+      "status": "Status",
+      "total": "Statement total",
+      "outstanding": "Amount due",
+      "due": "Due date",
+      "action": "Action"
+    },
+    "status": {
+      "pending_review": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "expired": "Expired",
+      "active": "Available",
+      "frozen": "Frozen",
+      "closed": "Closed",
+      "bad_debt": "Bad debt",
+      "open": "Payment due",
+      "partially_paid": "Partially paid",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "written_off": "Written off",
+      "refunded": "Refunded"
+    },
+    "application": {
+      "button": "Apply for credit",
+      "title": "Submit credit application",
+      "help": "Enter the requested limit and validity honestly. Evidence is visible only to authorized reviewers.",
+      "currency": "Currency",
+      "limit": "Requested limit",
+      "from": "Start date",
+      "until": "End date",
+      "files": "Evidence",
+      "fileHelp": "Up to 10 PDF, JPG, or PNG files; 20 MiB each and 200 MiB total.",
+      "fileRejected": "The file type, size, or count is not allowed.",
+      "invalid": "Enter a valid limit and dates, and upload at least one evidence file.",
+      "success": "Credit application submitted",
+      "failed": "The application was not submitted. Please try again."
+    },
+    "repayment": {
+      "button": "Repay from balance",
+      "title": "Repay from balance",
+      "amount": "Repayment amount",
+      "help": "This statement has {amount} due; available same-currency balance is {balance}.",
+      "invalid": "The amount must be positive and no greater than the outstanding amount.",
+      "success": "Repayment completed and the limit was released for repaid principal.",
+      "failed": "Repayment did not complete. Balance and statement remain unchanged."
+    }
+  },
+  "customerAccount": {
+    "common": {
+      "cancelChanges": "Discard changes",
+      "refresh": "Refresh",
+      "retry": "Retry"
+    },
+    "type": {
+      "enterprise": "Business customer",
+      "individual": "Individual customer"
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "pending_activation": "Pending activation",
+      "restricted": "Restricted"
+    },
+    "verification": {
+      "expired": "Verification expired",
+      "pending": "Verification in progress",
+      "rejected": "Verification rejected",
+      "revoked": "Verification revoked",
+      "unverified": "Not verified",
+      "verified": "Verified"
+    },
+    "profile": {
+      "accountCard": "Account information",
+      "accountStatus": "Account status",
+      "countryCode": "Country or region code",
+      "customerNo": "Customer number",
+      "customerType": "Customer type",
+      "displayName": "Display name",
+      "editCard": "Editable details",
+      "eyebrow": "Account profile",
+      "heading": "Manage your basic profile",
+      "identifier": "Identity or registration number",
+      "legalName": "Verified name",
+      "legalNote": "Verified names, identity numbers and business registration details cannot be changed here. Submit them for review from the verification page.",
+      "loadFailed": "Your profile could not be loaded. Please retry.",
+      "locale": "Preferred language",
+      "localeEn": "English",
+      "localeZh": "简体中文",
+      "menu": "Account profile",
+      "save": "Save profile",
+      "saved": "Your account profile has been saved.",
+      "subtitle": "These are ordinary display details. They do not change verification, your password or account permissions.",
+      "title": "Account profile",
+      "verification": "Verification status"
+    },
+    "contacts": {
+      "add": "Add contact",
+      "archive": "Deactivate",
+      "archiveCancel": "Keep active",
+      "archiveConfirm": "Deactivate",
+      "archiveDescription": "This contact will stop receiving new notifications. Existing history remains retained.",
+      "archiveTitle": "Deactivate this contact?",
+      "archived": "The contact has been deactivated.",
+      "authorityWarning": "Notification contacts only receive messages you authorize. They do not gain sign-in, payment, server operation or contract signing authority.",
+      "callingCode": "Calling code",
+      "cancel": "Cancel",
+      "createTitle": "Add notification contact",
+      "created": "The contact has been added.",
+      "description": "Manage recipients for billing, service and security notices. Enter at least an email address or a phone number.",
+      "edit": "Edit",
+      "editTitle": "Edit notification contact",
+      "email": "Email",
+      "empty": "There are no notification contacts yet.",
+      "name": "Contact name",
+      "phone": "Phone number",
+      "save": "Save contact",
+      "status": {
+        "active": "Active",
+        "archived": "Deactivated"
+      },
+      "title": "Notification contacts",
+      "updated": "The contact has been updated.",
+      "verification": {
+        "unverified": "Not verified",
+        "verified": "Verified"
+      },
+      "verificationReset": "Changing the email address or phone number clears its previous verification. Verify the new destination before using it for notifications."
+    },
+    "data": {
+      "closureAction": "Request account closure",
+      "closureBlocked": "Some items must be resolved before a closure request can be submitted.",
+      "closureCancel": "Not now",
+      "closureConfirm": "Submit request",
+      "closureConfirmDescription": "The system first checks funds, billing invoices, servers, contracts and in-progress work. Passing the check only starts a manual review; it does not immediately delete the account.",
+      "closureConfirmTitle": "Request account closure?",
+      "closureDescription": "Closure is not immediate deletion. Funds, billing invoices, servers, contracts and in-progress work are checked first. Ordinary profile data is anonymized only after approval. Contract, tax invoice and audit evidence required by law remains retained.",
+      "closurePending": "Your closure request is waiting for manual review. Every blocking condition will be checked again before final processing.",
+      "closureSafety": "Closure is blocked while there are funds, unpaid billing invoices, active servers, active contracts or in-progress work.",
+      "closureSubmitted": "Your closure request has been submitted for review.",
+      "closureTitle": "Account closure",
+      "download": "Download export",
+      "expiresAt": "File expires",
+      "exportAction": "Request export",
+      "exportDescription": "The system creates a private archive for this account only. It is never public and is not kept behind a long-lived ordinary link.",
+      "exportFailed": "The export request was not submitted. Sign in again and retry.",
+      "exportRequested": "The export task was created. Refresh its status in a moment.",
+      "exportSecurity": "Exporting sensitive data requires a recent full sign-in. The private file and download access both expire shortly.",
+      "exportTitle": "Export my data",
+      "eyebrow": "Data rights",
+      "findingsTitle": "Check results",
+      "heading": "Download your data or request closure",
+      "menu": "Data and closure",
+      "refreshStatus": "Refresh export status",
+      "requestNo": "Request number",
+      "requestedAt": "Requested at",
+      "resolveFindings": "Resolve the items above, then submit a new closure request.",
+      "status": "Status",
+      "subtitle": "Every action is bound to the signed-in customer account. A staff account cannot enter this area and act on your behalf.",
+      "title": "Data and closure"
+    },
+    "exportStatus": {
+      "cancelled": "Cancelled",
+      "failed": "Generation failed",
+      "pending": "Waiting",
+      "ready": "Ready to download",
+      "running": "Generating",
+      "succeeded": "Generated"
+    },
+    "closureFinding": {
+      "active_contracts": "Contracts still in progress",
+      "active_services": "Active server services",
+      "in_progress_operations": "Business operations still in progress",
+      "legal_retention": "Evidence that must be retained by law (does not block the request)",
+      "unsettled_funds": "Unsettled balance or held funds",
+      "unsettled_invoices": "Unsettled billing invoices"
+    }
+  },
+  "customerActivation": {
+    "enter": "Enter customer center",
+    "failedDescription": "The link may have expired, been used, or been replaced by a resend. If you are signed in with a staff account, sign out and use a separate customer account.",
+    "failedTitle": "This invitation cannot be claimed",
+    "login": "Sign in to continue",
+    "readyDescription": "Sign in with the account that received the invitation, or register first. An administrator never knows or sets your password.",
+    "readyTitle": "Claim your customer account invitation",
+    "redeemingDescription": "We are checking the invitation and your signed-in account. Please do not repeat the action.",
+    "redeemingTitle": "Activating your customer account",
+    "register": "Register a new account",
+    "successDescription": "The invitation was claimed and this login is now securely bound to the customer profile.",
+    "successTitle": "Customer account activated",
+    "useAnotherAccount": "Sign in with another account"
+  },
+  "customerAddress": {
+    "menu": "My addresses",
+    "title": "My addresses",
+    "subtitle": "Maintain contact, billing, registered and service addresses. Each type can have one default address.",
+    "add": "Add address",
+    "refresh": "Refresh",
+    "empty": "No addresses yet",
+    "default": "Default",
+    "archived": "Archived",
+    "edit": "Edit",
+    "archive": "Archive",
+    "createTitle": "Add address",
+    "editTitle": "Edit address",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Address saved",
+    "archivedMessage": "Address archived",
+    "archiveTitle": "Archive this address?",
+    "archiveDescription": "The address remains in history and will not be used for new business.",
+    "archiveConfirm": "Archive",
+    "type": "Address type",
+    "label": "Address label",
+    "recipientName": "Recipient",
+    "recipientPhone": "Contact phone",
+    "countryCode": "Country or region code",
+    "province": "State / province",
+    "region": "Province / city / district",
+    "regionPlaceholder": "Select a province, city, and district",
+    "city": "City",
+    "district": "District",
+    "addressLine1": "Address",
+    "addressLine2": "Address details",
+    "postalCode": "Postal code",
+    "makeDefault": "Make this the default for its type",
+    "defaultHint": "The previous default of the same type will automatically stop being the default.",
+    "types": {
+      "contact": "Contact address",
+      "billing": "Billing address",
+      "registered": "Registered address",
+      "service": "Service address"
+    }
+  },
+  "customerOnboarding": {
+    "abusePreventionNotice": "To detect short-term bulk registration, the browser stores a random device identifier locally. The server stores only purpose-bound digests of that identifier and the IP address; it does not collect hardware fingerprints or retain the raw device identifier or IP address.",
+    "codeDescription": "A code was sent to {destination}. It is valid for 10 minutes.",
+    "codePlaceholder": "Enter the 6-digit code",
+    "codeTitle": "Verify your contact",
+    "continue": "Continue",
+    "createAccount": "Verify and create account",
+    "customerType": "Customer type",
+    "customerTypeTip": "Choose an individual or enterprise customer",
+    "enter": "Enter customer center",
+    "enterprise": "Enterprise customer",
+    "failedDescription": "The onboarding proof may have expired or been replaced, or the signed-in username does not match. Staff and super administrator accounts cannot redeem it; use a separate customer account.",
+    "failedTitle": "Customer onboarding could not be completed",
+    "humanAnswer": "Enter the answer",
+    "humanDescription": "Complete a short check before a verification message is sent.",
+    "humanTitle": "Confirm you are human",
+    "individual": "Individual customer",
+    "intentPreservedDescription": "Your contact is verified. If the account already exists, sign in with the same username to continue. The proof stays in this tab for a short time.",
+    "intentPreservedTitle": "Onboarding verification preserved",
+    "login": "Sign in to continue",
+    "loginAgain": "Sign in with the correct account",
+    "readyDescription": "Sign in to the account you just registered. The system will verify the username and this browser before binding the customer account.",
+    "readyTitle": "Complete customer onboarding",
+    "redeemingDescription": "Checking the registered account, contact verification, and one-time onboarding proof.",
+    "redeemingTitle": "Creating your customer account",
+    "registerSuccessDescription": "The login account was created. Sign in once to finish the customer binding.",
+    "successDescription": "The signed-in account is now a customer account and can enter the customer center.",
+    "successTitle": "Customer onboarding complete"
+  },
+  "demos": {
+    "title": "Demos",
+    "antd": "Ant Design Vue",
+    "vben": {
+      "title": "Project",
+      "about": "About",
+      "document": "Document",
+      "antdv": "Ant Design Vue Version",
+      "antdv-next": "Antdv Next Version",
+      "naive-ui": "Naive UI Version",
+      "element-plus": "Element Plus Version",
+      "tdesign": "TDesign Vue Version"
+    }
+  },
+  "enterpriseVerification": {
+    "account": "Business customer account",
+    "change": {
+      "create": "Start a business profile change",
+      "created": "The change request is ready. Accept the notice again and submit the new evidence.",
+      "lead": "Select only the categories that will change here. New identity details are entered later. The current verified profile stays effective until the new review passes.",
+      "legalIdentifier": "Registration identifier",
+      "legalName": "Legal business name",
+      "reason": "Select the reason",
+      "reasonCorrection": "Identifier correction",
+      "reasonLegalName": "Legal name change",
+      "reasonOther": "Other",
+      "reasonRegistration": "Business registration change",
+      "title": "Update the verified business profile"
+    },
+    "draft": {
+      "description": "Uploaded evidence status is restored from the server. Sensitive legal and identity values are never stored in the browser and must be entered again after leaving this page.",
+      "title": "Draft restored from the server"
+    },
+    "enterpriseOnly": "This account is not a business customer and cannot use business verification.",
+    "evidence": {
+      "agent_id": "Authorized agent identity evidence",
+      "authorization_letter": "Authorization letter",
+      "business_license": "Business license",
+      "choose": "Click or drop a file",
+      "hint": "{required} · PDF/JPG/PNG · up to 5 MiB",
+      "invalid": "Choose a PDF, JPG, or PNG file no larger than 5 MiB.",
+      "lead": "The business license and legal representative identity evidence are required. An authorized agent also requires agent identity evidence and an authorization letter. Up to eight files are accepted.",
+      "legal_representative_id": "Legal representative identity evidence",
+      "notUploaded": "Not uploaded",
+      "optional": "Optional",
+      "organization_certificate": "Organization certificate",
+      "other": "Other supporting evidence",
+      "ready": "Encrypted and ready",
+      "required": "Required",
+      "title": "Upload verification evidence",
+      "uploaded": "Evidence encrypted and saved",
+      "uploading": "Encrypting and uploading"
+    },
+    "failed": "Business verification is temporarily unavailable. Please try again.",
+    "form": {
+      "agentId": "Agent identity number",
+      "agentName": "Agent name",
+      "agentRole": "Authorized agent",
+      "applicantRole": "Applicant role",
+      "industry": "Industry code (optional)",
+      "invalid": "Complete the valid business details and upload all evidence required for the selected applicant role.",
+      "lead": "These values go only to this installation's local compliance service and are encrypted. They are never written to browser storage.",
+      "legalName": "Legal business name",
+      "registrationHint": "The first release accepts an 18-character mainland China unified social credit code",
+      "registrationId": "Unified social credit code",
+      "representative": "Legal representative name",
+      "representativeId": "Legal representative identity number",
+      "representativeRole": "Legal representative",
+      "submit": "Submit for manual review",
+      "submitHint": "Submission starts a local manual review. Only the server state decides the result; browser parameters cannot forge approval.",
+      "submitted": "Business verification submitted for manual review",
+      "title": "Enter business details"
+    },
+    "lead": "Verify business details and evidence. Initial verification, corrected resubmission, and post-verification changes are handled here.",
+    "menu": "Business verification",
+    "notice": {
+      "accept": "I have read and accept this business verification information notice",
+      "begin": "Accept and create a verification draft",
+      "data": "Data: legal business name, registration identifier, legal representative and agent identity details, and evidence files you choose to upload.",
+      "policy": "Notice version",
+      "purpose": "Purpose: confirm the contracting, payment, invoicing, and service-use entity and meet this installation's local compliance requirements.",
+      "recipient": "Scope: data stays in this installation's local compliance service and is available only to authorized reviewers. It is not sent to the software provider.",
+      "retention": "Storage: evidence is encrypted in private server storage. The page and browser storage keep no raw identity values, filenames, or file contents.",
+      "rights": "Your choices: stop before submission, or correct and resubmit after rejection. During a post-verification change, the current verified profile stays effective.",
+      "started": "Verification draft created",
+      "title": "Business verification information notice"
+    },
+    "personal": "View personal identity verification",
+    "profile": {
+      "title": "Current effective business profile",
+      "verifiedAt": "Verified at"
+    },
+    "reason": {
+      "identifier_invalid": "The registration identifier is invalid. Check it and submit again.",
+      "materials_incomplete": "Evidence is incomplete. Add the missing evidence and submit again.",
+      "materials_unreadable": "Evidence is not readable. Replace it with a clear file and submit again.",
+      "other": "This review did not pass. Correct the information according to the review result and submit again."
+    },
+    "rejected": {
+      "title": "This verification was returned and can be corrected and resubmitted"
+    },
+    "reload": "Refresh server status",
+    "review": {
+      "changeDescription": "The new profile is under review. The current verified profile stays effective and is replaced only after approval.",
+      "description": "Evidence has been submitted. This page will show the new server state after a local reviewer processes it.",
+      "title": "Business verification is under manual review"
+    },
+    "security": {
+      "description": "The browser stores only random retry keys. Raw identity values, filenames, file contents, material numbers, and storage locations are never written to browser storage.",
+      "title": "Sensitive business data stays in the local encrypted compliance service"
+    },
+    "status": {
+      "canceled": "Canceled",
+      "draft": "Draft",
+      "expired": "Expired",
+      "hint": "This is the authoritative verification state returned by the current installation.",
+      "pending": "Pending review",
+      "rejected": "Returned",
+      "review_required": "Further review required",
+      "title": "Current business verification status",
+      "unverified": "Not verified",
+      "verified": "Verified",
+      "verifying": "Under review"
+    },
+    "steps": {
+      "consent": "Read and accept",
+      "materials": "Enter details and upload evidence",
+      "review": "Local manual review"
+    },
+    "title": "Business verification center"
+  },
+  "finance": {
+    "eyebrow": "Customer finance",
+    "lead": "Balances, receivables, transactions, and renewal policies always come from current backend facts. Currencies remain separate without hidden conversion.",
+    "views": {
+      "overview": "Financial overview",
+      "invoices": "My invoices",
+      "transactions": "Transactions",
+      "renewals": "Automatic renewal"
+    },
+    "overview": {
+      "openInvoices": "Open invoices",
+      "autoRenew": "Automatic renewals"
+    },
+    "creditPayment": {
+      "action": "Pay with credit",
+      "title": "Confirm credit payment",
+      "description": "This payment is {amount}. Estimated available credit afterward is {remaining}. The server checks the limit again before settling.",
+      "confirm": "Confirm credit payment",
+      "success": "Credit payment completed and the order is financially settled.",
+      "failed": "Credit payment did not complete. The invoice and limit remain unchanged."
+    },
+    "account": {
+      "customer_balance": "Balance account",
+      "customer_credit": "Credit account",
+      "customer_gift": "Gift account",
+      "customer_commission": "Commission account"
+    },
+    "amount": {
+      "balance": "Balance",
+      "available": "Available",
+      "outstanding": "Outstanding",
+      "total": "Invoice total"
+    },
+    "status": {
+      "all": "All statuses",
+      "active": "Active",
+      "cancelled": "Cancelled",
+      "expired": "Expired",
+      "grace": "Grace period",
+      "overdue": "Overdue",
+      "paid": "Paid",
+      "partially_paid": "Partially paid",
+      "pending": "Pending",
+      "confirming": "Confirming",
+      "failed": "Not completed",
+      "pending_payment": "Awaiting payment",
+      "refunded": "Refunded",
+      "submitted": "Submitted, awaiting provider confirmation",
+      "succeeded": "Completed"
+    },
+    "invoice": {
+      "detailTitle": "Invoice {invoiceNo}",
+      "due": "Payment due",
+      "items": "Invoice items"
+    },
+    "transaction": {
+      "businessAmount": "Business amount",
+      "change": "Account change",
+      "posted": "Posted"
+    },
+    "filters": {
+      "currency": "Currency, e.g. CNY"
+    },
+    "empty": {
+      "balances": "No balance accounts yet",
+      "invoices": "No invoices yet",
+      "transactions": "No transactions yet",
+      "renewals": "No renewable long-term entitlements yet"
+    },
+    "recharge": {
+      "action": "Recharge",
+      "title": "Add account balance",
+      "description": "Choose a currency and a payment channel enabled by this merchant. Confirmed funds are credited to the matching balance.",
+      "currency": "Currency",
+      "amount": "Amount",
+      "channel": "Payment channel",
+      "mode": "Payment method",
+      "continue": "Continue to payment",
+      "cancel": "Not now",
+      "close": "Close",
+      "invalid": "Enter a positive amount and choose a payment channel and method.",
+      "failed": "Recharge could not be started. Check the payment channel and try again.",
+      "confirmationNote": "Returning from the cashier does not credit funds. Balance changes only after the payment platform confirms success.",
+      "scanTitle": "Scan with WeChat",
+      "scanDescription": "Scan this code in WeChat. After payment, select “Check credit status” to read the server-confirmed result.",
+      "checkStatus": "Check credit status",
+      "modes": {
+        "alipay_page": "Alipay desktop website",
+        "alipay_wap": "Alipay mobile website",
+        "wechat_h5": "WeChat H5",
+        "wechat_native": "WeChat QR code",
+        "wechat_jsapi": "WeChat Official Account",
+        "epay_cashier": "EPay cashier"
+      },
+      "unavailable": "No payment channel has passed the capability gate, so recharge is unavailable. Existing balance payments still work."
+    },
+    "paymentReturn": {
+      "title": "Payment confirmation",
+      "eyebrow": "Secure payment status",
+      "complete": "Recharge credited",
+      "confirming": "Waiting for payment confirmation",
+      "description": "This page shows the server-confirmed result. Returning from a cashier never credits the balance by itself.",
+      "attemptNo": "Payment reference",
+      "currency": "Currency",
+      "refresh": "Refresh status",
+      "back": "Back to finance",
+      "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly."
+    },
+    "merge": {
+      "action": "Merge selected invoices",
+      "selected": "{count} selected",
+      "title": "Merge these invoices?",
+      "description": "Only untouched invoices for the same customer and currency are merged. Source invoices remain immutable evidence.",
+      "confirm": "Confirm merge"
+    },
+    "balancePayment": {
+      "action": "Pay from balance",
+      "title": "Confirm balance payment",
+      "description": "Use the available balance in the same currency? The server charges the exact current outstanding amount.",
+      "confirm": "Confirm payment"
+    },
+    "renewal": {
+      "note": "Automatic renewal only uses same-currency available balance. Insufficient funds never create a false success.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "configure": "Configure renewal",
+      "entitlementStatus": "Entitlement status",
+      "expiry": "Entitlement expiry",
+      "nextAttempt": "Next attempt",
+      "insufficient": "Automatic renewal could not finish because the balance is insufficient. The current policy retries after funds are added.",
+      "failureNotify": "Notify me when renewal fails",
+      "cycles": "Cycles per renewal",
+      "leadDays": "Lead time (days)",
+      "attempts": "Maximum attempts",
+      "retryHours": "Retry interval (hours)"
+    },
+    "actions": {
+      "apply": "Apply filters",
+      "backToInvoices": "Back to invoices",
+      "detail": "View details",
+      "next": "Next",
+      "previous": "Previous",
+      "retry": "Reload",
+      "save": "Save policy"
+    },
+    "messages": {
+      "loadFailed": "Financial data is temporarily unavailable. Try again shortly.",
+      "merged": "Invoices were merged safely and the list was refreshed.",
+      "paid": "Balance payment succeeded and invoice facts were refreshed.",
+      "renewalSaved": "Automatic-renewal policy updated."
+    }
+  },
+  "identity": {
+    "platformMenu": "Platform verification",
+    "platform": {
+      "title": "Platform verification",
+      "description": "Every account verifies the account holder first. Enterprise verification becomes available afterwards and upgrades the account only when approved.",
+      "personalFirst": "Complete identity verification before enterprise verification",
+      "personalTab": "Identity verification",
+      "enterpriseTab": "Enterprise verification",
+      "gateFailed": "Identity status is temporarily unavailable. Enterprise verification remains safely locked; try again later."
+    },
+    "account": "Account center · Identity",
+    "lead": "Identity verification is completed once. Returning here never means approval; the system rechecks the authoritative Aliyun result.",
+    "loadFailed": "Identity verification is temporarily unavailable. Try again later.",
+    "menu": "Identity verification",
+    "personalOnly": "This entry is for individual customers. Enterprise customers use the enterprise verification flow.",
+    "reload": "Reload",
+    "returnChecking": "You returned from the verification page. The system is rechecking the result with Aliyun…",
+    "returnPending": "The authoritative check completed, but Aliyun has not confirmed approval. Check again later instead of starting another attempt.",
+    "title": "Verify who you are before the first payment",
+    "status": {
+      "expired": "Expired",
+      "hint": "Status comes only from local evidence or an authoritative Aliyun query, never result parameters in the browser address.",
+      "rejected": "Not passed",
+      "review_required": "Merchant review required",
+      "title": "Current verification status",
+      "unverified": "Not verified",
+      "verified": "Verified",
+      "verifying": "Verification in progress"
+    },
+    "verified": {
+      "description": "The first-payment identity gate was updated from a server-authoritative result.",
+      "name": "Name",
+      "number": "Identity document",
+      "time": "Verified at",
+      "title": "Identity verification passed"
+    },
+    "payment": {
+      "continue": "Return to the original order",
+      "failed": "Identity passed, but automatic payment recovery is temporarily unavailable. Retry from the original order without creating another order.",
+      "orders": "Back to my orders",
+      "pending": "Identity passed, but the original payment preparation still needs a server recheck. You can retry safely from the order.",
+      "ready": "The original payment preparation was revalidated and is ready to continue."
+    },
+    "verifying": {
+      "query": "Recheck authoritative result",
+      "querying": "Checking…",
+      "title": "Verification is in progress"
+    },
+    "review": {
+      "description": "There is no force-approve action. The merchant works from masked case evidence; never send a full identity number in a ticket.",
+      "title": "Contact the merchant for assistance"
+    },
+    "retry": {
+      "description": "A rejected or expired attempt can be submitted again. Document and age checks still run on the server.",
+      "title": "You can start a new verification"
+    },
+    "form": {
+      "invalid": "Enter your legal name and a valid 18-digit resident identity number, then grant separate consent.",
+      "lead": "The first release supports mainland Chinese individual customers aged 14 or above with an 18-digit resident identity card.",
+      "name": "Legal name",
+      "namePlaceholder": "Name exactly as shown on the identity card",
+      "number": "Resident identity card number",
+      "numberPlaceholder": "18-digit resident identity card number",
+      "safety": "The name and identity number are never written to browser storage or retained in ordinary case, audit, or task records.",
+      "start": "Consent and continue to Aliyun",
+      "starting": "Starting securely…",
+      "title": "Enter your own identity information"
+    },
+    "consent": {
+      "accept": "I have read and separately consent to the sensitive-personal-information processing above, and I confirm this is my own information.",
+      "data": "Your legal name, 18-digit resident identity card number, and face/liveness information collected directly on the Aliyun verification page.",
+      "dataTitle": "Information processed",
+      "purpose": "Used to satisfy the first-payment identity requirement, prevent impersonation, and create an auditable verification conclusion. Declining prevents the first payment.",
+      "purposeTitle": "Purpose and necessity",
+      "recipient": "The IDC merchant operating this site uses its own Aliyun account for financial-grade real-person verification. End customers neither configure nor pay for that technical account.",
+      "recipientTitle": "Recipient and responsibility",
+      "rights": "Contact the merchant to access, correct, or lawfully delete information, or withdraw consent for later processing. Withdrawal does not affect prior lawful processing and may prevent the first payment.",
+      "rightsTitle": "Your rights",
+      "storage": "The provider integration region is mainland China. This system does not store face images or liveness video; it retains masked results, necessary evidence, and a protected encrypted snapshot for the period required by applicable law and the merchant privacy policy.",
+      "storageTitle": "Storage and processing region",
+      "title": "Separate consent for sensitive personal information",
+      "version": "Notice version"
+    }
+  },
+  "initialPassword": {
+    "title": "Change your password to continue",
+    "subtitle": "This is the initial password set by an administrator. Choose your own password before entering the customer center.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordTip": "Use at least 8 characters",
+    "confirmPasswordTip": "The passwords do not match",
+    "submit": "Save password and continue",
+    "successTitle": "Password changed",
+    "successDescription": "You can now use the customer center."
+  },
+  "invoiceProfiles": {
+    "menu": "Invoice profiles",
+    "title": "Invoice profiles",
+    "eyebrow": "Invoice details",
+    "heading": "Manage reusable invoice profiles",
+    "subtitle": "Save personal or business invoice details for future requests. Submitted requests keep their original snapshot and are never rewritten by later edits.",
+    "refresh": "Refresh",
+    "add": "Add profile",
+    "securityTitle": "Full bank account numbers are never shown again",
+    "securityDescription": "Bank accounts are encrypted by the server. Editing keeps the saved value unless you explicitly choose Replace or Clear.",
+    "loadFailed": "Invoice profiles are temporarily unavailable. Try again later.",
+    "retry": "Try again",
+    "empty": "No invoice profiles have been saved",
+    "loadMore": "Load more",
+    "default": "Default",
+    "notConfigured": "Not provided",
+    "status": {
+      "active": "Active",
+      "archived": "Deactivated"
+    },
+    "type": {
+      "individual": "Personal",
+      "enterprise": "Business"
+    },
+    "fields": {
+      "type": "Profile type",
+      "taxNo": "Tax number",
+      "bank": "Bank",
+      "bankAccount": "Bank account",
+      "updated": "Last updated"
+    },
+    "actions": {
+      "edit": "Edit",
+      "setDefault": "Set as default",
+      "deactivate": "Deactivate"
+    },
+    "form": {
+      "createTitle": "Add invoice profile",
+      "editTitle": "Edit invoice profile",
+      "type": "Profile type",
+      "title": "Name",
+      "taxNo": "Business tax number",
+      "address": "Registered address (optional)",
+      "phone": "Registered phone (optional)",
+      "bankName": "Bank (optional)",
+      "bankAction": "Bank account action",
+      "bankAccount": "Bank account (optional)",
+      "bankAccountHelp": "Only the last few characters are shown after saving. The full value is never displayed again.",
+      "savedBank": "The saved account is {masked}. This page cannot read the full value.",
+      "noSavedBank": "No bank account is saved. Choose Replace to add one.",
+      "individualClearsBankTitle": "Changing to a personal profile clears this profile's bank account",
+      "individualClearsBankDescription": "After saving, this profile will no longer retain business tax or bank details. Previously submitted invoice requests keep their original snapshots.",
+      "makeDefault": "Also make this the default profile",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "bankAction": {
+      "keep": "Keep saved account",
+      "replace": "Replace account",
+      "clear": "Clear account"
+    },
+    "deactivate": {
+      "title": "Deactivate this invoice profile?",
+      "description": "It cannot be selected for new invoice requests, but existing requests and history remain available.",
+      "defaultDescription": "This is the current default. Deactivating it will not silently choose another profile. You can set a new default later, and all existing requests and history remain available.",
+      "cancel": "Keep active",
+      "confirm": "Deactivate"
+    },
+    "messages": {
+      "created": "The invoice profile was added.",
+      "updated": "The invoice profile was updated.",
+      "defaultSet": "The default invoice profile was updated.",
+      "deactivated": "The invoice profile was deactivated and its history was retained."
+    }
+  },
+  "marketingCoupons": {
+    "claim": {
+      "button": "Redeem",
+      "code": "Promotion code",
+      "invalid": "The promotion code is invalid",
+      "lead": "Enter 8–24 letters or digits. Letters are not case-sensitive.",
+      "placeholder": "Enter promotion code",
+      "succeeded": "The promotion has been added to your account",
+      "title": "Redeem a promotion code"
+    },
+    "empty": "You do not have any promotions yet",
+    "loadFailed": "Promotions could not be loaded. Try again later.",
+    "menu": "My promotions",
+    "mine": "Claimed promotions",
+    "status": {
+      "active": "Available",
+      "exhausted": "Used",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "title": "My promotions"
+  },
+  "menu": {
+    "customerGroups": {
+      "products": "Products & Services",
+      "finance": "Finance",
+      "account": "Account",
+      "salesChannel": "Referrals & commissions",
+      "security": "Security",
+      "compliance": "Compliance",
+      "support": "Support",
+      "external": "More services"
+    },
+    "platform": {
+      "title": "Platform",
+      "tenants": "Tenants"
+    }
+  },
+  "notifications": {
+    "channelChoices": "Channel choices",
+    "consentOptedIn": "Opted in",
+    "consentOptedOut": "Opted out",
+    "consentUnknown": "Unknown status",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "marketingConsents": "Marketing consent",
+    "marketingDescription": "Turn a marketing channel off to unsubscribe. You can turn it on again only when the current consent policy is available.",
+    "marketingEditingUnavailable": "Use the marketing consent controls below to unsubscribe or opt in again.",
+    "marketingEvidenceMissing": "The current consent information is incomplete, so this setting is locked to avoid recording the wrong choice.",
+    "marketingTitle": "Choose how you receive marketing messages",
+    "marketingToggleLabel": "Receive marketing messages by {channel}",
+    "preferenceRetryReady": "The latest settings are loaded and your choice is retained. Save it again.",
+    "preferenceSaveFailed": "Your change was not saved. Your choice is retained; load the latest settings first.",
+    "preferenceSaved": "Saved",
+    "preferenceToggleLabel": "{channel} delivery for {category}",
+    "preferenceVersion": "Settings version",
+    "preferredLocale": "Message language",
+    "preferencesDescription": "You can change ordinary notification choices one at a time, unsubscribe from or restore marketing messages, and edit quiet hours. Security notices always remain on.",
+    "preferencesEmpty": "No individual channel choices have been saved",
+    "preferencesLoadFailed": "Notification preferences are temporarily unavailable. Try again later.",
+    "preferencesTitle": "Notification delivery settings",
+    "quietHours": "Quiet hours",
+    "quietHoursContactAmbiguous": "More than one marketing contact is available, so quiet hours are locked until the service can identify the correct one.",
+    "quietHoursEnabledLabel": "Enable quiet hours",
+    "quietHoursEnd": "End time",
+    "quietHoursEvidenceMissing": "The current marketing consent information is incomplete, so quiet hours cannot be changed safely.",
+    "quietHoursInvalid": "Enter a valid time zone, start time, and end time.",
+    "quietHoursMissing": "No current quiet-hours setting is available. Nothing has been changed.",
+    "quietHoursStart": "Start time",
+    "quietHoursTimezone": "Time zone (city/region)",
+    "refreshLatest": "Load latest settings",
+    "saveAgain": "Save again",
+    "saveQuietHours": "Save quiet hours",
+    "securityRequired": "This notification cannot be turned off because it protects your account and services.",
+    "categories": {
+      "account": "Account",
+      "billing": "Billing",
+      "marketing": "Marketing",
+      "security": "Security",
+      "service": "Service",
+      "support": "Support tickets"
+    },
+    "channels": {
+      "email": "Email",
+      "in_app": "In-app",
+      "sms": "SMS",
+      "wechat_official": "WeChat Official Account"
+    },
+    "completedAt": "Completed",
+    "deliveryHistory": "Delivery history",
+    "empty": "No notification delivery records yet",
+    "loadFailed": "Notification delivery records are temporarily unavailable. Try again later.",
+    "menu": "Notification center",
+    "nextPage": "Next",
+    "pageNumber": "Page {page}",
+    "preferences": "Delivery preferences",
+    "previousPage": "Previous",
+    "queuedAt": "Created",
+    "retry": "Retry",
+    "statuses": {
+      "cancelled": "Cancelled",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "manual_review": "Awaiting manual confirmation",
+      "manual_unknown_closed": "Manual confirmation completed",
+      "preference_blocked": "Skipped by your preference",
+      "queued": "Queued",
+      "result_unknown": "Result pending confirmation",
+      "retry_wait": "Waiting to retry",
+      "sending": "Sending",
+      "submitted": "Submitted to delivery channel",
+      "succeeded": "Sent successfully",
+      "template_error": "Content preparation failed"
+    }
+  },
+  "page": {
+    "auth": {
+      "login": "Login",
+      "register": "Register",
+      "codeLogin": "Code Login",
+      "qrcodeLogin": "Qr Code Login",
+      "forgetPassword": "Forget Password",
+      "resetPassword": "Reset Password",
+      "profile": "Profile"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "analytics": "Analytics",
+      "workspace": "Workspace"
+    },
+    "customer": {
+      "overview": "Customer Overview",
+      "description": "Manage purchases, orders, cloud services, billing, and support in one place.",
+      "avatarMenu": {
+        "profile": "Account profile",
+        "addresses": "Contacts & addresses",
+        "dataRights": "Data & account",
+        "privacy": "Privacy settings"
+      },
+      "summary": {
+        "welcome": "Welcome back",
+        "customerCode": "Customer ID: ",
+        "individual": "Individual account",
+        "enterprise": "Enterprise account",
+        "verified": "Verified",
+        "unverified": "Not verified",
+        "manageAccount": "Manage account",
+        "balance": "Account balance",
+        "frozen": "Held",
+        "recharge": "Add funds & pay",
+        "transactions": "Transactions",
+        "openInvoices": "Unpaid invoices",
+        "activeServers": "Running services",
+        "expiringSoon": "Expiring in 7 days",
+        "openTickets": "Open tickets",
+        "withinSevenDays": "Based on currently loaded services",
+        "viewDetails": "View details",
+        "services": "My services",
+        "serviceName": "Product / service",
+        "serviceStatus": "Status",
+        "expiresAt": "Expires",
+        "serviceNo": "Service ID",
+        "action": "Action",
+        "manage": "Manage",
+        "noServices": "No active services yet. Start by browsing products.",
+        "unknown": "Status pending",
+        "unavailable": "Financial data is temporarily unavailable",
+        "partialFailed": "Some summary sections are unavailable; the remaining live data is shown.",
+        "loadFailed": "The account summary is temporarily unavailable. Try again later.",
+        "retry": "Reload"
+      },
+      "quickAccess": {
+        "title": "Quick access",
+        "description": "Open frequently used services without searching through the navigation.",
+        "products": "Browse products",
+        "productsDescription": "Review available products and configurations",
+        "servers": "My servers",
+        "serversDescription": "Check service status and available actions",
+        "orders": "Orders",
+        "ordersDescription": "Track orders and delivery progress",
+        "finance": "Finance center",
+        "financeDescription": "Manage bills, invoices, and renewals",
+        "support": "Technical support",
+        "supportDescription": "Create and follow up support tickets",
+        "profile": "Account profile",
+        "profileDescription": "Maintain contacts and account details"
+      },
+      "workflow": {
+        "title": "Common workflow",
+        "description": "Complete the main service journey in three clear steps.",
+        "choose": "Choose a product and confirm its configuration",
+        "submit": "Submit the order and complete payment",
+        "manage": "Track delivery and service status under My servers"
+      }
+    },
+    "about": {
+      "project": {
+        "description": "An AI-native full-stack framework for sustainable delivery, built with GoFrame, Vue 3, and Vben 5. It provides the core host service, default management workspace, plugin extension capabilities, and AI-native development workflow.",
+        "name": "Current Application",
+        "title": "About",
+        "viewLink": "View",
+        "sections": {
+          "basic": "Basic Information",
+          "dependencies": "Production Dependencies",
+          "devDependencies": "Development Dependencies"
+        },
+        "items": {
+          "author": "Author",
+          "buildTime": "Last Build Time",
+          "documentation": "Documentation",
+          "homepage": "Homepage",
+          "license": "License",
+          "preview": "Preview",
+          "version": "Version"
+        }
+      },
+      "systemInfo": {
+        "loading": "Loading...",
+        "viewLink": "View",
+        "sections": {
+          "framework": "About LinaPro",
+          "backend": "Backend Components",
+          "frontend": "Frontend Components"
+        },
+        "items": {
+          "frameworkName": "Framework Name",
+          "homepage": "Homepage",
+          "repositoryUrl": "Repository",
+          "version": "Version",
+          "license": "License",
+          "description": "Description"
+        }
+      }
+    },
+    "plugin": {
+      "dynamicPage": {
+        "mountFailedTitle": "Dynamic plugin mount failed",
+        "notFoundTitle": "Plugin page not found",
+        "notFoundSubtitle": "The current route does not match a registered source-plugin page or a valid dynamic embedded entry.",
+        "refreshNoticeTitle": "Plugin updated",
+        "refreshNoticeDescription": "A newer plugin generation is ready for this page. Refresh now to switch to the latest version.",
+        "refreshNoticeAction": "Refresh current page"
+      }
+    },
+    "routes": {
+      "about": {
+        "developerCenter": "Dev Tools",
+        "apiDocs": "API Docs",
+        "systemInfo": "Version Info"
+      },
+      "system": {
+        "accessManagement": "Access",
+        "userManagement": "Users",
+        "roleManagement": "Roles",
+        "menuManagement": "Menus",
+        "roleUserManagement": "Role Members",
+        "systemSettings": "Settings",
+        "dictManagement": "Dictionaries",
+        "configManagement": "Parameters",
+        "fileManagement": "Files",
+        "messageList": "Messages",
+        "scheduler": "Scheduler",
+        "jobManagement": "Jobs",
+        "jobGroupManagement": "Groups",
+        "jobLogManagement": "Run Logs",
+        "extensionCenter": "Extensions",
+        "pluginManagement": "Plugins"
+      },
+      "platform": {
+        "title": "Platform",
+        "tenants": "Tenants"
+      }
+    }
+  },
+  "pages": {
+    "common": {
+      "search": "Search",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "save": "Save",
+      "export": "Export",
+      "import": "Import",
+      "more": "More",
+      "back": "Back",
+      "preview": "Preview",
+      "detail": "Detail",
+      "upload": "Upload",
+      "download": "Download",
+      "clear": "Clear",
+      "actions": "Actions",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "remark": "Remark",
+      "status": "Status",
+      "confirmTitle": "Confirm",
+      "deleteConfirm": "Delete this record?",
+      "builtinDeleteDisabled": "System built-in data cannot be deleted",
+      "deleteSuccess": "Deleted successfully",
+      "createSuccess": "Created successfully",
+      "updateSuccess": "Updated successfully",
+      "exportSuccess": "Export completed",
+      "exportFailed": "Export failed",
+      "yes": "Yes",
+      "no": "No",
+      "discardChangesConfirm": "This form has unsaved changes. Discard them and close?"
+    },
+    "fields": {
+      "username": "Username",
+      "nickname": "Nickname",
+      "email": "Email",
+      "phone": "Phone",
+      "dept": "Department",
+      "role": "Role",
+      "roles": "Roles",
+      "avatar": "Avatar",
+      "sex": "Gender",
+      "password": "Password",
+      "newPassword": "New Password",
+      "sort": "Order",
+      "name": "Name",
+      "code": "Code",
+      "type": "Type",
+      "description": "Description"
+    },
+    "status": {
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "unknown": "Unknown",
+      "male": "Male",
+      "female": "Female"
+    },
+    "layout": {
+      "notifications": {
+        "clearAllConfirm": "Clear all notifications?"
+      }
+    },
+    "dashboard": {
+      "analytics": {
+        "overview": {
+          "users": {
+            "title": "Users",
+            "total": "Total Users"
+          },
+          "visits": {
+            "title": "Visits",
+            "total": "Total Visits"
+          },
+          "downloads": {
+            "title": "Downloads",
+            "total": "Total Downloads"
+          },
+          "usage": {
+            "title": "Usage",
+            "total": "Total Usage"
+          }
+        },
+        "tabs": {
+          "trends": "Traffic Trends",
+          "visits": "Monthly Visits"
+        },
+        "cards": {
+          "channels": "Visit Channels",
+          "sources": "Traffic Sources"
+        },
+        "sources": {
+          "search": "Search Engines",
+          "direct": "Direct Traffic",
+          "email": "Email Campaigns",
+          "ads": "Affiliate Ads"
+        },
+        "channels": {
+          "visits": "Visits",
+          "trend": "Trend",
+          "web": "Web",
+          "mobile": "Mobile",
+          "client": "Client",
+          "thirdParty": "Third-party",
+          "other": "Other"
+        },
+        "sales": {
+          "title": "Commercial Mix",
+          "outsourcing": "Outsourcing",
+          "customDevelopment": "Custom Development",
+          "technicalSupport": "Technical Support",
+          "remote": "Remote Delivery"
+        }
+      },
+      "workspace": {
+        "greeting": "Good morning, {name}. Let us get your day started.",
+        "defaultName": "Administrator",
+        "weather": "Sunny today, 20C - 32C.",
+        "sections": {
+          "projects": "Projects",
+          "trends": "Recent Activity",
+          "quickNav": "Quick Navigation",
+          "todos": "To-do Items",
+          "trafficSources": "Traffic Sources"
+        },
+        "stats": {
+          "todos": "To-dos",
+          "projects": "Projects",
+          "team": "Team"
+        },
+        "quickNav": {
+          "userManagement": "User Management",
+          "menuManagement": "Menu Management",
+          "systemParameters": "System Parameters",
+          "extensionCenter": "Extension Center",
+          "apiDocs": "API Docs",
+          "scheduledJobs": "Scheduled Jobs"
+        },
+        "projects": {
+          "linapro": {
+            "group": "Full-stack framework",
+            "content": "Let the framework carry the complexity."
+          },
+          "goframe": {
+            "group": "Backend framework",
+            "content": "Steady foundations make faster delivery."
+          },
+          "vue": {
+            "group": "Frontend framework",
+            "content": "Change is easier when it stays visible."
+          },
+          "vben": {
+            "group": "Admin workspace",
+            "content": "Smooth details compound into speed."
+          },
+          "antDesign": {
+            "group": "Design system",
+            "content": "Order makes the experience feel light."
+          },
+          "typescript": {
+            "group": "Type system",
+            "content": "Clear boundaries make delivery calmer."
+          }
+        },
+        "todos": {
+          "reviewShortcuts": {
+            "title": "Review Workbench Shortcuts",
+            "content": "Confirm that user, menu, parameter, plugin, API doc, and scheduled job entries all reach the right pages."
+          },
+          "verifyI18n": {
+            "title": "Verify Workspace i18n",
+            "content": "Check that Simplified Chinese and English workspace copy stay aligned."
+          },
+          "preparePluginDemo": {
+            "title": "Prepare Plugin Extension Demo",
+            "content": "Organize demo data for dynamic plugin install, enablement, and page refresh."
+          },
+          "inspectJobLogs": {
+            "title": "Inspect Scheduled Job Logs",
+            "content": "Confirm host and plugin job trigger results remain traceable."
+          },
+          "syncApiDocs": {
+            "title": "Sync API Documentation Examples",
+            "content": "Update debugging notes for core host APIs and plugin APIs."
+          }
+        },
+        "trends": {
+          "justNow": "Just now",
+          "oneHourAgo": "1 hour ago",
+          "oneDayAgo": "1 day ago",
+          "twoDaysAgo": "2 days ago",
+          "threeDaysAgo": "3 days ago",
+          "oneWeekAgo": "1 week ago",
+          "people": {
+            "platformTeam": "Platform Team",
+            "accessTeam": "Access Team",
+            "extensionCenter": "Extension Center",
+            "apiDocs": "API Docs",
+            "scheduler": "Scheduler",
+            "configCenter": "Parameter Center",
+            "aiWorkflow": "AI Workflow",
+            "testSuite": "Test Suite",
+            "releasePipeline": "Release Pipeline"
+          },
+          "items": {
+            "releasedWorkspaceNav": "Published the <a>workspace quick navigation</a> demo entries",
+            "alignedAccessMenus": "Aligned <a>user management</a> and <a>menu management</a> page permissions",
+            "publishedPluginDemo": "Published a <a>dynamic plugin installation</a> demo package",
+            "refreshedApiDocs": "Refreshed the <a>OpenAPI debugging docs</a>",
+            "checkedSchedulerLogs": "Completed a <a>scheduled job run log</a> check",
+            "updatedPublicConfig": "Updated <a>login page display parameters</a>",
+            "draftedOpenSpec": "Generated an <a>OpenSpec change proposal</a>",
+            "passedPlaywright": "Passed the <a>Playwright regression run</a>",
+            "archivedDemoIteration": "Archived the <a>LinaPro demo iteration</a>"
+          }
+        }
+      }
+    },
+    "system": {
+      "user": {
+        "tableTitle": "User List",
+        "placeholders": {
+          "username": "Please enter an account",
+          "nickname": "Please enter a nickname",
+          "email": "Please enter an email",
+          "phone": "Please enter a phone number",
+          "password": "Please enter a password",
+          "passwordKeep": "Leave blank to keep unchanged",
+          "selectDept": "Please select",
+          "selectDeptFirst": "Please select a department first",
+          "selectRole": "Please select roles",
+          "remark": "Please enter a remark"
+        },
+        "labels": {
+          "account": "Account",
+          "userAccount": "User Account",
+          "userNickname": "User Nickname",
+          "userStatus": "User Status",
+          "unassignedDept": "Unassigned",
+          "unassignedRole": "Unassigned Role",
+          "na": "N/A",
+          "positions": "Positions",
+          "tenantMemberships": "Tenants"
+        },
+        "help": {
+          "positions": "After selecting a department, all positions under that department are loaded automatically.",
+          "roles": "You can assign multiple roles to this user.",
+          "tenantMemberships": "Platform context can maintain this user's tenants. Leaving it empty keeps a platform user."
+        },
+        "messages": {
+          "deleteSelectedConfirm": "Delete the selected {count} record(s)?",
+          "exportSelectedConfirm": "Export the selected records?",
+          "exportAllConfirm": "Export all records?",
+          "deleteConfirm": "Delete this user?",
+          "noPosts": "No positions are available in this department",
+          "noDepartments": "No departments",
+          "passwordLength": "Password must be 5-20 characters",
+          "resetPasswordSuccess": "Password reset successfully"
+        },
+        "actions": {
+          "resetPassword": "Reset Password",
+          "batchEdit": "Edit"
+        },
+        "more": "More",
+        "drawer": {
+          "createTitle": "Add User",
+          "editTitle": "Edit User"
+        },
+        "import": {
+          "title": "Import Users",
+          "resultTitle": "Import Result",
+          "uploadHint": "Click or drag a file here to upload",
+          "fileHint": "Supports xlsx and xls files",
+          "downloadTemplate": "Download template",
+          "overwrite": "Update and overwrite existing user records",
+          "downloadTemplateFailed": "Failed to download the template",
+          "success": "Imported {count} user record(s) successfully.",
+          "summary": "Imported {success} row(s) successfully and {fail} row(s) failed.",
+          "rowReason": "Row {row}: {reason}"
+        },
+        "resetPassword": {
+          "title": "Reset Password",
+          "newPassword": "New Password",
+          "placeholder": "Please enter a new password with 5-20 characters",
+          "userId": "User ID"
+        },
+        "exportFileName": "user-data-export.xlsx",
+        "batchEdit": {
+          "title": "Batch Edit Users",
+          "selectedCount": "{count} user(s) selected",
+          "fields": {
+            "updateStatus": "Update Status",
+            "updateRoles": "Update Roles",
+            "updateTenant": "Update Tenants"
+          },
+          "help": {
+            "roles": "When enabled, selected roles replace each user's roles in the current context.",
+            "tenants": "When enabled, selected tenants replace each user's tenant memberships."
+          },
+          "messages": {
+            "noFields": "Select at least one field to update.",
+            "statusRequired": "Select the target user status.",
+            "success": "Users updated successfully.",
+            "roleTenantConflict": "Update roles and tenants in separate batches."
+          }
+        }
+      },
+      "role": {
+        "tableTitle": "Role List",
+        "fields": {
+          "roleId": "Role ID",
+          "roleName": "Role Name",
+          "permissionKey": "Permission",
+          "dataScope": "Data Scope",
+          "roleSort": "Order",
+          "roleStatus": "Role Status",
+          "menuPermissions": "Menu Permissions"
+        },
+        "placeholders": {
+          "roleName": "Please enter a role name",
+          "permissionKey": "Please enter a permission key",
+          "dataScope": "Please select a data scope",
+          "status": "Please select a status",
+          "sort": "Please enter a sort order",
+          "remark": "Please enter a remark",
+          "permissionExample": "For example: admin, user",
+          "permissionHelp": "For example: admin, simpleUser"
+        },
+        "help": {
+          "status": "After you change this, users who hold the role are signed out automatically.",
+          "dataScope": "Changes take effect after the user signs in again."
+        },
+        "messages": {
+          "deleteSelectedConfirm": "Delete the selected {count} record(s)?",
+          "deleteConfirm": "Delete this role?",
+          "statusUpdated": "Status updated successfully"
+        },
+        "actions": {
+          "assign": "Assign"
+        },
+        "roleAuth": {
+          "tableTitle": "Assigned Users",
+          "removeAssignment": "Remove Assignment",
+          "back": "Back",
+          "removeConfirm": "Remove assignment for user [{username} - {nickname}]?",
+          "removeSelectedConfirm": "Remove the selected {count} assignment record(s)?",
+          "removeSuccess": "Role assignment removed successfully",
+          "removeSelectedSuccess": "Selected role assignments have been removed"
+        }
+      },
+      "config": {
+        "tableTitle": "Parameter Settings",
+        "exportFileName": "parameter-settings.xlsx",
+        "fields": {
+          "name": "Parameter Name",
+          "key": "Parameter Key",
+          "value": "Parameter Value",
+          "valueType": "Value Type",
+          "options": "Options"
+        },
+        "drawer": {
+          "createTitle": "Add Parameter Setting",
+          "editTitle": "Edit Parameter Setting"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "Delete the selected {count} record(s)?",
+          "exportSelectedConfirm": "Export the selected records?",
+          "exportAllConfirm": "Export all data?",
+          "optionsRequired": "Enum parameter types require an options list"
+        },
+        "import": {
+          "title": "Import Parameter Settings",
+          "resultTitle": "Import Result",
+          "uploadHint": "Click or drag a file here to upload",
+          "fileHint": "Supports xlsx and xls files",
+          "downloadTemplate": "Download template",
+          "overwrite": "Update and overwrite existing parameter settings",
+          "downloadTemplateFailed": "Failed to download the template",
+          "success": "Imported {count} parameter setting record(s) successfully.",
+          "summary": "Imported {success} row(s) successfully and {fail} row(s) failed.",
+          "rowReason": "Row {row}: {reason}"
+        },
+        "valueTypes": {
+          "text": "Text",
+          "textarea": "Textarea",
+          "number": "Number",
+          "boolean": "Boolean",
+          "select": "Select",
+          "radio": "Radio",
+          "multi_select": "Multi Select",
+          "richtext": "Rich Text"
+        },
+        "boolean": {
+          "true": "True",
+          "false": "False"
+        },
+        "help": {
+          "optionsJson": "JSON array of {label,value} objects, e.g. [{\"label\":\"Left\",\"value\":\"panel-left\"}]",
+          "optionsSimple": "One option per line. Format: label=value, or value only. Example:\nLeft=panel-left\nCenter=panel-center"
+        },
+        "placeholders": {
+          "optionsJson": "[{\"label\":\"Label\",\"value\":\"option-value\"}]",
+          "optionsSimple": "Left=panel-left\nCenter=panel-center\nRight=panel-right",
+          "richtext": "Enter rich text content"
+        }
+      },
+      "dict": {
+        "type": {
+          "tableTitle": "Dictionary Types",
+          "exportFileName": "dictionary-management.xlsx",
+          "fields": {
+            "name": "Dictionary Name",
+            "type": "Dictionary Type"
+          },
+          "drawer": {
+            "createTitle": "Add Dictionary Type",
+            "editTitle": "Edit Dictionary Type"
+          },
+          "help": {
+            "typeRule": "Use letters, numbers, and underscores only, for example: sys_normal_disable"
+          },
+          "messages": {
+            "typeRule": "Dictionary types may contain only letters, numbers, and underscores",
+            "deleteConfirm": "Deleting a dictionary type also deletes all dictionary data under that type. Continue?",
+            "deleteSelectedConfirm": "Deleting a dictionary type also deletes all dictionary data under that type. Delete the selected {count} record(s)?",
+            "deleteFailed": "Failed to delete the dictionary type",
+            "exportSelectedConfirm": "Export the selected dictionary types and their related dictionary data?",
+            "exportAllConfirm": "Export all dictionary types and dictionary data?"
+          },
+          "import": {
+            "title": "Import Dictionaries",
+            "resultTitle": "Import Result",
+            "uploadHint": "Click or drag a file here to upload",
+            "fileHint": "Supports xlsx and xls files",
+            "downloadTemplate": "Download template",
+            "overwrite": "Update and overwrite existing dictionary types and dictionary data",
+            "downloadTemplateFailed": "Failed to download the template",
+            "success": "Imported {typeCount} dictionary type(s) and {dataCount} dictionary data row(s) successfully.",
+            "summary": "Dictionary types: {typeSuccess} succeeded, {typeFail} failed. Dictionary data: {dataSuccess} succeeded, {dataFail} failed.",
+            "rowReason": "[{sheet}] Row {row}: {reason}"
+          }
+        },
+        "data": {
+          "tableTitle": "Dictionary Data",
+          "fields": {
+            "label": "Dictionary Label",
+            "value": "Dictionary Value",
+            "tagStyle": "Tag Style",
+            "dataLabel": "Data Label",
+            "dataValue": "Data Value",
+            "sortOrder": "Sort Order",
+            "cssClass": "CSS Class"
+          },
+          "drawer": {
+            "createTitle": "Add Dictionary Data",
+            "editTitle": "Edit Dictionary Data"
+          },
+          "help": {
+            "cssClass": "Tag CSS class names. You can reference classes that are already compiled into the project."
+          },
+          "messages": {
+            "deleteSelectedConfirm": "Delete the selected {count} record(s)?"
+          },
+          "import": {
+            "title": "Import Dictionary Data",
+            "resultTitle": "Import Result",
+            "uploadHint": "Click or drag a file here to upload",
+            "fileHint": "Supports xlsx and xls files",
+            "downloadTemplate": "Download template",
+            "overwrite": "Update and overwrite existing dictionary data",
+            "downloadTemplateFailed": "Failed to download the template",
+            "success": "Imported {count} dictionary data row(s) successfully.",
+            "summary": "Imported {success} row(s) successfully and {fail} row(s) failed.",
+            "rowReason": "Row {row}: {reason}"
+          },
+          "tagStyle": {
+            "options": {
+              "default": "Default Colors",
+              "custom": "Custom Color"
+            },
+            "placeholders": {
+              "select": "Please select a tag style",
+              "custom": "Enter a hex color value, for example #1677ff"
+            },
+            "presets": {
+              "cyan": "Cyan",
+              "danger": "Danger",
+              "default": "Default",
+              "green": "Green",
+              "info": "Info",
+              "orange": "Orange",
+              "pink": "Pink",
+              "primary": "Primary",
+              "purple": "Purple",
+              "red": "Red",
+              "success": "Success",
+              "warning": "Warning"
+            }
+          }
+        }
+      },
+      "file": {
+        "tableTitle": "Files",
+        "fields": {
+          "originalName": "Filename",
+          "fileType": "File Type",
+          "scene": "Usage",
+          "preview": "Preview",
+          "size": "File Size",
+          "uploadedAt": "Uploaded",
+          "uploader": "Uploaded By"
+        },
+        "actions": {
+          "fileUpload": "Upload File",
+          "imageUpload": "Upload Image"
+        },
+        "detail": {
+          "title": "File Details",
+          "fileId": "File ID",
+          "storedName": "Stored Name",
+          "url": "File URL"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "Delete the selected {count} record(s)?",
+          "previewImages": "Preview images",
+          "pdfPreview": "Preview PDF"
+        }
+      },
+      "job": {
+        "tableTitle": "Scheduled Jobs",
+        "fields": {
+          "group": "Job Group",
+          "status": "Job Status",
+          "keyword": "Keyword",
+          "name": "Job Name",
+          "source": "Job Source",
+          "cronExpr": "Cron Expression",
+          "timezone": "Timezone",
+          "scope": "Schedule Scope",
+          "concurrency": "Concurrency Strategy",
+          "executedCount": "Executed Count",
+          "stopReason": "Stop Reason",
+          "maxConcurrency": "Max Concurrency",
+          "maxExecutions": "Max Executions",
+          "retention": "Log Retention",
+          "retentionValue": "Retention Value",
+          "timeoutSeconds": "Timeout (Seconds)"
+        },
+        "placeholders": {
+          "selectGroup": "Please select a group",
+          "selectStatus": "Please select a status",
+          "cronExpr": "Please enter a cron expression",
+          "currentTimezone": "Current system timezone: {value}",
+          "description": "Please enter a description",
+          "name": "Please enter a job name",
+          "selectRetention": "Please select a retention policy",
+          "timezone": "Please enter or select a timezone"
+        },
+        "actions": {
+          "runNow": "Run Now",
+          "resetCount": "Reset Counter",
+          "preview": "Preview"
+        },
+        "status": {
+          "enabled": "Enabled",
+          "disabled": "Disabled",
+          "pluginUnavailable": "Unavailable"
+        },
+        "source": {
+          "hostBuiltin": "Host Built-in",
+          "pluginBuiltin": "Plugin Built-in",
+          "userCreated": "User Created"
+        },
+        "scope": {
+          "masterOnly": "Primary Node Only",
+          "allNodes": "All Nodes"
+        },
+        "concurrency": {
+          "singleton": "Singleton",
+          "parallel": "Parallel"
+        },
+        "retention": {
+          "summary": {
+            "count": "Keep logs by count",
+            "countWithValue": "Keep the most recent {value} logs",
+            "days": "Keep logs by days",
+            "daysWithValue": "Keep logs from the last {value} day(s)",
+            "none": "Do not clear logs automatically"
+          },
+          "followSystemHelp": "Follow system: the job cleanup follows the system-level log retention policy.\nCurrent system policy: {currentPolicy}.\nIf the job defines an override, the job-level policy takes precedence.",
+          "count": "Keep by Count",
+          "days": "Keep by Days",
+          "followSystem": "Follow System Policy",
+          "none": "Do Not Clear Automatically"
+        },
+        "help": {
+          "cron": "Supports 5-part or 6-part Cron.\n5-part expressions are parsed as minute hour day month week, and the runtime fills the seconds placeholder automatically.\n6-part expressions can set seconds explicitly.",
+          "timeout": "Maximum runtime allowed for a single job instance.\nWhen the limit is exceeded, the system attempts to interrupt the execution and marks the execution log as timed out.\nLeave some headroom above the normal runtime to avoid false positives.",
+          "maxExecutions": "Limits the accumulated execution count that participates in execution counting.\nOnce the limit is reached, the job is disabled automatically and the stop reason is recorded.\nSet to 0 to disable the limit; manual Run Now actions do not increase the count.",
+          "scope": "Primary Node Only: only the current primary node runs the job.\nAll Nodes: every online node runs the job once.",
+          "concurrency": "Singleton: if one instance is already running on the current node, new triggers are skipped.\nParallel: multiple instances can run on the current node, limited by Max Concurrency."
+        },
+        "messages": {
+          "pluginPausedTooltip": "This job depends on a handler provided by a plugin. When the plugin is disabled, uninstalled, or the handler is not registered, the system pauses the job automatically until the plugin becomes available again.",
+          "noShellPermission": "The current account does not have permission to manage shell jobs",
+          "platformUnsupported": "Shell jobs are not supported on the current platform",
+          "environmentDisabled": "Shell jobs are not enabled in the current environment",
+          "deleteSelectedConfirm": "Delete the selected {count} job(s)?",
+          "deleteConfirm": "Delete this job?",
+          "triggerConfirm": "Run this job now?",
+          "triggerSuccess": "Triggered successfully. Log ID: {logId}",
+          "resetSuccess": "The execution counter has been reset",
+          "builtinReadonly": "Built-in jobs cannot be modified in the form editor.",
+          "formInvalid": "Please complete the job configuration before saving.",
+          "previewFailed": "Failed to preview upcoming execution times.",
+          "saveFailed": "Failed to save the job.",
+          "shellConfigInvalid": "Shell task configuration is invalid."
+        },
+        "builtin": {
+          "title": "Built-in Job Details",
+          "description": "Built-in jobs are provided by the host or plugins and can only be reviewed here.",
+          "handlerParams": "Handler Parameters",
+          "handlerRef": "Handler Reference",
+          "taskType": "Task Type"
+        },
+        "drawer": {
+          "createTitle": "Add Job",
+          "detailTitle": "Job Details",
+          "editTitle": "Edit Job"
+        },
+        "handler": {
+          "fields": {
+            "handler": "Handler"
+          },
+          "help": {
+            "readonly": "Built-in jobs use a fixed handler. The handler schema is displayed here for review only."
+          },
+          "messages": {
+            "empty": "Select a handler to load its parameter schema preview.",
+            "invalid": "Please complete the handler configuration.",
+            "loadFailed": "Failed to load the handler schema.",
+            "readonly": "Built-in job handlers are read-only.",
+            "schemaInvalidObject": "Handler parameter schema is not a valid object: {schema}",
+            "schemaRootObject": "Handler parameter schema root must be an object.",
+            "schemaUnsupportedKeyword": "Handler parameter schema contains an unsupported frontend keyword: {key}"
+          },
+          "placeholders": {
+            "inputField": "Please enter {label}",
+            "select": "Please select a handler",
+            "selectField": "Please select {label}"
+          }
+        },
+        "preview": {
+          "title": "Execution Preview",
+          "description": "Review upcoming execution times before saving.",
+          "empty": "Click Preview to load upcoming execution times."
+        },
+        "shell": {
+          "actions": {
+            "addEnv": "Add Variable"
+          },
+          "description": "Configure an optional shell step. The runtime executes it with the current job context.",
+          "envHelp": "Environment variable names must be unique. Leave a masked value blank to keep it unchanged.",
+          "fields": {
+            "command": "Command",
+            "env": "Environment Variables",
+            "workDir": "Working Directory"
+          },
+          "messages": {
+            "currentValueMasked": "The current value is hidden for security. Leave the field blank to keep it unchanged.",
+            "masked": "Current value kept"
+          },
+          "placeholders": {
+            "command": "Please enter a shell command",
+            "envKey": "Variable name",
+            "envValue": "Variable value",
+            "envValueMasked": "Leave blank to keep the current value",
+            "workDir": "Please enter a working directory"
+          },
+          "title": "Shell Task Configuration",
+          "validation": {
+            "envKeyDuplicated": "Duplicate environment variable name(s): {keys}",
+            "envKeyRequired": "Environment variable name is required when a value is provided"
+          },
+          "warning": "Shell tasks run commands on the host node. Review the command and environment variables carefully before saving."
+        },
+        "validation": {
+          "cronInvalidCount": "Cron expressions must contain 5 or 6 parts.",
+          "cronRequired": "Please enter a cron expression.",
+          "cronSecondInvalid": "The seconds field must be * or a value between 0 and 59.",
+          "cronTooLong": "Cron expression is too long.",
+          "groupRequired": "Please select a job group.",
+          "integerRequired": "{label} must be an integer.",
+          "invalidOption": "Please select a valid {label}.",
+          "maxValue": "{label} must be less than or equal to {max}.",
+          "minValue": "{label} must be greater than or equal to {min}.",
+          "nameRequired": "Please enter a job name.",
+          "nameTooLong": "Job names cannot exceed 128 characters.",
+          "retentionValuePositive": "Retention value must be greater than 0.",
+          "timezoneInvalid": "Please enter a valid timezone, for example Asia/Shanghai.",
+          "timezoneRequired": "Please enter a timezone."
+        }
+      },
+      "jobGroup": {
+        "tableTitle": "Job Groups",
+        "fields": {
+          "code": "Group Code",
+          "name": "Group Name",
+          "sortOrder": "Sort Order",
+          "jobCount": "Jobs",
+          "defaultGroup": "Default Group"
+        },
+        "drawer": {
+          "createTitle": "Add Job Group",
+          "editTitle": "Edit Job Group"
+        },
+        "placeholders": {
+          "code": "Please enter a group code",
+          "name": "Please enter a group name",
+          "remark": "Please enter a remark"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "Delete the selected {count} job group(s)? Jobs in those groups are moved to the default group automatically.",
+          "defaultDeleteDisabled": "The default group cannot be deleted",
+          "deleteConfirm": "Delete this group? Jobs in the group are moved to the default group automatically."
+        }
+      },
+      "jobLog": {
+        "tableTitle": "Execution Logs",
+        "fields": {
+          "jobName": "Job Name",
+          "status": "Status",
+          "nodeId": "Node",
+          "startAt": "Start Time",
+          "endAt": "End Time",
+          "trigger": "Trigger Type",
+          "durationMs": "Duration (ms)",
+          "errorSummary": "Error Summary"
+        },
+        "placeholders": {
+          "selectJob": "Please select a job",
+          "selectStatus": "Please select a status"
+        },
+        "actions": {
+          "terminate": "Terminate"
+        },
+        "detail": {
+          "title": "Execution Log Details",
+          "logId": "Log ID",
+          "duration": "Duration",
+          "error": "Error Details",
+          "jobSnapshot": "Job Snapshot",
+          "paramsSnapshot": "Parameter Snapshot",
+          "result": "Execution Result"
+        },
+        "status": {
+          "running": "Running",
+          "success": "Success",
+          "failed": "Failed",
+          "cancelled": "Cancelled",
+          "timeout": "Timed Out",
+          "skippedMaxConcurrency": "Skipped: Max Concurrency",
+          "skippedNotPrimary": "Skipped: Not Primary Node",
+          "skippedSingleton": "Skipped: Singleton Running"
+        },
+        "messages": {
+          "cancelSent": "Termination request sent",
+          "deleteSelectedConfirm": "Delete the selected {count} execution log(s)?",
+          "deleteAllHint": "When selected, the date range is ignored and all execution logs in the current permission scope are deleted.",
+          "deleteAllLabel": "Delete all execution logs",
+          "deleteRangeDescription": "Select how to delete execution logs. By default, logs are cleaned by date range; selecting all logs cleans every execution log in the current permission scope.",
+          "deleteRangeRequired": "Select a complete execution log date range",
+          "deleteRangeSuccess": "Deleted {count} execution log(s)",
+          "deleteRangeTitle": "Delete Execution Logs",
+          "clearCurrentConfirm": "Clear execution logs for the current job?",
+          "clearAllConfirm": "Clear all execution logs?",
+          "clearSuccess": "Execution logs cleared",
+          "terminateConfirm": "Terminate the current job instance?"
+        }
+      },
+      "menu": {
+        "tableTitle": "Menu List",
+        "tableTitleHelp": "Double-click a row to expand or collapse child menus. Changes refresh the sidebar and tab titles immediately.",
+        "drawer": {
+          "createTitle": "Add Menu",
+          "editTitle": "Edit Menu"
+        },
+        "actions": {
+          "searchIcons": "Search Icons"
+        },
+        "fields": {
+          "parentMenu": "Parent Menu",
+          "menuType": "Menu Type",
+          "menuIcon": "Menu Icon",
+          "menuName": "Menu Name",
+          "permissionKey": "Permission",
+          "displaySort": "Display Order",
+          "routePath": "Route Path",
+          "componentPath": "Component",
+          "icon": "Icon",
+          "type": "Type",
+          "menuStatus": "Menu Status",
+          "visibleStatus": "Visible Status",
+          "visible": "Visible",
+          "isExternalLink": "External Link",
+          "cache": "Route Cache",
+          "cascadeDelete": "Cascade Delete",
+          "routeParams": "Route Params",
+          "componentType": "Component Type"
+        },
+        "help": {
+          "cache": "Cache this route with KeepAlive so the page state can be preserved.",
+          "component": "Enter a frontend component path relative to the views directory, for example system/user/index.",
+          "externalLink": "External links must use a complete URL starting with http:// or https://.",
+          "icon": "Use an Iconify icon name for the sidebar and route display.",
+          "name": "Displayed in the sidebar, breadcrumb, and tab title.",
+          "path": "Use a relative route path for internal pages, or a full URL for external links.",
+          "permission": "Use a unique permission key so menus and buttons can participate in unified authorization.",
+          "queryParam": "Optional query parameters appended to the route, for example id=1&type=detail.",
+          "sort": "Smaller values appear earlier in menus of the same level.",
+          "status": "Disabled menus are hidden from regular navigation and cannot be opened normally.",
+          "visible": "Hidden menus keep route access but do not appear in the sidebar."
+        },
+        "messages": {
+          "cascadeDeleteTooltip": "When enabled, deleting a menu also removes all of its descendant menus and buttons.",
+          "deleteConfirm": "Delete menu \"{menuName}\"?",
+          "deleteWithChildrenConfirm": "Delete menu \"{menuName}\" and its {childCount} child item(s)?",
+          "rootMenu": "Root Menu"
+        },
+        "placeholders": {
+          "externalPath": "Please enter a complete external URL",
+          "menuName": "Please enter a menu name",
+          "permissionKey": "Please enter a permission key",
+          "queryParam": "Please enter route parameters",
+          "remark": "Please enter a remark",
+          "routePath": "Please enter a route path"
+        },
+        "validation": {
+          "componentNoSlash": "Component paths cannot start with /",
+          "componentRequired": "Please enter a component path",
+          "linkInvalid": "External links must start with http:// or https://",
+          "linkRequired": "Please enter an external link",
+          "permissionRequired": "Please enter a permission key",
+          "routeRequired": "Please enter a route path"
+        },
+        "type": {
+          "directory": "Directory",
+          "menu": "Menu",
+          "button": "Button"
+        },
+        "visible": {
+          "shown": "Shown",
+          "hidden": "Hidden"
+        }
+      },
+      "plugin": {
+        "tableTitle": "Plugin List",
+        "columnHelp": {
+          "ariaLabel": "{label} column help",
+          "type": "Source plugins are delivered with host source code and build artifacts for built-in or trusted extensions; dynamic plugins are uploaded as wasm artifacts for runtime install, upgrade, and isolated governance.",
+          "runtimeState": "Runtime state shows whether discovered plugin files, the database-effective version, upgrade flow, and abnormal diagnostics are consistent. The Status column only shows whether the plugin is currently enabled for business entry.",
+          "mockData": "Yes means the plugin ships bundled mock data that can be loaded during install; No means no bundled mock data is available.",
+          "supportsMultiTenant": "Yes means the plugin declares multi-tenant governance support and can use tenant-scoped install mode and tenant-side enablement; No means it is managed only as a platform-global capability.",
+          "tenantProvisioning": "Controls whether a tenant-scoped plugin is enabled automatically for newly created tenants. Only multi-tenant plugins installed in tenant-scoped mode can use this policy."
+        },
+        "fields": {
+          "id": "Plugin ID",
+          "name": "Plugin Name",
+          "type": "Plugin Type",
+          "description": "Plugin Description",
+          "installed": "Installed",
+          "installedAt": "Installed At",
+          "version": "Version",
+          "authorizationStatus": "Authorization Status",
+          "startupManagement": "Startup Management",
+          "distribution": "Distribution",
+          "hasMockData": "Mock Data",
+          "supportsMultiTenant": "Multi-Tenant",
+          "tenantProvisioning": "New Tenants",
+          "scopeNature": "Scope Nature",
+          "installMode": "Install Mode",
+          "pluginScope": "Plugin Scope",
+          "runtimeState": "Runtime State",
+          "pluginStatus": "Plugin Status",
+          "effectiveVersion": "Effective Version",
+          "discoveredVersion": "Discovered Version"
+        },
+        "type": {
+          "source": "Source Plugin",
+          "dynamic": "Dynamic Plugin"
+        },
+        "pluginStatus": {
+          "notInstalled": "Not Installed",
+          "disabled": "Disabled",
+          "enabled": "Enabled"
+        },
+        "pluginScope": {
+          "platformOnly": "Platform Only",
+          "global": "Global",
+          "tenantScoped": "Tenant Scoped"
+        },
+        "installed": {
+          "connected": "Installed",
+          "notInstalled": "Not Installed"
+        },
+        "actions": {
+          "syncPlugins": "Synchronize Plugins",
+          "uploadPlugin": "Upload Plugin",
+          "install": "Install",
+          "installAndEnable": "Install and Enable",
+          "manage": "Manage",
+          "upgrade": "Upgrade",
+          "retryUpgrade": "Retry Upgrade",
+          "manualRepair": "Manual Repair",
+          "uninstall": "Uninstall",
+          "continueAction": "Continue {actionLabel}",
+          "installMockDataLabel": "Install mock data?",
+          "installMockDataTooltip": "When checked, the host loads the plugin's manifest/sql/mock-data SQL files in a single database transaction after the install SQL succeeds. Any failure rolls back only the mock data; the plugin install itself remains in effect. Mock data is intended for demo and feature validation, not production use.",
+          "installMockDataHelpHint": "Learn more"
+        },
+        "auth": {
+          "installTitle": "Install Plugin",
+          "installWithAuthTitle": "Review Plugin Authorization Before Installation",
+          "enableTitle": "Enable Plugin",
+          "enableWithAuthTitle": "Review Plugin Authorization Before Enabling",
+          "confirmInstall": "Install",
+          "confirmInstallWithAuth": "Confirm Installation",
+          "confirmEnable": "Enable",
+          "confirmEnableWithAuth": "Confirm Enable",
+          "enableBanner": "Review the latest host-service snapshot before enabling this plugin.",
+          "hostServiceAuthTitle": "Host Service Authorization Review",
+          "hostServiceDeclareTitle": "Declared Host Services",
+          "installBanner": "Review the plugin metadata below before installation.",
+          "installBannerWithAuth": "This plugin requests host services. Review the requested scopes before installation."
+        },
+        "authorization": {
+          "confirmed": "Confirmed",
+          "notRequired": "Not Required",
+          "pending": "Pending Review"
+        },
+        "autoEnableBadge": "Auto Enable",
+        "autoEnableManaged": "Host-managed Auto Enable",
+        "builtinBadge": "Built-in",
+        "builtinManaged": "Project Built-in",
+        "managedDistribution": "Managed",
+        "manualManaged": "Manual Control",
+        "scopeNature": {
+          "platformOnly": "Platform Only",
+          "tenantAware": "Tenant Aware"
+        },
+        "runtimeState": {
+          "normal": "Normal",
+          "pending_upgrade": "Pending Upgrade",
+          "abnormal": "Abnormal",
+          "upgrade_running": "Upgrade Running",
+          "upgrade_failed": "Upgrade Failed"
+        },
+        "runtimeStateHint": {
+          "normal": "File metadata matches the database-effective state.",
+          "pendingUpgrade": "Effective version {effectiveVersion} is lower than discovered version {discoveredVersion}; an administrator must confirm runtime upgrade.",
+          "upgradeFailed": "The latest runtime upgrade failed. Fix the cause before retrying.",
+          "upgradeFailedWithDetail": "The latest runtime upgrade failed: {detail}",
+          "abnormal": "The plugin needs manual repair: {reason}"
+        },
+        "abnormalReason": {
+          "discovered_version_lower_than_effective": "File version is lower than the database-effective version",
+          "version_compare_failed": "Version comparison failed",
+          "unknown": "Unknown abnormal state"
+        },
+        "failurePhase": {
+          "before_upgrade": "Before-upgrade callback",
+          "upgrade_callback": "Custom upgrade callback",
+          "sql": "Upgrade SQL",
+          "governance": "Governance synchronization",
+          "release_switch": "Effective release switch",
+          "cache_invalidation": "Cache invalidation",
+          "release": "Release state",
+          "unknown": "Unknown phase"
+        },
+        "detail": {
+          "title": "Plugin Details",
+          "hostServicesTitle": "Host Service Scopes",
+          "routeListTitle": "Declared Routes"
+        },
+        "dependency": {
+          "blocker": {
+            "dependency_cycle": "Dependency cycle",
+            "dependency_missing": "Dependency missing",
+            "dependency_snapshot_unknown": "Dependency snapshot unavailable",
+            "dependency_version_unsatisfied": "Dependency version mismatch",
+            "framework_version_unsatisfied": "Framework version mismatch",
+            "reverse_dependency": "Downstream dependency",
+            "reverse_dependency_version": "Downstream version mismatch"
+          },
+          "checkFailed": "Failed to refresh plugin dependency check results",
+          "cycle": "A dependency cycle was detected. Adjust the related plugin dependencies before continuing.",
+          "frameworkUnsatisfied": "The current framework version does not meet this plugin's requirements.",
+          "frameworkUnsatisfiedDescription": "Required: {required}; current: {current}.",
+          "installBlocked": "Some dependency requirements are not met yet. Review the items below before installing.",
+          "loading": "Checking plugin dependencies...",
+          "resolveBeforeInstall": "Some dependency requirements are not met yet. Resolve them before installing this plugin.",
+          "resolveBeforeUninstall": "Uninstall plugins that depend on this one before continuing.",
+          "title": "Dependency Check",
+          "uninstallBlocked": "Other installed plugins still depend on this one. Resolve them before uninstalling."
+        },
+        "hostServices": {
+          "identity": {
+            "owner": "Owner Plugin",
+            "version": "Capability Version"
+          },
+          "messages": {
+            "defaultEmpty": "No scoped resources declared"
+          },
+          "scope": {
+            "authorized": "Authorized Scope",
+            "effective": "Effective Scope",
+            "requested": "Requested Scope"
+          },
+          "service": {
+            "ai": "AI",
+            "apidoc": "API Doc",
+            "auth": "Auth",
+            "bizctx": "Business Context",
+            "cache": "Cache",
+            "confidentialoutbound": "Secure External API Access",
+            "data": "Data",
+            "dict": "Dictionary",
+            "files": "Files",
+            "hostconfig": "Host Config",
+            "jobs": "Jobs",
+            "lock": "Distributed Lock",
+            "manifest": "Manifest",
+            "network": "Network",
+            "notifications": "Notifications",
+            "org": "Organization",
+            "plugins": "Plugins",
+            "route": "Route",
+            "runtime": "Runtime",
+            "sessions": "Sessions",
+            "storage": "Storage",
+            "tenant": "Tenant",
+            "unknown": "Unknown Service ({service})",
+            "users": "Users"
+          },
+          "summary": {
+            "path": "Path",
+            "resource": "Resource",
+            "storage": "Storage Path",
+            "table": "Table"
+          }
+        },
+        "messages": {
+          "autoEnableConfirmTitle": "Confirm {actionLabel}",
+          "autoEnableDetailAlert": "This plugin is managed by the host auto-enable policy. Manual changes may be reverted by the runtime during the next synchronization.",
+          "autoEnableRuntimeHint": "{actionLabel} may only be temporary because the runtime can re-apply the host-managed auto-enable policy.",
+          "autoEnableTooltip": "Plugin {pluginId} is managed by the host auto-enable policy.",
+          "autoEnableUninstallAlert": "This plugin is managed by the host auto-enable policy. If it is synchronized again later, the runtime may reinstall or re-enable it according to host policy.",
+          "builtinDetailAlert": "This plugin is a project built-in capability. It cannot be installed, enabled, disabled, uninstalled, or manually upgraded from the management UI. You can view details and open its management page when available.",
+          "builtinTooltip": "Plugin {pluginId} is a project built-in capability and cannot be uninstalled.",
+          "disabled": "Plugin disabled",
+          "emptyHostServices": "This plugin does not currently expose any host service scopes.",
+          "enabled": "Plugin enabled",
+          "hostServiceSnapshot": "The following scopes reflect the current plugin metadata and authorization snapshot.",
+          "installFirst": "Please install the plugin first",
+          "installSucceededEnableFailed": "Installed successfully, but enabling failed. Please review the authorization result and plugin status.",
+          "installed": "Plugin installed",
+          "installedAndEnabled": "Plugin installed and enabled",
+          "managementRouteUnavailable": "This plugin management page is not available in the current session. Confirm the plugin is enabled and your account has the corresponding menu permission.",
+          "mockDataRolledBack": "Plugin {pluginId} installed successfully, but mock data {failedFile} failed to load and was rolled back: {cause}. You can keep the plugin in its installed-without-mock state or uninstall and reinstall after fixing the mock SQL.",
+          "noInstallPermission": "The current account does not have permission to install or synchronize plugins",
+          "noManagementPage": "This plugin has no management page",
+          "noUpgradePermission": "The current account does not have permission to upgrade plugins",
+          "noPolicyPermission": "The current account does not have permission to configure plugin policies",
+          "noStatusPermission": "The current account does not have permission to change plugin status",
+          "noUninstallPermission": "The current account does not have permission to uninstall plugins",
+          "abnormalManualRepair": "Plugin files and database-effective state are inconsistent. Repair the plugin files or database state manually before continuing.",
+          "upgradeFailed": "The latest plugin upgrade failed",
+          "upgraded": "Plugin upgraded",
+          "tenantProvisioningEffective": "When this tenant-scoped plugin is installed and enabled, newly created tenants will receive it automatically.",
+          "tenantProvisioningUnsupported": "Only multi-tenant plugins installed in tenant-scoped mode support this policy.",
+          "tenantProvisioningUpdated": "New-tenant plugin policy updated",
+          "syncSuccess": "Synchronized {total} plugin record(s)",
+          "uninstalled": "Plugin uninstalled"
+        },
+        "routes": {
+          "authenticated": "Authenticated",
+          "collapse": "Collapse",
+          "expand": "Expand",
+          "public": "Public"
+        },
+        "uninstall": {
+          "title": "Uninstall Plugin",
+          "defaultWarning": "Uninstalling this plugin removes the runtime registration information. Review the impact before continuing.",
+          "dynamicWarning": "Uninstalling a dynamic plugin removes the uploaded artifact and can optionally clear plugin-owned data and storage files.",
+          "purgeStorage": "Also clear plugin-owned storage data",
+          "purgeStorageWarning": "When checked, the host runs uninstall SQL and physically deletes plugin-owned table data, authorized storage files, and governance resource references. This cannot be restored after confirmation. If unchecked, uninstall only deactivates the plugin and keeps business tables/config; reinstalling will still show previous settings.",
+          "sourceWarning": "Uninstalling a source plugin removes its synchronized governance records and can optionally clear plugin-owned data and storage files."
+        },
+        "upgrade": {
+          "title": "Upgrade Plugin",
+          "titleWithName": "Upgrade Plugin: {name}",
+          "confirm": "Confirm Upgrade",
+          "banner": "Upgrade can run plugin callbacks, upgrade SQL, governance synchronization, and effective release switching. Review version differences and risk hints before confirming.",
+          "retryBanner": "The previous upgrade failed. Fix the cause and make sure callbacks and SQL are safely retryable before confirming.",
+          "versionSection": "Versions and Manifest",
+          "fromManifest": "Before Upgrade",
+          "toManifest": "After Upgrade",
+          "sqlSection": "SQL Summary",
+          "installSqlCount": "Install/upgrade SQL: {count}",
+          "runtimeSqlCount": "Dynamic SQL: {count}",
+          "uninstallSqlCount": "Uninstall SQL: {count}",
+          "mockSqlExcluded": "Mock data excluded: {count}",
+          "hostServiceSection": "Host Service Changes",
+          "hostServiceChange": {
+            "added": "Added",
+            "changed": "Changed",
+            "removed": "Removed"
+          },
+          "resourceCount": "Resources {count}",
+          "riskSection": "Risk Hints",
+          "noRiskHints": "No additional risk hints",
+          "resolveBeforeUpgrade": "Some dependency requirements are not met yet. Resolve them before upgrading this plugin."
+        },
+        "upload": {
+          "acknowledge": "Got It",
+          "dragHint": "Upload a single .wasm artifact for a dynamic plugin. The host will validate the manifest and register the plugin package.",
+          "dragText": "Click or drag a .wasm plugin package here to upload",
+          "overwriteHint": "Allow upload to overwrite an existing plugin package with the same ID and version",
+          "selectFile": "Please select a .wasm plugin package first",
+          "success": "Plugin package uploaded successfully",
+          "title": "Upload Dynamic Plugin"
+        }
+      },
+      "message": {
+        "tableTitle": "Messages",
+        "actions": {
+          "markAllRead": "Mark All as Read",
+          "clearAll": "Clear Messages"
+        },
+        "messages": {
+          "clearAllConfirm": "Clear all messages? This action cannot be undone."
+        },
+        "pagination": {
+          "total": "Total {total} item(s)"
+        }
+      }
+    },
+    "upload": {
+      "button": "Upload",
+      "dragHint": "Click or drag files here to upload",
+      "formatHint": "Supports {accept} files up to {maxSize}MB each",
+      "success": "Uploaded successfully",
+      "tooLarge": "File size must be smaller than {maxSize}MB"
+    },
+    "exportConfirm": {
+      "selected": "Export the selected records?",
+      "all": "Export all records?"
+    },
+    "cropper": {
+      "title": "Upload and Crop Image",
+      "tooLarge": "The selected image exceeds the size limit",
+      "noImageSelected": "Please select an image first",
+      "avatarUploadSuccess": "Avatar updated successfully",
+      "alt": {
+        "originalImage": "Original image for cropping"
+      },
+      "actions": {
+        "selectImage": "Select Image",
+        "reset": "Reset",
+        "rotateLeft": "Rotate Left",
+        "rotateRight": "Rotate Right",
+        "flipHorizontal": "Flip Horizontal",
+        "flipVertical": "Flip Vertical",
+        "zoomIn": "Zoom In",
+        "zoomOut": "Zoom Out"
+      },
+      "messages": {
+        "imageExportFailed": "Image export failed:",
+        "imageLoadFailed": "Image loading failed: {message}",
+        "imageLoadTimeout": "Image loading timed out after 10 seconds",
+        "invalidAspectRatioFormat": "Invalid crop ratio format. Expected \"number:number\", for example \"16:9\".",
+        "invalidAspectRatioValue": "Failed to parse crop ratio. Width and height must be positive integers."
+      }
+    },
+    "editor": {
+      "placeholder": "Please enter content...",
+      "actions": {
+        "undo": "Undo",
+        "redo": "Redo",
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "strike": "Strikethrough",
+        "heading1": "Heading 1",
+        "heading2": "Heading 2",
+        "heading3": "Heading 3",
+        "bulletList": "Bulleted List",
+        "orderedList": "Numbered List",
+        "blockquote": "Blockquote",
+        "codeBlock": "Code Block",
+        "horizontalRule": "Divider",
+        "image": "Image",
+        "link": "Link"
+      },
+      "link": {
+        "title": "Insert Link",
+        "placeholder": "Please enter the link URL"
+      },
+      "messages": {
+        "imageUploadFailed": "Image upload failed"
+      }
+    },
+    "profile": {
+      "tabs": {
+        "basic": "Basic Info",
+        "password": "Password"
+      },
+      "actions": {
+        "updateProfile": "Update Profile"
+      },
+      "placeholders": {
+        "nickname": "Please enter a nickname",
+        "email": "Please enter an email address",
+        "phone": "Please enter a phone number"
+      },
+      "validation": {
+        "email": "Please enter a valid email address",
+        "phone": "Please enter a valid phone number"
+      },
+      "panel": {
+        "account": "Account",
+        "lastLogin": "Last Login",
+        "noLoginRecord": "No login record",
+        "unboundEmail": "No email bound",
+        "unboundPhone": "No phone bound",
+        "uploadAvatar": "Upload avatar"
+      },
+      "password": {
+        "oldPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password",
+        "submit": "Change Password",
+        "success": "Password updated successfully",
+        "placeholders": {
+          "oldPassword": "Please enter the current password",
+          "newPassword": "Please enter a new password",
+          "confirmPassword": "Please confirm the new password"
+        },
+        "validation": {
+          "oldPassword": "Please enter the current password",
+          "newPassword": "Please enter a new password",
+          "confirmPassword": "Please confirm the new password",
+          "passwordLength": "Password must be at least 5 characters",
+          "passwordMismatch": "The two passwords do not match"
+        }
+      },
+      "security": {
+        "accountPassword": "Account Password",
+        "accountPasswordDesc": "Set a strong password and update it regularly to protect your account.",
+        "securityPhone": "Security Phone",
+        "securityPhoneDesc": "Bind a phone number so the system can use it for verification and notifications.",
+        "securityQuestion": "Security Questions",
+        "securityQuestionDesc": "Configure security questions to verify your identity during account recovery.",
+        "securityEmail": "Security Email",
+        "securityEmailDesc": "Bind a recovery email to receive verification codes and security alerts.",
+        "securityMfa": "Multi-factor Authentication",
+        "securityMfaDesc": "Add a second verification factor for sensitive operations and sign-ins."
+      },
+      "notification": {
+        "accountPassword": "Account Security",
+        "accountPasswordDesc": "Receive alerts when your password or other important account settings change.",
+        "systemMessage": "System Messages",
+        "systemMessageDesc": "Receive announcements, maintenance notices, and other system-wide updates.",
+        "todoTask": "To-do Tasks",
+        "todoTaskDesc": "Receive reminders for pending tasks and workflows assigned to you."
+      }
+    },
+    "multiTenant": {
+      "platformScope": "Platform",
+      "placeholders": {
+        "selectTenant": "Select tenant"
+      },
+      "fields": {
+        "code": "Tenant Code",
+        "name": "Tenant Name",
+        "keyword": "Keyword",
+        "tenantId": "Tenant ID",
+        "userId": "User ID",
+        "joinedAt": "Joined"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "deleted": "Deleted",
+        "unknown": "Unknown"
+      },
+      "empty": {
+        "tenants": "No tenants",
+        "members": "No members",
+        "plugins": "No tenant-managed plugins"
+      },
+      "messages": {
+        "codeRule": "Tenant code must be 2-32 lowercase letters, numbers, or hyphens",
+        "nameRequired": "Enter a tenant name",
+        "deleteTenantConfirm": "Delete tenant {name}?",
+        "deleteSelectedConfirm": "Delete {count} selected tenants?",
+        "removeMemberConfirm": "Remove this member?",
+        "switchSuccess": "Tenant switched",
+        "statusUpdated": "Tenant status updated",
+        "tenantSelected": "Tenant selected"
+      },
+      "login": {
+        "selectTenant": "Select Tenant",
+        "selectTenantSubtitle": "Select the tenant you want to enter for this session. The workspace and permissions will load from that tenant.",
+        "enteringTenant": "Entering Tenant",
+        "enteringTenantSubtitle": "Loading this tenant's workspace and permissions.",
+        "enterTenant": "Enter Tenant"
+      },
+      "impersonation": {
+        "banner": "Acting as platform administrator for tenant {tenant}",
+        "exit": "Exit"
+      },
+      "switcher": {
+        "placeholder": "Switch Tenant"
+      },
+      "tenant": {
+        "tableTitle": "Tenants",
+        "actions": {
+          "create": "Create Tenant",
+          "edit": "Edit Tenant",
+          "suspend": "Suspend",
+          "resume": "Resume",
+          "impersonate": "Impersonate"
+        },
+        "tooltips": {
+          "impersonate": "Act in this tenant as platform admin"
+        }
+      },
+      "platformMembers": {
+        "tableTitle": "Tenant Members"
+      },
+      "member": {
+        "tableTitle": "Tenant Members",
+        "status": {
+          "active": "Active",
+          "suspended": "Suspended",
+          "removed": "Removed"
+        }
+      },
+      "plugin": {
+        "tableTitle": "Tenant Plugins",
+        "installMode": "Install Mode",
+        "platformOnlyGlobalHint": "Plugins that do not support tenant-scoped installation must be installed globally.",
+        "installModes": {
+          "global": "Global",
+          "tenant_scoped": "Tenant Scoped"
+        },
+        "installModeDescriptions": {
+          "global": "One platform-level enabled state is shared by every tenant.",
+          "tenant_scoped": "Tenant administrators enable or disable the plugin in their own tenant."
+        },
+        "lifecyclePrecondition": {
+          "title": "Lifecycle Precondition",
+          "summary": "The plugin returned reasons blocking this operation.",
+          "summaryHelp": "Resolve the precondition reasons first; use force uninstall only after confirming the risk.",
+          "reasonTitle": "Blocking Reasons",
+          "reasonCount": "{count} item(s)",
+          "forceTitle": "Force Uninstall Confirmation",
+          "defaultReason": "Related data still exists, so the operation cannot continue.",
+          "blockedReason": "The current plugin blocked this operation. Reason:",
+          "forceConfirm": "Force uninstall bypasses these preconditions and can remove plugin data. Confirm that you understand the risk.",
+          "forceInputHint": "Type plugin ID \"{pluginId}\" to enable force uninstall.",
+          "forceSubmitted": "Force channel request submitted",
+          "reasons": {
+            "multiTenantUninstallBlocked": "Tenants still exist. Delete tenants before uninstalling the plugin."
+          }
+        }
+      }
+    },
+    "tree": {
+      "association": {
+        "linked": "Parent-child linked",
+        "independent": "Independent selection"
+      },
+      "expandCollapseAll": "Expand/Collapse All",
+      "selectAll": "Select All",
+      "parentChildLinked": "Link parent and child nodes",
+      "nodeStatus": "Selection Mode",
+      "messages": {
+        "fullscreenHint": "Click here to enter fullscreen mode so permission selection is easier to review.",
+        "selectedPrefix": "Selected",
+        "selectedSuffix": "item(s)"
+      },
+      "permissionDisplay": {
+        "dynamicRoutePermission": "Dynamic Route Permission",
+        "dynamicRoutePermissionLabel": "Dynamic Route Permission (resource: {resource}, action: {action})",
+        "segments": {
+          "action": "Action",
+          "add": "Add",
+          "audit": "Audit",
+          "auth": "Authorization",
+          "backend": "Backend",
+          "config": "Configuration",
+          "create": "Create",
+          "delete": "Delete",
+          "demo": "Demo",
+          "dept": "Department",
+          "detail": "Details",
+          "dict": "Dictionary",
+          "disable": "Disable",
+          "edit": "Edit",
+          "enable": "Enable",
+          "export": "Export",
+          "file": "File",
+          "health": "Health",
+          "import": "Import",
+          "inspect": "Inspect",
+          "install": "Install",
+          "list": "List",
+          "log": "Log",
+          "menu": "Menu",
+          "notice": "Notice",
+          "plugin": "Plugin",
+          "post": "Post",
+          "query": "Query",
+          "record": "Record",
+          "remove": "Remove",
+          "resource": "Resource",
+          "review": "Review",
+          "role": "Role",
+          "run": "Run",
+          "status": "Status",
+          "summary": "Summary",
+          "sync": "Sync",
+          "uninstall": "Uninstall",
+          "update": "Update",
+          "user": "User",
+          "view": "View"
+        }
+      },
+      "validation": {
+        "menuChildInvalid": "Menu node \"{childLabel}\" cannot be nested under menu \"{menuLabel}\".",
+        "buttonChildInvalid": "Node \"{childLabel}\" cannot be nested under button \"{menuLabel}\"."
+      }
+    }
+  },
+  "presales": {
+    "accessExpired": "This access link has expired",
+    "accessExpiredHint": "Verify the original email address or phone number again to receive a new link. Registration is not required.",
+    "accessUnavailable": "This access link cannot be used",
+    "accessUnavailableDescription": "The link may have expired, may be invalid, or could not be verified. No inquiry details are displayed.",
+    "accessUntil": "This link is available until {date}",
+    "accessibleChallenge": "Accessible question",
+    "actionsUnavailable": "Some actions are not available",
+    "actionsUnavailableDescription": "This link shows only actions that the service currently allows. Internal support actions and information are never exposed.",
+    "actionFailed": "The action was not completed. The current status has been refreshed; review it before trying again.",
+    "addAttachments": "Add attachments",
+    "attachmentCountExceeded": "A reply can include up to 20 attachments.",
+    "attachmentEmpty": "Empty files cannot be uploaded.",
+    "attachmentHint": "Images, PDFs, text, logs, office documents, and ZIP files are supported. Up to 20 files, 20 MiB per file, and 200 MiB per inquiry. File contents are checked securely by the service.",
+    "attachmentTooLarge": "Each attachment must be 20 MiB or smaller.",
+    "attachmentTotalTooLarge": "All attachments on this inquiry must total 200 MiB or less.",
+    "availableCategories": "Available inquiry categories",
+    "backToCreate": "Submit another presales inquiry",
+    "body": "Inquiry details",
+    "categoriesEmpty": "No inquiry categories are currently available",
+    "categoriesLoadFailed": "Inquiry categories are temporarily unavailable. Try again later.",
+    "category": "Problem category",
+    "categoryPlaceholder": "Select a problem category",
+    "categoryRequired": "Select a problem category",
+    "challengeAnswer": "Enter the answer shown above",
+    "challengeUnavailable": "Human verification is temporarily unavailable",
+    "challengeUnavailableDescription": "This verification provider cannot be completed on this page. Try again later or ask the site operator to check its configuration.",
+    "channel": "Verification method",
+    "close": "Problem solved",
+    "closeConfirm": "Confirm that the problem is solved and close this presales inquiry?",
+    "closeSuccess": "Presales inquiry closed",
+    "code": "Verification code",
+    "codePlaceholder": "Enter the 6-digit verification code",
+    "codeSent": "Verification code requested",
+    "codeSentDescription": "Check {destination}. The code remains valid until {date}.",
+    "confirmCode": "Verify",
+    "create": "Submit inquiry",
+    "createHint": "Verify an email address or phone number before describing your question. The internal team is assigned automatically and is never exposed.",
+    "createTitle": "Presales inquiry",
+    "customFieldsInvalid": "Check the required fields and formats in Additional information.",
+    "customFieldsLoadFailed": "Additional information could not be loaded. Refresh before continuing verification.",
+    "customerLogin": "Already a customer? Sign in",
+    "deliveryHint": "A new access link for this inquiry only was sent to {destination}. Open it from the message to view and reply.",
+    "destination": "Email address or phone number",
+    "destinationPlaceholder": "Enter an email address or phone number",
+    "destinationRequired": "Enter the email address or phone number that will receive the code and access link",
+    "detailTitle": "Presales inquiry details",
+    "email": "Email",
+    "expiresAt": "The code is available until {date}",
+    "humanCheck": "Human verification",
+    "imageChallenge": "Image",
+    "imageChallengeAlt": "Human verification arithmetic image",
+    "linkDelivered": "Access link sent",
+    "linkDeliveryUncertain": "The access-link delivery result is not yet confirmed",
+    "linkDeliveryUncertainDescription": "Your inquiry was created and this browser can continue securely. The system will not resend automatically. If needed, verify the same destination again after the waiting period.",
+    "linkLifetimeHint": "Access links remain valid for up to 2 hours. After expiry, verify the original email address or phone number again to receive a new link.",
+    "loadFailed": "This inquiry is temporarily unavailable. Check the link or try again later.",
+    "menu": "Presales inquiry",
+    "messageRequired": "Describe your inquiry",
+    "newLinkUntil": "The new link is available until {date}",
+    "rate": "Rate this resolution",
+    "ratingComment": "Additional feedback (optional)",
+    "ratingLowHint": "Reopen this inquiry if you still need help.",
+    "ratingSuccess": "Thank you for your feedback",
+    "reopen": "Reopen",
+    "reopenDeadline": "Reopen available until {date}",
+    "reopenSuccess": "Presales inquiry reopened",
+    "reply": "Send reply",
+    "replyFailedDraftPreserved": "The reply was not sent. Your message and selected files are still here so you can check and try again.",
+    "replyPlaceholder": "Add more details or reply to support",
+    "requestCode": "Send verification code",
+    "requestNewLink": "Verify again for a new link",
+    "retry": "Retry",
+    "retryAfter": "A new code can be requested after {seconds} seconds. This page will not request one automatically.",
+    "retryReady": "The waiting period has ended. Complete a new human check before requesting another code.",
+    "reverificationNeedsSafeTicket": "Open the complete link to renew access",
+    "reverificationNeedsSafeTicketDescription": "This address does not contain a safe inquiry number, so the page will not guess one from the failed token. Return to the full link from your message or submit a new inquiry.",
+    "restartHumanCheck": "Complete a new human check for another code",
+    "sendAgain": "Send another code",
+    "sms": "SMS",
+    "stage": "Status",
+    "startVerification": "Start verification",
+    "subject": "Subject",
+    "subjectRequired": "Enter a subject",
+    "submissionUnknown": "The submission result is not confirmed",
+    "submissionUnknownDescription": "The request may still have reached the service. This page will not submit again automatically. Keep this page open and try the same operation later or contact support.",
+    "submitFailed": "Submission failed. Check the form and try again.",
+    "submittedHint": "The access link is sent only to the verified destination and is never exposed on this page.",
+    "ticketNo": "Inquiry number",
+    "unknownResult": "The delivery result is not confirmed",
+    "unknownResultDescription": "The service could not confirm whether the message was accepted. Nothing will be sent again automatically. Wait for the server-provided interval before starting a new verification.",
+    "updatedAt": "Last updated",
+    "verificationFailed": "Verification failed. Check the code and try again.",
+    "verified": "Contact verified",
+    "verifyAndSendCode": "Verify and send code"
+  },
+  "privacy": {
+    "menu": "Privacy & Authorization",
+    "title": "Privacy & Authorization",
+    "eyebrow": "Understand and manage your information",
+    "heading": "Privacy & Authorization",
+    "subtitle": "Review purposes, retention periods, and current consent, or request an export or deletion of your information.",
+    "evidenceTitle": "Withdrawal does not erase records that must legally be retained",
+    "evidenceDescription": "Withdrawal stops future processing that relies on that consent. Contract, tax, dispute, audit, or legally held evidence is handled only after its retention basis ends.",
+    "loadFailed": "Privacy information could not be loaded. Try again later.",
+    "retry": "Reload",
+    "noticeTitle": "How we process information",
+    "noticeEmpty": "No processing notice has been published",
+    "consentTitle": "My consent",
+    "consentEmpty": "No consent record is available",
+    "requestTitle": "My requests",
+    "requestEmpty": "No export or deletion request yet",
+    "days": "days",
+    "fields": {
+      "purpose": "Purpose",
+      "necessity": "Why it is needed",
+      "impact": "Possible impact",
+      "recipients": "Recipients",
+      "storage": "Storage location",
+      "retention": "Retention",
+      "rights": "How to exercise your rights"
+    },
+    "assessment": {
+      "personal_verification": "Personal verification",
+      "sensitive_personal_information": "Sensitive personal information",
+      "enterprise_verification": "Enterprise verification",
+      "electronic_contract": "Electronic contract",
+      "tax_invoice": "Tax invoice"
+    },
+    "consent": {
+      "granted": "Granted",
+      "withdrawn": "Withdrawn"
+    },
+    "withdraw": {
+      "action": "Withdraw future consent",
+      "title": "Withdraw consent for future processing?",
+      "description": "New processing that relies on this consent will stop. Evidence that must be retained will not be deleted immediately.",
+      "confirm": "Withdraw consent"
+    },
+    "request": {
+      "export": "Request data export",
+      "delete": "Request data deletion",
+      "exportDescription": "The system will verify and prepare information owned by you.",
+      "deleteDescription": "The system first checks contract, tax, dispute, audit, and legal retention duties. It will not bypass them for immediate deletion.",
+      "submit": "Submit request"
+    },
+    "requestType": {
+      "export": "Data export",
+      "delete": "Data deletion"
+    },
+    "requestStatus": {
+      "submitted": "Submitted",
+      "processing": "Processing",
+      "retention_blocked": "Retention required",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "hold": {
+      "contract": "Contract evidence must be retained",
+      "tax": "Tax evidence must be retained",
+      "dispute": "Dispute evidence must be retained",
+      "audit": "Audit evidence must be retained",
+      "legal_hold": "Legally held"
+    },
+    "messages": {
+      "withdrawn": "Future consent was withdrawn",
+      "requested": "Request submitted"
+    },
+    "common": {
+      "cancel": "Cancel"
+    }
+  },
+  "productDirectories": {
+    "menu": "My services",
+    "all": "All services",
+    "product": "Product",
+    "status": "Status",
+    "startedAt": "Started",
+    "expiresAt": "Expires",
+    "actions": "Actions",
+    "viewOrder": "View order",
+    "noExpiry": "No expiry",
+    "empty": "No product directories configured",
+    "loadFailed": "Unable to load directories",
+    "retry": "Retry",
+    "states": {
+      "pending": "Pending",
+      "active": "Active",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "terminated": "Terminated",
+      "cancelled": "Cancelled",
+      "failed": "Failed",
+      "provisioning": "Provisioning",
+      "pending_activation": "Pending activation"
+    },
+    "notStarted": "Not started"
+  },
+  "purchaseConfiguration": {
+    "actions": {
+      "back": "Back",
+      "freeze": "Confirm and return to cart",
+      "quote": "Validate and view price"
+    },
+    "catalog": {
+      "configure": "Choose configuration",
+      "empty": "No products are currently available",
+      "loadFailed": "Products could not be loaded. Please try again.",
+      "loadMore": "Load more",
+      "loadMoreFailed": "More products could not be loaded. Products already shown remain available.",
+      "menu": "Browse products",
+      "refresh": "Refresh",
+      "retry": "Retry",
+      "title": "Browse products",
+      "unavailable": "Unavailable",
+      "categories": "Product categories",
+      "allProducts": "All products"
+    },
+    "file": {
+      "drag": "Click or drag files here to upload",
+      "policy": "Up to {count} files, {size} MB each; accepted: {extensions}",
+      "remove": "Remove",
+      "removeFailed": "The file could not be removed. Please try again.",
+      "revoked": "File removed",
+      "uploaded": "File passed inspection",
+      "uploadFailed": "The file could not be uploaded. Check it and try again."
+    },
+    "messages": {
+      "frozen": "Purchase configuration saved for this item",
+      "evaluateFailed": "Configuration validation is temporarily unavailable. Please try again.",
+      "fieldInvalid": "Check the value entered for this field",
+      "changedDuringSubmit": "The configuration changed while submitting. Review it and try again.",
+      "freezeFailed": "The purchase configuration could not be saved. Please try again.",
+      "invalid": "Check the required fields and entered values",
+      "loadFailed": "Purchase configuration could not be loaded. Please try again.",
+      "navigationFailed": "The configuration was saved. Return to the cart to continue.",
+      "previewOnly": "No cart item is linked. You can validate the configuration and view pricing; enter from a product purchase action to save it to the cart.",
+      "quoteFailed": "Pricing could not be calculated. Please try again.",
+      "quoted": "Configuration validated and pricing refreshed"
+    },
+    "title": "Product purchase configuration"
+  },
+  "refunds": {
+    "actions": {
+      "cancel": "Cancel",
+      "chooseOrder": "Choose an order to refund",
+      "next": "Next",
+      "preview": "Review refund impact",
+      "previous": "Previous",
+      "submit": "Submit refund"
+    },
+    "application": {
+      "amountHelp": "Choose the order item and refund quantity first, then enter the amount in minor units, for example 1299 for CNY 12.99. A specific entitlement is available only for ongoing services. The server rechecks every limit.",
+      "amountMinor": "Refund amount (minor units)",
+      "entitlement": "Refund this ongoing entitlement only",
+      "lineTotal": "Original invoice line amount",
+      "order": "Order: {orderNo}",
+      "quantity": "Refund quantity",
+      "refundable": "Maximum refundable now",
+      "title": "New refund request",
+      "wholeItem": "Select this order item"
+    },
+    "approval": {
+      "automatic": "Automatic when all rules remain clear",
+      "manual": "Manual staff review required"
+    },
+    "destination": {
+      "mixed": "Original sources plus same-currency balance",
+      "original_channel": "Original payment source",
+      "same_currency_balance": "Same-currency customer balance"
+    },
+    "balance": {
+      "accept": "Send unsupported portions to my balance",
+      "acceptDetail": "The total refund is {amount}. Portions that cannot return to their original source will go to your same-currency balance; all other portions stay original-source. Every portion starts together only after confirmation.",
+      "acceptTitle": "Confirm the whole refund destination",
+      "declineDetail": "If you keep waiting, none of the refund will execute and no portion will be returned early. You can still accept later.",
+      "declineTitle": "Keep the whole refund pending",
+      "failed": "The refund choice could not be saved. Refresh and try again.",
+      "keepPending": "Do not accept; keep all pending",
+      "saved": "Your refund choice was saved",
+      "wholeHeld": "One portion cannot return to its original source. The whole refund is paused and no portion has executed early."
+    },
+    "eyebrow": "ONLINE REFUNDS",
+    "history": {
+      "destination": "Destination",
+      "empty": "No refund requests yet",
+      "lead": "Track review, execution, and any balance-refund choice that needs you.",
+      "reason": "Reason",
+      "submittedAt": "Submitted",
+      "title": "My refunds"
+    },
+    "lead": "Choose the order item, refund quantity, and amount first. For ongoing services, also review the selected entitlement impact. Amounts, status, and destination are always rechecked.",
+    "menu": "My refunds",
+    "messages": {
+      "confirmRequired": "Choose a reason and confirm that you understand the service impact",
+      "historyFailed": "Refund history is temporarily unavailable",
+      "orderFailed": "A refund request cannot be prepared for this order right now. Return to Orders and choose it again.",
+      "otherDetailRequired": "Describe the reason when Other is selected",
+      "previewFailed": "The refund preview failed. Amounts, service state, or refundable limits may have changed.",
+      "selectionRequired": "Select at least one item and enter a positive refund amount",
+      "submitFailed": "The refund could not be submitted. Create a fresh preview and try again.",
+      "submitted": "Your refund request was submitted"
+    },
+    "preview": {
+      "amount": "Expected refund",
+      "approval": "Review path",
+      "confirmImpact": "I understand and confirm the refund, ongoing-entitlement termination, and review impact shown above",
+      "dangerousWarning": "A selected service has an unfinished or unknown-result risky operation. The refund will wait for resource verification.",
+      "reason": "Refund reason",
+      "reasonDetail": "Details",
+      "entitlementImpact": "Ongoing service “{productName}” will be handled as shown in this preview",
+      "entitlementTermination": "Ongoing service “{productName}” will be terminated",
+      "terminationWarning": "This refund terminates the selected ongoing entitlement and may interrupt service or affect data. Protect important data first.",
+      "title": "Confirm refund amount and service impact"
+    },
+    "reason": {
+      "duplicate_purchase": "Duplicate purchase",
+      "no_longer_needed": "No longer needed",
+      "other": "Other",
+      "service_issue": "Service issue",
+      "wrong_configuration": "Wrong configuration"
+    },
+    "status": {
+      "approved": "Approved",
+      "awaiting_balance_consent": "Waiting for refund destination choice",
+      "executing": "Refunding",
+      "failed": "Refund failed",
+      "manual_confirmation": "Waiting for manual verification",
+      "pending_review": "Waiting for review",
+      "rejected": "Rejected",
+      "result_unknown": "Refund result needs verification",
+      "succeeded": "Refunded"
+    },
+    "title": "Refunds and service impact"
+  },
+  "salesChannel": {
+    "customer": {
+      "menu": "Referrals & commissions",
+      "lead": "Referral relationships and commissions are scoped to the signed-in customer. Settlement requests freeze available funds before review.",
+      "refresh": "Refresh",
+      "loadFailed": "Referral or commission data is temporarily unavailable. Please try again.",
+      "status": {
+        "first_touch": "First touch",
+        "last_touch": "Last touch",
+        "pending": "Pending maturity",
+        "matured": "Matured",
+        "reversed": "Reversed",
+        "pending_review": "Pending review",
+        "approved": "Approved",
+        "paid": "Paid",
+        "failed": "Failed"
+      },
+      "referral": {
+        "tab": "My referrals",
+        "menu": "My referrals",
+        "title": "My referral relationships",
+        "linkTitle": "Share your referral link",
+        "linkLead": "When a new customer registers through this link and completes an eligible order, the relationship is recorded under the attribution policy.",
+        "copy": "Copy link",
+        "copied": "Referral link copied.",
+        "copyFailed": "Copy failed. Select the link manually.",
+        "code": "Referral code",
+        "policy": "Attribution policy",
+        "expires": "Valid until",
+        "referred": "Referred customers",
+        "attributed": "Attributed orders",
+        "qualified": "Eligible orders",
+        "rejected": "Rejected attributions"
+      },
+      "commission": {
+        "tab": "My commissions",
+        "menu": "My commissions",
+        "title": "My commissions",
+        "available": "Available to settle",
+        "pending": "Pending maturity",
+        "matured": "Matured total",
+        "frozen": "Frozen for settlement",
+        "requestTitle": "Request settlement",
+        "requestLead": "Only available commission in the selected currency can be requested. The amount is frozen immediately and paid after review.",
+        "currency": "Currency",
+        "amount": "Amount (major unit)",
+        "request": "Request settlement",
+        "invalidAmount": "Enter a valid positive amount.",
+        "insufficient": "The amount exceeds your available commission.",
+        "requested": "Settlement request submitted. Check its status below.",
+        "requestFailed": "Settlement request failed; your commission balance was unchanged.",
+        "settlementsTitle": "Settlement requests",
+        "entriesTitle": "Commission ledger",
+        "emptySettlements": "No settlement requests yet.",
+        "emptyEntries": "No commission entries yet."
+      }
+    }
+  },
+  "servers": {
+    "actions": {
+      "backup_create": "Create backup",
+      "backup_delete": "Delete backup",
+      "backup_restore": "Restore backup",
+      "console": "Console",
+      "ip_change": "Change IP",
+      "nat_create": "Create NAT rule",
+      "nat_delete": "Delete NAT rule",
+      "reboot": "Reboot",
+      "reinstall": "Reinstall",
+      "reset_password": "Reset password",
+      "resize": "Resize",
+      "security_group_attach": "Attach security group",
+      "security_group_detach": "Detach security group",
+      "snapshot_create": "Create snapshot",
+      "snapshot_delete": "Delete snapshot",
+      "snapshot_restore": "Restore snapshot",
+      "start": "Start",
+      "stop": "Stop",
+      "traffic_add": "Buy traffic",
+      "virtual_media_mount": "Mount virtual media",
+      "virtual_media_unmount": "Unmount virtual media"
+    },
+    "advanced": {
+      "formatDataDisk": "Also format data disks",
+      "port": "Login port",
+      "systemDiskSize": "System disk size (GiB)",
+      "title": "Advanced settings (unchanged by default)"
+    },
+    "common": {
+      "back": "Back to servers",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "loadFailed": "Server information is temporarily unavailable. Please try again.",
+      "loading": "Loading server information…",
+      "refresh": "Refresh",
+      "save": "Save"
+    },
+    "confirm": {
+      "backup_create": "A backup will be created for the selected disk. If the free quota is exceeded, payment starts only after you confirm the quote.",
+      "backup_delete": "This backup cannot be recovered after deletion.",
+      "backup_restore": "Restoring overwrites current disk data. Review the impact and enter the current service number.",
+      "console": "A short-lived console entry will be requested. Request another after it expires.",
+      "ip_change": "The old address may stop working immediately. Make sure your service is ready for the change.",
+      "nat_create": "This exposes a port forwarding rule. Confirm the ports and protocol do not expose an unintended service.",
+      "nat_delete": "The corresponding port forwarding stops immediately.",
+      "reboot": "Rebooting briefly interrupts service. A forced reboot may lose unsaved data.",
+      "reinstall": "Reinstalling overwrites the current system. Enabling data-disk formatting also erases those disks. This cannot be undone.",
+      "reset_password": "The old password stops working immediately after this succeeds.",
+      "resize": "A configuration change may require a reboot and may incur charges.",
+      "security_group_attach": "Network access rules may change immediately. Confirm required connections will remain available.",
+      "security_group_detach": "Network access rules may change immediately. Confirm the server remains adequately protected.",
+      "snapshot_create": "A snapshot will be created for the selected disk. If the free quota is exceeded, payment starts only after you confirm the quote.",
+      "snapshot_delete": "This snapshot cannot be recovered after deletion.",
+      "snapshot_restore": "Restoring overwrites current disk data. Review the impact and enter the current service number.",
+      "start": "Confirm that you want to start this server.",
+      "stop": "Stopping interrupts every service on this server. A forced stop may lose unsaved data.",
+      "traffic_add": "Buying traffic may incur a charge. It takes effect only after quote confirmation and payment.",
+      "virtual_media_mount": "Mounting changes the installation media visible to the server. Confirm the running service allows it.",
+      "virtual_media_unmount": "The server can no longer access this virtual media after unmounting.",
+      "title": "Confirm this operation"
+    },
+    "credential": {
+      "closeWarning": "After closing, this information can never be viewed again. Save it securely first.",
+      "savedAndClose": "I saved it securely. Close",
+      "password": "New password",
+      "port": "Login port",
+      "reveal": "View new password (once)",
+      "revealConfirm": "The password will be shown only this once. View it now?",
+      "title": "New login details",
+      "username": "Username"
+    },
+    "accessories": {
+      "createTicket": "Create support ticket",
+      "empty": "No accessory resources have been synchronized",
+      "kind": {
+        "backup": "Backup",
+        "disk": "Disk",
+        "ip": "IP address",
+        "nat": "NAT rule",
+        "security_group": "Security group",
+        "snapshot": "Snapshot",
+        "virtual_media": "Virtual media"
+      },
+      "observedAt": "Resource catalog observed at",
+      "stale": "The accessory catalog has expired. To prevent an incorrect operation, it is read-only. Refresh it, or contact the merchant if no action becomes available.",
+      "title": "IP, disks, and accessories",
+      "unavailable": "The provider currently offers no accessory action that can be performed safely. Contact the merchant for help."
+    },
+    "detail": {
+      "actions": "Server actions",
+      "configuration": "Current configuration",
+      "emptyConfiguration": "No configuration snapshot",
+      "history": "Operation history",
+      "imageUnavailable": "No system image is currently available. Ask the merchant to sync the resource catalog.",
+      "title": "Server details"
+    },
+    "fields": {
+      "expiresAt": "Expires",
+      "product": "Product",
+      "runtime": "Runtime status",
+      "serviceNo": "Service number",
+      "status": "Entitlement"
+    },
+    "form": {
+      "accessory": "Resource",
+      "completeAccessory": "Complete all information required for this operation",
+      "confirmServiceNo": "Enter the current service number to confirm data overwrite",
+      "confirmServiceNoMismatch": "The service number does not match this server",
+      "confirmPassword": "Enter the new password again",
+      "disk": "Disk",
+      "externalPort": "External port",
+      "force": "Forced",
+      "graceful": "Graceful",
+      "image": "System image",
+      "internalPort": "Internal port",
+      "mode": "Mode",
+      "name": "Name",
+      "natRule": "NAT rule",
+      "newPassword": "New password",
+      "passwordMismatch": "The passwords do not match",
+      "passwordRequired": "Enter a new password with at least 8 characters",
+      "protocol": "Protocol",
+      "securityGroup": "Security group",
+      "selectAccessory": "Select a resource",
+      "selectImage": "Select an available image",
+      "trafficGb": "Traffic (GB)",
+      "trafficRequired": "Enter a traffic quantity greater than zero",
+      "virtualMedia": "Virtual media"
+    },
+    "list": {
+      "empty": "No servers",
+      "open": "View and operate",
+      "title": "My servers"
+    },
+    "ipChange": {
+      "checkout": "Confirm IP change",
+      "quoteSummary": "This changes {quantity} IP address(es) for {amount}. The old addresses may stop working immediately after confirmation."
+    },
+    "menu": "My servers",
+    "metadata": {
+      "alias": "Server alias",
+      "edit": "Edit alias and note",
+      "empty": "No note",
+      "hint": "Use this only for non-sensitive information that helps you recognize the server. Do not enter passwords or keys.",
+      "product": "Original product name",
+      "remark": "My note",
+      "saveFailed": "Could not save because the server information may have changed. The latest data has been loaded.",
+      "saved": "The server alias and note were saved.",
+      "title": "Edit server alias and note"
+    },
+    "messages": {
+      "created": "The operation was submitted. Refresh later to see its result.",
+      "outputUnavailable": "This one-time information was viewed, expired, or is temporarily unavailable.",
+      "paymentRequired": "The quote was confirmed. Complete payment before checking the operation result."
+    },
+    "operation": {
+      "openConsole": "Open console",
+      "processing": "In progress",
+      "submittedAt": "Submitted"
+    },
+    "quote": {
+      "checkout": "Confirm quote and continue",
+      "summary": "Quantity: {quantity}. Amount due: {amount}. The server applies the free quota automatically; this quote cannot be changed after confirmation."
+    },
+    "refund": {
+      "none": "No active refund",
+      "open": "View refund progress",
+      "title": "Refund linkage"
+    },
+    "renewal": {
+      "autoRenew": "Automatic renewal",
+      "disabled": "Disabled",
+      "enabled": "Enabled for {cycles} cycle(s) each time",
+      "manage": "Manage renewal"
+    },
+    "resize": {
+      "confirm": "Confirm configuration change",
+      "diskWarning": "Disk capacity can be increased but cannot be reduced. Migrate the data and contact the merchant if you need a smaller disk.",
+      "downgradeSummary": "Downgrades are not refunded and take effect when the current period ends ({effectiveAt}). The recurring price will then be {recurring} per period.",
+      "downgradeTitle": "Confirm downgrade for next renewal",
+      "failed": "The configuration change could not be submitted. The configuration may have changed or another operation may be active. Refresh and try again.",
+      "loadFailed": "Configuration choices are temporarily unavailable. Refresh and try again.",
+      "open": "Change configuration",
+      "paymentRequired": "The upgrade invoice was created. The configuration change starts immediately after payment settles.",
+      "quote": "Review price and continue",
+      "scheduled": "The downgrade is scheduled for the next renewal.",
+      "selectionRequired": "Complete the required selections in every configuration group.",
+      "title": "Change server configuration",
+      "upgradeSummary": "The remaining-period upgrade charge is {charge}. The upgrade starts immediately after payment, and the new recurring price is {recurring} per period.",
+      "upgradeTitle": "Confirm immediate upgrade"
+    },
+    "status": {
+      "active": "Active",
+      "attached": "Attached",
+      "available": "Available",
+      "cancelled": "Cancelled",
+      "changing": "Changing",
+      "expired": "Expired",
+      "failed": "Failed",
+      "grace": "Grace period",
+      "manual_review": "Manual review",
+      "pending": "Pending",
+      "pending_activation": "Pending activation",
+      "pending_provision": "Pending provisioning",
+      "provisioning": "Provisioning",
+      "ready": "Ready",
+      "result_unknown": "Result being checked",
+      "resuming": "Resuming",
+      "running": "Running",
+      "stopped": "Stopped",
+      "succeeded": "Completed",
+      "suspended": "Suspended",
+      "terminated": "Terminated",
+      "terminating": "Terminating",
+      "unknown": "Unknown"
+    },
+    "traffic": {
+      "base": "Plan traffic",
+      "observational": "This is the provider's latest observational data and is not the authority for billing. The system does not guess when the provider does not supply usage or reset time.",
+      "resetAt": "Reset time",
+      "temporary": "Purchased traffic packs",
+      "title": "Traffic and usage",
+      "total": "Current total quota",
+      "unavailable": "Not supplied by provider",
+      "updatedAt": "Data updated",
+      "used": "Used this period"
+    },
+    "transfer": {
+      "accepted": "The transfer request was accepted. If the email belongs to an eligible customer, they will see a confirmation in their customer center.",
+      "confirm": "Accept server",
+      "confirmDescription": "After confirmation, server {serviceNo} moves to your account. The former customer's historical invoices, payments, refunds, contracts, tax invoices, and tickets stay with them. Paid and still-valid snapshots or backups that belong only to this server move with it. Auto-renew is turned off, and you may enable it again if needed.",
+      "confirmFailed": "The transfer cannot be completed now. It may have expired, or the server may have an unpaid renewal or add-on invoice, refund, operation, or contract in progress.",
+      "confirmTitle": "Accept this server",
+      "confirmed": "The server was transferred to your account.",
+      "description": "Enter the recipient's registered and verified email. The same accepted response is shown whether or not the email exists. The recipient must confirm within 24 hours. Resolve unpaid renewal and add-on invoices first; auto-renew is turned off after transfer.",
+      "email": "Recipient registered email",
+      "expiresAt": "Confirmation deadline",
+      "failed": "The transfer could not be submitted. Check that the merchant allows transfers and resolve unpaid renewal or add-on invoices, refunds, and active operations.",
+      "incomingTitle": "Server transfers waiting for me",
+      "open": "Transfer server",
+      "submit": "Request transfer",
+      "title": "Transfer server to another customer"
+    }
+  },
+  "sshKeys": {
+    "actions": {
+      "add": "Add public key",
+      "cancel": "Cancel",
+      "revoke": "Revoke",
+      "save": "Save"
+    },
+    "confirm": {
+      "revoke": "Revoke this public key? It will no longer be available for new provisioning or reinstall operations."
+    },
+    "create": {
+      "placeholder": "Paste one line beginning with ssh-ed25519, ssh-rsa, or ecdsa-sha2-...",
+      "title": "Add SSH public key",
+      "warning": "Paste only the contents of a .pub public-key file. Never paste a private key."
+    },
+    "empty": "No SSH public keys saved",
+    "fields": {
+      "actions": "Actions",
+      "algorithm": "Algorithm",
+      "fingerprint": "SHA256 fingerprint",
+      "name": "Name",
+      "publicKey": "Public key",
+      "status": "Status"
+    },
+    "menu": "SSH public keys",
+    "messages": {
+      "created": "Public key saved",
+      "privateRejected": "This looks like a private key. For your safety, it was not uploaded.",
+      "required": "Enter a name and paste one public key",
+      "revoked": "Public key revoked"
+    },
+    "notice": {
+      "description": "Only the public key is stored. The system shows its SHA256 fingerprint and will use it only when both the product and server provider explicitly support key injection.",
+      "title": "Your private key always stays on your device"
+    },
+    "status": {
+      "active": "Active",
+      "revoked": "Revoked"
+    },
+    "title": "SSH public keys"
+  },
+  "support": {
+    "action": "Actions",
+    "searchKeyword": "Keyword",
+    "statusUnavailable": "Status unavailable",
+    "viewDetail": "View details",
+    "additionalInformation": "Additional information",
+    "additionalInformationHint": "Complete the fields shown now. The names, options, and values saved at creation remain unchanged if settings are renamed or disabled later.",
+    "categoriesLoadFailed": "Ticket categories are temporarily unavailable. Try again later.",
+    "addAttachments": "Add attachments (optional)",
+    "attachmentDownload": "Download attachment {name}",
+    "attachmentDownloadFailed": "The attachment could not be downloaded. Try again later.",
+    "attachmentTooLarge": "Each attachment must be 20 MiB or smaller.",
+    "ratingStars": "Submitted rating: {stars} stars",
+    "submittedRating": "My rating",
+    "allStages": "All statuses",
+    "attachmentHint": "Images, PDFs, text, logs, office documents, and ZIP files are supported. Maximum 20 MiB per file and 200 MiB per ticket.",
+    "back": "Back to tickets",
+    "body": "Description",
+    "category": "Problem category",
+    "chooseCustomFieldOption": "Select an option",
+    "close": "Problem solved",
+    "closeConfirm": "Confirm that the problem is solved and close this ticket?",
+    "closed": "Closed",
+    "create": "Submit ticket",
+    "createIntro": "Choose a public problem category. The internal team is assigned automatically.",
+    "createSuccess": "Ticket submitted",
+    "createTitle": "Submit a new ticket",
+    "createUnavailable": "New tickets are temporarily unavailable",
+    "createUnavailableDescription": "The server has not published the customer-facing problem categories yet. To avoid sending your request to the wrong team, please try again later. Existing tickets remain available.",
+    "customFieldMultiLineTooLong": "Multi-line text must not exceed 65,536 characters.",
+    "customFieldDateInvalid": "Enter a valid date.",
+    "customFieldNumberInvalid": "Enter a number with up to 20 integer digits and 10 decimal places.",
+    "customFieldOptionInvalid": "The available options changed. Refresh and choose again.",
+    "customFieldRequired": "Complete {name}.",
+    "customFieldSingleLineTooLong": "Single-line text must not exceed 1,024 characters.",
+    "customFieldsLoadFailed": "Required additional fields could not be loaded. Refresh before submitting.",
+    "detailTitle": "Ticket details",
+    "empty": "No tickets yet",
+    "in_progress": "In progress",
+    "loadFailed": "Tickets are temporarily unavailable. Try again later.",
+    "menu": "My tickets",
+    "messageRequired": "Describe the problem",
+    "new": "New",
+    "newTicket": "New ticket",
+    "no": "No",
+    "noEntitlementCandidates": "No eligible long-term entitlements were found",
+    "notProvided": "Not provided",
+    "nextPage": "Next",
+    "pageNumber": "Page {page}",
+    "previousPage": "Previous",
+    "rate": "Rate this resolution",
+    "ratingComment": "Additional feedback (optional)",
+    "ratingLowHint": "Reopen the ticket if you still need help.",
+    "ratingRequired": "Choose a rating from 1 to 5 stars.",
+    "ratingSuccess": "Thank you for your feedback",
+    "reopen": "Reopen",
+    "reopenDeadline": "Reopen available until {date}",
+    "reopenSuccess": "Ticket reopened",
+    "retry": "Retry",
+    "reply": "Send reply",
+    "replyPlaceholder": "Add new details or reply to support",
+    "resolved": "Resolved",
+    "relatedEntitlement": "Related entitlement (optional)",
+    "entitlementAtCreation": "When this ticket was created",
+    "entitlementCurrent": "Current entitlement",
+    "entitlementCurrentUnavailable": "The current entitlement is unavailable. The information saved when the ticket was created remains available.",
+    "entitlementOptionalHint": "Only your non-terminal long-term entitlements are shown. You may leave this empty.",
+    "entitlementPlaceholder": "No related entitlement, or search by product name",
+    "entitlementsLoadFailed": "Entitlements are temporarily unavailable",
+    "entitlementsLoadFailedHint": "A related entitlement cannot be selected right now. You can still submit the ticket without one.",
+    "entitlementStatusUnavailable": "Status unavailable",
+    "entitlementStatus": {
+      "active": "Active",
+      "expired": "Expired",
+      "suspended": "Suspended",
+      "terminated": "Terminated"
+    },
+    "stage": "Status",
+    "subject": "Subject",
+    "subjectRequired": "Enter a subject",
+    "submitRating": "Submit rating",
+    "submitFailed": "Submission failed. Check the form and try again.",
+    "supportTeam": "Support team",
+    "system": "System message",
+    "ticketNo": "Ticket number",
+    "updatedAt": "Last updated",
+    "waiting_customer": "Waiting for you",
+    "yes": "Yes",
+    "you": "Me"
+  },
+  "taxInvoices": {
+    "menu": "My invoices",
+    "title": "My invoices",
+    "eyebrow": "TAX INVOICES",
+    "heading": "Request an invoice and track its progress",
+    "subtitle": "Choose a saved invoice profile and paid bills, then enter the amount requested from each bill. The back office confirms the invoice type and reviews the request.",
+    "refresh": "Refresh",
+    "noticeTitle": "The back office confirms the invoice type",
+    "noticeDescription": "You do not choose an invoice type. A submitted request first enters review and immediately reserves the invoiceable amount from each selected bill.",
+    "steps": {
+      "profile": "1. Choose an invoice profile",
+      "invoices": "2. Choose bills and enter amounts",
+      "submit": "3. Submit the request"
+    },
+    "profile": {
+      "placeholder": "Choose an active invoice profile",
+      "default": "Default",
+      "individual": "Personal",
+      "enterprise": "Business",
+      "empty": "No active invoice profile is available. Add or reactivate one under Invoice profiles first.",
+      "manage": "Manage invoice profiles"
+    },
+    "invoice": {
+      "empty": "No paid bill currently has an invoiceable balance.",
+      "billNo": "Bill number",
+      "orderNo": "Order number",
+      "settledAt": "Paid at",
+      "paid": "Paid bill amount",
+      "allocated": "Already requested or issued",
+      "remaining": "Invoiceable balance",
+      "amount": "Amount for this request",
+      "amountPlaceholder": "Enter an amount",
+      "differentCurrency": "One request can combine bills in one currency only",
+      "selectionLimit": "One request can include up to 20 bills",
+      "amountRequired": "Enter an amount for this bill",
+      "amountInvalid": "Enter an amount above zero with valid decimal places",
+      "amountTooLarge": "The amount cannot exceed this bill's invoiceable balance"
+    },
+    "selectionSummary": "{count} bills selected, request total {amount}",
+    "submit": "Submit invoice request",
+    "submitting": "Submitting",
+    "submitHint": "After submission, this profile snapshot and bill allocation are frozen. Later profile edits do not change this request.",
+    "messages": {
+      "created": "Invoice request submitted for back-office review.",
+      "reused": "The earlier successful submission of this same request was recovered.",
+      "createFailed": "Submission failed. Check the amounts, refresh, and try again."
+    },
+    "history": {
+      "title": "Request history",
+      "description": "Only your requests and customer-visible processing reasons appear here.",
+      "empty": "No invoice request yet.",
+      "loadFailed": "Request history is temporarily unavailable.",
+      "loadMore": "Load more",
+      "requestNo": "Request number",
+      "amount": "Requested amount",
+      "submittedAt": "Submitted at",
+      "invoiceType": "Invoice type",
+      "invoiceNo": "Invoice number",
+      "issuedAt": "Issued at",
+      "deliveredAt": "Delivered at",
+      "reason": "Processing reason"
+    },
+    "status": {
+      "draft": "Draft",
+      "pending_review": "Pending review",
+      "approved_pending_submission": "Approved, awaiting submission",
+      "rejected": "Rejected",
+      "queued": "Queued",
+      "submitting": "Issuing",
+      "issued": "Issued",
+      "delivered": "Delivered",
+      "failed": "Issuing failed",
+      "result_unknown": "Confirming result",
+      "red_letter_pending": "Red-letter processing",
+      "red_lettered": "Red-lettered",
+      "canceled": "Canceled"
+    },
+    "invoiceType": {
+      "pending_confirmation": "Invoice type pending back-office confirmation",
+      "vat_electronic_normal": "Electronic VAT general invoice",
+      "vat_electronic_special": "Electronic VAT special invoice",
+      "digital_electronic_normal": "Digital electronic general invoice",
+      "digital_electronic_special": "Digital electronic special invoice"
+    },
+    "reason": {
+      "buyer_or_tax_information_incorrect": "The invoice profile or tax information needs correction",
+      "amount_or_billing_invoice_adjustment_required": "The requested amount or selected bills need adjustment",
+      "duplicate_request": "This request duplicates an existing request",
+      "business_not_invoiceable": "This business cannot currently be invoiced",
+      "customer_requested_cancellation": "Canceled at your request",
+      "order_or_refund_changed": "The order or refund situation changed",
+      "other": "The request could not continue. Contact the merchant for details"
+    },
+    "loadFailed": "Invoiceable information is temporarily unavailable. Try again later."
+  },
+  "trafficPackages": {
+    "title": "Buy traffic package",
+    "name": "Package name",
+    "capacity": "Traffic capacity",
+    "price": "One-time tax-inclusive price",
+    "availability": "Availability",
+    "actions": "Actions",
+    "available": "Available",
+    "soldOut": "Sold out",
+    "buy": "Buy",
+    "confirm": "Confirm traffic package order",
+    "createOrder": "Place order",
+    "expiryWarning": "Validity follows the upstream traffic reset rules. An exact expiry date is not currently provided.",
+    "executionWarning": "Traffic is added only to this server. Paid packages execute after payment; purchasing does not start or unsuspend the server.",
+    "paymentRequired": "Order created. Complete payment to start the traffic addition.",
+    "created": "Traffic addition has been queued"
+  },
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "collapse": "Collapse",
+  "expand": "Expand"
+}

@@ -1,7 +1,7 @@
 {
   "plugin.idc-compliance.enterprise.eyebrow": "合规工作台 · 证据管控",
   "plugin.idc-compliance.enterprise.title": "企业认证审核台",
-  "plugin.idc-compliance.enterprise.subtitle": "审核脱敏法定资料；查看原件必须经过近期完整登录、单次授权与逐次审计；审核结论全部由服务端权威执行。",
+  "plugin.idc-compliance.enterprise.subtitle": "审核企业资料，查看原件时按提示重新登录。",
   "plugin.idc-compliance.enterprise.page": "队列页",
   "plugin.idc-compliance.enterprise.view": "审核",
   "plugin.idc-compliance.enterprise.previous": "上一页",

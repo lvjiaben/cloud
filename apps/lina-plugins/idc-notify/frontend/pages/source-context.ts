@@ -20,7 +20,7 @@ function storedAccessToken() {
   return '';
 }
 
-export function useSourcePluginContext() {
+export function useSourcePluginContext(pagePath: string) {
   const route = useRoute();
   const locale = ref(document.documentElement.lang || navigator.language || 'zh-CN');
   const localeObserver = new MutationObserver(() => {
@@ -43,7 +43,7 @@ export function useSourcePluginContext() {
       }),
     ),
     route,
-    routePath: route.path,
+    routePath: pagePath,
     t: (_key, fallback = _key) => fallback,
     title: String(route.meta.title ?? route.path),
   }));

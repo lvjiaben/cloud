@@ -11,22 +11,24 @@ type CustomerLevelItem struct {
 }
 
 type CustomerSummaryItem struct {
-	CustomerNo                   string             `json:"customerNo" dc:"Stable external customer number" eg:"CUS_0123456789abcdef0123456789abcdef"`
-	CustomerCode                 string             `json:"customerCode" dc:"Short monotonic customer number shown to staff and customers" eg:"10000"`
-	PrimaryPhone                 string             `json:"primaryPhone" dc:"Primary customer phone with calling code, or empty when the primary login is email" eg:"+8613800138000"`
-	Type                         string             `json:"type" dc:"Customer type: individual or enterprise" eg:"individual"`
-	Status                       string             `json:"status" dc:"Account status: pending_activation, active, restricted, disabled, or anonymized" eg:"active"`
-	Verification                 string             `json:"verification" dc:"Identity verification status: unverified, pending, verified, rejected, expired, or revoked" eg:"verified"`
-	DisplayName                  string             `json:"displayName" dc:"Customer display name without legal identity fields" eg:"Example Customer"`
-	CountryCode                  string             `json:"countryCode" dc:"ISO 3166-1 alpha-2 customer country code" eg:"CN"`
-	PreferredLocale              string             `json:"preferredLocale" dc:"Preferred customer locale" eg:"zh-CN"`
-	EnterpriseContractPolicyCode string             `json:"enterpriseContractPolicyCode" dc:"Enterprise contract rule: none or required; empty for individuals" eg:"none"`
-	EnterpriseContractTemplateNo string             `json:"enterpriseContractTemplateNo" dc:"Enterprise contract template number, or empty"`
-	Level                        *CustomerLevelItem `json:"level" dc:"Current customer level, or null when no level is assigned" eg:"null"`
-	TagCount                     int                `json:"tagCount" dc:"Number of active customer tags" eg:"2"`
-	Version                      int64              `json:"version" dc:"Optimistic concurrency version" eg:"1"`
-	CreatedAt                    int64              `json:"createdAt" dc:"Customer creation time as a Unix timestamp in milliseconds" eg:"1786161600000"`
-	UpdatedAt                    int64              `json:"updatedAt" dc:"Customer update time as a Unix timestamp in milliseconds" eg:"1786161660000"`
+	Balances                     []*CustomerBalanceSummary `json:"balances" dc:"Currency-separated customer wallet balances" eg:"[]"`
+	CustomerNo                   string                    `json:"customerNo" dc:"Stable external customer number" eg:"CUS_0123456789abcdef0123456789abcdef"`
+	CustomerCode                 string                    `json:"customerCode" dc:"Short monotonic customer number shown to staff and customers" eg:"10000"`
+	PrimaryEmail                 string                    `json:"primaryEmail" dc:"Primary customer email, empty when no email is set" eg:"customer@example.com"`
+	PrimaryPhone                 string                    `json:"primaryPhone" dc:"Primary customer phone with calling code; empty when no phone is set" eg:"+8613800138000"`
+	Type                         string                    `json:"type" dc:"Customer type: individual or enterprise" eg:"individual"`
+	Status                       string                    `json:"status" dc:"Account status: pending_activation, active, restricted, disabled, or anonymized" eg:"active"`
+	Verification                 string                    `json:"verification" dc:"Identity verification status: unverified, pending, verified, rejected, expired, or revoked" eg:"verified"`
+	DisplayName                  string                    `json:"displayName" dc:"Customer display name without legal identity fields" eg:"Example Customer"`
+	CountryCode                  string                    `json:"countryCode" dc:"ISO 3166-1 alpha-2 customer country code" eg:"CN"`
+	PreferredLocale              string                    `json:"preferredLocale" dc:"Preferred customer locale" eg:"zh-CN"`
+	EnterpriseContractPolicyCode string                    `json:"enterpriseContractPolicyCode" dc:"Enterprise contract rule: none or required; empty for individuals" eg:"none"`
+	EnterpriseContractTemplateNo string                    `json:"enterpriseContractTemplateNo" dc:"Enterprise contract template number, or empty"`
+	Level                        *CustomerLevelItem        `json:"level" dc:"Current customer level, or null when no level is assigned" eg:"null"`
+	TagCount                     int                       `json:"tagCount" dc:"Number of active customer tags" eg:"2"`
+	Version                      int64                     `json:"version" dc:"Optimistic concurrency version" eg:"1"`
+	CreatedAt                    int64                     `json:"createdAt" dc:"Customer creation time as a Unix timestamp in milliseconds" eg:"1786161600000"`
+	UpdatedAt                    int64                     `json:"updatedAt" dc:"Customer update time as a Unix timestamp in milliseconds" eg:"1786161660000"`
 }
 
 type CustomerSegmentItem struct {
@@ -76,4 +78,38 @@ type CustomerBalanceSummary struct {
 	HeldBalanceMinor      string `json:"heldBalanceMinor" dc:"Held balance in minor units" eg:"1000"`
 	AvailableBalanceMinor string `json:"availableBalanceMinor" dc:"Available balance in minor units" eg:"9000"`
 	UpdatedAt             int64  `json:"updatedAt" dc:"Balance update time in Unix milliseconds" eg:"1786161660000"`
+}
+
+// CustomerOperationsStatistics summarizes authoritative customer business facts.
+type CustomerOperationsStatistics struct {
+	ProductCategories []CustomerProductCategoryStatistics `json:"productCategories" dc:"Purchased product counts by delivery type and owner; at most sixty-four categories, excluding renewals" eg:"[]"`
+	Currencies        []CustomerCurrencyStatistics        `json:"currencies" dc:"Currency-separated customer payment, refund and unpaid totals" eg:"[]"`
+	Tickets           CustomerTicketStatistics            `json:"tickets" dc:"Support ticket totals by base stage" eg:"{}"`
+	Products          int64                               `json:"products" dc:"Total customer products" eg:"3"`
+	Expiring          int64                               `json:"expiring" dc:"Products expiring within the next thirty days" eg:"1"`
+	Expired           int64                               `json:"expired" dc:"Products whose entitlement has already expired" eg:"1"`
+}
+
+// CustomerCurrencyStatistics contains exact currency minor units.
+type CustomerCurrencyStatistics struct {
+	CurrencyCode  string `json:"currencyCode" dc:"ISO currency code" eg:"CNY"`
+	PaidMinor     string `json:"paidMinor" dc:"Actual customer payments in minor units" eg:"10000"`
+	RefundedMinor string `json:"refundedMinor" dc:"Actual customer refunds in minor units" eg:"1000"`
+	UnpaidMinor   string `json:"unpaidMinor" dc:"Outstanding invoice amount in minor units" eg:"2000"`
+	UnpaidCount   int64  `json:"unpaidCount" dc:"Number of outstanding invoices" eg:"1"`
+}
+
+// CustomerTicketStatistics counts support base stages.
+type CustomerTicketStatistics struct {
+	Total      int64 `json:"total" dc:"Total customer tickets" eg:"5"`
+	Processing int64 `json:"processing" dc:"Open and in-progress tickets" eg:"2"`
+	Replied    int64 `json:"replied" dc:"Waiting-for-customer and resolved tickets" eg:"1"`
+	Closed     int64 `json:"closed" dc:"Closed tickets" eg:"2"`
+}
+
+// CustomerProductCategoryStatistics contains actual purchased product categories, including pending delivery.
+type CustomerProductCategoryStatistics struct {
+	ProductType string `json:"productType" dc:"Authoritative delivery type from the purchased product projection" eg:"cloud_server"`
+	PluginID    string `json:"pluginId" dc:"Delivery owner plugin identifier; empty when no owner is bound" eg:"idc-resource"`
+	Total       int64  `json:"total" dc:"Purchased units in this category, including pending delivery" eg:"2"`
 }

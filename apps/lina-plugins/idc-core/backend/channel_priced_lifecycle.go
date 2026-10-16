@@ -1017,7 +1017,7 @@ WHERE tenant_id=0 AND service_no=?
 			IdempotencyScope: "channel.priced_operation.confirm",
 			IdempotencyKey:   operationNo, OperationCode: "channel.lifecycle." + input.Operation,
 			TargetType: "service_entitlement", TargetNo: quote.ServiceNo,
-			CustomerNo: quote.OwnerCustomerNo, ResultCode: status,
+			CustomerNo: quote.OwnerCustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "approved_channel_quote", RiskCode: "high", CorrelationNo: operationNo,
 			BeforeSnapshot: map[string]any{"serviceVersion": quote.ExpectedServiceVersion,
 				"quoteNo": quote.QuoteNo},

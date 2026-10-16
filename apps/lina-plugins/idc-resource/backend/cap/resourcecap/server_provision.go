@@ -25,6 +25,9 @@ const (
 	ServerProvisionComponentDataDisk        ServerProvisionComponentType = "data_disk"
 	ServerProvisionComponentIP              ServerProvisionComponentType = "ip"
 	ServerProvisionComponentBackup          ServerProvisionComponentType = "backup"
+	ServerProvisionComponentSnapshot        ServerProvisionComponentType = "snapshot"
+	ServerProvisionComponentNATForward      ServerProvisionComponentType = "nat_forward"
+	ServerProvisionComponentNATWebsite      ServerProvisionComponentType = "nat_website"
 	ServerProvisionComponentImage           ServerProvisionComponentType = "image"
 	ServerProvisionComponentOperatingSystem ServerProvisionComponentType = "operating_system"
 	ServerProvisionComponentTraffic         ServerProvisionComponentType = "traffic"
@@ -139,6 +142,9 @@ func (c ServerProvisionComponent) Validate() error {
 		ServerProvisionComponentDataDisk,
 		ServerProvisionComponentIP,
 		ServerProvisionComponentBackup,
+		ServerProvisionComponentSnapshot,
+		ServerProvisionComponentNATForward,
+		ServerProvisionComponentNATWebsite,
 		ServerProvisionComponentImage,
 		ServerProvisionComponentOperatingSystem,
 		ServerProvisionComponentTraffic,

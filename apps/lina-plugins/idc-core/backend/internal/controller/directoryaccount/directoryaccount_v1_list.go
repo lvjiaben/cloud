@@ -13,7 +13,7 @@ func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (*v1.ListRes, 
 	}
 	items := make([]v1.Directory, len(page.Items))
 	for i, item := range page.Items {
-		items[i] = v1.Directory{DirectoryNo: item.DirectoryNo, NameZhCn: item.NameZhCn, NameEnUs: item.NameEnUs, SortOrder: item.SortOrder, ServiceCount: item.ServiceCount}
+		items[i] = v1.Directory{NavigationType: string(item.NavigationType), TargetURL: item.TargetURL, Icon: item.Icon, DirectoryNo: item.DirectoryNo, NameZhCn: item.NameZhCn, NameEnUs: item.NameEnUs, SortOrder: item.SortOrder, ServiceCount: item.ServiceCount}
 	}
 	return &v1.ListRes{Items: items, Total: page.Total, Page: page.Page, PageSize: page.PageSize}, nil
 }

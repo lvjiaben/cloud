@@ -11,6 +11,7 @@ func TestSupportSettingsAPIDocChineseBundleCoversSourceMetadata(t *testing.T) {
 	bundle := readFinancialAPIDocBundle(t, "manifest/i18n/zh-CN/apidoc")
 	root := financialAPIDocPluginRoot(t)
 	keys := collectFinancialAPIDocKeys(t, filepath.Join(root, filepath.FromSlash("backend/api/admin/v1/support_settings.go")), "admin")
+	keys = append(keys, collectFinancialAPIDocKeys(t, filepath.Join(root, filepath.FromSlash("backend/api/admin/v1/support_organization_departments.go")), "admin")...)
 	publicKeys := collectFinancialAPIDocKeys(t, filepath.Join(root, filepath.FromSlash("backend/api/supportpublic/v1/support.go")), "public")
 	for _, key := range publicKeys {
 		if supportAnonymousAPIDocKey(key) {

@@ -35,27 +35,12 @@ func TestAnonymousCloseReopenAndRateLifecyclePostgreSQL(t *testing.T) {
 	if _, err = service.CloseAnonymous(ctx, access.Token, 1); !bizerr.Is(err, CodeConflict) {
 		t.Fatalf("stale anonymous close error=%v, want conflict", err)
 	}
-	if _, err = service.RateAnonymous(ctx, access.Token, RatingInput{TicketVersion: closed.Ticket.Version, RoundNo: 1, Stars: 2, Feedback: "Need follow-up"}); !bizerr.Is(err, CodeUnavailable) {
-		t.Fatalf("low anonymous rating error=%v, want unavailable while notification source is absent", err)
-	}
-	ratingCount, err := queryCount(ctx, database, `SELECT COUNT(1) FROM plugin_idc_core_support_ticket_rating WHERE tenant_id=0 AND ticket_no='TKT_anonymous'`)
-	if err != nil || ratingCount != 0 {
-		t.Fatalf("failed low rating must not be stored: count=%d err=%v", ratingCount, err)
-	}
-	var followUp bool
-	followUpValue, err := database.GetValue(ctx, `SELECT follow_up_required FROM plugin_idc_core_support_ticket WHERE tenant_id=0 AND ticket_no='TKT_anonymous'`)
-	if err == nil {
-		followUp = followUpValue.Bool()
-	}
-	if err != nil || followUp {
-		t.Fatalf("failed low rating must not mark follow-up: followUp=%v err=%v", followUp, err)
-	}
 
-	rated, err := service.RateAnonymous(ctx, access.Token, RatingInput{TicketVersion: closed.Ticket.Version, RoundNo: 1, Stars: 5, Feedback: "Solved"})
+	rated, err := service.RateAnonymous(ctx, access.Token, RatingInput{TicketVersion: closed.Ticket.Version, RoundNo: 1, Stars: 2, Feedback: "Need follow-up"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rated.Rating == nil || rated.Rating.Stars != 5 || hasAction(rated.AvailableActions, "rate") {
+	if rated.Rating == nil || rated.Rating.Stars != 2 || !rated.Ticket.FollowUpRequired || hasAction(rated.AvailableActions, "rate") {
 		t.Fatalf("unexpected anonymous rating projection: rating=%+v actions=%v", rated.Rating, rated.AvailableActions)
 	}
 	if _, err = service.RateAnonymous(ctx, access.Token, RatingInput{TicketVersion: rated.Ticket.Version, RoundNo: 1, Stars: 5}); !bizerr.Is(err, CodeConflict) {
@@ -106,7 +91,7 @@ func TestAnonymousActionsRejectExpiredAccessAndLateReopenPostgreSQL(t *testing.T
 	}
 }
 
-func TestAnonymousReopenRejectsAssignedTicketWithoutAuthoritativeStaffCheckPostgreSQL(t *testing.T) {
+func TestAnonymousReopenReturnsAssignedTicketToQueuePostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
 	service := newAuthorizedSupportDeskTestService(database)
 	destinationDigest := strings.Repeat("c", 64)
@@ -117,8 +102,8 @@ func TestAnonymousReopenRejectsAssignedTicketWithoutAuthoritativeStaffCheckPostg
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = service.ReopenAnonymous(ctx, access.Token, 1); !bizerr.Is(err, CodeUnavailable) {
-		t.Fatalf("assigned anonymous reopen error=%v, want unavailable without authoritative staff check", err)
+	if _, err = service.ReopenAnonymous(ctx, access.Token, 1); err != nil {
+		t.Fatalf("anonymous reopen: %v", err)
 	}
 	var current struct {
 		Stage          string `orm:"base_stage"`
@@ -128,8 +113,8 @@ func TestAnonymousReopenRejectsAssignedTicketWithoutAuthoritativeStaffCheckPostg
 	if err = database.GetScan(ctx, &current, `SELECT base_stage,version,assignee_user_id FROM plugin_idc_core_support_ticket WHERE tenant_id=0 AND ticket_no='TKT_anonymous_assigned'`); err != nil {
 		t.Fatal(err)
 	}
-	if current.Stage != StageClosed || current.Version != 1 || current.AssigneeUserID != 77 {
-		t.Fatalf("failed reopen changed ticket: %+v", current)
+	if current.Stage != StageInProgress || current.Version != 2 || current.AssigneeUserID != 0 {
+		t.Fatalf("reopened ticket did not return to queue: %+v", current)
 	}
 }
 

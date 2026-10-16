@@ -18,6 +18,10 @@ func TestCustomFieldsAndEntitlementAssociationPostgreSQL(t *testing.T) {
 	staff := newAuthorizedSupportDeskTestService(database)
 	customer := newCustomerSupportDeskTestService(database, "CUS_owner")
 	seedCustomFieldCustomerFacts(t, ctx, database)
+	staff.organization = &queueOrgStub{deptID: 11}
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_core_support_department SET org_dept_id=11 WHERE department_no='DEP_internal'`); err != nil {
+		t.Fatal(err)
+	}
 
 	definitions := make([]*CustomFieldDefinition, 0, 7)
 	for index, fieldType := range []string{

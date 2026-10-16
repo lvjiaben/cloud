@@ -46,6 +46,15 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
 		return bizerr.NewCode(CodeEvidenceUnavailable)
 	}
+	if exact.PluginID == portableImportProviderID {
+		var imported *entity.CatalogImportContract
+		if loadErr := s.database.Model(do.CatalogImportContract{}).Ctx(ctx).Where(do.CatalogImportContract{TenantId: 0, VersionNo: input.VersionNo}).Scan(&imported); loadErr != nil {
+			return bizerr.WrapCode(loadErr, catalog.CodeManagementUnavailable)
+		}
+		if imported != nil {
+			return bizerr.NewCode(catalog.CodeManagementConflict)
+		}
+	}
 	currentInterfaceRevision, err := s.loadLatestInterfaceConfigurationRevision(ctx, binding.InterfaceInstanceNo, false)
 	if err != nil || currentInterfaceRevision == nil {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
@@ -55,12 +64,16 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 	if err != nil {
 		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	if exact.CustomerConfiguration != nil {
-		if err = s.validateConfigurationRuntime(ctx, exact, exact.CustomerConfiguration, nil, configurationSurfaceCustomer, scope); err != nil {
+	customerSchema, err := selectCustomerSchema(exact, input.CustomerFieldSelections)
+	if err != nil {
+		return bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
+	if customerSchema != nil {
+		if err = s.validateConfigurationRuntime(ctx, exact, customerSchema, nil, configurationSurfaceCustomer, scope); err != nil {
 			return bizerr.NewCode(catalog.CodeManagementInvalid)
 		}
 	}
-	customerJSON, err := configurationDeclarationJSON(exact.CustomerConfiguration)
+	customerJSON, err := configurationDeclarationJSON(customerSchema)
 	if err != nil {
 		return bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
@@ -86,7 +99,7 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 			return gerror.Wrap(loadErr, "load product version configuration")
 		}
 		productVersion := configurationSchemaVersion(exact.ProductConfiguration)
-		customerVersion := configurationSchemaVersion(exact.CustomerConfiguration)
+		customerVersion := configurationSchemaVersion(customerSchema)
 		declarationDigest := configurationDigest(append(append([]byte{}, product.DeclarationJSON...), customerJSON...))
 		merchantValueDigest := configurationDigest(product.ValuesJSON)
 		data := do.CatalogProductVersionConfiguration{
@@ -199,12 +212,16 @@ func (s *serviceImpl) resolveFrozenConfigurationCandidates(
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
 	}
-	scope := dynamicCandidateScope{interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: row.InterfaceConfigurationRevision}
+	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, row, exact)
+	if schemaErr != nil {
+		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	scope := dynamicCandidateScope{versionNo: binding.VersionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: row.InterfaceConfigurationRevision}
 	productValues, err := s.resolveDynamicCandidates(ctx, exact, exact.ProductConfiguration, merchantValues, configurationSurfaceProduct, scope)
 	if err != nil {
 		return nil, err
 	}
-	customerValues, err := s.resolveDynamicCandidates(ctx, exact, exact.CustomerConfiguration, nil, configurationSurfaceCustomer, scope)
+	customerValues, err := s.resolveDynamicCandidates(ctx, exact, customerSchema, nil, configurationSurfaceCustomer, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -254,16 +271,20 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 		row.InterfaceConfigurationRevision != latestInterfaceRevision.Revision {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
+	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, row, exact)
+	if schemaErr != nil {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
 	productDeclaration, err := configurationDeclarationJSON(exact.ProductConfiguration)
 	if err != nil {
 		return gerror.Wrap(err, "encode exact product configuration declaration")
 	}
-	customerDeclaration, err := configurationDeclarationJSON(exact.CustomerConfiguration)
+	customerDeclaration, err := configurationDeclarationJSON(customerSchema)
 	if err != nil {
 		return gerror.Wrap(err, "encode exact customer configuration declaration")
 	}
 	if row.ProductSchemaVersion != configurationSchemaVersion(exact.ProductConfiguration) ||
-		row.CustomerSchemaVersion != configurationSchemaVersion(exact.CustomerConfiguration) ||
+		row.CustomerSchemaVersion != configurationSchemaVersion(customerSchema) ||
 		row.DeclarationDigest != configurationDigest(append(append([]byte{}, productDeclaration...), customerDeclaration...)) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
@@ -272,7 +293,7 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	storedCustomer, err := decodeConfigurationDeclaration(row.CustomerDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(storedCustomer, exact.CustomerConfiguration) {
+	if err != nil || !sameExactConfiguration(storedCustomer, customerSchema) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	merchantValues, err := configurationValuesFromJSON(
@@ -289,11 +310,17 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 		configurationDigest(compiled.ValuesJSON) != row.MerchantValueDigest {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
+	if err = s.validateProviderProductConfiguration(ctx, exact, compiled.ValuesJSON); err != nil {
+		return err
+	}
 	if _, err = configurationcontract.EvaluateResolved(
-		exact.CustomerConfiguration, nil, configurationSurfaceCustomer,
+		customerSchema, nil, configurationSurfaceCustomer,
 		exact.AuthorizedMethods, resolved.customerValues,
 	); err != nil {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	if err = s.validateCustomerSelectionPrices(ctx, binding.VersionNo, exact, customerSchema); err != nil {
+		return bizerr.WrapCode(err, codeCustomerOptionPricesRequired)
 	}
 	return nil
 }

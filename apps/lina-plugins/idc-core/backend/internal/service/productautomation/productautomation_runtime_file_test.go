@@ -24,6 +24,14 @@ type runtimeFileReaderStub struct {
 	data  []byte
 }
 
+func (s *runtimeFileReaderStub) VisitConsumedField(ctx context.Context, scope purchaseconfigurationfile.ConsumedFileScope, fieldKey string, consume func(purchaseconfigurationfile.ConsumedFile, io.Reader) error) error {
+	files, err := s.ListConsumedField(ctx, scope, fieldKey)
+	if err != nil {
+		return err
+	}
+	return consume(files[0], bytes.NewReader(s.data))
+}
+
 func (s *runtimeFileReaderStub) ListConsumedField(_ context.Context, scope purchaseconfigurationfile.ConsumedFileScope, fieldKey string) ([]purchaseconfigurationfile.ConsumedFile, error) {
 	if scope != s.scope || fieldKey != "certificate" {
 		return nil, errors.New("CFU_SECRET private/internal/object https://storage.invalid")

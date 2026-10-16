@@ -1,7 +1,10 @@
 package admin
 
 import (
+	"lina-plugin-idc-core/backend/internal/service/currency"
 	"reflect"
+
+	"lina-plugin-idc-core/backend/internal/service/audit"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
@@ -18,16 +21,20 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 	"lina-plugin-idc-core/backend/internal/service/productfulfillment"
 	"lina-plugin-idc-core/backend/internal/service/saleschannel"
+	"lina-plugin-idc-core/backend/internal/service/salesmanagement"
 	"lina-plugin-idc-core/backend/internal/service/serveroperation"
 )
 
 type ControllerV1 struct {
+	currencies                currency.Service
+	customerAudit             audit.Reader
 	customerManagement        customermanagement.Service
 	customerMutation          customermanagement.MutationService
 	customerAccountLifecycle  customer.AccountLifecycleService
 	catalogManagement         catalog.ProductManagementReader
 	catalogWriter             catalog.ManagementService
 	catalogImport             catalogdraft.Service
+	catalogCopy               catalogdraft.CopyService
 	catalogPublication        catalog.PublicationService
 	catalogPublicationPreview catalog.PublicationPreviewService
 	marketingOverview         marketing.ManagementOverviewReader
@@ -53,6 +60,7 @@ type ControllerV1 struct {
 	productAutomation         productautomation.Service
 	productFulfillment        productfulfillment.ManagementService
 	salesChannel              saleschannel.Service
+	salesManagement           salesmanagement.Service
 	operations                operations.Service
 }
 
@@ -86,6 +94,11 @@ func NewV1(
 
 func BindContractPolicies(controller *ControllerV1, service contractpolicy.ManagementService) error {
 	return bindAdminDependency(controller, service, controller.contractPolicies != nil, func() { controller.contractPolicies = service })
+}
+
+// BindCatalogCopy attaches the existing owner services before route binding.
+func BindCatalogCopy(controller *ControllerV1, service catalogdraft.CopyService) error {
+	return bindAdminDependency(controller, service, controller.catalogCopy != nil, func() { controller.catalogCopy = service })
 }
 
 // BindCatalogImport attaches the startup-created owner import orchestrator.
@@ -155,4 +168,22 @@ func nilControllerDependency(value any) bool {
 	default:
 		return false
 	}
+}
+
+// BindSalesManagement binds the shared staff management owner.
+func BindSalesManagement(controller *ControllerV1, service salesmanagement.Service) error {
+	return bindAdminDependency(controller, service, controller.salesManagement != nil, func() { controller.salesManagement = service })
+}
+
+// BindCustomerAudit binds the shared startup audit reader; missing and duplicate bindings fail.
+func BindCustomerAudit(controller *ControllerV1, reader audit.Reader) error {
+	if controller == nil {
+		return gerror.New("customer audit binding requires controller")
+	}
+	return bindAdminDependency(controller, reader, controller.customerAudit != nil, func() { controller.customerAudit = reader })
+}
+
+// BindCurrencies attaches the startup-owned currency management service.
+func BindCurrencies(c *ControllerV1, svc currency.Service) error {
+	return bindAdminDependency(c, svc, c.currencies != nil, func() { c.currencies = svc })
 }

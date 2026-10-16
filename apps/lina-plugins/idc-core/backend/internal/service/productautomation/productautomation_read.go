@@ -258,14 +258,19 @@ func (s *serviceImpl) loadFrozenFulfillmentContract(ctx context.Context, version
 	if err != nil {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
-	return &catalog.FrozenFulfillmentContract{
-		Capability: fulfillmentCapability(contract), Granularity: contract.Granularity,
+	result := &catalog.FrozenFulfillmentContract{
+		TrialPauseResume: contract.TrialPauseResume,
+		Capability:       fulfillmentCapability(contract), Granularity: contract.Granularity,
 		OngoingManagement: contract.OngoingManagement,
 		RenewalMode:       renewalMode, RenewalMethod: contract.MethodRoles.Renewal,
 		EntitlementOwnerID: contract.EntitlementOwnerID,
 		ProvisionMethod:    contract.MethodRoles.Provision, QueryMethod: contract.MethodRoles.Query,
 		DeclarationDigest: exact.DeclarationDigest,
-	}, nil
+	}
+	if err = s.applyImportedFulfillmentContract(ctx, versionNo, exact, result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (s *serviceImpl) loadBinding(ctx context.Context, versionNo string, lock bool) (*entity.CatalogProductVersionFulfillmentBinding, error) {

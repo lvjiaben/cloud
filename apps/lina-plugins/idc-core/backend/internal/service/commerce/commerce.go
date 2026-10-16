@@ -177,6 +177,7 @@ type GuestCartAccess struct {
 
 // Service deliberately separates guest-token and authenticated-customer methods.
 type Service interface {
+	AddonService
 	CreateGuestCart(context.Context, string) (*GuestCartAccess, error)
 	GetGuestCart(context.Context, string) (*Cart, error)
 	AddGuestItem(context.Context, string, AddItemInput) (*Cart, error)
@@ -198,6 +199,7 @@ type Service interface {
 }
 
 type serviceImpl struct {
+	currencies              CheckoutCurrencyReader
 	database                gdb.DB
 	catalog                 catalog.PurchaseConfigurationResolver
 	quoteCatalog            catalog.PurchaseQuoteAssembler
@@ -337,4 +339,15 @@ func newService(
 		contractPolicy: contractpolicy.NewResolver(nil),
 		principal:      principalReader, random: random,
 	}, nil
+}
+
+// NewWithQuoteAdjustmentsAndContractTemplates reuses the shared pricing policy
+// and preserves the same contract gate for channel and website checkout.
+func NewWithQuoteAdjustmentsAndContractTemplates(database gdb.DB, resolver catalog.PurchaseConfigurationResolver, reader principal.Reader, evaluator QuoteAdjustmentEvaluator, settlements billing.FinancialSettlementService, templates contracttemplatecap.Source) (Service, error) {
+	service, err := newServiceWithQuoteAdjustments(database, resolver, reader, evaluator, settlements)
+	if err != nil {
+		return nil, err
+	}
+	service.contractPolicy = contractpolicy.NewResolver(templates)
+	return service, nil
 }

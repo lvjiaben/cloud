@@ -26,7 +26,14 @@ func toAPIOverview(overview *customermanagement.Overview) *v1.CustomerOverviewGe
 			UpdatedAt:             balance.UpdatedAt.UnixMilli(),
 		})
 	}
-	return &v1.CustomerOverviewGetRes{
+	statistics := &v1.CustomerOperationsStatistics{Currencies: []v1.CustomerCurrencyStatistics{}, ProductCategories: []v1.CustomerProductCategoryStatistics{}, Products: overview.Statistics.Products, Expiring: overview.Statistics.Expiring, Expired: overview.Statistics.Expired, Tickets: v1.CustomerTicketStatistics{Total: overview.Statistics.Tickets.Total, Processing: overview.Statistics.Tickets.Processing, Replied: overview.Statistics.Tickets.Replied, Closed: overview.Statistics.Tickets.Closed}}
+	for _, item := range overview.Statistics.ProductCategories {
+		statistics.ProductCategories = append(statistics.ProductCategories, v1.CustomerProductCategoryStatistics{ProductType: item.ProductType, PluginID: item.PluginID, Total: item.Total})
+	}
+	for _, item := range overview.Statistics.Currencies {
+		statistics.Currencies = append(statistics.Currencies, v1.CustomerCurrencyStatistics{CurrencyCode: item.CurrencyCode, PaidMinor: fmt.Sprint(item.PaidMinor), RefundedMinor: fmt.Sprint(item.RefundedMinor), UnpaidMinor: fmt.Sprint(item.UnpaidMinor), UnpaidCount: item.UnpaidCount})
+	}
+	return &v1.CustomerOverviewGetRes{Statistics: statistics,
 		Customer: toAPICustomerSummary(overview.Customer), Groups: toAPISegmentPreview(overview.Groups),
 		Tags: toAPISegmentPreview(overview.Tags), Counts: &v1.CustomerOverviewCounts{
 			ActiveContacts: overview.Counts.ActiveContacts, ActiveAddresses: overview.Counts.ActiveAddresses,
@@ -48,8 +55,9 @@ func toAPIOverview(overview *customermanagement.Overview) *v1.CustomerOverviewGe
 
 func toAPICustomerSummary(summary customermanagement.Summary) *v1.CustomerSummaryItem {
 	item := &v1.CustomerSummaryItem{
+		Balances:   toAPICustomerBalances(summary.Balances),
 		CustomerNo: summary.CustomerNo, Type: string(summary.Type), Status: string(summary.Status),
-		CustomerCode: summary.CustomerCode, PrimaryPhone: summary.PrimaryPhone,
+		CustomerCode: summary.CustomerCode, PrimaryPhone: summary.PrimaryPhone, PrimaryEmail: summary.PrimaryEmail,
 		Verification: string(summary.Verification), DisplayName: summary.DisplayName,
 		CountryCode: summary.CountryCode, PreferredLocale: summary.PreferredLocale,
 		EnterpriseContractPolicyCode: summary.EnterpriseContractPolicyCode,
@@ -71,4 +79,13 @@ func toAPISegmentPreview(preview customermanagement.SegmentPreview) *v1.Customer
 			NameZhCn: item.NameZhCn, NameEnUs: item.NameEnUs, ColorToken: item.ColorToken, Status: item.Status})
 	}
 	return &v1.CustomerSegmentPreview{Items: items, HasMore: preview.HasMore}
+}
+
+// toAPICustomerBalances preserves minor units and omits ledger identifiers.
+func toAPICustomerBalances(balances []customermanagement.BalanceSummary) []*v1.CustomerBalanceSummary {
+	result := make([]*v1.CustomerBalanceSummary, 0, len(balances))
+	for _, balance := range balances {
+		result = append(result, &v1.CustomerBalanceSummary{AccountTypeCode: balance.AccountTypeCode, CurrencyCode: balance.CurrencyCode, StatusCode: balance.StatusCode, BalanceMinor: fmt.Sprint(balance.BalanceMinor), HeldBalanceMinor: fmt.Sprint(balance.HeldBalanceMinor), AvailableBalanceMinor: fmt.Sprint(balance.AvailableBalanceMinor), UpdatedAt: balance.UpdatedAt.UnixMilli()})
+	}
+	return result
 }

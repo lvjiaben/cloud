@@ -7,22 +7,22 @@
       "title": "Manage Provider Channels and Pools"
     },
     "plugin:idc-resource:overview": {
-      "title": "Resource Operations Overview"
+      "title": "Overview"
     },
     "plugin:idc-resource:provider-capacity": {
-      "title": "Provider Capacity Observations"
+      "title": "Resource Updates"
     },
     "plugin:idc-resource:provider-capacity:refresh": {
       "title": "Collect Provider Capacity"
     },
     "plugin:idc-resource:health": {
-      "title": "Provider Health"
+      "title": "Connections"
     },
     "plugin:idc-resource:health:policy": {
       "title": "Update Health Policy"
     },
     "plugin:idc-resource:tasks": {
-      "title": "Provider Task Reconciliation"
+      "title": "Operations"
     },
     "plugin:idc-resource:tasks:query": {
       "title": "View Provider Task Evidence"
@@ -77,6 +77,12 @@
     },
     "plugin:idc-resource:server-renewals:safe": {
       "title": "Confirm Server Renewals"
+    },
+    "plugin:idc-resource:provider-operations": {
+      "title": "Supplier Operations"
+    },
+    "plugin:idc-resource:server-management": {
+      "title": "Server Management"
     }
   }
 }

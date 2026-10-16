@@ -136,7 +136,9 @@ func (s *managementServiceImpl) CreateBillingRule(
 			IdempotencyScope: "catalog.billing-rule.create", IdempotencyKey: billingRuleNo,
 			OperationCode: "catalog.billing-rule.create", TargetType: "catalog_product_version",
 			TargetNo: normalized.versionNo, ResultCode: "succeeded", ReasonCode: "manual_create",
-			RiskCode: "medium", AfterSnapshot: map[string]any{
+			RequiredPermission: permissionCatalogBillingWrite,
+			BeforeSnapshot:     map[string]any{},
+			RiskCode:           "medium", AfterSnapshot: map[string]any{
 				"state": normalized.status, "billing_rule_no": billingRuleNo,
 				"charge_type": definition.ChargeType, "period_unit": definition.PeriodUnit,
 				"period_count": definition.PeriodCount,
@@ -177,13 +179,15 @@ func (s *managementServiceImpl) CreatePriceSchedule(
 		if lockErr != nil {
 			return lockErr
 		}
+		mode := ConfigurationPriceFixed
 		if normalized.configurationPriceDimensionNo != "" {
-			if lockErr = lockConfigurationPriceDimension(ctx, normalized.versionNo, normalized.configurationPriceDimensionNo); lockErr != nil {
+			mode, lockErr = lockConfigurationPriceDimension(ctx, normalized.versionNo, normalized.configurationPriceDimensionNo)
+			if lockErr != nil {
 				return lockErr
 			}
 		}
-		if validateErr := ValidatePriceSchedule(
-			BillingRuleDefinitionFromEntity(*billingRule), normalized.tiers,
+		if validateErr := validateConfigurationPriceSchedule(
+			BillingRuleDefinitionFromEntity(*billingRule), mode, normalized.tiers,
 		); validateErr != nil {
 			return bizerr.NewCode(CodeManagementInvalid)
 		}
@@ -218,7 +222,9 @@ func (s *managementServiceImpl) CreatePriceSchedule(
 			IdempotencyScope: "catalog.price-schedule.create", IdempotencyKey: priceNumbers[0],
 			OperationCode: "catalog.price-schedule.create", TargetType: "catalog_product_version",
 			TargetNo: normalized.versionNo, ResultCode: "succeeded", ReasonCode: "manual_create",
-			RiskCode: "high", AfterSnapshot: map[string]any{
+			RequiredPermission: permissionCatalogPriceWrite,
+			BeforeSnapshot:     map[string]any{},
+			RiskCode:           "high", AfterSnapshot: map[string]any{
 				"state": normalized.status, "billing_rule_no": normalized.billingRuleNo,
 				"configuration_priced": normalized.configurationPriceDimensionNo != "", "currency_code": normalized.currencyCode,
 				"tier_count": len(normalized.tiers),
@@ -282,18 +288,19 @@ func lockBillingRule(ctx context.Context, versionNo, billingRuleNo string) (*ent
 	return rule, nil
 }
 
-func lockConfigurationPriceDimension(ctx context.Context, versionNo, dimensionNo string) error {
+func lockConfigurationPriceDimension(ctx context.Context, versionNo, dimensionNo string) (ConfigurationPriceMode, error) {
 	var dimension *struct {
-		DimensionNo string `orm:"dimension_no"`
+		DimensionNo string                 `orm:"dimension_no"`
+		PricingMode ConfigurationPriceMode `orm:"pricing_mode_code"`
 	}
-	if err := dao.CatalogProductVersion.Ctx(ctx).Raw(`SELECT dimension_no FROM plugin_idc_core_catalog_configuration_price_dimension
+	if err := dao.CatalogProductVersion.Ctx(ctx).Raw(`SELECT dimension_no,pricing_mode_code FROM plugin_idc_core_catalog_configuration_price_dimension
 WHERE tenant_id=0 AND version_no=? AND dimension_no=? AND status_code='active' FOR UPDATE`, versionNo, dimensionNo).Scan(&dimension); err != nil {
-		return gerror.Wrap(err, "lock configuration price dimension")
+		return "", gerror.Wrap(err, "lock configuration price dimension")
 	}
 	if dimension == nil {
-		return bizerr.NewCode(CodeManagementNotAccessible)
+		return "", bizerr.NewCode(CodeManagementNotAccessible)
 	}
-	return nil
+	return dimension.PricingMode, nil
 }
 
 func ensurePriceCapacity(ctx context.Context, versionNo string, adding int) error {

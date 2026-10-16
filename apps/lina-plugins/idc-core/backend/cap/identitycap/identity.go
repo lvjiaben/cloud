@@ -63,6 +63,11 @@ const (
 // PersonalSubject is the minimum authenticated subject projection needed to
 // create one compliance-owned verification case.
 type PersonalSubject struct {
+	// ManualVerification identifies a staff-managed status; unverified means current data was cleared.
+	ManualVerification    bool
+	VerificationStatus    Status
+	VerificationUpdatedAt *time.Time
+
 	CustomerNo         string
 	PrincipalReference string
 	ActorUserID        int
@@ -115,6 +120,11 @@ type PersonalProjection struct {
 // EnterpriseSubject is the minimum authenticated enterprise projection needed
 // to create one compliance-owned manual-review case.
 type EnterpriseSubject struct {
+	// ManualVerification identifies a staff-managed status; unverified means current data was cleared.
+	ManualVerification    bool
+	VerificationStatus    Status
+	VerificationUpdatedAt *time.Time
+
 	CustomerNo         string
 	PrincipalReference string
 	ActorUserID        int

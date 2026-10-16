@@ -3,11 +3,13 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type SupportDepartmentSetting struct {
+	OrgDeptID          int    `json:"orgDeptId" dc:"Linked organization department ID; zero means an old queue needs configuration" eg:"1"`
+	OrgDeptName        string `json:"orgDeptName" dc:"Linked organization department display name" eg:"Customer Support"`
 	DepartmentNo       string `json:"departmentNo" dc:"Stable support department number"`
 	NameZhCN           string `json:"nameZhCN" dc:"Chinese display name"`
 	NameEnUS           string `json:"nameEnUS" dc:"English display name"`
 	ParentDepartmentNo string `json:"parentDepartmentNo,omitempty" dc:"Optional parent support department number"`
-	AssignmentMode     string `json:"assignmentMode" dc:"manual_claim, round_robin, or least_unresolved"`
+	AssignmentMode     string `json:"assignmentMode" dc:"manual_claim only; employees claim tickets from the department queue"`
 	Status             string `json:"status" dc:"active or disabled"`
 	Version            int64  `json:"version" dc:"Optimistic concurrency version"`
 }
@@ -19,23 +21,25 @@ type SupportDepartmentSettingListRes struct {
 	Items []SupportDepartmentSetting `json:"items" dc:"Support department settings"`
 }
 type SupportDepartmentSettingCreateReq struct {
+	OrgDeptID          int `json:"orgDeptId" v:"required|min:1" dc:"Enabled organization department to bind to this queue" eg:"1"`
 	g.Meta             `path:"/admin/support/settings/departments" method:"post" tags:"IDC Support Settings" summary:"Create a support department" permission:"idc:admin:support:configuration:manage"`
 	NameZhCN           string `json:"nameZhCN" dc:"Chinese display name"`
 	NameEnUS           string `json:"nameEnUS" dc:"English display name"`
 	ParentDepartmentNo string `json:"parentDepartmentNo" dc:"Optional parent support department number"`
-	AssignmentMode     string `json:"assignmentMode" d:"manual_claim" dc:"manual_claim, round_robin, or least_unresolved"`
+	AssignmentMode     string `json:"assignmentMode" d:"manual_claim" dc:"manual_claim only; employees claim tickets from the department queue"`
 	Status             string `json:"status" d:"active" dc:"active or disabled"`
 }
 type SupportDepartmentSettingCreateRes struct {
 	Item *SupportDepartmentSetting `json:"item" dc:"Created support department"`
 }
 type SupportDepartmentSettingUpdateReq struct {
+	OrgDeptID          int `json:"orgDeptId" v:"required|min:1" dc:"Enabled organization department to bind to this queue" eg:"1"`
 	g.Meta             `path:"/admin/support/settings/departments/{departmentNo}" method:"put" tags:"IDC Support Settings" summary:"Update a support department" permission:"idc:admin:support:configuration:manage"`
 	DepartmentNo       string `json:"departmentNo" dc:"Support department number"`
 	NameZhCN           string `json:"nameZhCN" dc:"Chinese display name"`
 	NameEnUS           string `json:"nameEnUS" dc:"English display name"`
 	ParentDepartmentNo string `json:"parentDepartmentNo" dc:"Optional parent support department number"`
-	AssignmentMode     string `json:"assignmentMode" dc:"manual_claim, round_robin, or least_unresolved"`
+	AssignmentMode     string `json:"assignmentMode" dc:"manual_claim only; employees claim tickets from the department queue"`
 	Status             string `json:"status" dc:"active or disabled"`
 	ExpectedVersion    int64  `json:"expectedVersion" dc:"Version returned by the latest read"`
 }

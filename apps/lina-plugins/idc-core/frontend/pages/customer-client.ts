@@ -27,6 +27,7 @@ export interface CustomerLevel {
 }
 
 export interface CustomerSummary {
+ balances?: CustomerBalanceSummary[];
   countryCode: string;
   createdAt: number;
   customerNo: string;
@@ -37,6 +38,7 @@ export interface CustomerSummary {
   level: CustomerLevel | null;
   preferredLocale: string;
   primaryPhone: string;
+  primaryEmail: string;
   status: CustomerStatus;
   tagCount: number;
   type: CustomerType;
@@ -73,6 +75,7 @@ export interface CustomerOverviewCounts {
 }
 
 export interface CustomerOverview {
+ statistics?: CustomerOperationsStatistics;
   balances: CustomerBalanceSummary[];
   business: CustomerBusinessSummary;
   counts: CustomerOverviewCounts;
@@ -147,8 +150,9 @@ export interface CustomerTagBatchInput {
   action: CustomerTagBatchAction;
   customerNos: string[];
   idempotencyKey: string;
-  reason: string;
+  reason?: string;
   tagNos: string[];
+  tagNames?: string[];
 }
 
 export interface CustomerTagBatchResult {
@@ -504,3 +508,34 @@ export function customerBlacklistDecision(
     data,
   );
 }
+
+export function customerSegmentAdd(customerNo: string, data: { kind: "group" | "tag"; segmentNo?: string; name?: string; idempotencyKey: string }) {
+  return requestClient.post<{ segmentNo: string }>(pluginApiPath(pluginID, `admin/customers/${encodeURIComponent(customerNo)}/segments`), data);
+}
+export function customerSegmentRemove(customerNo: string, segmentNo: string, data: { kind: "group" | "tag"; idempotencyKey: string }) {
+  return requestClient.delete(pluginApiPath(pluginID, `admin/customers/${encodeURIComponent(customerNo)}/segments/${encodeURIComponent(segmentNo)}`), { data });
+}
+export interface CustomerAuditRecord { auditNo: string; occurredAt: number; operationCode: string; result: string }
+export function customerAuditRecords(customerNo: string) {
+  return requestClient.get<{ items: CustomerAuditRecord[] }>(pluginApiPath(pluginID, `admin/customers/${encodeURIComponent(customerNo)}/audit-records`));
+}
+
+/** Apply one audited manual identity command, then refresh the authoritative overview. */
+export function customerVerificationUpdate(customerNo: string, data: {action: "approve" | "clear"; expectedVersion: number; idempotencyKey: string}) {
+ return requestClient.put<void>(pluginApiPath(pluginID, `admin/customers/${encodeURIComponent(customerNo)}/verification`),data);
+}
+
+export interface CustomerOperationsStatistics {
+ currencies: {currencyCode:string;paidMinor:string;refundedMinor:string;unpaidMinor:string;unpaidCount:number}[];
+ tickets:{total:number;processing:number;replied:number;closed:number};
+ products:number;expiring:number;expired:number;
+ productCategories: {productType:string;pluginId:string;total:number}[];
+}
+export interface CustomerProduct {deliveryKind:"server"|"entitlement"|"pending";number:string;orderNo:string;productNo:string;nameZhCn:string;nameEnUs:string;information:string;informationEnUs?:string;amountMinor:string;currencyCode:string;productType:string;pluginId:string;periodUnit:string;periodCount:number;createdAt:number;expiresAt:number|null;status:string}
+export function customerProducts(customerNo:string,page=1,pageSize=10){return requestClient.get<{items:CustomerProduct[];total:number}>(pluginApiPath(pluginID,`/admin/customers/${encodeURIComponent(customerNo)}/products`),{params:{page,pageSize}})}
+export interface CustomerAPIOverview {authorized:boolean;appId:string;displayName:string;status:string;tokenId:number;canReset:boolean;scopes:string[];sourceCidrs:string[];expiresAt:number|null}
+export interface CustomerAPICall {id:number;method:string;operation:string;succeeded:boolean;durationMillis:number;createdAt:number}
+const apiCustomerPath=(customerNo:string)=>pluginApiPath("idc-channel",`/admin/customers/${encodeURIComponent(customerNo)}/open-platform`);
+export function customerAPIOverview(customerNo:string){return requestClient.get<CustomerAPIOverview>(apiCustomerPath(customerNo))}
+export function customerAPICalls(customerNo:string,page=1,pageSize=10){return requestClient.get<{list:CustomerAPICall[];total:number}>(`${apiCustomerPath(customerNo)}/calls`,{params:{page,pageSize}})}
+export function customerAPIReset(customerNo:string,tokenId:number){return requestClient.post<{appId:string;secret:string}>(`${apiCustomerPath(customerNo)}/secrets`,{tokenId})}

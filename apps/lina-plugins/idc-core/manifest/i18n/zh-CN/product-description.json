@@ -1,0 +1,20 @@
+{
+  "plugin": {
+    "idc-core": {
+      "catalog": {
+        "description": {
+          "edit": "编辑商品介绍",
+          "nameZhCn": "中文商品名称",
+          "nameEnUs": "英文商品名称",
+          "summaryZhCn": "中文商品介绍",
+          "summaryEnUs": "英文商品介绍",
+          "help": "补齐中文和英文名称、介绍后保存，客户就能看到。这里只改展示文字，不会更改价格、配置或购买合同。",
+          "required": "请填写中文和英文名称、介绍。",
+          "saved": "商品介绍已保存",
+          "save": "保存",
+          "cancel": "取消"
+        }
+      }
+    }
+  }
+}

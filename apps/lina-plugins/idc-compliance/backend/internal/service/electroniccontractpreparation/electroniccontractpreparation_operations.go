@@ -319,11 +319,11 @@ VALUES (?, ?, ?, ?, ?, ?)`, idccap.DefaultTenantID, replacementNo,
 		databaseTime.Time().UTC()); err != nil {
 		return gerror.Wrap(err, "insert immutable contract replacement relation")
 	}
-	return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": "not_created"},
 		IdempotencyScope: "compliance.contract.replacement.prepare",
 		IdempotencyKey:   idempotencyDigest, OperationCode: "compliance.contract.replacement.prepare",
 		TargetType: "contract", TargetNo: state.persisted.ContractNo,
-		CustomerNo: state.persisted.CustomerNo, ResultCode: "prepared",
+		CustomerNo: state.persisted.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 		ReasonCode: "changed_contract_replacement", RiskCode: "high",
 		CorrelationNo: replacementNo,
 		AfterSnapshot: map[string]any{
@@ -1288,10 +1288,14 @@ func (s *serviceImpl) appendOperationAudit(
 	if flow == nil || (purpose != "reissue" && purpose != "termination") {
 		return gerror.New("contract operation audit input is invalid")
 	}
-	return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	beforeState := "not_created"
+	if status != "submitting" {
+		beforeState = flow.StatusCode
+	}
+	return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"flow_state": beforeState},
 		IdempotencyScope: "compliance.contract." + purpose + "." + status,
 		IdempotencyKey:   flow.IdempotencySHA256, OperationCode: "compliance.contract." + purpose,
-		TargetType: "contract", TargetNo: flow.ContractNo, ResultCode: status,
+		TargetType: "contract", TargetNo: flow.ContractNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 		ReasonCode: purpose + "_" + status, RiskCode: "high", CorrelationNo: flow.FlowNo,
 		AfterSnapshot: map[string]any{"state": status, "flow_no": flow.FlowNo, "purpose": purpose},
 	})

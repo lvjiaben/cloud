@@ -83,7 +83,7 @@ func TestUnavailableRecognizerDoesNotIssueProofOrCreatePendingState(t *testing.T
 		},
 		&supplierSessions{current: &sessioncap.SessionInfo{
 			ID: "session-1", UserID: "42", TenantID: capmodel.DomainID("0"),
-			LoginAt: timePointer(now.Add(-time.Minute)),
+			LoginAt: timePointer(now.Add(-30 * 24 * time.Hour)),
 		}},
 		&supplierGateway{available: false},
 	)
@@ -97,7 +97,7 @@ func TestUnavailableRecognizerDoesNotIssueProofOrCreatePendingState(t *testing.T
 	}
 }
 
-func TestAllSupplierWritesRequireRecentFullLoginBeforeStateAccess(t *testing.T) {
+func TestAllSupplierWritesRequireActiveSessionBeforeStateAccess(t *testing.T) {
 	now := time.Date(2026, time.August, 14, 8, 0, 0, 0, time.UTC)
 	authorizer := &supplierAuthorizer{actor: 42}
 	service, err := New(
@@ -108,7 +108,7 @@ func TestAllSupplierWritesRequireRecentFullLoginBeforeStateAccess(t *testing.T) 
 		},
 		&supplierSessions{current: &sessioncap.SessionInfo{
 			ID: "session-1", UserID: "42", TenantID: capmodel.DomainID("0"),
-			LoginAt: timePointer(now.Add(-freshLoginWindow - time.Second)),
+			LoginAt: nil,
 		}},
 		&supplierGateway{available: false},
 	)

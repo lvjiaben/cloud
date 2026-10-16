@@ -159,10 +159,11 @@ func (e *automationTestExtensions) InvokeProviderMethod(
 }
 
 type automationTestCodec struct {
-	evidence  *capmodel.BusinessExtensionProviderEvidence
-	encodes   int
-	decodes   int
-	decodeErr error
+	identityOnly bool
+	evidence     *capmodel.BusinessExtensionProviderEvidence
+	encodes      int
+	decodes      int
+	decodeErr    error
 }
 
 func (c *automationTestCodec) EncodeProviderSelection(context.Context, *capmodel.BusinessExtensionProviderEvidence) (string, error) {
@@ -172,7 +173,15 @@ func (c *automationTestCodec) EncodeProviderSelection(context.Context, *capmodel
 
 func (c *automationTestCodec) DecodeProviderSelection(context.Context, string) (*capmodel.BusinessExtensionProviderEvidence, error) {
 	c.decodes++
-	return cloneAutomationEvidence(c.evidence), c.decodeErr
+	value := cloneAutomationEvidence(c.evidence)
+	if c.identityOnly && value != nil {
+		value.ProviderMetadata = nil
+		value.InterfaceConfiguration = nil
+		value.InterfaceConfigurationCardinality = ""
+		value.ProductConfiguration = nil
+		value.CustomerConfiguration = nil
+	}
+	return value, c.decodeErr
 }
 
 type automationTestAudit struct {
@@ -187,6 +196,9 @@ type automationTestAudit struct {
 func (a *automationTestAudit) AppendBusinessTransition(ctx context.Context, input idccap.BusinessAuditTransition) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if input.BeforeSnapshot == nil || input.AfterSnapshot == nil || input.ResultCode != idccap.BusinessAuditResultSucceeded {
+		return errors.New("invalid audit transition contract")
+	}
 	if a.strict {
 		key := input.IdempotencyScope + ":" + input.IdempotencyKey
 		if a.seen == nil {

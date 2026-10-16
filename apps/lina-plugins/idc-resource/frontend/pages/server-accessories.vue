@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type {
   ServerBatch,
   ServerBatchAction,
@@ -17,6 +19,8 @@ import type {
 import type { VxeGridProps } from "#/adapter/vxe-table";
 
 import { computed, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import OperationsDetailPanel from "../../../idc-core/frontend/pages/components/operations-detail-panel.vue";
 
 import { Page, useVbenDrawer } from "@vben/common-ui";
 import { $te } from "@vben/locales";
@@ -62,6 +66,12 @@ import {
 } from "./server-accessory-client";
 
 const serviceNo = ref("");
+const route = useRoute();
+const operationsDetail = computed(() => route.query.operationsMetric === 'servers');
+function openOperationsServer(id: string) {
+  serviceNo.value = id;
+  void load();
+}
 const loading = ref(false);
 const submitting = ref(false);
 const failed = ref(false);
@@ -151,7 +161,7 @@ const [ServiceGrid, serviceGridApi] = useVbenVxeGrid({
     columns: serviceColumns(),
     data: [],
     emptyRender: { name: "Empty" },
-    height: 520,
+    height: "100%",
     pagerConfig: { enabled: true, pageSize: 20, pageSizes: [10, 20, 50, 100], layouts: ["Total", "Sizes", "PrevJump", "PrevPage", "Number", "NextPage", "NextJump", "FullJump"] },
     proxyConfig: { ajax: { query: loadServices } },
     rowConfig: { keyField: "serviceNo" },
@@ -212,6 +222,7 @@ const batchActions: ServerBatchAction[] = [
 ];
 
 async function loadServices({ page }: { page: { currentPage: number; pageSize: number } }, values: Record<string, unknown>) {
+  if (operationsDetail.value) return { items: [], total: 0 };
   selectedServiceNos.value = [];
   try {
     const result = await listStaffServerServices({
@@ -238,6 +249,7 @@ function manageService(row: ServerServiceSummary) {
   serviceNo.value = row.serviceNo;
   void load();
 }
+watch(operationsDetail, (active) => { if (!active) void serviceGridApi.query(); });
 
 function openBatch() {
   if (!selectedServiceNos.value.length) return;
@@ -496,15 +508,17 @@ async function submit() {
     submitting.value = false;
   }
 }
+const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
 </script>
 
 <template>
-  <Page
+  <Page :ref="layoutRoot" class="plugin-admin-page"
     :auto-content-height="true"
     data-testid="server-accessory-management-page"
   >
     <div class="accessory-shell">
-      <Card :title="text('title')">
+      <OperationsDetailPanel v-if="operationsDetail" can-open @open="openOperationsServer($event.id)" />
+      <Card v-show="!operationsDetail" class="accessory-directory">
         <template #extra>
           <Button
             type="primary"
@@ -515,7 +529,7 @@ async function submit() {
             {{ text("batch.open") }}（{{ selectedServiceNos.length }}/20）
           </Button>
         </template>
-        <ServiceGrid>
+        <ServiceGrid class="min-h-0 flex-1">
           <template #selection="{ row }"
             ><Checkbox
               :checked="selectedServiceNos.includes(row.serviceNo)"
@@ -876,10 +890,14 @@ async function submit() {
 
 <style scoped>
 .accessory-shell {
-  display: grid;
-  gap: 16px;
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
 }
+.accessory-directory { flex: 1; min-height: 0; }
+.accessory-directory :deep(.ant-card-body) { display: flex; height: 100%; min-height: 0; flex-direction: column; }
 .accessory-search-row {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) auto;

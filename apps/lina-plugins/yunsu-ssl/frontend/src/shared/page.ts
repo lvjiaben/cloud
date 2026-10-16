@@ -34,6 +34,8 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
   let nextCursor = "";
   let selected: CertificateItem | null = null;
   let busy = false;
+  let requestedEntitlement = "";
+  let openedEntitlement = "";
 
   const node = (testId: string) => doc.querySelector<HTMLElement>(`[data-testid="${testId}"]`)!;
   const show = (testId: string, visible: boolean) => { node(testId).hidden = !visible; };
@@ -174,13 +176,19 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
       return;
     }
     items = append ? [...items, ...page.items] : page.items; nextCursor = page.nextCursor; renderRows();
+    await openRequestedEntitlement();
   }
 
   async function loadDetail(item: CertificateItem) {
-    const key = safeSegment(item.entitlementNo); if (!key || busy) return; busy = true; show("ssl-loading", true);
+    await loadDetailNumber(item.entitlementNo);
+  }
+
+  async function loadDetailNumber(entitlementNo:string) {
+    const key = safeSegment(entitlementNo); if (!key || busy) return; busy = true; show("ssl-loading", true);
     const response = await bridge.request("GET", `${api.detail}/${key}`, {});
     busy = false; show("ssl-loading", false);
     const detail = response.ok === true ? parseCertificateDetail(response.result) : null;
+    if (disposed) return;
     if (detail) renderDetail(detail); else show("ssl-error", true);
   }
 
@@ -216,8 +224,19 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
     show("ssl-notice", false); renderRows();
   }
 
+  // Host routes carry only a safe entitlement number; the owner rechecks every detail request.
+  async function openRequestedEntitlement() {
+    if (options.audience!=="admin" || !requestedEntitlement || openedEntitlement===requestedEntitlement || busy) return;
+    openedEntitlement=requestedEntitlement;
+    await loadDetailNumber(requestedEntitlement);
+  }
+
   const stopContext = bridge.subscribeContext((context) => {
     locale = normalizeLocale(context.locale); applyTheme(context); applyCopy();
+    const route=context.route as {path?:unknown}|undefined;
+    const match=typeof route?.path==="string"? /^\/?entitlements\/([A-Za-z0-9_-]{1,128})$/.exec(route.path):null;
+    requestedEntitlement=match?.[1]??"";
+    if (initialized) void openRequestedEntitlement();
     if (!initialized) { initialized = true; void loadList(false); }
     resize();
   });

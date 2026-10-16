@@ -18,7 +18,6 @@ import (
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 )
 
@@ -114,18 +113,19 @@ func (s *serviceImpl) FreezeAccountQuoteItemConfiguration(ctx context.Context, i
 	if err != nil {
 		return nil, err
 	}
-	return s.freezeQuoteItemConfiguration(ctx, audience, input)
+	return s.freezeQuoteItemConfiguration(ctx, audience.CustomerNo, audience.UserID, input)
 }
 
 func (s *serviceImpl) freezeQuoteItemConfiguration(
 	ctx context.Context,
-	audience *principal.Audience,
+	customerNo string,
+	uploaderUserID int,
 	input FreezeQuoteItemConfigurationInput,
 ) (*FrozenQuoteItemConfiguration, error) {
 	if s.structuredConfiguration == nil || strings.TrimSpace(input.QuoteItemNo) != input.QuoteItemNo || input.QuoteItemNo == "" || len(input.QuoteItemNo) > 40 {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
-	quoteItem, err := s.structuredConfiguration.loadQuoteItem(ctx, audience.CustomerNo, input.QuoteItemNo, false)
+	quoteItem, err := s.structuredConfiguration.loadQuoteItem(ctx, customerNo, input.QuoteItemNo, false)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +153,8 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
 	}
 	digest, err := quoteContentDigest(&structuredSnapshotDigestInput{
-		audience.CustomerNo, quoteItem.QuoteNo, quoteItem.QuoteItemNo, frozen.ProductNo, frozen.VersionNo,
-		frozen.ConfigurationRevision, audience.UserID, frozen.InterfaceConfigurationRevision, frozen.InterfaceInstanceNo,
+		customerNo, quoteItem.QuoteNo, quoteItem.QuoteItemNo, frozen.ProductNo, frozen.VersionNo,
+		frozen.ConfigurationRevision, uploaderUserID, frozen.InterfaceConfigurationRevision, frozen.InterfaceInstanceNo,
 		frozen.CustomerDeclarationDigest, frozen.CandidateSnapshotDigest, frozen.CustomerValueDigest})
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
@@ -164,7 +164,7 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
-		locked, loadErr := s.structuredConfiguration.loadQuoteItem(ctx, audience.CustomerNo, input.QuoteItemNo, true)
+		locked, loadErr := s.structuredConfiguration.loadQuoteItem(ctx, customerNo, input.QuoteItemNo, true)
 		if loadErr != nil {
 			return loadErr
 		}
@@ -187,7 +187,7 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 		}
 		_, loadErr = tx.Exec(`INSERT INTO plugin_idc_core_commerce_structured_configuration_snapshot
 (tenant_id,snapshot_no,customer_no,uploader_user_id,quote_no,quote_item_no,product_no,version_no,configuration_revision,interface_instance_no,interface_configuration_revision,customer_declaration_digest,candidate_snapshot_digest,customer_value_digest,candidate_snapshot,typed_value_snapshot,content_digest,created_at)
-VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),?,?)`, snapshotNo, audience.CustomerNo, audience.UserID,
+VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),?,?)`, snapshotNo, customerNo, uploaderUserID,
 			quoteItem.QuoteNo, quoteItem.QuoteItemNo, frozen.ProductNo, frozen.VersionNo, frozen.ConfigurationRevision,
 			frozen.InterfaceInstanceNo, frozen.InterfaceConfigurationRevision, frozen.CustomerDeclarationDigest,
 			frozen.CandidateSnapshotDigest, frozen.CustomerValueDigest, string(frozen.CandidateSnapshotJSON),
@@ -296,12 +296,23 @@ ORDER BY quote_item_no FOR UPDATE`, quoteItemNos); err != nil {
 		return gerror.Wrap(err, "lock structured checkout snapshots")
 	}
 	if len(snapshots) != len(required) {
+		if authority.assistedRequestNo != nil {
+			return bizerr.NewCode(CodeAssistedConfigurationMissing)
+		}
 		return gerror.Wrap(bizerr.NewCode(CodeQuoteNotAvailable), "structured snapshot count does not match required quote items")
+	}
+	configurationOwner := authority.userID
+	if authority.assistedRequestNo != nil {
+		var owner struct{ RequestedBy int }
+		if err := tx.GetScan(&owner, `SELECT requested_by FROM plugin_idc_core_commerce_assisted_quote_request WHERE tenant_id=0 AND request_no=? AND customer_no=? AND quote_no=? AND status_code=?`, *authority.assistedRequestNo, authority.customerNo, quoteItems[0].QuoteNo, string(assistedQuoteStatusDirectReady)); err != nil || owner.RequestedBy <= 0 {
+			return bizerr.NewCode(CodeNotAccessible)
+		}
+		configurationOwner = owner.RequestedBy
 	}
 	byQuote := make(map[string]structuredCheckoutSnapshotRow, len(snapshots))
 	snapshotNos := make([]string, 0, len(snapshots))
 	for _, snapshot := range snapshots {
-		if snapshot.CustomerNo != authority.customerNo || snapshot.UploaderUserID != authority.userID || orderItemByQuote[snapshot.QuoteItemNo] == "" {
+		if snapshot.CustomerNo != authority.customerNo || snapshot.UploaderUserID != configurationOwner || orderItemByQuote[snapshot.QuoteItemNo] == "" {
 			return bizerr.NewCode(CodeNotAccessible)
 		}
 		byQuote[snapshot.QuoteItemNo] = snapshot
@@ -334,7 +345,7 @@ WHERE tenant_id=0 AND snapshot_no IN(?) ORDER BY snapshot_no,field_sequence,file
 		values = append(values, "(?,?,?)")
 		arguments = append(arguments, snapshot.SnapshotNo, orderItemByQuote[snapshot.QuoteItemNo], snapshot.QuoteItemNo)
 	}
-	arguments = append(arguments, authority.customerNo, authority.userID)
+	arguments = append(arguments, authority.customerNo, configurationOwner)
 	result, err := tx.Exec(`UPDATE plugin_idc_core_commerce_structured_configuration_snapshot AS snapshot
 SET order_no=?, order_item_no=source.order_item_no, bound_at=CURRENT_TIMESTAMP
 FROM (VALUES `+strings.Join(values, ",")+`) AS source(snapshot_no,order_item_no,quote_item_no)

@@ -81,7 +81,7 @@ type ServerServiceBatchImpactItem struct {
 type ServerServiceBatch struct {
 	BatchNo       string                          `json:"batchNo" dc:"Stable batch number" eg:"sbt_0123456789abcdef"`
 	Action        string                          `json:"action" dc:"Frozen action" eg:"terminate"`
-	Dangerous     bool                            `json:"dangerous" dc:"Whether recent full login is mandatory" eg:"true"`
+	Dangerous     bool                            `json:"dangerous" dc:"Whether current active session is mandatory" eg:"true"`
 	Status        string                          `json:"status" dc:"Batch coordination status" eg:"previewed"`
 	PreviewDigest string                          `json:"previewDigest" dc:"Exact immutable impact digest" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 	Items         []*ServerServiceBatchImpactItem `json:"items" dc:"Bounded per-service impact and independent result list"`
@@ -103,12 +103,12 @@ type ServerServiceBatchDetailRes struct {
 }
 
 type ServerServiceBatchConfirmationReq struct {
-	g.Meta        `path:"/admin/resource/server-batches/{batchNo}/confirmation" method:"post" tags:"IDC Server Batches" summary:"Confirm a recent login for a dangerous batch" dc:"Issue one short-lived, single-use proof bound to the exact dangerous batch preview after checking the host full-login time." permission:"idc:admin:resource:server-batch:dangerous"`
+	g.Meta        `path:"/admin/resource/server-batches/{batchNo}/confirmation" method:"post" tags:"IDC Server Batches" summary:"Confirm a current session for a dangerous batch" dc:"Issue one short-lived, single-use proof bound to the exact dangerous batch preview after checking the current host session." permission:"idc:admin:resource:server-batch:dangerous"`
 	BatchNo       string `json:"batchNo" in:"path" v:"required|max-length:40" dc:"Stable dangerous batch number" eg:"sbt_0123456789abcdef"`
 	PreviewDigest string `json:"previewDigest" v:"required|length:64" dc:"Exact immutable impact digest shown to the operator" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 }
 type ServerServiceBatchConfirmationRes struct {
-	ProofToken string `json:"proofToken" dc:"Opaque single-use recent-login proof"`
+	ProofToken string `json:"proofToken" dc:"Opaque single-use current-session proof"`
 	ExpiresAt  int64  `json:"expiresAt" dc:"Proof expiry in Unix milliseconds" eg:"1787184300000"`
 }
 
@@ -124,7 +124,7 @@ type ServerServiceSafeBatchExecuteReq struct {
 }
 
 type ServerServiceDangerousBatchExecuteReq struct {
-	g.Meta `path:"/admin/resource/server-batches/{batchNo}/dangerous-executions" method:"post" tags:"IDC Server Batches" summary:"Execute a dangerous server batch" dc:"Consume the exact recent-login proof and advance every server through its own idempotent operation." permission:"idc:admin:resource:server-batch:dangerous"`
+	g.Meta `path:"/admin/resource/server-batches/{batchNo}/dangerous-executions" method:"post" tags:"IDC Server Batches" summary:"Execute a dangerous server batch" dc:"Consume the exact current-session proof and advance every server through its own idempotent operation." permission:"idc:admin:resource:server-batch:dangerous"`
 	ServerServiceBatchExecuteFields
 }
 type ServerServiceBatchExecuteRes struct {

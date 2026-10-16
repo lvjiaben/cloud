@@ -30,6 +30,12 @@ assets/
 !.github/assets/linapro-logo.webp
 !apps/lina-websites/sites/default/app/assets/
 !apps/lina-websites/sites/default/app/assets/styles.css
+!apps/lina-plugins/website-default/frontend/site/app/assets/
+!apps/lina-plugins/website-default/frontend/site/app/assets/**
+!apps/lina-plugins/website-minimal/frontend/site/app/assets/
+!apps/lina-plugins/website-minimal/frontend/site/app/assets/**
+apps/lina-plugins/website-*/frontend/site/.nuxt/
+apps/lina-plugins/website-*/frontend/site/.output/
 
 # =============================================================================
 # Agent / AI tooling local config

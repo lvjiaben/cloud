@@ -17,6 +17,7 @@ const (
 // QuoteRequest carries cart concurrency and explicitly selected customer assets.
 // Asset ownership and eligibility remain authoritative in the adjustment owner.
 type QuoteRequest struct {
+	TargetEntitlementNo string
 	ExpectedCartVersion int64
 	AssetNumbers        []string
 }
@@ -24,10 +25,16 @@ type QuoteRequest struct {
 // QuoteAdjustmentLineInput is the tax-exclusive, pre-adjustment amount exposed
 // to a quote-wide local adjustment evaluator.
 type QuoteAdjustmentLineInput struct {
-	ReferenceNo   string
-	ProductNo     string
-	CategoryNo    string
-	SubtotalMinor int64
+	ReferenceNo         string
+	ProductNo           string
+	CategoryNo          string
+	SubtotalMinor       int64
+	ChargeTypeCode      string
+	PeriodUnitCode      string
+	PeriodCount         int
+	Quantity            int
+	PurchaseCycles      int
+	PeriodSubtotalMinor int64
 }
 
 // QuoteAdjustmentInput is evaluated once per quote, never once per item.
@@ -45,12 +52,14 @@ type QuoteAdjustmentInput struct {
 // QuoteAdjustment is already allocated to one quote line. Digests and optional
 // reservations are authoritative facts from the adjustment owner.
 type QuoteAdjustment struct {
-	ReferenceNo          string
-	TypeCode             string
-	SourceReference      string
-	SourceVersionDigest  string
-	ReservationReference string
-	AmountMinor          int64
+	ReferenceNo               string
+	TypeCode                  string
+	SourceReference           string
+	SourceVersionDigest       string
+	ReservationReference      string
+	AmountMinor               int64
+	OriginalPeriodAmountMinor *int64
+	TargetPeriodAmountMinor   *int64
 }
 
 // QuoteAdjustmentResult expires no later than its earliest local reservation.

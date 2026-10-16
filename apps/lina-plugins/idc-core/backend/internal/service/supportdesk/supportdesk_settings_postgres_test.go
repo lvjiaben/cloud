@@ -12,8 +12,9 @@ import (
 func TestSupportSettingsLifecyclePostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
 	service := newAuthorizedSupportDeskTestService(database)
+	service.organization = &queueOrgStub{deptID: 11}
 
-	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{NameZhCN: "客户支持", NameEnUS: "Customer Support"})
+	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "客户支持", NameEnUS: "Customer Support"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +63,10 @@ func TestSupportSettingsLifecyclePostgreSQL(t *testing.T) {
 		t.Fatalf("reminder nodes not canonical: %v", rule.NearDueMinutes)
 	}
 
-	updated, err := service.UpdateDepartmentSetting(ctx, department.DepartmentNo, DepartmentSettingInput{NameZhCN: "技术支持", NameEnUS: "Technical Support", AssignmentMode: AssignmentModeLeastUnresolved, Status: SettingStatusActive, ExpectedVersion: department.Version})
+	if _, err = service.UpdateDepartmentSetting(ctx, department.DepartmentNo, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "Support", NameEnUS: "Support", AssignmentMode: AssignmentModeLeastUnresolved, ExpectedVersion: department.Version}); !bizerr.Is(err, CodeInvalid) {
+		t.Fatalf("legacy automatic assignment accepted=%v", err)
+	}
+	updated, err := service.UpdateDepartmentSetting(ctx, department.DepartmentNo, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "技术支持", NameEnUS: "Technical Support", AssignmentMode: AssignmentModeManualClaim, Status: SettingStatusActive, ExpectedVersion: department.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,10 +76,10 @@ func TestSupportSettingsLifecyclePostgreSQL(t *testing.T) {
 	if _, calendarErr := service.DisableSLACalendarSetting(ctx, calendar.CalendarNo, calendar.Version); !bizerr.Is(calendarErr, CodeConflict) {
 		t.Fatalf("referenced calendar disable error=%v, want conflict", calendarErr)
 	}
-	if updated.Version != 2 || updated.AssignmentMode != string(AssignmentModeLeastUnresolved) {
+	if updated.Version != 2 || updated.AssignmentMode != string(AssignmentModeManualClaim) {
 		t.Fatalf("unexpected department update: %+v", updated)
 	}
-	if _, err = service.UpdateDepartmentSetting(ctx, department.DepartmentNo, DepartmentSettingInput{NameZhCN: "过期写入", NameEnUS: "Stale", AssignmentMode: AssignmentModeManualClaim, Status: SettingStatusActive, ExpectedVersion: department.Version}); !bizerr.Is(err, CodeConflict) {
+	if _, err = service.UpdateDepartmentSetting(ctx, department.DepartmentNo, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "过期写入", NameEnUS: "Stale", AssignmentMode: AssignmentModeManualClaim, Status: SettingStatusActive, ExpectedVersion: department.Version}); !bizerr.Is(err, CodeConflict) {
 		t.Fatalf("stale update error=%v, want conflict", err)
 	}
 	if _, err = service.DisableDepartmentSetting(ctx, department.DepartmentNo, updated.Version); !bizerr.Is(err, CodeConflict) {
@@ -107,7 +111,8 @@ func TestSupportSettingsLifecyclePostgreSQL(t *testing.T) {
 func TestSupportSLARuleScopeIsUniqueUnderConcurrencyPostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
 	service := newAuthorizedSupportDeskTestService(database)
-	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{NameZhCN: "支持", NameEnUS: "Support"})
+	service.organization = &queueOrgStub{deptID: 11}
+	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "支持", NameEnUS: "Support"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +154,8 @@ func TestSupportSLARuleScopeIsUniqueUnderConcurrencyPostgreSQL(t *testing.T) {
 func TestUpstreamMappingsRequireTheLatestVersionPostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
 	service := newAuthorizedSupportDeskTestService(database)
-	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{NameZhCN: "支持", NameEnUS: "Support"})
+	service.organization = &queueOrgStub{deptID: 11}
+	department, err := service.CreateDepartmentSetting(ctx, DepartmentSettingInput{OrgDeptID: 11, NameZhCN: "支持", NameEnUS: "Support"})
 	if err != nil {
 		t.Fatal(err)
 	}

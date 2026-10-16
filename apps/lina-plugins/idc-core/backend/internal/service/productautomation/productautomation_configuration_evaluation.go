@@ -142,6 +142,15 @@ func (s *serviceImpl) evaluateConfiguration(
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
+	if evaluated.Valid && surface == configurationSurfaceProduct {
+		compiled, compileErr := configurationcontract.CompileResolved(schema, values, surface, exact.AuthorizedMethods, resolved)
+		if compileErr != nil {
+			return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+		}
+		if validationErr := s.validateProviderProductConfiguration(ctx, exact, compiled.ValuesJSON); validationErr != nil {
+			return nil, validationErr
+		}
+	}
 	presentation, err := configurationcontract.MaterializeResolvedSchema(
 		schema, surface, exact.AuthorizedMethods, resolved,
 	)

@@ -12,8 +12,8 @@ import (
 const (
 	commissionRefundJobPattern     = "@every 10s"
 	commissionRefundJobName        = "idc-core-commission-refund-reversal"
-	commissionRefundJobDisplayName = "IDC Commission Refund Reversal"
-	commissionRefundJobDescription = "Reverses only not-yet-matured commission after a verified refund."
+	commissionRefundJobDisplayName = "IDC Commission Processing"
+	commissionRefundJobDescription = "Accrues paid orders and renewals, reverses refunds, and matures due commissions."
 	commissionRefundJobBatchLimit  = 20
 )
 

@@ -1,0 +1,1 @@
+These customer-only integration pages are maintained within customer-default. They consume documented public HTTP APIs; no source-plugin filesystem is required at build or runtime. Original project ownership and source copyright remain unchanged.

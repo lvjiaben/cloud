@@ -33,7 +33,7 @@ function descendantNos(categories: CatalogCategory[], categoryNo: string) {
   let changed = true;
   while (changed) {
     changed = false;
-    for (const item of categories) {
+    for (const item of categories.filter(item => !item.parentCategoryNo)) {
       if (
         !excluded.has(item.categoryNo) &&
         excluded.has(item.parentCategoryNo)
@@ -48,7 +48,7 @@ function descendantNos(categories: CatalogCategory[], categoryNo: string) {
 
 function categoryTree(categories: CatalogCategory[]) {
   const nodes = new Map<string, CategoryTreeNode>();
-  for (const item of categories) {
+  for (const item of categories.filter(item => !item.parentCategoryNo)) {
     nodes.set(item.categoryNo, {
       children: [],
       label: localizedName(item),
@@ -56,7 +56,7 @@ function categoryTree(categories: CatalogCategory[]) {
     });
   }
   const roots: CategoryTreeNode[] = [];
-  for (const item of categories) {
+  for (const item of categories.filter(item => !item.parentCategoryNo)) {
     const node = nodes.get(item.categoryNo)!;
     const parent = nodes.get(item.parentCategoryNo);
     if (parent) parent.children!.push(node);
@@ -157,7 +157,7 @@ const [Modal, modalApi] = useVbenModal({
       currentCategory.categoryNo,
     );
     parentCategories.value = result.categories.filter(
-      (item) => !excluded.has(item.categoryNo),
+      (item) => !excluded.has(item.categoryNo) && !item.parentCategoryNo && !result.categories.some(child => child.parentCategoryNo === currentCategory!.categoryNo),
     );
     await formApi.setState({ schema: formSchema() });
     await formApi.setValues({

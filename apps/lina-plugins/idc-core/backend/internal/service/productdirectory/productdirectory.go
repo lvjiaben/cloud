@@ -12,6 +12,16 @@ import (
 // Status is the merchant navigation availability, independent of service state.
 type Status string
 
+// NavigationType identifies the customer destination; only product menus bind products.
+type NavigationType string
+
+const (
+	NavigationProduct NavigationType = "product"
+	NavigationSystem  NavigationType = "system"
+	NavigationCustom  NavigationType = "custom"
+	NavigationPlugin  NavigationType = "plugin"
+)
+
 const (
 	StatusEnabled  Status = "enabled"
 	StatusDisabled Status = "disabled"
@@ -28,17 +38,14 @@ type Access interface {
 	Customer(context.Context) (string, error)
 }
 
-// Product is the minimal batched display projection for bound products.
-type Product struct{ ProductNo, NameZhCn, NameEnUs string }
-
-// Directory is a merchant configuration projection with bounded product links.
+// Directory is a merchant configuration projection with aggregate product counts.
 type Directory struct {
+	NavigationType                  NavigationType
+	TargetURL, Icon                 string
 	DirectoryNo, NameZhCn, NameEnUs string
 	SortOrder                       int
 	StatusCode                      Status
 	Version                         int64
-	ProductNos                      []string
-	Products                        []Product
 	ProductCount                    int
 	ServiceCount                    int
 }
@@ -49,14 +56,14 @@ type Page struct {
 	Total, Page, PageSize int
 }
 
-// SaveInput creates or replaces one directory's configuration; updates require
-// the current version and membership conflicts never silently move a product.
+// SaveInput writes navigation metadata only; product assignment belongs to catalog editing.
 type SaveInput struct {
+	NavigationType                  NavigationType
+	TargetURL, Icon                 string
 	DirectoryNo, NameZhCn, NameEnUs string
 	SortOrder                       int
 	StatusCode                      Status
 	ExpectedVersion                 int64
-	ProductNos                      []string
 }
 
 // Entitlement is a customer-safe purchased service projection; timestamps are milliseconds.
@@ -76,7 +83,7 @@ type ServicePage struct {
 type Service interface {
 	// ListAdmin reads globally shared navigation for authorized staff with bounded pagination.
 	ListAdmin(context.Context, int, int) (*Page, error)
-	// Save checks staff permission, version and every linked product in one transaction.
+	// Save checks staff permission and version, preserving product assignments.
 	Save(context.Context, SaveInput) (*Directory, error)
 	// ListAccount reads enabled merchant menus with current-customer scoped service counts.
 	ListAccount(context.Context, int, int) (*Page, error)

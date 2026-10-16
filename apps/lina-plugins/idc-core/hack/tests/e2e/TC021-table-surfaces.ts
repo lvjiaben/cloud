@@ -68,7 +68,7 @@ test.describe("TC-21 表格白色面板与页面底色隔离", () => {
     const customers = new CustomerManagementPage(adminPage);
     await customers.goto();
     await customers.openOverviewByPublicId("10000");
-    const popup = await customers.startAssistance("TC021 表格面板颜色回归");
+    const popup = await customers.startAssistance();
     try {
       await new CustomerAssistancePage(popup).waitUntilReady();
       await installCustomerSupportListMock(popup);

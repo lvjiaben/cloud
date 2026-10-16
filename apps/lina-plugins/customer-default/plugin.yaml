@@ -1,0 +1,58 @@
+id: customer-default
+name: 默认用户中心
+version: v0.2.0
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 可独立安装的用户中心，支持客户服务、订单、财务和工单。
+author: linapro
+license: MIT
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - { locale: en-US, nativeName: English }
+    - { locale: zh-CN, nativeName: 简体中文 }
+dependencies:
+  plugins:
+    - id: idc-portal
+      version: ">=0.1.11 <1.0.0"
+business_extensions:
+  - point: customer-template
+    version: v1
+    role: provider
+    owner: idc-portal
+    methods:
+      - capabilities.describe
+    interface_configuration_cardinality: singleton
+    interface_configuration:
+      version: v1
+      fields:
+        - key: primarycolor
+          type: single_line
+          label: { en-US: Theme color, zh-CN: 主题颜色 }
+          description: { en-US: "For example #1677ff", zh-CN: "例如 #1677ff" }
+          maximum_length: 7
+    provider_metadata:
+      type: customer-template-contract
+      version: v1
+      values:
+        renderer: customer-standard-v1
+        entry: index.html
+        spa: true
+
+        pages:
+          - { id: overview, nameZh: 账户概览, nameEn: Overview, path: /account }
+          - { id: services, nameZh: 我的服务, nameEn: Services, path: /account/servers }
+          - { id: orders, nameZh: 我的订单, nameEn: Orders, path: /account/orders }
+          - { id: finance, nameZh: 账单与余额, nameEn: Finance, path: /account/billing }
+          - { id: support, nameZh: 服务工单, nameEn: Support, path: /account/support }
+          - { id: profile, nameZh: 个人资料, nameEn: Profile, path: /account/profile }
+          - { id: login, nameZh: 登录, nameEn: Login, path: /auth/login }
+          - { id: register, nameZh: 注册, nameEn: Register, path: /auth/register }
+public_assets:
+  - source: frontend/dist
+    mount: /
+    index: index.html

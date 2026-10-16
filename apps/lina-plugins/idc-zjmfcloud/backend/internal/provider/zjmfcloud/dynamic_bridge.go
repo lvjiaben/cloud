@@ -75,7 +75,6 @@ func ExecuteDynamicResource(
 func dynamicAuthenticate(executor confidentialoutboundcap.Service, contextID string) error {
 	request := resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindAuthenticate, Method: http.MethodPost, Path: "/login",
-		CredentialFields: map[string]string{"username": "username", "password": "password"},
 	}
 	payload, err := json.Marshal(request)
 	if err != nil {
@@ -98,7 +97,7 @@ func dynamicCall(executor confidentialoutboundcap.Service, contextID string, seq
 		Query: map[string][]string(query), Form: firstFormValues(form), ResponseFields: dynamicSafeResponseFields, UseAuthentication: true,
 	}
 	if len(secretFormFields) == 1 {
-		request.SecretFormFields = secretFormFields[0]
+		request.SecretFormBindings = resourcecap.NewConfidentialSecretFormBindings(secretFormFields[0])
 	} else if len(secretFormFields) > 1 {
 		return dynamicHTTPResponse{}, errInvalidConfig
 	}

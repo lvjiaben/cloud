@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-plugin-idc-portal/backend/cap/templatecap"
 )
 
 // LocalizedText is the bilingual text used by the public website contract.
@@ -21,18 +22,25 @@ type LocalizedText struct {
 
 // Config is the merchant-editable, code-free website brand configuration.
 type Config struct {
-	Revision       string          `json:"revision"`
-	SiteName       LocalizedText   `json:"siteName"`
-	LogoURL        string          `json:"logoUrl,omitempty"`
-	PrimaryColor   string          `json:"primaryColor"`
-	ContactEmail   string          `json:"contactEmail,omitempty"`
-	ContactPhone   string          `json:"contactPhone,omitempty"`
-	Navigation     []NavItem       `json:"navigation"`
-	HomepageBlocks []HomepageBlock `json:"homepageBlocks"`
-	Footer         LocalizedText   `json:"footer"`
-	TermsURL       string          `json:"termsUrl,omitempty"`
-	SEOTitle       LocalizedText   `json:"seoTitle"`
-	SEODescription LocalizedText   `json:"seoDescription"`
+	TemplateConfig   map[string]any     `json:"templateConfig,omitempty"`
+	TemplateEntry    *templatecap.Entry `json:"templateEntry,omitempty"`
+	TemplateRenderer string             `json:"templateRenderer"`
+	HeroTitle        LocalizedText      `json:"heroTitle"`
+	HeroDescription  LocalizedText      `json:"heroDescription"`
+	HeroImage        string             `json:"heroImage"`
+	Revision         string             `json:"revision"`
+	SiteName         LocalizedText      `json:"siteName"`
+	LogoURL          string             `json:"logoUrl,omitempty"`
+	PrimaryColor     string             `json:"primaryColor"`
+	ContactEmail     string             `json:"contactEmail,omitempty"`
+	ContactPhone     string             `json:"contactPhone,omitempty"`
+	FooterNavigation []NavItem          `json:"footerNavigation"`
+	Navigation       []NavItem          `json:"navigation"`
+	HomepageBlocks   []HomepageBlock    `json:"homepageBlocks"`
+	Footer           LocalizedText      `json:"footer"`
+	TermsURL         string             `json:"termsUrl,omitempty"`
+	SEOTitle         LocalizedText      `json:"seoTitle"`
+	SEODescription   LocalizedText      `json:"seoDescription"`
 }
 
 // HomepageBlock is a small, code-free content block rendered on the public home page.
@@ -45,8 +53,12 @@ type HomepageBlock struct {
 
 // NavItem is one safe public navigation link.
 type NavItem struct {
-	Label LocalizedText `json:"label"`
-	Href  string        `json:"href"`
+	Group    bool          `json:"group,omitempty"`
+	Customer bool          `json:"customer,omitempty"`
+	External bool          `json:"external,omitempty"`
+	Children []NavItem     `json:"children,omitempty"`
+	Label    LocalizedText `json:"label"`
+	Href     string        `json:"href"`
 }
 
 type published struct {
@@ -227,3 +239,6 @@ func readJSON(path string, target any) error {
 	}
 	return json.Unmarshal(data, target)
 }
+
+// SafePublicPath exposes the common safe public-link boundary for template configuration.
+func SafePublicPath(value string) bool { return safePublicPath(value) }

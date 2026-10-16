@@ -19,9 +19,5 @@ func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (*v1.ListRes, 
 	return &v1.ListRes{Items: items, Total: page.Total, Page: page.Page, PageSize: page.PageSize}, nil
 }
 func projectDirectory(item productdirectory.Directory) v1.Directory {
-	products := make([]v1.Product, len(item.Products))
-	for i, p := range item.Products {
-		products[i] = v1.Product{ProductNo: p.ProductNo, NameZhCn: p.NameZhCn, NameEnUs: p.NameEnUs}
-	}
-	return v1.Directory{DirectoryNo: item.DirectoryNo, NameZhCn: item.NameZhCn, NameEnUs: item.NameEnUs, SortOrder: item.SortOrder, StatusCode: string(item.StatusCode), Version: item.Version, ProductNos: item.ProductNos, Products: products, ProductCount: item.ProductCount}
+	return v1.Directory{NavigationType: string(item.NavigationType), TargetURL: item.TargetURL, Icon: item.Icon, DirectoryNo: item.DirectoryNo, NameZhCn: item.NameZhCn, NameEnUs: item.NameEnUs, SortOrder: item.SortOrder, StatusCode: string(item.StatusCode), Version: item.Version, ProductCount: item.ProductCount}
 }

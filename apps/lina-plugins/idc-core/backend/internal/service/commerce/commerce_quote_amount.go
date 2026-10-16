@@ -1,3 +1,4 @@
+// This file calculates shared quote taxes and keeps installation fees outside agent discounts.
 package commerce
 
 import (
@@ -9,9 +10,10 @@ import (
 )
 
 type quoteNetComponent struct {
-	amount    int64
-	setup     bool
-	lineIndex int
+	amount       int64
+	setup        bool
+	installation bool
+	lineIndex    int
 }
 
 type quoteItemAmounts struct {
@@ -50,7 +52,20 @@ func CalculatePricingAmounts(
 	line catalog.PurchaseQuoteLine,
 	discountMinor int64,
 ) (PricingAmounts, error) {
-	amounts, err := calculateQuoteItemAmounts(line, discountMinor)
+	return pricingAmounts(line, discountMinor, false)
+}
+
+// CalculatePricingAmountsWithAdjustments preserves the discount scope frozen by the quote owner.
+func CalculatePricingAmountsWithAdjustments(line catalog.PurchaseQuoteLine, adjustments []QuoteAdjustment) (PricingAmounts, error) {
+	discount, agent, err := quoteDiscountScope(adjustments)
+	if err != nil {
+		return PricingAmounts{}, err
+	}
+	return pricingAmounts(line, discount, agent)
+}
+
+func pricingAmounts(line catalog.PurchaseQuoteLine, discountMinor int64, agent bool) (PricingAmounts, error) {
+	amounts, err := calculateScopedQuoteItemAmounts(line, discountMinor, agent)
 	if err != nil {
 		return PricingAmounts{}, err
 	}
@@ -98,6 +113,10 @@ func calculateQuoteItemAmounts(
 	line catalog.PurchaseQuoteLine,
 	discount int64,
 ) (quoteItemAmounts, error) {
+	return calculateScopedQuoteItemAmounts(line, discount, false)
+}
+
+func calculateScopedQuoteItemAmounts(line catalog.PurchaseQuoteLine, discount int64, agent bool) (quoteItemAmounts, error) {
 	components, err := quoteTaxExclusiveComponents(line)
 	if err != nil {
 		return quoteItemAmounts{}, err
@@ -105,7 +124,9 @@ func calculateQuoteItemAmounts(
 	amounts := quoteItemAmounts{discount: discount}
 	weights := make([]int64, len(components))
 	for index, component := range components {
-		weights[index] = component.amount
+		if !agent || !component.installation {
+			weights[index] = component.amount
+		}
 		if component.setup {
 			amounts.setupSubtotal, err = safeQuoteAmountAdd(amounts.setupSubtotal, component.amount)
 		} else {
@@ -176,7 +197,7 @@ func quoteTaxExclusiveComponents(line catalog.PurchaseQuoteLine) ([]quoteNetComp
 	for lineIndex, charge := range line.Charges {
 		if charge.SetupFeeMinor > 0 {
 			components = append(components, quoteNetComponent{
-				amount: charge.SetupFeeMinor, setup: true, lineIndex: lineIndex,
+				amount: charge.SetupFeeMinor, setup: true, installation: true, lineIndex: lineIndex,
 			})
 		}
 		if charge.ChargeAmountMinor > 0 {
@@ -311,4 +332,29 @@ func safeQuoteAmountAdd(left, right int64) (int64, error) {
 		return 0, bizerr.NewCode(CodeQuoteNotAvailable)
 	}
 	return left + right, nil
+}
+
+// quoteDiscountScope rejects accidental stacking on a negotiated-price line.
+func quoteDiscountScope(adjustments []QuoteAdjustment) (int64, bool, error) {
+	var total int64
+	var agent, other bool
+	for _, adjustment := range adjustments {
+		if !validQuoteAdjustment(adjustment) {
+			return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
+		}
+		if adjustment.TypeCode == QuoteAdjustmentAgentPrice {
+			agent = true
+		} else {
+			other = true
+		}
+		var err error
+		total, err = safeQuoteAmountAdd(total, adjustment.AmountMinor)
+		if err != nil {
+			return 0, false, err
+		}
+	}
+	if agent && other {
+		return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
+	}
+	return total, agent, nil
 }

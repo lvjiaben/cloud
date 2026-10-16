@@ -8,6 +8,12 @@ This source plugin owns the stable IDC business boundaries for customers, produc
 
 The plugin depends only on the LinaPro host. Other IDC plugins may depend on its public contracts under `backend/cap`.
 
+## Operating data
+
+The top-level Operating Data page reports actual receipts and paid orders for today, yesterday, the current month, and all history in the merchant timezone. Top-ups and cash receipts count as income; spending an existing balance does not count again. Amounts remain separated by original currency. Calendar-month trends compare the same date in the previous month without fabricating absent dates, and product rankings use paid order quantity snapshots.
+
+Online customers are deduplicated through the host-governed session seam. Server counts cover active cloud and bare-metal servers expiring within seven days; tickets are grouped by their current resolved or closed state. Every metric and chart opens a matching paginated projection in its original business page, with fresh host permission checks. `GET /admin/operations/data` and `GET /admin/operations/data/records` replace the scattered legacy homepage endpoints. Pages contain at most one hundred rows, and the existing homepage route remains valid.
+
 ## Runtime security keyring
 
 Before enabling the plugin routes and secret envelope service, deployment must provide `LINAPRO_IDC_CORE_SECURITY_KEYRING` as one canonical JSON object:
@@ -33,3 +39,23 @@ The retired development-only path that generated catalog drafts from resource or
 ## Delivery boundary
 
 This stable business owner is delivered as a mandatory built-in source plugin with Chinese and English resources. Replaceable supplier connectors are separately managed dynamic plugins: they install, upgrade, stop new sales, disable, and uninstall through the single LinaPro plugin manager, while their business configuration remains in the catalog or owning-domain page. The built-in owner is not listed as an uninstallable managed plugin.
+
+## Configuring support staff
+
+1. Create an organization department under Permissions.
+2. Create a support role with department data scope and ticket list, detail, reply, note, claim, and resolve permissions. Supervisors additionally need Manage Department Tickets plus each required transfer, close, or reopen action.
+3. Create a separate backend user and assign the department and role. Positions record employment information; they do not grant permissions.
+4. An administrator with broad data scope and support configuration permission links the queue to the organization department in Support Settings. Existing unlinked queues need an explicit mapping.
+5. Employees claim tickets from their department queue. Transfers and reopening return tickets to the queue. Automatic assignment, individual targets, and the separate staff qualification feature have been removed. Escalations and low ratings flag follow-up in the queue; customer notifications remain.
+
+Role permissions accumulate; all-data scope does not grant actions. Department changes and revoked permissions are checked on subsequent requests. The five permission administration pages provide a floating help icon at the lower right through a published plugin slot, without host changes.
+
+## Product agent prices and custom prices
+
+Use **Edit** on a product row, then **Set agent prices** inside the product editor to set that product’s prices for agent levels. **Custom Prices** in the toolbar lets administrators select a customer and product, then create, query, edit or delete customer-specific prices. Use the small Agent Price dialog in Agent Sales → Agent Levels to set a default charge percentage per level, such as 80 for 80% of regular prices; leave blank and confirm to clear. Priority is customer custom price, product level price, default level percentage, regular price; web purchases, the open `API`, and upstream catalog exports share these rules. Setting or clearing the default requires pricing management permission. Editing a level name or status does not change its price; immutable versions are retained and conflicting updates require closing and reopening before saving. Product level and customer custom prices identify their currency and billing period; the default level percentage applies to uncovered product terms. The configured item price includes configuration but excludes tax and setup fees. Deletion revokes the rule for future quotes while preserving historical quotes and orders. Administrators need catalog access and pricing management permissions; custom customer prices additionally require customer query permission.
+
+## Trial lifecycle admission
+
+The optional `trialPauseResume` flag in the owner-defined `product-fulfillment-contract` declaration defaults to false. A provider may declare it only when its entitlement owner implements real system-owned pause and resume operations and a usable formal renewal path. Ongoing management alone does not imply trial support. No existing provider is enabled by inference. Publication rejects active trial plans on manual products or on a bound release without this declaration; ordinary plans and inactive trial history remain unaffected.
+
+For local trials, the first successful activation initializes the trial dates from the immutable order period in UTC. Provisioning waits, catalog changes, repeated activation and later resumes cannot consume or restart that trial duration. This date initialization does not by itself provide expiry scheduling or paid conversion.

@@ -168,10 +168,21 @@ export class ElectronicContractPage {
   }
 
   async openContractDetail(contractNo: string) {
-    const row = this.contractManager.locator("tbody tr").filter({
-      hasText: contractNo,
-    });
-    await row.getByRole("button", { name: /查看详情|View details/u }).click();
+    await expect(async () => {
+      await this.openContractManager();
+      const row = this.contractManager
+        .locator(".vxe-table--main-wrapper .vxe-body--row")
+        .filter({ hasText: contractNo });
+      await expect(row).toBeVisible({ timeout: 3_000 });
+    }).toPass({ intervals: [100, 250, 500], timeout: 15_000 });
+    const row = this.contractManager
+      .locator(".vxe-table--main-wrapper .vxe-body--row")
+      .filter({ hasText: contractNo });
+    const rowId = await row.getAttribute("rowid");
+    await this.contractManager
+      .locator(`.vxe-table--fixed-right-wrapper .vxe-body--row[rowid="${rowId}"]`)
+      .getByRole("button", { name: /查看详情|View details/u })
+      .click();
     await this.contractDetail.waitFor({ state: "visible" });
   }
 
@@ -285,7 +296,7 @@ export class ElectronicContractPage {
     const directory = resolve(process.cwd(), "../../temp", day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, stamp + "-" + description + ".png");
-    await this.page.screenshot({ fullPage: false, path });
+    await this.page.screenshot({ animations: "disabled", fullPage: false, path });
     return path;
   }
 }

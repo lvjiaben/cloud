@@ -166,7 +166,7 @@ VALUES ` + strings.Join(values, ",")
 		if _, insertErr := s.database.Exec(txCtx, query, args...); insertErr != nil {
 			return gerror.Wrap(insertErr, "insert coupon batch assets")
 		}
-		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(txCtx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"batch_no": ""},
 			IdempotencyScope: "marketing.coupon.batch.generate", IdempotencyKey: input.RequestNo,
 			OperationCode: "marketing.coupon.batch.generate", TargetType: "marketing_coupon_batch", TargetNo: batchNo,
 			ResultCode: "succeeded", ReasonCode: "campaign_fulfillment", RiskCode: "high",

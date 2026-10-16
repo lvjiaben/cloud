@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 
@@ -275,41 +276,7 @@ INSERT INTO plugin_idc_core_customer_individual_profile (
 	if err != nil {
 		t.Fatalf("create concurrent trial commerce service: %v", err)
 	}
-	authorizer := &assistedQuoteAuthorizerStub{actor: 1001}
-	assisted, err := NewAssistedQuoteService(
-		database, resolver, commerceService, &assistedQuoteAuditStub{}, authorizer,
-		[]byte("0123456789abcdef0123456789abcdef"),
-	)
-	if err != nil {
-		t.Fatalf("create concurrent trial assisted service: %v", err)
-	}
 	purchase := trialPurchaseConfiguration(t, ctx, reader)
-	requests := make([]*AssistedQuoteRequest, 2)
-	for index := range requests {
-		requests[index], err = assisted.CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
-			CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY",
-			PaymentTermCode: AssistedPaymentTermStandardPrepay,
-			Reason:          "concurrent trial qualification verification",
-			ValiditySeconds: 3600,
-			IdempotencyKey:  []string{"trial-assisted-create-0001", "trial-assisted-create-0002"}[index],
-			Items:           []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
-		})
-		if err != nil {
-			t.Fatalf("create concurrent trial assisted request %d: %v", index, err)
-		}
-	}
-	authorizer.actor = 1002
-	for index, request := range requests {
-		requests[index], err = assisted.DecideAssistedQuote(ctx, AssistedQuoteDecisionInput{
-			RequestNo: request.RequestNo, DecisionCode: AssistedQuoteDecisionApproved,
-			DecisionReason: "independent trial qualification approval",
-			IdempotencyKey: []string{"trial-assisted-approve-0001", "trial-assisted-approve-0002"}[index],
-		})
-		if err != nil || requests[index].StatusCode != AssistedQuoteStatusApproved ||
-			requests[index].TotalAmountMinor != 0 {
-			t.Fatalf("approve concurrent trial request %d result=%+v err=%v", index, requests[index], err)
-		}
-	}
 	checkoutServices := make([]AssistedQuoteService, 2)
 	for index := range checkoutServices {
 		checkoutServices[index], err = NewAssistedQuoteService(
@@ -330,12 +297,9 @@ INSERT INTO plugin_idc_core_customer_individual_profile (
 		go func(index int) {
 			defer workers.Done()
 			<-start
-			results[index], errorsFound[index] = checkoutServices[index].CheckoutAssistedQuote(
-				ctx, AssistedQuoteCheckoutInput{
-					RequestNo:      requests[index].RequestNo,
-					IdempotencyKey: []string{"trial-assisted-checkout-0001", "trial-assisted-checkout-0002"}[index],
-				},
-			)
+			results[index], errorsFound[index] = checkoutServices[index].CreateAssistedQuote(ctx, AssistedQuoteCreateInput{
+				CustomerNo: "customer-commerce-service-1", CurrencyCode: "CNY", PaymentDueAt: time.Now().Add(time.Hour).UnixMilli(), Reason: "concurrent trial", IdempotencyKey: []string{"trial-direct-create-1", "trial-direct-create-2"}[index], Items: []AssistedQuoteItemInput{{Quantity: 1, Purchase: purchase}},
+			})
 		}(index)
 	}
 	close(start)

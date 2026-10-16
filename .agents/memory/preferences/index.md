@@ -36,7 +36,7 @@
 | 订单取消、到期与风险审核规则 | [29-order-lifecycle.md](29-order-lifecycle.md) |
 | 首次付款实名门禁与订单恢复规则 | [30-first-payment-identity.md](30-first-payment-identity.md) |
 | 客户交易门户与后台订单目录规则 | [31-customer-commerce.md](31-customer-commerce.md) |
-| 后台协助报价与订单规则 | [32-assisted-orders.md](32-assisted-orders.md) |
+| 后台协助下单规则 | [32-assisted-orders.md](32-assisted-orders.md) |
 | 账单变换与财务复核长期规则 | [33-invoice-review.md](33-invoice-review.md) |
 | 服务期限与续费履约长期规则 | [34-renewal.md](34-renewal.md) |
 | 财务工作台与客户财务中心规则 | [35-finance-workspace.md](35-finance-workspace.md) |
@@ -77,7 +77,12 @@
 | SSL 证书插件长期规则 | [70-ssl.md](70-ssl.md) |
 | 营销反滥用复核长期规则 | [71-marketing-abuse.md](71-marketing-abuse.md) |
 | 用户中心与官网视觉长期规则 | [72-customer-website-visual.md](72-customer-website-visual.md) |
+| 工单角色、组织与部门队列（2026-10-10） | [75-support-role-access.md](75-support-role-access.md) |
+| 客户业务、代理销售与开放 API（2026-10-10） | [76-customer-business-openapi.md](76-customer-business-openapi.md) |
+| 严格禁止修改宿主（2026-10-10） | [74-host-boundary.md](74-host-boundary.md) |
 
 `migration-manifest.json`仅保存迁移时的来源与哈希，便于确认原文完整迁移；后续更新主题记录不要求保持旧哈希。新确认结论写入对应主题，避免重新堆积到入口文件。
 
 - [用户中心商品目录](73-customer-product-directory.md)：商家关联商品、商家配置服务菜单与购买分类导航；不含私人服务分组。
+
+- [商品业务与插件交付](75-product-commerce.md)：分类商品同页、任意商品插件化、人工交付、试用转正式和配置升级。

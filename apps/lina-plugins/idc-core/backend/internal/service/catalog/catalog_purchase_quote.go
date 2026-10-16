@@ -152,6 +152,12 @@ func (s *publicCatalogReaderImpl) AssemblePurchaseQuote(
 	if err != nil {
 		return nil, err
 	}
+	if err := s.admitCurrency(ctx, input.CurrencyCode); err != nil {
+		return nil, err
+	}
+	if err = verifyConfigurationPriceModes(ctx, s.database, input.Lines); err != nil {
+		return nil, unavailablePurchaseQuote(err)
+	}
 	productRows := make([]purchaseQuoteProductRow, 0)
 	if err = s.database.GetScan(ctx, &productRows, purchaseQuoteProductsSQL,
 		strings.Join(products, ","), strings.Join(versions, ","), len(versions)+1,
@@ -197,9 +203,13 @@ func (s *publicCatalogReaderImpl) AssemblePurchaseQuote(
 	if len(simpleInventoryRows) > len(versions) {
 		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
-	return buildPurchaseQuoteWithSimpleInventory(
+	lines, err := buildPurchaseQuoteWithSimpleInventory(
 		input, productRows, ruleRows, priceRows, taxRows, simpleInventoryRows,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return s.applyImportedPurchasePrices(ctx, input.CurrencyCode, versions, lines)
 }
 
 func validatePurchaseQuoteInput(input PurchaseQuoteInput) (
@@ -235,7 +245,7 @@ func validatePurchaseQuoteInput(input PurchaseQuoteInput) (
 			return nil, nil, nil, nil, bizerr.NewCode(CodePublicQuoteInvalid)
 		}
 		for _, selection := range line.PriceSelections {
-			if !strings.HasPrefix(selection.DimensionNo, "cpd_") || selection.Quantity < 1 || selection.Quantity > 128 {
+			if !strings.HasPrefix(selection.DimensionNo, "cpd_") || selection.Quantity < 1 || selection.Quantity > math.MaxInt32 {
 				return nil, nil, nil, nil, bizerr.NewCode(CodePublicQuoteInvalid)
 			}
 			if _, duplicate := dimensionSet[line.ReferenceNo+"\x00"+selection.DimensionNo]; duplicate {
@@ -534,13 +544,13 @@ func purchaseQuoteCharges(
 ) ([]PurchaseQuoteCharge, error) {
 	definition := BillingRuleDefinitionFromEntity(rule)
 	result := make([]PurchaseQuoteCharge, 0, 1)
-	base, err := purchaseQuoteCharge(line, definition, "", false, 1, prices, priorTrialUses)
+	base, err := purchaseQuoteCharge(line, definition, "", false, ConfigurationPriceFixed, 1, prices, priorTrialUses)
 	if err != nil {
 		return nil, err
 	}
 	result = append(result, base)
 	for _, selection := range line.PriceSelections {
-		charge, err := purchaseQuoteCharge(line, definition, selection.DimensionNo, true, selection.Quantity, prices, priorTrialUses)
+		charge, err := purchaseQuoteCharge(line, definition, selection.DimensionNo, true, selection.PricingMode, selection.Quantity, prices, priorTrialUses)
 		if err != nil {
 			return nil, err
 		}
@@ -554,6 +564,7 @@ func purchaseQuoteCharge(
 	definition BillingRuleDefinition,
 	optionNo string,
 	configurationDimension bool,
+	pricingMode ConfigurationPriceMode,
 	quantity int,
 	prices map[string][]entity.CatalogPrice,
 	priorTrialUses *int,
@@ -564,13 +575,22 @@ func purchaseQuoteCharge(
 		schedule = append(schedule, PriceTierDefinitionFromEntity(row))
 	}
 	quotedQuantity := int64(quantity)
-	if definition.QuantityMode == QuantityModeFixed {
+	if definition.QuantityMode == QuantityModeFixed && (pricingMode == "" || pricingMode == ConfigurationPriceFixed) {
 		quotedQuantity = 1
 	}
-	quoted, err := QuoteBillingRule(definition, schedule, BillingQuoteRequest{
+	request := BillingQuoteRequest{
 		Phase: QuotePhaseNewPurchase, Cycles: line.PurchaseCycles, Quantity: &quotedQuantity,
 		AuthoritativePriorTrialUses: priorTrialUses,
-	})
+	}
+	var (
+		quoted *BillingQuote
+		err    error
+	)
+	if configurationDimension {
+		quoted, err = quoteConfigurationPrice(definition, pricingMode, schedule, request)
+	} else {
+		quoted, err = QuoteBillingRule(definition, schedule, request)
+	}
 	if err != nil || quoted.Status != BillingQuoteFinal || quoted.ChargeAmountMinor == nil ||
 		quoted.SetupFeeMinor == nil || quoted.TotalAmountMinor == nil {
 		return PurchaseQuoteCharge{}, bizerr.NewCode(CodePublicQuoteNotAvailable)
@@ -588,12 +608,17 @@ func purchaseQuoteCharge(
 	if err != nil {
 		return PurchaseQuoteCharge{}, err
 	}
+	digestMode := pricingMode
+	if digestMode == ConfigurationPriceFixed {
+		digestMode = ""
+	}
 	digest, err := purchaseQuoteDigest(struct {
 		VersionNo, BillingRuleNo, OptionNo string
 		Quantity, PurchaseQuantity, Cycles int
+		PricingMode                        ConfigurationPriceMode `json:",omitempty"`
 		Schedule                           []PriceTierDefinition
 	}{line.VersionNo, line.BillingRuleNo, optionNo, quantity, requestedQuantity,
-		line.PurchaseCycles, schedule})
+		line.PurchaseCycles, digestMode, schedule})
 	if err != nil {
 		return PurchaseQuoteCharge{}, err
 	}

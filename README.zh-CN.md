@@ -27,6 +27,10 @@
 
 # 快速链接
 
+首次部署业务版本请先阅读[首次安装](INSTALL.zh-CN.md)，使用包含业务插件的构建入口。
+
+开发官网、用户中心或交给`AI`继续开发，请从[开发与协作入口](DEVELOPMENT.zh-CN.md)开始。
+
 | 资源 | 地址 |
 |------|------|
 | **开源仓库** | https://github.com/linaproai/linapro |

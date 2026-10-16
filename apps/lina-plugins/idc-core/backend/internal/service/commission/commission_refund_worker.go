@@ -1,8 +1,9 @@
+// This file dispatches dedicated commission events and bounded renewal/maturity recovery.
 package commission
 
 import (
 	"context"
-	"errors"
+	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-plugin-idc-core/backend/internal/service/outbox"
 )
@@ -24,18 +25,18 @@ type worker struct {
 
 func NewWorker(dispatcher Dispatcher, consumer Consumer) (Worker, error) {
 	if dispatcher == nil || consumer == nil {
-		return nil, errors.New("commission refund worker requires dependencies")
+		return nil, gerror.New("commission refund worker requires dependencies")
 	}
 	return &worker{dispatcher: dispatcher, consumer: consumer}, nil
 }
 
 func (w *worker) Run(ctx context.Context, limit int) (int, error) {
 	if ctx == nil || ctx.Err() != nil || limit < 1 || limit > maximumWorkerBatch {
-		return 0, errors.New("commission refund worker input is invalid")
+		return 0, gerror.New("commission refund worker input is invalid")
 	}
 	claimed, err := w.dispatcher.Claim(ctx, outbox.ClaimInput{
 		WorkerID: "idc-core-commission-refund-reversal", Limit: limit,
-		EventTypes: []string{RefundReversalEventType},
+		EventTypes: []string{AccrualEventType, RefundReversalEventType},
 	})
 	if err != nil {
 		return 0, err
@@ -49,7 +50,7 @@ func (w *worker) Run(ctx context.Context, limit int) (int, error) {
 			code, canRetry := failureClass(consumeErr)
 			if _, transitionErr := w.dispatcher.RecordFailure(ctx, outbox.FailureInput{
 				Lease: lease, Retryable: canRetry, ErrorCode: code,
-				ErrorSummary: "Commission refund reversal could not be completed",
+				ErrorSummary: "Commission processing could not be completed",
 			}); transitionErr != nil {
 				return processed, transitionErr
 			}
@@ -60,5 +61,10 @@ func (w *worker) Run(ctx context.Context, limit int) (int, error) {
 		}
 		processed++
 	}
-	return processed, nil
+	renewals, renewalErr := w.consumer.AccrueRenewals(ctx, limit)
+	if renewalErr != nil {
+		return processed + renewals, renewalErr
+	}
+	matured, maturityErr := w.consumer.Mature(ctx, limit)
+	return processed + renewals + matured, maturityErr
 }

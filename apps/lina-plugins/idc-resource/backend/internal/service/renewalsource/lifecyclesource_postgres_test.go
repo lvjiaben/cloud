@@ -164,6 +164,69 @@ VALUES ('evidence_44444444444444444444444444444444',?,'provider_task',
 	}
 }
 
+// TestEntitlementLifecycleOwnerRoutingPostgreSQL proves modern suspension and
+// recovery use resource-owned customer bindings without a legacy service row.
+func TestEntitlementLifecycleOwnerRoutingPostgreSQL(t *testing.T) {
+	ctx, database := newRenewalSourceDatabase(t)
+	seedRenewalOwnerRoute(t, ctx, database)
+	insertLifecycleCapabilitySnapshot(t, ctx, database, "capability-entitlement-lifecycle", "supported", `[]`)
+	service, err := lifecyclesource.New(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := lifecycleresourcecap.TaskRequest{
+		LifecycleTaskNo: "LCT_0123456789abcdef0123456789abcdef",
+		ServiceNo:       "ent_11111111111111111111111111111111", CustomerNo: "customer-renewal-1",
+		Action: lifecycleresourcecap.ActionSuspend, ExpectedServiceVersion: 3,
+		ExpectedExpiresAt: time.Now().UTC(), IdempotencyDigest: strings.Repeat("a", 64),
+	}
+	foreign := request
+	foreign.CustomerNo = "another-customer"
+	if _, err = service.CreateTask(ctx, foreign); !errors.Is(err, lifecycleresourcecap.ErrSourceUnavailable) {
+		t.Fatalf("foreign customer created lifecycle task: %v", err)
+	}
+	forged := request
+	forged.ChannelNo, forged.PoolNo = "channel-renewal-1", "pool-renewal-1"
+	if _, err = service.CreateTask(ctx, forged); !errors.Is(err, lifecycleresourcecap.ErrSourceUnavailable) {
+		t.Fatalf("caller-specified route was accepted: %v", err)
+	}
+	count, err := database.GetValue(ctx, `SELECT count(*) FROM plugin_idc_resource_task WHERE capability_code<>'server.provision'`)
+	if err != nil || count.Int() != 0 {
+		t.Fatalf("rejected ownership requests created tasks: %v %v", count, err)
+	}
+	created, err := service.CreateTask(ctx, request)
+	if err != nil || created == nil || created.Status != lifecycleresourcecap.TaskStatusPending {
+		t.Fatalf("entitlement suspend=%+v err=%v", created, err)
+	}
+	assertLifecycleProviderParameters(t, ctx, database, created.ProviderTaskNo, `{"reason":"due"}`, request.LifecycleTaskNo)
+	replayed, err := service.CreateTask(ctx, request)
+	if err != nil || replayed == nil || !replayed.Reused || replayed.ProviderTaskNo != created.ProviderTaskNo {
+		t.Fatalf("entitlement replay=%+v err=%v", replayed, err)
+	}
+	if _, err = service.ReadTask(ctx, lifecycleresourcecap.TaskReadRequest{ProviderTaskNo: created.ProviderTaskNo, Request: foreign}); !errors.Is(err, lifecycleresourcecap.ErrSourceUnavailable) {
+		t.Fatalf("foreign customer read lifecycle task: %v", err)
+	}
+	read, err := service.ReadTask(ctx, lifecycleresourcecap.TaskReadRequest{ProviderTaskNo: created.ProviderTaskNo, Request: request})
+	if err != nil || read == nil || read.ProviderTaskNo != created.ProviderTaskNo {
+		t.Fatalf("owned lifecycle read=%+v err=%v", read, err)
+	}
+	resume := request
+	resume.LifecycleTaskNo = "LCT_22222222222222222222222222222222"
+	resume.Action = lifecycleresourcecap.ActionResume
+	resume.IdempotencyDigest = strings.Repeat("b", 64)
+	restored, err := service.CreateTask(ctx, resume)
+	if err != nil || restored == nil || restored.ProviderTaskNo == created.ProviderTaskNo {
+		t.Fatalf("entitlement resume=%+v err=%v", restored, err)
+	}
+	assertLifecycleProviderParameters(t, ctx, database, restored.ProviderTaskNo, `{}`, resume.LifecycleTaskNo)
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_mapping SET status_code='released',released_at=CURRENT_TIMESTAMP WHERE mapping_no='mapping-renewal-1'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.ReadTask(ctx, lifecycleresourcecap.TaskReadRequest{ProviderTaskNo: created.ProviderTaskNo, Request: request}); !errors.Is(err, lifecycleresourcecap.ErrSourceUnavailable) {
+		t.Fatalf("released mapping still readable through old task: %v", err)
+	}
+}
+
 func assertLifecycleProviderParameters(
 	t *testing.T,
 	ctx context.Context,

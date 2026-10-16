@@ -26,7 +26,10 @@ test.describe("TC-8 服务器批量续费", () => {
     expect(JSON.stringify(state.previews[0])).not.toMatch(
       /entitlementNo|customerNo/,
     );
-    await expect(renewals.root.getByRole("textbox")).toHaveCount(0);
+    // The official pager has a page-number textbox. Server selection itself
+    // must still come from the list rather than a typed server identifier.
+    await expect(renewals.root.locator(".ant-input")).toHaveCount(0);
+    await expect(renewals.root.locator(".vxe-pager").getByRole("textbox")).toHaveCount(1);
   });
 
   test("TC-8b: 二次确认后逐项显示成功和失败", async ({ adminPage }) => {

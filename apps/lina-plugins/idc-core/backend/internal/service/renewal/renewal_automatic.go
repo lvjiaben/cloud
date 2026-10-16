@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/internal/service/catalog"
 )
 
 const maximumAutomaticRenewalBatch = 64
@@ -186,6 +187,7 @@ LEFT JOIN LATERAL (
     LIMIT 1
 ) latest ON TRUE
 WHERE service.tenant_id = 0
+  AND service.charge_type_code = ?
   AND service.status_code IN ('active', 'expired')
   AND service.expires_at IS NOT NULL
   AND service.renewal_mode_code IN ('provider_confirmed','local_entitlement')
@@ -196,7 +198,7 @@ WHERE service.tenant_id = 0
       AND (latest.next_attempt_at IS NULL OR latest.next_attempt_at <= CURRENT_TIMESTAMP)
   ))
 ORDER BY service.expires_at ASC, service.id ASC
-LIMIT ?`, limit); err != nil {
+LIMIT ?`, string(catalog.ChargeTypeRecurring), limit); err != nil {
 		return nil, normalizeError(gerror.Wrap(err, "list due automatic renewals"))
 	}
 	report := &AutomaticBatch{Selected: len(serviceRows)}
@@ -249,11 +251,12 @@ INNER JOIN plugin_idc_core_service_renewal_policy policy
    AND policy.policy_version = service.current_renewal_policy_version
    AND policy.entitlement_no = service.entitlement_no
 WHERE service.tenant_id = 0 AND service.entitlement_no = ?
+  AND service.charge_type_code = ?
   AND customer.status_code = 'active'
   AND service.status_code IN ('active', 'expired')
   AND service.expires_at IS NOT NULL
   AND service.renewal_mode_code IN ('provider_confirmed','local_entitlement')
-  AND policy.auto_renew_enabled = TRUE`, entitlementNo); err != nil {
+  AND policy.auto_renew_enabled = TRUE`, entitlementNo, string(catalog.ChargeTypeRecurring)); err != nil {
 		return nil, gerror.Wrap(err, "load due automatic renewal target")
 	}
 	return row, nil

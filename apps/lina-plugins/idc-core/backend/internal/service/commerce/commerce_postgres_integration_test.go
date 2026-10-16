@@ -828,7 +828,7 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 	}
 	migrationRoot := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "manifest", "sql")
 	for _, name := range []string{
-		"001-core-foundation.sql", "003-customer-account.sql", "010-catalog-foundation.sql",
+		"001-core-foundation.sql", "003-customer-account.sql", "125-customer-manual-verification.sql", "010-catalog-foundation.sql",
 		"013-catalog-billing-policy.sql",
 		"014-catalog-inventory-routing.sql", "019-catalog-tax-policy.sql",
 		"020-marketing-foundation.sql", "022-commerce-foundation.sql",
@@ -879,6 +879,10 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 		"093-simple-inventory-fail-closed.sql",
 		"094-generic-configuration-pricing.sql",
 		"102-channel-commerce-attribution.sql",
+		"110-catalog-product-import.sql",
+		"120-portable-catalog-import.sql",
+		"121-peer-service-mapping.sql",
+		"127-product-commerce-workflow.sql",
 	} {
 		content, readErr := os.ReadFile(filepath.Join(migrationRoot, name))
 		if readErr != nil {
@@ -888,7 +892,7 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 			assertQuantityShadowCleanupPrecedesColumnRemoval(t, string(content))
 		}
 		attempts := 1
-		if name == "061-commission-refund-reversal.sql" || name == "062-marketing-performance-abuse.sql" || name == "078-product-fulfillment-execution.sql" || name == "079-generic-commerce-query-indexes.sql" || name == "080-generic-delivery-entitlement.sql" || name == "081-simple-product-version-inventory.sql" || name == "082-generic-commerce-inventory-snapshots.sql" || name == "083-fixed-product-empty-configuration.sql" || name == "084-general-product-version-cost.sql" || name == "085-generic-trial-unit-identity.sql" || name == "086-generic-commerce-shadow-removal.sql" || name == "087-generic-refund-entitlement.sql" || name == "088-generic-entitlement-renewal.sql" || name == "089-retire-provider-catalog-draft.sql" || name == "090-generic-delivery-entitlement-backfill.sql" || name == "091-support-entitlement-association.sql" || name == "092-entitlement-created-safe-product-labels.sql" || name == "093-simple-inventory-fail-closed.sql" || name == "094-generic-configuration-pricing.sql" || name == "102-channel-commerce-attribution.sql" {
+		if name == "061-commission-refund-reversal.sql" || name == "062-marketing-performance-abuse.sql" || name == "078-product-fulfillment-execution.sql" || name == "079-generic-commerce-query-indexes.sql" || name == "080-generic-delivery-entitlement.sql" || name == "081-simple-product-version-inventory.sql" || name == "082-generic-commerce-inventory-snapshots.sql" || name == "083-fixed-product-empty-configuration.sql" || name == "084-general-product-version-cost.sql" || name == "085-generic-trial-unit-identity.sql" || name == "086-generic-commerce-shadow-removal.sql" || name == "087-generic-refund-entitlement.sql" || name == "088-generic-entitlement-renewal.sql" || name == "089-retire-provider-catalog-draft.sql" || name == "090-generic-delivery-entitlement-backfill.sql" || name == "091-support-entitlement-association.sql" || name == "092-entitlement-created-safe-product-labels.sql" || name == "093-simple-inventory-fail-closed.sql" || name == "094-generic-configuration-pricing.sql" || name == "102-channel-commerce-attribution.sql" || name == "121-peer-service-mapping.sql" || name == "127-product-commerce-workflow.sql" {
 			attempts = 2
 		}
 		for attempt := 0; attempt < attempts; attempt++ {

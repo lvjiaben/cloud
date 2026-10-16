@@ -236,7 +236,11 @@ func (s *Service) CreateTask(
 	if err != nil {
 		return nil, errors.Join(provisionresourcecap.ErrSourceUnavailable, err)
 	}
-	secretResult, err := manager.Create(ctx, provisionSecretIdempotencyKey(request), s.passwordProducer())
+	generationPolicy, err := parseServerGenerationPolicy(request.ProductConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	secretResult, err := manager.Create(ctx, provisionSecretIdempotencyKey(request), s.generatedPasswordProducer(generationPolicy))
 	if err != nil || secretResult.Handle.IsZero() {
 		return nil, provisionresourcecap.ErrSourceUnavailable
 	}

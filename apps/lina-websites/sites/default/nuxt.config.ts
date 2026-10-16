@@ -1,4 +1,4 @@
-const apiOrigin = process.env.NUXT_API_ORIGIN?.trim() || 'http://localhost:9999';
+const apiOrigin = process.env.NUXT_API_ORIGIN?.trim() || 'http://localhost:6030';
 
 export default defineNuxtConfig({
   components: [
@@ -35,21 +35,15 @@ export default defineNuxtConfig({
   },
   modules: ['@nuxtjs/i18n'],
   nitro: {
-    devProxy: {
-      '/x': {
-        changeOrigin: true,
-        target: `${apiOrigin}/x`,
-      },
-    },
     preset: 'node-server',
   },
   routeRules: {
-    '/': { swr: 60 },
-    '/en-US': { swr: 60 },
-    '/en-US/pages/**': { swr: 300 },
-    '/en-US/products/**': { swr: 60 },
-    '/pages/**': { swr: 300 },
-    '/products/**': { swr: 60 },
+    '/': { cache: false },
+    '/en-US': { cache: false },
+    '/en-US/pages/**': { cache: false },
+    '/en-US/products/**': { cache: false },
+    '/pages/**': { cache: false },
+    '/products/**': { cache: false },
   },
   runtimeConfig: {
     apiOrigin,

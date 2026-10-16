@@ -218,6 +218,9 @@ type PublicPurchaseConfigurationQuoteInput struct {
 type PublicPurchaseConfigurationQuoteTerm struct {
 	BillingTermToken      string
 	Label                 PublicLocalizedText
+	ChargeType            ChargeType
+	PeriodUnit            PeriodUnit
+	PeriodCount           int
 	MinimumPurchaseCycles int
 	Status                string
 	SetupAmount           string
@@ -368,7 +371,7 @@ LIMIT 1`, snapshot.Target.VersionNo); err != nil || binding.InterfaceInstanceNo 
 		ConfigurationRevision:          input.ConfigurationRevision,
 		InterfaceInstanceNo:            binding.InterfaceInstanceNo,
 		InterfaceConfigurationRevision: binding.InterfaceConfigurationRevision,
-		CustomerDeclarationDigest:      snapshot.Target.CustomerDeclarationDigest,
+		CustomerDeclarationDigest:      frozenConfigurationDigest(compiled.DeclarationJSON),
 		CandidateSnapshotDigest:        frozenConfigurationDigest(candidateJSON),
 		CustomerValueDigest:            frozenConfigurationDigest(compiled.ValuesJSON),
 		PriceSelectionDigest:           priceSelectionDigest,
@@ -415,6 +418,9 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	if currency != input.CurrencyCode || !currencyCodePattern.MatchString(currency) {
 		return nil, bizerr.NewCode(CodePublicQuoteInvalid)
 	}
+	if err := s.admitCurrency(ctx, currency); err != nil {
+		return nil, err
+	}
 	snapshot, err := s.loadStructuredConfiguration(ctx, input.PublicSlug, input.ConfigurationRevision)
 	if err != nil {
 		return nil, err
@@ -443,6 +449,9 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	}
 	baseQuote, err := buildPublicConfigurationQuote(snapshot.Revision, currency, source, configurationPriceSelectionMap(selections))
 	if err != nil {
+		return nil, err
+	}
+	if err = s.applyImportedPublicPrices(ctx, snapshot.Target.VersionNo, baseQuote); err != nil {
 		return nil, err
 	}
 	terms := make([]PublicPurchaseConfigurationQuoteTerm, 0, len(baseQuote.Terms))
@@ -480,6 +489,7 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 		}
 		terms = append(terms, PublicPurchaseConfigurationQuoteTerm{
 			BillingTermToken: token, Label: label,
+			ChargeType: term.ChargeType, PeriodUnit: term.PeriodUnit, PeriodCount: term.PeriodCount,
 			MinimumPurchaseCycles: term.MinimumPurchaseCycles, Status: term.Status,
 			SetupAmount: fmt.Sprintf("%d", setup), SubtotalAmount: fmt.Sprintf("%d", subtotal),
 			TaxAmount: fmt.Sprintf("%d", tax), TotalAmount: fmt.Sprintf("%d", total),
@@ -534,7 +544,10 @@ func (s *publicCatalogReaderImpl) loadStructuredConfiguration(
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
-	if _, err = configurationcontract.ValidateSchema(schema, configurationcontract.SurfaceCustomer, nil); err != nil {
+	// Published schemas already freeze their declared methods. The resolver
+	// checks the live exact binding before invoking those methods; passing nil
+	// here would reject every valid published dynamic field before that check.
+	if _, err = configurationcontract.ValidateSchema(schema, configurationcontract.SurfaceCustomer, authorizedDynamicMethods(schema)); err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
 	snapshot := &publicStructuredConfigurationSnapshot{Target: target, Revision: revision, Schema: schema}

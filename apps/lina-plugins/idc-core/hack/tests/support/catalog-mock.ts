@@ -1,4 +1,6 @@
 import type { Page, Route } from "@host-tests/support/playwright";
+import { readFile } from "node:fs/promises";
+import { config } from "@host-tests/fixtures/config";
 
 const categories = [
   {
@@ -207,6 +209,10 @@ function productDetail(
   };
 }
 
+export function mockProductDetail(productNo: string) {
+  return productDetail(products.find((product) => product.productNo === productNo));
+}
+
 function apiEnvelope(data: unknown) {
   return { code: 0, data, message: "success" };
 }
@@ -241,6 +247,31 @@ export async function installCatalogManagementMock(
     publicationReady?: boolean;
   } = {},
 ) {
+  const categoryRows = categories.map(row => ({ ...row }));
+  // Read the current plugin resources: the running backend may still cache an older bundle.
+  await page.addInitScript(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith("linapro:i18n:runtime:")) localStorage.removeItem(key);
+    }
+  });
+  await page.route("**/api/v1/i18n/runtime/messages**", async route => {
+    const headers = { ...route.request().headers() };
+    delete headers["if-none-match"];
+    const requested = new URL(route.request().url());
+    const response = await route.fetch({ headers, url: new URL(requested.pathname + requested.search, config.backendBaseURL).href });
+    const payload = await response.json();
+    const locale = new URL(route.request().url()).searchParams.get("lang") === "en-US" ? "en-US" : "zh-CN";
+    const messages = JSON.parse(await readFile(new URL(`../../../manifest/i18n/${locale}/catalog-workspace.json`, import.meta.url), "utf8"));
+    payload.data.messages.plugin ??= {};
+    payload.data.messages.plugin["idc-core"] ??= {};
+    payload.data.messages.plugin["idc-core"].catalog ??= {};
+    for (const section of ["workspace", "commerce", "configurationPrice", "copy"]) {
+      payload.data.messages.plugin["idc-core"].catalog[section] = { ...payload.data.messages.plugin["idc-core"].catalog[section], ...Object.fromEntries(
+        Object.entries(messages).filter(([key]) => key.startsWith(`plugin.idc-core.catalog.${section}.`)).map(([key, value]) => [key.replace(`plugin.idc-core.catalog.${section}.`, ""), value]),
+      ) };
+    }
+    await route.fulfill({ response, json: payload });
+  });
   const state: CatalogMockState = {
     categoryRequests: [],
     detailRequests: [],
@@ -259,7 +290,7 @@ export async function installCatalogManagementMock(
       costNo: "cst_00000000000000000000000000000001",
       currencyCode: "CNY",
       effectiveFrom: 1_786_161_600_000,
-      effectiveUntil: null,
+      effectiveUntil: null as number | null,
       periodCount: 1,
       periodUnit: "year",
       unitCostMinor: "8800",
@@ -374,24 +405,31 @@ export async function installCatalogManagementMock(
     async (route: Route) => {
       const request = route.request();
       const url = new URL(request.url());
-      const body =
-        request.method() === "POST" ? request.postDataJSON() : undefined;
+      const body = ["POST", "PUT"].includes(request.method()) ? request.postDataJSON() : undefined;
       state.categoryRequests.push({ body, method: request.method(), url });
       if (request.method() === "POST") {
+        const category = { ...body, categoryNo: `ctg_${String(categoryRows.length + 1).padStart(32, "0")}`, deleted: false, status: "active", version: 1 };
+        categoryRows.push(category);
         await route.fulfill({
           json: apiEnvelope({
-            category: {
-              ...(body as object),
-              categoryNo: "ctg_00000000000000000000000000000005",
-              deleted: false,
-              status: "active",
-              version: 1,
-            },
+            category,
           }),
         });
         return;
       }
-      await route.fulfill({ json: apiEnvelope({ categories }) });
+      const parts = url.pathname.split("/");
+      const restoring = parts.at(-1) === "restore";
+      const row = categoryRows.find(item => item.categoryNo === parts.at(restoring ? -2 : -1));
+      if (row && request.method() !== "GET") {
+        if (request.method() === "DELETE") row.deleted = true;
+        else if (restoring) row.deleted = false;
+        else Object.assign(row, body);
+        row.version++;
+        await route.fulfill({ json: apiEnvelope({ category: row }) });
+        return;
+      }
+      const deletionState = url.searchParams.get("deletionState") ?? "active";
+      await route.fulfill({ json: apiEnvelope({ categories: categoryRows.filter(item => deletionState === "all" || item.deleted === (deletionState === "deleted")) }) });
     },
   );
   await page.route(

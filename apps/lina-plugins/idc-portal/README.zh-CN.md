@@ -13,7 +13,7 @@
 - 通过`GET /x/idc-portal/api/v1/public/brand`提供已发布品牌投影，管理员可在受保护接口中暂存、预览、发布和回滚不可变品牌修订。
 - 只注册宿主密码重置邮件需要的精确`GET /admin/auth/reset-password`桥接。
 
-公开官网源码由`apps/lina-websites/`负责。登录后的客户页面由`apps/lina-vben/apps/web-customer/`负责。本插件的品牌管理页面位于`frontend/dist/`，并通过插件前端机制加载。
+公开官网源码由`apps/lina-websites/`负责。登录后的客户页面由`apps/lina-vben/apps/web-customer/`负责。本插件的品牌管理页面位于`frontend/pages/portal-brand.vue`，通过源码插件页面注册表加载，并使用宿主的`Vben`表单和请求适配器。
 
 ## 密码重置桥接
 

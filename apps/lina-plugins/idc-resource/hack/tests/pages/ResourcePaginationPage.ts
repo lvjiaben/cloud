@@ -19,7 +19,7 @@ export class ResourcePaginationPage {
     await this.page.locator(".vxe-select-option:visible").filter({ hasText: new RegExp(`^${value}\\s*条/页$`, "u") }).click();
   }
   async refresh() {
-    if (this.kind === "overview") await this.root.getByRole("button", { name: "刷新本地数据" }).click();
+    if (this.kind === "overview") await this.root.getByRole("button", { name: /刷\s*新/ }).click();
     else if (this.kind === "renewals") await this.root.getByTestId("server-renewal-refresh").click();
     else await this.grid().locator('.vxe-toolbar [title="刷新"], .vxe-toolbar [title="Refresh"]').click();
   }

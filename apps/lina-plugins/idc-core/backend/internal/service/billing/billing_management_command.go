@@ -260,7 +260,7 @@ func (s *managementFinanceCommandImpl) ConfigureAdjustmentPolicy(
 		if err != nil {
 			return err
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"policy_no": ""},
 			IdempotencyScope: "billing.adjustment_policy.configure", IdempotencyKey: intent.RequestNo,
 			OperationCode: "billing.adjustment_policy.configure", TargetType: "billing_adjustment_policy",
 			TargetNo: result.PolicyNo, ResultCode: "succeeded", ReasonCode: "adjustment_policy_update",
@@ -408,7 +408,7 @@ func (s *managementFinanceCommandImpl) appendAdjustmentAudit(
 	if operation == "invoice_waiver" {
 		permission = permissionBillingInvoiceWaiverCreate
 	}
-	return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": "not_created"},
 		IdempotencyScope: "billing." + operation + ".create", IdempotencyKey: requestNo,
 		OperationCode: "billing." + operation + ".create", TargetType: "billing_adjustment_request",
 		TargetNo: result.AdjustmentNo, CustomerNo: result.CustomerNo, ResultCode: "succeeded",

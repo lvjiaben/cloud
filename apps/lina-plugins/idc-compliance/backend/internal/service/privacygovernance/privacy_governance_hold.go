@@ -82,6 +82,10 @@ func (s *serviceImpl) changeRetentionHold(ctx context.Context, targetType, targe
 		if _, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_compliance_privacy_action (tenant_id, action_no, action_code, target_no, idempotency_digest, request_fingerprint, result_reference, actor_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, idccap.DefaultTenantID, actionNo, action, targetNo, digest, fingerprint, reason, actor); insertErr != nil {
 			return insertErr
 		}
+		beforeStatus := "not_created"
+		if release {
+			beforeStatus = "active"
+		}
 		resultCode := "active"
 		if release {
 			resultCode = "released"
@@ -96,6 +100,7 @@ func (s *serviceImpl) changeRetentionHold(ctx context.Context, targetType, targe
 			ReasonCode:         reason,
 			RiskCode:           "high",
 			RequiredPermission: PermissionConfigure,
+			BeforeSnapshot:     map[string]any{"hold_status": beforeStatus},
 			AfterSnapshot:      map[string]any{"hold_status": resultCode, "owner": owner},
 		})
 	})

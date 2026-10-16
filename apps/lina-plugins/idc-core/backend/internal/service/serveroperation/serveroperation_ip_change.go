@@ -206,7 +206,7 @@ SET current_version=?,updated_at=? WHERE tenant_id=0 AND policy_no=? AND current
 			IdempotencyScope: "server.ip_change.policy.publish",
 			IdempotencyKey:   policyNo + ":" + strconv.FormatInt(nextVersion, 10),
 			OperationCode:    "server.ip_change.policy.publish", TargetType: "server_ip_change_policy",
-			TargetNo: policyNo, ResultCode: "published", ReasonCode: "staff_policy_publication",
+			TargetNo: policyNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "staff_policy_publication",
 			RiskCode: "high", RequiredPermission: PermissionIPChangePolicyWrite,
 			BeforeSnapshot: map[string]any{"version": currentVersion},
 			AfterSnapshot: map[string]any{"version": nextVersion, "currencyCode": input.CurrencyCode,

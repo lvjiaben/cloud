@@ -38,6 +38,7 @@ type CustomerEnterpriseProfileColumns struct {
 	Version                      string //
 	CreatedAt                    string //
 	UpdatedAt                    string //
+	ManualVerification           string // Current verification status set by staff; not supplier identity evidence
 }
 
 // customerEnterpriseProfileColumns holds the columns for the table plugin_idc_core_customer_enterprise_profile.
@@ -59,6 +60,7 @@ var customerEnterpriseProfileColumns = CustomerEnterpriseProfileColumns{
 	Version:                      "version",
 	CreatedAt:                    "created_at",
 	UpdatedAt:                    "updated_at",
+	ManualVerification:           "manual_verification",
 }
 
 // NewCustomerEnterpriseProfileDao creates and returns a new DAO object for table data access.

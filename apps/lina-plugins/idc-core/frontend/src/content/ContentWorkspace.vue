@@ -41,6 +41,7 @@ const filters = reactive({
   type: '',
   visibility: '',
 });
+const showMoreFilters = ref(false);
 const items = ref<ContentSummary[]>([]);
 const categories = ref<ContentCategory[]>([]);
 const selected = ref<ContentDetail | null>(null);
@@ -518,6 +519,11 @@ async function selectItem(contentNo: string) {
   }
 }
 
+function resetFilters() {
+  Object.assign(filters, { categoryNo: '', keyword: '', status: '', type: '', visibility: '' });
+  applyFilters();
+}
+
 function applyFilters() {
   cursorHistory.value = [];
   filters.cursor = '';
@@ -724,29 +730,35 @@ onMounted(async () => {
     </section>
 
     <section class="filter-panel">
-      <label class="field wide"><span>{{ tr('content.field.keyword') }}</span><input v-model.trim="filters.keyword" type="search" @keyup.enter="applyFilters" /></label>
-      <label class="field"><span>{{ tr('content.field.type') }}</span><select v-model="filters.type" @change="applyFilters"><option value="">—</option><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label>
-      <label v-if="filters.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select v-model="filters.categoryNo"><option value="">{{ tr('content.filter.all') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && (!filters.type || item.type === filters.type))" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
-      <label class="field"><span>{{ tr('content.field.status') }}</span><select v-model="filters.status"><option value="">—</option><option value="draft">{{ tr('content.status.draft') }}</option><option value="published">{{ tr('content.status.published') }}</option><option value="offline">{{ tr('content.status.offline') }}</option></select></label>
-      <label class="field"><span>{{ tr('content.field.visibility') }}</span><select v-model="filters.visibility"><option value="">—</option><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label>
-      <button class="button primary filter-submit" type="button" @click="applyFilters">{{ tr('content.action.refresh') }}</button>
+      <label class="field wide"><span>{{ tr('content.field.keyword') }}</span><input :aria-label="tr('content.field.keyword')" v-model.trim="filters.keyword" type="search" @keyup.enter="applyFilters" /></label>
+      <label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="filters.type" @change="applyFilters"><option value="">{{ tr('content.filter.all') }}</option><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label>
+      <label v-if="filters.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="filters.categoryNo"><option value="">{{ tr('content.filter.all') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && (!filters.type || item.type === filters.type))" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
+      <label class="field"><span>{{ tr('content.field.status') }}</span><select :aria-label="tr('content.field.status')" v-model="filters.status"><option value="">{{ tr('content.filter.all') }}</option><option value="draft">{{ tr('content.status.draft') }}</option><option value="published">{{ tr('content.status.published') }}</option><option value="offline">{{ tr('content.status.offline') }}</option></select></label>
+      <div class="filter-actions">
+        <button class="button primary" type="button" @click="applyFilters">{{ tr('content.action.search') }}</button>
+        <button class="button secondary" type="button" @click="resetFilters">{{ tr('content.action.reset') }}</button>
+        <button class="button ghost" type="button" :aria-expanded="showMoreFilters" @click="showMoreFilters = !showMoreFilters">{{ tr(showMoreFilters ? 'content.action.lessFilters' : 'content.action.moreFilters') }}</button>
+      </div>
+      <div v-if="showMoreFilters" class="advanced-filters">
+      <label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="filters.visibility"><option value="">{{ tr('content.filter.all') }}</option><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label>
+      </div>
     </section>
 
     <section class="split-workspace">
       <div class="panel content-directory">
-        <div class="panel-heading"><div><p class="panel-kicker">{{ tr('content.library.label') }}</p><h2>{{ tr('content.title') }}</h2></div><span class="count-pill">{{ items.length }}</span></div>
+        <div class="panel-heading"><div><h2>{{ tr('content.title') }}</h2></div><span class="count-pill">{{ items.length }}</span></div>
         <div v-if="loading" class="empty-state">{{ tr('content.state.loading') }}</div>
         <div v-else-if="items.length === 0" class="empty-state">{{ tr('content.empty') }}</div>
         <button v-for="item in items" v-else :key="item.contentNo" class="content-row" :class="{ active: selected?.contentNo === item.contentNo }" :data-testid="`content-item-${item.contentNo}`" type="button" @click="selectItem(item.contentNo)">
           <div class="content-type-mark" :data-type="item.type">{{ typeLabel(item.type).slice(0, 1) }}</div>
           <div class="content-row-main"><div class="ticket-row-top"><span class="content-type-label">{{ typeLabel(item.type) }}</span><span class="stage-badge">{{ statusLabel(item.status) }}</span></div><strong>{{ item.title }}</strong><p>{{ item.summary || item.contentNo }}</p><time>{{ formatTime(item.updatedAt) }}</time></div>
         </button>
-        <footer class="pagination"><button class="button ghost" :disabled="cursorHistory.length === 0 || loading" type="button" @click="previousPage">←</button><button class="button ghost" :disabled="!nextCursor || loading" type="button" @click="nextPage">→</button></footer>
+        <footer v-if="nextCursor || cursorHistory.length" class="pagination"><button class="button ghost" :disabled="cursorHistory.length === 0 || loading" type="button" @click="previousPage">←</button><button class="button ghost" :disabled="!nextCursor || loading" type="button" @click="nextPage">→</button></footer>
       </div>
 
       <div class="panel content-detail">
         <div v-if="detailLoading" class="empty-state">{{ tr('content.state.loading') }}</div>
-        <div v-else-if="!selected" class="empty-state">{{ tr('content.empty') }}</div>
+        <div v-else-if="!selected" class="empty-state">{{ tr('content.state.selectContent') }}</div>
         <template v-else>
           <div class="detail-heading"><div><p class="panel-kicker">{{ typeLabel(selected.type) }} · {{ selected.contentNo }}</p><h2>{{ selected.title }}</h2><p>{{ selected.summary }}</p></div><span class="stage-badge">{{ statusLabel(selected.status) }}</span></div>
           <div class="action-strip">
@@ -786,16 +798,16 @@ onMounted(async () => {
       <form class="modal-card modal-wide" data-testid="content-editor" @submit.prevent="save('draft')">
         <div class="modal-heading"><div><p class="panel-kicker">{{ tr('content.editor.label') }}</p><h2>{{ editor.contentNo ? tr('content.action.edit') : tr('content.action.create') }}</h2></div><button class="icon-button" type="button" @click="editorOpen = false">×</button></div>
         <div class="notice info">{{ tr('content.note.original') }}</div>
-        <div class="form-grid"><label class="field"><span>{{ tr('content.field.type') }}</span><select v-model="editor.type" :disabled="Boolean(editor.contentNo)" @change="handleEditorTypeChange"><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.field.visibility') }}</span><select v-model="editor.visibility" @change="resetAudienceSelection"><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option v-if="editor.type === 'announcement'" value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option v-if="editor.type === 'announcement'" value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label></div>
-        <label v-if="editor.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select v-model="editor.categoryNo"><option value="">{{ tr('content.category.uncategorized') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && item.type === editor.type)" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
-        <label class="field wide"><span>{{ tr('content.field.title') }}</span><input v-model.trim="editor.title" required maxlength="240" /></label>
+        <div class="form-grid"><label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="editor.type" :disabled="Boolean(editor.contentNo)" @change="handleEditorTypeChange"><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="editor.visibility" @change="resetAudienceSelection"><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option v-if="editor.type === 'announcement'" value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option v-if="editor.type === 'announcement'" value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label></div>
+        <label v-if="editor.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="editor.categoryNo"><option value="">{{ tr('content.category.uncategorized') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && item.type === editor.type)" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
+        <label class="field wide"><span>{{ tr('content.field.title') }}</span><input :aria-label="tr('content.field.title')" v-model.trim="editor.title" required maxlength="240" /></label>
         <label class="field wide"><span>{{ tr('content.field.summary') }}</span><textarea v-model="editor.summary" rows="3" /></label>
         <label class="field wide"><span>{{ tr('content.field.body') }}</span><textarea v-model="editor.body" required rows="12" /></label>
         <div class="notice info">{{ tr('content.note.seo') }}</div>
-        <div class="form-grid"><label class="field"><span>{{ tr('content.field.seoTitle') }}</span><input v-model="editor.seoTitle" /></label><label class="field"><span>{{ tr('content.field.seoDescription') }}</span><textarea v-model="editor.seoDescription" rows="2" /></label></div>
+        <div class="form-grid"><label class="field"><span>{{ tr('content.field.seoTitle') }}</span><input :aria-label="tr('content.field.seoTitle')" v-model="editor.seoTitle" /></label><label class="field"><span>{{ tr('content.field.seoDescription') }}</span><textarea v-model="editor.seoDescription" rows="2" /></label></div>
         <section v-if="audienceType" class="audience-picker">
           <div class="section-title compact"><h3>{{ tr('content.field.scopeTargets') }}</h3><span class="count-pill">{{ selectedAudienceTargets.length }}</span></div>
-          <div class="audience-search"><label class="field"><span>{{ tr('content.audience.search') }}</span><input v-model.trim="audienceQuery" type="search" @keyup.enter.prevent="searchAudience" /></label><button class="button secondary" :disabled="audienceLoading" type="button" @click="searchAudience">{{ audienceLoading ? tr('content.state.loading') : tr('content.action.search') }}</button></div>
+          <div class="audience-search"><label class="field"><span>{{ tr('content.audience.search') }}</span><input :aria-label="tr('content.audience.search')" v-model.trim="audienceQuery" type="search" @keyup.enter.prevent="searchAudience" /></label><button class="button secondary" :disabled="audienceLoading" type="button" @click="searchAudience">{{ audienceLoading ? tr('content.state.loading') : tr('content.action.search') }}</button></div>
           <div v-if="selectedAudienceTargets.length" class="audience-selected" :aria-label="tr('content.audience.selected')"><span v-for="target in selectedAudienceTargets" :key="`${target.type}:${target.number}`" class="audience-chip">{{ target.label }}<button type="button" :aria-label="tr('content.action.remove')" @click="removeAudience(target)">×</button></span></div>
           <p v-else class="audience-help">{{ tr('content.audience.required') }}</p>
           <div class="audience-results"><button v-for="candidate in audienceCandidates" :key="candidateNumber(candidate)" class="audience-option" type="button" @click="addAudience(candidate)"><strong>{{ candidate.label }}</strong><span>{{ tr('content.audience.add') }}</span></button><p v-if="!audienceLoading && audienceCandidates.length === 0" class="audience-help">{{ tr('content.audience.empty') }}</p></div>
@@ -817,7 +829,7 @@ onMounted(async () => {
     </div>
 
     <div v-if="categoryOpen" class="modal-backdrop" role="presentation" @click.self="categoryOpen = false">
-      <section class="modal-card" role="dialog" aria-modal="true"><div class="modal-heading"><div><p class="panel-kicker">{{ tr('content.action.categories') }}</p><h2>{{ tr('content.category.title') }}</h2></div><button class="icon-button" type="button" @click="categoryOpen = false">×</button></div><form class="category-create" @submit.prevent="createCategory"><label class="field"><span>{{ tr('content.field.type') }}</span><select v-model="categoryEditor.type"><option value="news">{{ tr('content.type.news') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.category.name') }}</span><input v-model.trim="categoryEditor.name" required maxlength="80" /></label><button class="button primary" :disabled="writeLoading" type="submit">{{ tr('content.action.createCategory') }}</button></form><div class="category-list"><p v-if="categories.filter((item) => !item.synthetic && item.type === categoryEditor.type).length === 0" class="empty-state">{{ tr('content.category.empty') }}</p><article v-for="category in categories.filter((item) => !item.synthetic && item.type === categoryEditor.type)" v-else :key="category.categoryNo"><strong>{{ category.name }}</strong><button class="button danger" type="button" @click="categoryToDelete = category">{{ tr('content.action.delete') }}</button></article></div></section>
+      <section class="modal-card" role="dialog" aria-modal="true"><div class="modal-heading"><div><p class="panel-kicker">{{ tr('content.action.categories') }}</p><h2>{{ tr('content.category.title') }}</h2></div><button class="icon-button" type="button" @click="categoryOpen = false">×</button></div><form class="category-create" @submit.prevent="createCategory"><label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="categoryEditor.type"><option value="news">{{ tr('content.type.news') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.category.name') }}</span><input :aria-label="tr('content.category.name')" v-model.trim="categoryEditor.name" required maxlength="80" /></label><button class="button primary" :disabled="writeLoading" type="submit">{{ tr('content.action.createCategory') }}</button></form><div class="category-list"><p v-if="categories.filter((item) => !item.synthetic && item.type === categoryEditor.type).length === 0" class="empty-state">{{ tr('content.category.empty') }}</p><article v-for="category in categories.filter((item) => !item.synthetic && item.type === categoryEditor.type)" v-else :key="category.categoryNo"><strong>{{ category.name }}</strong><button class="button danger" type="button" @click="categoryToDelete = category">{{ tr('content.action.delete') }}</button></article></div></section>
     </div>
 
     <div v-if="categoryToDelete" class="modal-backdrop" role="presentation" @click.self="categoryToDelete = null">

@@ -178,7 +178,7 @@ func (s *serviceImpl) completeWeComSelfTest(
 		return s.management.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "notification.channel.test", IdempotencyKey: prepared.OperationNo,
 			OperationCode: "notification.channel.test", TargetType: "notification_channel",
-			TargetNo: prepared.ChannelCode, ResultCode: string(result.Class), ReasonCode: "employee_self_test", RiskCode: "high",
+			TargetNo: prepared.ChannelCode, ResultCode: channelTestAuditResult(result.Class), ReasonCode: "employee_self_test", RiskCode: "high",
 			RequiredPermission: PermissionChannelManage,
 			BeforeSnapshot:     map[string]any{"channel_version": prepared.ChannelVersion, "target_mask": prepared.TargetMask},
 			AfterSnapshot:      map[string]any{"result_class": string(result.Class), "crossed_external_boundary": result.CrossedExternalBorder},

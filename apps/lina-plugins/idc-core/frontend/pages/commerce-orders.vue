@@ -6,10 +6,14 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { VbenFormProps } from "@vben/common-ui";
 
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import OperationsDetailPanel from "./components/operations-detail-panel.vue";
 
 import { useAccess } from "./plugin-access";
 import { Page } from "@vben/common-ui";
@@ -58,7 +62,11 @@ import {
 } from "./electronic-contract-client";
 
 const loading = ref(false);
+const route = useRoute();
+const operationsDetail = computed(() => ['orders', 'products'].includes(String(route.query.operationsMetric || '')));
 const detailLoading = ref(false);
+const detailError = ref("");
+const detailReference = ref("");
 const errorMessage = ref("");
 const rows = ref<CommerceOrderSummary[]>([]);
 const detail = ref<CommerceOrderDetail>();
@@ -194,7 +202,7 @@ function columns(): VxeGridProps<CommerceOrderSummary>["columns"] {
 
 function searchSchema(): VbenFormProps["schema"] {
   return [
-    { component: "Select", componentProps: { allowClear: true, filterOption: false, loading: customerLoading.value, onSearch: searchCustomers, options: customerOptions.value, showSearch: true }, fieldName: "customerNo", label: $t("plugin.idc-core.commerce.orders.table.customer") },
+    { component: "Select", componentProps: { allowClear: true, dropdownMatchSelectWidth: false, popupClassName: "plugin-customer-options", filterOption: false, loading: customerLoading.value, onSearch: searchCustomers, options: customerOptions.value, showSearch: true }, fieldName: "customerNo", label: $t("plugin.idc-core.commerce.orders.filter.customer") },
     { component: "Select", componentProps: { allowClear: true, options: statusOptions.value }, fieldName: "statusCode", label: $t("plugin.idc-core.commerce.orders.table.status") },
     { component: "Select", componentProps: { allowClear: true, options: riskOptions.value }, fieldName: "riskDecisionCode", label: $t("plugin.idc-core.commerce.orders.table.risk") },
   ];
@@ -211,10 +219,14 @@ const [Grid, gridApi] = useVbenVxeGrid({
     handleReset: search,
     handleSubmit: search,
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
-    columns: columns(), data: [], emptyRender: { name: "Empty" }, height: 560,
+    columns: columns(), data: [], emptyRender: { name: "Empty" }, height: "100%",
     pagerConfig: { enabled: true, currentPage: 1, pageSize: 10, total: 0 }, rowConfig: { keyField: "orderNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true }, id: "idc-commerce-orders",
   },
@@ -376,8 +388,11 @@ async function load(targetPage = currentPage.value, size = pageSize.value) {
 
 async function searchCustomers(keyword = "") {
   customerLoading.value = true;
-  try { customerOptions.value = await searchCustomerOptions(keyword); gridApi.formApi.setState({ schema: searchSchema() }); }
-  finally { customerLoading.value = false; }
+  try { customerOptions.value = await searchCustomerOptions(keyword); }
+  finally {
+    customerLoading.value = false;
+    gridApi.formApi.setState({ schema: searchSchema() });
+  }
 }
 
 function search() {
@@ -386,6 +401,8 @@ function search() {
 
 async function openDetail(orderNo: string) {
   const generation = ++detailGeneration;
+  detailReference.value = orderNo;
+  detailError.value = "";
   drawerOpen.value = true;
   detailLoading.value = true;
   detail.value = undefined;
@@ -422,7 +439,7 @@ async function openDetail(orderNo: string) {
     }
   } catch {
     if (generation !== detailGeneration) return;
-    errorMessage.value = $t("plugin.idc-core.commerce.orders.detailLoadFailed");
+    detailError.value = $t("plugin.idc-core.commerce.orders.detailLoadFailed");
   } finally {
     if (generation === detailGeneration) detailLoading.value = false;
   }
@@ -565,23 +582,34 @@ function requestSigningSubmission() {
   });
 }
 
-onMounted(() => { gridApi.formApi.setState({ schema: searchSchema() }); void load(); void searchCustomers(); });
+watch(drawerOpen, open => { if (!open) detailGeneration += 1; });
+onBeforeUnmount(() => { detailGeneration += 1; });
+
+function openRequestedOrder() {
+  const reference = route.query.orderNo;
+  if (route.path.endsWith("/idc/orders") && typeof reference === "string" && reference.length > 0 && reference.length <= 128 &&
+      ["idc:admin:commerce:order:list", "idc:admin:commerce:order:query"].every(code => hasAccessByCodes([code]))) void openDetail(reference);
+}
+
+onMounted(async () => {
+  gridApi.formApi.setState({ schema: searchSchema() });
+  if (!operationsDetail.value) { void searchCustomers(); await load(); openRequestedOrder(); }
+});
+watch(() => route.query.orderNo, () => { if (!operationsDetail.value) openRequestedOrder(); });
+watch(operationsDetail, (active) => {
+  if (!active) { void load(); void searchCustomers(); }
+});
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page auto-content-height>
+  <Page :ref="layoutRoot" class="plugin-admin-page" auto-content-height>
     <div class="commerce-order-page" data-testid="commerce-order-page">
-      <Card :bordered="false">
-        <div class="page-heading">
-          <div>
-            <h2>{{ $t("plugin.idc-core.commerce.orders.title") }}</h2>
-            <p>{{ $t("plugin.idc-core.commerce.orders.subtitle") }}</p>
-          </div>
-        </div>
-
+      <OperationsDetailPanel v-if="operationsDetail" :can-open="hasAccessByCodes(['idc:admin:commerce:order:query'])" @open="openDetail($event.id)" />
+      <div v-show="!operationsDetail" class="order-directory">
         <Alert v-if="errorMessage" class="page-alert" :message="errorMessage" show-icon type="error" />
-        <Grid :loading="loading">
-          <template #customer="{ row }">{{ customerDisplay(row) }}</template>
+        <Grid :loading="loading" class="min-h-0 flex-1">
+          <template #customer="{ row }"><span class="order-customer"><span>{{ row.customerDisplayName }}</span><span v-if="row.customerPrimaryPhone"> · {{ row.customerPrimaryPhone }}</span><span v-if="row.customerCode" class="whitespace-nowrap"> · #{{ row.customerCode }}</span></span></template>
           <template #productSummary="{ row }">{{ productSummary(row) }}</template>
           <template #plainValue="{ row, column }">{{ plainOrderValue(row, column.field) }}</template>
           <template #paymentMethod="{ row }">{{ paymentMethodLabel(row.paymentMethodCode, row.statusCode) }}</template>
@@ -590,10 +618,11 @@ onMounted(() => { gridApi.formApi.setState({ schema: searchSchema() }); void loa
           <template #createdAt="{ row }">{{ formatTimestamp(row.createdAt) }}</template>
           <template #action="{ row }"><Button size="small" type="link" @click="openDetail(row.orderNo)">{{ $t("plugin.idc-core.commerce.orders.detail") }}</Button></template>
         </Grid>
-      </Card>
+      </div>
 
       <VbenDrawerCompat v-model:open="drawerOpen" :title="$t('plugin.idc-core.commerce.orders.detailTitle')" :width="720">
-        <div v-if="detailLoading" class="drawer-loading">{{ $t("plugin.idc-core.commerce.orders.loading") }}</div>
+        <Alert v-if="detailError" :message="detailError" show-icon type="error"><template #action><Button @click="openDetail(detailReference)">{{ $t('plugin.idc-core.fulfillment.common.retry') }}</Button></template></Alert>
+        <div v-else-if="detailLoading" class="drawer-loading">{{ $t("plugin.idc-core.commerce.orders.loading") }}</div>
         <template v-else-if="detail">
           <Descriptions :column="2" bordered size="small">
             <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.table.order')">{{ detail.summary.orderNo }}</DescriptionsItem>
@@ -833,12 +862,22 @@ onMounted(() => { gridApi.formApi.setState({ schema: searchSchema() }); void loa
 
 <style scoped>
 .commerce-order-page {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   gap: 16px;
   min-width: 0;
   max-width: 100%;
 }
+.order-directory {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.order-customer { display: block; white-space: normal; overflow-wrap: anywhere; }
 .commerce-order-page > .ant-card { min-width: 0; }
 .page-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .page-heading h2 { margin: 0 0 6px; font-size: 20px; }

@@ -62,14 +62,17 @@ func TestIssueConsumeIsSingleUseAndOperationBound(t *testing.T) {
 	}
 }
 
-// TestIssueRequiresActualRecentLogin verifies an access-token refresh cannot
-// turn an old session LoginAt into recent authentication evidence.
-func TestIssueRequiresActualRecentLogin(t *testing.T) {
+// TestIssueAcceptsActiveSession verifies login age does not block valid actions.
+func TestIssueAcceptsActiveSession(t *testing.T) {
 	now := time.Date(2026, time.August, 6, 9, 0, 0, 0, time.UTC)
 	service, _, _ := newReauthTestService(t, &now, now.Add(-defaultFreshLoginWindow-time.Second))
 	binding := Binding{Purpose: PurposeSecretAccess, TargetDigest: DigestTarget([]byte("secret-operation"))}
-	if _, err := service.Issue(t.Context(), binding); !bizerr.Is(err, CodeRecentLoginRequired) {
-		t.Fatalf("stale LoginAt error=%v, want recent login required", err)
+	issued, err := service.Issue(t.Context(), binding)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.Consume(t.Context(), issued.Token, binding); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -100,8 +103,8 @@ func TestServerOperationSessionConfirmationAcceptsOldActiveSession(t *testing.T)
 	}
 	if _, err = service.IssueSessionConfirmation(t.Context(), Binding{
 		Purpose: PurposeSecretAccess, TargetDigest: binding.TargetDigest,
-	}); !bizerr.Is(err, CodeInvalid) {
-		t.Fatalf("non-server session confirmation error=%v", err)
+	}); err != nil {
+		t.Fatalf("secret session confirmation error=%v", err)
 	}
 }
 

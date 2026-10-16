@@ -11,7 +11,9 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-core/pkg/plugin/capability/authcap/authz"
 	"lina-core/pkg/plugin/capability/bizctxcap"
+	"lina-core/pkg/plugin/capability/sessioncap"
 )
 
 type QueueCount struct {
@@ -109,6 +111,10 @@ type OperationalAlert struct {
 }
 
 type Service interface {
+	// LoadData returns currency-isolated operating metrics under broad staff scope.
+	LoadData(ctx context.Context, currencyCode string) (Data, error)
+	// ListDataRecords returns at most 100 records using the metric predicates and target-domain permission.
+	ListDataRecords(ctx context.Context, query DataQuery) (DataRecords, error)
 	LoadSnapshot(ctx context.Context) (Snapshot, error)
 	Refresh(ctx context.Context, request RefreshRequest) (RefreshResult, error)
 	// RefreshInternal runs the scheduled, platform-owned refresh without a user
@@ -120,37 +126,29 @@ type Service interface {
 	ListTaskAlerts(ctx context.Context) ([]TaskAlert, error)
 	UpsertSignal(ctx context.Context, signal Signal) error
 	ListOperationalAlerts(ctx context.Context) ([]OperationalAlert, error)
-	// LoadDashboardSummary returns the paid-order revenue headline metrics per
-	// currency for the analytics page. It applies the same data-scope gate as
-	// the workbench snapshot and fails closed for unsupported scopes.
-	LoadDashboardSummary(ctx context.Context) ([]RevenueMetric, error)
-	// LoadCustomerStats returns today's registrations, the total customer
-	// count, and the pending-activation count for the analytics page.
-	LoadCustomerStats(ctx context.Context) (CustomerStats, error)
-	// LoadRevenueTrend returns one fixed-length daily paid-order revenue
-	// series for a single currency. Days must stay between 7 and 31.
-	LoadRevenueTrend(ctx context.Context, currencyCode string, days int) ([]TrendDay, error)
-	// LoadExpiringServices returns active service counts per product type
-	// whose entitlement expires within the next 7 days.
-	LoadExpiringServices(ctx context.Context) ([]ExpiringServiceBucket, error)
-	// LoadProductSalesRank returns products ranked by paid order items over
-	// the last 30 days. Limit must stay between 1 and 50.
-	LoadProductSalesRank(ctx context.Context, limit int) ([]ProductSalesRank, error)
 }
 
 type serviceImpl struct {
-	database gdb.DB
-	bizCtx   bizctxcap.Service
+	database      gdb.DB
+	bizCtx        bizctxcap.Service
+	sessions      sessioncap.Service
+	authorization authz.Service
 }
 
-func New(database gdb.DB, bizCtx bizctxcap.Service) (Service, error) {
+func New(database gdb.DB, bizCtx bizctxcap.Service, sessions sessioncap.Service, authorization authz.Service) (Service, error) {
 	if database == nil {
 		return nil, gerror.New("operations database is required")
 	}
 	if bizCtx == nil {
 		return nil, gerror.New("operations business context is required")
 	}
-	return &serviceImpl{database: database, bizCtx: bizCtx}, nil
+	if sessions == nil {
+		return nil, gerror.New("operations sessions capability is required")
+	}
+	if authorization == nil {
+		return nil, gerror.New("operations authorization is required")
+	}
+	return &serviceImpl{database: database, bizCtx: bizCtx, sessions: sessions, authorization: authorization}, nil
 }
 
 func (s *serviceImpl) LoadSnapshot(ctx context.Context) (Snapshot, error) {

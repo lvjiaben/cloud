@@ -148,7 +148,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, 'application/pdf', ?, 'archived', TRUE, ?, ?)`,
 			IdempotencyScope: "compliance.contract.archive",
 			IdempotencyKey:   job.JobNo, OperationCode: "compliance.contract.archive-file",
 			TargetType: "contract", TargetNo: job.ContractNo, CustomerNo: job.CustomerNo,
-			ResultCode: "archived", ReasonCode: "artifact_archived", RiskCode: "high",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "artifact_archived", RiskCode: "high",
 			CorrelationNo:  job.FlowNo,
 			BeforeSnapshot: map[string]any{"archive_status": "processing"},
 			AfterSnapshot: map[string]any{
@@ -214,7 +214,7 @@ WHERE tenant_id = ? AND source_system_code = 'tencent_essbasic' AND source_event
 			IdempotencyScope: "compliance.contract.archive",
 			IdempotencyKey:   job.JobNo, OperationCode: "compliance.contract.archive-evidence-metadata",
 			TargetType: "contract", TargetNo: job.ContractNo, CustomerNo: job.CustomerNo,
-			ResultCode: "archived", ReasonCode: "short_lived_metadata_archived", RiskCode: "high",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "short_lived_metadata_archived", RiskCode: "high",
 			CorrelationNo:  job.FlowNo,
 			BeforeSnapshot: map[string]any{"archive_status": "processing"},
 			AfterSnapshot: map[string]any{
@@ -240,11 +240,15 @@ func (s *serviceImpl) finishWithoutFile(
 		if err = s.completeJob(ctx, tx, job, status, reason, time.Time{}, now); err != nil {
 			return err
 		}
+		auditResult := "failed"
+		if status == "result_unknown" {
+			auditResult = "result_unknown"
+		}
 		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "compliance.contract.archive",
 			IdempotencyKey:   job.JobNo, OperationCode: "compliance.contract.archive-file",
 			TargetType: "contract", TargetNo: job.ContractNo, CustomerNo: job.CustomerNo,
-			ResultCode: status, ReasonCode: reason, RiskCode: "high", CorrelationNo: job.FlowNo,
+			ResultCode: auditResult, ReasonCode: reason, RiskCode: "high", CorrelationNo: job.FlowNo,
 			BeforeSnapshot: map[string]any{"archive_status": "processing"},
 			AfterSnapshot: map[string]any{
 				"archive_status": status, "file_type": job.ArtifactType, "reason": reason,

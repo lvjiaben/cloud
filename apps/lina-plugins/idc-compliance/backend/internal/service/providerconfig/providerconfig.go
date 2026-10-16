@@ -30,7 +30,7 @@ const (
 	statusDisabled              Status = "disabled"
 	auditTargetType                    = "compliance_provider_configuration"
 	auditRiskHigh                      = "high"
-	auditResultAccepted                = "accepted"
+	auditResultAccepted                = "succeeded"
 	auditResultSucceeded               = "succeeded"
 	auditResultFailed                  = "failed"
 	auditReasonCredentialUpdate        = "merchant_credential_update"

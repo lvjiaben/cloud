@@ -510,7 +510,7 @@ func validatePersistedSecurityFields(
 ) error {
 	if (security.EntryKind != entryKindTransition && security.EntryKind != entryKindObservation) ||
 		security.ActorAudienceCode != row.ActorAudienceCode || security.DataScope < 0 ||
-		!validPersistedStableCode(security.RequiredPermission, maximumPermissionRunes, false) {
+		!validAuditPermission(security.RequiredPermission) {
 		return gerror.New("persisted audit security evidence is invalid")
 	}
 	return nil

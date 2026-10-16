@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogf/gf/v2/database/gdb"
+
 	authsvc "lina-core/internal/service/auth"
 	"lina-core/internal/service/datascope"
 	"lina-core/internal/service/session"
@@ -15,6 +17,7 @@ import (
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/capmodel"
 	capabilitysessioncap "lina-core/pkg/plugin/capability/sessioncap"
+	"lina-core/pkg/plugin/capability/sessioncap/sessionspi"
 	tenantcap "lina-core/pkg/plugin/capability/tenantcap"
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
 	capabilityusercap "lina-core/pkg/plugin/capability/usercap"
@@ -32,6 +35,20 @@ type sessionCapabilityAdapter struct {
 }
 
 var _ capabilitysessioncap.Service = (*sessionCapabilityAdapter)(nil)
+var _ sessionspi.ScopeService = (*sessionCapabilityAdapter)(nil)
+
+// BuildOnlineUserExists exposes host-owned SQL composition only through the
+// source SPI, keeping host table details out of ordinary plugin contracts.
+func (a *sessionCapabilityAdapter) BuildOnlineUserExists(ctx context.Context, userIDColumn string) (*gdb.Model, bool, error) {
+	if a == nil || a.authSvc == nil || a.sessionStore == nil || a.scopeSvc == nil || a.tenantSvc == nil {
+		return nil, false, bizerr.NewCode(capmodel.CodeCapabilityUnavailable, bizerr.P("capability", "session.scope"))
+	}
+	timeout, err := a.authSvc.SessionTimeout(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	return session.BuildOnlineUserExists(ctx, userIDColumn, timeout, a.scopeSvc, a.tenantSvc)
+}
 
 // New creates the host-owned online-session capability adapter.
 func newSessionCapabilityAdapter(

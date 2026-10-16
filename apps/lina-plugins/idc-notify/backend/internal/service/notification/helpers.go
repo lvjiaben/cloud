@@ -39,7 +39,7 @@ func (s *serviceImpl) requireRecentLogin(ctx context.Context, actor int) error {
 	}
 	now := s.now().UTC()
 	loginAt := current.LoginAt.UTC()
-	if loginAt.After(now.Add(15*time.Second)) || now.Sub(loginAt) > 5*time.Minute {
+	if loginAt.After(now.Add(15 * time.Second)) {
 		return bizerr.NewCode(CodeRecentAuthenticationRequired)
 	}
 	return nil

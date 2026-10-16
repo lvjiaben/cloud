@@ -40,6 +40,7 @@ import (
 	"lina-plugin-idc-resource/backend/internal/dao"
 	"lina-plugin-idc-resource/backend/internal/service/accessorydirectory"
 	"lina-plugin-idc-resource/backend/internal/service/batchrenewal"
+	"lina-plugin-idc-resource/backend/internal/service/businessimpact"
 	"lina-plugin-idc-resource/backend/internal/service/channelinvocation"
 	"lina-plugin-idc-resource/backend/internal/service/channelsecret"
 	"lina-plugin-idc-resource/backend/internal/service/customer360summary"
@@ -73,11 +74,14 @@ var configuredResourcePublicOrigin atomic.Value
 
 // init registers the embedded resource source plugin with the host.
 func init() {
-	if err := resourceinterfaceprojectionspi.DeclareCatalogSource(
-		func(_ context.Context, authorizer managementcap.Authorizer) (resourceinterfaceprojectioncap.CatalogSource, error) {
-			return interfacecandidate.NewCatalogSource(resourceInterfaceCandidates, authorizer)
+	if err := resourceinterfaceprojectionspi.DeclareExistingBusinessOutbound(
+		func(context.Context) (resourceinterfaceprojectioncap.ExistingBusinessOutboundSource, error) {
+			return resourceInterfaceCandidates, nil
 		},
 	); err != nil {
+		panic(err)
+	}
+	if err := resourceinterfaceprojectionspi.DeclareCatalogSource(newCatalogSource); err != nil {
 		panic(err)
 	}
 	if err := resourceinterfaceprojectionspi.DeclareCandidateSource(
@@ -157,6 +161,13 @@ func init() {
 		panic(err)
 	}
 	declarations := pluginhost.NewDeclarations(pluginID)
+	impactHandler, err := businessimpact.NewLazy(func() gdb.DB { return dao.Channel.DB() })
+	if err != nil {
+		panic(err)
+	}
+	if err := declarations.Lifecycle().RegisterBusinessImpactHandler(impactHandler); err != nil {
+		panic(err)
+	}
 	declarations.Assets().UseEmbeddedFiles(idcresource.EmbeddedFiles)
 	if err := declarations.BusinessExtensions().RegisterProviderValidator(
 		resourcecap.DynamicProviderPoint,
@@ -366,13 +377,17 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 	if err != nil {
 		return err
 	}
+	configurationProjection, err := newConfigurationProjection(ctx)
+	if err != nil {
+		return err
+	}
 	configurations, err := providerconfiguration.New(
-		dao.Channel.DB(), runtime, providerDeclarations, usageReader, registrar.BusinessExtensions(),
+		dao.Channel.DB(), runtime, providerDeclarations, usageReader, configurationProjection, registrar.BusinessExtensions(),
 	)
 	if err != nil {
 		return err
 	}
-	catalogSource, err := interfacecandidate.NewCatalogSource(resourceInterfaceCandidates, runtime.Authorizer)
+	catalogSource, err := newCatalogSource(ctx, runtime.Authorizer)
 	if err != nil {
 		return err
 	}
@@ -453,10 +468,13 @@ func bindResourceInterfaceCandidates(
 	if err != nil {
 		return err
 	}
-	return resourceInterfaceCandidates.Bind(
+	if err = resourceInterfaceCandidates.Bind(
 		dao.Channel.DB(), registrar.BusinessExtensions(),
 		composition.NewProductionDynamicOutboundFactory(secretSource, invocationLeases),
-	)
+	); err != nil {
+		return err
+	}
+	return resourceInterfaceCandidates.BindFileTransfer(composition.NewProductionPurchaseFileTransferFactory(secretSource))
 }
 
 // validateHTTPProviderRuntime makes the HTTP and Jobs startup paths consume
@@ -484,4 +502,35 @@ func bindResourceReadCapability(resourceInvoker *resourceprojection.CapabilityIn
 		return err
 	}
 	return resourceInvoker.Bind(readService, currentCustomerServers)
+}
+
+// newCatalogSource binds the shared owner database and declared projection sink
+// during startup. Ordered delivery uses the same durable outbox as scheduled work.
+func newCatalogSource(ctx context.Context, authorizer managementcap.Authorizer) (resourceinterfaceprojectioncap.CatalogSource, error) {
+	factory := resourceinterfaceprojectionspi.Freeze().SinkFactory()
+	if factory == nil {
+		return nil, gerror.New("resource interface projection sink is unavailable")
+	}
+	sink, err := factory(ctx)
+	if err != nil {
+		return nil, err
+	}
+	worker, err := interfaceprojection.NewWorker(dao.Channel.DB(), sink)
+	if err != nil {
+		return nil, err
+	}
+	return interfacecandidate.NewCatalogSource(resourceInterfaceCandidates, authorizer, worker)
+}
+
+// newConfigurationProjection resolves the stateless core-owned sink once at startup.
+func newConfigurationProjection(ctx context.Context) (*interfaceprojection.Worker, error) {
+	factory := resourceinterfaceprojectionspi.Freeze().SinkFactory()
+	if factory == nil {
+		return nil, gerror.New("resource interface projection sink is unavailable")
+	}
+	sink, err := factory(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return interfaceprojection.NewWorker(dao.Channel.DB(), sink)
 }

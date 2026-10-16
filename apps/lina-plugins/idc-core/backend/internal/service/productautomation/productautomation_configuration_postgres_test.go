@@ -14,9 +14,11 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 
+	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/capregistry"
 	"lina-core/pkg/plugin/pluginhost"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/supplierinterfacecap"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
@@ -76,6 +78,12 @@ func TestInterfaceConfigurationRevisionSecretsAreCompensatable(t *testing.T) {
 	defer admin.Exec(ctx, `DROP SCHEMA `+quoteAutomationIdentifier(schemaName)+` CASCADE`)
 	database := openAutomationDatabase(t, ctx, dsn, schemaName)
 	if _, err = database.Exec(ctx, `CREATE TABLE plugin_idc_core_catalog_product_version (tenant_id INT NOT NULL DEFAULT 0,version_no VARCHAR(40) NOT NULL PRIMARY KEY,status_code VARCHAR(16) NOT NULL,UNIQUE(tenant_id,version_no));
+CREATE TABLE IF NOT EXISTS plugin_idc_core_catalog_billing_rule (
+    tenant_id INT NOT NULL DEFAULT 0,
+    version_no VARCHAR(40) NOT NULL,
+    charge_type_code VARCHAR(16) NOT NULL,
+    status_code VARCHAR(16) NOT NULL
+);
 CREATE TABLE plugin_idc_core_catalog_product_version_fulfillment_policy (
  tenant_id INT NOT NULL DEFAULT 0,version_no VARCHAR(40) NOT NULL PRIMARY KEY,
  strategy_code VARCHAR(32) NOT NULL,granularity_code VARCHAR(32) NOT NULL,
@@ -104,8 +112,18 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 		}
 	}
 	installResourceProjectionTestColumns(t, ctx, database)
+	if _, err = database.Exec(ctx, `ALTER TABLE plugin_idc_core_product_automation_interface_configuration_revision ADD COLUMN resource_owner_configuration_revision VARCHAR(40) NOT NULL DEFAULT ''`); err != nil {
+		t.Fatal(err)
+	}
+	deleteMigration, err := os.ReadFile(filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "manifest", "sql", "128-interface-delete-session-operations.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, string(deleteMigration)); err != nil {
+		t.Fatal(err)
+	}
 	label := &capmodel.LocalizedText{EnUS: "API secret", ZhCN: "接口密钥"}
-	evidence := automationEvidence([]string{"candidate.product", "provision", "query.status"})
+	evidence := automationEvidence([]string{"candidate.product", productfulfillmentcap.MethodValidateProductConfiguration, "provision", "query.status"})
 	evidence.InterfaceConfigurationCardinality = capmodel.InterfaceConfigurationCardinalityMultiple
 	evidence.InterfaceConfiguration = &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{
 		{Key: "api_secret", Type: capmodel.ConfigurationFieldSecret, Label: label},
@@ -129,7 +147,17 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 		}},
 	}
 	extensions := &automationTestExtensions{evidence: []*capmodel.BusinessExtensionProviderEvidence{evidence}}
+	var (
+		providerConfigurationValid  = true
+		providerConfigurationReason productfulfillmentcap.ConfigurationValidationReason
+		validationCalls             int
+	)
 	extensions.invoke = func(input pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error) {
+		if input.Method == productfulfillmentcap.MethodValidateProductConfiguration {
+			validationCalls++
+			payload, marshalErr := json.Marshal(productfulfillmentcap.ConfigurationValidationResult{Version: productfulfillmentcap.ContractVersion, Valid: providerConfigurationValid, Reason: providerConfigurationReason})
+			return &capmodel.BusinessExtensionMethodResult{Version: productfulfillmentcap.ContractVersion, Payload: payload}, marshalErr
+		}
 		var request configurationcontract.DynamicCandidateRequest
 		if err := json.Unmarshal(input.Payload, &request); err != nil {
 			return nil, err
@@ -145,7 +173,7 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 	}
 	authorizer := &automationTestAuthorizer{}
 	audit := &automationTestAudit{}
-	codec := &automationTestCodec{evidence: evidence}
+	codec := &automationTestCodec{evidence: evidence, identityOnly: true}
 	randomInput := bytes.NewReader(append(bytes.Repeat([]byte{0x4a}, 16), bytes.Repeat([]byte{0x4b}, 240)...))
 	service, err := newWithRandom(database, extensions, authorizer, audit, codec, randomInput)
 	if err != nil {
@@ -199,6 +227,17 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 		invalidEvaluation.Issues[0].Code != configurationcontract.IssueInvalidValue {
 		t.Fatalf("invalid dynamic selection did not return one stable field issue: value=%+v err=%v", invalidEvaluation, err)
 	}
+	evidence.ProductConfiguration.Fields[0].Required = true
+	emptyEvaluation, err := service.EvaluateVersionConfiguration(ctx, EvaluateVersionConfigurationInput{
+		VersionNo: "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", MerchantValues: []ConfigurationValue{}, ExpectedVersion: 0,
+	})
+	if err != nil || emptyEvaluation.Valid {
+		t.Fatalf("empty array bypassed declared required merchant field: %+v %v", emptyEvaluation, err)
+	}
+	if err = service.SaveVersionConfiguration(ctx, SaveVersionConfigurationInput{VersionNo: "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", MerchantValues: []ConfigurationValue{}, ExpectedVersion: 0}); err == nil {
+		t.Fatal("empty array saved despite declared required merchant field")
+	}
+	evidence.ProductConfiguration.Fields[0].Required = false
 	evaluatedInterface, err := service.EvaluateInterfaceConfiguration(ctx, EvaluateInterfaceConfigurationInput{
 		InterfaceInstanceNo: created.InterfaceInstanceNo, ExpectedRevision: 1,
 	})
@@ -333,6 +372,23 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 	}); publicationErr == nil || publicationActionCalled {
 		t.Fatalf("final publication crossed a missing configuration gate: called=%v err=%v", publicationActionCalled, publicationErr)
 	}
+	providerConfigurationValid = false
+	if rejected, evaluationErr := service.EvaluateVersionConfiguration(ctx, EvaluateVersionConfigurationInput{
+		VersionNo: "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ExpectedVersion: 0,
+		MerchantValues: []ConfigurationValue{{FieldKey: "certificate_profile", OptionTokens: []string{"ssl-basic"}}},
+	}); evaluationErr == nil || rejected != nil {
+		t.Fatalf("provider-rejected configuration was shown as valid: result=%+v err=%v", rejected, evaluationErr)
+	}
+	if rejectedErr := service.SaveVersionConfiguration(ctx, SaveVersionConfigurationInput{
+		VersionNo: "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ExpectedVersion: 0,
+		MerchantValues: []ConfigurationValue{{FieldKey: "certificate_profile", OptionTokens: []string{"ssl-basic"}}},
+	}); rejectedErr == nil {
+		t.Fatal("provider-rejected merchant configuration was saved")
+	}
+	if count, countErr := database.GetCount(ctx, `SELECT 1 FROM plugin_idc_core_catalog_product_version_configuration`); countErr != nil || count != 0 {
+		t.Fatalf("rejected merchant configuration left persisted data: count=%d err=%v", count, countErr)
+	}
+	providerConfigurationValid = true
 	if err = service.SaveVersionConfiguration(ctx, SaveVersionConfigurationInput{
 		VersionNo:       "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		MerchantValues:  []ConfigurationValue{{FieldKey: "certificate_profile", OptionTokens: []string{"ssl-basic"}}},
@@ -437,9 +493,20 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 	}); publicationErr != nil || !publicationActionCalled {
 		t.Fatalf("complete final publication admission failed: called=%v err=%v", publicationActionCalled, publicationErr)
 	}
-	if extensions.invokeCalls != 4 {
+	if extensions.invokeCalls-validationCalls != 4 {
 		t.Fatalf("dynamic product candidates produced repeated per-boundary calls: calls=%d want=4 distinct instance/revision inputs", extensions.invokeCalls)
 	}
+	providerConfigurationValid = false
+	providerConfigurationReason = productfulfillmentcap.ConfigurationValidationSupplierCapabilitiesUnconfirmed
+	publicationActionCalled = false
+	if publicationErr := service.WithPublicationAdmission(ctx, "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", func(context.Context) error {
+		publicationActionCalled = true
+		return nil
+	}); !bizerr.Is(publicationErr, codeSupplierCapabilitiesUnconfirmed) || publicationActionCalled {
+		t.Fatalf("provider-rejected configuration crossed final publication admission: called=%v err=%v", publicationActionCalled, publicationErr)
+	}
+	providerConfigurationValid = true
+	providerConfigurationReason = ""
 	publicationActionCalled = false
 	originalMerchantDigest, err := database.GetValue(ctx, `SELECT merchant_value_digest FROM plugin_idc_core_catalog_product_version_configuration WHERE version_no=?`, "ver_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	if err != nil {
@@ -535,5 +602,18 @@ INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,'ver_aaaaaaaaaaaaa
 	latestValue, err = database.GetValue(ctx, `SELECT max(revision) FROM plugin_idc_core_product_automation_interface_configuration_revision WHERE interface_instance_no=?`, created.InterfaceInstanceNo)
 	if err != nil || latestValue.Int64() != 4 {
 		t.Fatalf("recovery materialized a rolled-back revision: revision=%d err=%v", latestValue.Int64(), err)
+	}
+	service.audit = audit
+	audit.err = nil
+	revokesBeforeDelete := secrets.revokeCalls
+	if err = service.DeleteInterface(ctx, DeleteInterfaceInput{InterfaceInstanceNo: createdB.InterfaceInstanceNo, ExpectedVersion: 1}); err != nil {
+		t.Fatalf("delete unused configured interface: %v", err)
+	}
+	if secrets.revokeCalls != revokesBeforeDelete+1 {
+		t.Fatal("deletion did not revoke the private credential")
+	}
+	remaining, remainingErr := database.GetValue(ctx, `SELECT count(*) FROM plugin_idc_core_product_automation_interface_secret_reference r JOIN plugin_idc_core_product_automation_interface_configuration_revision c ON c.id=r.configuration_revision_id WHERE c.interface_instance_no=?`, createdB.InterfaceInstanceNo)
+	if remainingErr != nil || remaining.Int() != 0 {
+		t.Fatalf("deleted interface retained credential references: %v %v", remaining, remainingErr)
 	}
 }

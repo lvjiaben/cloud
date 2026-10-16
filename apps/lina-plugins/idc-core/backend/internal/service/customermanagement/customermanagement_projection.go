@@ -15,8 +15,10 @@ import (
 )
 
 type batchProjection struct {
+	balancesByCustomer     map[string][]BalanceSummary
 	codeByCustomer         map[string]string
 	phoneByCustomer        map[string]string
+	emailByCustomer        map[string]string
 	verificationByCustomer map[string]customer.VerificationStatus
 	levelByCustomer        map[string]*LevelSummary
 	tagCountByCustomer     map[string]int
@@ -29,8 +31,10 @@ type tagCountRow struct {
 
 func loadBatchProjection(ctx context.Context, rows []*entity.CustomerSubject) (batchProjection, error) {
 	projection := batchProjection{
+		balancesByCustomer:     make(map[string][]BalanceSummary, len(rows)),
 		codeByCustomer:         make(map[string]string, len(rows)),
 		phoneByCustomer:        make(map[string]string, len(rows)),
+		emailByCustomer:        make(map[string]string, len(rows)),
 		verificationByCustomer: make(map[string]customer.VerificationStatus, len(rows)),
 		levelByCustomer:        make(map[string]*LevelSummary, len(rows)),
 		tagCountByCustomer:     make(map[string]int, len(rows)),
@@ -56,6 +60,9 @@ func loadBatchProjection(ctx context.Context, rows []*entity.CustomerSubject) (b
 			return batchProjection{}, gerror.New("customer management customer type is inconsistent")
 		}
 	}
+	if err := loadWalletProjection(ctx, customerNos, projection.balancesByCustomer); err != nil {
+		return batchProjection{}, err
+	}
 	if err := loadVerificationProjection(ctx, individualNos, enterpriseNos, projection.verificationByCustomer); err != nil {
 		return batchProjection{}, err
 	}
@@ -76,6 +83,7 @@ type customerIdentityProjectionRow struct {
 	CustomerCode     string `orm:"customer_code"`
 	PhoneCountryCode string `orm:"phone_country_code"`
 	Phone            string `orm:"phone"`
+	Email            string `orm:"email"`
 }
 
 // loadCustomerIdentityProjection reads short numbers and primary phones in one bounded query.
@@ -83,7 +91,7 @@ func loadCustomerIdentityProjection(ctx context.Context, customerNos []string, p
 	var rows []customerIdentityProjectionRow
 	err := dao.CustomerSubject.Ctx(ctx).
 		LeftJoin(dao.CustomerContact.Table()+" contact", "contact.customer_no="+dao.CustomerSubject.Table()+".customer_no AND contact.tenant_id=0 AND contact.status_code='active' AND EXISTS (SELECT 1 FROM "+dao.CustomerContactRole.Table()+" contact_role WHERE contact_role.tenant_id=0 AND contact_role.customer_no=contact.customer_no AND contact_role.contact_no=contact.contact_no AND contact_role.role_code='primary' AND contact_role.status_code='active')").
-		Fields(dao.CustomerSubject.Table()+".customer_no", dao.CustomerSubject.Table()+".customer_code", "COALESCE(contact.phone_country_code,'') AS phone_country_code", "COALESCE(contact.phone,'') AS phone").
+		Fields(dao.CustomerSubject.Table()+".customer_no", dao.CustomerSubject.Table()+".customer_code", "COALESCE(contact.phone_country_code,'') AS phone_country_code", "COALESCE(contact.phone,'') AS phone", "COALESCE(contact.email,'') AS email").
 		WhereIn(dao.CustomerSubject.Table()+".customer_no", customerNos).
 		Scan(&rows)
 	if err != nil {
@@ -95,6 +103,7 @@ func loadCustomerIdentityProjection(ctx context.Context, customerNos []string, p
 		}
 		projection.codeByCustomer[row.CustomerNo] = row.CustomerCode
 		projection.phoneByCustomer[row.CustomerNo] = row.PhoneCountryCode + row.Phone
+		projection.emailByCustomer[row.CustomerNo] = row.Email
 	}
 	if len(projection.codeByCustomer) != len(customerNos) {
 		return gerror.New("customer identity projection is incomplete")

@@ -1,0 +1,59 @@
+id: website-minimal
+name: 文字官网
+version: v0.1.5
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 无首页图片的文字官网，可设置首页文案和独立菜单。
+author: linapro
+license: Proprietary
+dependencies:
+  plugins:
+    - id: idc-portal
+      version: ">=0.1.11 <1.0.0"
+public_assets:
+  - source: frontend/dist
+    mount: /
+    index: index.html
+business_extensions:
+  - point: website-template
+    version: v1
+    role: provider
+    owner: idc-portal
+    methods:
+      - capabilities.describe
+    interface_configuration_cardinality: singleton
+    interface_configuration:
+      version: v1
+      fields:
+        - key: herotitle
+          type: single_line
+          label: { en-US: Home title, zh-CN: 首页标题 }
+          maximum_length: 120
+        - key: herodescription
+          type: multi_line
+          label: { en-US: Home description, zh-CN: 首页介绍 }
+          maximum_length: 1000
+        - key: menutext
+          type: multi_line
+          label: { en-US: Menu links, zh-CN: 导航菜单 }
+          description: { en-US: "One per line: Products|/products", zh-CN: "每行一个：商品|/products" }
+          maximum_length: 3000
+    provider_metadata:
+      type: website-template-contract
+      version: v1
+      values:
+        entry: index.html
+        spa: true
+        renderer: public-minimal-v1
+
+        pages:
+          - { id: home, nameZh: 首页, nameEn: Home, path: / }
+          - { id: products, nameZh: 商品列表, nameEn: Products, path: /products }
+          - { id: news, nameZh: 新闻, nameEn: News, path: /pages/news }
+          - { id: announcements, nameZh: 公告, nameEn: Announcements, path: /pages/announcements }
+          - { id: knowledge, nameZh: 知识库, nameEn: Knowledge, path: /pages/knowledge }
+          - { id: downloads, nameZh: 下载, nameEn: Downloads, path: /pages/downloads }
+          - { id: help, nameZh: 帮助, nameEn: Help, path: /pages/help }

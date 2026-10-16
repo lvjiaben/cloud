@@ -1,6 +1,6 @@
 id: yunsu-ssl
 name: Yunsu SSL Certificate Connector
-version: v0.3.6
+version: v0.3.7
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -22,7 +22,7 @@ dependencies:
     - id: vben-adapter
       version: "=0.1.0"
     - id: idc-core
-      version: ">=0.1.85 <1.0.0"
+      version: ">=0.1.101 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -32,6 +32,7 @@ business_extensions:
     methods:
       - configuration.candidates
       - configuration.validate
+      - product.configuration.validate
       - provision
       - query
       - service.detail
@@ -72,6 +73,9 @@ business_extensions:
           label:
             en-US: Supplier certificate product
             zh-CN: 供应商证书产品
+          description:
+            en-US: Supplier domain capabilities are unconfirmed. Automatic publication is blocked; use manual delivery.
+            zh-CN: 尚未确认供应商支持的域名类型与数量，暂不能自动发布，请改用人工交付。
           required: true
           dynamic_candidates:
             version: v1

@@ -113,86 +113,86 @@ type ServerResizeSelection struct {
 }
 
 type ServerResizeOption struct {
-	OptionNo        string `json:"optionNo"`
-	ComponentType   string `json:"componentType"`
-	NameZhCN        string `json:"nameZhCN"`
-	NameEnUS        string `json:"nameEnUS"`
-	MinimumQuantity int    `json:"minimumQuantity"`
-	MaximumQuantity int    `json:"maximumQuantity"`
-	DefaultQuantity int    `json:"defaultQuantity"`
+	OptionNo        string `json:"optionNo" dc:"Published option number" eg:"Example"`
+	ComponentType   string `json:"componentType" dc:"Catalog component type" eg:"Example"`
+	NameZhCN        string `json:"nameZhCN" dc:"Chinese display name" eg:"Example"`
+	NameEnUS        string `json:"nameEnUS" dc:"English display name" eg:"Example"`
+	MinimumQuantity int    `json:"minimumQuantity" dc:"Minimum option quantity" eg:"1"`
+	MaximumQuantity int    `json:"maximumQuantity" dc:"Maximum option quantity" eg:"1"`
+	DefaultQuantity int    `json:"defaultQuantity" dc:"Default option quantity" eg:"1"`
 }
 type ServerResizeGroup struct {
-	GroupNo         string                `json:"groupNo"`
-	SelectionMode   string                `json:"selectionMode"`
-	NameZhCN        string                `json:"nameZhCN"`
-	NameEnUS        string                `json:"nameEnUS"`
-	MinimumSelected int                   `json:"minimumSelected"`
-	MaximumSelected int                   `json:"maximumSelected"`
-	Options         []*ServerResizeOption `json:"options"`
+	GroupNo         string                `json:"groupNo" dc:"Published group number" eg:"Example"`
+	SelectionMode   string                `json:"selectionMode" dc:"Selection mode: single or multiple" eg:"Example"`
+	NameZhCN        string                `json:"nameZhCN" dc:"Chinese display name" eg:"Example"`
+	NameEnUS        string                `json:"nameEnUS" dc:"English display name" eg:"Example"`
+	MinimumSelected int                   `json:"minimumSelected" dc:"Minimum selected options" eg:"1"`
+	MaximumSelected int                   `json:"maximumSelected" dc:"Maximum selected options" eg:"1"`
+	Options         []*ServerResizeOption `json:"options" dc:"Published option choices" eg:"[]"`
 }
 type ServerResizeRule struct {
-	RuleType              string `json:"ruleType"`
-	SourceOptionNo        string `json:"sourceOptionNo"`
-	TargetOptionNo        string `json:"targetOptionNo"`
-	MinimumTargetQuantity int    `json:"minimumTargetQuantity"`
-	MaximumTargetQuantity *int   `json:"maximumTargetQuantity"`
+	RuleType              string `json:"ruleType" dc:"Catalog compatibility rule type" eg:"Example"`
+	SourceOptionNo        string `json:"sourceOptionNo" dc:"Source option number" eg:"Example"`
+	TargetOptionNo        string `json:"targetOptionNo" dc:"Target option number" eg:"Example"`
+	MinimumTargetQuantity int    `json:"minimumTargetQuantity" dc:"Minimum target quantity" eg:"1"`
+	MaximumTargetQuantity *int   `json:"maximumTargetQuantity" dc:"Maximum target quantity, null when unrestricted" eg:"1"`
 }
 type ServerResizeOptionsReq struct {
 	g.Meta    `path:"/account/servers/{serviceNo}/resize-options" method:"get" tags:"IDC Customer Servers" summary:"Get my server resize options" dc:"Return the current published configuration choices and the owned server's current selection."`
-	ServiceNo string `json:"serviceNo" in:"path" v:"required|max-length:40"`
+	ServiceNo string `json:"serviceNo" in:"path" v:"required|max-length:40" dc:"Target server number" eg:"SVC_SERVER_0001"`
 }
 type ServerResizeOptionsRes struct {
-	PublicSlug        string                   `json:"publicSlug"`
-	CurrencyCode      string                   `json:"currencyCode"`
-	Revision          string                   `json:"revision"`
-	Groups            []*ServerResizeGroup     `json:"groups"`
-	Rules             []*ServerResizeRule      `json:"rules"`
-	CurrentSelections []*ServerResizeSelection `json:"currentSelections"`
+	PublicSlug        string                   `json:"publicSlug" dc:"Published product slug" eg:"Example"`
+	CurrencyCode      string                   `json:"currencyCode" dc:"ISO currency code" eg:"CNY"`
+	Revision          string                   `json:"revision" dc:"Published configuration revision" eg:"Example"`
+	Groups            []*ServerResizeGroup     `json:"groups" dc:"Published configuration groups" eg:"[]"`
+	Rules             []*ServerResizeRule      `json:"rules" dc:"Published compatibility rules" eg:"[]"`
+	CurrentSelections []*ServerResizeSelection `json:"currentSelections" dc:"Current server option quantities" eg:"[]"`
 }
 type ServerResizeQuoteCreateReq struct {
 	g.Meta         `path:"/account/servers/{serviceNo}/resize-quotes" method:"post" tags:"IDC Customer Servers" summary:"Quote my server configuration change" dc:"Freeze an immediate remaining-period upgrade charge or a no-refund next-renewal downgrade."`
-	ServiceNo      string                   `json:"serviceNo" in:"path" v:"required|max-length:40"`
-	Revision       string                   `json:"revision" v:"required|max-length:4096"`
-	TermNo         string                   `json:"termNo" v:"max-length:4096"`
-	CurrencyCode   string                   `json:"currencyCode" v:"required|length:3"`
-	Selections     []*ServerResizeSelection `json:"selections" v:"required"`
-	IdempotencyKey string                   `json:"idempotencyKey" v:"required|min-length:8|max-length:256"`
+	ServiceNo      string                   `json:"serviceNo" in:"path" v:"required|max-length:40" dc:"Target server number" eg:"SVC_SERVER_0001"`
+	Revision       string                   `json:"revision" v:"required|max-length:4096" dc:"Published configuration revision" eg:"Example"`
+	TermNo         string                   `json:"termNo" v:"max-length:4096" dc:"Target field value" eg:"Example"`
+	CurrencyCode   string                   `json:"currencyCode" v:"required|length:3" dc:"ISO currency code" eg:"CNY"`
+	Selections     []*ServerResizeSelection `json:"selections" v:"required" dc:"Target field value" eg:"[]"`
+	IdempotencyKey string                   `json:"idempotencyKey" v:"required|min-length:8|max-length:256" dc:"Target field value" eg:"Example"`
 }
 type ServerResizeQuote struct {
-	QuoteNo                     string `json:"quoteNo"`
-	ServiceNo                   string `json:"serviceNo"`
-	Direction                   string `json:"direction"`
-	CurrencyCode                string `json:"currencyCode"`
-	CurrentRecurringAmountMinor int64  `json:"currentRecurringAmountMinor"`
-	TargetRecurringAmountMinor  int64  `json:"targetRecurringAmountMinor"`
-	ChargeAmountMinor           int64  `json:"chargeAmountMinor"`
-	EffectiveAt                 int64  `json:"effectiveAt"`
-	IssuedAt                    int64  `json:"issuedAt"`
-	ExpiresAt                   int64  `json:"expiresAt"`
-	Reused                      bool   `json:"reused"`
+	QuoteNo                     string `json:"quoteNo" dc:"Frozen configuration quote number" eg:"Example"`
+	ServiceNo                   string `json:"serviceNo" dc:"Target server number" eg:"SVC_SERVER_0001"`
+	Direction                   string `json:"direction" dc:"Change direction: upgrade or downgrade" eg:"Example"`
+	CurrencyCode                string `json:"currencyCode" dc:"ISO currency code" eg:"CNY"`
+	CurrentRecurringAmountMinor int64  `json:"currentRecurringAmountMinor" dc:"Current renewal price in currency minor units" eg:"1"`
+	TargetRecurringAmountMinor  int64  `json:"targetRecurringAmountMinor" dc:"Target renewal price in currency minor units" eg:"1"`
+	ChargeAmountMinor           int64  `json:"chargeAmountMinor" dc:"Current configuration change fee in currency minor units" eg:"1"`
+	EffectiveAt                 int64  `json:"effectiveAt" dc:"Effective time as a Unix timestamp in milliseconds" eg:"1787184000000"`
+	IssuedAt                    int64  `json:"issuedAt" dc:"Quote issue time as a Unix timestamp in milliseconds" eg:"1787184000000"`
+	ExpiresAt                   int64  `json:"expiresAt" dc:"Quote expiry as a Unix timestamp in milliseconds" eg:"1787184000000"`
+	Reused                      bool   `json:"reused" dc:"Whether the exact request was already accepted" eg:"false"`
 }
 type ServerResizeQuoteCreateRes struct {
-	Quote *ServerResizeQuote `json:"quote"`
+	Quote *ServerResizeQuote `json:"quote" dc:"Frozen configuration change quote" eg:"{}"`
 }
 type ServerResizeCheckoutCreateReq struct {
 	g.Meta         `path:"/account/server-resize-quotes/{quoteNo}/checkout" method:"post" tags:"IDC Customer Servers" summary:"Confirm my server configuration change" dc:"Create a pending bill for an upgrade or schedule a no-refund downgrade for the next renewal."`
-	QuoteNo        string `json:"quoteNo" in:"path" v:"required|max-length:40"`
-	IdempotencyKey string `json:"idempotencyKey" v:"required|min-length:8|max-length:256"`
+	QuoteNo        string `json:"quoteNo" in:"path" v:"required|max-length:40" dc:"Frozen configuration quote number" eg:"Example"`
+	IdempotencyKey string `json:"idempotencyKey" v:"required|min-length:8|max-length:256" dc:"Target field value" eg:"Example"`
 }
 type ServerResizeCheckout struct {
-	OperationNo       string `json:"operationNo"`
-	OrderNo           string `json:"orderNo"`
-	InvoiceNo         string `json:"invoiceNo"`
-	ServiceNo         string `json:"serviceNo"`
-	Direction         string `json:"direction"`
-	Status            string `json:"status"`
-	CurrencyCode      string `json:"currencyCode"`
-	ChargeAmountMinor int64  `json:"chargeAmountMinor"`
-	EffectiveAt       int64  `json:"effectiveAt"`
-	Reused            bool   `json:"reused"`
+	OperationNo       string `json:"operationNo" dc:"Configuration change operation number" eg:"Example"`
+	OrderNo           string `json:"orderNo" dc:"Pending order number, empty when no payment required" eg:"Example"`
+	InvoiceNo         string `json:"invoiceNo" dc:"Pending invoice number, empty when no payment required" eg:"Example"`
+	ServiceNo         string `json:"serviceNo" dc:"Target server number" eg:"SVC_SERVER_0001"`
+	Direction         string `json:"direction" dc:"Change direction: upgrade or downgrade" eg:"Example"`
+	Status            string `json:"status" dc:"Current owner workflow status" eg:"Example"`
+	CurrencyCode      string `json:"currencyCode" dc:"ISO currency code" eg:"CNY"`
+	ChargeAmountMinor int64  `json:"chargeAmountMinor" dc:"Current configuration change fee in currency minor units" eg:"1"`
+	EffectiveAt       int64  `json:"effectiveAt" dc:"Effective time as a Unix timestamp in milliseconds" eg:"1787184000000"`
+	Reused            bool   `json:"reused" dc:"Whether the exact request was already accepted" eg:"false"`
 }
 type ServerResizeCheckoutCreateRes struct {
-	Checkout *ServerResizeCheckout `json:"checkout"`
+	Checkout *ServerResizeCheckout `json:"checkout" dc:"Accepted configuration change" eg:"{}"`
 }
 
 type ServerCustomerMetadataUpdateReq struct {
@@ -204,13 +204,13 @@ type ServerCustomerMetadataUpdateReq struct {
 }
 
 type ServerCustomerMetadataUpdateRes struct {
-	Metadata *ServerCustomerMetadata `json:"metadata"`
+	Metadata *ServerCustomerMetadata `json:"metadata" dc:"Safe server alias, note and version" eg:"{}"`
 }
 
 type ServerCustomerMetadata struct {
-	Alias   string `json:"alias"`
-	Remark  string `json:"remark"`
-	Version int64  `json:"version"`
+	Alias   string `json:"alias" dc:"Server display alias" eg:"Example"`
+	Remark  string `json:"remark" dc:"Non-sensitive server note" eg:"Example"`
+	Version int64  `json:"version" dc:"Current server version" eg:"1"`
 }
 
 type ServerOperationIntent struct {

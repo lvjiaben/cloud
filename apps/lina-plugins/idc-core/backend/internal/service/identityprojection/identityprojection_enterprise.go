@@ -102,6 +102,9 @@ func (s *serviceImpl) applyEnterpriseProjection(
 	if profile == nil || profile.CustomerTypeCode != enterpriseType || profile.Version <= 0 {
 		return nil, nil, gerror.New("enterprise identity projection is unavailable")
 	}
+	if profile.ManualVerification && profile.VerificationStatusCode == string(identitycap.StatusVerified) {
+		return nil, nil, gerror.New("enterprise identity was manually approved; clear verification before starting another case")
+	}
 	if input.LegalChangeRequestNo != "" {
 		if subject.CustomerTypeCode != enterpriseType {
 			return nil, nil, gerror.New("enterprise legal change is not accessible before enterprise approval")
@@ -307,7 +310,7 @@ func (s *serviceImpl) updateEnterpriseProfile(
 	reverification bool,
 ) (*identitycap.EnterpriseProjection, *identitycap.EnterpriseProjection, error) {
 	nextVersion := profile.Version + 1
-	update := do.CustomerEnterpriseProfile{
+	update := do.CustomerEnterpriseProfile{ManualVerification: false,
 		VerificationCaseNo: input.CaseNo, VerificationStatusCode: string(input.Status),
 		Version: nextVersion,
 	}

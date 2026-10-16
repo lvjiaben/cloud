@@ -2,22 +2,15 @@ package managementruntime
 
 import (
 	"context"
-	"sync"
 
 	"github.com/gogf/gf/v2/errors/gerror"
-	"github.com/gogf/gf/v2/frame/g"
 
 	"lina-plugin-idc-core/backend/cap/managementcap"
-	"lina-plugin-idc-core/backend/internal/runtimeconfig"
-	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/renewal"
 )
 
 type staffRenewalManager struct {
-	mutex     sync.Mutex
-	principal principal.Reader
-	service   renewal.ManagementService
+	service renewal.ManagementService
 }
 
 var _ managementcap.StaffRenewalManager = (*staffRenewalManager)(nil)
@@ -87,30 +80,8 @@ func (m *staffRenewalManager) ConfirmForStaff(
 }
 
 func (m *staffRenewalManager) serviceFor(ctx context.Context) (renewal.ManagementService, error) {
-	if m == nil {
+	if m == nil || ctx == nil || ctx.Err() != nil || m.service == nil {
 		return nil, gerror.New("IDC staff renewal service is unavailable")
 	}
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if m.service != nil {
-		return m.service, nil
-	}
-	if m.principal == nil {
-		return nil, gerror.New("IDC staff renewal principal is unavailable")
-	}
-	cursorKey, err := runtimeconfig.LoadCatalogCursorKey()
-	if err != nil {
-		return nil, err
-	}
-	catalogReader, err := catalog.NewPublicCatalogReader(g.DB(), cursorKey)
-	clear(cursorKey)
-	if err != nil {
-		return nil, err
-	}
-	service, err := renewal.New(ctx, g.DB(), m.principal, catalogReader)
-	if err != nil {
-		return nil, err
-	}
-	m.service = service
-	return service, nil
+	return m.service, nil
 }

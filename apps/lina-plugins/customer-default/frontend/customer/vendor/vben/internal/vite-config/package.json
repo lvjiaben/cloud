@@ -1,0 +1,59 @@
+{
+  "name": "@vben/vite-config",
+  "version": "5.6.0",
+  "private": true,
+  "homepage": "https://github.com/vbenjs/vue-vben-admin",
+  "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vbenjs/vue-vben-admin.git",
+    "directory": "internal/vite-config"
+  },
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "src",
+    "loader.mjs"
+  ],
+  "main": "./loader.mjs",
+  "module": "./loader.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./loader.mjs"
+    }
+  },
+  "dependencies": {
+    "@intlify/unplugin-vue-i18n": "11.0.7",
+    "@jspm/generator": "2.11.0",
+    "@tailwindcss/vite": "4.2.1",
+    "archiver": "7.0.1",
+    "cheerio": "1.2.0",
+    "get-port": "7.1.0",
+    "html-minifier-terser": "7.2.0",
+    "nitropack": "2.13.4",
+    "resolve.exports": "2.0.3",
+    "vite-plugin-pwa": "1.2.0",
+    "vite-plugin-vue-devtools": "8.0.7",
+    "jiti": "2.6.1"
+  },
+  "devDependencies": {
+    "@pnpm/workspace.read-manifest": "1000.2.10",
+    "@types/archiver": "7.0.0",
+    "@types/html-minifier-terser": "7.0.2",
+    "@vben/node-utils": "workspace:*",
+    "@vitejs/plugin-vue": "6.0.4",
+    "@vitejs/plugin-vue-jsx": "5.1.4",
+    "dayjs": "1.11.19",
+    "dotenv": "17.3.1",
+    "rollup": "4.59.0",
+    "rollup-plugin-visualizer": "7.0.1",
+    "sass": "1.97.3",
+    "vite": "7.3.7",
+    "vite-plugin-compression": "0.5.1",
+    "vite-plugin-dts": "4.5.4",
+    "vite-plugin-html": "3.2.2",
+    "vite-plugin-lazy-import": "1.0.7"
+  }
+}

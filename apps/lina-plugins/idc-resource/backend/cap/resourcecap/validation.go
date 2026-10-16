@@ -5,6 +5,7 @@ package resourcecap
 import (
 	"encoding/json"
 	"math"
+	"net/netip"
 	"net/url"
 	"reflect"
 	"regexp"
@@ -175,7 +176,7 @@ func containsCredentialMaterial(value string) bool {
 // policy remains responsible for DNS, certificate, redirect, and network
 // destination checks.
 func validateEndpoint(endpoint string) error {
-	if err := validateSafeDiagnostic("endpoint", endpoint, maximumEndpointBytes, true); err != nil {
+	if err := validateRequiredText("endpoint", endpoint, maximumEndpointBytes); err != nil {
 		return err
 	}
 	parsed, err := url.Parse(endpoint)
@@ -189,6 +190,12 @@ func validateEndpoint(endpoint string) error {
 		return gerror.New(
 			"resource Provider endpoint must have a host and must not contain userinfo, a query, or a fragment",
 		)
+	}
+	// An IP literal is an address, not arbitrary diagnostic prose. Scanning its
+	// hexadecimal segments as encoded credential text rejects valid IPv6 hosts.
+	// Runtime dialing still checks the actual destination's public-network scope.
+	if _, addressErr := netip.ParseAddr(parsed.Hostname()); addressErr != nil && containsCredentialMaterial(parsed.Hostname()) {
+		return gerror.New("resource Provider endpoint host contains credential-like material")
 	}
 	if endpointPathContainsCredential(parsed.EscapedPath()) || endpointPathContainsCredential(parsed.Path) {
 		return gerror.New("resource Provider endpoint path contains credential-like material")

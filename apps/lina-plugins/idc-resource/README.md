@@ -32,6 +32,12 @@ Provider task administration is local and bounded. The queue uses keyset paginat
 
 The plugin depends on LinaPro and `idc-core` version `>=0.1.60 <1.0.0`. Version `v0.1.60` provides the versioned, safe lifecycle projection for residual resources after partial reclamation; the resource plugin continues to use the core plugin's Provider-task permissions and secret-owner capability. The resource plugin imports only public core capability contracts; other IDC plugins may import `resourcecap` but cannot import this plugin's internal implementation.
 
+## Peer connector lifecycle recovery
+
+The provider configuration page exposes an explicit peer connector check to staff with `plugin:query` and `plugin:business-impact`. Reconfirmation also requires `plugin:enable`, installed/enabled status, a normal runtime, and matching nonempty effective/discovered/current versions without a pending upgrade. It rereads the detail after confirmation, invokes the existing enable API, verifies the version and new-business state, then requests the official business-impact report. Failed or changed state clears the result. This is a standard enable/authorization operation that may refresh the current same-version build, not a checksum-pinned repair API.
+
+No host code or private authorization tables are changed. Restarting the host or changing another connector's status may require reconfirmation again. The report is advisory; the official disable operation still rechecks business drain and rejects unfinished work. The action never resumes stopped new business or disables the connector.
+
 ## Delivery and Phase boundary
 
 Version `v0.1.8` is delivered as a platform-only, global, built-in source plugin with Chinese and English resources. It includes bounded Provider-health and task-reconciliation pages, the latest normalized non-secret observations, and evidence-driven manual responsibility transfer with exact permissions and optimistic concurrency. An active circuit cannot be manually closed or shortened by relaxing policy, and manual takeover cannot force a result or replay a Provider write. Remaining capability-specific reconciliation, cross-owner reporting, and full resource orchestration remain gated implementation tasks.

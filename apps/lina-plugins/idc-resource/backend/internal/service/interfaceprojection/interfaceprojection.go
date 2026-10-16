@@ -99,6 +99,10 @@ type claimedProjection struct {
 // SKIP LOCKED and a renewable database lease, so one failed node cannot pin
 // the outbox indefinitely.
 func (worker *Worker) RunOne(ctx context.Context) (bool, error) {
+	return worker.runOne(ctx, "")
+}
+
+func (worker *Worker) runOne(ctx context.Context, interfaceNo string) (bool, error) {
 	if worker == nil || worker.database == nil || worker.sink == nil ||
 		ctx == nil || ctx.Err() != nil || worker.random == nil {
 		return false, gerror.New("resource interface projection worker is unavailable")
@@ -113,16 +117,16 @@ func (worker *Worker) RunOne(ctx context.Context) (bool, error) {
 UPDATE plugin_idc_resource_interface_projection_outbox
 SET status_code='manual_attention',locked_by='',lease_expires_at=NULL,
     last_failure_code='projection_delivery_exhausted',updated_at=CURRENT_TIMESTAMP
-WHERE tenant_id=? AND attempt_count>=? AND status_code IN ('pending','delivering')
+WHERE tenant_id=? AND attempt_count>=? AND (?='' OR interface_instance_no=?) AND status_code IN ('pending','delivering')
   AND (status_code='pending' OR lease_expires_at<CURRENT_TIMESTAMP)`,
-			idccap.DefaultTenantID, maximumDeliveryAttempts); updateErr != nil {
+			idccap.DefaultTenantID, maximumDeliveryAttempts, interfaceNo, interfaceNo); updateErr != nil {
 			return updateErr
 		}
 		return tx.GetScan(&claimed, `
 WITH candidate AS (
     SELECT id
     FROM plugin_idc_resource_interface_projection_outbox
-    WHERE tenant_id=? AND attempt_count<? AND (
+    WHERE tenant_id=? AND attempt_count<? AND (?='' OR interface_instance_no=?) AND (
         (status_code='pending' AND available_at<=CURRENT_TIMESTAMP) OR
         (status_code='delivering' AND lease_expires_at<CURRENT_TIMESTAMP)
     )
@@ -145,7 +149,7 @@ FROM candidate
 WHERE outbox.id=candidate.id
 RETURNING outbox.id,outbox.locked_by,outbox.attempt_count,
           outbox.projection_payload::TEXT AS projection_payload`,
-			idccap.DefaultTenantID, maximumDeliveryAttempts, lockToken, deliveryLeaseSeconds)
+			idccap.DefaultTenantID, maximumDeliveryAttempts, interfaceNo, interfaceNo, lockToken, deliveryLeaseSeconds)
 	})
 	if err != nil {
 		return false, gerror.Wrap(err, "claim resource interface projection")
@@ -225,4 +229,43 @@ func sameProjection(left, right resourceinterfaceprojectioncap.Projection) bool 
 	leftPayload, leftErr := json.Marshal(left)
 	rightPayload, rightErr := json.Marshal(right)
 	return leftErr == nil && rightErr == nil && string(leftPayload) == string(rightPayload)
+}
+
+// Ensure delivers only the requested interface's ordered outbox prefix before
+// import admission. It never waits for leases or backoff and fails closed after
+// twenty events; a retry continues from the durable delivered prefix.
+func (worker *Worker) Ensure(ctx context.Context, interfaceNo, revision string) error {
+	request := resourceinterfaceprojectioncap.CandidateRequest{InterfaceInstanceNo: interfaceNo, ExpectedConfigurationRevision: revision, Method: "projection.ensure", Values: json.RawMessage(`{}`)}
+	if worker == nil || worker.database == nil || revision == "" || resourceinterfaceprojectioncap.ValidateCandidateRequest(request) != nil {
+		return gerror.New("resource interface projection is unavailable")
+	}
+	for delivered := 0; delivered <= 20; delivered++ {
+		value, err := worker.database.GetValue(ctx, `SELECT CASE WHEN status_code='delivered' THEN projection_payload->>'InterfaceConfigurationRevision' ELSE '' END FROM plugin_idc_resource_interface_projection_outbox WHERE tenant_id=? AND interface_instance_no=? ORDER BY projection_sequence DESC LIMIT 1`, idccap.DefaultTenantID, interfaceNo)
+		if err != nil {
+			return gerror.Wrap(err, "read delivered interface projection")
+		}
+		if value.String() == revision {
+			return nil
+		}
+		if delivered == 20 {
+			break
+		}
+		progress, err := worker.runOne(ctx, interfaceNo)
+		if err != nil {
+			return err
+		}
+		if !progress {
+			break
+		}
+	}
+	return gerror.New("resource interface projection has not reached the requested revision")
+}
+
+// RefreshUnused drains the current durable projection before entering the
+// core-owned unused-interface fence. Failed historical events are never skipped.
+func (worker *Worker) RefreshUnused(ctx context.Context, currentRevision string, projection resourceinterfaceprojectioncap.Projection, apply func(context.Context) error) error {
+	if err := worker.Ensure(ctx, projection.InterfaceInstanceNo, currentRevision); err != nil {
+		return err
+	}
+	return worker.sink.RefreshUnused(ctx, projection, apply)
 }

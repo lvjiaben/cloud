@@ -27,4 +27,5 @@ type CustomerEnterpriseProfile struct {
 	Version                      int64      `json:"version"                      orm:"version"                        description:""`
 	CreatedAt                    *time.Time `json:"createdAt"                    orm:"created_at"                     description:""`
 	UpdatedAt                    *time.Time `json:"updatedAt"                    orm:"updated_at"                     description:""`
+	ManualVerification           bool       `json:"manualVerification"           orm:"manual_verification"            description:"Current verification status set by staff; not supplier identity evidence"`
 }

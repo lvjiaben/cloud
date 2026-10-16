@@ -15,36 +15,38 @@ const (
 )
 
 type PurchaseValue struct {
-	FieldToken          string
-	Type                string
-	TextValue           *string
-	IntegerValue        *string
-	DecimalValue        *string
-	BooleanValue        *bool
-	DateValue           *string
-	DateTimeValue       *string
-	OptionTokens        []string
-	TreeOptionTokens    []string
-	AddressOptionTokens []string
-	FileTokens          []string
+	FieldToken          string   `json:"fieldToken"`
+	Type                string   `json:"type"`
+	TextValue           *string  `json:"textValue"`
+	IntegerValue        *string  `json:"integerValue"`
+	DecimalValue        *string  `json:"decimalValue"`
+	BooleanValue        *bool    `json:"booleanValue"`
+	DateValue           *string  `json:"dateValue"`
+	DateTimeValue       *string  `json:"dateTimeValue"`
+	OptionTokens        []string `json:"optionTokens"`
+	TreeOptionTokens    []string `json:"treeOptionTokens"`
+	AddressOptionTokens []string `json:"addressOptionTokens"`
+	FileTokens          []string `json:"fileTokens"`
 }
 
 type Purchase struct {
-	PublicSlug            string
-	ConfigurationRevision string
-	BillingTermToken      string
-	CurrencyCode          string
-	PurchaseCycles        int
-	Quantity              int
-	Values                []PurchaseValue
+	PublicSlug            string          `json:"publicSlug"`
+	ConfigurationRevision string          `json:"configurationRevision"`
+	BillingTermToken      string          `json:"billingTermToken"`
+	CurrencyCode          string          `json:"currencyCode"`
+	PurchaseCycles        int             `json:"purchaseCycles"`
+	Quantity              int             `json:"quantity"`
+	Values                []PurchaseValue `json:"values"`
 }
 
 type QuoteInput struct {
-	PayerCustomerNo string
-	Purchase        Purchase
+	ChannelID, IdempotencyKey string
+	PayerCustomerNo           string
+	Purchase                  Purchase
 }
 
 type Quote struct {
+	QuoteNo          string
 	CurrencyCode     string
 	SubtotalMinor    int64
 	DiscountMinor    int64
@@ -76,6 +78,7 @@ type DelegatedCustomer struct {
 }
 
 type CreateOrderInput struct {
+	QuoteNo                string
 	ChannelID              string
 	ExternalCustomerID     string
 	OwnershipMode          string
@@ -226,6 +229,8 @@ type RepayCreditResult struct {
 }
 
 type ServiceListInput struct {
+	OrderNo         string
+	AfterServiceNo  string
 	ChannelID       string
 	PayerCustomerNo string
 	ServiceNo       string
@@ -255,7 +260,11 @@ type CustomerSubject struct {
 }
 
 type Runtime interface {
+	BrowseCatalog(context.Context, CatalogQuery) (*CatalogPage, error)
 	CurrentCustomer(context.Context) (*CustomerSubject, error)
+	// ValidatePayer checks the active customer and login binding for credential
+	// issuance; verification evidence is returned, not required here. Transaction
+	// owners retain their independent identity and payment gates.
 	ValidatePayer(context.Context, string) (*CustomerSubject, error)
 	CreateDelegatedCustomer(context.Context, DelegatedCustomerInput) (*DelegatedCustomer, error)
 	Quote(context.Context, QuoteInput) (*Quote, error)
@@ -263,9 +272,31 @@ type Runtime interface {
 	GetOrder(context.Context, string, string) (*Order, error)
 	SettleOrder(context.Context, SettleOrderInput) (*Order, error)
 	CancelOrder(context.Context, CancelOrderInput) (*Order, error)
+	GetLifecycle(context.Context, string, string, string) (*LifecycleResult, error)
 	Lifecycle(context.Context, LifecycleInput) (*LifecycleResult, error)
 	RedeemLifecycleOutput(context.Context, string, string, string, ConfidentialOutputConsumer) error
 	FinanceOverview(context.Context, string, string, ...FinancePages) (*FinanceOverview, error)
 	RepayCredit(context.Context, RepayCreditInput) (*RepayCreditResult, error)
 	ListServices(context.Context, ServiceListInput) ([]ServiceItem, error)
+}
+
+// CatalogQuery bounds public product discovery. Prices are obtained by quoting
+// a configuration as the authenticated customer, never from stale publications.
+type CatalogQuery struct {
+	NamePrefix, Currency, Cursor string
+	Limit                        int
+}
+type CatalogProduct struct {
+	PublicSlug   string   `json:"publicSlug"`
+	NameZhCN     string   `json:"nameZhCn"`
+	NameEnUS     string   `json:"nameEnUs"`
+	SummaryZhCN  string   `json:"summaryZhCn"`
+	SummaryEnUS  string   `json:"summaryEnUs"`
+	Currencies   []string `json:"currencies"`
+	Availability string   `json:"availability"`
+}
+type CatalogPage struct {
+	Products            []CatalogProduct `json:"products"`
+	AvailableCurrencies []string         `json:"availableCurrencies"`
+	NextCursor          string           `json:"nextCursor"`
 }

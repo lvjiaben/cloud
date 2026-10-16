@@ -1,4 +1,4 @@
-import { expect, test } from "../../../../../../hack/tests/fixtures/auth";
+import { expect, test } from "../support/catalog-auth";
 
 import { CommerceOrdersPage } from "../pages/CommerceOrdersPage";
 import {
@@ -53,13 +53,16 @@ test.describe("TC-4 后台订单处置", () => {
     const orders = new CommerceOrdersPage(adminPage);
     await orders.goto();
 
-    await expect(orders.pageRoot.getByText("订单管理", { exact: true })).toBeVisible();
+    await expect(orders.pageRoot.locator(".page-heading")).toHaveCount(0);
     await expect(orders.row(commerceAdminOrderNo)).toBeVisible();
     await orders.scrollTableToEnd();
     await expect(orders.row(commerceAdminOrderNo)).toContainText(
       "CNY 9007199254740993.01",
     );
     await orders.scrollTableToStart();
+    await expect(orders.pageRoot).not.toContainText("集中查看订单、账单、库存预留、商品交付与审核状态。");
+    await expect(orders.pageRoot.getByRole("combobox", { name: "客户搜索", exact: true })).toBeVisible();
+    await expect(orders.pageRoot.locator(".ant-select-loading")).toHaveCount(0);
     await expect(orders.row(commerceAdminOrderNo)).toContainText("订单测试客户 · 138****8008 · #10008");
     await expect(orders.row(commerceAdminOrderNo)).not.toContainText("CUS_admin_customer_0001");
     await orders.pageRoot.getByRole("combobox", { name: "客户" }).click();
@@ -106,11 +109,13 @@ test.describe("TC-4 后台订单处置", () => {
     await expect(drawer).toContainText("待处理");
     await expect(drawer).toContainText("状态暂不可用");
     await expect(drawer).toContainText("审核类型暂不可用");
-    await expect(drawer).toContainText("只读详情不会伪造证据摘要");
+    await expect(drawer).toContainText("暂未接入完整审核材料，当前不能批准或驳回；请联系风控负责人核实。");
+    await expect(drawer.getByRole("button", { name: "批准风控", exact: true })).toBeDisabled();
     await expect(drawer).not.toContainText(
       /held|future_inventory_status|future_review_status|future_review_type|unitSequence|serverQuantity|fulfillmentNo|FUL_ADMIN/iu,
     );
     expect(state.detailRequests).toHaveLength(1);
+    await expect.poll(async () => drawer.evaluate(element => element.getBoundingClientRect().right <= window.innerWidth + 1)).toBe(true);
     await orders.screenshot("idc-admin-commerce-order-detail");
 
     await adminPage.keyboard.press("Escape");
@@ -132,6 +137,7 @@ test.describe("TC-4 后台订单处置", () => {
     await expect(englishDrawer).toContainText("Pending");
     await expect(englishDrawer).toContainText("Status unavailable");
     await expect(englishDrawer).toContainText("Review type unavailable");
+    await expect(englishDrawer).toContainText("Complete review evidence is not connected yet. Approval and rejection are unavailable; contact the risk review owner.");
     await expect(englishDrawer).not.toContainText(
       /held|future_inventory_status|future_review_status|future_review_type|unitSequence|serverQuantity|fulfillmentNo|FUL_ADMIN/iu,
     );
@@ -226,7 +232,9 @@ test.describe("TC-4 后台订单处置", () => {
       expect(metrics.actionRight).toBeLessThanOrEqual(metrics.rootRight + 1);
       expect(metrics.pagerRight).toBeLessThanOrEqual(metrics.rootRight + 1);
       expect(metrics.bodyHeight).toBeGreaterThan(120);
-      expect(metrics.bodyHeight).toBeLessThanOrEqual(560);
+      expect(metrics.bodyHeight).toBeLessThan(metrics.viewportHeight);
+      expect(Math.abs(metrics.rootBottom - metrics.gridBottom)).toBeLessThanOrEqual(16);
+      expect(metrics.pagerBottom).toBeLessThanOrEqual(metrics.viewportHeight);
       expect(metrics.visibleRows).toBeGreaterThan(2);
       await orders.screenshot(`commerce-orders-contained-${width}`);
       await orders.scrollTableToEnd();
@@ -238,5 +246,25 @@ test.describe("TC-4 后台订单处置", () => {
     await orders.nextPage();
     await expect.poll(() => state.listRequests.at(-1)?.searchParams.get("page")).toBe("2");
     await expect(orders.previousPageAction).toBeEnabled();
+  });
+
+  test("TC-4h: 订单表随窗口高度伸展，分页留在屏幕内", async ({ adminPage }) => {
+    await installCommerceOrderMock(adminPage, { listSize: 12 });
+    const orders = new CommerceOrdersPage(adminPage);
+    await orders.resize(1440, 720);
+    await orders.goto();
+    await expect(orders.row(commerceAdminOrderNo)).toBeVisible();
+    let previousHeight = 0;
+    for (const height of [720, 900, 1200]) {
+      await orders.resize(1440, height);
+      await expect.poll(async () => {
+        const metrics = await orders.layoutMetrics();
+        return Math.abs(metrics.rootBottom - metrics.gridBottom) <= 16 && metrics.pagerBottom <= height;
+      }).toBe(true);
+      const metrics = await orders.layoutMetrics();
+      expect(metrics.bodyHeight).toBeGreaterThan(previousHeight + 100);
+      previousHeight = metrics.bodyHeight;
+      await orders.screenshot(`commerce-orders-full-height-${height}`);
+    }
   });
 });

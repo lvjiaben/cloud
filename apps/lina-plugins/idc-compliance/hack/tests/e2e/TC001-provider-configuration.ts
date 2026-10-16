@@ -30,7 +30,7 @@ test.describe("TC-1 阿里云实名认证服务商配置", () => {
     await expect(provider.pageRoot).toContainText("已配置");
     await expect(provider.pageRoot).toContainText("K9M2");
     await expect(provider.pageRoot).toContainText(
-      "使用系统的 IDC 商家承担账号和用量费用",
+      "服务费用由商家承担",
     );
     await expect(provider.pageRoot).not.toContainText(
       secretInput.accessKeySecret,
@@ -49,6 +49,8 @@ test.describe("TC-1 阿里云实名认证服务商配置", () => {
   }) => {
     await mainLayout.switchLanguage("简体中文");
     const provider = new ProviderConfigurationPage(adminPage);
+    const pageErrors: string[] = [];
+    adminPage.on("pageerror", error => pageErrors.push(error.message));
     await provider.goto();
 
     await expect(provider.pageRoot.getByTestId("aliyun-provider-status")).toHaveText(
@@ -58,6 +60,9 @@ test.describe("TC-1 阿里云实名认证服务商配置", () => {
     await expect(
       adminPage.getByText("合规服务商配置暂时不可用", { exact: true }),
     ).toHaveCount(0);
+    await expect(provider.validationStatus).toHaveText("未测试");
+    expect(pageErrors).toEqual([]);
+    await provider.screenshot("aliyun-provider-real-draft");
   });
 
   test("TC-1b: 首次配置整组提交且保存后不回显秘密", async ({
@@ -185,7 +190,7 @@ test.describe("TC-1 阿里云实名认证服务商配置", () => {
 
     await expect(provider.pageRoot).toContainText("Aliyun Identity Provider");
     await expect(provider.pageRoot).toContainText(
-      "The IDC merchant owns this account and its usage cost",
+      "The merchant pays service fees",
     );
     await expect(provider.validateButton).toHaveText("Validate connectivity");
     await expect(provider.pageRoot).not.toContainText("plugin.idc-compliance");

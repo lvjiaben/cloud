@@ -48,7 +48,7 @@ func TestBMSProvisionUsesHostSecretSlotAndRelativeRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(executor.requests) != 1 || executor.requests[0].Path != "/bms/source" || executor.requests[0].SecretFormFields["password"] != "password" {
+	if len(executor.requests) != 1 || executor.requests[0].Path != "/bms/source" || len(executor.requests[0].SecretFormFields) != 0 || len(executor.requests[0].SecretFormBindings) != 1 || executor.requests[0].SecretFormBindings[0] != (resourcecap.ConfidentialSecretFormBinding{Field: "password", Slot: "password"}) {
 		t.Fatalf("unexpected confidential request: %#v", executor.requests)
 	}
 	encoded, _ := json.Marshal(executor.requests[0])

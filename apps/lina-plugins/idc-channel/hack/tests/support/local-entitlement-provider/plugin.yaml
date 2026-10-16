@@ -1,0 +1,32 @@
+id: plugin-test-peer-entitlement
+name: Local entitlement protocol fixture
+version: v0.1.3
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Test-only provider used by TC011; never distributed with production plugins.
+author: linapro
+license: MIT
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.85 <1.0.0"
+business_extensions:
+  - point: product-fulfillment
+    version: v1
+    role: provider
+    owner: idc-core
+    methods: [provision, query]
+    provider_metadata:
+      type: product-fulfillment-contract
+      version: v1
+      values:
+        capability: {enUS: Test local entitlement, zhCN: 测试本地持续权益}
+        granularity: per_order_item
+        ongoingManagement: true
+        renewalSupport: unsupported
+        expiryManagement: unsupported
+        entitlementOwnerId: plugin-test-peer-entitlement
+        methodRoles: {provision: provision, query: query}

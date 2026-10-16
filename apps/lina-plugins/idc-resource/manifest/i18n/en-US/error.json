@@ -7,7 +7,10 @@
           "not": {
             "accessible": "You cannot view upstream products for this interface"
           },
-          "unavailable": "Upstream products could not be read; verify the interface and connector support"
+          "unavailable": "Upstream products could not be read; verify the interface and connector support",
+          "projection": {
+            "pending": "The interface is still being synchronized. Retry shortly; if it keeps failing, check the channel connection or contact an administrator"
+          }
         },
         "configuration": {
           "invalid": "The Provider channel or resource pool configuration is invalid",
@@ -15,7 +18,10 @@
             "accessible": "The Provider configuration is not accessible"
           },
           "conflict": "The configuration changed, or both credentials are required before enabling the channel",
-          "unavailable": "The Provider configuration service is temporarily unavailable"
+          "unavailable": "The Provider configuration service is temporarily unavailable",
+          "refresh": {
+            "referenced": "Update failed. Interfaces with historical use require a new interface"
+          }
         },
         "provider": {
           "verification": {
@@ -31,6 +37,28 @@
             },
             "conflict": "The channel and observation kind already have an active collection",
             "unavailable": "The Provider capacity observation service is temporarily unavailable"
+          },
+          "tls": {
+            "untrusted": "The upstream certificate is not trusted. Verify it and enter its fingerprint for this interface."
+          },
+          "timeout": "The upstream timed out. Retry later or check the network.",
+          "dns": "The upstream hostname could not be resolved. Check the endpoint.",
+          "network": "Cannot reach the upstream. Check the endpoint, port and network.",
+          "endpoint": {
+            "not": {
+              "found": "The upstream API path was not found. Check its endpoint and API version."
+            }
+          },
+          "invalid": {
+            "response": "The upstream returned invalid API data. Check the endpoint."
+          },
+          "auth": {
+            "rejected": "The upstream rejected authentication. Check the account, password or key."
+          },
+          "local": {
+            "auth": {
+              "policy": "The connector authentication configuration does not match its request. Update the connector or reconfigure this interface."
+            }
           }
         },
         "overview": {

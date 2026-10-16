@@ -146,7 +146,7 @@ VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?)`, transferNo, command.ServiceNo, subject.Cust
 		if auditErr := appendTransferAudit(ctx, s.operations, idccap.BusinessAuditTransition{
 			IdempotencyScope: "server.transfer.request", IdempotencyKey: transferNo,
 			OperationCode: "server.transfer.request", TargetType: "server_service", TargetNo: command.ServiceNo,
-			CustomerNo: subject.CustomerNo, ResultCode: "accepted", ReasonCode: "customer_request",
+			CustomerNo: subject.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "customer_request",
 			BeforeSnapshot: map[string]any{"service_version": service.Version},
 			AfterSnapshot:  map[string]any{"recipient_matched": targetCustomerNo != "", "expires_at": now.Add(transferLifetime)},
 		}); auditErr != nil {
@@ -269,7 +269,7 @@ WHERE tenant_id=0 AND transfer_no=? AND status_code='pending'`, now, now, transf
 		if auditErr := appendTransferAudit(ctx, s.operations, idccap.BusinessAuditTransition{
 			IdempotencyScope: "server.transfer.confirm", IdempotencyKey: transferNo,
 			OperationCode: "server.transfer.confirm", TargetType: "server_service", TargetNo: request.ServiceNo,
-			CustomerNo: subject.CustomerNo, ResultCode: "confirmed", ReasonCode: "recipient_confirmation",
+			CustomerNo: subject.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: "recipient_confirmation",
 			BeforeSnapshot: map[string]any{"customer_digest": transferDigest(request.SourceCustomerNo), "service_version": service.Version},
 			AfterSnapshot:  map[string]any{"customer_digest": transferDigest(subject.CustomerNo), "service_version": service.Version + 1},
 		}); auditErr != nil {

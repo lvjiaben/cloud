@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
   ServerRenewalCandidate,
@@ -331,10 +333,11 @@ async function execute() {
 }
 
 onMounted(() => void load());
+const layoutRoot = useAdminGridLayout(candidateGridApi, previewGridApi, resultGridApi);
 </script>
 
 <template>
-  <Page auto-content-height data-testid="server-batch-renewal-page">
+  <Page :ref="layoutRoot" class="plugin-admin-page" auto-content-height data-testid="server-batch-renewal-page">
     <Card class="renewal-card h-full" :title="tr('title')" :loading="loading">
       <template #extra>
         <Space>
@@ -371,7 +374,7 @@ onMounted(() => void load());
       </CandidateGrid>
     </Card>
 
-    <PreviewModal :title="tr('confirmTitle')">
+    <PreviewModal :title="tr('confirmTitle')" class="resource-renewal-preview">
       <Alert
         class="mb-4"
         show-icon
@@ -403,7 +406,7 @@ onMounted(() => void load());
       }}</Checkbox>
     </PreviewModal>
 
-    <ResultModal :title="tr('resultTitle')">
+    <ResultModal :title="tr('resultTitle')" class="resource-renewal-result">
       <ResultGrid v-if="results.length">
         <template #result="{ row }"
           ><Tag :color="row.succeeded ? 'green' : 'red'">{{
@@ -423,6 +426,12 @@ onMounted(() => void load());
 </template>
 
 <style scoped>
+:global(.resource-renewal-preview) {
+  width: min(1000px, calc(100vw - 32px));
+}
+:global(.resource-renewal-result) {
+  width: min(800px, calc(100vw - 32px));
+}
 .renewal-card {
   display: flex;
   flex-direction: column;

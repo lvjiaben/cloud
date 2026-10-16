@@ -24,4 +24,5 @@ type SupportDepartment struct {
 	UpdatedBy          int64      `json:"updatedBy"          orm:"updated_by"           description:""`
 	CreatedAt          *time.Time `json:"createdAt"          orm:"created_at"           description:""`
 	UpdatedAt          *time.Time `json:"updatedAt"          orm:"updated_at"           description:""`
+	OrgDeptId          int64      `json:"orgDeptId"          orm:"org_dept_id"          description:""`
 }

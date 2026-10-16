@@ -38,21 +38,22 @@ const (
 // Request contains only frozen business evidence. Provider credentials are
 // accessed through the source-only runtime callback and never serialized here.
 type Request struct {
-	Version                    string          `json:"version"`
-	IntentNo                   string          `json:"intentNo"`
-	IdempotencyKey             string          `json:"idempotencyKey"`
-	OrderNo                    string          `json:"orderNo"`
-	OrderItemNo                string          `json:"orderItemNo"`
-	UnitSequence               int             `json:"unitSequence"`
-	Quantity                   int             `json:"quantity"`
-	ProductNo                  string          `json:"productNo"`
-	ProductVersionNo           string          `json:"productVersionNo"`
-	ConfigurationRevision      string          `json:"configurationRevision"`
-	ProductConfiguration       json.RawMessage `json:"productConfiguration"`
-	ProductConfigurationDigest string          `json:"productConfigurationDigest"`
-	CustomerConfiguration      json.RawMessage `json:"customerConfiguration"`
-	CustomerConfigurationID    string          `json:"customerConfigurationId"`
-	PreviousExternalReference  string          `json:"previousExternalReference,omitempty"`
+	Version                    string           `json:"version"`
+	IntentNo                   string           `json:"intentNo"`
+	IdempotencyKey             string           `json:"idempotencyKey"`
+	OrderNo                    string           `json:"orderNo"`
+	OrderItemNo                string           `json:"orderItemNo"`
+	UnitSequence               int              `json:"unitSequence"`
+	Quantity                   int              `json:"quantity"`
+	ProductNo                  string           `json:"productNo"`
+	ProductVersionNo           string           `json:"productVersionNo"`
+	ConfigurationRevision      string           `json:"configurationRevision"`
+	ProductConfiguration       json.RawMessage  `json:"productConfiguration"`
+	ProductConfigurationDigest string           `json:"productConfigurationDigest"`
+	CustomerConfiguration      json.RawMessage  `json:"customerConfiguration"`
+	CustomerConfigurationID    string           `json:"customerConfigurationId"`
+	Billing                    *BillingSchedule `json:"billing,omitempty"`
+	PreviousExternalReference  string           `json:"previousExternalReference,omitempty"`
 }
 
 // Result distinguishes safe retry from uncertain acceptance. Evidence is a
@@ -62,6 +63,16 @@ type Result struct {
 	Status            ResultStatus    `json:"status"`
 	ExternalReference string          `json:"externalReference,omitempty"`
 	Evidence          json.RawMessage `json:"evidence,omitempty"`
+	Deliveries        []Delivery      `json:"deliveries,omitempty"`
+}
+
+// Delivery freezes one upstream delivery/service association. One-time results
+// have no UpstreamServiceNo; all timestamps use Unix milliseconds.
+type Delivery struct {
+	UpstreamDeliveryNo string `json:"upstreamDeliveryNo"`
+	UpstreamServiceNo  string `json:"upstreamServiceNo,omitempty"`
+	StartedAt          int64  `json:"startedAt"`
+	ExpiresAt          int64  `json:"expiresAt,omitempty"`
 }
 
 var (
@@ -78,6 +89,11 @@ func ValidateRequest(value *Request) error {
 	}
 	if !validJSONObject(value.CustomerConfiguration) {
 		return fmt.Errorf("product fulfillment customer configuration is invalid")
+	}
+	if value.Billing != nil {
+		if err := value.Billing.Validate(); err != nil {
+			return err
+		}
 	}
 	if value.PreviousExternalReference != "" && !safeID.MatchString(value.PreviousExternalReference) {
 		return fmt.Errorf("product fulfillment previous external reference is invalid")
@@ -126,6 +142,17 @@ func ValidateResult(action Action, value *Result) error {
 	}
 	if (value.Status == StatusAccepted || value.Status == StatusRunning) && value.ExternalReference == "" {
 		return fmt.Errorf("accepted product fulfillment result requires an external reference")
+	}
+	if len(value.Deliveries) > 1000 || (len(value.Deliveries) > 0 && value.Status != StatusSucceeded) {
+		return fmt.Errorf("product fulfillment deliveries are invalid")
+	}
+	seen := make(map[string]bool, len(value.Deliveries))
+	for _, delivery := range value.Deliveries {
+		key := delivery.UpstreamDeliveryNo + ":" + delivery.UpstreamServiceNo
+		if len(delivery.UpstreamDeliveryNo) > 40 || len(delivery.UpstreamServiceNo) > 40 || !safeID.MatchString(delivery.UpstreamDeliveryNo) || (delivery.UpstreamServiceNo != "" && !safeID.MatchString(delivery.UpstreamServiceNo)) || delivery.StartedAt < 1 || delivery.ExpiresAt < 0 || (delivery.ExpiresAt > 0 && delivery.ExpiresAt <= delivery.StartedAt) || seen[key] {
+			return fmt.Errorf("product fulfillment delivery is invalid")
+		}
+		seen[key] = true
 	}
 	return nil
 }

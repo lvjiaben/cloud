@@ -76,3 +76,16 @@ func TestProviderConfigurationPermissionsAreCataloged(t *testing.T) {
 		}
 	}
 }
+
+// TestCurrencyPermissionsAreCataloged prevents merchant currency routes from
+// being rejected by the shared management authorization catalog.
+func TestCurrencyPermissionsAreCataloged(t *testing.T) {
+	for _, permission := range []string{
+		"idc:admin:currency:read",
+		"idc:admin:currency:write",
+	} {
+		if !IsCatalogedAdminPermission(permission) {
+			t.Fatalf("expected currency permission %q to be cataloged", permission)
+		}
+	}
+}

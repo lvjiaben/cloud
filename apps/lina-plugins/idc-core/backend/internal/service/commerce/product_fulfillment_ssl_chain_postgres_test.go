@@ -37,7 +37,7 @@ func TestPaidSSLCertificateCrossesYunsuGuestAndCreatesManagedEntitlementPostgreS
 		t.Fatal(err)
 	}
 	worker, err := productfulfillmentservice.NewWorker(
-		prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil,
+		prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)

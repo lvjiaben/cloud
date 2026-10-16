@@ -154,6 +154,15 @@ const productDeclaration = {
     },
   ],
   fields: [
+    { key: "hostname_prefix", label: label("主机名前缀", "Hostname prefix"), maximumLength: 10, type: "single_line" },
+    { key: "hostname_length", label: label("主机名总长度", "Hostname length"), minimum: "4", maximum: "63", type: "integer" },
+    { key: "password_length", label: label("自动生成密码长度", "Generated password length"), minimum: "6", maximum: "20", type: "integer" },
+    { key: "password_characters", label: label("密码字符规则", "Password character rules"), type: "multi_select", staticCandidates: [
+      { value: "lowercase", label: label("小写字母", "Lowercase letters") },
+      { value: "uppercase", label: label("大写字母", "Uppercase letters") },
+      { value: "digits", label: label("数字", "Numbers") },
+      { value: "symbols", label: label("特殊字符", "Symbols") },
+    ] },
     {
       key: "quantity",
       label: label("商品整数", "Product integer"),
@@ -262,7 +271,7 @@ export interface CatalogConfigurationMockState {
   fileUploadRequests: Array<{ method: string; pathname: string }>;
 }
 
-export async function installCatalogConfigurationMock(page: Page) {
+export async function installCatalogConfigurationMock(page: Page, importedConfiguration = false) {
   const state: CatalogConfigurationMockState = {
     interfaceEvaluationRequests: [],
     interfaceConfigurationRequests: [],
@@ -591,6 +600,7 @@ export async function installCatalogConfigurationMock(page: Page) {
       await route.fulfill({
         json: apiEnvelope({
           configuration: {
+            importedConfiguration,
             customerDeclaration,
             customerResolvedCandidates: {},
             merchantValues,

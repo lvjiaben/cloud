@@ -10,7 +10,6 @@ require (
 	golang.org/x/text v0.40.0
 	lina-core v0.0.0
 	lina-plugin-idc-resource v0.1.0
-	lina-plugin-staff-access v0.1.0
 	lina-plugin-yunsu-ssl v0.1.0
 )
 
@@ -67,6 +66,5 @@ replace lina-plugin-shared-services => ../shared-services
 
 replace lina-plugin-idc-resource => ../idc-resource
 
-replace lina-plugin-staff-access => ../staff-access
 
 replace lina-plugin-yunsu-ssl => ../yunsu-ssl

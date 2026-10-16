@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
@@ -13,9 +15,10 @@ import type {
   ProviderTaskStatus,
 } from "./provider-task-client";
 
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useAccess } from "./plugin-access";
+import { preferences } from "@vben/preferences";
 import { Page, useVbenDrawer } from "@vben/common-ui";
 
 import { Badge, Tag, message } from "ant-design-vue";
@@ -125,7 +128,7 @@ function columns(): VxeGridProps["columns"] {
     },
     {
       field: "status",
-      minWidth: 150,
+      minWidth: 250,
       slots: { default: "status" },
       title: $t("plugin.idc-resource.tasks.table.status"),
     },
@@ -169,7 +172,11 @@ const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: {
     commonConfig: { componentProps: { allowClear: true }, labelWidth: 86 },
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-2",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: [],
@@ -266,13 +273,19 @@ async function onTakeover() {
 onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
-  gridApi.setState({ formOptions: { schema: searchSchema() } });
+  refreshLabels();
 });
+function refreshLabels() {
+  gridApi.setGridOptions({ columns: columns() });
+  gridApi.setState({ formOptions: { schema: searchSchema(), commonConfig: { labelWidth: preferences.app.locale === "en-US" ? 120 : 86 } } });
+}
+watch(() => $t("plugin.idc-resource.tasks.search.status"), refreshLabels);
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="provider-task-page">
-    <div class="task-shell">
+  <Page class="plugin-admin-page" :auto-content-height="true" data-testid="provider-task-page">
+    <div :ref="layoutRoot" class="task-shell">
       <section class="task-metrics">
         <article>
           <span>{{ $t("plugin.idc-resource.tasks.metrics.active") }}</span
@@ -293,14 +306,14 @@ onMounted(async () => {
       </section>
 
       <section class="task-grid">
-        <Grid>
+        <Grid class="w-full min-w-0">
           <template #task="{ row }">
             <div class="task-cell">
               <strong>{{ capabilityLabel(row.capabilityCode) }}</strong>
             </div>
           </template>
           <template #status="{ row }">
-            <div :data-testid="`provider-task-status-${row.taskNo}`">
+            <div class="task-status" :data-testid="`provider-task-status-${row.taskNo}`">
               <Badge
                 :status="statusBadge(row.status)"
                 :text="taskStatusLabel(row.status)"
@@ -338,9 +351,11 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.task-status { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.task-status :deep(.ant-tag) { margin: 0; }
 .task-shell {
   display: grid;
-  gap: 18px;
+  gap: 12px;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
@@ -354,18 +369,18 @@ onMounted(async () => {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0;
-  padding: 17px 20px;
+  padding: 12px 16px;
 }
 .task-metrics span {
   color: hsl(var(--muted-foreground));
   display: block;
   font-size: 12px;
-  margin-bottom: 9px;
+  margin-bottom: 4px;
 }
 .task-metrics strong {
-  font:
-    550 30px ui-monospace,
-    monospace;
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .metric-warning strong {
   color: rgb(217 119 6);
@@ -377,7 +392,7 @@ onMounted(async () => {
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
   border-radius: 0;
-  display: flex;
+  display: block;
   height: 100%;
   min-height: 0;
   overflow: hidden;

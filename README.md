@@ -27,6 +27,10 @@ Teams can skip the infrastructure-from-scratch phase and put AI to work driving 
 
 # Quick Links
 
+For a first business deployment, follow [First installation](INSTALL.md) and use the plugin-inclusive build entry point.
+
+For website/customer template development and AI handoff, start with the [development guide](DEVELOPMENT.md).
+
 | Resource | URL |
 |----------|-----|
 | **Repository** | https://github.com/linaproai/linapro |

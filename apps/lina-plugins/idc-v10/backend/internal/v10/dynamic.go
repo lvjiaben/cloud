@@ -71,7 +71,6 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 func authenticate(executor confidentialoutboundcap.Service, contextID string) error {
 	response, err := confidentialCall(executor, contextID, 1, resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindAuthenticate, Method: http.MethodPost, Path: "/api/v1/auth",
-		CredentialFields: map[string]string{"username": "username", "password": "password"},
 	})
 	if err != nil || !response.Authenticated {
 		return errInvalidResponse
@@ -257,7 +256,7 @@ func executeResourceQuery(executor confidentialoutboundcap.Service, contextID st
 }
 
 func businessCall(executor confidentialoutboundcap.Service, contextID string, sequence uint8, method, path string, query url.Values, form map[string]string, secrets map[string]string) (resourcecap.ConfidentialHTTPResponse, error) {
-	return confidentialCall(executor, contextID, sequence, resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: form, SecretFormFields: secrets, ResponseFields: safeResponseFields, UseAuthentication: true})
+	return confidentialCall(executor, contextID, sequence, resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: form, SecretFormBindings: resourcecap.NewConfidentialSecretFormBindings(secrets), ResponseFields: safeResponseFields, UseAuthentication: true})
 }
 
 func confidentialCall(executor confidentialoutboundcap.Service, contextID string, sequence uint8, request resourcecap.ConfidentialHTTPRequest) (resourcecap.ConfidentialHTTPResponse, error) {

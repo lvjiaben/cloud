@@ -49,4 +49,5 @@ type BusinessOperation struct {
 	SubjectTypeCode             any        //
 	SubjectNo                   any        //
 	ExpectedSubjectVersion      any        //
+	PayerCustomerNo             any        //
 }

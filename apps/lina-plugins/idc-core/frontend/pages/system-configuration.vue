@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import { computed, ref } from "vue";
 
 import { Page, useVbenDrawer } from "@vben/common-ui";
@@ -16,6 +17,7 @@ import { Button, TabPane, Tabs, Tag } from "ant-design-vue";
 import { $t } from "#/locales";
 
 import ConfigurationSurface from "./components/configuration-surface.vue";
+import CurrencyManagement from "./currency-management.vue";
 import TrafficPackages from "./components/traffic-packages.vue";
 import { useAccess } from "./plugin-access";
 
@@ -43,11 +45,10 @@ const groups = computed(() => [
     key: "business",
     title: tr("groups.business"),
     items: [
-      item("portalBrand", "lucide:palette", "/idc/portal-brand"),
       item(
         "customerMenus",
         "lucide:panel-left",
-        "/idc/customer-external-menus",
+        "/idc/member-navigation",
       ),
       item("support", "lucide:messages-square", "/idc/support/settings"),
       item(
@@ -102,7 +103,10 @@ const groups = computed(() => [
   {
     key: "payment",
     title: tr("groups.payment"),
-    items: [item("payment", "lucide:credit-card", "/idc/payment-channels")],
+    items: [
+ ...(access.hasAccessByCodes(["idc:admin:currency:read"]) ? [item("currencies", "lucide:coins", "/idc/currencies")] : []),
+ item("payment", "lucide:credit-card", "/idc/payment-channels"),
+ ],
   },
   {
     key: "migration",
@@ -135,7 +139,7 @@ function open(entry: ConfigurationItem) {
 </script>
 
 <template>
-  <Page :description="tr('description')" :title="tr('title')">
+  <Page class="plugin-admin-page">
     <section
       class="configuration-shell"
       data-testid="system-configuration-center"
@@ -185,6 +189,7 @@ function open(entry: ConfigurationItem) {
           <ConfigurationSurface path="/idc/catalog/automation-interfaces" />
         </TabPane>
       </Tabs>
+      <CurrencyManagement v-else-if="selected?.key === 'currencies'" />
       <TrafficPackages v-else-if="selected?.key === 'trafficPackages'" />
       <ConfigurationSurface v-else-if="selected" :path="selected.path" />
     </ConfigurationDrawer>

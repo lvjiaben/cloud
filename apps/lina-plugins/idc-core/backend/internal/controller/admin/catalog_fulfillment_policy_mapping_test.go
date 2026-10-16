@@ -1,3 +1,5 @@
+// This file validates safe fulfillment capability projections for product editing.
+
 package admin
 
 import (
@@ -30,5 +32,28 @@ func TestFulfillmentPolicySummaryUsesOnlyReadableCapabilityAndGranularity(t *tes
 	}, contract)
 	if manual.CapabilityZhCn != "" || manual.QuantityHandling != "together" {
 		t.Fatalf("manual summary leaked plugin capability or lost quantity description: %+v", manual)
+	}
+}
+
+func TestTrialCapabilityRequiresExplicitAutomaticFulfillment(t *testing.T) {
+	t.Parallel()
+	for _, item := range []struct {
+		name     string
+		strategy string
+		contract *catalog.FrozenFulfillmentContract
+		want     bool
+	}{
+		{"unbound", catalog.FulfillmentStrategyPaymentConfirmedPlugin, nil, false},
+		{"undeclared", catalog.FulfillmentStrategyPaymentConfirmedPlugin, &catalog.FrozenFulfillmentContract{}, false},
+		{"manual", catalog.FulfillmentStrategyManual, &catalog.FrozenFulfillmentContract{TrialPauseResume: true}, false},
+		{"automatic", catalog.FulfillmentStrategyPaymentConfirmedPlugin, &catalog.FrozenFulfillmentContract{TrialPauseResume: true}, true},
+		{"approval", catalog.FulfillmentStrategyApprovalThenPlugin, &catalog.FrozenFulfillmentContract{TrialPauseResume: true}, true},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			got := mapFulfillmentPolicySummary(&catalog.FulfillmentPolicyEvidence{StrategyCode: item.strategy}, item.contract)
+			if got.TrialSupported != item.want {
+				t.Fatalf("trial supported=%v want %v", got.TrialSupported, item.want)
+			}
+		})
 	}
 }

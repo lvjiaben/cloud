@@ -441,7 +441,7 @@ func configureCustomerIntegrationDB(t *testing.T, ctx context.Context) {
 		t.Fatalf("create customer dictionary fixtures: %v", err)
 	}
 	for _, migrationName := range []string{
-		"001-core-foundation.sql", "003-customer-account.sql", "007-customer-account-workflows.sql",
+		"001-core-foundation.sql", "003-customer-account.sql", "070-customer-short-code.sql", "007-customer-account-workflows.sql",
 	} {
 		migration, readErr := os.ReadFile(customerMigrationPath(t, migrationName))
 		if readErr != nil {

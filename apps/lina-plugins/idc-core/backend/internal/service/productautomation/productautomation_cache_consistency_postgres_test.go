@@ -80,6 +80,12 @@ func TestConfigurationRevisionsAndDynamicCandidateCachesConvergeAcrossPostgreSQL
 	if _, err = databaseA.Exec(ctx, `CREATE TABLE plugin_idc_core_catalog_product_version (
  tenant_id INT NOT NULL DEFAULT 0,version_no VARCHAR(40) NOT NULL PRIMARY KEY,status_code VARCHAR(16) NOT NULL,
  UNIQUE(tenant_id,version_no));
+CREATE TABLE IF NOT EXISTS plugin_idc_core_catalog_billing_rule (
+    tenant_id INT NOT NULL DEFAULT 0,
+    version_no VARCHAR(40) NOT NULL,
+    charge_type_code VARCHAR(16) NOT NULL,
+    status_code VARCHAR(16) NOT NULL
+);
 CREATE TABLE plugin_idc_core_catalog_product_version_fulfillment_policy (
  tenant_id INT NOT NULL DEFAULT 0,version_no VARCHAR(40) NOT NULL PRIMARY KEY,
  strategy_code VARCHAR(32) NOT NULL,granularity_code VARCHAR(32) NOT NULL,

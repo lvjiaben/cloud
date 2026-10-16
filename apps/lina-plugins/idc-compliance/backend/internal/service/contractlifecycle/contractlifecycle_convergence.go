@@ -146,7 +146,7 @@ f.gateway_route_version, CURRENT_TIMESTAMP AS database_now`).
 			IdempotencyKey:   observation.RouteNo + ":" + strconv.FormatInt(observation.RouteVersion, 10),
 			OperationCode:    "compliance.contract.status-observation",
 			TargetType:       "contract", TargetNo: locked.ContractNo, CustomerNo: locked.CustomerNo,
-			ResultCode: decision, ReasonCode: projected.ReasonCode, RiskCode: "high",
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: projected.ReasonCode, RiskCode: "high",
 			CorrelationNo:  locked.FlowNo,
 			BeforeSnapshot: map[string]any{"contract_status": locked.ContractStatus, "flow_status": locked.FlowStatus},
 			AfterSnapshot: map[string]any{

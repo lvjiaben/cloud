@@ -197,8 +197,8 @@ LEFT JOIN plugin_idc_core_service_instance legacy_service
  AND legacy_service."source_code" = 'order'
 WHERE intent."tenant_id" = 0
   AND intent."status_code" = 'completed'
-  AND intent."ongoing_management"
-ON CONFLICT("source_intent_no") DO NOTHING;
+  AND intent."ongoing_management" AND intent."plugin_id" <> 'idc-peer'
+ON CONFLICT("entitlement_no") DO NOTHING;
 
 -- Preserve the old service dates/status where an entitlement was migrated.
 UPDATE plugin_idc_core_service_entitlement entitlement

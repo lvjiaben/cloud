@@ -1,0 +1,35 @@
+{
+  "name": "@lina/website-minimal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm run typecheck && pnpm run i18n:check && pnpm run seo:check && pnpm run pages:check && nuxt build",
+    "dev": "nuxt dev --host 0.0.0.0 --port 6680",
+    "i18n:check": "node ./scripts/check-i18n.mjs",
+    "preview": "nuxt preview --host 0.0.0.0 --port 6680",
+    "seo:check": "node ./scripts/check-seo.mjs",
+    "test:e2e": "pnpm run build && playwright test --config tests/playwright.config.ts",
+    "typecheck": "nuxt typecheck",
+    "build:static": "pnpm run pages:check && WEBSITE_STATIC_BUILD=1 nuxt generate && node ./scripts/copy-static.mjs",
+    "build:ssr": "pnpm run typecheck && pnpm run i18n:check && pnpm run seo:check && pnpm run pages:check && nuxt build",
+    "pages:check": "node ./scripts/check-pages.mjs"
+  },
+  "dependencies": {
+    "@nuxtjs/i18n": "10.6.0",
+    "ant-design-vue": "^4.2.6",
+    "nuxt": "4.5.2",
+    "vue": "^3.5.29",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "packageManager": "pnpm@10.30.3"
+}

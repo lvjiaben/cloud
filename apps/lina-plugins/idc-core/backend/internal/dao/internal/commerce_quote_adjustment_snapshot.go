@@ -21,36 +21,40 @@ type CommerceQuoteAdjustmentSnapshotDao struct {
 
 // CommerceQuoteAdjustmentSnapshotColumns defines and stores column names for the table plugin_idc_core_commerce_quote_adjustment_snapshot.
 type CommerceQuoteAdjustmentSnapshotColumns struct {
-	Id                   string //
-	TenantId             string //
-	QuoteAdjustmentNo    string //
-	QuoteItemNo          string //
-	CurrencyCode         string //
-	ApplicationOrder     string //
-	AdjustmentTypeCode   string //
-	SourceReference      string //
-	SourceVersionDigest  string //
-	ReservationReference string //
-	AmountMinor          string //
-	ContentDigest        string //
-	CreatedAt            string //
+	Id                        string //
+	TenantId                  string //
+	QuoteAdjustmentNo         string //
+	QuoteItemNo               string //
+	CurrencyCode              string //
+	ApplicationOrder          string //
+	AdjustmentTypeCode        string //
+	SourceReference           string //
+	SourceVersionDigest       string //
+	ReservationReference      string //
+	AmountMinor               string //
+	ContentDigest             string //
+	CreatedAt                 string //
+	OriginalPeriodAmountMinor string //
+	TargetPeriodAmountMinor   string //
 }
 
 // commerceQuoteAdjustmentSnapshotColumns holds the columns for the table plugin_idc_core_commerce_quote_adjustment_snapshot.
 var commerceQuoteAdjustmentSnapshotColumns = CommerceQuoteAdjustmentSnapshotColumns{
-	Id:                   "id",
-	TenantId:             "tenant_id",
-	QuoteAdjustmentNo:    "quote_adjustment_no",
-	QuoteItemNo:          "quote_item_no",
-	CurrencyCode:         "currency_code",
-	ApplicationOrder:     "application_order",
-	AdjustmentTypeCode:   "adjustment_type_code",
-	SourceReference:      "source_reference",
-	SourceVersionDigest:  "source_version_digest",
-	ReservationReference: "reservation_reference",
-	AmountMinor:          "amount_minor",
-	ContentDigest:        "content_digest",
-	CreatedAt:            "created_at",
+	Id:                        "id",
+	TenantId:                  "tenant_id",
+	QuoteAdjustmentNo:         "quote_adjustment_no",
+	QuoteItemNo:               "quote_item_no",
+	CurrencyCode:              "currency_code",
+	ApplicationOrder:          "application_order",
+	AdjustmentTypeCode:        "adjustment_type_code",
+	SourceReference:           "source_reference",
+	SourceVersionDigest:       "source_version_digest",
+	ReservationReference:      "reservation_reference",
+	AmountMinor:               "amount_minor",
+	ContentDigest:             "content_digest",
+	CreatedAt:                 "created_at",
+	OriginalPeriodAmountMinor: "original_period_amount_minor",
+	TargetPeriodAmountMinor:   "target_period_amount_minor",
 }
 
 // NewCommerceQuoteAdjustmentSnapshotDao creates and returns a new DAO object for table data access.

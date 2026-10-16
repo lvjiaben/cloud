@@ -37,6 +37,7 @@ export interface ProviderChannel {
   connectionVerifiedAt?: number;
   displayName: string;
   endpoint: string;
+  tlsCertificateSha256?: string;
   interfaceConfiguration?: InterfaceConfigurationSchema;
   nonSecretSettings?: Record<string, unknown>;
   providerPluginId: string;

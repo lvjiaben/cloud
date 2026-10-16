@@ -14,10 +14,14 @@ import { useVbenForm, z } from "#/adapter/form";
 import { $t } from "#/locales";
 
 import { catalogCategoryList, catalogProductCreate } from "../catalog-client";
+import { useAccess } from "../plugin-access";
+import { listProductDirectoryOptions, type ProductDirectory } from "../product-directory-client";
 import { contractPolicyTemplates } from "../contract-policy-client";
 
 const emit = defineEmits<{ success: [] }>();
 const categories = ref<CatalogCategory[]>([]);
+const memberMenus = ref<ProductDirectory[]>([]);
+const { hasAccessByCodes } = useAccess();
 const contractTemplates = ref<ContractPolicyTemplate[]>([]);
 
 function localizedCategory(category: CatalogCategory) {
@@ -53,6 +57,7 @@ function categoryTree(items: CatalogCategory[]) {
 
 function formSchema(): VbenFormProps["schema"] {
   return [
+    ...(hasAccessByCodes(["idc:admin:product-directory:list"]) ? [{ component: "Select", fieldName: "directoryNo", label: $t("plugin.idc-core.productDirectory.productMenu"), defaultValue: "", componentProps: { "data-testid": "catalog-product-create-member-menu", allowClear: true, options: memberMenus.value.filter(item => item.statusCode === "enabled" && (!item.navigationType || item.navigationType === "product")).map(item => ({value: item.directoryNo, label: preferences.app.locale === "zh-CN" ? item.nameZhCn : item.nameEnUs})), placeholder: $t("plugin.idc-core.productDirectory.unclassified") } }] : []),
     {
       component: "TreeSelect",
       componentProps: {
@@ -234,6 +239,7 @@ const [Modal, modalApi] = useVbenModal({
     const { valid } = await formApi.validate();
     if (!valid) return false;
     const values = await formApi.getValues<{
+      directoryNo?: string;
       categoryNo: string;
       contractPolicyCode: "inherit" | "none" | "required";
       contractTemplateNo: string;
@@ -259,6 +265,7 @@ const [Modal, modalApi] = useVbenModal({
     try {
       await catalogProductCreate({
         ...values,
+        directoryNo: values.directoryNo ?? "",
         nameEnUs: values.nameEnUs.trim(),
         nameZhCn: values.nameZhCn.trim(),
         publicSlug: values.publicSlug.trim().toLowerCase(),
@@ -275,10 +282,13 @@ const [Modal, modalApi] = useVbenModal({
   async onOpenChange(open) {
     if (!open) return;
     modalApi.setState({ confirmDisabled: true });
+    if (hasAccessByCodes(["idc:admin:product-directory:list"])) { memberMenus.value = await listProductDirectoryOptions(); }
     await loadCategories();
     await loadContractTemplates();
     await formApi.setState({ schema: formSchema() });
     await formApi.setValues({
+      categoryNo: categories.value.some(item => item.categoryNo === modalApi.getData<{ categoryNo?: string }>()?.categoryNo) ? modalApi.getData<{ categoryNo?: string }>().categoryNo : undefined,
+      directoryNo: "",
       contractPolicyCode: "inherit",
       contractTemplateNo: "",
 	  inventoryTrackingEnabled: false,

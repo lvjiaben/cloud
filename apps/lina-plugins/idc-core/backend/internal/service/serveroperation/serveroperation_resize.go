@@ -70,14 +70,19 @@ type resizeQuoteRow struct {
 }
 
 func (s *accessoryPricingImpl) ResizeOptionsCurrentCustomer(ctx context.Context, serviceNo string) (*ResizeOptions, error) {
-	if s.catalog == nil || !validReference(strings.TrimSpace(serviceNo), 40) {
-		return nil, ErrServiceUnavailable
-	}
 	subject, err := s.customers.CurrentCustomer(ctx)
 	if err != nil || subject == nil {
 		return nil, ErrServiceUnavailable
 	}
-	row, err := s.loadResizeService(ctx, subject.CustomerNo, serviceNo, false)
+	return s.resizeOptions(ctx, subject.CustomerNo, serviceNo)
+}
+
+// resizeOptions shares the same owned configuration projection across customer and staff entries.
+func (s *accessoryPricingImpl) resizeOptions(ctx context.Context, customerNo, serviceNo string) (*ResizeOptions, error) {
+	if s.catalog == nil || !validReference(serviceNo, 40) {
+		return nil, ErrServiceUnavailable
+	}
+	row, err := s.loadResizeService(ctx, customerNo, serviceNo, false)
 	if err != nil || row == nil {
 		return nil, ErrServiceUnavailable
 	}
@@ -96,7 +101,16 @@ WHERE tenant_id=0 AND configuration_snapshot_no=? ORDER BY sort_order,id`, row.C
 }
 
 func (s *accessoryPricingImpl) PreviewResizeCurrentCustomer(ctx context.Context, input ResizeQuoteInput) (*ResizeQuote, error) {
-	service, customerNo, requestDigest, err := s.prepareResizePreview(ctx, input)
+	subject, err := s.customers.CurrentCustomer(ctx)
+	if err != nil || subject == nil {
+		return nil, ErrServiceUnavailable
+	}
+	return s.previewResize(ctx, subject.CustomerNo, input)
+}
+
+// previewResize freezes the existing pricing and compatibility rules for an authorized customer.
+func (s *accessoryPricingImpl) previewResize(ctx context.Context, customerNo string, input ResizeQuoteInput) (*ResizeQuote, error) {
+	service, customerNo, requestDigest, err := s.prepareResizePreview(ctx, customerNo, input)
 	if err != nil {
 		return nil, err
 	}
@@ -119,23 +133,19 @@ func (s *accessoryPricingImpl) PreviewResizeCurrentCustomer(ctx context.Context,
 	return projectResizeQuote(row, false), nil
 }
 
-func (s *accessoryPricingImpl) prepareResizePreview(ctx context.Context, input ResizeQuoteInput) (*resizeServiceRow, string, string, error) {
+func (s *accessoryPricingImpl) prepareResizePreview(ctx context.Context, customerNo string, input ResizeQuoteInput) (*resizeServiceRow, string, string, error) {
 	if s.catalog == nil || !validReference(strings.TrimSpace(input.ServiceNo), 40) || len(input.IdempotencyKey) < 8 || len(input.IdempotencyKey) > 256 || len(input.Selections) == 0 {
 		return nil, "", "", ErrInvalidInput
 	}
-	subject, err := s.customers.CurrentCustomer(ctx)
-	if err != nil || subject == nil {
-		return nil, "", "", ErrServiceUnavailable
-	}
-	service, err := s.loadResizeService(ctx, subject.CustomerNo, input.ServiceNo, false)
+	service, err := s.loadResizeService(ctx, customerNo, input.ServiceNo, false)
 	if err != nil || service == nil || input.CurrencyCode != service.CurrencyCode {
 		return nil, "", "", ErrServiceUnavailable
 	}
 	digest, err := digestValue(struct {
 		CustomerNo, ServiceNo, Revision, TermNo, Currency, Key string
 		Selections                                             []catalog.PublicConfigurationSelection
-	}{subject.CustomerNo, input.ServiceNo, input.Revision, input.TermNo, input.CurrencyCode, input.IdempotencyKey, input.Selections})
-	return service, subject.CustomerNo, digest, err
+	}{customerNo, input.ServiceNo, input.Revision, input.TermNo, input.CurrencyCode, input.IdempotencyKey, input.Selections})
+	return service, customerNo, digest, err
 }
 
 func (s *accessoryPricingImpl) loadResizeQuoteReplay(ctx context.Context, customerNo, digest string) (*resizeQuoteRow, error) {
@@ -382,18 +392,23 @@ func resizeNumeric(raw string, keys ...string) int64 {
 }
 
 func (s *accessoryPricingImpl) CheckoutResizeCurrentCustomer(ctx context.Context, input ResizeCheckoutInput) (*ResizeCheckout, error) {
-	input.QuoteNo = strings.TrimSpace(input.QuoteNo)
-	if !validReference(input.QuoteNo, 40) || len(input.IdempotencyKey) < 8 || len(input.IdempotencyKey) > 256 {
-		return nil, ErrInvalidInput
-	}
 	subject, err := s.customers.CurrentCustomer(ctx)
 	if err != nil || subject == nil {
 		return nil, ErrServiceUnavailable
 	}
-	idem, _ := digestValue(struct{ CustomerNo, Key string }{subject.CustomerNo, input.IdempotencyKey})
-	request, _ := digestValue(struct{ CustomerNo, QuoteNo string }{subject.CustomerNo, input.QuoteNo})
+	return s.checkoutResize(ctx, subject.CustomerNo, input, "customer", subject.CustomerNo)
+}
+
+// checkoutResize preserves pricing, mutex, version checks, payment and immutable order evidence.
+func (s *accessoryPricingImpl) checkoutResize(ctx context.Context, customerNo string, input ResizeCheckoutInput, actorType, actorReference string) (*ResizeCheckout, error) {
+	input.QuoteNo = strings.TrimSpace(input.QuoteNo)
+	if !validReference(input.QuoteNo, 40) || len(input.IdempotencyKey) < 8 || len(input.IdempotencyKey) > 256 {
+		return nil, ErrInvalidInput
+	}
+	idem, _ := digestValue(struct{ CustomerNo, Key string }{customerNo, input.IdempotencyKey})
+	request, _ := digestValue(struct{ CustomerNo, QuoteNo string }{customerNo, input.QuoteNo})
 	var result *ResizeCheckout
-	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+	err := s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
 		var quote *resizeQuoteRow
 		if err := s.database.GetScan(ctx, &quote, `SELECT quote_no,customer_no,service_no,public_slug,
 source_configuration_snapshot_no,target_configuration_snapshot_no,target_version_no,target_billing_rule_no,
@@ -402,7 +417,7 @@ current_recurring_amount_minor AS current_recurring_minor,target_recurring_amoun
 target_subtotal_minor,target_net_amount_minor AS target_net_minor,target_tax_amount_minor AS target_tax_minor,
 charge_amount_minor,charge_subtotal_minor,charge_net_amount_minor AS charge_net_minor,charge_tax_amount_minor AS charge_tax_minor,
 expected_service_version,customer_subject_version,period_started_at,period_expires_at,effective_at,issued_at,expires_at
-FROM plugin_idc_core_server_resize_quote WHERE tenant_id=0 AND customer_no=? AND quote_no=? FOR UPDATE`, subject.CustomerNo, input.QuoteNo); err != nil {
+FROM plugin_idc_core_server_resize_quote WHERE tenant_id=0 AND customer_no=? AND quote_no=? FOR UPDATE`, customerNo, input.QuoteNo); err != nil {
 			return err
 		}
 		if quote == nil {
@@ -426,7 +441,7 @@ WHERE tenant_id=0 AND operation_type_code='resize' AND quote_no=?`, quote.QuoteN
 		if err != nil {
 			return err
 		}
-		service, err := s.loadResizeService(ctx, subject.CustomerNo, quote.ServiceNo, true)
+		service, err := s.loadResizeService(ctx, customerNo, quote.ServiceNo, true)
 		if err != nil {
 			return err
 		}
@@ -492,12 +507,12 @@ VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?)`, operationNo, quote.QuoteNo, quote.Service
 WHERE tenant_id=0 AND service_no=? AND customer_no=? AND version=?`, operationNo, now, service.ServiceNo, service.CustomerNo, service.ServiceVersion); err != nil {
 			return ErrOperationConflict
 		}
-		if err = insertEvent(ctx, s.database, operationNo, service.ServiceNo, 1, nil, status, "server_resize.checkout_created", "customer", subject.CustomerNo, quote.ContentDigest, now); err != nil {
+		if err = insertEvent(ctx, s.database, operationNo, service.ServiceNo, 1, nil, status, "server_resize.checkout_created", actorType, actorReference, quote.ContentDigest, now); err != nil {
 			return err
 		}
 		if err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "server.resize.checkout", IdempotencyKey: input.IdempotencyKey,
 			OperationCode: "server.resize.checkout", TargetType: "server_service", TargetNo: service.ServiceNo, CustomerNo: service.CustomerNo,
-			ResultCode: status, ReasonCode: "customer_resize_checkout", RiskCode: "medium", CorrelationNo: operationNo,
+			ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: actorType + "_resize_checkout", RiskCode: "medium", CorrelationNo: operationNo,
 			BeforeSnapshot: map[string]any{"configurationSnapshotNo": service.CurrentConfigurationNo, "serviceVersion": service.ServiceVersion},
 			AfterSnapshot:  map[string]any{"configurationSnapshotNo": quote.TargetConfigurationNo, "serviceVersion": nextVersion, "direction": quote.Direction, "effectiveAt": quote.EffectiveAt}}); err != nil {
 			return err

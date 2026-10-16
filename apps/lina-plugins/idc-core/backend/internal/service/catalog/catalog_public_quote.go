@@ -84,6 +84,9 @@ func (s *publicCatalogReaderImpl) QuoteConfiguration(
 		currency != input.CurrencyCode || !currencyCodePattern.MatchString(currency) || s.revision == nil {
 		return nil, bizerr.NewCode(CodePublicQuoteInvalid)
 	}
+	if err := s.admitCurrency(ctx, currency); err != nil {
+		return nil, err
+	}
 	target, err := loadPublicConfigurationTarget(ctx, s.database, slug)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
@@ -109,6 +112,9 @@ func (s *publicCatalogReaderImpl) QuoteConfiguration(
 	}
 	quote, err := buildPublicConfigurationQuote(revision, currency, source, selections)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.applyImportedPublicPrices(ctx, target.VersionNo, quote); err != nil {
 		return nil, err
 	}
 	for index := range quote.Terms {
@@ -196,6 +202,7 @@ func buildPublicConfigurationQuote(
 	if err != nil {
 		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
+	pricing.configurationModes = source.ConfigurationModes
 	optionNumbers := make([]string, 0, len(selections))
 	for optionNo := range selections {
 		optionNumbers = append(optionNumbers, optionNo)
@@ -280,10 +287,10 @@ func quotePublicPriceLine(
 	}
 	definition := BillingRuleDefinitionFromEntity(rule)
 	requestedQuantity := int64(quantity)
-	if definition.QuantityMode == QuantityModeFixed {
+	if definition.QuantityMode == QuantityModeFixed && (pricing.configurationModes[optionNo] == "" || pricing.configurationModes[optionNo] == ConfigurationPriceFixed) {
 		requestedQuantity = 1
 	}
-	priced, err := QuoteBillingRule(definition, schedule, BillingQuoteRequest{
+	priced, err := quoteConfigurationPrice(definition, pricing.configurationModes[optionNo], schedule, BillingQuoteRequest{
 		Phase: QuotePhaseNewPurchase, Cycles: definition.MinimumPurchaseCycles,
 		Quantity: &requestedQuantity,
 	})

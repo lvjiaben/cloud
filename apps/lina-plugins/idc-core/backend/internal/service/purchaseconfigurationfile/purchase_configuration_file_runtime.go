@@ -43,6 +43,44 @@ type OpenConsumedFile struct {
 type ConsumedFileReader interface {
 	ListConsumedField(context.Context, ConsumedFileScope, string) ([]ConsumedFile, error)
 	OpenConsumedFieldFile(context.Context, ConsumedFileScope, string, int) (*OpenConsumedFile, error)
+	// VisitConsumedField reads metadata once and streams each verified private
+	// object to a trusted in-process consumer without exposing storage paths.
+	VisitConsumedField(context.Context, ConsumedFileScope, string, func(ConsumedFile, io.Reader) error) error
+}
+
+func (r *consumedFileReader) VisitConsumedField(ctx context.Context, scope ConsumedFileScope, fieldKey string, consume func(ConsumedFile, io.Reader) error) error {
+	if consume == nil {
+		return gerror.New("consumed file consumer is unavailable")
+	}
+	files, err := r.ListConsumedField(ctx, scope, fieldKey)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		object, err := r.storage.Get(ctx, storagecap.GetInput{Path: file.ObjectRef})
+		if err != nil {
+			return err
+		}
+		if object == nil || object.Body == nil {
+			return gerror.New("consumed file content is unavailable")
+		}
+		valid := object.Found && object.Object != nil && object.Object.Path == file.ObjectRef && object.Object.Size == file.SizeBytes && object.Object.ContentType == file.MediaType && object.Object.Visibility == storagecap.VisibilityPrivate
+		if valid {
+			// The consumer receives metadata only, never the private storage key.
+			file.ObjectRef = ""
+			err = consume(file, object.Body)
+		} else {
+			err = gerror.New("consumed file content evidence mismatch")
+		}
+		closeErr := object.Body.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+	}
+	return nil
 }
 
 type consumedFileReader struct {

@@ -42,6 +42,7 @@ func New(database gdb.DB) (*Service, error) {
 
 type taskParameters struct {
 	ContractVersion          string                      `json:"contractVersion"`
+	CustomerNo               string                      `json:"customerNo,omitempty"`
 	LifecycleTaskNo          string                      `json:"lifecycleTaskNo"`
 	Action                   lifecycleresourcecap.Action `json:"action"`
 	ExpectedServiceVersion   int64                       `json:"expectedServiceVersion"`
@@ -92,6 +93,10 @@ func (s *Service) CreateTask(
 	if s == nil || s.database == nil || s.tasks == nil || ctx == nil || ctx.Err() != nil ||
 		lifecycleresourcecap.ValidateTaskRequest(request) != nil {
 		return nil, lifecycleresourcecap.ErrSourceUnavailable
+	}
+	request, err := s.resolveEntitlementRoute(ctx, request)
+	if err != nil {
+		return nil, err
 	}
 	requestID := "core.lifecycle." + request.LifecycleTaskNo
 	existing, err := s.loadTaskByRequest(ctx, request.ChannelNo, requestID)
@@ -147,6 +152,11 @@ func (s *Service) ReadTask(
 		lifecycleresourcecap.ValidateTaskReadRequest(request) != nil {
 		return nil, lifecycleresourcecap.ErrSourceUnavailable
 	}
+	normalized, err := s.resolveEntitlementRoute(ctx, request.Request)
+	if err != nil {
+		return nil, err
+	}
+	request.Request = normalized
 	row, err := s.loadTask(ctx, request.ProviderTaskNo, request.Request.ChannelNo)
 	if err != nil {
 		return nil, err
@@ -227,6 +237,7 @@ INNER JOIN plugin_idc_resource_capability_snapshot_item item
 	}
 	return &taskParameters{
 		ContractVersion: lifecycleresourcecap.ContractVersion,
+		CustomerNo:      request.CustomerNo,
 		LifecycleTaskNo: request.LifecycleTaskNo, Action: request.Action,
 		ExpectedServiceVersion:  request.ExpectedServiceVersion,
 		ExpectedExpiresUnixNano: request.ExpectedExpiresAt.UTC().UnixNano(),
@@ -346,6 +357,7 @@ func sameIntent(
 		row.CapabilityCode == string(capability) && row.LocalResourceNo == request.ServiceNo &&
 		row.ChannelNo == request.ChannelNo && row.PoolNo == request.PoolNo &&
 		parameters.ContractVersion == lifecycleresourcecap.ContractVersion &&
+		parameters.CustomerNo == request.CustomerNo &&
 		parameters.LifecycleTaskNo == request.LifecycleTaskNo && parameters.Action == request.Action &&
 		parameters.ExpectedServiceVersion == request.ExpectedServiceVersion &&
 		parameters.ExpectedExpiresUnixNano == request.ExpectedExpiresAt.UTC().UnixNano() &&

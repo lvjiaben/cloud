@@ -15,14 +15,17 @@ func (c *ControllerV1) CommerceAssistedQuoteCreate(ctx context.Context, req *v1.
 	if err != nil {
 		return nil, bizerr.NewCode(commerce.CodeAssistedQuoteInvalid)
 	}
+	items, err := toCommerceAssistedQuoteItems(req.Items, req.CurrencyCode)
+	if err != nil {
+		return nil, err
+	}
 	request, err := c.commerceAssistedQuotes.CreateAssistedQuote(ctx, commerce.AssistedQuoteCreateInput{
 		CustomerNo: req.CustomerNo, CurrencyCode: req.CurrencyCode, ManualDiscountMinor: discount,
-		PaymentTermCode:   commerce.AssistedPaymentTerm(req.PaymentTermCode),
-		PaymentDueSeconds: req.PaymentDueSeconds, Reason: req.Reason, InternalNote: req.InternalNote,
+		PaymentDueAt: req.PaymentDueAt, Reason: req.Reason, InternalNote: req.InternalNote,
 		ContractPolicyCode: contractpolicy.Policy(req.ContractPolicyCode),
 		ContractTemplateNo: req.ContractTemplateNo,
-		ValiditySeconds:    req.ValiditySeconds, IdempotencyKey: req.IdempotencyKey,
-		Items: toCommerceAssistedQuoteItems(req.Items, req.CurrencyCode),
+		IdempotencyKey:     req.IdempotencyKey,
+		Items:              items,
 	})
 	if err != nil {
 		return nil, err

@@ -105,6 +105,63 @@ func (providerConfigurationAudit) AppendBusinessBatchTransition(
 	return idccap.BusinessAuditAppendResult{}, nil
 }
 
+func TestProviderConfigurationPostgreSQLPersistsCertificateTrust(t *testing.T) {
+	ctx, database := newProviderConfigurationDatabase(t)
+	service, err := New(database, managementcap.Runtime{
+		Authorizer: providerConfigurationAuthorizer{}, Audit: providerConfigurationAudit{},
+	}, []providerspi.Declaration{{Key: resourcecap.ProviderKey{PluginID: "server-connector", ProviderID: "server-api", ContractVersion: resourcecap.ContractVersion}, ProvisionParameters: testProviderConfigurationParameters}}, testUsageReader{}, testConfigurationProjection(t, database))
+	if err != nil {
+		t.Fatal(err)
+	}
+	pin := strings.Repeat("a", 64)
+	created, err := service.CreateChannel(ctx, ChannelInput{ProviderPluginID: "server-connector", DisplayName: "Pinned", Endpoint: "https://supplier.example/v1", TLSCertificateSHA256: &pin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.TLSCertificateSHA256 != pin {
+		t.Fatal("create lost certificate trust")
+	}
+	reader, err := channelconfig.NewReader(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	configuration, err := reader.ReadConfigured(ctx, created.ChannelNo)
+	if err != nil || configuration.Config.TLSCertificateSHA256 != pin {
+		t.Fatalf("current reader lost certificate trust: %v", err)
+	}
+	revision, err := database.GetValue(ctx, "SELECT current_configuration_revision FROM plugin_idc_resource_interface_channel_binding WHERE channel_no=?", created.ChannelNo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, "UPDATE plugin_idc_resource_channel SET status_code='enabled' WHERE channel_no=?", created.ChannelNo); err != nil {
+		t.Fatal(err)
+	}
+	frozen, err := reader.ReadRevision(ctx, created.ChannelNo, revision.String())
+	if err != nil || frozen.Config.TLSCertificateSHA256 != pin {
+		t.Fatalf("revision reader lost channel transport trust: %v", err)
+	}
+	if _, err = database.Exec(ctx, "UPDATE plugin_idc_resource_channel SET status_code='disabled' WHERE channel_no=?", created.ChannelNo); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := service.UpdateChannel(ctx, ChannelInput{ChannelNo: created.ChannelNo, DisplayName: created.DisplayName, Endpoint: created.Endpoint, Status: "disabled", Version: created.Version})
+	if err != nil || updated == nil || updated.TLSCertificateSHA256 != pin {
+		t.Fatalf("omitted trust not preserved: %v", err)
+	}
+	invalid := "invalid"
+	if _, err = service.UpdateChannel(ctx, ChannelInput{ChannelNo: updated.ChannelNo, DisplayName: updated.DisplayName, Endpoint: updated.Endpoint, Status: "disabled", Version: updated.Version, TLSCertificateSHA256: &invalid}); err == nil {
+		t.Fatal("invalid trust accepted")
+	}
+	value, err := database.GetValue(ctx, "SELECT version FROM plugin_idc_resource_channel WHERE channel_no=?", updated.ChannelNo)
+	if err != nil || value.Int64() != updated.Version {
+		t.Fatal("invalid trust wrote configuration")
+	}
+	updated, err = service.UpdateChannel(ctx, ChannelInput{ChannelNo: updated.ChannelNo, DisplayName: updated.DisplayName, Endpoint: "https://other.example/v1", Status: "disabled", Version: updated.Version})
+	if err != nil || updated == nil || updated.TLSCertificateSHA256 != "" {
+		t.Fatalf("endpoint change retained stale trust: %v", err)
+	}
+}
+
 func TestProviderConfigurationPostgreSQLCreatesStableInterfaceBindingAtomically(t *testing.T) {
 	ctx, database := newProviderConfigurationDatabase(t)
 	service, err := New(database, managementcap.Runtime{
@@ -115,7 +172,7 @@ func TestProviderConfigurationPostgreSQLCreatesStableInterfaceBindingAtomically(
 			ContractVersion: resourcecap.ContractVersion,
 		},
 		ProvisionParameters: testProviderConfigurationParameters,
-	}}, testUsageReader{})
+	}}, testUsageReader{}, testConfigurationProjection(t, database))
 	if err != nil {
 		t.Fatalf("construct Provider configuration service: %v", err)
 	}
@@ -155,11 +212,23 @@ FROM plugin_idc_resource_interface_channel_binding WHERE channel_no=?`, created.
 		after.Revision == before.Revision || !after.Updated.After(before.Updated) {
 		t.Fatalf("configuration revision did not advance: before=%+v after=%+v err=%v", before, after, err)
 	}
+	deleted, deleteErr := service.UpdateChannel(ctx, ChannelInput{
+		ChannelNo: updated.ChannelNo, DisplayName: updated.DisplayName,
+		Endpoint: updated.Endpoint, NonSecretSettings: updated.NonSecretSettings,
+		Status: "deleted", Version: updated.Version,
+	})
+	if deleteErr != nil || deleted == nil || deleted.Status != "deleted" || deleted.Version != updated.Version+1 {
+		t.Fatalf("delete must return committed state, not fail while rereading hidden configuration: %+v %v", deleted, deleteErr)
+	}
+	stored, storedErr := database.GetValue(ctx, "SELECT deleted_at IS NOT NULL FROM plugin_idc_resource_channel WHERE channel_no=?", created.ChannelNo)
+	if storedErr != nil || !stored.Bool() {
+		t.Fatalf("channel deletion was not persisted: %v %v", stored, storedErr)
+	}
 	reader, readerErr := channelconfig.NewReader(database)
 	if readerErr != nil {
 		t.Fatal(readerErr)
 	}
-	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET status_code='enabled' WHERE channel_no=?`, created.ChannelNo); err != nil {
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET status_code='enabled',deleted_at=NULL WHERE channel_no=?`, created.ChannelNo); err != nil {
 		t.Fatal(err)
 	}
 	frozen, readerErr := reader.ReadRevision(ctx, created.ChannelNo, before.Revision)
@@ -225,7 +294,7 @@ func TestProviderConfigurationPostgreSQLCreatesPoolForOwnedChannel(t *testing.T)
 			ContractVersion: resourcecap.ContractVersion,
 		},
 		ProvisionParameters: testProviderConfigurationParameters,
-	}}, testUsageReader{})
+	}}, testUsageReader{}, testConfigurationProjection(t, database))
 	if err != nil {
 		t.Fatalf("construct Provider configuration service: %v", err)
 	}

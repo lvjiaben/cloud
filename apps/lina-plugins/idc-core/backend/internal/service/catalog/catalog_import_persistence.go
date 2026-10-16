@@ -138,6 +138,11 @@ func (s *managementServiceImpl) CommitImport(ctx context.Context, input ImportIn
 	if err = s.insertImportPrices(ctx, versionNo, prices); err != nil {
 		return nil, false, err
 	}
+	if source.ImportSnapshot != nil {
+		if err = s.insertPortableImport(ctx, versionNo, input, source, prices); err != nil {
+			return nil, false, err
+		}
+	}
 	updated, err := dao.CatalogProductImport.Ctx(ctx).Where(do.CatalogProductImport{TenantId: idccap.DefaultTenantID, ActorUserId: actor, RequestKey: input.RequestKey, RequestDigest: digest}).
 		Data(do.CatalogProductImport{ProductNo: &productNo, VersionNo: &versionNo}).UpdateAndGetAffected()
 	if err != nil {
@@ -160,6 +165,9 @@ func (s *managementServiceImpl) CommitImport(ctx context.Context, input ImportIn
 func (s *managementServiceImpl) insertImportPrices(ctx context.Context, versionNo string, prices []importPrice) error {
 	if len(prices) == 0 {
 		return nil
+	}
+	if prices[0].portable != nil {
+		return nil // The complete portable contract is inserted as one batch below.
 	}
 	var (
 		rules      = make([]do.CatalogBillingRule, 0, len(prices))

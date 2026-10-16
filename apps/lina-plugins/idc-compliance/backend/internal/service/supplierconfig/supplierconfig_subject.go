@@ -75,7 +75,7 @@ func (s *serviceImpl) recordUnavailableRecognizer(
 		OperationCode:      auditSubjectGateOperation,
 		TargetType:         auditTargetType,
 		TargetNo:           configurationNo(provider),
-		ResultCode:         "blocked",
+		ResultCode:         "denied",
 		ReasonCode:         EvidenceExternalConfirmationRequired,
 		RiskCode:           "high",
 		RequiredPermission: permission,
@@ -512,12 +512,16 @@ func (s *serviceImpl) updateSubjectOperation(
 		if result == OperationResultPending {
 			auditOperation = auditSubjectPendingOperation
 		}
+		auditResult := idccap.BusinessAuditResultSucceeded
+		if result == OperationResultRetryableFailed {
+			auditResult = "failed"
+		}
 		return s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: auditOperation,
 			IdempotencyKey:   subjectAuditKey(request, result),
 			OperationCode:    auditOperation,
 			TargetType:       auditTargetType, TargetNo: configurationNo(request.ProviderCode),
-			ResultCode: string(result), ReasonCode: string(request.Operation), RiskCode: "high",
+			ResultCode: auditResult, ReasonCode: string(request.Operation), RiskCode: "high",
 			RequiredPermission: permission,
 			BeforeSnapshot:     auditSnapshot(before), AfterSnapshot: auditSnapshot(after),
 		})

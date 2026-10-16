@@ -467,11 +467,11 @@ VALUES
 	if bundle.Order.RequiresContract {
 		reasonCode = "required_contract_order"
 	}
-	if auditErr := s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	if auditErr := s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": "not_created"},
 		IdempotencyScope: "compliance.contract.prepare",
 		IdempotencyKey:   idempotencyDigest, OperationCode: "compliance.contract.prepare",
 		TargetType: "contract", TargetNo: bundle.ContractNo,
-		CustomerNo: bundle.Order.Customer.CustomerNo, ResultCode: "prepared",
+		CustomerNo: bundle.Order.Customer.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 		ReasonCode: reasonCode, RiskCode: "high",
 		CorrelationNo: bundle.Order.OrderNo,
 		AfterSnapshot: map[string]any{

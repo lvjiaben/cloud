@@ -239,7 +239,7 @@ func executeResourceQuery(executor confidentialoutboundcap.Service, contextID st
 }
 
 func businessCall(executor confidentialoutboundcap.Service, contextID string, sequence uint8, method, path string, query, form url.Values, secretFields map[string]string) (resourcecap.ConfidentialHTTPResponse, error) {
-	request := resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: firstValues(form), SecretFormFields: secretFields, ResponseFields: safeResponseFields, UseAuthentication: true}
+	request := resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path, Query: map[string][]string(query), Form: firstValues(form), SecretFormBindings: resourcecap.NewConfidentialSecretFormBindings(secretFields), ResponseFields: safeResponseFields, UseAuthentication: true}
 	encoded, err := json.Marshal(request)
 	if err != nil {
 		return resourcecap.ConfidentialHTTPResponse{}, errInvalidConfiguration

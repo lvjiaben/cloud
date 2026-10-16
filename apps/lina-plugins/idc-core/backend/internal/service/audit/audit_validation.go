@@ -20,6 +20,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/idccap"
 )
 
 const (
@@ -277,7 +278,7 @@ func validateNormalizedFields(fields Fields) error {
 		!validReferenceText(fields.TargetNo, 64, true) ||
 		!validReferenceText(fields.CustomerNo, 40, false) ||
 		!validPersistedStableCode(fields.ReasonCode, maximumIdentifierRunes, false) ||
-		!validPersistedStableCode(fields.RequiredPermission, maximumPermissionRunes, false) ||
+		!validAuditPermission(fields.RequiredPermission) ||
 		!validReferenceText(fields.CorrelationNo, 64, false) ||
 		!validResult(fields.Result) {
 		return bizerr.NewCode(CodeInvalid)
@@ -740,6 +741,14 @@ func validStableCode(value string, maximumRunes int, required bool) bool {
 func validPersistedStableCode(value string, maximumRunes int, required bool) bool {
 	return validStableCode(value, maximumRunes, required) &&
 		!containsCredentialBearingText(value)
+}
+
+// Only exact compiled permission identifiers may bypass credential-text
+// scanning: channel-secret:manage is a permission, not a secret assignment.
+// Unknown codes and every other independent audit column keep the scanner.
+func validAuditPermission(value string) bool {
+	return validStableCode(value, maximumPermissionRunes, false) &&
+		(idccap.IsCatalogedAdminPermission(value) || !containsCredentialBearingText(value))
 }
 
 // validReferenceText prevents credential-bearing prose from being smuggled

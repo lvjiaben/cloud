@@ -79,11 +79,11 @@ func (c *ControllerV1) TicketClaim(ctx context.Context, req *v1.TicketClaimReq) 
 	return &v1.TicketClaimRes{Item: ToDetail(item)}, nil
 }
 func (c *ControllerV1) TicketTransfer(ctx context.Context, req *v1.TicketTransferReq) (*v1.TicketTransferRes, error) {
-	item, err := c.service.Transfer(ctx, supportdesk.TransferInput{TicketNo: req.TicketNo, DepartmentNo: req.DepartmentNo, Reason: req.Reason, AssigneeUserID: req.AssigneeUserID, TicketVersion: req.TicketVersion})
+	err := c.service.Transfer(ctx, supportdesk.TransferInput{TicketNo: req.TicketNo, DepartmentNo: req.DepartmentNo, Reason: req.Reason, AssigneeUserID: req.AssigneeUserID, TicketVersion: req.TicketVersion})
 	if err != nil {
 		return nil, err
 	}
-	return &v1.TicketTransferRes{Item: ToDetail(item)}, nil
+	return &v1.TicketTransferRes{}, nil
 }
 func (c *ControllerV1) TicketResolve(ctx context.Context, req *v1.TicketResolveReq) (*v1.TicketResolveRes, error) {
 	item, err := c.service.Resolve(ctx, supportdesk.TransitionInput{TicketNo: req.TicketNo, Reason: req.Reason, TicketVersion: req.TicketVersion})

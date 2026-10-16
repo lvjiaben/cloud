@@ -25,6 +25,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
+	"lina-plugin-idc-core/backend/internal/service/salesmanagement"
 )
 
 func TestRenewalQuoteItemInsertMatchesGenericCommerceSchemaPostgreSQL(t *testing.T) {
@@ -187,6 +188,82 @@ func (renewalPostgreSQLSettlementStub) SettleOrderWithCredit(
 
 func TestGenericConfigurationPriceRenewalFromCheckoutPostgreSQL(t *testing.T) {
 	ctx, database := newRenewalPostgreSQLDatabase(t)
+	publicReader, principalReader, fixture := newGenericRenewalCheckout(t, ctx, database)
+
+	pricing, err := salesmanagement.NewPricing(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	marketingEvaluator, err := newDefaultQuoteAdjustments(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	evaluator, err := commerce.NewAgentQuoteAdjustmentEvaluator(pricing, marketingEvaluator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	renewalService, err := NewWithQuoteAdjustments(ctx, database, principalReader, publicReader, evaluator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	renewalQuote, err := renewalService.QuoteCurrentCustomer(ctx, QuoteInput{
+		EntitlementNo:  fixture.EntitlementNo,
+		RenewalCycles:  1,
+		IdempotencyKey: "renewal-configured-quote-0001",
+	})
+	if err != nil || renewalQuote == nil || renewalQuote.SubtotalMinor != 15_000 ||
+		renewalQuote.TotalAmountMinor != 15_000 {
+		t.Fatalf("quote configured entitlement renewal: quote=%+v err=%v", renewalQuote, err)
+	}
+	assertGenericRenewalPriceEvidence(t, ctx, database, renewalQuote, fixture)
+	// The same production-injected owner must replace renewal prices even when
+	// the negotiated amount exceeds the current public renewal configuration.
+	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_core_sales_purchase_price
+ (tenant_id,price_no,customer_no,product_no,currency_code,charge_type_code,period_unit_code,period_count,adjustment_type_code,fixed_price_minor,status_code,version,content_digest)
+ SELECT 0,'APR_renewal_markup','CUS_renewal_owner',product_no,currency_code,charge_type_code,period_unit_code,period_count,'fixed_price',20000,'active',1,repeat('a',64)
+ FROM plugin_idc_core_commerce_quote_item_snapshot WHERE quote_item_no=?`, fixture.QuoteItemNo); err != nil {
+		t.Fatal(err)
+	}
+	markedUp, err := renewalService.QuoteCurrentCustomer(ctx, QuoteInput{EntitlementNo: fixture.EntitlementNo, RenewalCycles: 1, IdempotencyKey: "renewal-agent-markup-0001"})
+	if err != nil || markedUp == nil || markedUp.TotalAmountMinor != 20000 || markedUp.DiscountMinor != 0 {
+		t.Fatalf("agent renewal quote=%+v err=%v", markedUp, err)
+	}
+	evidence, err := database.GetOne(ctx, `SELECT a.original_period_amount_minor,a.target_period_amount_minor FROM plugin_idc_core_commerce_quote_adjustment_snapshot a JOIN plugin_idc_core_commerce_quote_item_snapshot i USING (quote_item_no) WHERE i.quote_no=?`, markedUp.QuoteNo)
+	if err != nil || evidence["original_period_amount_minor"].Int64() != 15000 || evidence["target_period_amount_minor"].Int64() != 20000 {
+		t.Fatalf("renewal negotiated evidence=%v err=%v", evidence, err)
+	}
+	// A stopped sale invalidates both fresh quotes and unconfirmed earlier
+	// quotes. Reopening preserves the original quote for a valid checkout.
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_core_catalog_product SET status_code='suspended' WHERE product_no='prd_renewal_ssl'`); err != nil {
+		t.Fatal(err)
+	}
+	if quote, err := renewalService.QuoteCurrentCustomer(ctx, QuoteInput{EntitlementNo: fixture.EntitlementNo, RenewalCycles: 1, IdempotencyKey: "stopped-renewal-quote"}); !bizerr.Is(err, CodePriceUnavailable) || quote != nil {
+		t.Fatalf("stopped product quoted: quote=%+v err=%v", quote, err)
+	}
+	confirmationInput := ConfirmInput{QuoteNo: markedUp.QuoteNo, IdempotencyKey: "stopped-renewal-confirm"}
+	if operation, err := renewalService.ConfirmCurrentCustomer(ctx, confirmationInput); !bizerr.Is(err, CodePriceUnavailable) || operation != nil {
+		t.Fatalf("old quote confirmed after stop: operation=%+v err=%v", operation, err)
+	}
+	// The stopped sale is reopened only in a fresh fixture; this test keeps the
+	// earlier quote immutable and verifies the pre-confirmation rejection.
+
+	principalReader.audience = &principal.Audience{
+		UserID: 202, Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive,
+		CustomerNo: "CUS_renewal_other", Version: 1,
+	}
+	if _, err = renewalService.QuoteCurrentCustomer(ctx, QuoteInput{
+		EntitlementNo:  fixture.EntitlementNo,
+		RenewalCycles:  1,
+		IdempotencyKey: "renewal-cross-customer-0001",
+	}); !bizerr.Is(err, CodeNotAccessible) {
+		t.Fatalf("cross-customer renewal returned %v", err)
+	}
+}
+
+// newGenericRenewalCheckout materializes a configured paid service fixture;
+// tests of later lifecycle phases explicitly set their starting entitlement facts.
+func newGenericRenewalCheckout(t *testing.T, ctx context.Context, database gdb.DB) (catalog.CatalogReader, *renewalPostgreSQLPrincipal, renewableCheckoutFixture) {
+	t.Helper()
 	seedGenericRenewalProduct(t, ctx, database)
 
 	principalReader := &renewalPostgreSQLPrincipal{audience: &principal.Audience{
@@ -337,35 +414,11 @@ func TestGenericConfigurationPriceRenewalFromCheckoutPostgreSQL(t *testing.T) {
 		t.Fatalf("checkout did not retain separate CFG and SCF snapshots: %+v", fixture)
 	}
 
-	renewalService, err := New(ctx, database, principalReader, publicReader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	renewalQuote, err := renewalService.QuoteCurrentCustomer(ctx, QuoteInput{
-		EntitlementNo:  fixture.EntitlementNo,
-		RenewalCycles:  1,
-		IdempotencyKey: "renewal-configured-quote-0001",
-	})
-	if err != nil || renewalQuote == nil || renewalQuote.SubtotalMinor != 15_000 ||
-		renewalQuote.TotalAmountMinor != 15_000 {
-		t.Fatalf("quote configured entitlement renewal: quote=%+v err=%v", renewalQuote, err)
-	}
-	assertGenericRenewalPriceEvidence(t, ctx, database, renewalQuote, fixture)
-
-	principalReader.audience = &principal.Audience{
-		UserID: 202, Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive,
-		CustomerNo: "CUS_renewal_other", Version: 1,
-	}
-	if _, err = renewalService.QuoteCurrentCustomer(ctx, QuoteInput{
-		EntitlementNo:  fixture.EntitlementNo,
-		RenewalCycles:  1,
-		IdempotencyKey: "renewal-cross-customer-0001",
-	}); !bizerr.Is(err, CodeNotAccessible) {
-		t.Fatalf("cross-customer renewal returned %v", err)
-	}
+	return publicReader, principalReader, fixture
 }
 
 type renewableCheckoutFixture struct {
+	QuoteItemNo                       string
 	EntitlementNo                     string
 	PriceConfigurationSnapshotNo      string
 	StructuredConfigurationSnapshotNo string
@@ -526,6 +579,7 @@ WHERE tenant_id=0 AND entitlement_no=?`, entitlementNo); err != nil {
 		t.Fatalf("set renewable entitlement expiry: %v", err)
 	}
 	return renewableCheckoutFixture{
+		QuoteItemNo:                       quoteItemNo,
 		EntitlementNo:                     entitlementNo,
 		PriceConfigurationSnapshotNo:      row.PriceConfigurationSnapshotNo,
 		StructuredConfigurationSnapshotNo: structuredConfigurationSnapshotNo,
@@ -588,7 +642,7 @@ WHERE tenant_id=0 AND price_snapshot_no=? AND subject_no=?`,
 
 func seedGenericRenewalProduct(t *testing.T, ctx context.Context, database gdb.DB) {
 	t.Helper()
-	if _, err := database.Exec(ctx, genericRenewalProductSQL); err != nil {
+	if _, err := database.Exec(ctx, genericRenewalProductSQL+genericRenewalProductPublicationSQL); err != nil {
 		t.Fatalf("seed generic renewable product: %v", err)
 	}
 }
@@ -669,6 +723,9 @@ INSERT INTO plugin_idc_core_catalog_tax_policy
      rounding_quantum_minor)
 VALUES ('TAX_renewal_ssl','ver_renewal_ssl_v1','CNY',TRUE,'exempt',NULL,
 		'goods','line','half_up',1);
+`
+
+const genericRenewalProductPublicationSQL = `
 UPDATE plugin_idc_core_catalog_product_version
 SET status_code='published',published_at=CURRENT_TIMESTAMP
 WHERE version_no='ver_renewal_ssl_v1';

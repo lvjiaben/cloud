@@ -21,7 +21,7 @@ type SupportUpstreamChannelGetRes struct {
 }
 
 type SupportUpstreamChannelPutReq struct {
-	g.Meta          `path:"/admin/support/settings/upstream-channel" method:"put" tags:"IDC Support" summary:"Configure upstream ticket channel" dc:"Replaces the isolated channel credential after recent-login verification." permission:"idc:admin:support:configuration:manage"`
+	g.Meta          `path:"/admin/support/settings/upstream-channel" method:"put" tags:"IDC Support" summary:"Configure upstream ticket channel" dc:"Replaces the isolated channel credential after current-session verification." permission:"idc:admin:support:configuration:manage"`
 	OperationNo     string `json:"operationNo" dc:"Unique idempotent operation number" eg:"OP_upstream_001"`
 	BaseURL         string `json:"baseUrl" dc:"One public HTTPS origin" eg:"https://support.example.com"`
 	AuthMode        string `json:"authMode" dc:"Authentication mode: zjmf_api_login or resource_login" eg:"zjmf_api_login"`

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"github.com/gogf/gf/v2/frame/g"
 
 	"lina-core/pkg/plugin/capability"
 	"lina-core/pkg/plugin/capability/authcap/authz"
@@ -15,8 +16,11 @@ import (
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/internal/runtimeconfig"
 	"lina-plugin-idc-core/backend/internal/service/audit"
+	"lina-plugin-idc-core/backend/internal/service/catalog"
+	"lina-plugin-idc-core/backend/internal/service/commerce"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/reauth"
+	"lina-plugin-idc-core/backend/internal/service/renewal"
 )
 
 // sensitiveAccessProofTTL is the reviewed upper bound for exact-target proofs.
@@ -36,7 +40,7 @@ type sensitiveAccessAuthenticator struct {
 var _ managementcap.SensitiveAccessAuthenticator = (*sensitiveAccessAuthenticator)(nil)
 
 // New constructs one requester-scoped administration runtime from governed host capabilities.
-func New(ctx context.Context, services capability.Services) (managementcap.Runtime, error) {
+func New(ctx context.Context, services capability.Services, adjustments commerce.QuoteAdjustmentEvaluator) (managementcap.Runtime, error) {
 	if ctx == nil || ctx.Err() != nil || services == nil || services.BizCtx() == nil ||
 		services.Sessions() == nil || services.Auth() == nil || services.Auth().Authz() == nil {
 		return managementcap.Runtime{}, gerror.New("IDC management runtime host capabilities are unavailable")
@@ -69,10 +73,23 @@ func New(ctx context.Context, services capability.Services) (managementcap.Runti
 	if err != nil {
 		return managementcap.Runtime{}, err
 	}
+	cursorKey, err := runtimeconfig.LoadCatalogCursorKey()
+	if err != nil {
+		return managementcap.Runtime{}, err
+	}
+	catalogReader, err := catalog.NewPublicCatalogReader(g.DB(), cursorKey)
+	clear(cursorKey)
+	if err != nil {
+		return managementcap.Runtime{}, err
+	}
+	renewals, err := renewal.NewWithQuoteAdjustments(ctx, g.DB(), principalService, catalogReader, adjustments)
+	if err != nil {
+		return managementcap.Runtime{}, err
+	}
 	runtime := managementcap.Runtime{
 		Authorizer: &authorizer{services: services, principal: principalService},
 		Audit:      auditWriter, SensitiveAccess: recentAuthentication,
-		Renewals: &staffRenewalManager{principal: principalService},
+		Renewals: &staffRenewalManager{service: renewals},
 	}
 	if err = managementcap.ValidateRuntime(runtime); err != nil {
 		return managementcap.Runtime{}, err

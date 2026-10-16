@@ -60,9 +60,9 @@ menus:
   # Unique menu key; it must use the `plugin:<plugin-id>:<menu-key>` format.
   # 菜单唯一键，必须使用 `plugin:<plugin-id>:<menu-key>` 格式。
   - key: plugin:org-core:dept
-    # Parent menu key pointing to the built-in host organization directory.
-    # 父级菜单键，指向宿主内置组织目录。
-    parent_key: org
+    # Parent menu key pointing to the built-in identity and access directory.
+    # 父级菜单键，指向宿主内置权限管理目录。
+    parent_key: iam
     # Menu display name.
     # 菜单显示名称。
     name: 部门管理
@@ -83,7 +83,7 @@ menus:
     type: M
     # Menu sort order; lower values appear earlier.
     # 菜单排序值，数值越小越靠前。
-    sort: 1
+    sort: 4
     # Menu remark stored in host menu governance data.
     # 菜单备注，写入宿主菜单治理数据。
     remark: 组织管理插件-部门管理
@@ -162,9 +162,9 @@ menus:
   # Unique menu key; it must use the `plugin:<plugin-id>:<menu-key>` format.
   # 菜单唯一键，必须使用 `plugin:<plugin-id>:<menu-key>` 格式。
   - key: plugin:org-core:post
-    # Parent menu key pointing to the built-in host organization directory.
-    # 父级菜单键，指向宿主内置组织目录。
-    parent_key: org
+    # Parent menu key pointing to the built-in identity and access directory.
+    # 父级菜单键，指向宿主内置权限管理目录。
+    parent_key: iam
     # Menu display name.
     # 菜单显示名称。
     name: 岗位管理
@@ -185,7 +185,7 @@ menus:
     type: M
     # Menu sort order; lower values appear earlier.
     # 菜单排序值，数值越小越靠前。
-    sort: 2
+    sort: 5
     # Menu remark stored in host menu governance data.
     # 菜单备注，写入宿主菜单治理数据。
     remark: 组织管理插件-岗位管理

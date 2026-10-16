@@ -159,7 +159,7 @@ func (s *serviceImpl) applyAction(ctx context.Context, current *IntentDetail, in
 		}
 		var taskCount int
 		if err = s.database.GetScan(ctx, &taskCount, `SELECT count(*) FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.task_no=? AND task.intent_no=? AND task.maximum_attempts=intent.maximum_attempts AND task.retry_base_seconds=intent.retry_base_seconds`, taskNo, current.IntentNo); err != nil || taskCount != 1 {
-			return errorsNew("product_fulfillment_task_conflict")
+			return errorsNew(taskConflictCode)
 		}
 		return nil
 	case actionReviewReject:
@@ -304,7 +304,7 @@ func (s *serviceImpl) loadDetailAuthorized(ctx context.Context, intentNo string,
 	if err != nil {
 		return nil, errorsNew("product_fulfillment_not_accessible")
 	}
-	query := `SELECT intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::jsonb))) LIMIT 1`
+	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::jsonb))) LIMIT 1`
 	if lock {
 		query += ` FOR UPDATE`
 	}
@@ -312,7 +312,7 @@ func (s *serviceImpl) loadDetailAuthorized(ctx context.Context, intentNo string,
 }
 
 func (s *serviceImpl) loadDetail(ctx context.Context, intentNo string, lock bool) (*IntentDetail, error) {
-	query := `SELECT intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? LIMIT 1`
+	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? LIMIT 1`
 	if lock {
 		query += ` FOR UPDATE`
 	}
@@ -360,6 +360,7 @@ func validAuthorizationScope(authorization Authorization) bool {
 }
 
 type intentDetailRow struct {
+	TargetEntitlementNo                                          string
 	IntentNo, OrderNo, OrderItemNo, CustomerNo                   string
 	ProductNameZhCN, ProductNameEnUS                             string
 	StrategyCode, GranularityCode, InitialStatusCode, StatusCode string
@@ -370,7 +371,7 @@ type intentDetailRow struct {
 }
 
 func (row *intentDetailRow) safe() *IntentDetail {
-	return &IntentDetail{IntentNo: row.IntentNo, OrderNo: row.OrderNo, OrderItemNo: row.OrderItemNo,
+	return &IntentDetail{TargetEntitlementNo: row.TargetEntitlementNo, IntentNo: row.IntentNo, OrderNo: row.OrderNo, OrderItemNo: row.OrderItemNo,
 		CustomerNo: row.CustomerNo, ProductNameZhCN: row.ProductNameZhCN, ProductNameEnUS: row.ProductNameEnUS,
 		StrategyCode: row.StrategyCode, GranularityCode: row.GranularityCode, StatusCode: safeIntentStatus(row.StatusCode),
 		Quantity: row.Quantity, UnitSequence: row.UnitSequence, Version: row.Version,
@@ -561,7 +562,7 @@ WHERE tenant_id=0 AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::j
 			return nil
 		}
 		pageArgs := append(append([]any(nil), args...), boundary, boundary, input.Limit+1, offset)
-		return s.database.GetScan(ctx, &rows, `SELECT intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,
+		return s.database.GetScan(ctx, &rows, `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,
        strategy_code,granularity_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,
        EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task
               WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested`+filtered+

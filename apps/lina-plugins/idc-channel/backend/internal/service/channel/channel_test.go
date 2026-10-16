@@ -50,7 +50,7 @@ func TestTokenScopeAndSourceAuthorization(t *testing.T) {
 func TestRequiredScopeForRequest(t *testing.T) {
 	cases := map[string]string{
 		"GET /x/idc-channel/api/v1/channel/catalog":                                              "catalog.read",
-		"GET /x/idc-channel/api/v1/channel/quotes":                                               "catalog.read",
+		"POST /x/idc-channel/api/v1/channel/quotes":                                              "catalog.read",
 		"GET /x/idc-channel/api/v1/channel/orders/10":                                            "order.read",
 		"POST /x/idc-channel/api/v1/channel/orders":                                              "order.create",
 		"POST /x/idc-channel/api/v1/channel/orders/10/cancel":                                    "order.cancel",
@@ -87,13 +87,6 @@ func TestRequestFingerprintBindsOrderPayload(t *testing.T) {
 	}
 	if requestFingerprint(base) != requestFingerprint(base) {
 		t.Fatal("fingerprint must be deterministic")
-	}
-}
-
-func TestQuoteInputNormalizesCurrencyAndChannel(t *testing.T) {
-	in := normalizeQuoteInput(QuoteInput{ChannelID: "  demo ", ProductVersionID: 3, Currency: " cny "})
-	if in.ChannelID != "demo" || in.Currency != "CNY" {
-		t.Fatalf("quote input was not normalized: %#v", in)
 	}
 }
 

@@ -374,6 +374,7 @@ func configureManagementIntegrationDB(t *testing.T, ctx context.Context) {
 		"008-audit-keyset-filter-indexes.sql",
 		"009-audit-customer-link.sql",
 		"070-customer-short-code.sql",
+		"125-customer-manual-verification.sql",
 	} {
 		migration, readErr := os.ReadFile(managementMigrationPath(t, migrationName))
 		if readErr != nil {
@@ -385,6 +386,9 @@ func configureManagementIntegrationDB(t *testing.T, ctx context.Context) {
 		if _, err = scopedDB.Exec(ctx, string(migration)); err != nil {
 			t.Fatalf("repeat management migration %s idempotently: %v", migrationName, err)
 		}
+	}
+	if _, err = scopedDB.Exec(ctx, managementWorkspaceFixtureSQL); err != nil {
+		t.Fatalf("create customer workspace fixture: %v", err)
 	}
 }
 

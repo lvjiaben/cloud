@@ -94,4 +94,33 @@ test.describe('TC-4 支付目录真实总数与完整 Vben 分页', () => {
       expect(state.writes).toBe(0);
     } finally { await surface.dispose(); }
   });
+  test('TC-4e: 对账页签和批次差异入口保持同一数据范围，分页无需滚动整页', async ({ adminPage, mainLayout }) => {
+    await mainLayout.switchLanguage('简体中文');
+    const state = await installPaymentPagesMock(adminPage);
+    const view = new PaymentPagedTablesPage(adminPage);
+    await view.open('batches');
+    await expect(view.rows('batches')).toHaveCount(20);
+    await view.viewDifferences();
+    await expect(adminPage.getByRole('tab', { name: '差异明细', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await expect(view.total('differences')).toContainText('521');
+    const box = await view.pager('differences').boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(adminPage.viewportSize()!.height);
+    await view.screenshot('differences', 'payment-differences-tab-aligned');
+    await mainLayout.switchLanguage('English');
+    await expect(adminPage.getByTestId('payment-reconciliation-tabs')).toContainText('Daily batches');
+    await adminPage.setViewportSize({ width: 768, height: 1000 });
+    await view.selectDirectory('batches');
+    const narrowBox = await view.pager('batches').boundingBox();
+    expect(narrowBox!.y + narrowBox!.height).toBeLessThanOrEqual(1000);
+    await expect.poll(() => view.pager('batches').evaluate(pager => {
+      const bounds = pager.getBoundingClientRect();
+      return [...pager.querySelector('.vxe-pager--wrapper')!.children].every(item => {
+        const rect = item.getBoundingClientRect();
+        return rect.bottom <= bounds.bottom + 1 && rect.right <= bounds.right + 1;
+      });
+    })).toBe(true);
+    await view.screenshot('batches', 'payment-batches-english-narrow-aligned');
+    expect(state.writes).toBe(0);
+  });
+
 });

@@ -481,7 +481,7 @@ func TestManualConsultingProductCompletesWithoutPluginOrResourceCallsPostgreSQL(
 		t.Fatal(err)
 	}
 	worker, err := productfulfillmentservice.NewWorker(
-		scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil,
+		scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -553,7 +553,7 @@ func TestProductFulfillmentWorkerUsesFixedQueryFirstPolicyPostgreSQL(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil)
+	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -570,6 +570,25 @@ func TestProductFulfillmentWorkerUsesFixedQueryFirstPolicyPostgreSQL(t *testing.
 	second, err := worker.Run(scenario.ctx, 1)
 	if err != nil || second.Selected != 1 || second.Completed != 1 {
 		t.Fatalf("submit batch=%+v err=%v", second, err)
+	}
+	// Procurement receives the immutable order interval on both query and submit.
+	var purchased struct {
+		CurrencyCode, ChargeTypeCode, PeriodUnitCode string
+		PeriodCount, PurchaseCycles                  int
+	}
+	if err = scenario.database.GetScan(scenario.ctx, &purchased, `SELECT currency_code,charge_type_code,period_unit_code,period_count,purchase_cycles FROM plugin_idc_core_commerce_order_item WHERE order_no=?`, checkout.OrderNo); err != nil {
+		t.Fatal(err)
+	}
+	for _, invocation := range extensions.invocations {
+		var request productfulfillmentcap.Request
+		if err = json.Unmarshal(invocation.Payload, &request); err != nil {
+			t.Fatal(err)
+		}
+		if request.Billing == nil || request.Billing.Validate() != nil || request.Billing.CurrencyCode != purchased.CurrencyCode ||
+			string(request.Billing.ChargeType) != purchased.ChargeTypeCode || string(request.Billing.PeriodUnit) != purchased.PeriodUnitCode ||
+			request.Billing.PeriodCount != purchased.PeriodCount || request.Billing.PurchaseCycles != purchased.PurchaseCycles {
+			t.Fatalf("provider did not receive frozen purchase terms: %+v", request.Billing)
+		}
 	}
 	contexts.mu.Lock()
 	if len(contexts.inputs) != 2 || contexts.releases != 2 {
@@ -605,7 +624,7 @@ func TestProductFulfillmentWorkerDoesNotCreateEntitlementForDeliveryOnlyProductP
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker, err := productfulfillmentservice.NewWorker(prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil)
+	worker, err := productfulfillmentservice.NewWorker(prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -632,7 +651,7 @@ func TestProductFulfillmentWorkerTwentyConcurrentClaimsInvokeOncePostgreSQL(t *t
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker, err := productfulfillmentservice.NewWorker(prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil)
+	worker, err := productfulfillmentservice.NewWorker(prepared.checkout.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -687,7 +706,7 @@ func TestProductFulfillmentWorkerRecoversExpiredSubmitWithoutRepeatingPostgreSQL
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil)
+	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -743,7 +762,7 @@ func TestProductFulfillmentCancellationDuringExpiredSubmitRequiresAttentionPostg
 	if err != nil {
 		t.Fatal(err)
 	}
-	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil)
+	worker, err := productfulfillmentservice.NewWorker(scenario.database, extensions, contexts, sealer, fulfillmentSystemReasons(t), nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

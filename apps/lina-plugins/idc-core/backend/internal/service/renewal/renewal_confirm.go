@@ -9,13 +9,17 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/internal/service/commerce"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
 type confirmationRow struct {
+	TrialConversion            bool
+	EntitlementStatus          string
 	RequestNo                  string    `orm:"request_no"`
 	CustomerNo                 string    `orm:"customer_no"`
 	EntitlementNo              string    `orm:"entitlement_no"`
+	ProductNo                  string    `orm:"product_no"`
 	CurrencyCode               string    `orm:"currency_code"`
 	QuoteNo                    string    `orm:"quote_no"`
 	QuoteExpiresAt             time.Time `orm:"quote_expires_at"`
@@ -104,7 +108,8 @@ FROM plugin_idc_core_commerce_quote_adjustment_snapshot adjustment
 INNER JOIN plugin_idc_core_commerce_quote_item_snapshot item
     ON item.tenant_id = adjustment.tenant_id
    AND item.quote_item_no = adjustment.quote_item_no
-WHERE item.tenant_id = 0 AND item.quote_no = ?`, confirmation.QuoteNo)
+WHERE item.tenant_id = 0 AND item.quote_no = ?
+ AND adjustment.adjustment_type_code <> ?`, confirmation.QuoteNo, commerce.QuoteAdjustmentAgentPrice)
 	if err != nil {
 		return gerror.Wrap(err, "count renewal quote reservations")
 	}
@@ -326,6 +331,12 @@ func (s *serviceImpl) confirmOwned(
 			confirmation.CurrentEntitlementVersion != confirmation.ExpectedEntitlementVersion {
 			return bizerr.NewCode(CodeConflict)
 		}
+		if err := s.catalog.RequireRenewalSale(ctx, confirmation.ProductNo); err != nil {
+			return bizerr.NewCode(CodePriceUnavailable)
+		}
+		if err := s.requireConversionQuote(ctx, confirmation.QuoteNo); err != nil {
+			return err
+		}
 		if consumeErr := s.consumeRenewalQuoteReservations(ctx, confirmation); consumeErr != nil {
 			return consumeErr
 		}
@@ -390,7 +401,7 @@ INSERT INTO plugin_idc_core_business_operation
      capability_evidence_digest, idempotency_digest, request_digest,
      content_digest, expected_subject_version, financially_settled_at,
      execution_started_at, completed_at, version, created_at, updated_at)
-VALUES (0, ?, 'renewal', ?, ?, 'entitlement', ?, ?, ?, ?, ?, TRUE, ?,
+VALUES (0, ?, 'renewal', ?, ?, 'entitlement', ?, ?, ?, ?, ?, ?, TRUE, ?,
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
 			numbers.OperationNo, confirmation.CustomerNo, payerCustomerNo, confirmation.EntitlementNo,
 			confirmation.CurrencyCode, confirmation.PriceSnapshotNo,
@@ -482,6 +493,9 @@ WHERE tenant_id = 0 AND entitlement_no = ? AND customer_no = ? AND version = ?
 		if affectedErr != nil || affected != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
+		if err := s.finishFreeTrialConversion(ctx, confirmation, numbers.OperationNo); err != nil {
+			return err
+		}
 		result = &Operation{
 			OperationNo: numbers.OperationNo, QuoteNo: confirmation.QuoteNo,
 			InvoiceNo: numbers.InvoiceNo, EntitlementNo: confirmation.EntitlementNo,
@@ -503,8 +517,9 @@ func lockConfirmation(
 ) (*confirmationRow, error) {
 	var row *confirmationRow
 	if err := database.GetScan(ctx, &row, `
-SELECT request.request_no, request.customer_no, request.entitlement_no,
+SELECT request.request_no, request.customer_no, request.entitlement_no, service.product_no,
        request.currency_code, request.quote_no,
+ service.charge_type_code='trial' AS trial_conversion, service.status_code AS entitlement_status,
        quote.expires_at AS quote_expires_at,
        request.price_snapshot_no,
        price.content_digest AS price_content_digest,

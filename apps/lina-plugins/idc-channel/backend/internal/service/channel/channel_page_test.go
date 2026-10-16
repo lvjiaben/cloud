@@ -43,7 +43,7 @@ func TestChannelPagesPostgreSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	svc := &service{db: database}
+	svc := &service{db: database, bizCtx: applicationContext{scope: 1}}
 	indexSQL, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "manifest", "sql", "005-channel-list-pagination.sql"))
 	if err != nil {
 		t.Fatal(err)

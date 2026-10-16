@@ -37,13 +37,15 @@ const (
 )
 
 var (
-	CodeInvalid       = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_INVALID", "The Provider configuration request is invalid", gcode.CodeInvalidParameter)
-	CodeNotAccessible = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_NOT_ACCESSIBLE", "The Provider configuration target is not accessible", gcode.CodeNotAuthorized)
-	CodeConflict      = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_CONFLICT", "The Provider configuration changed; refresh and try again", gcode.CodeInvalidOperation)
-	CodeUnavailable   = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_UNAVAILABLE", "The Provider configuration service is temporarily unavailable", gcode.CodeInternalError)
+	CodeRefreshReferenced = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_REFRESH_REFERENCED", "This interface has historical use; create a new interface for the updated connector", gcode.CodeInvalidOperation)
+	CodeInvalid           = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_INVALID", "The Provider configuration request is invalid", gcode.CodeInvalidParameter)
+	CodeNotAccessible     = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_NOT_ACCESSIBLE", "The Provider configuration target is not accessible", gcode.CodeNotAuthorized)
+	CodeConflict          = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_CONFLICT", "The Provider configuration changed; refresh and try again", gcode.CodeInvalidOperation)
+	CodeUnavailable       = bizerr.MustDefine("IDC_RESOURCE_CONFIGURATION_UNAVAILABLE", "The Provider configuration service is temporarily unavailable", gcode.CodeInternalError)
 )
 
 type Channel struct {
+	TLSCertificateSHA256                                         string
 	ChannelNo, InterfaceInstanceNo, ProviderID, ProviderPluginID string
 	DisplayName, Endpoint, Status                                string
 	Version                                                      int64
@@ -100,6 +102,7 @@ type ListInput struct {
 }
 
 type channelListRow struct {
+	TLSCertificateSHA256                                                 string
 	ChannelNo, InterfaceInstanceNo, ProviderID, ProviderPluginID         string
 	DisplayName, Endpoint, StatusCode                                    string
 	Version                                                              int64
@@ -111,6 +114,8 @@ type channelListRow struct {
 	ResourceAuthorizedMethods                                            []string
 }
 type ChannelInput struct {
+	RefreshProvider                                            bool
+	TLSCertificateSHA256                                       *string
 	ChannelNo, ProviderPluginID, DisplayName, Endpoint, Status string
 	Version                                                    int64
 	NonSecretSettings                                          json.RawMessage
@@ -137,6 +142,7 @@ type service struct {
 	provider   resourcecap.ProviderKey
 	extensions pluginhost.BusinessExtensionRegistrar
 	usage      resourceinterfaceprojectioncap.UsageReader
+	projection *interfaceprojection.Worker
 }
 
 // New binds database, staff runtime, declarations and read-only local usage once.
@@ -145,9 +151,10 @@ func New(
 	runtime managementcap.Runtime,
 	declarations []providerspi.Declaration,
 	usage resourceinterfaceprojectioncap.UsageReader,
+	projection *interfaceprojection.Worker,
 	extensions ...pluginhost.BusinessExtensionRegistrar,
 ) (Service, error) {
-	if db == nil || usage == nil || managementcap.ValidateRuntime(runtime) != nil {
+	if db == nil || usage == nil || projection == nil || managementcap.ValidateRuntime(runtime) != nil {
 		return nil, gerror.New("Provider configuration dependencies are invalid")
 	}
 	key, err := selectSoleServerProvider(declarations)
@@ -161,7 +168,7 @@ func New(
 	if key.PluginID == "" && extensionRegistrar == nil {
 		return nil, gerror.New("Provider configuration requires an available Provider extension")
 	}
-	return &service{db: db, runtime: runtime, provider: key, extensions: extensionRegistrar, usage: usage}, nil
+	return &service{db: db, runtime: runtime, provider: key, extensions: extensionRegistrar, usage: usage, projection: projection}, nil
 }
 
 func selectSoleServerProvider(declarations []providerspi.Declaration) (resourcecap.ProviderKey, error) {
@@ -331,6 +338,11 @@ func (s *service) CreateChannel(ctx context.Context, input ChannelInput) (*Chann
 	input.DisplayName = strings.TrimSpace(input.DisplayName)
 	input.Endpoint = strings.TrimSpace(input.Endpoint)
 	input.ProviderPluginID = strings.TrimSpace(input.ProviderPluginID)
+	fingerprint, err := resolveCertificateFingerprint(input.TLSCertificateSHA256, "", false)
+	if err != nil {
+		return nil, bizerr.NewCode(CodeInvalid)
+	}
+	input.TLSCertificateSHA256 = &fingerprint
 	if resourcecap.ValidatePluginID(input.ProviderPluginID) != nil ||
 		!validName(input.DisplayName) || !validEndpoint(input.Endpoint) {
 		logger.Errorf(ctx, "provider channel input validation failed plugin=%q", input.ProviderPluginID)
@@ -374,7 +386,7 @@ func (s *service) createSourceChannel(
 	configurationRevision string,
 ) error {
 	return s.db.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
-		if _, insertErr := tx.Exec(`INSERT INTO plugin_idc_resource_channel (tenant_id,channel_no,provider_id,provider_plugin_id,provider_runtime_type,display_name,endpoint,non_secret_settings,status_code,created_by,updated_by) VALUES(?,?,?,?, 'source',?,?,CAST(? AS jsonb),'disabled',?,?)`, idccap.DefaultTenantID, input.ChannelNo, s.provider.ProviderID, s.provider.PluginID, input.DisplayName, input.Endpoint, string(input.NonSecretSettings), actor, actor); insertErr != nil {
+		if _, insertErr := tx.Exec(`INSERT INTO plugin_idc_resource_channel (tenant_id,channel_no,provider_id,provider_plugin_id,provider_runtime_type,display_name,endpoint,tls_certificate_sha256,non_secret_settings,status_code,created_by,updated_by) VALUES(?,?,?,?, 'source',?,?,?,CAST(? AS jsonb),'disabled',?,?)`, idccap.DefaultTenantID, input.ChannelNo, s.provider.ProviderID, s.provider.PluginID, input.DisplayName, input.Endpoint, *input.TLSCertificateSHA256, string(input.NonSecretSettings), actor, actor); insertErr != nil {
 			return insertErr
 		}
 		if insertErr := insertInterfaceChannelBinding(
@@ -468,7 +480,7 @@ func (s *service) createDynamicChannel(
 	}
 	return s.withDynamicAdmissions(ctx, selected, productEvidence, func(productCtx context.Context) error {
 		return s.db.Transaction(productCtx, func(txCtx context.Context, tx gdb.TX) error {
-			_, insertErr := tx.Exec(`INSERT INTO plugin_idc_resource_channel (tenant_id,channel_no,provider_id,provider_plugin_id,provider_runtime_type,provider_contract_version,provider_release_version,provider_release_digest,provider_declaration_digest,display_name,endpoint,non_secret_settings,status_code,created_by,updated_by) VALUES(?,?,?,?, 'dynamic',?,?,?,?,?,?,CAST(? AS jsonb),'disabled',?,?)`, idccap.DefaultTenantID, input.ChannelNo, providerID, selected.PluginID, selected.ContractVersion, selected.ReleaseVersion, selected.ReleaseDigest, selected.DeclarationDigest, input.DisplayName, input.Endpoint, string(input.NonSecretSettings), actor, actor)
+			_, insertErr := tx.Exec(`INSERT INTO plugin_idc_resource_channel (tenant_id,channel_no,provider_id,provider_plugin_id,provider_runtime_type,provider_contract_version,provider_release_version,provider_release_digest,provider_declaration_digest,display_name,endpoint,tls_certificate_sha256,non_secret_settings,status_code,created_by,updated_by) VALUES(?,?,?,?, 'dynamic',?,?,?,?,?,?,?,CAST(? AS jsonb),'disabled',?,?)`, idccap.DefaultTenantID, input.ChannelNo, providerID, selected.PluginID, selected.ContractVersion, selected.ReleaseVersion, selected.ReleaseDigest, selected.DeclarationDigest, input.DisplayName, input.Endpoint, *input.TLSCertificateSHA256, string(input.NonSecretSettings), actor, actor)
 			if insertErr != nil {
 				return insertErr
 			}
@@ -636,6 +648,13 @@ func (s *service) UpdateChannel(ctx context.Context, input ChannelInput) (*Chann
 	if err != nil {
 		return nil, err
 	}
+	if input.RefreshProvider {
+		return s.refreshChannelProvider(ctx, actor, before, input.Version)
+	}
+	fingerprint, err := resolveCertificateFingerprint(input.TLSCertificateSHA256, before.TLSCertificateSHA256, before.Endpoint != input.Endpoint)
+	if err != nil {
+		return nil, bizerr.NewCode(CodeInvalid)
+	}
 	input.NonSecretSettings, err = s.validateUpdatedSettings(ctx, before, input.NonSecretSettings)
 	if err != nil {
 		return nil, bizerr.NewCode(CodeInvalid)
@@ -660,7 +679,7 @@ func (s *service) UpdateChannel(ctx context.Context, input ChannelInput) (*Chann
 		if input.Status == "deleted" {
 			deleted = gdb.Raw("CURRENT_TIMESTAMP")
 		}
-		res, e := tx.Exec(`UPDATE plugin_idc_resource_channel SET display_name=?,endpoint=?,non_secret_settings=CAST(? AS jsonb),status_code=?,deleted_at=?,updated_by=?,updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE tenant_id=? AND channel_no=? AND version=?`, input.DisplayName, input.Endpoint, string(input.NonSecretSettings), input.Status, deleted, actor, idccap.DefaultTenantID, input.ChannelNo, input.Version)
+		res, e := tx.Exec(`UPDATE plugin_idc_resource_channel SET display_name=?,endpoint=?,tls_certificate_sha256=?,non_secret_settings=CAST(? AS jsonb),status_code=?,deleted_at=?,updated_by=?,updated_at=CURRENT_TIMESTAMP,version=version+1 WHERE tenant_id=? AND channel_no=? AND version=?`, input.DisplayName, input.Endpoint, fingerprint, string(input.NonSecretSettings), input.Status, deleted, actor, idccap.DefaultTenantID, input.ChannelNo, input.Version)
 		if e != nil {
 			return e
 		}
@@ -686,6 +705,17 @@ func (s *service) UpdateChannel(ctx context.Context, input ChannelInput) (*Chann
 			return nil, err
 		}
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
+	}
+	if input.Status == "deleted" {
+		// A deleted channel is intentionally absent from active configuration
+		// reads. Return the committed transition instead of reloading it there.
+		before.DisplayName = input.DisplayName
+		before.Endpoint = input.Endpoint
+		before.TLSCertificateSHA256 = fingerprint
+		before.NonSecretSettings = input.NonSecretSettings
+		before.Status = input.Status
+		before.Version = input.Version + 1
+		return before, nil
 	}
 	return s.channel(ctx, input.ChannelNo)
 }
@@ -764,7 +794,7 @@ func (s *service) channel(ctx context.Context, no string) (*Channel, error) {
 	err := s.db.Model("plugin_idc_resource_channel c").Safe().Ctx(ctx).
 		LeftJoin("plugin_idc_resource_interface_channel_binding interface_binding",
 			"interface_binding.tenant_id=c.tenant_id AND interface_binding.channel_no=c.channel_no").
-		Fields("c.channel_no,interface_binding.interface_instance_no,c.provider_id,c.provider_plugin_id,c.provider_runtime_type,c.display_name,c.endpoint,c.non_secret_settings::TEXT AS non_secret_settings,c.status_code,c.version",
+		Fields("c.channel_no,interface_binding.interface_instance_no,c.provider_id,c.provider_plugin_id,c.provider_runtime_type,c.display_name,c.endpoint,c.tls_certificate_sha256,c.non_secret_settings::TEXT AS non_secret_settings,c.status_code,c.version",
 			"interface_binding.resource_contract_version,interface_binding.resource_plugin_release_version AS resource_release_version,interface_binding.resource_release_digest,interface_binding.resource_declaration_digest").
 		Where("c.tenant_id", idccap.DefaultTenantID).Where("c.channel_no", no).Limit(1).Scan(&row)
 	if err != nil {
@@ -787,7 +817,7 @@ func (s *service) channel(ctx context.Context, no string) (*Channel, error) {
 	if projectionErr != nil {
 		return nil, bizerr.WrapCode(projectionErr, CodeUnavailable)
 	}
-	return &Channel{ChannelNo: row.ChannelNo, InterfaceInstanceNo: row.InterfaceInstanceNo, ProviderID: row.ProviderID, ProviderPluginID: row.ProviderPluginID, DisplayName: row.DisplayName, Endpoint: row.Endpoint, NonSecretSettings: publicSettings, Status: row.StatusCode, SecretFields: configuration.SecretFields, InterfaceConfiguration: configuration.InterfaceConfiguration, ProviderContractVersion: row.ResourceContractVersion, ProviderReleaseVersion: row.ResourceReleaseVersion, ProviderReleaseDigest: row.ResourceReleaseDigest, ProviderDeclarationDigest: row.ResourceDeclarationDigest, Version: row.Version}, nil
+	return &Channel{ChannelNo: row.ChannelNo, InterfaceInstanceNo: row.InterfaceInstanceNo, ProviderID: row.ProviderID, ProviderPluginID: row.ProviderPluginID, DisplayName: row.DisplayName, Endpoint: row.Endpoint, TLSCertificateSHA256: row.TLSCertificateSHA256, NonSecretSettings: publicSettings, Status: row.StatusCode, SecretFields: configuration.SecretFields, InterfaceConfiguration: configuration.InterfaceConfiguration, ProviderContractVersion: row.ResourceContractVersion, ProviderReleaseVersion: row.ResourceReleaseVersion, ProviderReleaseDigest: row.ResourceReleaseDigest, ProviderDeclarationDigest: row.ResourceDeclarationDigest, Version: row.Version}, nil
 }
 
 func (s *service) CreatePool(ctx context.Context, input PoolInput) (*Pool, error) {

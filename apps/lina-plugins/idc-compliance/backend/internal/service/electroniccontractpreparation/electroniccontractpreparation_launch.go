@@ -121,9 +121,6 @@ func (s *serviceImpl) SubmitSigning(
 		return nil, err
 	}
 	if !launchRequired {
-		if auditErr := s.appendSigningSubmissionAudit(ctx, flow, flow.StatusCode); auditErr != nil {
-			return nil, auditErr
-		}
 		return &SubmittedSigning{
 			ContractNo: input.ContractNo, FlowNo: flow.FlowNo,
 			StatusCode: flow.StatusCode, Version: contractVersion, Reused: true,
@@ -169,12 +166,16 @@ func (s *serviceImpl) appendSigningSubmissionAudit(
 	} else if statusCode == "failed" {
 		reasonCode = "provider_flow_failed"
 	}
-	if err := s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+	beforeState := "not_created"
+	if statusCode != "submitting" {
+		beforeState = flow.StatusCode
+	}
+	if err := s.runtime.Audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"flow_state": beforeState},
 		IdempotencyScope: "compliance.contract.submit." + statusCode,
 		IdempotencyKey:   flow.IdempotencySHA256,
 		OperationCode:    "compliance.contract.submit",
 		TargetType:       "contract", TargetNo: flow.ContractNo,
-		ResultCode: statusCode, ReasonCode: reasonCode, RiskCode: "high",
+		ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: reasonCode, RiskCode: "high",
 		CorrelationNo: flow.FlowNo,
 		AfterSnapshot: map[string]any{
 			"state": statusCode, "flow_no": flow.FlowNo,

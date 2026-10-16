@@ -12,8 +12,9 @@ import (
 
 type ControllerV1 struct {
 	delegate *channelcontroller.AdminController
+	service  channelservice.Service
 }
 
 func NewV1(service channelservice.Service) admin.IAdminV1 {
-	return &ControllerV1{delegate: channelcontroller.NewAdmin(service)}
+	return &ControllerV1{delegate: channelcontroller.NewAdmin(service), service: service}
 }

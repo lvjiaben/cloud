@@ -70,7 +70,7 @@ func (c *ControllerV1) ProviderChannelCreate(ctx context.Context, req *v1.Provid
 	if err != nil {
 		return nil, err
 	}
-	item, err := c.configurations.CreateChannel(ctx, providerconfiguration.ChannelInput{ProviderPluginID: req.ProviderPluginID, DisplayName: req.DisplayName, Endpoint: req.Endpoint, NonSecretSettings: settings})
+	item, err := c.configurations.CreateChannel(ctx, providerconfiguration.ChannelInput{ProviderPluginID: req.ProviderPluginID, DisplayName: req.DisplayName, Endpoint: req.Endpoint, NonSecretSettings: settings, TLSCertificateSHA256: req.TLSCertificateSHA256})
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (c *ControllerV1) ProviderChannelUpdate(ctx context.Context, req *v1.Provid
 	if err != nil {
 		return nil, err
 	}
-	item, err := c.configurations.UpdateChannel(ctx, providerconfiguration.ChannelInput{ChannelNo: req.ChannelNo, DisplayName: req.DisplayName, Endpoint: req.Endpoint, Status: req.Status, Version: req.Version, NonSecretSettings: settings})
+	item, err := c.configurations.UpdateChannel(ctx, providerconfiguration.ChannelInput{RefreshProvider: req.RefreshProvider, ChannelNo: req.ChannelNo, DisplayName: req.DisplayName, Endpoint: req.Endpoint, Status: req.Status, Version: req.Version, NonSecretSettings: settings, TLSCertificateSHA256: req.TLSCertificateSHA256})
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func providerChannelItem(item providerconfiguration.Channel) (*v1.ProviderChanne
 		value := item.VerificationObservedAt.UnixMilli()
 		verifiedAt = &value
 	}
-	return &v1.ProviderChannelItem{CatalogAvailable: item.CatalogAvailable, Usage: usage, ChannelNo: item.ChannelNo, InterfaceInstanceNo: item.InterfaceInstanceNo, ProviderID: item.ProviderID, ProviderPluginID: item.ProviderPluginID, DisplayName: item.DisplayName, Endpoint: item.Endpoint, NonSecretSettings: item.NonSecretSettings, Status: item.Status, SecretFields: secretFields, InterfaceConfiguration: schema, ProviderContractVersion: item.ProviderContractVersion, ProviderReleaseVersion: item.ProviderReleaseVersion, ProviderReleaseDigest: item.ProviderReleaseDigest, ProviderDeclarationDigest: item.ProviderDeclarationDigest, ConnectionStatus: item.VerificationHealthCode, ConnectionStatusCode: item.VerificationSummaryCode, ConnectionVerifiedAt: verifiedAt, Version: item.Version}, nil
+	return &v1.ProviderChannelItem{CatalogAvailable: item.CatalogAvailable, TLSCertificateSHA256: item.TLSCertificateSHA256, Usage: usage, ChannelNo: item.ChannelNo, InterfaceInstanceNo: item.InterfaceInstanceNo, ProviderID: item.ProviderID, ProviderPluginID: item.ProviderPluginID, DisplayName: item.DisplayName, Endpoint: item.Endpoint, NonSecretSettings: item.NonSecretSettings, Status: item.Status, SecretFields: secretFields, InterfaceConfiguration: schema, ProviderContractVersion: item.ProviderContractVersion, ProviderReleaseVersion: item.ProviderReleaseVersion, ProviderReleaseDigest: item.ProviderReleaseDigest, ProviderDeclarationDigest: item.ProviderDeclarationDigest, ConnectionStatus: item.VerificationHealthCode, ConnectionStatusCode: item.VerificationSummaryCode, ConnectionVerifiedAt: verifiedAt, Version: item.Version}, nil
 }
 func resourcePoolItem(item providerconfiguration.Pool) *v1.ResourcePoolItem {
 	return &v1.ResourcePoolItem{ChannelName: item.ChannelName, PoolNo: item.PoolNo, ChannelNo: item.ChannelNo, DisplayName: item.DisplayName, ResourceKind: item.ResourceKind, Status: item.Status, RoutingPriority: item.RoutingPriority, RoutingWeight: item.RoutingWeight, Version: item.Version}

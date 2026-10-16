@@ -257,16 +257,8 @@ func (*assistedQuoteServiceStub) GetAssistedQuote(
 	return nil, nil
 }
 
-func (*assistedQuoteServiceStub) DecideAssistedQuote(
-	context.Context, commerce.AssistedQuoteDecisionInput,
-) (*commerce.AssistedQuoteRequest, error) {
-	return nil, nil
-}
-
-func (*assistedQuoteServiceStub) CheckoutAssistedQuote(
-	context.Context, commerce.AssistedQuoteCheckoutInput,
-) (*commerce.AssistedQuoteRequest, error) {
-	return nil, nil
+func (*assistedQuoteServiceStub) AssistedOrderCurrencies(context.Context, string) ([]string, error) {
+	return []string{"CNY"}, nil
 }
 
 func (s *commerceRiskReviewServiceStub) DecideRiskReview(
@@ -815,6 +807,8 @@ type catalogManagementServiceStub struct {
 	taxPolicyInput      catalog.TaxPolicyCreateInput
 	taxPolicy           *catalog.TaxPolicy
 }
+
+func (s *catalogManagementServiceStub) UpdateProductDescription(context.Context, catalog.ProductDescriptionUpdateInput) (int64, error) { return 2,nil }
 
 func (s *catalogManagementServiceStub) CreateCategory(
 	_ context.Context,

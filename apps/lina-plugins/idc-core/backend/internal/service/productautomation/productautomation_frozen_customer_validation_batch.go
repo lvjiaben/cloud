@@ -9,6 +9,7 @@ import (
 
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/plugincap"
+	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
@@ -39,6 +40,8 @@ type frozenValidationBatchRow struct {
 	InterfacePublicValueSnapshot   string   `orm:"interface_public_value_snapshot"`
 	InterfaceDeclarationDigest     string   `orm:"interface_declaration_digest"`
 	InterfaceValueDigest           string   `orm:"interface_value_digest"`
+	ResourceOwnerRevision          string   `orm:"resource_owner_configuration_revision"`
+	ImportedContract               *entity.CatalogImportContract
 }
 
 func (s *frozenCustomerConfigurationValidator) ValidateBatch(ctx context.Context, inputs []FrozenCustomerConfigurationInput) ([]FrozenCustomerConfigurationEvidence, error) {
@@ -68,7 +71,8 @@ configuration.customer_schema_version,configuration.customer_declaration_snapsho
 configuration.declaration_digest AS version_declaration_digest,
 revision.schema_version AS interface_schema_version,revision.declaration_snapshot AS interface_declaration_snapshot,
 revision.public_value_snapshot AS interface_public_value_snapshot,
-revision.declaration_digest AS interface_declaration_digest,revision.value_digest AS interface_value_digest
+revision.declaration_digest AS interface_declaration_digest,revision.value_digest AS interface_value_digest,
+revision.resource_owner_configuration_revision
 FROM plugin_idc_core_catalog_product_version_fulfillment_binding binding
 JOIN plugin_idc_core_catalog_product_version_configuration configuration
   ON configuration.tenant_id=binding.tenant_id AND configuration.version_no=binding.version_no
@@ -81,6 +85,25 @@ WHERE binding.tenant_id=0 AND binding.version_no IN(?)`, versionNos); err != nil
 	}
 	if len(rows) != len(versionNos) {
 		return nil, gerror.New("frozen configuration batch evidence is unavailable")
+	}
+	peerVersions := make([]string, 0)
+	for _, row := range rows {
+		if row.PluginID == portableImportProviderID {
+			peerVersions = append(peerVersions, row.VersionNo)
+		}
+	}
+	if len(peerVersions) > 0 {
+		var contracts []*entity.CatalogImportContract
+		if err := s.database.Model(do.CatalogImportContract{}).Ctx(ctx).Where(do.CatalogImportContract{TenantId: 0}).WhereIn("version_no", peerVersions).Scan(&contracts); err != nil {
+			return nil, err
+		}
+		byVersion := make(map[string]*entity.CatalogImportContract, len(contracts))
+		for _, contract := range contracts {
+			byVersion[contract.VersionNo] = contract
+		}
+		for index := range rows {
+			rows[index].ImportedContract = byVersion[rows[index].VersionNo]
+		}
 	}
 	byVersion := make(map[string]frozenValidationBatchRow, len(rows))
 	for _, row := range rows {
@@ -204,7 +227,18 @@ func validateFrozenBatchDeclarations(
 	exact *capmodel.BusinessExtensionProviderEvidence,
 ) (*capmodel.ConfigurationSchemaDeclaration, error) {
 	customer, err := decodeConfigurationDeclaration(row.CustomerDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(customer, exact.CustomerConfiguration) {
+	if err != nil {
+		return nil, err
+	}
+	var expectedCustomer *capmodel.ConfigurationSchemaDeclaration
+	if row.ImportedContract != nil {
+		binding := &entity.CatalogProductVersionFulfillmentBinding{VersionNo: row.VersionNo, InterfaceInstanceNo: row.BindingInterfaceInstanceNo, InterfaceDisplayNameSnapshot: row.InterfaceDisplayNameSnapshot, PluginId: row.PluginID, ExtensionPointCode: row.ExtensionPointCode, PluginReleaseVersion: row.PluginReleaseVersion, ContractVersion: row.ContractVersion, AuthorizedMethods: row.AuthorizedMethods, ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.BindingDeclarationDigest}
+		revision := &entity.ProductAutomationInterfaceConfigurationRevision{InterfaceInstanceNo: row.BindingInterfaceInstanceNo, ResourceOwnerConfigurationRevision: row.ResourceOwnerRevision}
+		expectedCustomer, err = verifiedPortableCustomerSchema(row.ImportedContract, binding, revision, exact)
+	} else {
+		expectedCustomer, err = verifiedCustomerSchema(exact, row.CustomerDeclarationSnapshot)
+	}
+	if err != nil || !sameExactConfiguration(customer, expectedCustomer) {
 		return nil, gerror.New("frozen customer declaration is unavailable")
 	}
 	product, err := decodeConfigurationDeclaration(row.ProductDeclarationSnapshot)
@@ -212,7 +246,13 @@ func validateFrozenBatchDeclarations(
 		return nil, gerror.New("frozen product declaration is unavailable")
 	}
 	interfaceSchema, err := decodeConfigurationDeclaration(row.InterfaceDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(interfaceSchema, exact.InterfaceConfiguration) || configurationSchemaVersion(interfaceSchema) != row.InterfaceSchemaVersion || configurationDeclarationDigest(interfaceSchema) != row.InterfaceDeclarationDigest || configurationStoredJSONDigest([]byte(row.InterfacePublicValueSnapshot)) != row.InterfaceValueDigest {
+	expectedInterface := exact.InterfaceConfiguration
+	if row.ImportedContract != nil {
+		// The verified read evidence above binds this opaque owner revision;
+		// resource credentials and their schema remain in the resource owner.
+		expectedInterface = &capmodel.ConfigurationSchemaDeclaration{Version: "resource-owner-v1"}
+	}
+	if err != nil || !sameExactConfiguration(interfaceSchema, expectedInterface) || configurationSchemaVersion(interfaceSchema) != row.InterfaceSchemaVersion || configurationDeclarationDigest(interfaceSchema) != row.InterfaceDeclarationDigest || configurationStoredJSONDigest([]byte(row.InterfacePublicValueSnapshot)) != row.InterfaceValueDigest {
 		return nil, gerror.New("frozen interface configuration evidence does not match")
 	}
 	customerJSON, err := configurationDeclarationJSON(customer)

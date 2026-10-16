@@ -83,7 +83,7 @@ func validReplayClaim(claim ReplayClaim) bool {
 		return false
 	}
 	if claim.SessionConfirmation {
-		return claim.Purpose == PurposeServerOperation
+		return true
 	}
 	return !issuedAt.After(loginAt.Add(absoluteFreshLoginWindow))
 }

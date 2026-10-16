@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
@@ -173,7 +175,11 @@ const [Grid, gridApi] = useVbenVxeGrid({
       await load(1);
     },
     schema: [],
-    wrapperClass: "grid-cols-1 md:grid-cols-2",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridEvents: { pageChange: ({ currentPage, pageSize }: { currentPage: number; pageSize: number }) => load(currentPage, pageSize) },
   gridOptions: {
@@ -209,16 +215,12 @@ onMounted(async () => {
   gridApi.formApi.setState({ schema: searchSchema() });
   await load();
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" class="min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="enterprise-verification-page">
+  <Page :ref="layoutRoot" :auto-content-height="true" class="plugin-admin-page min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="enterprise-verification-page">
     <div class="enterprise-shell">
-      <header class="enterprise-header">
-        <small>{{ $t("plugin.idc-compliance.enterprise.eyebrow") }}</small>
-        <h1>{{ $t("plugin.idc-compliance.enterprise.title") }}</h1>
-        <p>{{ $t("plugin.idc-compliance.enterprise.subtitle") }}</p>
-      </header>
 
       <section class="metric-rail">
         <article>

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const directoryFields = "directory_no,name_zh_cn,name_en_us,sort_order,status_code,version"
+const directoryFields = "directory_no,name_zh_cn,name_en_us,sort_order,status_code,version,navigation_type,target_url,icon"
 
 func validPage(page, size int) bool { return page >= 1 && page <= 1000000 && size >= 1 && size <= 100 }
 
@@ -61,20 +61,19 @@ func (s *serviceImpl) list(ctx context.Context, page, size int, customerNo strin
 	for i := range result.Items {
 		nos[i] = result.Items[i].DirectoryNo
 		positions[result.Items[i].DirectoryNo] = i
-		result.Items[i].ProductNos = []string{}
-		result.Items[i].Products = []Product{}
 	}
 	if customerNo == "" {
-		var links []struct{ DirectoryNo, ProductNo, NameZhCn, NameEnUs string }
-		err = s.database.GetScan(ctx, &links, `SELECT m.directory_no,m.product_no,p.name_zh_cn,p.name_en_us FROM plugin_idc_core_product_directory_membership m JOIN plugin_idc_core_catalog_product p ON p.tenant_id=m.tenant_id AND p.product_no=m.product_no WHERE m.tenant_id=0 AND m.directory_no IN (`+placeholders(len(nos))+`) ORDER BY m.directory_no,m.product_no`, nos...)
+		var facts []struct {
+			DirectoryNo  string
+			ProductCount int
+		}
+		err = s.database.GetScan(ctx, &facts, `SELECT directory_no,COUNT(*) AS product_count FROM plugin_idc_core_product_directory_membership WHERE tenant_id=0 AND directory_no IN (`+placeholders(len(nos))+`) GROUP BY directory_no`, nos...)
 		if err != nil {
 			return nil, err
 		}
-		for _, link := range links {
-			i := positions[link.DirectoryNo]
-			result.Items[i].ProductNos = append(result.Items[i].ProductNos, link.ProductNo)
-			result.Items[i].Products = append(result.Items[i].Products, Product{ProductNo: link.ProductNo, NameZhCn: link.NameZhCn, NameEnUs: link.NameEnUs})
-			result.Items[i].ProductCount++
+		for _, fact := range facts {
+			i := positions[fact.DirectoryNo]
+			result.Items[i].ProductCount = fact.ProductCount
 		}
 	} else {
 		var facts []struct {
@@ -111,7 +110,7 @@ func (s *serviceImpl) ListServices(ctx context.Context, directoryNo string, page
 	where := `e.tenant_id=0 AND e.customer_no=?`
 	args := []any{customerNo}
 	if directoryNo != AllDirectory {
-		count, countErr := s.database.Model(do.ProductDirectory{}).Ctx(ctx).Where(do.ProductDirectory{TenantId: 0, DirectoryNo: directoryNo, StatusCode: StatusEnabled}).Count()
+		count, countErr := s.database.Model(do.ProductDirectory{}).Ctx(ctx).Where(do.ProductDirectory{TenantId: 0, DirectoryNo: directoryNo, StatusCode: StatusEnabled, NavigationType: NavigationProduct}).Count()
 		if countErr != nil {
 			return nil, countErr
 		}

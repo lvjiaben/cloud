@@ -1,8 +1,14 @@
+// This file invokes frozen resource connectors through confidential owner-side
+// callbacks; connection proofs require owner-confirmed authentication and clocks.
 package composition
 
 import (
 	"context"
 	"encoding/json"
+	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -111,11 +117,43 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 	}
 	handler, cleanup, err := p.outbound(ctx, p.configuration, method, operationSecrets)
 	if err != nil || handler == nil || cleanup == nil {
-		return gerror.New("dynamic resource Provider outbound handler is unavailable")
+		if safe := resourcecap.SafeProviderConnectionError(err); safe != nil {
+			return safe
+		}
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	defer cleanup()
 
-	var response []byte
+	var (
+		response        []byte
+		failureMu       sync.Mutex
+		ownerFailure    error
+		authenticatedAt time.Time
+	)
+	// Capture only owner-reviewed codes before the WASM host sanitizes errors.
+	capture := func(callCtx context.Context, request *pluginhost.ConfidentialOutboundRequest) (*pluginhost.ConfidentialOutboundResult, error) {
+		result, callErr := handler(callCtx, request)
+		if method == resourcecap.DynamicProviderMethodVerifyConnection {
+			logger.Debugf(callCtx, "Provider owner connection check completed success=%t authenticated=%t", callErr == nil, confirmedAuthenticationStep(request, result))
+			if metadata, ok := bizerr.As(callErr); ok {
+				logger.Debugf(callCtx, "Provider owner connection check rejected code=%s", metadata.RuntimeCode())
+			}
+		}
+		// The guest clock is isolated and cannot establish wall-clock freshness.
+		// Only an owner-confirmed successful authentication in this invocation
+		// can supply the observation time for a connection proof.
+		if method == resourcecap.DynamicProviderMethodVerifyConnection && callErr == nil && confirmedAuthenticationStep(request, result) {
+			failureMu.Lock()
+			authenticatedAt = time.Now().UTC()
+			failureMu.Unlock()
+		}
+		if safe := resourcecap.SafeProviderConnectionError(callErr); safe != nil {
+			failureMu.Lock()
+			ownerFailure = safe
+			failureMu.Unlock()
+		}
+		return result, callErr
+	}
 	err = p.extensions.WithConfidentialOutboundContext(ctx, pluginhost.ConfidentialOutboundContextInput{
 		ProviderPluginID: p.configuration.PluginID,
 		Point:            resourcecap.DynamicProviderPoint, ContractVersion: p.configuration.ContractVersion,
@@ -125,7 +163,7 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 		InterfaceInstanceID: p.configuration.Config.ChannelRef,
 		Purpose:             capmodel.BusinessExtensionInvocationPurposeExistingBusiness,
 		ExpiresAfter:        5 * time.Second, AllowedResultFields: allowedDynamicResultFields(method),
-		Handler: handler,
+		Handler: capture,
 	}, func(callCtx context.Context, runtimeContext *capmodel.BusinessExtensionRuntimeContext) error {
 		result, invokeErr := p.extensions.InvokeProviderMethod(callCtx, pluginhost.BusinessExtensionMethodInvokeInput{
 			PluginID: p.configuration.PluginID, Point: resourcecap.DynamicProviderPoint,
@@ -136,16 +174,42 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 			RuntimeContext:    runtimeContext, Payload: payload,
 		})
 		if invokeErr != nil || result == nil {
+			if metadata, ok := bizerr.As(invokeErr); ok {
+				logger.Warningf(callCtx, "Provider invocation rejected code=%s", metadata.RuntimeCode())
+			}
 			return gerror.New("dynamic resource Provider invocation failed")
 		}
 		response = append(response[:0], result.Payload...)
 		return nil
 	})
 	if err != nil || len(response) == 0 {
+		failureMu.Lock()
+		safe := ownerFailure
+		failureMu.Unlock()
+		if safe != nil {
+			return safe
+		}
 		return gerror.New("dynamic resource Provider invocation failed")
 	}
 	if err = json.Unmarshal(response, target); err != nil {
-		return gerror.New("dynamic resource Provider result is invalid")
+		return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
+	}
+	switch typed := target.(type) {
+	case *resourcecap.ConnectionVerification:
+		failureMu.Lock()
+		safe, observedAt := ownerFailure, authenticatedAt
+		failureMu.Unlock()
+		if !typed.Verified || observedAt.IsZero() {
+			if safe != nil {
+				return safe
+			}
+			return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
+		}
+		typed.ObservedAt = observedAt
+	case *resourcecap.CapabilitySnapshot:
+		// A capability declaration is observed on receipt; this does not prove
+		// that an upstream connection was attempted or authenticated.
+		typed.ObservedAt = time.Now().UTC()
 	}
 	return nil
 }
@@ -166,4 +230,20 @@ func allowedDynamicResultFields(method string) []string {
 	default:
 		return nil
 	}
+}
+
+// confirmedAuthenticationStep inspects only the owner-produced HTTP outcome;
+// a guest business request or successful transport alone is never authentication.
+func confirmedAuthenticationStep(request *pluginhost.ConfidentialOutboundRequest, result *pluginhost.ConfidentialOutboundResult) bool {
+	if request == nil || result == nil {
+		return false
+	}
+	var (
+		step     resourcecap.ConfidentialHTTPRequest
+		observed resourcecap.ConfidentialHTTPResponse
+	)
+	if json.Unmarshal(request.Payload, &step) != nil || step.Kind != resourcecap.ConfidentialHTTPKindAuthenticate || json.Unmarshal(result.Payload, &observed) != nil {
+		return false
+	}
+	return observed.Authenticated && observed.StatusCode >= http.StatusOK && observed.StatusCode < http.StatusMultipleChoices
 }

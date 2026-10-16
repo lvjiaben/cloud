@@ -89,9 +89,12 @@ type LegacyServerCatalogReader interface {
 // controllers deliberately receive only PublicCatalogReader.
 type CatalogReader interface {
 	PublicCatalogReader
+	// SearchNumbered returns a bounded supplier selection page with an exact visible total.
+	SearchNumbered(context.Context, PublicCatalogNumberedInput) (*PublicCatalogNumberedPage, error)
 	PublicStructuredConfigurationReader
 	LegacyServerCatalogReader
 	ConfigurationPriceSelectionReader
+	CatalogImportReader
 	// TrafficPackageProducts returns bounded server-product choices for an already authorized installation-level accessory configuration.
 	TrafficPackageProducts(context.Context, string, []string) ([]TrafficPackageProduct, error)
 }
@@ -112,6 +115,7 @@ type PublicConfigurationCacheObserver interface {
 }
 
 type publicCatalogReaderImpl struct {
+	currencies               CurrencyReader
 	database                 gdb.DB
 	cursor                   *publicCatalogCursorCodec
 	revision                 *publicConfigurationRevisionCodec

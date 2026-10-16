@@ -18,6 +18,10 @@ import (
 type RenewalQuoteInput struct {
 	CurrencyCode string
 	Lines        []RenewalQuoteLineInput
+	// TrialConversion uses the current sale price without setup fees for an
+	// already provisioned service. The caller must verify frozen configuration
+	// compatibility and recheck sale eligibility before payment.
+	TrialConversion bool
 }
 
 // RenewalQuoteLineInput references one immutable generic long-lived
@@ -37,6 +41,9 @@ type RenewalQuoteLineInput struct {
 // billing rules, prices, and tax. Renewal never consumes sale inventory.
 type RenewalQuoteAssembler interface {
 	AssembleRenewalQuote(context.Context, RenewalQuoteInput) ([]PurchaseQuoteLine, error)
+	// RequireRenewalSale locks the product sale state for the caller's transaction.
+	// It rejects missing or stopped products without changing paid history.
+	RequireRenewalSale(context.Context, string) error
 }
 
 var _ RenewalQuoteAssembler = (*publicCatalogReaderImpl)(nil)
@@ -56,6 +63,15 @@ func (s *publicCatalogReaderImpl) AssembleRenewalQuote(
 	ctx context.Context,
 	input RenewalQuoteInput,
 ) ([]PurchaseQuoteLine, error) {
+	var currencyErr error
+	if input.TrialConversion {
+		currencyErr = s.admitCurrency(ctx, input.CurrencyCode)
+	} else {
+		currencyErr = s.admitRenewalCurrency(ctx, input.CurrencyCode)
+	}
+	if currencyErr != nil {
+		return nil, currencyErr
+	}
 	purchaseInput := PurchaseQuoteInput{CurrencyCode: input.CurrencyCode, Lines: make([]PurchaseQuoteLineInput, 0, len(input.Lines))}
 	for _, line := range input.Lines {
 		purchaseInput.Lines = append(purchaseInput.Lines, PurchaseQuoteLineInput{
@@ -67,6 +83,9 @@ func (s *publicCatalogReaderImpl) AssembleRenewalQuote(
 	versions, products, _, _, err := validatePurchaseQuoteInput(purchaseInput)
 	if err != nil {
 		return nil, err
+	}
+	if err = verifyConfigurationPriceModes(ctx, s.database, purchaseInput.Lines); err != nil {
+		return nil, unavailablePurchaseQuote(err)
 	}
 	productRows := make([]purchaseQuoteProductRow, 0)
 	if err = s.database.GetScan(ctx, &productRows, purchaseQuoteProductsSQL,
@@ -111,7 +130,11 @@ func (s *publicCatalogReaderImpl) AssembleRenewalQuote(
 	); err != nil {
 		return nil, unavailablePurchaseQuote(err)
 	}
-	return buildRenewalQuote(input, productRows, ruleRows, priceRows, taxRows)
+	lines, err := buildRenewalQuote(input, productRows, ruleRows, priceRows, taxRows)
+	if err != nil {
+		return nil, err
+	}
+	return s.applyImportedPurchasePrices(ctx, input.CurrencyCode, versions, lines)
 }
 
 func buildRenewalQuote(
@@ -129,7 +152,11 @@ func buildRenewalQuote(
 	for _, requested := range input.Lines {
 		product, found := index.products[purchaseQuotePair(requested.ProductNo, requested.VersionNo)]
 		if !found || product.VersionStatusCode != "published" ||
-			(product.ProductStatusCode != "active" && product.ProductStatusCode != "inactive") {
+			product.ProductStatusCode != catalogStatusActive {
+			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
+		}
+		if input.TrialConversion && (product.ProductStatusCode != "active" || product.CategoryStatusCode != "active" ||
+			product.CurrentVersionNo == nil || *product.CurrentVersionNo != requested.VersionNo) {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
 		rule, found := index.rules[purchaseQuotePair(requested.VersionNo, requested.BillingRuleNo)]
@@ -137,9 +164,12 @@ func buildRenewalQuote(
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
 		definition := BillingRuleDefinitionFromEntity(rule)
-		if definition.PricePhase == PricePhaseNewPurchase ||
+		if !input.TrialConversion && definition.PricePhase == PricePhaseNewPurchase ||
 			definition.ChargeType == ChargeTypeOneTime || definition.ChargeType == ChargeTypeTrial ||
 			definition.QuantityMode == QuantityModeUsage {
+			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
+		}
+		if input.TrialConversion && (definition.ChargeType != ChargeTypeRecurring || definition.PricePhase == PricePhaseRenewal) {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
 		tax, found := index.taxes[requested.VersionNo]
@@ -147,7 +177,13 @@ func buildRenewalQuote(
 			ValidateTaxPolicy(taxDefinitionFromEntity(tax)) != nil {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
-		charges, chargeErr := renewalQuoteCharges(requested, rule, index.prices)
+		var charges []PurchaseQuoteCharge
+		var chargeErr error
+		if input.TrialConversion {
+			charges, chargeErr = trialConversionQuoteCharges(requested, rule, index.prices)
+		} else {
+			charges, chargeErr = renewalQuoteCharges(requested, rule, index.prices)
+		}
 		if chargeErr != nil {
 			return nil, chargeErr
 		}
@@ -178,7 +214,7 @@ func renewalQuoteCharges(
 	prices map[string][]entity.CatalogPrice,
 ) ([]PurchaseQuoteCharge, error) {
 	definition := BillingRuleDefinitionFromEntity(rule)
-	base, err := renewalQuoteCharge(line, definition, "", false, 1, prices)
+	base, err := renewalQuoteCharge(line, definition, "", false, ConfigurationPriceFixed, 1, prices)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +222,7 @@ func renewalQuoteCharges(
 	charges = append(charges, base)
 	for _, selection := range line.PriceSelections {
 		charge, chargeErr := renewalQuoteCharge(
-			line, definition, selection.DimensionNo, true, selection.Quantity, prices,
+			line, definition, selection.DimensionNo, true, selection.PricingMode, selection.Quantity, prices,
 		)
 		if chargeErr != nil {
 			return nil, chargeErr
@@ -201,6 +237,7 @@ func renewalQuoteCharge(
 	definition BillingRuleDefinition,
 	optionNo string,
 	configurationDimension bool,
+	pricingMode ConfigurationPriceMode,
 	quantity int,
 	prices map[string][]entity.CatalogPrice,
 ) (PurchaseQuoteCharge, error) {
@@ -210,12 +247,21 @@ func renewalQuoteCharge(
 		schedule = append(schedule, PriceTierDefinitionFromEntity(row))
 	}
 	quotedQuantity := int64(quantity)
-	if definition.QuantityMode == QuantityModeFixed {
+	if definition.QuantityMode == QuantityModeFixed && (pricingMode == "" || pricingMode == ConfigurationPriceFixed) {
 		quotedQuantity = 1
 	}
-	quoted, err := QuoteBillingRule(definition, schedule, BillingQuoteRequest{
+	request := BillingQuoteRequest{
 		Phase: QuotePhaseRenewal, Cycles: line.PurchaseCycles, Quantity: &quotedQuantity,
-	})
+	}
+	var (
+		quoted *BillingQuote
+		err    error
+	)
+	if configurationDimension {
+		quoted, err = quoteConfigurationPrice(definition, pricingMode, schedule, request)
+	} else {
+		quoted, err = QuoteBillingRule(definition, schedule, request)
+	}
 	if err != nil || quoted.Status != BillingQuoteFinal || quoted.ChargeAmountMinor == nil ||
 		quoted.SetupFeeMinor == nil || quoted.TotalAmountMinor == nil || *quoted.SetupFeeMinor != 0 {
 		return PurchaseQuoteCharge{}, bizerr.NewCode(CodePublicQuoteNotAvailable)
@@ -224,13 +270,18 @@ func renewalQuoteCharge(
 	if err != nil {
 		return PurchaseQuoteCharge{}, err
 	}
+	digestMode := pricingMode
+	if digestMode == ConfigurationPriceFixed {
+		digestMode = ""
+	}
 	digest, err := purchaseQuoteDigest(struct {
 		Phase                              QuotePhase
 		VersionNo, BillingRuleNo, OptionNo string
 		Quantity, PurchaseQuantity, Cycles int
+		PricingMode                        ConfigurationPriceMode `json:",omitempty"`
 		Schedule                           []PriceTierDefinition
 	}{QuotePhaseRenewal, line.VersionNo, line.BillingRuleNo, optionNo, quantity,
-		line.Quantity, line.PurchaseCycles, schedule})
+		line.Quantity, line.PurchaseCycles, digestMode, schedule})
 	if err != nil {
 		return PurchaseQuoteCharge{}, err
 	}

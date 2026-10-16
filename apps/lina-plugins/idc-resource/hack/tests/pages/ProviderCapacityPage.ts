@@ -97,7 +97,7 @@ export class ProviderCapacityPage {
   async confirmSync() {
     await this.page
       .getByRole("dialog")
-      .getByRole("button", { name: /创建采集任务|Create collection task/iu })
+      .getByRole("button", { name: /开始更新|Start Update/iu })
       .click();
     await this.syncModal.waitFor({ state: "hidden" });
     await waitForTableReady(this.page);

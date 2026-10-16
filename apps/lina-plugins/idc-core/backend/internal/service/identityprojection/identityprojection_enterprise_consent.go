@@ -42,19 +42,24 @@ func (s *serviceImpl) CurrentEnterprise(
 		return nil, gerror.New("enterprise identity preparation is not accessible")
 	}
 	var eligibility *struct {
-		CustomerNo         string     `json:"customer_no"`
-		CustomerTypeCode   string     `json:"customer_type_code"`
-		StatusCode         string     `json:"status_code"`
-		IdentityStatusCode string     `json:"identity_status_code"`
-		IdentityVerifiedAt *time.Time `json:"identity_verified_at"`
-		IdentityExpiresAt  *time.Time `json:"identity_expires_at"`
+		CustomerNo             string     `json:"customer_no"`
+		CustomerTypeCode       string     `json:"customer_type_code"`
+		StatusCode             string     `json:"status_code"`
+		ManualVerification     bool       `json:"manual_verification"`
+		VerificationStatusCode string     `json:"verification_status_code"`
+		VerificationUpdatedAt  *time.Time `json:"verification_updated_at"`
+		IdentityStatusCode     string     `json:"identity_status_code"`
+		IdentityVerifiedAt     *time.Time `json:"identity_verified_at"`
+		IdentityExpiresAt      *time.Time `json:"identity_expires_at"`
 	}
 	err = s.database.GetScan(ctx, &eligibility, `
 SELECT subject.customer_no, subject.customer_type_code, subject.status_code,
-       personal.identity_status_code, personal.identity_verified_at, personal.identity_expires_at
+       personal.identity_status_code, personal.identity_verified_at, personal.identity_expires_at,
+ enterprise.manual_verification, enterprise.verification_status_code, enterprise.updated_at AS verification_updated_at
 FROM plugin_idc_core_customer_subject subject
 JOIN plugin_idc_core_customer_individual_profile personal
   ON personal.tenant_id = subject.tenant_id AND personal.customer_no = subject.customer_no
+LEFT JOIN plugin_idc_core_customer_enterprise_profile enterprise ON enterprise.tenant_id = subject.tenant_id AND enterprise.customer_no = subject.customer_no
 WHERE subject.tenant_id = ? AND subject.customer_no = ?
 LIMIT 1`, idccap.DefaultTenantID, audience.CustomerNo)
 	if err != nil {
@@ -63,12 +68,12 @@ LIMIT 1`, idccap.DefaultTenantID, audience.CustomerNo)
 	if eligibility == nil || (eligibility.CustomerTypeCode != individualType &&
 		eligibility.CustomerTypeCode != enterpriseType) ||
 		!eligibleCustomerStatus(eligibility.StatusCode) ||
-		eligibility.IdentityStatusCode != string(identitycap.StatusVerified) ||
-		eligibility.IdentityVerifiedAt == nil ||
-		(eligibility.IdentityExpiresAt != nil && !eligibility.IdentityExpiresAt.After(time.Now().UTC())) {
+		(!eligibility.ManualVerification && (eligibility.IdentityStatusCode != string(identitycap.StatusVerified) ||
+			eligibility.IdentityVerifiedAt == nil || (eligibility.IdentityExpiresAt != nil && !eligibility.IdentityExpiresAt.After(time.Now().UTC())))) {
 		return nil, gerror.New("enterprise identity preparation is not accessible")
 	}
 	return &identitycap.EnterpriseSubject{
+		ManualVerification: eligibility.ManualVerification, VerificationStatus: identitycap.Status(eligibility.VerificationStatusCode), VerificationUpdatedAt: eligibility.VerificationUpdatedAt,
 		CustomerNo: audience.CustomerNo, PrincipalReference: "usr:" + strconv.Itoa(audience.UserID),
 		ActorUserID: audience.UserID,
 	}, nil
@@ -84,7 +89,7 @@ func (s *serviceImpl) RecordEnterpriseConsent(
 		!validConsentLocale(input.Locale) || !validConsentIdempotencyKey(input.IdempotencyKey) {
 		return nil, gerror.New("enterprise identity consent input is invalid")
 	}
-	subject, err := s.CurrentEnterprise(ctx)
+	subject, err := s.prepareEnterpriseSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -151,11 +156,10 @@ func (s *serviceImpl) PrepareEnterprise(
 	consentNo string,
 	legalChangeRequestNo string,
 ) (*identitycap.EnterprisePreparation, error) {
-	if ctx == nil || ctx.Err() != nil || !validBusinessNo(consentNo, 40) ||
-		(legalChangeRequestNo != "" && !validBusinessNo(legalChangeRequestNo, 40)) {
+	if !validEnterprisePreparationInput(ctx, consentNo, legalChangeRequestNo) {
 		return nil, gerror.New("enterprise identity preparation is not accessible")
 	}
-	subject, err := s.CurrentEnterprise(ctx)
+	subject, err := s.prepareEnterpriseSubject(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -281,4 +285,37 @@ func matchesEnterpriseConsent(
 		row.PolicyVersion == input.PolicyVersion && row.ActionCode == consentGranted &&
 		row.SourceCode == personalConsentSource && row.Locale == input.Locale &&
 		row.RecordedBy == actorUserID
+}
+
+// requirePersonalVerification retains the personal-first prerequisite for new enterprise submissions.
+func (s *serviceImpl) requirePersonalVerification(ctx context.Context, customerNo string) error {
+	var profile *entity.CustomerIndividualProfile
+	if err := s.database.Model(dao.CustomerIndividualProfile.Table()).Ctx(ctx).Where(do.CustomerIndividualProfile{TenantId: idccap.DefaultTenantID, CustomerNo: customerNo}).Scan(&profile); err != nil {
+		return err
+	}
+	if profile == nil || profile.IdentityStatusCode != string(identitycap.StatusVerified) || profile.IdentityVerifiedAt == nil || (profile.IdentityExpiresAt != nil && !profile.IdentityExpiresAt.After(time.Now().UTC())) {
+		return gerror.New("verified personal identity is required before enterprise verification")
+	}
+	return nil
+}
+
+// prepareEnterpriseSubject applies the personal-first prerequisite to writes, including a staff-cleared enterprise.
+func (s *serviceImpl) prepareEnterpriseSubject(ctx context.Context) (*identitycap.EnterpriseSubject, error) {
+	subject, err := s.CurrentEnterprise(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if subject.ManualVerification {
+		if err = s.requirePersonalVerification(ctx, subject.CustomerNo); err != nil {
+			return nil, err
+		}
+	}
+	return subject, nil
+}
+
+// validEnterprisePreparationInput preserves the preparation entry validation
+// independently of database reads and consent/ownership state checks.
+func validEnterprisePreparationInput(ctx context.Context, consentNo, legalChangeRequestNo string) bool {
+	return ctx != nil && ctx.Err() == nil && validBusinessNo(consentNo, 40) &&
+		(legalChangeRequestNo == "" || validBusinessNo(legalChangeRequestNo, 40))
 }

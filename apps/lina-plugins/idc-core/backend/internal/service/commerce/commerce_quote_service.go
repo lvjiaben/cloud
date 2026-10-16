@@ -113,7 +113,7 @@ func (s *serviceImpl) QuoteGuestCart(
 	if err != nil {
 		return nil, err
 	}
-	if len(request.AssetNumbers) != 0 {
+	if len(request.AssetNumbers) != 0 || request.TargetEntitlementNo != "" {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	return s.quoteCart(ctx, cartOwner{guestDigest: digest}, request)
@@ -194,7 +194,10 @@ func (s *serviceImpl) quoteCart(
 		result, calculateErr = s.persistQuote(
 			ctx, quoteNo, graph, customer, now, expiresAt, calculated,
 		)
-		return calculateErr
+		if calculateErr != nil {
+			return calculateErr
+		}
+		return s.freezeAddonQuoteTarget(ctx, owner.customerNo, quoteNo, request.TargetEntitlementNo)
 	})
 	if err != nil {
 		if bizerr.Is(err, CodeNotAccessible) || bizerr.Is(err, CodeConflict) ||
@@ -281,19 +284,22 @@ WHERE item.tenant_id=0 AND item.cart_no=? ORDER BY item.sort_order,item.id LIMIT
 		snapshotNos = append(snapshotNos, item.ConfigurationSnapshotNo)
 	}
 	type selectionRow struct {
-		ConfigurationSnapshotNo string  `orm:"configuration_snapshot_no"`
-		SelectionDigest         string  `orm:"selection_digest"`
-		SelectedOptionCount     int     `orm:"selected_option_count"`
-		DimensionNo             *string `orm:"dimension_no"`
-		Quantity                *int    `orm:"quantity"`
+		ConfigurationSnapshotNo string                         `orm:"configuration_snapshot_no"`
+		SelectionDigest         string                         `orm:"selection_digest"`
+		SelectedOptionCount     int                            `orm:"selected_option_count"`
+		DimensionNo             *string                        `orm:"dimension_no"`
+		Quantity                *int                           `orm:"quantity"`
+		PricingMode             catalog.ConfigurationPriceMode `orm:"pricing_mode_code"`
 	}
 	var selectionRows []selectionRow
 	if err = s.database.GetScan(ctx, &selectionRows, `SELECT snapshot.configuration_snapshot_no,snapshot.selection_digest,snapshot.selected_option_count,
-selection.dimension_no,selection.quantity
+selection.dimension_no,selection.quantity,dimension.pricing_mode_code
 FROM plugin_idc_core_commerce_configuration_snapshot snapshot
 LEFT JOIN plugin_idc_core_commerce_configuration_price_selection selection
   ON selection.tenant_id=snapshot.tenant_id
  AND selection.configuration_snapshot_no=snapshot.configuration_snapshot_no
+LEFT JOIN plugin_idc_core_catalog_configuration_price_dimension dimension
+ ON dimension.tenant_id=selection.tenant_id AND dimension.version_no=selection.version_no AND dimension.dimension_no=selection.dimension_no
 WHERE snapshot.tenant_id=0 AND snapshot.configuration_snapshot_no IN(?)
 ORDER BY snapshot.configuration_snapshot_no,selection.dimension_no LIMIT ?`, snapshotNos, len(items)*128+len(items)+1); err != nil || len(selectionRows) > len(items)*128+len(items) {
 		return nil, bizerr.NewCode(CodeQuoteNotAvailable)
@@ -309,7 +315,7 @@ ORDER BY snapshot.configuration_snapshot_no,selection.dimension_no LIMIT ?`, sna
 		selectionCounts[row.ConfigurationSnapshotNo] = row.SelectedOptionCount
 		if row.DimensionNo != nil && row.Quantity != nil {
 			priceSelections[row.ConfigurationSnapshotNo] = append(priceSelections[row.ConfigurationSnapshotNo], catalog.ConfigurationPriceSelection{
-				DimensionNo: *row.DimensionNo, Quantity: *row.Quantity,
+				DimensionNo: *row.DimensionNo, Quantity: *row.Quantity, PricingMode: row.PricingMode,
 			})
 		}
 	}
@@ -478,10 +484,16 @@ func (s *serviceImpl) evaluateQuoteAdjustments(
 		Lines: make([]QuoteAdjustmentLineInput, 0, len(lines)),
 	}
 	for _, line := range lines {
+		basis, basisErr := agentPriceBasis(line.catalogLine)
+		if basisErr != nil {
+			return nil, basisErr
+		}
 		input.Lines = append(input.Lines, QuoteAdjustmentLineInput{
 			ReferenceNo: line.catalogLine.ReferenceNo, ProductNo: line.catalogLine.ProductNo,
-			CategoryNo:    line.catalogLine.CategoryNo,
-			SubtotalMinor: line.amounts.subtotal,
+			CategoryNo:     line.catalogLine.CategoryNo,
+			SubtotalMinor:  line.amounts.subtotal,
+			ChargeTypeCode: line.catalogLine.ChargeTypeCode, PeriodUnitCode: line.catalogLine.PeriodUnitCode, PeriodCount: line.catalogLine.PeriodCount,
+			Quantity: line.catalogLine.Quantity, PurchaseCycles: line.catalogLine.PurchaseCycles, PeriodSubtotalMinor: basis,
 		})
 	}
 	result, err := s.adjustments.EvaluateAndReserveQuote(ctx, input)
@@ -513,7 +525,16 @@ func applyQuoteAdjustments(lines []calculatedQuoteLine, result *QuoteAdjustmentR
 		lines[lineIndex].adjustments = append(lines[lineIndex].adjustments, adjustment)
 	}
 	for index := range lines {
-		amounts, err := calculateQuoteItemAmounts(lines[index].catalogLine, discounts[index])
+		pricedLine, err := ApplyAgentPrice(lines[index].catalogLine, lines[index].adjustments)
+		if err != nil {
+			return err
+		}
+		lines[index].catalogLine = pricedLine
+		_, agent, err := quoteDiscountScope(lines[index].adjustments)
+		if err != nil {
+			return err
+		}
+		amounts, err := calculateScopedQuoteItemAmounts(lines[index].catalogLine, discounts[index], agent)
 		if err != nil {
 			return err
 		}
@@ -526,7 +547,7 @@ func validQuoteAdjustment(value QuoteAdjustment) bool {
 	validType := value.TypeCode == QuoteAdjustmentCampaignDiscount || value.TypeCode == QuoteAdjustmentCoupon ||
 		value.TypeCode == QuoteAdjustmentVoucher || value.TypeCode == QuoteAdjustmentCustomerPrice ||
 		value.TypeCode == QuoteAdjustmentAgentPrice || value.TypeCode == QuoteAdjustmentManualDiscount
-	return validType && value.AmountMinor > 0 && value.SourceReference == strings.TrimSpace(value.SourceReference) &&
+	return validType && (value.AmountMinor > 0 || (value.TypeCode == QuoteAdjustmentAgentPrice && value.AmountMinor == 0)) && value.SourceReference == strings.TrimSpace(value.SourceReference) &&
 		len(value.SourceReference) >= 1 && len(value.SourceReference) <= 128 &&
 		quoteDigestPattern.MatchString(value.SourceVersionDigest) &&
 		(value.ReservationReference == "" ||
@@ -804,7 +825,9 @@ func (s *serviceImpl) buildQuoteRows(
 				SourceReference:      adjustment.SourceReference,
 				SourceVersionDigest:  adjustment.SourceVersionDigest,
 				ReservationReference: reservation, AmountMinor: adjustment.AmountMinor,
-				ContentDigest: contentDigest,
+				ContentDigest:             contentDigest,
+				OriginalPeriodAmountMinor: adjustment.OriginalPeriodAmountMinor,
+				TargetPeriodAmountMinor:   adjustment.TargetPeriodAmountMinor,
 			})
 			views = append(views, QuoteAdjustmentView{
 				TypeCode: adjustment.TypeCode, SourceReference: adjustment.SourceReference,

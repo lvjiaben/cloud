@@ -51,7 +51,7 @@ const content = {
     campaigns: "当前活动",
     next: "下一页",
     previous: "上一页",
-    pricingNote: "商品购买能力将在对应插件提供通用配置声明后开放。",
+    pricingNote: "价格随配置和计费周期变化，请进入商品详情选择配置并确认报价。",
     retry: "重新加载",
     search: "搜索商品名称",
     unavailable: "暂不可售",
@@ -79,7 +79,7 @@ const content = {
     next: "Next",
     previous: "Previous",
     pricingNote:
-      "Purchasing will open after the relevant plugin provides its general configuration declaration.",
+      "Prices depend on configuration and billing period. Open product details to choose your configuration and confirm a quote.",
     retry: "Try again",
     search: "Search products",
     unavailable: "Unavailable",

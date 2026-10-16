@@ -4,7 +4,9 @@ package enterpriseverification
 
 import (
 	"context"
+	"lina-plugin-idc-core/backend/cap/identitycap"
 	"strings"
+	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 
@@ -17,7 +19,8 @@ import (
 
 const (
 	// caseStatusDraft permits customer evidence changes.
-	caseStatusDraft = "draft"
+	reasonManualClear = "manual_identity_clear"
+	caseStatusDraft   = "draft"
 	// caseStatusPending is immutable customer input awaiting merchant review.
 	caseStatusPending = "pending"
 )
@@ -43,6 +46,11 @@ func (s *serviceImpl) CreateDraft(
 	)
 	if err != nil || preparation == nil {
 		return nil, bizerr.NewCode(CodeNotAccessible)
+	}
+	if preparation.Subject.ManualVerification && preparation.Subject.VerificationStatus == identitycap.StatusUnverified && preparation.Subject.VerificationUpdatedAt != nil {
+		if err = s.cancelClearedCases(ctx, preparation.Subject); err != nil {
+			return nil, err
+		}
 	}
 	digest := sha256Hex([]byte(input.IdempotencyKey))
 	fingerprint := sha256Hex([]byte(
@@ -141,4 +149,22 @@ func validateDraftReplay(
 		LegalChangeRequestNo: row.LegalChangeRequestNo,
 		Reverification:       row.LegalChangeRequestNo != "", Reused: true,
 	}, nil
+}
+
+// cancelClearedCases keeps encrypted historical materials and only retires in-flight cases predating reset.
+func (s *serviceImpl) cancelClearedCases(ctx context.Context, subject identitycap.EnterpriseSubject) error {
+	return dao.VerificationCase.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		result, err := s.database.Model(dao.VerificationCase.Table()).Ctx(ctx).Where(do.VerificationCase{TenantId: idccap.DefaultTenantID, CustomerNo: subject.CustomerNo, SubjectTypeCode: enterpriseSubjectType}).WhereIn("status_code", []string{caseStatusDraft, caseStatusPending, "review_required"}).WhereLT("created_at", subject.VerificationUpdatedAt).Data(do.VerificationCase{StatusCode: caseStatusCanceled, Version: gdb.Raw("version + 1")}).Update()
+		if err != nil {
+			return bizerr.NewCode(CodeUnavailable)
+		}
+		count, err := result.RowsAffected()
+		if err != nil {
+			return bizerr.NewCode(CodeUnavailable)
+		}
+		if count == 0 {
+			return nil
+		}
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "compliance.enterprise-verification.clear", IdempotencyKey: subject.CustomerNo + subject.VerificationUpdatedAt.UTC().Format(time.RFC3339Nano), OperationCode: "compliance.enterprise-verification.clear", TargetType: "customer", TargetNo: subject.CustomerNo, CustomerNo: subject.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded, ReasonCode: reasonManualClear, RiskCode: "low", CorrelationNo: subject.CustomerNo, BeforeSnapshot: struct{ Count int64 }{count}, AfterSnapshot: struct{ Status string }{caseStatusCanceled}})
+	})
 }

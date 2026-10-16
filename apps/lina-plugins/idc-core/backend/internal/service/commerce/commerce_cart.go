@@ -252,7 +252,7 @@ func insertGenericPurchaseSnapshot(
 	}
 	totalSelected := 0
 	for _, selection := range resolved.PriceSelections {
-		if selection.DimensionNo == "" || selection.Quantity < 1 || selection.Quantity > 128 {
+		if selection.DimensionNo == "" || selection.Quantity < 1 || int64(selection.Quantity) > 2147483647 {
 			return gerror.New("generic configuration price selection is invalid")
 		}
 		totalSelected += selection.Quantity

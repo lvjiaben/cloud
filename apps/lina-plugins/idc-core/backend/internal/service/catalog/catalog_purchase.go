@@ -162,6 +162,9 @@ func (s *publicCatalogReaderImpl) ResolvePurchaseConfiguration(
 		input.PurchaseCycles < 1 || input.PurchaseCycles > 120 || s.revision == nil {
 		return nil, bizerr.NewCode(CodePublicQuoteInvalid)
 	}
+	if err := s.admitCurrency(ctx, currency); err != nil {
+		return nil, err
+	}
 	revision := strings.TrimSpace(input.ConfigurationRevision)
 	termToken := strings.TrimSpace(input.BillingTermToken)
 	if revision != input.ConfigurationRevision || termToken != input.BillingTermToken ||

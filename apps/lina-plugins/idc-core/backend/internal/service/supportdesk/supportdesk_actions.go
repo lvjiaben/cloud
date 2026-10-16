@@ -345,7 +345,7 @@ func (s *serviceImpl) Escalate(ctx context.Context, input EscalateInput) (*Detai
 		return nil, err
 	}
 	reason, ok := normalizeText(input.Reason, 512)
-	if !ok || !businessNoPattern.MatchString(input.TicketNo) || input.ToUserID <= 0 || input.ToUserID == int64(a.UserID) || input.TicketVersion <= 0 {
+	if !ok || !businessNoPattern.MatchString(input.TicketNo) || input.ToUserID != 0 || input.TicketVersion <= 0 {
 		return nil, bizInvalid()
 	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
@@ -359,13 +359,6 @@ func (s *serviceImpl) Escalate(ctx context.Context, input EscalateInput) (*Detai
 		if !a.Global && ticket.AssigneeUserID != int64(a.UserID) && !s.isDepartmentLeader(ctx, a.UserID, ticket.DepartmentNo) {
 			return bizNotAccessible()
 		}
-		allowed, allowErr := s.targetStaffAllowed(ctx, input.ToUserID, staffCapabilityLead, ticket.DepartmentNo, true)
-		if allowErr != nil {
-			return allowErr
-		}
-		if !allowed {
-			return bizNotAccessible()
-		}
 		now, nowErr := databaseNow(ctx, s.database)
 		if nowErr != nil {
 			return nowErr
@@ -374,17 +367,17 @@ func (s *serviceImpl) Escalate(ctx context.Context, input EscalateInput) (*Detai
 		if noErr != nil {
 			return noErr
 		}
-		if _, writeErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket_escalation (tenant_id,escalation_no,ticket_no,from_user_id,to_user_id,reason,created_at) VALUES (0,?,?,?,?,?,?)`, escalationNo, input.TicketNo, a.UserID, input.ToUserID, reason, now); writeErr != nil {
+		if _, writeErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket_escalation (tenant_id,escalation_no,ticket_no,from_user_id,to_user_id,reason,created_at) VALUES (0,?,?,?,NULL,?,?)`, escalationNo, input.TicketNo, a.UserID, reason, now); writeErr != nil {
 			return writeErr
 		}
-		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET last_activity_at=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND ticket_no=? AND version=?`, now, a.UserID, now, input.TicketNo, input.TicketVersion)
+		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET follow_up_required=TRUE,last_activity_at=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND ticket_no=? AND version=?`, now, a.UserID, now, input.TicketNo, input.TicketVersion)
 		if updateErr != nil {
 			return updateErr
 		}
 		if changed, _ := result.RowsAffected(); changed != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
-		return s.enqueueStaffTicketEvent(ctx, ticket, supportEventTicketEscalated, input.ToUserID, ticket.Version+1, map[string]string{"status": ticket.BaseStage, "message": reason})
+		return nil
 	})
 	if err != nil {
 		return nil, wrapUnavailable(err, "escalate support ticket")

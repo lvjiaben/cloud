@@ -2,12 +2,17 @@ package admin
 
 import (
 	"context"
+	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/api/admin/v1"
+	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 )
 
 func (c *ControllerV1) CatalogProductVersionConfigurationUpdate(ctx context.Context, req *v1.CatalogProductVersionConfigurationUpdateReq) (*v1.CatalogProductVersionConfigurationUpdateRes, error) {
-	err := c.productAutomation.SaveVersionConfiguration(ctx, productautomation.SaveVersionConfigurationInput{VersionNo: req.VersionNo, MerchantValues: mapConfigurationInput(req.MerchantValues), ExpectedVersion: req.ExpectedVersion})
+	if req.MerchantValues == nil {
+		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
+	err := c.productAutomation.SaveVersionConfiguration(ctx, productautomation.SaveVersionConfigurationInput{VersionNo: req.VersionNo, MerchantValues: mapConfigurationInput(req.MerchantValues), ExpectedVersion: req.ExpectedVersion, CustomerFieldSelections: mapCustomerFieldSelections(req.CustomerFieldSelections)})
 	if err != nil {
 		return nil, err
 	}

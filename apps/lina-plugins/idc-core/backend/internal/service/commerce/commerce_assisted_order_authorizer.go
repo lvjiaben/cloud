@@ -1,11 +1,10 @@
 // This file enforces direct-staff identity, representable data scope, and
-// separate exact permissions for every assisted quote workflow action.
+// exact permissions for direct assistance and historical reads.
 
 package commerce
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
@@ -20,9 +19,6 @@ const (
 	permissionAssistedQuoteCreate   = "idc:admin:commerce:assisted-quote:create"
 	permissionAssistedQuoteList     = "idc:admin:commerce:assisted-quote:list"
 	permissionAssistedQuoteDetail   = "idc:admin:commerce:assisted-quote:query"
-	permissionAssistedQuoteApprove  = "idc:admin:commerce:assisted-quote:approve"
-	permissionAssistedQuoteReject   = "idc:admin:commerce:assisted-quote:reject"
-	permissionAssistedQuoteCheckout = "idc:admin:commerce:assisted-quote:checkout"
 	permissionAssistedCustomerQuery = "idc:admin:customer:query"
 )
 
@@ -56,11 +52,11 @@ func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteCreate(
 	if !validAssistedIdentifier(customerNo) {
 		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
 	}
-	return a.authorize(ctx, permissionAssistedQuoteCreate, true)
+	return a.authorize(ctx, permissionAssistedQuoteCreate)
 }
 
 func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteList(ctx context.Context) (int, error) {
-	return a.authorize(ctx, permissionAssistedQuoteList, false)
+	return a.authorize(ctx, permissionAssistedQuoteList)
 }
 
 func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteDetail(
@@ -70,43 +66,12 @@ func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteDetail(
 	if !validAssistedIdentifier(requestNo) {
 		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
 	}
-	return a.authorize(ctx, permissionAssistedQuoteDetail, false)
-}
-
-func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteApprove(
-	ctx context.Context,
-	requestNo string,
-) (int, error) {
-	if !validAssistedIdentifier(requestNo) {
-		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
-	}
-	return a.authorize(ctx, permissionAssistedQuoteApprove, false)
-}
-
-func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteReject(
-	ctx context.Context,
-	requestNo string,
-) (int, error) {
-	if !validAssistedIdentifier(requestNo) {
-		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
-	}
-	return a.authorize(ctx, permissionAssistedQuoteReject, false)
-}
-
-func (a *assistedQuoteAuthorizerImpl) AuthorizeAssistedQuoteCheckout(
-	ctx context.Context,
-	requestNo string,
-) (int, error) {
-	if !validAssistedIdentifier(requestNo) {
-		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
-	}
-	return a.authorize(ctx, permissionAssistedQuoteCheckout, false)
+	return a.authorize(ctx, permissionAssistedQuoteDetail)
 }
 
 func (a *assistedQuoteAuthorizerImpl) authorize(
 	ctx context.Context,
 	permission string,
-	requireCustomerQuery bool,
 ) (int, error) {
 	if a == nil {
 		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
@@ -127,22 +92,12 @@ func (a *assistedQuoteAuthorizerImpl) authorize(
 		authz.PermissionKey(permission),
 		authz.PermissionKey(idccap.HostPermissionWildcard),
 	}
-	if requireCustomerQuery {
-		keys = append(keys, authz.PermissionKey(permissionAssistedCustomerQuery))
-	}
 	grants, err := a.authorization.BatchHasPermissions(ctx, keys)
 	if err != nil {
 		return 0, bizerr.WrapCode(err, CodeAssistedQuoteNotAccessible)
 	}
-	platformAdmin, err := a.authorization.IsPlatformAdmin(
-		ctx, authz.UserID(strconv.Itoa(current.UserID)),
-	)
-	if err != nil {
-		return 0, bizerr.WrapCode(err, CodeAssistedQuoteNotAccessible)
-	}
-	bypass := grants[authz.PermissionKey(idccap.HostPermissionWildcard)] || platformAdmin
-	if !bypass && (!grants[authz.PermissionKey(permission)] ||
-		(requireCustomerQuery && !grants[authz.PermissionKey(permissionAssistedCustomerQuery)])) {
+	bypass := grants[authz.PermissionKey(idccap.HostPermissionWildcard)]
+	if !bypass && !grants[authz.PermissionKey(permission)] {
 		return 0, bizerr.NewCode(CodeAssistedQuoteNotAccessible)
 	}
 	return current.UserID, nil

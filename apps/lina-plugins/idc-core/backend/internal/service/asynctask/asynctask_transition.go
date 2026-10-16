@@ -403,24 +403,24 @@ func (s *serviceImpl) finishAttemptInDatabase(
 
 // RecoverExpired freezes bounded expired running work as result unknown.
 func (s *serviceImpl) RecoverExpired(ctx context.Context, input RecoverExpiredInput) ([]Task, error) {
-	if input.Limit < 0 {
-		return nil, bizerr.NewCode(CodeInvalid)
+	normalized, err := s.normalizeClaimInput(ClaimInput{WorkerID: "lease-recovery", Limit: input.Limit, TaskTypes: input.TaskTypes})
+	if err != nil {
+		return nil, err
 	}
-	if input.Limit == 0 {
-		input.Limit = s.config.MaximumClaimBatch
-	}
-	if input.Limit > s.config.MaximumClaimBatch {
-		return nil, bizerr.NewCode(CodeInvalid)
-	}
+	input.Limit = normalized.Limit
 	recovered := make([]Task, 0)
-	err := dao.AsyncTask.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+	err = dao.AsyncTask.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
 		now := databaseTime(s.now())
 		columns := dao.AsyncTask.Columns()
 		var rows []entity.AsyncTask
-		err := dao.AsyncTask.Ctx(ctx).
+		model := dao.AsyncTask.Ctx(ctx).
 			Where(do.AsyncTask{TenantId: idccap.DefaultTenantID, StatusCode: string(StatusRunning)}).
 			WhereNotNull(columns.LeaseExpiresAt).
-			WhereLTE(columns.LeaseExpiresAt, now).
+			WhereLTE(columns.LeaseExpiresAt, now)
+		if len(normalized.TaskTypes) > 0 {
+			model = model.WhereIn(columns.TaskType, normalized.TaskTypes)
+		}
+		err := model.
 			OrderAsc(columns.LeaseExpiresAt).
 			OrderAsc(columns.Id).
 			Limit(input.Limit).

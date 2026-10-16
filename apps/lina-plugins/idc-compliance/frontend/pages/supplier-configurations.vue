@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
 import type {
   SupplierConfiguration,
   SupplierProviderCode,
@@ -147,7 +148,7 @@ onMounted(() => load());
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="supplier-configurations-page">
+  <Page class="plugin-admin-page" :auto-content-height="true" data-testid="supplier-configurations-page">
     <Card class="h-full" :loading="loading">
       <template #title>{{ tr("title") }}</template>
       <template #extra>

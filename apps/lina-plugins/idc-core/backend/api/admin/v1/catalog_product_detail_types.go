@@ -3,19 +3,21 @@
 package v1
 
 type CatalogProductDetailProduct struct {
-	ProductNo        string `json:"productNo" dc:"Stable product business number" eg:"prd_0123456789abcdef0123456789abcdef"`
-	CategoryNo       string `json:"categoryNo" dc:"Stable category business number" eg:"ctg_0123456789abcdef0123456789abcdef"`
-	CategoryNameZhCn string `json:"categoryNameZhCn" dc:"Simplified Chinese category name" eg:"Cloud servers"`
-	CategoryNameEnUs string `json:"categoryNameEnUs" dc:"English category name" eg:"Cloud servers"`
-	Status           string `json:"status" dc:"Product status: draft, active, suspended, or retired" eg:"active"`
-	PublicSlug       string `json:"publicSlug" dc:"Public URL slug" eg:"hong-kong-cloud"`
-	NameZhCn         string `json:"nameZhCn" dc:"Simplified Chinese product name" eg:"Hong Kong Elastic Cloud"`
-	NameEnUs         string `json:"nameEnUs" dc:"English product name" eg:"Hong Kong Elastic Cloud"`
-	SummaryZhCn      string `json:"summaryZhCn" dc:"Simplified Chinese sales summary" eg:"Low-latency cloud server"`
-	SummaryEnUs      string `json:"summaryEnUs" dc:"English sales summary" eg:"Low-latency cloud server"`
-	SortOrder        int    `json:"sortOrder" dc:"Merchant-defined ascending display order" eg:"10"`
-	CreatedAt        int64  `json:"createdAt" dc:"Creation time as a Unix timestamp in milliseconds" eg:"1786161600000"`
-	UpdatedAt        int64  `json:"updatedAt" dc:"Update time as a Unix timestamp in milliseconds" eg:"1786161660000"`
+	DirectoryNo        string `json:"directoryNo" dc:"Single member product-navigation reference; empty means unclassified" eg:"pdr_example"`
+	DescriptionVersion int64  `json:"descriptionVersion" dc:"Optimistic revision for bilingual sales copy updates" eg:"1"`
+	ProductNo          string `json:"productNo" dc:"Stable product business number" eg:"prd_0123456789abcdef0123456789abcdef"`
+	CategoryNo         string `json:"categoryNo" dc:"Stable category business number" eg:"ctg_0123456789abcdef0123456789abcdef"`
+	CategoryNameZhCn   string `json:"categoryNameZhCn" dc:"Simplified Chinese category name" eg:"Cloud servers"`
+	CategoryNameEnUs   string `json:"categoryNameEnUs" dc:"English category name" eg:"Cloud servers"`
+	Status             string `json:"status" dc:"Product status: draft, active, suspended, or retired" eg:"active"`
+	PublicSlug         string `json:"publicSlug" dc:"Public URL slug" eg:"hong-kong-cloud"`
+	NameZhCn           string `json:"nameZhCn" dc:"Simplified Chinese product name" eg:"Hong Kong Elastic Cloud"`
+	NameEnUs           string `json:"nameEnUs" dc:"English product name" eg:"Hong Kong Elastic Cloud"`
+	SummaryZhCn        string `json:"summaryZhCn" dc:"Simplified Chinese sales summary" eg:"Low-latency cloud server"`
+	SummaryEnUs        string `json:"summaryEnUs" dc:"English sales summary" eg:"Low-latency cloud server"`
+	SortOrder          int    `json:"sortOrder" dc:"Merchant-defined ascending display order" eg:"10"`
+	CreatedAt          int64  `json:"createdAt" dc:"Creation time as a Unix timestamp in milliseconds" eg:"1786161600000"`
+	UpdatedAt          int64  `json:"updatedAt" dc:"Update time as a Unix timestamp in milliseconds" eg:"1786161660000"`
 }
 
 type CatalogProductDetailVersion struct {
@@ -37,6 +39,7 @@ type CatalogProductDetailVersion struct {
 // CatalogFulfillmentPolicySummary deliberately excludes plugin methods,
 // technical granularity codes, digests, and retry settings.
 type CatalogFulfillmentPolicySummary struct {
+	TrialSupported   bool   `json:"trialSupported" dc:"Whether the exact automatic fulfillment plugin supports real trial suspension and recovery" eg:"false"`
 	StrategyCode     string `json:"strategyCode" dc:"Merchant-facing fulfillment choice: manual, approval_then_plugin, or payment_confirmed_plugin" eg:"manual"`
 	CapabilityZhCn   string `json:"capabilityZhCn" dc:"Simplified Chinese plugin capability description, or empty for manual fulfillment" eg:"\u7b7e\u53d1\u5e76\u7ba1\u7406\u8bc1\u4e66"`
 	CapabilityEnUs   string `json:"capabilityEnUs" dc:"English plugin capability description, or empty for manual fulfillment" eg:"Issue and manage certificates"`

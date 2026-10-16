@@ -59,6 +59,12 @@ CREATE TABLE plugin_idc_core_catalog_product_version (
     status_code VARCHAR(16) NOT NULL,
     UNIQUE (tenant_id, version_no)
 );
+CREATE TABLE IF NOT EXISTS plugin_idc_core_catalog_billing_rule (
+    tenant_id INT NOT NULL DEFAULT 0,
+    version_no VARCHAR(40) NOT NULL,
+    charge_type_code VARCHAR(16) NOT NULL,
+    status_code VARCHAR(16) NOT NULL
+);
 CREATE TABLE plugin_idc_core_catalog_product_version_fulfillment_policy (
     tenant_id INT NOT NULL DEFAULT 0,
     version_no VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -112,12 +118,21 @@ INSERT INTO plugin_idc_core_catalog_product_version (version_no,status_code) VAL
 		t.Fatal(err)
 	}
 	installResourceProjectionTestColumns(t, ctx, scoped)
+	deleteMigration, err := os.ReadFile(filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "manifest", "sql", "128-interface-delete-session-operations.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if _, err = scoped.Exec(ctx, string(deleteMigration)); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	evidence := automationEvidence(nil)
 	extensions := &automationTestExtensions{evidence: []*capmodel.BusinessExtensionProviderEvidence{evidence}}
 	authorizer := &automationTestAuthorizer{}
 	audit := &automationTestAudit{strict: true, database: scoped}
-	codec := &automationTestCodec{evidence: evidence}
+	codec := &automationTestCodec{evidence: evidence, identityOnly: true}
 	randomBytes := append(bytes.Repeat([]byte{0x11}, 16), bytes.Repeat([]byte{0x22}, 16)...)
 	service, err := newWithRandom(scoped, extensions, authorizer, audit, codec, bytes.NewReader(randomBytes))
 	if err != nil {
@@ -137,6 +152,21 @@ INSERT INTO plugin_idc_core_catalog_product_version (version_no,status_code) VAL
 		manualPolicy.GranularityCode, manualPolicy.ProvisionMethod, manualPolicy.QueryMethod,
 		manualPolicy.MaximumAttempts, manualPolicy.RetryBaseSeconds, manualPolicy.PolicyDigest); err != nil {
 		t.Fatalf("insert unbound manual publication policy: %v", err)
+	}
+	if _, err = scoped.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_billing_rule
+        (tenant_id,version_no,charge_type_code,status_code)
+        VALUES(0,'ver_22222222222222222222222222222222','trial','active')`); err != nil {
+		t.Fatal(err)
+	}
+	unsafePublicationCalled := false
+	if publicationErr := service.WithPublicationAdmission(ctx, "ver_22222222222222222222222222222222", func(context.Context) error {
+		unsafePublicationCalled = true
+		return nil
+	}); !bizerr.Is(publicationErr, catalog.CodeTrialFulfillmentUnavailable) || unsafePublicationCalled {
+		t.Fatalf("manual trial reached publication: called=%v err=%v", unsafePublicationCalled, publicationErr)
+	}
+	if _, err = scoped.Exec(ctx, `DELETE FROM plugin_idc_core_catalog_billing_rule WHERE version_no='ver_22222222222222222222222222222222'`); err != nil {
+		t.Fatal(err)
 	}
 	manualPublicationCalled := false
 	if publicationErr := service.WithPublicationAdmission(ctx, "ver_22222222222222222222222222222222", func(context.Context) error {
@@ -555,6 +585,35 @@ WHERE interface_instance_no='pfi_33333333333333333333333333333333'`)
 	}
 
 	const directInterfaceNo = "pfi_55555555555555555555555555555555"
+	unusedService, err := newWithRandom(scoped, extensions, authorizer, audit, codec, bytes.NewReader(bytes.Repeat([]byte{0x99}, 16)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	unused, err := unusedService.CreateInterface(ctx, CreateInterfaceInput{DisplayName: "误建可删除接口", SelectionToken: "opaque-unused"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = failingService.DeleteInterface(ctx, DeleteInterfaceInput{InterfaceInstanceNo: unused.InterfaceInstanceNo, ExpectedVersion: 1}); err == nil {
+		t.Fatal("delete must roll back when audit fails")
+	}
+	for _, table := range []string{"plugin_idc_core_product_automation_interface_instance", "plugin_idc_core_product_automation_interface_configuration_revision"} {
+		count, countErr := scoped.GetValue(ctx, "SELECT count(*) FROM "+table+" WHERE interface_instance_no=?", unused.InterfaceInstanceNo)
+		if countErr != nil || count.Int() != 1 {
+			t.Fatalf("delete rollback lost %s: count=%v err=%v", table, count, countErr)
+		}
+	}
+	if _, err = scoped.Exec(ctx, `DELETE FROM plugin_idc_core_product_automation_interface_configuration_revision WHERE interface_instance_no=?`, unused.InterfaceInstanceNo); err == nil {
+		t.Fatal("direct deletion must preserve append-only configuration history")
+	}
+	if err = unusedService.DeleteInterface(ctx, DeleteInterfaceInput{InterfaceInstanceNo: unused.InterfaceInstanceNo, ExpectedVersion: 1}); err != nil {
+		t.Fatalf("delete unused interface with its initial configuration: %v", err)
+	}
+	for _, table := range []string{"plugin_idc_core_product_automation_interface_instance", "plugin_idc_core_product_automation_interface_configuration_revision"} {
+		count, countErr := scoped.GetValue(ctx, "SELECT count(*) FROM "+table+" WHERE interface_instance_no=?", unused.InterfaceInstanceNo)
+		if countErr != nil || count.Int() != 0 {
+			t.Fatalf("unused interface cleanup left %s: count=%v err=%v", table, count, countErr)
+		}
+	}
 	if _, err = scoped.Exec(ctx, `INSERT INTO plugin_idc_core_product_automation_interface_instance
 (tenant_id,interface_instance_no,display_name,plugin_id,extension_point_code,plugin_release_version,contract_version,authorized_methods,release_digest,declaration_digest,new_business_state,version,created_by,changed_by)
 VALUES (0,?,'直接 SQL 接口',?,'product-fulfillment',?,?,ARRAY[]::TEXT[],?,?,'accepting',1,101,101)`, directInterfaceNo, evidence.PluginID, evidence.ReleaseVersion, evidence.ContractVersion, evidence.ReleaseDigest, evidence.DeclarationDigest); err != nil {

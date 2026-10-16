@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
   ResourceFinanceFact,
@@ -92,7 +94,7 @@ function financeColumns(): VxeGridProps<ResourceFinanceFact>["columns"] {
 const [PoolGrid, poolGridApi] = useVbenVxeGrid({
   gridEvents: { pageChange: ({ currentPage, pageSize }: {currentPage: number; pageSize: number}) => void load("pool", { currentPage, pageSize }) },
   gridOptions: {
-    columns: poolColumns(), data: [], emptyRender: { name: "Empty" }, height: 420,
+    columns: poolColumns(), data: [], emptyRender: { name: "Empty" }, height: "100%",
     pagerConfig: { enabled: true, ...poolPage.value, pageSizes: [10, 20, 50, 100] }, rowConfig: { keyField: "poolNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true }, id: "idc-resource-overview-pools",
   },
@@ -100,7 +102,7 @@ const [PoolGrid, poolGridApi] = useVbenVxeGrid({
 const [FinanceGrid, financeGridApi] = useVbenVxeGrid({
   gridEvents: { pageChange: ({ currentPage, pageSize }: {currentPage: number; pageSize: number}) => void load("finance", { currentPage, pageSize }) },
   gridOptions: {
-    columns: financeColumns(), data: [], emptyRender: { name: "Empty" }, height: 420,
+    columns: financeColumns(), data: [], emptyRender: { name: "Empty" }, height: "100%",
     pagerConfig: { enabled: true, ...financePage.value, pageSizes: [10, 20, 50, 100] }, rowConfig: { keyField: "snapshotNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true }, id: "idc-resource-overview-finance",
   },
@@ -188,22 +190,15 @@ function factValue(item: ResourceFinanceFact) {
 }
 
 onMounted(() => void load());
+const layoutRoot = useAdminGridLayout(poolGridApi, financeGridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="resource-overview-page">
-    <Card
-      :bordered="false"
-      :title="$t('plugin.idc-resource.overview.title')"
-      class="mb-4"
-      size="small"
-    >
-      <template #extra
-        ><Button :loading="loading" @click="load()">{{
-          $t("plugin.idc-resource.overview.refresh")
-        }}</Button></template
-      >
-    </Card>
+  <Page class="plugin-admin-page" :auto-content-height="true" data-testid="resource-overview-page">
+    <div :ref="layoutRoot" class="overview-shell">
+    <div class="overview-heading">
+      <Button :loading="loading" @click="load()">{{ $t("plugin.idc-resource.overview.refresh") }}</Button>
+    </div>
     <Alert
       v-if="failed"
       class="mb-4"
@@ -211,7 +206,7 @@ onMounted(() => void load());
       type="error"
       :message="$t('plugin.idc-resource.overview.failed')"
     />
-    <Row v-if="summary" :gutter="[16, 16]" class="mb-4">
+    <Row v-if="summary" :gutter="[12, 12]" class="overview-metrics">
       <Col :xs="12" :md="8" :xl="4"
         ><Card
           ><Statistic
@@ -244,20 +239,13 @@ onMounted(() => void load());
       ></Col>
       <Col :xs="12" :md="8" :xl="4"
         ><Card
-          ><Statistic
-            :title="$t('plugin.idc-resource.overview.providerCapacityAt')"
-            :value="
-              summary.latestProviderCapacityAt
-                ? formatTimestamp(summary.latestProviderCapacityAt)
-                : '—'
-            " /></Card
+          ><p class="mb-2 text-muted-foreground">{{ $t('plugin.idc-resource.overview.providerCapacityAt') }}</p>
+          <span class="text-base">{{ summary.latestProviderCapacityAt ? formatTimestamp(summary.latestProviderCapacityAt) : '—' }}</span></Card
       ></Col>
     </Row>
-    <Card
-      class="mb-4"
-      :title="$t('plugin.idc-resource.overview.poolTitle')"
-    >
-      <PoolGrid :loading="loading">
+    <div class="overview-lists">
+    <Card class="overview-directory" size="small">
+      <PoolGrid :loading="loading" :table-title="$t('plugin.idc-resource.overview.poolTitle')">
         <template #pool="{ row }"><strong>{{ row.displayName }}</strong></template>
         <template #channel="{ row }">{{ row.channelName }}</template>
         <template #status="{ row }"><Tag>{{ poolStatusLabel(row.status) }}</Tag></template>
@@ -266,12 +254,33 @@ onMounted(() => void load());
         <template #updatedAt="{ row }">{{ formatTimestamp(row.updatedAt) }}</template>
       </PoolGrid>
     </Card>
-    <Card :title="$t('plugin.idc-resource.overview.financeTitle')">
-      <FinanceGrid :loading="loading">
+    <Card class="overview-directory" size="small">
+      <FinanceGrid :loading="loading" :table-title="$t('plugin.idc-resource.overview.financeTitle')">
         <template #kind="{ row }"><Tag>{{ factLabel(row.kind) }}</Tag></template>
         <template #value="{ row }">{{ factValue(row) }}</template>
         <template #observedAt="{ row }">{{ formatTimestamp(row.observedAt) }}</template>
       </FinanceGrid>
     </Card>
+    </div>
+    </div>
   </Page>
 </template>
+
+<style scoped>
+.overview-shell { display: flex; flex-direction: column; gap: 12px; height: 100%; min-height: 0; }
+.overview-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.overview-heading h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.overview-heading p { margin: 4px 0 0; font-size: 13px; color: hsl(var(--muted-foreground)); }
+.overview-metrics { flex: 0 0 auto; }
+.overview-metrics :deep(.ant-card-body) { padding: 12px 16px; }
+.overview-metrics :deep(.ant-statistic-content) { font-size: 24px; }
+.overview-lists { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; flex: 1; min-height: 0; }
+.overview-directory { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.overview-directory :deep(.ant-card-head) { flex: 0 0 auto; }
+.overview-directory :deep(.ant-card-body) { flex: 1; min-height: 0; padding: 0; overflow: hidden; }
+@media (max-width: 1100px) {
+  .overview-shell { height: auto; }
+  .overview-lists { grid-template-columns: minmax(0, 1fr); flex: none; }
+  .overview-directory { height: 380px; }
+}
+</style>

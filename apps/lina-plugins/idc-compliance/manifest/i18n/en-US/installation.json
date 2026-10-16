@@ -1,0 +1,5 @@
+{
+  "installation": {
+    "missingPacked": "Official embedded resource generation left required files missing. Restore the configuration template, metadata, SQL and language resources under manifest, then rebuild. Independent templates remain available through target=templates."
+  }
+}

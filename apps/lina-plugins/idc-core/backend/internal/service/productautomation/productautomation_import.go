@@ -14,6 +14,7 @@ import (
 
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/model/do"
@@ -42,6 +43,8 @@ type ImportBinding struct {
 	exact                *capmodel.BusinessExtensionProviderEvidence
 	product              *canonicalConfiguration
 	customerJSON         []byte
+	customerSchema       *capmodel.ConfigurationSchemaDeclaration
+	portable             *channelcommercecap.ImportSnapshot
 	interfaceCandidates  configurationcontract.ResolvedCandidates
 }
 
@@ -49,14 +52,14 @@ type ImportBinding struct {
 type ImportBindingService interface {
 	// PrepareImportBinding validates proven values and resolves only supplied
 	// dynamic selections outside a transaction; missing required fields survive.
-	PrepareImportBinding(context.Context, string, *resourceinterfaceprojectioncap.CatalogReadEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue) (*ImportBinding, error)
+	PrepareImportBinding(context.Context, string, *resourceinterfaceprojectioncap.CatalogReadEvidence, []resourceinterfaceprojectioncap.CatalogConfigurationValue, *channelcommercecap.ImportSnapshot) (*ImportBinding, error)
 	// WithImportBinding holds exact release and local revision admission while
 	// action creates the draft in the same transaction. An empty returned version
 	// means a concurrent idempotent replay and performs no binding write.
 	WithImportBinding(context.Context, *ImportBinding, func(context.Context) (string, error)) error
 }
 
-func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo string, readEvidence *resourceinterfaceprojectioncap.CatalogReadEvidence, supplied []resourceinterfaceprojectioncap.CatalogConfigurationValue) (*ImportBinding, error) {
+func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo string, readEvidence *resourceinterfaceprojectioncap.CatalogReadEvidence, supplied []resourceinterfaceprojectioncap.CatalogConfigurationValue, portable *channelcommercecap.ImportSnapshot) (*ImportBinding, error) {
 	authorization, err := s.authorizer.AuthorizeInterfaceList(ctx)
 	if err != nil {
 		return nil, err
@@ -105,11 +108,21 @@ func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo stri
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	customerJSON, err := configurationDeclarationJSON(exact.CustomerConfiguration)
+	customerSchema, err := selectCustomerSchema(exact, nil)
+	if err != nil {
+		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
+	if portable != nil {
+		if err = validatePortableImportEvidence(portable, readEvidence, exact, supplied); err != nil {
+			return nil, err
+		}
+		customerSchema = portable.Schema
+	}
+	customerJSON, err := configurationDeclarationJSON(customerSchema)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
-	if _, err = configurationcontract.ValidateSchema(exact.CustomerConfiguration, configurationSurfaceCustomer, exact.AuthorizedMethods); err != nil {
+	if _, err = configurationcontract.ValidateSchema(customerSchema, configurationSurfaceCustomer, exact.AuthorizedMethods); err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
 	interfaceCandidates, err := s.resolveCurrentInterfaceCandidates(ctx, interfaceNo, exact)
@@ -140,7 +153,7 @@ func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo stri
 	frozenRead := *readEvidence
 	frozenRead.AuthorizedMethods = append([]string(nil), readEvidence.AuthorizedMethods...)
 	return &ImportBinding{MissingConfiguration: missing, owner: s, actor: authorization.ActorUserID, interfaceNo: interfaceNo, readEvidence: frozenRead,
-		interfaceVersion: instance.Version, interfaceRevision: revision.Revision, exact: exact, product: product, customerJSON: customerJSON, interfaceCandidates: interfaceCandidates}, nil
+		interfaceVersion: instance.Version, interfaceRevision: revision.Revision, exact: exact, product: product, customerJSON: customerJSON, customerSchema: customerSchema, portable: portable, interfaceCandidates: interfaceCandidates}, nil
 }
 
 // matchesImportReadEvidence joins the resource-owned read snapshot to the
@@ -307,11 +320,16 @@ func (s *serviceImpl) WithImportBinding(ctx context.Context, prepared *ImportBin
 			_, err = s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(txCtx).Data(do.CatalogProductVersionConfiguration{
 				TenantId: idccap.DefaultTenantID, VersionNo: versionNo, InterfaceInstanceNo: prepared.interfaceNo, InterfaceConfigurationRevision: prepared.interfaceRevision,
 				ProductSchemaVersion: configurationSchemaVersion(evidence.ProductConfiguration), ProductDeclarationSnapshot: string(prepared.product.DeclarationJSON),
-				MerchantValueSnapshot: string(prepared.product.ValuesJSON), CustomerSchemaVersion: configurationSchemaVersion(evidence.CustomerConfiguration), CustomerDeclarationSnapshot: string(prepared.customerJSON),
+				MerchantValueSnapshot: string(prepared.product.ValuesJSON), CustomerSchemaVersion: configurationSchemaVersion(prepared.customerSchema), CustomerDeclarationSnapshot: string(prepared.customerJSON),
 				DeclarationDigest: configurationDigest(append(append([]byte{}, prepared.product.DeclarationJSON...), prepared.customerJSON...)), MerchantValueDigest: configurationDigest(prepared.product.ValuesJSON), Version: 1, ChangedBy: prepared.actor,
 			}).Insert()
 			if err != nil {
 				return gerror.Wrap(err, "freeze imported draft partial configuration")
+			}
+			if prepared.portable != nil {
+				if err = s.insertImportedFulfillmentPolicy(txCtx, versionNo, prepared.actor); err != nil {
+					return err
+				}
 			}
 			bound, err := s.loadBinding(txCtx, versionNo, false)
 			if err != nil {

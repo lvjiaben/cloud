@@ -16,6 +16,7 @@ func (c *ControllerV1) CustomerTagBatch(
 		Action:         customermanagement.TagBatchAction(req.Action),
 		CustomerNos:    req.CustomerNos,
 		TagNos:         req.TagNos,
+		TagNames:       req.TagNames,
 		Reason:         req.Reason,
 		IdempotencyKey: req.IdempotencyKey,
 	})

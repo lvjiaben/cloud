@@ -7,6 +7,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "@vben/common-ui";
 
 import type { VxeGridProps } from "#/adapter/vxe-table";
@@ -162,10 +164,11 @@ function setExpandOrCollapse(expand: boolean) {
   eachTreeData(tableApi.grid.getData(), (item) => (item.expand = expand));
   tableApi.grid?.setAllTreeExpand(expand);
 }
+const layoutRoot = useAdminGridLayout(tableApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true">
     <BasicTable
       class="h-full min-h-0"
       :table-title="$t('plugin.org-core.dept.tableTitle')"

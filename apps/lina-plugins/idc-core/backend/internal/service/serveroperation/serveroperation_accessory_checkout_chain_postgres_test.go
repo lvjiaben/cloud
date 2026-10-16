@@ -33,7 +33,16 @@ func (accessoryChainCustomer) CurrentCustomer(context.Context) (*identitycap.Cus
 // accessoryChainAudit records whether public checkout retained its audit call.
 type accessoryChainAudit struct{ calls int }
 
-func (audit *accessoryChainAudit) AppendBusinessTransition(context.Context, idccap.BusinessAuditTransition) error {
+func (audit *accessoryChainAudit) AppendBusinessTransition(_ context.Context, input idccap.BusinessAuditTransition) error {
+	if input.BeforeSnapshot == nil || input.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch input.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
+
 	audit.calls++
 	return nil
 }

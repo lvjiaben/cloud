@@ -1,6 +1,10 @@
 import type { LocalMessages } from '../runtime/i18n';
 
 export const contentMessages: LocalMessages = {
+  'content.action.reset': { en: 'Reset', zh: '重置' },
+  'content.action.moreFilters': { en: 'More filters', zh: '更多筛选' },
+  'content.action.lessFilters': { en: 'Fewer filters', zh: '收起筛选' },
+  'content.state.selectContent': { en: 'Select an item to view or edit it.', zh: '选择一条内容查看或编辑。' },
   'content.action.search': { en: 'Search', zh: '搜索' },
   'content.action.remove': { en: 'Remove', zh: '移除' },
   'content.audience.add': { en: 'Add', zh: '添加' },

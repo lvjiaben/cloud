@@ -38,6 +38,7 @@ test.describe("TC-4 电子合同", () => {
     await contract.goto();
 
     await expect(contract.root).toContainText("企业资料确认");
+    await expect(contract.root).toContainText("核对已有的商家名称、地区和编号。");
     await expect(contract.root).toContainText("示例 IDC 有限公司");
     await expect(contract.root).toContainText("merchant-local");
     await expect(contract.root).toContainText("可以开始");
@@ -100,6 +101,7 @@ test.describe("TC-4 电子合同", () => {
       "not connected to the merchant's Tencent eSign application",
     );
     await expect(contract.openTencentButton).toBeDisabled();
+    await expect(contract.root).toContainText("Check the existing merchant name, region and ID.");
     await expect(contract.root).not.toContainText(
       "plugin.idc-compliance",
     );

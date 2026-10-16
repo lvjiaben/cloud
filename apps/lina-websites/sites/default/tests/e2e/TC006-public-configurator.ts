@@ -151,4 +151,50 @@ test.describe("TC-6 通用公开商品配置", () => {
     await expect(policy).toContainText("需要");
     await expect(catalog.configurator).not.toContainText(/https?:\/\/|令牌|token/iu);
   });
+
+  test("TC-6g: 数量100和0原样提交且价格采用服务端结果", async ({ page }) => {
+    const schema = {
+      configurationRevision: "quantity-revision",
+      fields: [{ fieldToken: "quantity-field", type: "integer", labelZhCN: "数据盘容量", labelEnUS: "Data disk", required: true, visible: true, disabled: false, minimumInteger: "0", maximumInteger: "200" }],
+      values: [{ fieldToken: "quantity-field", type: "integer", integerValue: "100" }],
+    };
+    const quotedValues: Array<Record<string, unknown>> = [];
+    await page.route("**/managed-ssl/purchase-configuration**", async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      if (path.endsWith("/evaluate")) {
+        const body = route.request().postDataJSON();
+        const allowed = Number(body.values[0]?.integerValue) <= 200;
+        await route.fulfill({ json: { code: 0, data: { ...schema, values: body.values, valid: allowed, issues: allowed ? [] : [{ fieldToken: "quantity-field", issueCode: "out_of_range" }] } } });
+      } else if (path.endsWith("/quote")) {
+        const body = route.request().postDataJSON();
+        const value = body.values[0] as Record<string, unknown>;
+        quotedValues.push(value);
+        await route.fulfill({ json: { code: 0, data: {
+          configurationRevision: schema.configurationRevision,
+          currencyCode: "CNY",
+          terms: [{ billingTermToken: "quantity-term", labelZhCN: "月付", labelEnUS: "Monthly", minimumPurchaseCycles: 1, setupAmount: "0", status: "final", subtotalAmount: value.integerValue === "0" ? "9800" : "11800", taxAmount: "0", totalAmount: value.integerValue === "0" ? "9800" : "11800" }],
+        } } });
+      } else {
+        await route.fulfill({ json: { code: 0, data: schema } });
+      }
+    });
+    const catalog = new PublicCatalogPage(page);
+    await catalog.goto("/products/managed-ssl");
+    await expect(catalog.configurator).toContainText("数据盘容量");
+    await catalog.requestConfigurationQuote();
+    await expect(catalog.configurator).toContainText("CNY 118.00");
+    expect(quotedValues[0]).toEqual({ fieldToken: "quantity-field", type: "integer", integerValue: "100" });
+    await catalog.setConfigurationQuantity("数据盘容量", "0");
+    await expect(catalog.configurator).not.toContainText("CNY 118.00");
+    await catalog.requestConfigurationQuote();
+    await expect(catalog.configurator).toContainText("CNY 98.00");
+    expect(quotedValues.at(-1)).toEqual({ fieldToken: "quantity-field", type: "integer", integerValue: "0" });
+    await capturePublicScreenshot(page, "quantity-zero-quote");
+    await catalog.setConfigurationQuantity("数据盘容量", "201");
+    await expect(catalog.configurator.getByRole("button", { name: "查看准确价格" })).toBeDisabled();
+    await expect(catalog.configurator).toContainText("请检查标出的配置后再查看价格。");
+    await expect(catalog.configurator).not.toContainText("CNY 98.00");
+    expect(quotedValues).toHaveLength(2);
+    await capturePublicScreenshot(page, "quantity-out-of-range");
+  });
 });

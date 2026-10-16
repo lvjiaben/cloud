@@ -145,6 +145,10 @@ func (s *batchManagementImpl) executeBatchClassification(ctx context.Context, ba
 	}
 	operationNo, _ := deterministicReference("sbc_", struct{ BatchNo, ServiceNo string }{batch.BatchNo, item.ServiceNo})
 	err := s.management.directory.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		var before string
+		if err := s.management.directory.database.GetScan(ctx, &before, `SELECT classification_no FROM plugin_idc_core_server_service_classification WHERE tenant_id=0 AND service_no=? AND customer_no=? FOR UPDATE`, item.ServiceNo, item.CustomerNo); err != nil {
+			return err
+		}
 		result, err := s.management.directory.database.Exec(ctx, `INSERT INTO plugin_idc_core_server_service_classification
 (tenant_id,service_no,customer_no,classification_no,assigned_by,created_at,updated_at)
 SELECT 0,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP
@@ -160,7 +164,7 @@ customer_no=EXCLUDED.customer_no,assigned_by=EXCLUDED.assigned_by,updated_at=CUR
 		if countErr != nil || affected != 1 {
 			return bizerr.NewCode(CodeServerBatchConflict)
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"classification_no": before},
 			IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
 			OperationCode: "server.batch.classification_set", TargetType: "server_service",
 			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: "succeeded",
@@ -182,6 +186,10 @@ func (s *batchManagementImpl) executeBatchTag(ctx context.Context, batch *Servic
 	}
 	operationNo, _ := deterministicReference("sbo_", struct{ BatchNo, ServiceNo string }{batch.BatchNo, item.ServiceNo})
 	err := s.management.directory.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		var tagCount int
+		if err := s.management.directory.database.GetScan(ctx, &tagCount, `SELECT COUNT(1) FROM plugin_idc_core_server_service_tag WHERE tenant_id=0 AND service_no=? AND customer_no=? AND tag_code=?`, item.ServiceNo, item.CustomerNo, parameters.Tag); err != nil {
+			return err
+		}
 		if batch.Action == BatchActionTagAdd {
 			_, err := s.management.directory.database.Exec(ctx, `INSERT INTO plugin_idc_core_server_service_tag
 (tenant_id,service_no,customer_no,tag_code,created_by)
@@ -197,7 +205,7 @@ WHERE tenant_id=0 AND service_no=? AND customer_no=? AND tag_code=?`, item.Servi
 				return err
 			}
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"tag": parameters.Tag, "present": tagCount > 0},
 			IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
 			OperationCode: "server.batch." + string(batch.Action), TargetType: "server_service",
 			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: "succeeded",
@@ -240,7 +248,7 @@ WHERE tenant_id=0 AND created_by=? AND service_no=? AND idempotency_digest=?`, a
 			}
 			return nil
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"note_no": ""},
 			IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
 			OperationCode: "server.batch.note_append", TargetType: "server_service",
 			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: "succeeded",
@@ -266,26 +274,32 @@ ORDER BY role.id LIMIT 1`, item.CustomerNo)
 		return "", "", bizerr.NewCode(CodeServerBatchUnavailable)
 	}
 	correlationNo, _ := deterministicReference("sbr_", struct{ BatchNo, ServiceNo string }{batch.BatchNo, item.ServiceNo})
-	receipt, err := s.notifications.Enqueue(ctx, notificationcap.EventRequest{
-		EventCode: "service.renewal.manual_reminder",
-		Recipient: notificationcap.Recipient{Kind: notificationcap.RecipientCustomerContact,
-			CustomerNo: item.CustomerNo, ContactNo: contact.ContactNo},
-		BusinessObjectType: notificationcap.BusinessObjectService,
-		BusinessObjectNo:   item.ServiceNo, BusinessObjectVersion: item.ServiceVersion,
-		Variables: map[string]string{"service_no": item.ServiceNo,
-			"expires_at": formatOptionalTime(item.EntitlementExpiresAt)},
-		CorrelationNo: correlationNo, IdempotencyKey: correlationNo,
-	})
-	if err != nil || receipt.EventNo == "" {
-		return "", "", err
-	}
-	err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
-		IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
-		OperationCode: "server.batch.renewal_reminder", TargetType: "server_service",
-		TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: "submitted",
-		ReasonCode: "staff_batch_renewal_reminder", RiskCode: "low",
-		RequiredPermission: PermissionServerBatchSafe, CorrelationNo: correlationNo,
-		AfterSnapshot: map[string]any{"notification_event_no": receipt.EventNo},
+	var receipt notificationcap.EventReceipt
+	err = s.management.directory.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		receipt, err = s.notifications.Enqueue(ctx, notificationcap.EventRequest{
+			EventCode: "service.renewal.manual_reminder",
+			Recipient: notificationcap.Recipient{Kind: notificationcap.RecipientCustomerContact,
+				CustomerNo: item.CustomerNo, ContactNo: contact.ContactNo},
+			BusinessObjectType: notificationcap.BusinessObjectService,
+			BusinessObjectNo:   item.ServiceNo, BusinessObjectVersion: item.ServiceVersion,
+			Variables: map[string]string{"service_no": item.ServiceNo,
+				"expires_at": formatOptionalTime(item.EntitlementExpiresAt)},
+			CorrelationNo: correlationNo, IdempotencyKey: correlationNo,
+		})
+		if err != nil {
+			return err
+		}
+		if receipt.EventNo == "" {
+			return bizerr.NewCode(CodeServerBatchUnavailable)
+		}
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"notification_event_no": ""},
+			IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
+			OperationCode: "server.batch.renewal_reminder", TargetType: "server_service",
+			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
+			ReasonCode: "staff_batch_renewal_reminder", RiskCode: "low",
+			RequiredPermission: PermissionServerBatchSafe, CorrelationNo: correlationNo,
+			AfterSnapshot: map[string]any{"notification_event_no": receipt.EventNo},
+		})
 	})
 	return correlationNo, receipt.EventNo, err
 }
@@ -335,7 +349,7 @@ WHERE tenant_id=0 AND service_no=? AND action_code=? AND idempotency_digest=?`, 
 		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
 			IdempotencyScope: "server.batch.item", IdempotencyKey: batch.BatchNo + ":" + item.ServiceNo,
 			OperationCode: "server.batch." + action, TargetType: "server_service",
-			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: "submitted",
+			TargetNo: item.ServiceNo, CustomerNo: item.CustomerNo, ResultCode: idccap.BusinessAuditResultSucceeded,
 			ReasonCode: "staff_batch_lifecycle", RiskCode: "high",
 			RequiredPermission: PermissionServerBatchDangerous, CorrelationNo: taskNo,
 			BeforeSnapshot: map[string]any{"runtime_status": item.RuntimeStatus, "service_version": item.ServiceVersion},

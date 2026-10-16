@@ -72,8 +72,14 @@ func (p CatalogPage) Validate(q CatalogQuery) error {
 }
 
 func (d CatalogDetail) Validate(q CatalogProductQuery) error {
+	if d.ImportSnapshot != nil && (d.ImportSnapshot.Validate() != nil || d.ImportSnapshot.Product.PublicSlug != q.Reference) {
+		return gerror.New("upstream import snapshot is invalid")
+	}
+	if d.PeerPurchase != nil && (d.PeerPurchase.Validate() != nil || d.PeerPurchase.Product.PublicSlug != q.Reference) {
+		return gerror.New("upstream peer product snapshot is invalid")
+	}
 	if q.Validate() != nil || d.Product.Reference != q.Reference || !validCatalogProduct(d.Product) ||
-		!validCatalogPrices(d.BasePrices) || len(d.Options) > 128 || (d.PriceScheduleComplete && len(d.BasePrices) == 0) {
+		!validCatalogPrices(d.BasePrices) || len(d.Options) > 128 || (d.ImportSnapshot == nil && d.PriceScheduleComplete && len(d.BasePrices) == 0) {
 		return gerror.New("upstream catalog detail is invalid")
 	}
 	if err := validCatalogConfiguration(d.ProductConfiguration); err != nil {

@@ -56,6 +56,7 @@ type CommerceCartItemRemoveRes struct {
 }
 
 type CommerceQuoteCreateReq struct {
+	TargetEntitlementNo string `json:"targetEntitlementNo" v:"max-length:128" dc:"Optional owned active service number for add-on purchase; all cart products must be allowed add-ons" eg:"ent_service"`
 	g.Meta              `path:"/account/commerce/quotes" method:"post" tags:"IDC Customer Commerce" summary:"Create final shopping cart quote" dc:"Revalidate the complete customer cart and persist one immutable expiring final quote."`
 	ExpectedCartVersion int64    `json:"expectedCartVersion" v:"required|min:1" dc:"Expected optimistic cart version"`
 	AssetNumbers        []string `json:"assetNumbers" dc:"Optional selected customer marketing asset numbers; collection bounds are enforced by the quote service"`

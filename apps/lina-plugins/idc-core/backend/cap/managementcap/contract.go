@@ -35,7 +35,7 @@ type SensitiveAccessBinding struct {
 }
 
 // SensitiveAccessContext is the opaque, short-lived context returned only
-// after the current direct staff session has a sufficiently recent full login.
+// after the current direct staff session has been verified as active.
 type SensitiveAccessContext struct {
 	Token     string
 	ExpiresAt time.Time
@@ -48,7 +48,7 @@ type SensitiveAccessProof struct {
 	ExpiresAt   time.Time
 }
 
-// SensitiveAccessAuthenticator exposes the core-owned recent-login and durable
+// SensitiveAccessAuthenticator exposes the core-owned active-session and durable
 // replay fence without leaking the core implementation into source plugins.
 type SensitiveAccessAuthenticator interface {
 	IssueSensitiveAccess(

@@ -11,6 +11,7 @@ import (
 	"lina-plugin-idc-compliance/backend/internal/model/do"
 	"lina-plugin-idc-compliance/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/identitycap"
 )
 
 // Current returns the latest local case and attempt owned by the authenticated customer.
@@ -21,6 +22,13 @@ func (s *serviceImpl) Current(ctx context.Context) (*Verification, error) {
 	subject, err := s.identities.CurrentPersonal(ctx)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeNotAccessible)
+	}
+	if subject.ManualVerification {
+		status := StatusUnverified
+		if subject.VerificationStatus == identitycap.StatusVerified {
+			status = StatusVerified
+		}
+		return &Verification{Status: status}, nil
 	}
 	var caseRow *entity.VerificationCase
 	caseColumns := dao.VerificationCase.Columns()

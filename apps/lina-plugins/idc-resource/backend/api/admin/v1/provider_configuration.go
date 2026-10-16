@@ -44,6 +44,7 @@ type ProviderCandidateItem struct {
 }
 
 type ProviderChannelItem struct {
+	TLSCertificateSHA256      string                       `json:"tlsCertificateSha256" dc:"Optional exact trusted supplier leaf certificate SHA-256; empty uses system trust" eg:""`
 	ChannelNo                 string                       `json:"channelNo"`
 	InterfaceInstanceNo       string                       `json:"interfaceInstanceNo" dc:"Stable product-automation interface number bound to this supplier channel" eg:"pfi_0123456789abcdef0123456789abcdef"`
 	ProviderID                string                       `json:"providerId"`
@@ -86,11 +87,12 @@ type ResourcePoolItem struct {
 }
 
 type ProviderChannelCreateReq struct {
-	g.Meta            `path:"/admin/resource/provider-configurations/channels" method:"post" tags:"IDC Resource Channels" summary:"Create a Provider channel" permission:"idc:admin:resource:configuration:write"`
-	DisplayName       string         `json:"displayName" v:"required|max-length:128"`
-	Endpoint          string         `json:"endpoint" v:"required|max-length:2048"`
-	ProviderPluginID  string         `json:"providerPluginId" v:"required|max-length:128"`
-	NonSecretSettings map[string]any `json:"nonSecretSettings" dc:"Structured non-confidential connector settings declared by the selected release"`
+	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Optional exact trusted leaf certificate fingerprint; empty uses system trust" eg:""`
+	g.Meta               `path:"/admin/resource/provider-configurations/channels" method:"post" tags:"IDC Resource Channels" summary:"Create a Provider channel" permission:"idc:admin:resource:configuration:write"`
+	DisplayName          string         `json:"displayName" v:"required|max-length:128"`
+	Endpoint             string         `json:"endpoint" v:"required|max-length:2048"`
+	ProviderPluginID     string         `json:"providerPluginId" v:"required|max-length:128"`
+	NonSecretSettings    map[string]any `json:"nonSecretSettings" dc:"Structured non-confidential connector settings declared by the selected release"`
 }
 
 type ProviderChannelCreateRes struct {
@@ -98,13 +100,15 @@ type ProviderChannelCreateRes struct {
 }
 
 type ProviderChannelUpdateReq struct {
-	g.Meta            `path:"/admin/resource/provider-configurations/channels/{channelNo}" method:"put" tags:"IDC Resource Channels" summary:"Update a Provider channel" permission:"idc:admin:resource:configuration:write"`
-	ChannelNo         string         `json:"channelNo" in:"path" v:"required|max-length:64"`
-	DisplayName       string         `json:"displayName" v:"required|max-length:128"`
-	Endpoint          string         `json:"endpoint" v:"required|max-length:2048"`
-	Status            string         `json:"status" v:"required|in:disabled,enabled,maintenance,deleted"`
-	Version           int64          `json:"version" v:"required|min:1"`
-	NonSecretSettings map[string]any `json:"nonSecretSettings" dc:"Structured non-confidential connector settings declared by the frozen release"`
+	RefreshProvider      bool    `json:"refreshProvider" dc:"Explicitly refresh this unused interface to its enabled connector release; retains endpoint, certificate pin, secrets and status; defaults to false" eg:"false"`
+	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Trusted leaf SHA-256; omit to retain for the same endpoint, empty clears trust" eg:""`
+	g.Meta               `path:"/admin/resource/provider-configurations/channels/{channelNo}" method:"put" tags:"IDC Resource Channels" summary:"Update a Provider channel" permission:"idc:admin:resource:configuration:write"`
+	ChannelNo            string         `json:"channelNo" in:"path" v:"required|max-length:64"`
+	DisplayName          string         `json:"displayName" v:"required|max-length:128"`
+	Endpoint             string         `json:"endpoint" v:"required|max-length:2048"`
+	Status               string         `json:"status" v:"required|in:disabled,enabled,maintenance,deleted"`
+	Version              int64          `json:"version" v:"required|min:1"`
+	NonSecretSettings    map[string]any `json:"nonSecretSettings" dc:"Structured non-confidential connector settings declared by the frozen release"`
 }
 
 type ProviderChannelUpdateRes struct {
@@ -118,7 +122,7 @@ type ProviderChannelVerificationCreateReq struct {
 
 type ProviderChannelVerificationCreateRes struct {
 	Verified   bool   `json:"verified" dc:"Whether the authenticated upstream check completed successfully"`
-	StatusCode string `json:"statusCode" dc:"Stable non-sensitive verification outcome code"`
+	StatusCode string `json:"statusCode" dc:"Verification outcome: verified, configuration_incomplete, verification_unsupported, tls_untrusted, timeout, dns, network, endpoint_not_found, invalid_response, auth_rejected, local_auth_policy, or connection_failed"`
 	ObservedAt int64  `json:"observedAt" dc:"Verification observation time in Unix milliseconds"`
 }
 

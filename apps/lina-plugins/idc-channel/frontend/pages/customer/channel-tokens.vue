@@ -1,357 +1,286 @@
 <script lang="ts">
 export const pluginPageMeta = {
-  routePath: 'channel-tokens',
-  title: 'Channel access tokens',
+  routePath: "/account/plugins/idc-channel/open-platform",
+  title: "plugin.idc-channel.workspace.platform.title",
 };
 </script>
-
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-
-import { Page } from '@vben/common-ui';
-
+import {
+  computed,
+  onActivated,
+  onDeactivated,
+  onBeforeUnmount,
+  onMounted,
+  nextTick,
+  ref,
+} from "vue";
+import { Page, useVbenModal } from "@vben/common-ui";
 import {
   Alert,
   Button,
   Card,
-  Col,
-  Empty,
-  Row,
-  Space,
+  Descriptions,
+  DescriptionsItem,
   Spin,
+  Tabs,
+  TabPane,
   Tag,
   message,
-} from 'ant-design-vue';
+} from "ant-design-vue";
+import { useVbenVxeGrid, type VxeGridProps } from "#/adapter/vxe-table";
+import { pluginApiPath, requestClient } from "#/api/request";
+import { channelText as t } from "../channel-i18n";
+import OpenApiGuide from "../components/open-api-guide.vue";
 
-import { useVbenForm, z } from '#/adapter/form';
-import { pluginApiPath, requestClient } from '#/api/request';
-import { $t } from '#/locales';
-
-type ChannelToken = {
-  createdAt: number;
-  expiresAt?: number;
-  id: number;
-  revokedAt?: number;
+type Overview = {
+  authorized: boolean;
+  appId: string;
+  displayName: string;
+  status: string;
+  tokenId: number;
+  canReset: boolean;
   scopes: string[];
   sourceCidrs: string[];
+  expiresAt?: number;
 };
-
-type TokenList = { list: ChannelToken[] };
-type TokenCreated = { token: string };
-
-// Resolve lazily so this page cannot call the shared request module while that
-// module is still being initialized through the authentication store.
-const apiPath = () =>
-  pluginApiPath('idc-channel', 'account/channel/tokens');
-const locale = ref(document.documentElement.lang || navigator.language || 'zh-CN');
-const isEnglish = computed(() => locale.value.toLowerCase().startsWith('en'));
-const text = (zh: string, en: string) => (isEnglish.value ? en : zh);
-const loading = ref(true);
-const submitting = ref(false);
-const blocked = ref(false);
-const tokens = ref<ChannelToken[]>([]);
-const oneTimeToken = ref('');
-const defaultScopes = [
-  'catalog.read',
-  'order.create',
-  'order.read',
-  'service.read',
-  'settlement.read',
-];
-
-function scopeOptions() {
-  return [
-    { label: text('查看可售商品', 'View catalog'), value: 'catalog.read' },
-    { label: text('创建订单', 'Create orders'), value: 'order.create' },
-    { label: text('查看订单', 'View orders'), value: 'order.read' },
-    { label: text('查看服务', 'View services'), value: 'service.read' },
-    { label: text('查看结算', 'View settlement'), value: 'settlement.read' },
-  ];
-}
-
-function tokenFormSchema() {
-  return [
-    {
-      component: 'CheckboxGroup' as const,
-      componentProps: { options: scopeOptions() },
-      defaultValue: defaultScopes,
-      fieldName: 'scopes',
-      label: text('允许的操作', 'Allowed actions'),
-      rules: z.array(z.string()).min(1),
-    },
-    {
-      component: 'Textarea' as const,
-      componentProps: { rows: 3 },
-      defaultValue: '',
-      fieldName: 'sourceCidrs',
-      label: text('来源网段（每行一个，可留空）', 'Source CIDRs (one per line, optional)'),
-    },
-    {
-      component: 'DatePicker' as const,
-      componentProps: {
-        format: 'YYYY-MM-DD HH:mm',
-        showTime: true,
-        valueFormat: 'x',
-      },
-      defaultValue: '',
-      fieldName: 'expiresAt',
-      label: text('到期时间（可留空）', 'Expiry time (optional)'),
-    },
-  ];
-}
-
-const [TokenForm, tokenFormApi] = useVbenForm({
-  commonConfig: {
-    componentProps: { class: 'w-full' },
-    formItemClass: 'col-span-1',
-  },
-  layout: 'vertical',
-  schema: tokenFormSchema(),
-  showDefaultActions: false,
-  wrapperClass: 'grid-cols-1',
-});
-
-const splitLines = (value: string) =>
-  value
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
+type Call = {
+  id: number;
+  method: string;
+  operation: string;
+  succeeded: boolean;
+  durationMillis: number;
+  createdAt: number;
+};
+const overview = ref<Overview>();
+const loading = ref(false);
+const failed = ref(false);
+const busy = ref(false);
+const secret = ref("");
+const tab = ref("info");
+const api = () => pluginApiPath("idc-channel", "account/open-platform");
+const address = computed(() =>
+  new URL(
+    pluginApiPath("idc-channel", ""),
+    window.location.origin,
+  ).href.replace(/\/$/, ""),
+);
 const formatTime = (value?: number) =>
-  value ? new Date(value).toLocaleString(locale.value) : text('不限', 'No limit');
-
-function formatScopes(scopes: string[]) {
-  const labels = new Map(scopeOptions().map((item) => [item.value, item.label]));
-  const values = scopes.map((scope) => labels.get(scope) ?? text('其他已授权操作', 'Other authorized action'));
-  return [...new Set(values)].join(text('、', ', '));
+  value ? new Date(value).toLocaleString() : t("platform.unlimited");
+const gridOptions: VxeGridProps<Call> = {
+  columns: [],
+  height: 440,
+  rowConfig: { keyField: "id" },
+  pagerConfig: {},
+  proxyConfig: {
+    autoLoad: true,
+    ajax: {
+      query: async ({ page }) => {
+        const result = await requestClient.get<{ list: Call[]; total: number }>(
+          `${api()}/calls`,
+          { params: { page: page.currentPage, pageSize: page.pageSize } },
+        );
+        return { items: result.list, total: result.total };
+      },
+    },
+  },
+};
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+function columns() {
+  return [
+    {
+      field: "createdAt",
+      title: t("platform.time"),
+      width: 190,
+      formatter: ({ cellValue }: { cellValue: number }) =>
+        formatTime(cellValue),
+    },
+    { field: "method", title: t("platform.method"), width: 110 },
+    { field: "operation", title: t("platform.operation"), minWidth: 200 },
+    {
+      field: "succeeded",
+      title: t("platform.result"),
+      width: 100,
+      slots: { default: "result" },
+    },
+    { field: "durationMillis", title: t("platform.duration"), width: 150 },
+  ];
 }
-
-async function loadTokens() {
+async function load() {
+  if (loading.value) return;
   loading.value = true;
   try {
-    const result = await requestClient.get<TokenList>(apiPath(), {
-      silentErrorMessage: true,
-    });
-    tokens.value = result.list ?? [];
-    blocked.value = false;
+    overview.value = await requestClient.get<Overview>(api());
+    failed.value = false;
   } catch {
-    blocked.value = true;
-    tokens.value = [];
+    overview.value = undefined;
+    failed.value = true;
   } finally {
     loading.value = false;
   }
 }
-
-async function createToken() {
-  const { valid } = await tokenFormApi.validate();
-  if (!valid) return;
-  const form = await tokenFormApi.getValues<{
-    expiresAt?: string;
-    scopes?: string[];
-    sourceCidrs?: string;
-  }>();
-  submitting.value = true;
-  try {
-    const result = await requestClient.post<TokenCreated>(
-      apiPath(),
-      {
-        expiresAt: form.expiresAt ? Number(form.expiresAt) : undefined,
-        scopes: form.scopes ?? [],
-        sourceCidrs: splitLines(form.sourceCidrs ?? ''),
-      },
-      { silentErrorMessage: true },
-    );
-    oneTimeToken.value = result.token;
-    message.success($t('plugin.idc-channel.customerTokenCreated'));
-    await loadTokens();
-  } catch {
-    message.error($t('plugin.idc-channel.customerTokenCreateFailed'));
-  } finally {
-    submitting.value = false;
-  }
-}
-
-async function revokeToken(id: number) {
-  try {
-    await requestClient.delete(`${apiPath()}/${id}`, {
-      silentErrorMessage: true,
-    });
-    message.success($t('plugin.idc-channel.customerTokenRevoked'));
-    await loadTokens();
-  } catch {
-    message.error($t('plugin.idc-channel.customerTokenRevokeFailed'));
-  }
-}
-
-const localeObserver = new MutationObserver(() => {
-  locale.value = document.documentElement.lang || 'zh-CN';
-  void tokenFormApi.setState({ schema: tokenFormSchema() });
+const [ResetModal, resetApi] = useVbenModal({
+  onConfirm: async () => {
+    if (busy.value || !overview.value?.canReset) return;
+    busy.value = true;
+    resetApi.setState({ confirmLoading: true });
+    try {
+      const result = await requestClient.post<{ secret: string }>(
+        `${api()}/secrets`,
+        { tokenId: overview.value.tokenId },
+      );
+      secret.value = result.secret;
+      resetApi.close();
+      secretApi.open();
+      await load();
+    } catch {
+      message.error(t("platform.resetFailed"));
+      await load();
+    } finally {
+      busy.value = false;
+      resetApi.setState({ confirmLoading: false });
+    }
+  },
 });
-
+const [SecretModal, secretApi] = useVbenModal({
+  onClosed: () => {
+    secret.value = "";
+  },
+});
+async function copy(value: string) {
+  try {
+    await navigator.clipboard.writeText(value);
+    message.success(t("platform.copied"));
+  } catch {
+    message.error(t("platform.copyFailed"));
+  }
+}
+async function changeTab(value: string | number) {
+  if (value === "calls") {
+    gridApi.setGridOptions({ columns: columns() });
+    await nextTick();
+    await gridApi.query();
+  }
+}
 onMounted(() => {
-  localeObserver.observe(document.documentElement, {
-    attributeFilter: ['lang'],
-    attributes: true,
-  });
-  void loadTokens();
+  void load();
 });
-onBeforeUnmount(() => localeObserver.disconnect());
+onActivated(() => {
+  void load();
+});
+onDeactivated(() => {
+  secret.value = "";
+  secretApi.close();
+  resetApi.close();
+});
+onBeforeUnmount(() => {
+  secret.value = "";
+});
 </script>
-
 <template>
-  <Page :auto-content-height="true" data-testid="channel-customer-token-page">
-    <Card :bordered="false" class="channel-token-page">
-      <div class="page-heading">
-        <div>
-          <h1>{{ text('渠道访问令牌', 'Channel access tokens') }}</h1>
-          <p>
-            {{
-              text(
-                '仅商家已批准且完成实名的企业渠道可用。令牌原文只在创建时显示一次。',
-                'Available only to merchant-approved, identity-verified enterprise channels. A token is shown only once when created.',
-              )
-            }}
-          </p>
-        </div>
-        <Button @click="loadTokens">{{ text('刷新', 'Refresh') }}</Button>
-      </div>
-
+  <Page data-testid="open-platform-page">
+    <div class="mb-4 flex items-center justify-between">
+      <h1 class="text-xl font-semibold">{{ t("platform.title") }}</h1>
+      <Button :loading="loading" @click="load">{{
+        t("platform.refresh")
+      }}</Button>
+    </div>
+    <Spin :spinning="loading">
+      <Alert v-if="failed" type="error" :message="t('platform.loadFailed')" />
       <Alert
-        v-if="blocked"
-        show-icon
-        type="warning"
-        :message="text('此页面只对获批企业渠道开放', 'Available only to approved enterprise channels')"
-        :description="text('普通个人、普通企业、待激活客户和未获批渠道不能创建或查看渠道令牌。', 'Individuals, ordinary enterprises, pending customers, and unapproved channels cannot manage channel tokens.')"
+        v-else-if="overview && !overview.authorized"
+        type="info"
+        :message="t('platform.none')"
       />
-
-      <Spin v-else :spinning="loading">
-        <Row :gutter="16">
-          <Col :lg="12" :xs="24">
-            <Card size="small" :title="text('创建令牌', 'Create token')">
-              <TokenForm />
-              <Button data-testid="create-own-token" html-type="button" type="primary" :loading="submitting" @click="createToken">
-                {{ text('创建并显示一次', 'Create and show once') }}
-              </Button>
-              <div class="secret-box" data-testid="one-time-token">
-                {{ oneTimeToken || text('创建后在这里显示一次', 'The new token will appear here once') }}
-              </div>
-            </Card>
-          </Col>
-
-          <Col :lg="12" :xs="24">
-            <Card size="small" :title="text('现有令牌', 'Existing tokens')">
-              <p class="muted">{{ text('这里不会回显令牌原文。', 'Stored token values are never shown again.') }}</p>
-              <Empty v-if="!tokens.length" :description="text('暂无令牌', 'No tokens')" />
-              <Space v-else direction="vertical" size="middle" class="token-list">
-                <div v-for="token in tokens" :key="token.id" class="token-item">
-                  <div class="token-item__head">
-                    <strong>{{ text('访问令牌', 'Access token') }}</strong>
-                    <Tag :color="token.revokedAt ? 'default' : 'success'">
-                      {{ token.revokedAt ? text('已撤销', 'Revoked') : text('有效', 'Active') }}
-                    </Tag>
-                  </div>
-                  <div>{{ text('允许的操作', 'Allowed actions') }}：{{ formatScopes(token.scopes) }}</div>
-                  <div>{{ text('来源', 'Sources') }}：{{ token.sourceCidrs.join(', ') || text('不限', 'No limit') }}</div>
-                  <div>{{ text('创建', 'Created') }}：{{ formatTime(token.createdAt) }}</div>
-                  <div>{{ text('到期', 'Expires') }}：{{ formatTime(token.expiresAt) }}</div>
-                  <Button v-if="!token.revokedAt" danger size="small" :data-testid="`revoke-own-token-${token.id}`" @click="revokeToken(token.id)">
-                    {{ text('撤销', 'Revoke') }}
-                  </Button>
-                </div>
-              </Space>
-            </Card>
-          </Col>
-        </Row>
-      </Spin>
-    </Card>
+      <Tabs
+        v-else-if="overview?.authorized"
+        v-model:active-key="tab"
+        @change="changeTab"
+      >
+        <TabPane key="info" :tab="t('platform.info')">
+          <Card>
+            <Descriptions :column="1" bordered>
+              <DescriptionsItem :label="t('platform.address')"
+                ><code class="break-all">{{ address }}</code
+                ><Button size="small" class="ml-3" @click="copy(address)">{{
+                  t("platform.copy")
+                }}</Button></DescriptionsItem
+              >
+              <DescriptionsItem label="AppID"
+                ><code data-testid="platform-app-id">{{ overview.appId }}</code
+                ><Button
+                  size="small"
+                  class="ml-3"
+                  @click="copy(overview.appId)"
+                  >{{ t("platform.copy") }}</Button
+                ></DescriptionsItem
+              >
+              <DescriptionsItem :label="t('platform.status')"
+                ><Tag :color="overview.canReset ? 'success' : 'warning'">{{
+                  t(`platform.${overview.status}`)
+                }}</Tag></DescriptionsItem
+              >
+              <DescriptionsItem :label="t('platform.scopes')"
+                ><Tag v-for="scope in overview.scopes" :key="scope">{{
+                  scope
+                }}</Tag></DescriptionsItem
+              >
+              <DescriptionsItem :label="t('platform.sources')">{{
+                overview.sourceCidrs.join(", ") || t("platform.unlimited")
+              }}</DescriptionsItem>
+              <DescriptionsItem :label="t('platform.expiry')">{{
+                formatTime(overview.expiresAt)
+              }}</DescriptionsItem>
+              <DescriptionsItem :label="t('platform.secret')"
+                ><p>••••••••••••••••</p>
+                <p class="my-2 text-muted-foreground">
+                  {{ t("platform.secretNote") }}
+                </p>
+                <Button
+                  data-testid="platform-reset"
+                  :disabled="!overview.canReset"
+                  type="primary"
+                  @click="resetApi.open()"
+                  >{{ t("platform.reset") }}</Button
+                ></DescriptionsItem
+              >
+            </Descriptions>
+            <Alert
+              v-if="!overview.canReset"
+              class="mt-4"
+              type="warning"
+              :message="t('platform.disabled')"
+            />
+          </Card>
+        </TabPane>
+        <TabPane key="docs" :tab="t('platform.docs')"><OpenApiGuide /></TabPane>
+        <TabPane key="calls" :tab="t('platform.calls')"
+          ><Alert
+            class="mb-3"
+            type="info"
+            :message="t('platform.historyNote')"
+          /><Grid
+            ><template #result="{ row }"
+              ><Tag :color="row.succeeded ? 'success' : 'error'">{{
+                t(row.succeeded ? "platform.success" : "platform.failure")
+              }}</Tag></template
+            ></Grid
+          ></TabPane
+        >
+      </Tabs>
+    </Spin>
+    <ResetModal :title="t('platform.reset')"
+      ><p>{{ t("platform.resetTitle") }}</p>
+      <p class="mt-3">{{ t("platform.resetNote") }}</p></ResetModal
+    >
+    <SecretModal :title="t('platform.newSecret')" :show-confirm-button="false"
+      ><Alert type="warning" :message="t('platform.secretNote')" /><code
+        data-testid="platform-new-secret"
+        class="my-4 block break-all rounded bg-muted p-4"
+        >{{ secret }}</code
+      ><Button @click="copy(secret)">{{ t("platform.copy") }}</Button
+      ><Button class="ml-3" type="primary" @click="secretApi.close()">{{
+        t("platform.saved")
+      }}</Button></SecretModal
+    >
   </Page>
 </template>
-
-<style scoped>
-.channel-token-page {
-  min-width: 0;
-  min-height: 100%;
-}
-
-.channel-token-page :deep(.ant-card-body) {
-  padding: 16px;
-}
-
-.channel-token-page :deep(.ant-row) {
-  row-gap: 16px;
-}
-
-.channel-token-page :deep(.ant-col) {
-  min-width: 0;
-}
-
-.page-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.page-heading > div {
-  min-width: 0;
-}
-
-.page-heading h1 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.page-heading p,
-.muted,
-.token-item div {
-  color: hsl(var(--muted-foreground));
-}
-
-.page-heading p,
-.muted {
-  margin: 0;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.secret-box {
-  min-height: 46px;
-  margin-top: 16px;
-  padding: 11px 12px;
-  border-radius: 0;
-  background: hsl(var(--muted));
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  overflow-wrap: anywhere;
-}
-
-.token-list {
-  width: 100%;
-}
-
-.token-item {
-  display: grid;
-  min-width: 0;
-  gap: 8px;
-  padding: 12px 16px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 0;
-  overflow-wrap: anywhere;
-}
-
-.token-item__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-}
-
-@media (max-width: 991px) {
-  .page-heading {
-    flex-direction: column;
-  }
-}
-</style>

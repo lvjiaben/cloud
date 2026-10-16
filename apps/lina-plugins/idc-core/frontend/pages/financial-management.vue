@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "#/adapter/form";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 
@@ -31,6 +33,8 @@ import {
 } from "vue";
 
 import { useAccess } from "./plugin-access";
+import { useRoute } from "vue-router";
+import OperationsDetailPanel from "./components/operations-detail-panel.vue";
 import { Page } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
 
@@ -38,6 +42,8 @@ import {
   Alert,
   Button,
   Card,
+  Collapse,
+  CollapsePanel,
   Descriptions,
   DescriptionsItem,
   Form,
@@ -91,6 +97,8 @@ type ActionKind = "manual_receipt" | "invoice_waiver" | "policy" | "review";
 type DetailKind = "adjustment" | "invoice" | "transaction";
 
 const { hasAccessByCodes } = useAccess();
+const route = useRoute();
+const operationsDetail = computed(() => route.query.operationsMetric === 'income');
 const FinanceWorkspace = defineAsyncComponent(
   () => import("./components/credit-management-workspace.vue"),
 );
@@ -256,6 +264,8 @@ const detailOpen = ref(false);
 const detailLoading = ref(false);
 const detailError = ref("");
 const detailKind = ref<DetailKind>("invoice");
+const detailReference = ref("");
+let detailGeneration = 0;
 const invoiceDetail = ref<FinancialInvoiceDetail>();
 const transactionDetail = ref<FinancialTransactionDetail>();
 const adjustmentDetail = ref<FinancialAdjustmentDetail>();
@@ -421,6 +431,8 @@ function customerField() {
     component: "Select",
     componentProps: {
       allowClear: true,
+      dropdownMatchSelectWidth: false,
+      popupClassName: "plugin-customer-options",
       filterOption: false,
       loading: customerLoading.value,
       onSearch: searchCustomers,
@@ -428,7 +440,7 @@ function customerField() {
       showSearch: true,
     },
     fieldName: "customerNo",
-    label: t("table.customer"),
+    label: t("filter.customer"),
   };
 }
 const invoiceStatusOptions = computed(() =>
@@ -532,13 +544,17 @@ const [InvoiceGrid, invoiceGridApi] = useVbenVxeGrid({
     handleReset: searchInvoices,
     handleSubmit: searchInvoices,
     schema: invoiceSearchSchema(),
-    wrapperClass: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: invoiceColumns(),
     data: [],
     emptyRender: { name: "Empty" },
-    height: 420,
+    height: "100%",
     pagerConfig: { enabled: true, currentPage: 1, pageSize: 10, total: 0 },
     rowConfig: { keyField: "invoiceNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true },
@@ -559,13 +575,17 @@ const [TransactionGrid, transactionGridApi] = useVbenVxeGrid({
     handleReset: searchTransactions,
     handleSubmit: searchTransactions,
     schema: transactionSearchSchema(),
-    wrapperClass: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: transactionColumns(),
     data: [],
     emptyRender: { name: "Empty" },
-    height: 420,
+    height: "100%",
     pagerConfig: { enabled: true, currentPage: 1, pageSize: 10, total: 0 },
     rowConfig: { keyField: "transactionNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true },
@@ -586,13 +606,17 @@ const [AdjustmentGrid, adjustmentGridApi] = useVbenVxeGrid({
     handleReset: searchAdjustments,
     handleSubmit: searchAdjustments,
     schema: adjustmentSearchSchema(),
-    wrapperClass: "grid-cols-1 md:grid-cols-2 xl:grid-cols-4",
+    wrapperClass: "plugin-admin-search",
+    layout: "inline",
+    actionLayout: "inline",
+    actionPosition: "left",
+    showCollapseButton: false,
   },
   gridOptions: {
     columns: adjustmentColumns(),
     data: [],
     emptyRender: { name: "Empty" },
-    height: 420,
+    height: "100%",
     pagerConfig: { enabled: true, currentPage: 1, pageSize: 10, total: 0 },
     rowConfig: { keyField: "adjustmentNo" },
     toolbarConfig: { custom: true, refresh: false, zoom: true },
@@ -850,6 +874,8 @@ async function searchCustomers(keyword = "") {
   customerLoading.value = true;
   try {
     customerOptions.value = await searchCustomerOptions(keyword);
+  } finally {
+    customerLoading.value = false;
     // Inactive tabs have no mounted formApi yet; the grid store is available
     // before mount and applies this schema when that tab is first opened.
     invoiceGridApi.setState({ formOptions: { schema: invoiceSearchSchema() } });
@@ -859,12 +885,12 @@ async function searchCustomers(keyword = "") {
     adjustmentGridApi.setState({
       formOptions: { schema: adjustmentSearchSchema() },
     });
-  } finally {
-    customerLoading.value = false;
   }
 }
 
 async function openDetail(kind: DetailKind, reference: string) {
+  const generation = ++detailGeneration;
+  detailReference.value = reference;
   detailKind.value = kind;
   detailOpen.value = true;
   detailLoading.value = true;
@@ -873,16 +899,22 @@ async function openDetail(kind: DetailKind, reference: string) {
   transactionDetail.value = undefined;
   adjustmentDetail.value = undefined;
   try {
-    if (kind === "invoice")
-      invoiceDetail.value = await financialInvoiceDetail(reference);
-    if (kind === "transaction")
-      transactionDetail.value = await financialTransactionDetail(reference);
-    if (kind === "adjustment")
-      adjustmentDetail.value = await financialAdjustmentDetail(reference);
+    if (kind === "invoice") {
+      const result = await financialInvoiceDetail(reference);
+      if (generation === detailGeneration) invoiceDetail.value = result;
+    }
+    if (kind === "transaction") {
+      const result = await financialTransactionDetail(reference);
+      if (generation === detailGeneration) transactionDetail.value = result;
+    }
+    if (kind === "adjustment") {
+      const result = await financialAdjustmentDetail(reference);
+      if (generation === detailGeneration) adjustmentDetail.value = result;
+    }
   } catch {
-    detailError.value = t("detail.loadFailed");
+    if (generation === detailGeneration) detailError.value = t("detail.loadFailed");
   } finally {
-    detailLoading.value = false;
+    if (generation === detailGeneration) detailLoading.value = false;
   }
 }
 
@@ -1014,7 +1046,10 @@ async function submitAction() {
 
 const actionTitle = computed(() => t(`action.${actionKind.value}.title`));
 
+watch(detailOpen, open => { if (!open) detailGeneration += 1; });
+
 onBeforeUnmount(() => {
+  detailGeneration += 1;
   invoiceSequence += 1;
   transactionSequence += 1;
   adjustmentSequence += 1;
@@ -1023,17 +1058,36 @@ onBeforeUnmount(() => {
   adjustmentPagination.invalidate();
 });
 
-onMounted(() => {
-  void searchCustomers();
-  void Promise.all([loadOverview(), loadInvoices()]);
+function openRequestedInvoice() {
+  const reference = route.query.invoiceNo;
+  if (route.path.endsWith("/idc/finance") && typeof reference === "string" && reference.length > 0 && reference.length <= 128 &&
+      ["idc:admin:billing:invoice:list", "idc:admin:billing:invoice:query"].every(code => hasAccessByCodes([code]))) void openDetail("invoice", reference);
+}
+
+onMounted(async () => {
+  if (!operationsDetail.value) {
+    void searchCustomers();
+    await Promise.all([loadOverview(), loadInvoices()]);
+    openRequestedInvoice();
+  }
 });
+watch(() => route.query.invoiceNo, () => { if (!operationsDetail.value) openRequestedInvoice(); });
+watch(operationsDetail, async (active) => {
+  if (!active) {
+    await nextTick();
+    void searchCustomers();
+    void Promise.all([loadOverview(), loadInvoices()]);
+  }
+});
+const layoutRoot = useAdminGridLayout(invoiceGridApi, transactionGridApi, adjustmentGridApi);
 </script>
 
 <template>
-  <Page auto-content-height>
+  <Page :ref="layoutRoot" class="plugin-admin-page" auto-content-height>
+    <OperationsDetailPanel v-if="operationsDetail" :can-open="hasAccessByCodes(['idc:admin:billing:transaction:query'])" @open="openDetail('transaction', $event.id)" />
     <div class="finance-page" data-testid="financial-management-page">
-      <Card size="small" :title="t('title')">
-        <template #extra>
+      <div v-if="!operationsDetail" class="finance-page">
+      <div class="finance-heading">
           <Space>
             <Button
               v-if="canCreateReceipt"
@@ -1049,8 +1103,7 @@ onMounted(() => {
               >{{ t("action.policy.button") }}</Button
             >
           </Space>
-        </template>
-      </Card>
+      </div>
 
       <Alert
         v-if="overviewError"
@@ -1088,15 +1141,18 @@ onMounted(() => {
         </Card>
       </section>
 
-      <FinancialOperationsPanel
-        v-if="!['credit', 'refunds'].includes(activeTab)"
-        :current-filter="operationsCurrentFilter"
-        :view-code="operationsViewCode"
-        @apply-filter="applyOperationsFilter"
-      />
+      <Collapse v-if="!['credit', 'refunds'].includes(activeTab)" class="finance-tools">
+        <CollapsePanel key="tools" :header="$t('plugin.idc-core.finance.moreTools')">
+          <FinancialOperationsPanel
+            :current-filter="operationsCurrentFilter"
+            :view-code="operationsViewCode"
+            @apply-filter="applyOperationsFilter"
+          />
+        </CollapsePanel>
+      </Collapse>
 
       <Card :bordered="false" class="workspace-card">
-        <Tabs v-model:active-key="activeTab" class="finance-tabs">
+        <Tabs v-model:active-key="activeTab" class="finance-tabs plugin-admin-tabs">
           <TabPane key="invoices" :tab="t('tabs.invoices')">
             <Alert
               v-if="invoiceError"
@@ -1105,7 +1161,7 @@ onMounted(() => {
               show-icon
               type="error"
             />
-            <InvoiceGrid :loading="invoiceLoading">
+            <InvoiceGrid class="min-h-0 flex-1" :loading="invoiceLoading">
               <template #customer="{ row }">{{
                 customerDisplay(row)
               }}</template>
@@ -1136,6 +1192,7 @@ onMounted(() => {
               <template #action="{ row }"
                 ><Space
                   ><Button
+                    :data-testid="`finance-invoice-detail-${row.invoiceNo}`"
                     type="link"
                     size="small"
                     @click="openDetail('invoice', row.invoiceNo)"
@@ -1162,7 +1219,7 @@ onMounted(() => {
               show-icon
               type="error"
             />
-            <TransactionGrid :loading="transactionLoading">
+            <TransactionGrid class="min-h-0 flex-1" :loading="transactionLoading">
               <template #customer="{ row }">{{
                 row.customerDisplayName
                   ? customerDisplay(row)
@@ -1204,7 +1261,7 @@ onMounted(() => {
               show-icon
               type="error"
             />
-            <AdjustmentGrid :loading="adjustmentLoading">
+            <AdjustmentGrid class="min-h-0 flex-1" :loading="adjustmentLoading">
               <template #customer="{ row }">{{
                 customerDisplay(row)
               }}</template>
@@ -1268,6 +1325,7 @@ onMounted(() => {
         </Tabs>
       </Card>
 
+      </div>
       <VbenDrawerCompat
         v-model:open="detailOpen"
         :title="t(`detail.${detailKind}`)"
@@ -1278,7 +1336,7 @@ onMounted(() => {
           :message="detailError"
           show-icon
           type="error"
-        />
+        ><template #action><Button @click="openDetail(detailKind, detailReference)">{{ $t('plugin.idc-core.fulfillment.common.retry') }}</Button></template></Alert>
         <div v-else-if="detailLoading" class="detail-loading">
           {{ t("detail.loading") }}
         </div>
@@ -1509,18 +1567,32 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.finance-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.finance-heading h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.finance-tools { background: hsl(var(--card)); }
+.workspace-card :deep(.ant-card-body) { padding: 0; }
+.finance-tabs :deep(.ant-tabs-tabpane) { padding: 0 16px 16px; }
 .finance-page {
-  --ink: #102a2a;
+  --ink: hsl(var(--foreground));
   --mint: #25a77a;
-  --line: #dce8e4;
+  --line: hsl(var(--border));
   color: var(--ink);
-  display: grid;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
 }
+.workspace-card { flex: 1; min-height: 0; }
+.workspace-card :deep(.ant-card-body) { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.finance-tabs { flex: 1; min-height: 0; }
+.finance-tabs :deep(.ant-tabs-content-holder) { flex: 1; min-height: 0; }
+.finance-tabs :deep(.ant-tabs-content),
+.finance-tabs :deep(.ant-tabs-tabpane-active) { height: 100%; min-height: 0; display: flex; flex-direction: column; }
 .policy-button {
-  background: #7ee5c1;
-  border-color: #7ee5c1;
-  color: #103c38;
+  background: hsl(var(--card));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
   font-weight: 700;
 }
 .metric-grid {
@@ -1536,7 +1608,7 @@ onMounted(() => {
   border: 1px solid var(--line);
   border-radius: 0;
   box-shadow: none;
-  min-height: 150px;
+  min-height: 88px;
 }
 .metric-card :deep(.ant-card-body) {
   display: flex;

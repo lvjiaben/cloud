@@ -23,6 +23,7 @@ import (
 const supplierRuntimeContextTTL = 10 * time.Second
 
 type dynamicCandidateScope struct {
+	versionNo                     string
 	interfaceInstanceNo           string
 	configurationRevision         int64
 	resourceConfigurationRevision string

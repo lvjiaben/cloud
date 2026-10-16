@@ -10,7 +10,21 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
-func TestAssistedQuoteAuthorizerRequiresCreateAndCustomerQueryPermissions(t *testing.T) {
+func TestAssistedQuoteAllDataScopeDoesNotGrantWorkflowPermissions(t *testing.T) {
+	authorizer, err := NewAssistedQuoteAuthorizer(
+		riskReviewBizCtxStub{current: bizctxcap.CurrentContext{UserID: 81, TenantID: 0, DataScope: 1}},
+		riskReviewPrincipalStub{audience: &principal.Audience{UserID: 81, Code: principal.AudienceStaff, Status: principal.AudienceStatusActive}},
+		riskReviewAuthzStub{platformAdmin: true},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = authorizer.AuthorizeAssistedQuoteCreate(context.Background(), "customer-1"); !bizerr.Is(err, CodeAssistedQuoteNotAccessible) {
+		t.Fatalf("all-data role bypassed exact permissions: %v", err)
+	}
+}
+
+func TestAssistedQuoteAuthorizerRequiresCreatePermission(t *testing.T) {
 	current := riskReviewBizCtxStub{current: bizctxcap.CurrentContext{
 		UserID: 81, TenantID: 0, DataScope: 2,
 	}}
@@ -31,7 +45,7 @@ func TestAssistedQuoteAuthorizerRequiresCreateAndCustomerQueryPermissions(t *tes
 			allow: true,
 		},
 		{
-			name: "missing customer query",
+			name: "create permission alone", allow: true,
 			grants: map[authz.PermissionKey]bool{
 				authz.PermissionKey(permissionAssistedQuoteCreate): true,
 			},
@@ -63,39 +77,6 @@ func TestAssistedQuoteAuthorizerRequiresCreateAndCustomerQueryPermissions(t *tes
 				t.Fatalf("incomplete permission set allowed actor=%d err=%v", actor, authorizeErr)
 			}
 		})
-	}
-}
-
-func TestAssistedQuoteAuthorizerKeepsWorkflowPermissionsIndependent(t *testing.T) {
-	authorizer, err := NewAssistedQuoteAuthorizer(
-		riskReviewBizCtxStub{current: bizctxcap.CurrentContext{
-			UserID: 81, TenantID: 0, DataScope: 1,
-		}},
-		riskReviewPrincipalStub{audience: &principal.Audience{
-			UserID: 81, Code: principal.AudienceStaff, Status: principal.AudienceStatusActive,
-		}},
-		riskReviewAuthzStub{grants: map[authz.PermissionKey]bool{
-			authz.PermissionKey(permissionAssistedQuoteApprove): true,
-		}},
-	)
-	if err != nil {
-		t.Fatalf("create assisted quote authorizer: %v", err)
-	}
-	requestNo := "AQR_0123456789abcdef0123456789abcdef"
-	if actor, authorizeErr := authorizer.AuthorizeAssistedQuoteApprove(
-		context.Background(), requestNo,
-	); authorizeErr != nil || actor != 81 {
-		t.Fatalf("approve permission actor=%d err=%v", actor, authorizeErr)
-	}
-	if actor, authorizeErr := authorizer.AuthorizeAssistedQuoteReject(
-		context.Background(), requestNo,
-	); !bizerr.Is(authorizeErr, CodeAssistedQuoteNotAccessible) || actor != 0 {
-		t.Fatalf("approve grant leaked into rejection actor=%d err=%v", actor, authorizeErr)
-	}
-	if actor, authorizeErr := authorizer.AuthorizeAssistedQuoteCheckout(
-		context.Background(), requestNo,
-	); !bizerr.Is(authorizeErr, CodeAssistedQuoteNotAccessible) || actor != 0 {
-		t.Fatalf("approve grant leaked into checkout actor=%d err=%v", actor, authorizeErr)
 	}
 }
 

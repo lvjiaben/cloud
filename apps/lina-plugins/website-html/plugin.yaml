@@ -1,0 +1,42 @@
+id: website-html
+name: 原生 HTML 官网示例
+version: v0.1.4
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 无前端框架依赖的静态官网模板，演示公开配置和导航接口。
+author: linapro
+license: Proprietary
+dependencies:
+  plugins:
+    - id: idc-portal
+      version: ">=0.1.11 <1.0.0"
+public_assets:
+  - source: frontend/public
+    mount: /
+    index: index.html
+business_extensions:
+  - point: website-template
+    version: v1
+    role: provider
+    owner: idc-portal
+    methods: [capabilities.describe]
+    interface_configuration_cardinality: singleton
+    interface_configuration:
+      version: v1
+      fields:
+        - key: herotitle
+          type: single_line
+          label: { en-US: Home title, zh-CN: 首页标题 }
+          maximum_length: 120
+    provider_metadata:
+      type: website-template-contract
+      version: v1
+      values:
+        entry: index.html
+        spa: false
+        pages:
+          - { id: home, nameZh: 首页, nameEn: Home, path: / }
+          - { id: products, nameZh: 商品, nameEn: Products, path: /products.html }

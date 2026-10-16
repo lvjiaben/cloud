@@ -8,10 +8,11 @@ type CustomerOverviewGetReq struct {
 }
 
 type CustomerOverviewGetRes struct {
-	Customer *CustomerSummaryItem      `json:"customer" dc:"Display-safe customer summary" eg:"{}"`
-	Groups   *CustomerSegmentPreview   `json:"groups" dc:"Bounded customer group preview" eg:"{}"`
-	Tags     *CustomerSegmentPreview   `json:"tags" dc:"Bounded customer tag preview" eg:"{}"`
-	Counts   *CustomerOverviewCounts   `json:"counts" dc:"Local customer-domain aggregate counts" eg:"{}"`
-	Business *CustomerBusinessSummary  `json:"business" dc:"Cross-domain customer business counts" eg:"{}"`
-	Balances []*CustomerBalanceSummary `json:"balances" dc:"Display-safe customer balances" eg:"[]"`
+	Statistics *CustomerOperationsStatistics `json:"statistics" dc:"Customer financial, ticket and product statistics" eg:"{}"`
+	Customer   *CustomerSummaryItem          `json:"customer" dc:"Display-safe customer summary" eg:"{}"`
+	Groups     *CustomerSegmentPreview       `json:"groups" dc:"Bounded customer group preview" eg:"{}"`
+	Tags       *CustomerSegmentPreview       `json:"tags" dc:"Bounded customer tag preview" eg:"{}"`
+	Counts     *CustomerOverviewCounts       `json:"counts" dc:"Local customer-domain aggregate counts" eg:"{}"`
+	Business   *CustomerBusinessSummary      `json:"business" dc:"Cross-domain customer business counts" eg:"{}"`
+	Balances   []*CustomerBalanceSummary     `json:"balances" dc:"Display-safe customer balances" eg:"[]"`
 }

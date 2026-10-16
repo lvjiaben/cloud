@@ -53,18 +53,15 @@ type proofClaims struct {
 	SessionConfirmation bool `json:"sc,omitempty"`
 }
 
-// Issue validates a newly created host session and returns one opaque signed proof.
+// Issue binds one action to the current active session without a login-age gate.
 func (s *serviceImpl) Issue(ctx context.Context, binding Binding) (*ProofContext, error) {
-	return s.issueProof(ctx, binding, true)
+	return s.issueProof(ctx, binding, false)
 }
 
 // IssueSessionConfirmation signs one exact action confirmation for the
 // current active session without requiring a recently created login session.
 func (s *serviceImpl) IssueSessionConfirmation(ctx context.Context,
 	binding Binding) (*ProofContext, error) {
-	if binding.Purpose != PurposeServerOperation {
-		return nil, bizerr.NewCode(CodeInvalid)
-	}
 	return s.issueProof(ctx, binding, false)
 }
 
@@ -259,12 +256,8 @@ func (s *serviceImpl) validateClaimsAt(claims proofClaims, now time.Time) error 
 		expiresAt.Sub(issuedAt) > s.config.ProofTTL {
 		return bizerr.NewCode(CodeProofRejected)
 	}
-	if claims.SessionConfirmation {
-		if claims.Purpose != PurposeServerOperation {
-			return bizerr.NewCode(CodeProofRejected)
-		}
-	} else if issuedAt.Sub(loginAt) > s.config.FreshLoginWindow ||
-		expiresAt.After(loginAt.Add(s.config.FreshLoginWindow)) {
+	if !claims.SessionConfirmation && (issuedAt.Sub(loginAt) > s.config.FreshLoginWindow ||
+		expiresAt.After(loginAt.Add(s.config.FreshLoginWindow))) {
 		return bizerr.NewCode(CodeProofRejected)
 	}
 	return nil

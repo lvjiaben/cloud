@@ -13,6 +13,9 @@ func TestTicketNumberedPaginationPostgreSQL(t *testing.T) {
 	ctx, database := newSupportDeskTestDatabase(t)
 	customer := newCustomerSupportDeskTestService(database, "CUS_owner")
 	staff := newAuthorizedSupportDeskTestService(database)
+	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_support_department(tenant_id,department_no,name_zh_cn,name_en_us,assignment_mode,status_code,created_by,updated_by,org_dept_id) VALUES(0,'DEP_page','Page','Page','manual_claim','active',7,7,11)`); err != nil {
+		t.Fatal(err)
+	}
 	for index := 1; index <= 25; index++ {
 		if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket
 			(tenant_id,ticket_no,ticket_type,visibility_code,customer_no,subject,base_stage,priority_code,current_round,assignee_user_id)
@@ -42,7 +45,10 @@ func TestTicketNumberedPaginationPostgreSQL(t *testing.T) {
 			t.Fatalf("page %d size %d: got %+v", test.page, test.size, page)
 		}
 	}
-	page, err := staff.search(ctx, SearchInput{Page: 1, Limit: 10, Query: "Pagination"}, &actor{UserID: 7, DataScope: 4}, "")
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET department_no='DEP_page' WHERE customer_no='CUS_owner'`); err != nil {
+		t.Fatal(err)
+	}
+	page, err := staff.search(ctx, SearchInput{Page: 1, Limit: 10, Query: "Pagination"}, &actor{UserID: 7, DataScope: 4, Departments: []string{"DEP_page"}}, "")
 	if err != nil {
 		t.Fatal(err)
 	}

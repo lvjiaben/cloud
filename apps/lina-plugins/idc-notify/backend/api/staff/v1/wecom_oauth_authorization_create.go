@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // WeComOAuthAuthorizationCreateReq starts one session-bound authorization attempt.
 type WeComOAuthAuthorizationCreateReq struct {
-	g.Meta         `path:"/staff/notifications/wechat-work/oauth-authorizations" method:"post" tags:"IDC Staff WeCom Binding" summary:"Start my WeCom authorization" dc:"Creates one five-minute, current-session-bound official WeCom OAuth and QR authorization after a recent full login."`
+	g.Meta         `path:"/staff/notifications/wechat-work/oauth-authorizations" method:"post" tags:"IDC Staff WeCom Binding" summary:"Start my WeCom authorization" dc:"Creates one five-minute, current-session-bound official WeCom OAuth and QR authorization after a current active session."`
 	IdempotencyKey string `json:"idempotencyKey" v:"required|min-length:8|max-length:64" dc:"Caller-generated idempotency key" eg:"wecom-bind-20260815-001"`
 }
 

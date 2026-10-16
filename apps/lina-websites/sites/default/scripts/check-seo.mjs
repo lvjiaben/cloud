@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 
 const required = new Map([
-  ['../nuxt.config.ts', ['@nuxtjs/i18n', "strategy: 'prefix_except_default'", "preset: 'node-server'", "'/products/**': { swr: 60 }"]],
+  ['../nuxt.config.ts', ['@nuxtjs/i18n', "strategy: 'prefix_except_default'", "preset: 'node-server'", "'/products/**': { cache: false }"]],
   ['../app/app.vue', ['useLocaleHead', 'htmlAttrs: head.value.htmlAttrs']],
   ['../app/components/public/PublicHomePage.vue', ['useSeoMeta', "robots: 'index, follow'"]],
   ['../app/components/public/PublicContentPage.vue', ['useSeoMeta', "robots: 'index, follow'"]],

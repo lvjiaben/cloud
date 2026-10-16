@@ -33,4 +33,5 @@ type Channel struct {
 	ProviderReleaseVersion    any        // Exact managed plugin release version frozen when a dynamic Provider channel is created
 	ProviderReleaseDigest     any        // Exact managed plugin release digest frozen when a dynamic Provider channel is created
 	ProviderDeclarationDigest any        // Exact resource-provider declaration digest frozen when a dynamic Provider channel is created
+	TlsCertificateSha256      any        // Optional administrator-trusted exact leaf certificate SHA-256; empty uses system trust
 }

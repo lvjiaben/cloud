@@ -4,6 +4,8 @@ package interfacecandidate
 
 import (
 	"context"
+	"github.com/gogf/gf/v2/database/gdb"
+	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 	"testing"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -31,7 +33,15 @@ func TestCatalogSourceChecksStaffAndTargetBeforeUnboundRuntime(t *testing.T) {
 	t.Parallel()
 	for _, actor := range []int{0, 1} {
 		authorizer := &catalogAuthorizerStub{actor: actor}
-		source, err := NewCatalogSource(NewLazy(), authorizer)
+		database, err := gdb.New(gdb.ConfigNode{Type: "pgsql", Host: "127.0.0.1", Name: "linapro_test_unbound", User: "unused"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		projection, err := interfaceprojection.NewWorker(database, &catalogProjectionSink{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		source, err := NewCatalogSource(NewLazy(), authorizer, projection)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,4 +83,21 @@ func TestDecodeCatalogResponseRejectsSecretsAndTrailingDocuments(t *testing.T) {
 			t.Fatal("guest-supplied owner read evidence was accepted")
 		}
 	}
+}
+
+// catalogProjectionSink records only secret-free admitted owner projections.
+type catalogProjectionSink struct {
+	values []resourceinterfaceprojectioncap.Projection
+}
+
+func (s *catalogProjectionSink) Upsert(_ context.Context, value resourceinterfaceprojectioncap.Projection) error {
+	s.values = append(s.values, value)
+	return nil
+}
+
+func (sink *catalogProjectionSink) RefreshUnused(ctx context.Context, projection resourceinterfaceprojectioncap.Projection, apply func(context.Context) error) error {
+	if err := apply(ctx); err != nil {
+		return err
+	}
+	return sink.Upsert(ctx, projection)
 }

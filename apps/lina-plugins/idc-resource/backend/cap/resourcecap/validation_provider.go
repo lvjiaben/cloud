@@ -3,6 +3,7 @@
 package resourcecap
 
 import (
+	"encoding/hex"
 	"regexp"
 	"time"
 
@@ -30,6 +31,12 @@ func (c ProviderConfig) Validate() error {
 	}
 	if err := validateEndpoint(c.Endpoint); err != nil {
 		return err
+	}
+	if c.TLSCertificateSHA256 != "" {
+		decoded, err := hex.DecodeString(c.TLSCertificateSHA256)
+		if err != nil || len(decoded) != 32 {
+			return gerror.New("invalid certificate fingerprint")
+		}
 	}
 	if err := validateJSONObject("settings", c.Settings, false); err != nil {
 		return err

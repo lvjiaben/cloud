@@ -3,12 +3,12 @@
   box-sizing: border-box;
 }
 .notify-plugin-shell {
-  --ink: #172033;
-  --muted: #667086;
-  --line: #dfe6ef;
-  --panel: #fff;
-  --bg: #f4f7fb;
-  --blue: #3157d5;
+  --ink: hsl(var(--foreground));
+  --notify-text-muted: hsl(var(--muted-foreground));
+  --line: hsl(var(--border));
+  --panel: hsl(var(--card));
+  --bg: hsl(var(--background));
+  --blue: hsl(var(--primary));
   --green: #087d69;
   --red: #bd3347;
   --amber: #8a5a10;
@@ -19,12 +19,34 @@
 }
 .notify-plugin-shell .notify-workspace {
   width: 100%;
-  padding: 16px;
+  padding: 0;
 }
 .notify-plugin-shell .notify-toolbar {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 12px;
+}
+.notify-plugin-shell .workspace-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.notify-plugin-shell .workspace-toolbar h1 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.notify-plugin-shell .workspace-toolbar p {
+  margin: 4px 0 0;
+  color: var(--notify-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 .notify-plugin-shell .panel,
 .notify-plugin-shell .channel-card {
@@ -64,7 +86,7 @@
 }
 .notify-plugin-shell .binding-lead {
   max-width: 720px;
-  color: var(--muted);
+  color: var(--notify-text-muted);
   line-height: 1.7;
 }
 .notify-plugin-shell .authorization-card {
@@ -118,15 +140,15 @@
   height: 36px;
   border: 1px solid var(--line);
   border-radius: 50%;
-  color: var(--muted);
-  background: #fff;
+  color: var(--notify-text-muted);
+  background: var(--panel);
   cursor: pointer;
   font-size: 22px;
 }
 .notify-plugin-shell .status {
   padding: 5px 9px;
   border-radius: 999px;
-  color: var(--muted);
+  color: var(--notify-text-muted);
   background: #eef2f8;
   font-size: 12px;
   font-weight: 750;
@@ -157,7 +179,7 @@
   border-bottom: 1px solid #edf1f6;
 }
 .notify-plugin-shell dt {
-  color: var(--muted);
+  color: var(--notify-text-muted);
 }
 .notify-plugin-shell dd {
   margin: 0;
@@ -185,7 +207,7 @@
 }
 .notify-plugin-shell .button.secondary {
   border-color: var(--line);
-  background: #fff;
+  background: var(--panel);
 }
 .notify-plugin-shell .button.danger {
   border-color: #efc5cc;
@@ -238,7 +260,7 @@
 }
 .notify-plugin-shell .row p {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: var(--notify-text-muted);
   font-size: 12px;
 }
 .notify-plugin-shell .row-button {
@@ -256,7 +278,7 @@
   display: grid;
   gap: 7px;
   margin-bottom: 13px;
-  color: var(--muted);
+  color: var(--notify-text-muted);
   font-size: 12px;
   font-weight: 700;
 }
@@ -268,7 +290,7 @@
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink);
-  background: #fff;
+  background: var(--panel);
   font: inherit;
 }
 .notify-plugin-shell .two {
@@ -302,7 +324,7 @@
   margin-top: 14px;
   padding: 14px;
   border-radius: 8px;
-  background: #f4f7fb;
+  background: hsl(var(--muted));
 }
 .notify-plugin-shell .preview p,
 .notify-plugin-shell .reason-list p,
@@ -316,7 +338,7 @@
 }
 .notify-plugin-shell .empty {
   padding: 30px;
-  color: var(--muted);
+  color: var(--notify-text-muted);
   text-align: center;
 }
 .notify-plugin-shell .section-title {
@@ -339,8 +361,8 @@
   padding: 7px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  color: var(--muted);
-  background: #fff;
+  color: var(--notify-text-muted);
+  background: var(--panel);
   cursor: pointer;
 }
 .notify-plugin-shell .template-tab.active {
@@ -382,7 +404,7 @@
 }
 @media (max-width: 640px) {
   .notify-plugin-shell .notify-workspace {
-    padding: 12px;
+    padding: 0;
   }
   .notify-plugin-shell .card-grid,
   .notify-plugin-shell .two,

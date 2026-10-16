@@ -157,7 +157,9 @@ func (s *managementServiceImpl) CreateTaxPolicy(
 			IdempotencyScope: "catalog.tax-policy.create", IdempotencyKey: taxPolicyNo,
 			OperationCode: "catalog.tax-policy.create", TargetType: "catalog_product_version",
 			TargetNo: normalized.versionNo, ResultCode: "succeeded", ReasonCode: "manual_create",
-			RiskCode: "high", AfterSnapshot: map[string]any{
+			RequiredPermission: permissionCatalogTaxWrite,
+			BeforeSnapshot:     map[string]any{},
+			RiskCode:           "high", AfterSnapshot: map[string]any{
 				"tax_policy_no": taxPolicyNo, "currency_code": normalized.currencyCode,
 				"price_includes_tax":     normalized.definition.PriceIncludesTax,
 				"tax_treatment":          normalized.definition.TaxTreatment,

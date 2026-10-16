@@ -1,21 +1,24 @@
 <script lang="ts">
 export const pluginPageMeta = {
-  routePath: "idc/catalog/product-directories",
-  title: "Customer Product Directories",
+  routePath: "idc/member-navigation",
+  title: "Member Navigation",
 };
 </script>
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { ProductDirectory } from "./product-directory-client";
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Page, useVbenModal } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
-import { Button, Tag } from "ant-design-vue";
+import { Button, Tag, Tabs, TabPane } from "ant-design-vue";
 import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { $t } from "#/locales";
 import { useAccess } from "./plugin-access";
 import { fixedRightActionColumn } from "../../../vben-adapter/frontend/src";
 import { listProductDirectories } from "./product-directory-client";
+import ConfigurationSurface from "./components/configuration-surface.vue";
 import DirectoryEditor from "./components/product-directory-editor.vue";
 const { hasAccessByCodes } = useAccess();
 const canCreate = computed(() =>
@@ -25,6 +28,8 @@ const canUpdate = computed(() =>
   hasAccessByCodes(["idc:admin:product-directory:update"]),
 );
 const key = "plugin.idc-core.productDirectory.";
+const activeTab = ref("products");
+const canExternal = computed(() => hasAccessByCodes(["idc:admin:portal:external-menu:view"]));
 const [Editor, editorApi] = useVbenModal({
   connectedComponent: DirectoryEditor,
 });
@@ -41,6 +46,7 @@ function columns(): VxeGridProps<ProductDirectory>["columns"] {
       minWidth: 220,
       slots: { default: "name" },
     },
+    {field:"navigationType",title:$t(key+"navigationType"),width:140,slots:{default:"navigationType"}},
     { field: "productCount", title: $t(key + "productCount"), width: 140 },
     { field: "sortOrder", title: $t(key + "sortOrder"), width: 120 },
     {
@@ -103,20 +109,24 @@ onMounted(async () => {
   gridApi.setGridOptions({ columns: columns() });
   await gridApi.query();
 });
+const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 <template>
-  <Page auto-content-height>
+  <Page :ref="layoutRoot" class="plugin-admin-page" auto-content-height>
     <div
       data-testid="merchant-product-directories"
       class="flex h-full flex-col gap-3"
     >
-      <p class="text-muted-foreground">{{ $t(key + "note") }}</p>
-      <Grid class="min-h-0 flex-1">
+      <Tabs v-if="canExternal" v-model:active-key="activeTab"><TabPane key="products" :tab="$t(key + 'productTab')"/><TabPane key="external" :tab="$t(key + 'externalTab')"/></Tabs>
+      <p v-if="activeTab === 'products'" class="text-muted-foreground">{{ $t(key + "note") }}</p>
+      <ConfigurationSurface v-if="activeTab === 'external' && canExternal" path="/idc/customer-external-menus" class="min-h-0 flex-1"/>
+      <Grid v-else class="min-h-0 flex-1">
         <template #toolbar-tools
           ><Button v-if="canCreate" type="primary" @click="edit()">{{
             $t(key + "create")
           }}</Button></template
         >
+        <template #navigationType="{row}">{{ $t(key+"types."+(row.navigationType || "product")) }}</template>
         <template #name="{ row }">{{ name(row) }}</template>
         <template #status="{ row }"
           ><Tag :color="row.statusCode === 'enabled' ? 'green' : 'default'">{{

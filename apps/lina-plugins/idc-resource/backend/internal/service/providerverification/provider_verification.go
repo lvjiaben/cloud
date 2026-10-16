@@ -17,6 +17,18 @@ import (
 
 const permissionVerify = "idc:admin:resource:configuration:write"
 
+// Reviewed connection outcomes contain no supplier-controlled text.
+const (
+	statusTLSUntrusted     = "tls_untrusted"
+	statusTimeout          = "timeout"
+	statusDNS              = "dns"
+	statusNetwork          = "network"
+	statusEndpointNotFound = "endpoint_not_found"
+	statusInvalidResponse  = "invalid_response"
+	statusAuthRejected     = "auth_rejected"
+	statusLocalAuthPolicy  = "local_auth_policy"
+)
+
 var (
 	CodeNotAccessible = bizerr.MustDefine("IDC_RESOURCE_PROVIDER_VERIFICATION_NOT_ACCESSIBLE", "The Provider connection verification target is not accessible", gcode.CodeNotAuthorized)
 	CodeUnavailable   = bizerr.MustDefine("IDC_RESOURCE_PROVIDER_VERIFICATION_UNAVAILABLE", "The Provider connection verification service is temporarily unavailable", gcode.CodeInternalError)
@@ -69,7 +81,11 @@ func (s *service) Verify(ctx context.Context, channelNo string) (Result, error) 
 	startedAt := time.Now()
 	provider, cleanup, err := s.providers.ConstructConfiguredSession(ctx, channelNo)
 	if err != nil || cleanup == nil {
-		return s.failed(ctx, channelNo, "configuration_incomplete", time.Since(startedAt))
+		status := connectionFailureStatus(err)
+		if status == "connection_failed" {
+			status = "configuration_incomplete"
+		}
+		return s.failed(ctx, channelNo, status, time.Since(startedAt))
 	}
 	defer cleanup()
 	verifier, ok := provider.(connectionVerifier)
@@ -81,7 +97,11 @@ func (s *service) Verify(ctx context.Context, channelNo string) (Result, error) 
 	cancel()
 	latency := time.Since(startedAt)
 	if callErr != nil || proof == nil || proof.ValidateAt(time.Now().UTC()) != nil {
-		return s.failed(ctx, channelNo, "connection_failed", latency)
+		status := connectionFailureStatus(callErr)
+		if callErr == nil {
+			status = statusInvalidResponse
+		}
+		return s.failed(ctx, channelNo, status, latency)
 	}
 	if err = s.health.Record(ctx, providerhealth.Observation{
 		ChannelNo: channelNo, Operation: providerhealth.OperationAuthentication,
@@ -100,4 +120,27 @@ func (s *service) failed(ctx context.Context, channelNo, statusCode string, late
 		return Result{}, bizerr.WrapCode(err, CodeUnavailable)
 	}
 	return Result{Verified: false, StatusCode: statusCode, ObservedAt: time.Now().UTC()}, nil
+}
+
+// connectionFailureStatus preserves only reviewed owner diagnostics, never raw
+// error text. Unknown plugin failures retain the generic legacy status.
+func connectionFailureStatus(err error) string {
+	for _, candidate := range []struct {
+		code   *bizerr.Code
+		status string
+	}{
+		{resourcecap.CodeProviderTLSUntrusted, statusTLSUntrusted},
+		{resourcecap.CodeProviderTimeout, statusTimeout},
+		{resourcecap.CodeProviderDNS, statusDNS},
+		{resourcecap.CodeProviderNetwork, statusNetwork},
+		{resourcecap.CodeProviderEndpointNotFound, statusEndpointNotFound},
+		{resourcecap.CodeProviderInvalidResponse, statusInvalidResponse},
+		{resourcecap.CodeProviderAuthRejected, statusAuthRejected},
+		{resourcecap.CodeProviderLocalAuthPolicy, statusLocalAuthPolicy},
+	} {
+		if bizerr.Is(err, candidate.code) {
+			return candidate.status
+		}
+	}
+	return "connection_failed"
 }

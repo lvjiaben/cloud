@@ -9,9 +9,9 @@ import (
 
 	"lina-core/pkg/plugin/pluginhost"
 	idcchannel "lina-plugin-idc-channel"
-	accountcontroller "lina-plugin-idc-channel/backend/internal/controller/account"
 	admincontroller "lina-plugin-idc-channel/backend/internal/controller/admin"
 	channelcontroller "lina-plugin-idc-channel/backend/internal/controller/channel"
+	platformcontroller "lina-plugin-idc-channel/backend/internal/controller/platform"
 	channelservice "lina-plugin-idc-channel/backend/internal/service/channel"
 	channelcommercespi "lina-plugin-idc-core/backend/cap/channelcommercecap/spi"
 )
@@ -47,7 +47,7 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	channelService := channelservice.New(g.DB(), coreRuntime, services.BizCtx())
 	channelCtrl := channelcontroller.NewV1(channelService)
 	adminCtrl := admincontroller.NewV1(channelService)
-	accountCtrl := accountcontroller.NewV1(channelService)
+	platformCtrl := platformcontroller.NewV1(channelService)
 	tokenGuard := channelservice.NewTokenGuard(channelService)
 	routes := registrar.Routes()
 	mw := routes.Middlewares()
@@ -58,14 +58,13 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 				group.Bind(channelCtrl)
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
-				group.Middleware(mw.NeverDoneCtx(), mw.HandlerResponse(), mw.CORS(), mw.RequestBodyLimit(), mw.Ctx())
-				group.Middleware(mw.Auth(), mw.Tenancy(), mw.Permission())
-				group.Bind(adminCtrl)
+				group.Middleware(mw.NeverDoneCtx(), mw.HandlerResponse(), mw.CORS(), mw.RequestBodyLimit(), mw.Ctx(), mw.Auth(), mw.Tenancy())
+				group.Bind(platformCtrl)
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(mw.NeverDoneCtx(), mw.HandlerResponse(), mw.CORS(), mw.RequestBodyLimit(), mw.Ctx())
-				group.Middleware(mw.Auth(), mw.Tenancy())
-				group.Bind(accountCtrl)
+				group.Middleware(mw.Auth(), mw.Tenancy(), mw.Permission())
+				group.Bind(adminCtrl)
 			})
 		})
 	})

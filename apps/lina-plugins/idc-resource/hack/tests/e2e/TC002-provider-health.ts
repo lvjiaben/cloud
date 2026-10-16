@@ -3,24 +3,27 @@ import { expect, test } from "../../../../../../hack/tests/fixtures/auth";
 import { ProviderHealthPage } from "../pages/ProviderHealthPage";
 import { installProviderHealthMock } from "../support/provider-health-mock";
 
-test.describe("TC-2 上游渠道健康与写保护", () => {
+test.describe("TC-2 连接状态", () => {
   test("TC-2a: 中文页展示四维健康和本地保护边界", async ({ adminPage }) => {
     await installProviderHealthMock(adminPage);
     const health = new ProviderHealthPage(adminPage);
     await health.goto();
     await expect(
-      health.page.getByText("上游渠道健康与写保护", { exact: true }).first(),
+      health.page.getByText("连接状态", { exact: true }).first(),
     ).toBeVisible();
     await expect(health.row("魔方云生产渠道")).toContainText(
-      "禁止新的自动写入",
+      "已暂停新操作",
     );
     await expect(health.row("魔方云生产渠道")).toContainText(
-      "认证 · 健康 · 45ms",
+      "认证 · 正常 · 45ms",
     );
     await expect(health.row("魔方云生产渠道")).toContainText(
-      "容量观测 · 健康 · 125ms",
+      "资源查询 · 正常 · 125ms",
     );
     await expect(health.row("魔方云生产渠道")).toContainText("已启用");
+    await expect(health.root).toContainText("本页暂停");
+    await expect(health.root).toContainText("本页正常");
+    await expect(health.root).toContainText("尚未检测");
     await expect(health.root).not.toContainText(
       /endpoint|credential|raw error|secret/iu,
     );
@@ -33,7 +36,7 @@ test.describe("TC-2 上游渠道健康与写保护", () => {
     await health.goto();
     await health.openPolicy("channel_mofang_prod");
     const dialog = health.policyDialog;
-    await expect(dialog).toContainText("保护边界不会被策略更新绕过");
+    await expect(dialog).toContainText("自动保护设置");
     await expect(
       dialog.getByRole("button", { name: /解除|解锁|关闭保护/ }),
     ).toHaveCount(0);
@@ -66,14 +69,18 @@ test.describe("TC-2 上游渠道健康与写保护", () => {
     await mainLayout.switchLanguage("English");
     await expect(
       health.page
-        .getByText("Provider Health and Write Protection", { exact: true })
+        .getByText("Connection Status", { exact: true })
         .first(),
     ).toBeVisible();
     await expect(health.row("魔方云生产渠道")).toContainText(
-      "New automatic writes blocked",
+      "New operations paused",
     );
     await expect(health.root).not.toContainText("plugin.idc-resource");
+    await expect(health.root).toContainText("Paused on Page");
+    await expect(health.root).toContainText("Not Checked");
     await health.screenshot("provider-health-en-us");
+    await health.openPolicy("channel_mofang_prod");
+    await expect(health.policyDialog).toContainText("An active pause cannot end early.");
   });
 
   test("TC-2d: 只读权限不渲染策略入口", async ({ adminPage }) => {
@@ -93,9 +100,9 @@ test.describe("TC-2 上游渠道健康与写保护", () => {
     await health.goto();
     await health.openPolicy("channel_mofang_prod");
     const dialog = health.policyDialog;
-    await dialog.getByLabel("结果未知阈值").fill("4");
+    await dialog.getByLabel("待核对次数").fill("4");
     await dialog.getByRole("button", { name: "保存策略" }).click();
-    await expect(adminPage.getByText("阈值之间的范围关系不合法")).toBeVisible();
+    await expect(adminPage.getByText("次数设置不匹配，请检查后重试。")).toBeVisible();
     await expect(dialog).toBeVisible();
     expect(state.policyRequests).toHaveLength(0);
     await health.screenshot("provider-health-policy-invalid");

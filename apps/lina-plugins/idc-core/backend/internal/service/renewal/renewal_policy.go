@@ -1,3 +1,6 @@
+// This file appends customer-owned automatic renewal policies. Only recurring
+// paid services are eligible; trial services cannot authorize automatic charges.
+
 package renewal
 
 import (
@@ -8,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
@@ -15,6 +19,7 @@ type policyEntitlementRow struct {
 	EntitlementNo         string  `orm:"entitlement_no"`
 	CustomerNo            string  `orm:"customer_no"`
 	EntitlementStatusCode string  `orm:"entitlement_status_code"`
+	ChargeTypeCode        string  `orm:"charge_type_code"`
 	PeriodUnitCode        string  `orm:"period_unit_code"`
 	RenewalModeCode       string  `orm:"renewal_mode_code"`
 	EntitlementVersion    int64   `orm:"entitlement_version"`
@@ -61,7 +66,7 @@ func (s *serviceImpl) ConfigurePolicyCurrentCustomer(
 		if row == nil {
 			return bizerr.NewCode(CodeNotAccessible)
 		}
-		if row.PeriodUnitCode == "once" ||
+		if row.ChargeTypeCode != string(catalog.ChargeTypeRecurring) || row.PeriodUnitCode == "once" ||
 			(row.EntitlementStatusCode != "active" && row.EntitlementStatusCode != "expired") ||
 			(row.RenewalModeCode != "local_entitlement" &&
 				row.RenewalModeCode != "provider_confirmed") {
@@ -137,7 +142,7 @@ func lockPolicyEntitlement(
 	var row *policyEntitlementRow
 	if err := database.GetScan(ctx, &row, `
 SELECT service.entitlement_no AS entitlement_no, service.customer_no, service.status_code AS entitlement_status_code,
-       service.period_unit_code, service.renewal_mode_code,
+       service.charge_type_code, service.period_unit_code, service.renewal_mode_code,
        service.version AS entitlement_version,
        policy.policy_no, policy.policy_version, policy.auto_renew_enabled,
        policy.renewal_cycles, policy.lead_seconds, policy.maximum_attempts,

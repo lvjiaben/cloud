@@ -48,6 +48,7 @@ type normalizedCategoryCreate struct {
 }
 
 type normalizedProductCreate struct {
+	directoryNo              string
 	categoryNo               string
 	publicSlug               string
 	nameZhCN                 string
@@ -95,7 +96,17 @@ func (s *managementServiceImpl) createCategoryInTransaction(
 	input normalizedCategoryCreate,
 ) (*Category, error) {
 	if input.parentCategoryNo != "" {
-		_, err := loadActiveCategoryForUpdate(ctx, input.parentCategoryNo)
+		if err := lockCatalogCategoryTree(ctx); err != nil {
+			return nil, err
+		}
+		parents, err := loadCatalogCategoryTreeForUpdate(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err = validateCategoryTwoLevels(parents, categoryNo, input.parentCategoryNo); err != nil {
+			return nil, err
+		}
+		_, err = loadActiveCategoryForUpdate(ctx, input.parentCategoryNo)
 		if err != nil {
 			return nil, err
 		}
@@ -211,6 +222,11 @@ func (s *managementServiceImpl) createProductDraftInTransaction(
 	if err = requireSingleCatalogInsert(insertResult, insertErr, "insert catalog product"); err != nil {
 		return nil, err
 	}
+	if input.directoryNo != "" {
+		if err = replaceProductDirectory(ctx, productNo, input.directoryNo); err != nil {
+			return nil, err
+		}
+	}
 	insertResult, insertErr = dao.CatalogProductVersion.Ctx(ctx).Data(do.CatalogProductVersion{
 		TenantId: idccap.DefaultTenantID, VersionNo: versionNo, ProductNo: productNo,
 		VersionNumber: 1, StatusCode: catalogStatusDraft, SourceCode: catalogSourceManual,
@@ -297,7 +313,7 @@ func normalizeProductCreate(input ProductCreateInput) (normalizedProductCreate, 
 	rule, ruleErr := contractpolicy.NormalizeRule(contractpolicy.Rule{
 		Policy: input.ContractPolicyCode, TemplateNo: input.ContractTemplateNo,
 	}, true)
-	if !categoryNumberPattern.MatchString(categoryNo) ||
+	if input.DirectoryNo != "" && !existingCatalogReferencePattern.MatchString(strings.TrimSpace(input.DirectoryNo)) || !categoryNumberPattern.MatchString(categoryNo) ||
 		!validLocalizedText(publicSlug, 128, false) || !publicSlugPattern.MatchString(publicSlug) ||
 		!validLocalizedText(nameZhCN, 256, false) || !validLocalizedText(nameEnUS, 256, false) ||
 		!validLocalizedText(summaryZhCN, 1024, true) || !validLocalizedText(summaryEnUS, 1024, true) ||
@@ -305,7 +321,7 @@ func normalizeProductCreate(input ProductCreateInput) (normalizedProductCreate, 
 		return normalizedProductCreate{}, bizerr.NewCode(CodeManagementInvalid)
 	}
 	return normalizedProductCreate{
-		categoryNo: categoryNo, publicSlug: publicSlug,
+		directoryNo: strings.TrimSpace(input.DirectoryNo), categoryNo: categoryNo, publicSlug: publicSlug,
 		nameZhCN: nameZhCN, nameEnUS: nameEnUS, summaryZhCN: summaryZhCN,
 		summaryEnUS: summaryEnUS, sortOrder: input.SortOrder,
 		contractPolicyCode: rule.Policy, contractTemplateNo: rule.TemplateNo,

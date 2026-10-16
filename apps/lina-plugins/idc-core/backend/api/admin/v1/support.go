@@ -212,9 +212,10 @@ type TicketTransferReq struct {
 	AssigneeUserID int64  `json:"assigneeUserId"`
 	TicketVersion  int64  `json:"ticketVersion"`
 }
-type TicketTransferRes struct {
-	Item *TicketDetail `json:"item"`
-}
+
+// TicketTransferRes acknowledges a queue transfer without reading outside the
+// actor's new scope after ownership moves to another department.
+type TicketTransferRes struct{}
 type TicketTransitionReq struct {
 	TicketNo      string `json:"ticketNo"`
 	Reason        string `json:"reason"`

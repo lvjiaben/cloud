@@ -1,0 +1,4 @@
+{
+  "plugin.idc-peer.name": "Same-system connector",
+  "plugin.idc-peer.description": "Connect another installation through its customer-bound Open API."
+}

@@ -28,6 +28,7 @@ type TagBatchInput struct {
 	Action         TagBatchAction
 	CustomerNos    []string
 	TagNos         []string
+	TagNames       []string
 	Reason         string
 	IdempotencyKey string
 }

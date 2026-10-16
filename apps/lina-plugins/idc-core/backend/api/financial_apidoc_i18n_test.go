@@ -27,6 +27,9 @@ func TestFinancialAPIDocChineseBundleCoversSourceMetadata(t *testing.T) {
 		scope string
 	}{
 		{path: "backend/api/account/v1/financial_types.go", scope: "account"},
+		{path: "backend/api/account/v1/trial_conversion.go", scope: "account"},
+		{path: "backend/api/upgrades/v1/upgrades_read.go", scope: "upgrades"},
+		{path: "backend/api/upgrades/v1/upgrades_write.go", scope: "upgrades"},
 		{path: "backend/api/account/v1/financial_endpoints.go", scope: "account"},
 		{path: "backend/api/account/v1/refund_endpoints.go", scope: "account"},
 		{path: "backend/api/account/v1/refund_list.go", scope: "account"},

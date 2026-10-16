@@ -6,14 +6,14 @@ import {
   providerTaskFixture,
 } from "../support/provider-task-mock";
 
-test.describe("TC-3 上游任务核对与安全人工接管", () => {
+test.describe("TC-3 操作记录与安全人工接管", () => {
   test("TC-3a: 中文页只展示有界本地脱敏投影", async ({ adminPage }) => {
     await installProviderTaskMock(adminPage);
     const tasks = new ProviderTaskPage(adminPage);
     await tasks.goto();
 
     await expect(
-      tasks.page.getByText("上游任务核对", { exact: true }).first(),
+      tasks.page.getByText("操作记录", { exact: true }).first(),
     ).toBeVisible();
     await expect(tasks.row(providerTaskFixture.taskNo)).toContainText(
       "结果未知",
@@ -46,8 +46,8 @@ test.describe("TC-3 上游任务核对与安全人工接管", () => {
     await adminPage.getByTestId("provider-task-takeover-submit").click();
     const confirm = adminPage
       .locator(".ant-modal-confirm")
-      .filter({ hasText: "确认关闭自动化并承担处理责任？" });
-    await expect(confirm).toContainText("不会发送任何供应商请求");
+      .filter({ hasText: "停止自动核对，转为人工处理？" });
+    await expect(confirm).toContainText("不会向供应商提交操作");
     await confirm.getByRole("button", { name: "确认接管" }).click();
 
     await expect(tasks.detailDrawer).toContainText("人工接管结果");
@@ -114,12 +114,12 @@ test.describe("TC-3 上游任务核对与安全人工接管", () => {
 
     await expect(
       tasks.page
-        .getByText("Provider Task Reconciliation", { exact: true })
+        .getByText("Operation Records", { exact: true })
         .first(),
     ).toBeVisible();
     await tasks.openDetail(providerTaskFixture.taskNo);
     await expect(tasks.detailDrawer).toContainText(
-      "Manual takeover is responsibility transfer, not a result verdict",
+      "Switch to Manual Handling",
     );
     await expect(tasks.root).not.toContainText("plugin.idc-resource");
     await tasks.screenshot("provider-task-evidence-en-us");

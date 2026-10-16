@@ -1,0 +1,3674 @@
+{
+  "plugin": {
+    "customer-default": {
+      "name": "默认用户中心",
+      "description": "独立用户中心模板，支持服务、订单、财务和工单。"
+    }
+  },
+  "aiAssistant": {
+    "menu": "智能助手",
+    "title": "客户智能助手",
+    "description": "助手只读取当前账号可见的数据，并提供账单、服务器和工单等普通页面导航。",
+    "placeholder": "例如：帮我看看最近的账单或未解决工单",
+    "ask": "提问",
+    "openRelated": "打开相关页面",
+    "dataAsOf": "数据截至：{value}",
+    "disabled": "智能助手暂未启用，请联系运营人员。",
+    "error": "暂时无法使用智能助手，请稍后重试。"
+  },
+  "assistance": {
+    "title": "客户模拟登录",
+    "loading": "正在安全进入客户中心…",
+    "banner": "正在模拟登录 {customer}，剩余 {minutes} 分钟；操作按该客户正常规则执行并全程留痕",
+    "bannerMobile": "模拟登录 · {minutes} 分钟",
+    "close": "关闭页面",
+    "unavailableTitle": "本次协助已经失效",
+    "unavailableDescription": "协助链接不存在、已使用、已到期、已被新会话替代或已由后台结束。请由有权限的员工重新发起。"
+  },
+  "commerce": {
+    "eyebrow": "安全交易中心",
+    "cart": {
+      "browse": "返回客户首页",
+      "empty": "购物车还是空的",
+      "lead": "系统会在结账前重新核验商品、价格、优惠和库存，不会拿缓存金额直接下单。",
+      "menu": "购物车",
+      "title": "确认商品配置"
+    },
+    "orders": {
+      "empty": "暂无订单",
+      "lead": "付款、审核、开通和取消状态都以服务端最新事实为准。",
+      "menu": "我的订单",
+      "title": "我的订单"
+    },
+    "order": {
+      "contractOptional": "普通个人订单不强制签合同；只有后台明确要求的订单才会按合同状态处理。",
+      "created": "创建时间",
+      "delivery": "商品交付",
+      "services": "持续服务",
+      "detailTitle": "订单 {orderNo}",
+      "due": "付款截止",
+      "invoice": "账单",
+      "requestRefund": "申请退款",
+      "items": "商品项目",
+      "label": "订单"
+    },
+    "quote": {
+      "changed": "价格已经变化，请先确认新金额再提交订单。",
+      "expires": "报价有效至",
+      "title": "本次结账报价"
+    },
+    "configuration": {
+      "configure": "填写购买配置",
+      "reconfigure": "重新配置",
+      "ready": "配置已完成",
+      "required": "请先完成每个商品的购买配置，再提交订单。"
+    },
+    "amount": {
+      "discount": "优惠",
+      "subtotal": "小计",
+      "tax": "税额",
+      "total": "应付总额"
+    },
+    "payment": {
+      "identityDescription": "首次付款前需要完成实名认证；认证后返回这里继续同一订单，不会重复下单。",
+      "ready": "实名和订单状态已通过核验，可以继续选择支付方式。",
+      "readyDescription": "系统不会在没有收到款项时把订单显示成已付款。"
+    },
+    "cancel": {
+      "confirm": "确认取消",
+      "description": "系统会重新核对付款、资金和资源状态。无法安全关闭时只会转人工处理，不会错误释放资源。",
+      "title": "确认取消这个订单？"
+    },
+    "actions": {
+      "back": "返回",
+      "backToOrders": "返回订单列表",
+      "cancel": "取消未付款订单",
+      "checkout": "确认并提交订单",
+      "detail": "查看详情",
+      "next": "下一页",
+      "preparePayment": "继续付款",
+      "previous": "上一页",
+      "quote": "重新核价",
+      "quoteAgain": "再次核价",
+      "recheck": "我已完成，重新检查",
+      "remove": "移除",
+      "retry": "重新加载",
+      "verify": "去实名认证"
+    },
+    "messages": {
+      "actionFailed": "操作没有完成，请按页面最新状态重试。",
+      "cancelled": "取消请求已受理，页面已经刷新。",
+      "checkoutFailed": "订单没有提交成功，请先保留当前页面并重试。",
+      "loadFailed": "暂时无法加载，请稍后重试。",
+      "mergeFailed": "官网购物车暂时没有合并，请不要清理浏览器数据，稍后重试。",
+      "orderCreated": "订单已创建",
+      "quoteFailed": "核价没有完成，购物车已经重新读取。"
+    },
+    "status": {
+      "active": "可结账",
+      "all": "全部状态",
+      "awaiting_identity": "等待实名认证",
+      "awaiting_payment": "待付款",
+      "awaiting_review": "待商家审核",
+      "awaiting_order_review": "等待订单审核",
+      "cancelled": "已取消",
+      "completed": "已完成",
+      "consumed": "已使用",
+      "fulfilled": "已交付",
+      "fulfilling": "交付中",
+      "held": "已预留",
+      "manual_review": "人工审核",
+      "not_completed": "处理未完成",
+      "partially_fulfilled": "部分已交付",
+      "partially_refunded": "部分已退款",
+      "pending": "待处理",
+      "pending_payment": "待付款",
+      "payment_processing": "支付处理中",
+      "processing": "处理中",
+      "provisioning": "开通中",
+      "ready": "可以付款",
+      "refunded": "已退款",
+      "released": "已释放",
+      "rejected": "已驳回",
+      "succeeded": "已完成",
+      "suspended": "已暂停",
+      "expired": "已到期",
+      "terminated": "已终止",
+      "unavailable": "状态暂不可用",
+      "unknown": "状态暂不可用",
+      "waiting_payment": "等待付款"
+    },
+    "fulfillment": {
+      "ongoing": "包含持续服务",
+      "once": "一次性交付",
+      "serviceStarted": "开始时间",
+      "serviceExpires": "到期时间",
+      "noExpiry": "长期有效",
+      "serviceStatusUnavailable": "服务状态暂不可用",
+      "serviceStatus": {
+        "active": "服务中",
+        "suspended": "已暂停",
+        "expired": "已到期",
+        "terminated": "已终止"
+      },
+      "statusUnavailable": "履约状态暂不可用",
+      "status": {
+        "awaiting_payment": "待付款",
+        "awaiting_review": "待商家审核",
+        "processing": "处理中",
+        "completed": "已完成",
+        "not_completed": "处理未完成",
+        "cancelled": "已取消"
+      }
+    },
+    "units": {
+      "cycles": "个计费周期",
+      "items": "件商品",
+      "servers": "台服务器"
+    }
+  },
+  "contracts": {
+    "center": {
+      "menu": "合同与经办人",
+      "title": "合同与经办人",
+      "contracts": "我的合同",
+      "signers": "签署经办人",
+      "enterpriseRequired": "企业认证通过后才能维护签署经办人。"
+    },
+    "mine": {
+      "menu": "我的合同",
+      "title": "我的合同",
+      "eyebrow": "签署与存证",
+      "heading": "查看并完成你的电子合同",
+      "subtitle": "每份合同都保留固定的订单、金额、签署人和七天签署期限。腾讯页面返回或浏览器提示不能代替服务端权威结果。",
+      "refresh": "刷新列表",
+      "returnTitle": "已返回本系统，请重新检查结果",
+      "returnDescription": "返回本页面不代表签署已经完成。请在对应合同上点击“重新检查签署结果”，系统只采用腾讯的权威查询结果。",
+      "authorityTitle": "签署结果以服务端查询为准",
+      "authorityDescription": "“重新检查”只读取已有流程，不会重复发起合同；“重新获取签署入口”只生成新的 30 分钟入口，不会创建第二份合同，也不会延长七天期限。",
+      "loadFailed": "暂时无法读取合同列表，请稍后重试。",
+      "retry": "重新读取",
+      "empty": "目前没有需要查看的合同",
+      "loadMore": "加载更多合同",
+      "failedDescription": "这份合同当前无法由客户自行重新发起新流程。如页面仍提供重试，只会为原合同、原流程重新生成一条短期签署入口。",
+      "status": {
+        "processing": "处理中",
+        "completed": "已完成",
+        "failed": "失败"
+      },
+      "fields": {
+        "order": "订单编号",
+        "amount": "合同金额",
+        "created": "创建时间",
+        "deadline": "签署截止时间"
+      },
+      "actions": {
+        "openSigning": "前往腾讯签署",
+        "retrySigning": "重新获取签署入口",
+        "recheck": "重新检查签署结果"
+      },
+      "messages": {
+        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
+        "invalidSigningLink": "服务端没有返回安全的 HTTPS 签署入口，本次未打开外部页面。",
+        "openFailed": "暂时无法取得签署入口，请稍后重试。",
+        "recheckFailed": "暂时无法重新检查签署结果，请稍后重试。",
+        "rechecked": "已取得最新权威状态，合同仍在处理中。",
+        "completed": "腾讯权威状态已确认合同完成。"
+      }
+    },
+    "signers": {
+      "menu": "合同签署经办人",
+      "title": "合同签署经办人",
+      "eyebrow": "企业合同安全",
+      "heading": "维护可以代表企业签署合同的人员",
+      "subtitle": "只有本人实名和手机号都验证通过、且当前未停用的经办人，才会出现在后台发起合同时的选择名单中。",
+      "add": "添加经办人",
+      "separationTitle": "这里不是普通通知联系人",
+      "separationDescription": "通知联系人只接收消息，不能自动代表企业签合同。合同签署经办人必须在这里单独添加并完成两项验证。",
+      "returnTitle": "请主动检查实名结果",
+      "returnDescription": "从实名页面返回不代表已经通过。请找到对应经办人并点击“检查实名结果”，以服务端查询结果为准。",
+      "loadFailed": "暂时无法读取合同签署经办人，请稍后重试。",
+      "enterpriseOnlyTitle": "仅企业客户需要维护签署经办人",
+      "enterpriseOnlyDescription": "当前账号是个人客户，不需要设置企业合同签署经办人。个人合同由本人按签署流程完成。",
+      "retry": "重新读取",
+      "empty": "还没有合同签署经办人",
+      "candidateReady": "可用于新合同",
+      "fields": {
+        "identity": "证件",
+        "phone": "手机号",
+        "updated": "最近更新"
+      },
+      "status": {
+        "identity": {
+          "unverified": "未实名",
+          "verifying": "实名进行中",
+          "verified": "实名已通过",
+          "review_required": "需要人工核对",
+          "expired": "实名已过期"
+        },
+        "phone": {
+          "unverified": "未验证",
+          "verifying": "验证码已发送",
+          "verified": "手机号已验证"
+        },
+        "signer": {
+          "active": "验证未完成",
+          "disabled": "已停用"
+        }
+      },
+      "identity": {
+        "title": "本人实名认证",
+        "pending": "待完成",
+        "done": "已通过",
+        "start": "前往本人实名",
+        "check": "检查实名结果"
+      },
+      "phone": {
+        "title": "手机号验证",
+        "pending": "待验证",
+        "done": "已验证",
+        "start": "验证手机号",
+        "modalTitle": "验证经办人手机号",
+        "channelTitle": "验证码由平台统一短信通道发送",
+        "channelDescription": "本功能不会保存自己的短信账号或模板。后台未配置可用短信通道和本用途模板时会明确失败，不会假装发送成功。",
+        "humanCheck": "先完成人机验证",
+        "image": "图片题",
+        "accessible": "文字题",
+        "imageAlt": "人机验证图片",
+        "answer": "请输入题目答案",
+        "sendCode": "验证并发送短信验证码",
+        "unsupportedChallenge": "当前人机验证方式无法在此页面完成，请联系管理员检查验证服务配置。",
+        "uncertainTitle": "本次没有得到安全的发送结果",
+        "uncertainDescription": "系统不会自动重复发送。请确认短信通道后，主动获取一道新题再重新发送。",
+        "newChallenge": "获取新题",
+        "codeTitle": "验证码已请求发送",
+        "codeDescription": "请填写发送到 {destination} 的 6 位验证码，有效期至 {expires}。",
+        "codePlaceholder": "6 位短信验证码",
+        "verifyCode": "确认手机号"
+      },
+      "create": {
+        "title": "添加合同签署经办人",
+        "notice": "请填写经办人本人的真实资料",
+        "description": "资料提交后只显示脱敏内容。经办人仍需分别完成人脸实名认证和手机号验证，不能直接进入合同候选名单。",
+        "name": "本人姓名",
+        "identityNo": "本人身份证号",
+        "phone": "本人手机号",
+        "consent": "我已取得经办人同意，并确认这些资料仅用于合同签署身份核验。",
+        "cancel": "取消",
+        "submit": "确认添加"
+      },
+      "disable": {
+        "action": "停用",
+        "title": "停用这个合同签署经办人？",
+        "description": "停用后不能再用于新合同，但已经生成的合同仍保留原来冻结的签署人，不会被改写。",
+        "cancel": "暂不停用",
+        "confirm": "确认停用"
+      },
+      "messages": {
+        "created": "经办人已添加，请继续完成两项验证。",
+        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
+        "identityVerified": "本人实名认证已通过。",
+        "identityChecked": "已取得最新实名状态。",
+        "phoneVerified": "手机号验证已通过。",
+        "disabled": "经办人已停用，不会再进入新合同候选名单。"
+      }
+    }
+  },
+  "credit": {
+    "menu": "信用账户",
+    "eyebrow": "先用后付 · 逐币种独立额度",
+    "title": "信用账户",
+    "description": "申请授信、查看额度和账单，并使用同币种余额安全还款。",
+    "loadFailed": "信用账户暂时无法读取，请稍后重试。",
+    "retry": "重新加载",
+    "metrics": {
+      "available": "可用额度合计",
+      "pending": "待审核申请",
+      "open": "待还账单",
+      "overdue": "逾期账单"
+    },
+    "tabs": {
+      "accounts": "我的额度",
+      "applications": "授信申请",
+      "statements": "信用账单"
+    },
+    "account": {
+      "available": "当前可用",
+      "total": "总额度",
+      "unbilled": "未出账",
+      "billed": "已出账",
+      "empty": "还没有已开通的信用账户"
+    },
+    "table": {
+      "number": "编号",
+      "currency": "币种",
+      "requested": "申请额度",
+      "progress": "审核进度",
+      "status": "状态",
+      "total": "账单金额",
+      "outstanding": "待还金额",
+      "due": "还款日期",
+      "action": "操作"
+    },
+    "status": {
+      "pending_review": "待审核",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "cancelled": "已取消",
+      "expired": "已过期",
+      "active": "可用",
+      "frozen": "已冻结",
+      "closed": "已关闭",
+      "bad_debt": "坏账",
+      "open": "待还款",
+      "partially_paid": "部分还款",
+      "paid": "已还清",
+      "overdue": "已逾期",
+      "written_off": "已核销",
+      "refunded": "已退款"
+    },
+    "application": {
+      "button": "申请授信",
+      "title": "提交授信申请",
+      "help": "请如实填写额度和有效期。证明材料只提供给有权审核人员查看。",
+      "currency": "申请币种",
+      "limit": "申请额度",
+      "from": "开始日期",
+      "until": "结束日期",
+      "files": "证明材料",
+      "fileHelp": "最多 10 个 PDF、JPG 或 PNG；每个 20 MiB，合计 200 MiB。",
+      "fileRejected": "文件格式、大小或数量不符合要求。",
+      "invalid": "请填写有效额度、日期，并至少上传一个证明文件。",
+      "success": "授信申请已提交",
+      "failed": "授信申请提交失败，已上传材料不会形成申请，请重试。"
+    },
+    "repayment": {
+      "button": "余额还款",
+      "title": "使用余额还款",
+      "amount": "请输入还款金额",
+      "help": "本账单待还 {amount}，当前同币种可用余额 {balance}。",
+      "invalid": "还款金额必须大于零且不能超过待还金额。",
+      "success": "还款成功，额度已经按实际归还本金释放。",
+      "failed": "还款没有完成，余额和账单保持不变。"
+    }
+  },
+  "customerAccount": {
+    "common": {
+      "cancelChanges": "撤销修改",
+      "refresh": "刷新",
+      "retry": "重试"
+    },
+    "type": {
+      "enterprise": "企业客户",
+      "individual": "个人客户"
+    },
+    "status": {
+      "active": "正常",
+      "disabled": "已停用",
+      "pending_activation": "待激活",
+      "restricted": "受限制"
+    },
+    "verification": {
+      "expired": "认证已过期",
+      "pending": "认证处理中",
+      "rejected": "认证未通过",
+      "revoked": "认证已撤销",
+      "unverified": "未认证",
+      "verified": "已认证"
+    },
+    "profile": {
+      "accountCard": "账户信息",
+      "accountStatus": "账户状态",
+      "countryCode": "国家或地区代码",
+      "customerNo": "客户编号",
+      "customerType": "客户类型",
+      "displayName": "显示名称",
+      "editCard": "可修改资料",
+      "eyebrow": "账户资料",
+      "heading": "管理你的基本资料",
+      "identifier": "证件或登记号码",
+      "legalName": "认证名称",
+      "legalNote": "认证姓名、证件和企业登记资料不能在这里直接修改，需要通过实名认证页面重新提交审核。",
+      "loadFailed": "资料读取失败，请重试。",
+      "locale": "常用语言",
+      "localeEn": "English",
+      "localeZh": "简体中文",
+      "menu": "账户资料",
+      "save": "保存资料",
+      "saved": "账户资料已保存。",
+      "subtitle": "这里保存日常展示信息，不会改动实名认证、登录密码或账户权限。",
+      "title": "账户资料",
+      "verification": "认证状态"
+    },
+    "contacts": {
+      "add": "新增联系人",
+      "archive": "停用",
+      "archiveCancel": "暂不停用",
+      "archiveConfirm": "确认停用",
+      "archiveDescription": "停用后，这位联系人不再接收新的通知；历史记录会继续保留。",
+      "archiveTitle": "停用这位联系人？",
+      "archived": "联系人已停用。",
+      "authorityWarning": "通知联系人只负责接收你授权的消息，不会获得登录、付款、服务器操作或合同签署权限。",
+      "callingCode": "国际区号",
+      "cancel": "取消",
+      "createTitle": "新增通知联系人",
+      "created": "联系人已新增。",
+      "description": "维护账单、服务和安全提醒的接收人。至少填写邮箱或手机号其中一项。",
+      "edit": "编辑",
+      "editTitle": "编辑通知联系人",
+      "email": "邮箱",
+      "empty": "还没有通知联系人。",
+      "name": "联系人姓名",
+      "phone": "手机号",
+      "save": "保存联系人",
+      "status": {
+        "active": "使用中",
+        "archived": "已停用"
+      },
+      "title": "通知联系人",
+      "updated": "联系人已更新。",
+      "verification": {
+        "unverified": "未验证",
+        "verified": "已验证"
+      },
+      "verificationReset": "修改邮箱或手机号后，原来的验证状态会失效，需要重新验证后才能用于对应通知。"
+    },
+    "data": {
+      "closureAction": "申请注销账户",
+      "closureBlocked": "当前还有需要先处理的事项，暂时不能提交注销。",
+      "closureCancel": "暂不申请",
+      "closureConfirm": "确认申请",
+      "closureConfirmDescription": "系统会先检查余额、账单、服务器、合同和处理中业务。通过后只进入人工复核，不会立刻删除账户。",
+      "closureConfirmTitle": "确认申请注销账户？",
+      "closureDescription": "注销不是立即删除。系统会先检查资金、账单、服务器、合同和处理中业务，复核通过后才匿名化普通资料。依法需要保留的合同、发票和审计证据仍会保留。",
+      "closurePending": "注销申请已进入人工复核。在最终处理前，系统还会再次检查全部阻断条件。",
+      "closureSafety": "有余额、未结账单、活动服务器、有效合同或处理中业务时，注销会被阻止。",
+      "closureSubmitted": "注销申请已提交，等待后台复核。",
+      "closureTitle": "账户注销",
+      "download": "下载导出文件",
+      "expiresAt": "文件失效时间",
+      "exportAction": "申请导出",
+      "exportDescription": "系统会生成只属于当前账户的压缩文件，文件不会公开，也不会通过普通链接长期保存。",
+      "exportFailed": "导出申请没有提交。请重新登录后再试。",
+      "exportRequested": "导出任务已创建，请稍后刷新状态。",
+      "exportSecurity": "导出敏感资料前，需要使用最近一次完整登录确认是你本人。文件和下载入口都会在短时间后失效。",
+      "exportTitle": "导出我的数据",
+      "eyebrow": "数据权利",
+      "findingsTitle": "检查结果",
+      "heading": "下载资料或申请注销",
+      "menu": "数据与注销",
+      "refreshStatus": "刷新导出状态",
+      "requestNo": "申请编号",
+      "requestedAt": "申请时间",
+      "resolveFindings": "请先处理上面的事项，再重新提交注销申请。",
+      "status": "处理状态",
+      "subtitle": "所有操作都只针对当前登录的客户账户，后台员工身份不能进入这里代替操作。",
+      "title": "数据与注销"
+    },
+    "exportStatus": {
+      "cancelled": "已取消",
+      "failed": "生成失败",
+      "pending": "等待生成",
+      "ready": "可以下载",
+      "running": "正在生成",
+      "succeeded": "生成完成"
+    },
+    "closureFinding": {
+      "active_contracts": "仍在处理的合同",
+      "active_services": "仍在使用的服务器服务",
+      "in_progress_operations": "仍在处理的业务操作",
+      "legal_retention": "依法需要继续保留的证据（不阻止申请）",
+      "unsettled_funds": "未结清的余额或冻结资金",
+      "unsettled_invoices": "未结清的账单"
+    }
+  },
+  "customerActivation": {
+    "enter": "进入客户中心",
+    "failedDescription": "链接可能已过期、已使用或已被重新发送替换。如果当前登录的是员工账号，请退出并使用单独的客户账号。",
+    "failedTitle": "无法领取这条邀请",
+    "login": "登录后继续",
+    "readyDescription": "请先使用收到邀请的本人账号登录；没有账号可以先注册。管理员不会知道或设置您的密码。",
+    "readyTitle": "领取客户账号邀请",
+    "redeemingDescription": "正在核对邀请和当前登录账号，请不要重复操作。",
+    "redeemingTitle": "正在激活客户账号",
+    "register": "注册新账号",
+    "successDescription": "邀请已经领取，当前登录账号已安全绑定到客户资料。",
+    "successTitle": "客户账号已激活",
+    "useAnotherAccount": "使用其他账号登录"
+  },
+  "customerAddress": {
+    "menu": "我的地址",
+    "title": "我的地址",
+    "subtitle": "维护联系、账单、注册地址和服务地址。每类地址最多有一个默认地址。",
+    "add": "添加地址",
+    "refresh": "刷新",
+    "empty": "还没有地址",
+    "default": "默认地址",
+    "archived": "已归档",
+    "edit": "编辑",
+    "archive": "归档",
+    "createTitle": "添加地址",
+    "editTitle": "编辑地址",
+    "save": "保存",
+    "cancel": "取消",
+    "saved": "地址已保存",
+    "archivedMessage": "地址已归档",
+    "archiveTitle": "归档这个地址？",
+    "archiveDescription": "地址会保留在历史记录中，且不再用于新的业务。",
+    "archiveConfirm": "确认归档",
+    "type": "地址类型",
+    "label": "地址名称",
+    "recipientName": "收件人",
+    "recipientPhone": "联系电话",
+    "countryCode": "国家或地区代码",
+    "province": "省 / 州",
+    "region": "省 / 市 / 区县",
+    "regionPlaceholder": "请选择省、市和区县",
+    "city": "城市",
+    "district": "区 / 县",
+    "addressLine1": "详细地址",
+    "addressLine2": "补充地址",
+    "postalCode": "邮政编码",
+    "makeDefault": "设为这类地址的默认地址",
+    "defaultHint": "设为默认后，同类型的原默认地址会自动取消默认状态。",
+    "types": {
+      "contact": "联系地址",
+      "billing": "账单地址",
+      "registered": "注册地址",
+      "service": "服务地址"
+    }
+  },
+  "customerOnboarding": {
+    "abusePreventionNotice": "为识别短时间批量注册，浏览器会在本机保存一个随机设备编号。服务端只保存该编号和 IP 地址的加密摘要，不采集硬件指纹，也不保存原始设备编号或原始 IP。",
+    "codeDescription": "验证码已发送到 {destination}，10 分钟内有效。",
+    "codePlaceholder": "请输入 6 位验证码",
+    "codeTitle": "验证联系方式",
+    "continue": "继续",
+    "createAccount": "验证并创建账号",
+    "customerType": "客户类型",
+    "customerTypeTip": "请选择个人客户或企业客户",
+    "enter": "进入客户中心",
+    "enterprise": "企业客户",
+    "failedDescription": "开户凭证可能已过期、已被替换，或者当前账号与注册用户名不一致。员工和超级管理员账号不能兑换，请使用单独的客户账号。",
+    "failedTitle": "无法完成客户开户",
+    "humanAnswer": "请输入题目答案",
+    "humanDescription": "先完成一个简单验证，防止机器批量发送验证码。",
+    "humanTitle": "确认您是真人操作",
+    "individual": "个人客户",
+    "intentPreservedDescription": "联系方式已经验证。若账号已存在，请直接登录同名账号继续；开户凭证会在当前标签页短期保留。",
+    "intentPreservedTitle": "开户验证已保留",
+    "login": "登录后继续",
+    "loginAgain": "使用正确账号登录",
+    "readyDescription": "请登录刚注册的账号，系统会核对用户名和浏览器后完成客户绑定。",
+    "readyTitle": "完成客户开户",
+    "redeemingDescription": "正在核对注册账号、联系方式验证和一次性开户凭证。",
+    "redeemingTitle": "正在建立客户账号",
+    "registerSuccessDescription": "账号已创建，请登录一次以完成客户身份绑定。",
+    "successDescription": "当前登录账号已经绑定为客户账号，可以进入客户中心。",
+    "successTitle": "客户开户完成"
+  },
+  "demos": {
+    "title": "演示",
+    "antd": "Ant Design Vue",
+    "vben": {
+      "title": "项目",
+      "about": "关于",
+      "document": "文档",
+      "antdv": "Ant Design Vue 版本",
+      "antdv-next": "Antdv Next 版本",
+      "naive-ui": "Naive UI 版本",
+      "element-plus": "Element Plus 版本",
+      "tdesign": "TDesign Vue 版本"
+    }
+  },
+  "enterpriseVerification": {
+    "account": "企业客户账户",
+    "change": {
+      "create": "发起企业资料变更",
+      "created": "变更申请已建立，请重新同意并提交新材料",
+      "lead": "这里只选择要变更的资料类别，不在这一步填写新证件信息。旧的已认证资料在新审核通过前继续有效。",
+      "legalIdentifier": "统一社会信用代码",
+      "legalName": "企业名称",
+      "reason": "选择变更原因",
+      "reasonCorrection": "证件号码更正",
+      "reasonLegalName": "企业名称变更",
+      "reasonOther": "其他原因",
+      "reasonRegistration": "企业登记信息变更",
+      "title": "更新已认证企业资料"
+    },
+    "draft": {
+      "description": "已上传的材料状态会从服务端恢复；企业名称、证件号码等敏感内容不会保存在浏览器中，离开页面后需要重新填写。",
+      "title": "草稿已从服务端恢复"
+    },
+    "enterpriseOnly": "当前账户不是企业客户，不能进入企业认证流程。",
+    "evidence": {
+      "agent_id": "经办人身份证明",
+      "authorization_letter": "授权委托书",
+      "business_license": "营业执照",
+      "choose": "点击或拖入文件",
+      "hint": "{required} · PDF/JPG/PNG · 不超过 5 MiB",
+      "invalid": "请选择不超过 5 MiB 的 PDF、JPG 或 PNG 文件。",
+      "lead": "营业执照和法定代表人身份证明必传；选择授权经办人时，还要上传经办人身份证明和授权委托书。最多八份。",
+      "legal_representative_id": "法定代表人身份证明",
+      "notUploaded": "尚未上传",
+      "optional": "选传",
+      "organization_certificate": "组织机构证明",
+      "other": "其他补充材料",
+      "ready": "已加密保存",
+      "required": "必传",
+      "title": "上传认证材料",
+      "uploaded": "材料已加密保存",
+      "uploading": "正在加密上传"
+    },
+    "failed": "企业认证服务暂时不可用，请稍后重试。",
+    "form": {
+      "agentId": "经办人证件号码",
+      "agentName": "经办人姓名",
+      "agentRole": "授权经办人",
+      "applicantRole": "申请人身份",
+      "industry": "行业代码（选填）",
+      "invalid": "请填写完整且有效的企业资料，并上传当前申请人身份所需的材料。",
+      "lead": "这些内容只会提交到本套安装的本地合规服务，并加密保存；不会写进浏览器存储。",
+      "legalName": "企业法定名称",
+      "registrationHint": "首期支持中国大陆 18 位统一社会信用代码",
+      "registrationId": "统一社会信用代码",
+      "representative": "法定代表人姓名",
+      "representativeId": "法定代表人证件号码",
+      "representativeRole": "法定代表人",
+      "submit": "提交人工审核",
+      "submitHint": "提交后进入本地人工审核。审核结果只由服务端状态决定，不能通过浏览器参数伪造。",
+      "submitted": "企业认证已提交人工审核",
+      "title": "填写企业资料"
+    },
+    "lead": "完成企业资料和证明材料认证；首次认证、退回重提与认证后变更都在这里办理。",
+    "menu": "企业认证",
+    "notice": {
+      "accept": "我已阅读并同意本次企业认证信息处理说明",
+      "begin": "同意并建立认证草稿",
+      "data": "处理内容：企业名称、统一社会信用代码、法定代表人与经办人身份资料，以及你主动上传的证明文件。",
+      "policy": "说明版本",
+      "purpose": "处理目的：确认签约、付款、开票及服务使用主体，满足本套安装的本地合规要求。",
+      "recipient": "处理范围：仅进入当前安装实例的本地合规服务和获授权的审核人员，不发送给软件提供方。",
+      "retention": "保存方式：材料在服务端加密私有保存；页面和浏览器存储不保留证件原文、文件名或文件内容。",
+      "rights": "你的权利：可在提交前停止；被退回后可按原因修正并重新提交。认证后变更期间，旧的已认证资料继续有效。",
+      "started": "认证草稿已建立",
+      "title": "企业认证信息处理说明"
+    },
+    "personal": "查看个人实名认证",
+    "profile": {
+      "title": "当前有效的企业资料",
+      "verifiedAt": "认证时间"
+    },
+    "reason": {
+      "identifier_invalid": "统一社会信用代码无效，请核对后重新提交。",
+      "materials_incomplete": "证明材料不完整，请补齐后重新提交。",
+      "materials_unreadable": "证明材料无法清晰辨认，请更换清晰文件后重新提交。",
+      "other": "本次审核未通过，请按审核意见修正后重新提交。"
+    },
+    "rejected": {
+      "title": "本次认证已退回，可以修正后重提"
+    },
+    "reload": "刷新服务端状态",
+    "review": {
+      "changeDescription": "新资料正在审核，当前已认证资料继续有效；审核通过后才会替换。",
+      "description": "材料已经提交，本地审核人员处理后，页面会显示新的服务端状态。",
+      "title": "企业认证正在人工审核"
+    },
+    "security": {
+      "description": "浏览器只保存随机的防重复操作码。企业证件内容、文件名、文件内容、材料编号和存储位置都不会写入浏览器存储。",
+      "title": "敏感企业资料只进入本地加密合规服务"
+    },
+    "status": {
+      "canceled": "已取消",
+      "draft": "草稿",
+      "expired": "已过期",
+      "hint": "这里显示的是当前安装实例返回的真实认证状态。",
+      "pending": "待审核",
+      "rejected": "已退回",
+      "review_required": "需要进一步审核",
+      "title": "当前企业认证状态",
+      "unverified": "未认证",
+      "verified": "已认证",
+      "verifying": "审核中"
+    },
+    "steps": {
+      "consent": "阅读并同意",
+      "materials": "填写资料并上传材料",
+      "review": "本地人工审核"
+    },
+    "title": "企业认证中心"
+  },
+  "finance": {
+    "eyebrow": "客户财务中心",
+    "lead": "余额、应收账单、资金流水和自动续费都以后端最新账务事实为准。不同币种始终分开显示，不进行隐式换算。",
+    "views": {
+      "overview": "财务总览",
+      "invoices": "我的账单",
+      "transactions": "资金流水",
+      "renewals": "自动续费"
+    },
+    "overview": {
+      "openInvoices": "待处理账单",
+      "autoRenew": "已开启自动续费"
+    },
+    "creditPayment": {
+      "action": "使用信用额度支付",
+      "title": "确认使用信用额度",
+      "description": "本次支付 {amount}，支付后预计剩余可用额度 {remaining}。确认后服务器会再次检查额度。",
+      "confirm": "确认信用支付",
+      "success": "信用支付成功，订单已取得财务结清资格。",
+      "failed": "信用支付没有完成，账单和额度保持不变。"
+    },
+    "account": {
+      "customer_balance": "余额账户",
+      "customer_credit": "信用账户",
+      "customer_gift": "赠送账户",
+      "customer_commission": "佣金账户"
+    },
+    "amount": {
+      "balance": "账户余额",
+      "available": "可用余额",
+      "outstanding": "待付金额",
+      "total": "账单金额"
+    },
+    "status": {
+      "all": "全部状态",
+      "active": "有效",
+      "cancelled": "已取消",
+      "expired": "已到期",
+      "grace": "宽限期",
+      "overdue": "已逾期",
+      "paid": "已付清",
+      "partially_paid": "部分付款",
+      "pending": "待处理",
+      "confirming": "确认中",
+      "failed": "未完成",
+      "pending_payment": "待付款",
+      "refunded": "已退款",
+      "submitted": "已提交，待通道确认",
+      "succeeded": "已完成"
+    },
+    "invoice": {
+      "detailTitle": "账单 {invoiceNo}",
+      "due": "付款截止",
+      "items": "账单项目"
+    },
+    "transaction": {
+      "businessAmount": "业务金额",
+      "change": "账户变动",
+      "posted": "入账时间"
+    },
+    "filters": {
+      "currency": "币种，如 CNY"
+    },
+    "empty": {
+      "balances": "暂时没有余额账户",
+      "invoices": "暂无账单",
+      "transactions": "暂无资金流水",
+      "renewals": "暂无可续期的长期权益"
+    },
+    "recharge": {
+      "action": "账户充值",
+      "title": "充值到账户余额",
+      "description": "选择币种和本地商家已启用的支付通道，支付确认后自动计入同币种余额。",
+      "currency": "充值币种",
+      "amount": "充值金额",
+      "channel": "支付通道",
+      "mode": "付款方式",
+      "continue": "继续付款",
+      "cancel": "暂不充值",
+      "close": "关闭",
+      "invalid": "请填写有效的正数金额，并选择支付通道和付款方式。",
+      "failed": "暂时无法发起充值，请检查支付通道后重试。",
+      "confirmationNote": "付款页面返回不代表已经到账；系统只在支付平台确认成功后增加余额。",
+      "scanTitle": "微信扫码付款",
+      "scanDescription": "请使用微信扫描二维码。付款后点击“查看到账状态”，系统会读取服务端确认结果。",
+      "checkStatus": "查看到账状态",
+      "modes": {
+        "alipay_page": "支付宝电脑网站",
+        "alipay_wap": "支付宝手机网站",
+        "wechat_h5": "微信 H5",
+        "wechat_native": "微信扫码",
+        "wechat_jsapi": "微信公众号支付",
+        "epay_cashier": "易支付收银台"
+      },
+      "unavailable": "当前尚未安装通过能力门禁的支付通道，充值入口暂不可用；余额支付不受影响。"
+    },
+    "paymentReturn": {
+      "title": "付款确认",
+      "eyebrow": "安全付款状态",
+      "complete": "充值已经到账",
+      "confirming": "正在等待支付平台确认",
+      "description": "这里展示服务端确认结果。即使付款页面已返回，也不会直接把余额显示为到账。",
+      "attemptNo": "付款编号",
+      "currency": "币种",
+      "refresh": "刷新状态",
+      "back": "返回财务中心",
+      "loadFailed": "暂时无法读取付款状态，请稍后刷新。"
+    },
+    "merge": {
+      "action": "合并所选账单",
+      "selected": "已选择 {count} 张",
+      "title": "确认合并账单",
+      "description": "只会合并未发生付款、退款或减免的同客户同币种账单；原账单会保留为不可变凭证。",
+      "confirm": "确认合并"
+    },
+    "balancePayment": {
+      "action": "余额支付",
+      "title": "确认余额支付",
+      "description": "确认使用同币种可用余额支付这张账单？系统会按当前实际欠款精确扣款。",
+      "confirm": "确认支付"
+    },
+    "renewal": {
+      "note": "自动续费只使用同币种可用余额；余额不足不会伪造成功状态。",
+      "enabled": "已开启",
+      "disabled": "未开启",
+      "configure": "设置自动续费",
+      "entitlementStatus": "权益状态",
+      "expiry": "权益到期时间",
+      "nextAttempt": "下次尝试",
+      "insufficient": "自动续费因余额不足未完成。充值后系统会按当前策略重试。",
+      "failureNotify": "续费失败时通知我",
+      "cycles": "每次续费周期数",
+      "leadDays": "提前天数",
+      "attempts": "最大尝试次数",
+      "retryHours": "重试间隔（小时）"
+    },
+    "actions": {
+      "apply": "应用筛选",
+      "backToInvoices": "返回账单列表",
+      "detail": "查看明细",
+      "next": "下一页",
+      "previous": "上一页",
+      "retry": "重新加载",
+      "save": "保存策略"
+    },
+    "messages": {
+      "loadFailed": "财务数据暂时无法加载，请稍后重试。",
+      "merged": "账单已安全合并，列表已经刷新。",
+      "paid": "余额支付成功，账单状态已经刷新。",
+      "renewalSaved": "自动续费策略已更新。"
+    }
+  },
+  "identity": {
+    "platformMenu": "平台认证",
+    "platform": {
+      "title": "平台认证",
+      "description": "所有账号先完成本人实名认证；通过后可继续申请企业认证，审核通过后账号升级为企业主体。",
+      "personalFirst": "先完成实名认证，再办理企业认证",
+      "personalTab": "实名认证",
+      "enterpriseTab": "企业认证",
+      "gateFailed": "暂时无法确认实名认证状态，企业认证入口已安全锁定，请稍后重试。"
+    },
+    "account": "客户中心 · 实名认证",
+    "lead": "实名认证只需完成一次。返回本页不代表认证通过，系统会重新查询阿里云的权威结果。",
+    "loadFailed": "实名认证服务暂时不可用，请稍后重试。",
+    "menu": "实名认证",
+    "personalOnly": "此入口仅适用于个人客户，企业客户请使用企业认证流程。",
+    "reload": "重新加载",
+    "returnChecking": "已从认证页面返回，正在向阿里云重新核验结果……",
+    "returnPending": "权威查询已经完成，但阿里云尚未确认通过。请稍后重新查询，不要重复发起认证。",
+    "title": "首次付款前，先确认是你本人",
+    "status": {
+      "expired": "已过期",
+      "hint": "状态只来自本地证据或阿里云权威查询，不相信浏览器地址中的结果参数。",
+      "rejected": "未通过",
+      "review_required": "需要商家复核",
+      "title": "当前认证状态",
+      "unverified": "未认证",
+      "verified": "已认证",
+      "verifying": "认证中"
+    },
+    "verified": {
+      "description": "首次付款实名门禁已经由服务端权威结果更新。",
+      "name": "姓名",
+      "number": "证件号码",
+      "time": "通过时间",
+      "title": "实名认证已通过"
+    },
+    "payment": {
+      "continue": "返回原订单继续付款",
+      "failed": "实名已通过，但自动恢复付款暂时失败。返回原订单后可安全重试，不会重复下单。",
+      "orders": "返回我的订单",
+      "pending": "实名已通过，但原付款准备仍需服务端复核。返回订单后可以再次检查。",
+      "ready": "原付款准备已重新核验，可以继续选择支付方式。"
+    },
+    "verifying": {
+      "query": "重新查询权威结果",
+      "querying": "正在查询……",
+      "title": "认证正在处理中"
+    },
+    "review": {
+      "description": "系统没有强制通过入口。商家会根据脱敏案件证据处理，请不要在工单中发送完整身份证号。",
+      "title": "请联系商家协助处理"
+    },
+    "retry": {
+      "description": "此前认证未通过或已过期时，可以重新提交。系统仍会重新校验证件和年龄。",
+      "title": "可以重新发起实名认证"
+    },
+    "form": {
+      "invalid": "请填写本人姓名和有效的 18 位居民身份证号码，并勾选单独同意。",
+      "lead": "首版只支持年满 14 周岁的中国大陆个人客户和 18 位居民身份证。",
+      "name": "本人姓名",
+      "namePlaceholder": "请输入身份证上的姓名",
+      "number": "居民身份证号码",
+      "numberPlaceholder": "请输入 18 位居民身份证号码",
+      "safety": "姓名和身份证号不会写入浏览器本地存储，也不会保存到普通案件、审计或任务记录。",
+      "start": "同意并前往阿里云认证",
+      "starting": "正在安全发起……",
+      "title": "填写本人身份信息"
+    },
+    "consent": {
+      "accept": "我已阅读并单独同意上述敏感个人信息处理，并确认提交的是本人信息。",
+      "data": "本人姓名、18 位居民身份证号码，以及由阿里云认证页面直接采集的人脸和活体核验信息。",
+      "dataTitle": "处理的信息",
+      "purpose": "用于完成首次付款前的法定实名核验、防止身份冒用，并生成可审计的认证结论；不同意将无法完成首次付款。",
+      "purposeTitle": "处理目的和必要性",
+      "recipient": "运营本网站的 IDC 商家使用其自有阿里云账号调用金融级实人认证。终端客户不配置也不承担该技术账号费用。",
+      "recipientTitle": "接收方与责任",
+      "rights": "你可以联系商家查询、更正或依法删除相关信息，也可以撤回后续处理同意；撤回不影响此前合法处理，但可能导致无法继续首次付款。",
+      "rightsTitle": "你的权利",
+      "storage": "供应商服务接入区域位于中国大陆。本系统不保存人脸图片或活体视频，只保留脱敏结果、必要认证证据和受保护的加密快照；保留期限以适用法律和商家隐私政策为准。",
+      "storageTitle": "保存与处理区域",
+      "title": "敏感个人信息单独同意",
+      "version": "告知版本"
+    }
+  },
+  "initialPassword": {
+    "title": "首次登录请修改密码",
+    "subtitle": "这是管理员为你设置的初始密码。设置你自己的新密码后才能进入客户中心。",
+    "newPassword": "新密码",
+    "confirmPassword": "再次输入新密码",
+    "passwordTip": "密码至少需要 8 位",
+    "confirmPasswordTip": "两次输入的密码不一致",
+    "submit": "保存新密码并进入客户中心",
+    "successTitle": "密码修改成功",
+    "successDescription": "现在可以正常使用客户中心了。"
+  },
+  "invoiceProfiles": {
+    "menu": "发票抬头",
+    "title": "发票抬头",
+    "eyebrow": "开票资料",
+    "heading": "管理常用发票抬头",
+    "subtitle": "保存个人或企业抬头，申请发票时直接选择。已经提交的开票申请会保留当时资料，不会被之后的修改覆盖。",
+    "refresh": "刷新列表",
+    "add": "新增抬头",
+    "securityTitle": "银行账号不会在页面回显",
+    "securityDescription": "银行账号由服务端加密保存。编辑时默认保留，只有明确选择“更换”或“清除”才会改变。",
+    "loadFailed": "暂时无法读取发票抬头，请稍后重试。",
+    "retry": "重新读取",
+    "empty": "还没有保存发票抬头",
+    "loadMore": "加载更多抬头",
+    "default": "默认",
+    "notConfigured": "未填写",
+    "status": {
+      "active": "使用中",
+      "archived": "已停用"
+    },
+    "type": {
+      "individual": "个人抬头",
+      "enterprise": "企业抬头"
+    },
+    "fields": {
+      "type": "抬头类型",
+      "taxNo": "税号",
+      "bank": "开户行",
+      "bankAccount": "银行账号",
+      "updated": "最近更新"
+    },
+    "actions": {
+      "edit": "编辑",
+      "setDefault": "设为默认",
+      "deactivate": "停用"
+    },
+    "form": {
+      "createTitle": "新增发票抬头",
+      "editTitle": "编辑发票抬头",
+      "type": "抬头类型",
+      "title": "名称",
+      "taxNo": "企业税号",
+      "address": "注册地址（选填）",
+      "phone": "注册电话（选填）",
+      "bankName": "开户行（选填）",
+      "bankAction": "银行账号处理方式",
+      "bankAccount": "银行账号（选填）",
+      "bankAccountHelp": "提交后只显示末尾几位，原账号不会回显。",
+      "savedBank": "当前保存的是 {masked}，页面不会读取完整账号。",
+      "noSavedBank": "当前没有保存银行账号。选择“更换”可以新增。",
+      "individualClearsBankTitle": "切换为个人抬头会清除本抬头的银行账号",
+      "individualClearsBankDescription": "保存后，本抬头不再保留企业税务和银行资料；以前已经提交的开票申请仍保留原快照。",
+      "makeDefault": "同时设为默认抬头",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "bankAction": {
+      "keep": "保留原账号",
+      "replace": "更换账号",
+      "clear": "清除账号"
+    },
+    "deactivate": {
+      "title": "停用这个发票抬头？",
+      "description": "停用后不能用于新的开票申请，但已有申请和历史资料都会保留。",
+      "defaultDescription": "这是当前默认抬头。停用后系统不会偷偷选择其他抬头，之后可以由你重新设置默认。已有申请和历史资料都会保留。",
+      "cancel": "继续使用",
+      "confirm": "确认停用"
+    },
+    "messages": {
+      "created": "发票抬头已新增。",
+      "updated": "发票抬头已更新。",
+      "defaultSet": "默认发票抬头已更新。",
+      "deactivated": "发票抬头已停用，历史资料仍然保留。"
+    }
+  },
+  "marketingCoupons": {
+    "claim": {
+      "button": "兑换",
+      "code": "优惠码",
+      "invalid": "优惠码无效",
+      "lead": "输入 8～24 位字母或数字。字母不区分大小写。",
+      "placeholder": "请输入优惠码",
+      "succeeded": "优惠已经加入你的账户",
+      "title": "兑换优惠码"
+    },
+    "empty": "还没有可用优惠",
+    "loadFailed": "优惠暂时加载失败，请稍后重试",
+    "menu": "我的优惠",
+    "mine": "已经领取的优惠",
+    "status": {
+      "active": "可使用",
+      "exhausted": "已用完",
+      "expired": "已过期",
+      "revoked": "已撤销"
+    },
+    "title": "我的优惠"
+  },
+  "menu": {
+    "customerGroups": {
+      "products": "产品与服务",
+      "finance": "财务管理",
+      "account": "账户管理",
+      "salesChannel": "推荐与佣金",
+      "security": "安全管理",
+      "compliance": "认证与合规",
+      "support": "技术支持",
+      "external": "更多服务"
+    },
+    "platform": {
+      "title": "平台管理",
+      "tenants": "租户管理"
+    }
+  },
+  "notifications": {
+    "channelChoices": "各类消息的接收方式",
+    "consentOptedIn": "已同意",
+    "consentOptedOut": "已退订",
+    "consentUnknown": "状态未知",
+    "disabled": "未启用",
+    "enabled": "已启用",
+    "marketingConsents": "营销消息授权",
+    "marketingDescription": "关闭某个接收方式就是退订；只有当前授权政策完整时，才能再次开启。",
+    "marketingEditingUnavailable": "请在下方的营销消息授权中退订或恢复接收。",
+    "marketingEvidenceMissing": "当前授权信息不完整，为避免记错你的选择，这项设置已锁定。",
+    "marketingTitle": "选择营销消息的接收方式",
+    "marketingToggleLabel": "通过{channel}接收营销消息",
+    "preferenceRetryReady": "已读取最新设置，并保留了你的选择。请再次保存。",
+    "preferenceSaveFailed": "没有保存成功，你刚才的选择已保留。请先读取最新设置。",
+    "preferenceSaved": "已保存",
+    "preferenceToggleLabel": "{category}的{channel}接收开关",
+    "preferenceVersion": "设置版本",
+    "preferredLocale": "消息语言",
+    "preferencesDescription": "普通消息可逐项开启或关闭，也可以退订或恢复营销消息并设置免打扰时间。安全消息始终保留。",
+    "preferencesEmpty": "还没有单独保存过接收方式",
+    "preferencesLoadFailed": "暂时无法读取通知偏好，请稍后重试",
+    "preferencesTitle": "通知接收设置",
+    "quietHours": "免打扰时间",
+    "quietHoursContactAmbiguous": "当前有多个营销联系方式，服务端还不能明确本次应使用哪一个，因此免打扰时间暂时锁定。",
+    "quietHoursEnabledLabel": "启用免打扰时间",
+    "quietHoursEnd": "结束时间",
+    "quietHoursEvidenceMissing": "当前营销授权信息不完整，暂时不能安全修改免打扰时间。",
+    "quietHoursInvalid": "请填写有效的时区、开始时间和结束时间。",
+    "quietHoursMissing": "当前没有可用的免打扰设置，本页没有替你新建默认值。",
+    "quietHoursStart": "开始时间",
+    "quietHoursTimezone": "所在时区（城市/地区）",
+    "refreshLatest": "读取最新设置",
+    "saveAgain": "再次保存",
+    "saveQuietHours": "保存免打扰时间",
+    "securityRequired": "为了账号和服务安全，这类通知不能关闭。",
+    "categories": {
+      "account": "账号消息",
+      "billing": "账务消息",
+      "marketing": "营销消息",
+      "security": "安全消息",
+      "service": "服务消息",
+      "support": "工单消息"
+    },
+    "channels": {
+      "email": "邮件",
+      "in_app": "站内信",
+      "sms": "短信",
+      "wechat_official": "微信公众号"
+    },
+    "completedAt": "完成于",
+    "deliveryHistory": "发送记录",
+    "empty": "还没有通知发送记录",
+    "loadFailed": "暂时无法读取通知发送记录，请稍后重试",
+    "menu": "通知中心",
+    "nextPage": "下一页",
+    "pageNumber": "第 {page} 页",
+    "preferences": "接收偏好",
+    "previousPage": "上一页",
+    "queuedAt": "创建于",
+    "retry": "重试",
+    "statuses": {
+      "cancelled": "已取消",
+      "delivered": "已送达",
+      "failed": "发送失败",
+      "manual_review": "等待人工确认",
+      "manual_unknown_closed": "人工确认已结束",
+      "preference_blocked": "已按你的偏好跳过",
+      "queued": "等待发送",
+      "result_unknown": "结果待确认",
+      "retry_wait": "等待重试",
+      "sending": "发送中",
+      "submitted": "已交给发送渠道",
+      "succeeded": "发送成功",
+      "template_error": "内容准备失败"
+    }
+  },
+  "page": {
+    "auth": {
+      "login": "登录",
+      "register": "注册",
+      "codeLogin": "验证码登录",
+      "qrcodeLogin": "二维码登录",
+      "forgetPassword": "忘记密码",
+      "resetPassword": "重置密码",
+      "profile": "个人中心"
+    },
+    "dashboard": {
+      "title": "概览",
+      "analytics": "分析页",
+      "workspace": "工作台"
+    },
+    "customer": {
+      "overview": "客户概览",
+      "description": "集中管理产品选购、订单、云服务、财务和售后事项。",
+      "avatarMenu": {
+        "profile": "账户资料",
+        "addresses": "联系人与地址",
+        "dataRights": "数据与账号",
+        "privacy": "隐私设置"
+      },
+      "summary": {
+        "welcome": "欢迎回来",
+        "customerCode": "客户编号：",
+        "individual": "个人账号",
+        "enterprise": "企业账号",
+        "verified": "已实名",
+        "unverified": "未实名",
+        "manageAccount": "管理账户",
+        "balance": "账户余额",
+        "frozen": "冻结金额",
+        "recharge": "充值与付款",
+        "transactions": "查看流水",
+        "openInvoices": "待支付账单",
+        "activeServers": "运行中服务",
+        "expiringSoon": "7 天内到期",
+        "openTickets": "待处理工单",
+        "withinSevenDays": "按当前已加载服务统计",
+        "viewDetails": "查看详情",
+        "services": "我的服务",
+        "serviceName": "产品 / 服务名称",
+        "serviceStatus": "状态",
+        "expiresAt": "到期时间",
+        "serviceNo": "服务编号",
+        "action": "操作",
+        "manage": "管理",
+        "noServices": "当前没有已开通服务，可从产品选购开始。",
+        "unknown": "状态待确认",
+        "unavailable": "财务数据暂时不可用",
+        "partialFailed": "部分摘要暂时未加载，已显示其余真实数据。",
+        "loadFailed": "账户摘要暂时无法加载，请稍后重试。",
+        "retry": "重新加载"
+      },
+      "quickAccess": {
+        "title": "常用入口",
+        "description": "直接进入最常用的服务，减少在菜单中来回查找。",
+        "products": "产品选购",
+        "productsDescription": "查看可购买的产品和配置方案",
+        "servers": "我的服务器",
+        "serversDescription": "查看服务状态和可用操作",
+        "orders": "订单管理",
+        "ordersDescription": "查看订单与交付进度",
+        "finance": "财务中心",
+        "financeDescription": "处理账单、发票和续费",
+        "support": "技术支持",
+        "supportDescription": "提交并跟进服务工单",
+        "profile": "账户资料",
+        "profileDescription": "维护联系人和账户信息"
+      },
+      "workflow": {
+        "title": "常用办理流程",
+        "description": "从选购到使用，按这三个步骤即可完成主要业务。",
+        "choose": "选择产品并确认配置",
+        "submit": "提交订单并完成付款",
+        "manage": "在我的服务器查看交付和运行状态"
+      }
+    },
+    "about": {
+      "project": {
+        "description": "一个基于 GoFrame、Vue 3 和 Vben 5 的面向可持续交付的 AI 原生全栈框架，提供核心宿主服务、默认管理工作台、插件扩展能力与 AI 原生研发工作流。",
+        "name": "当前应用",
+        "title": "关于项目",
+        "viewLink": "点击查看",
+        "sections": {
+          "basic": "基本信息",
+          "dependencies": "生产环境依赖",
+          "devDependencies": "开发环境依赖"
+        },
+        "items": {
+          "author": "作者",
+          "buildTime": "最后构建时间",
+          "documentation": "文档地址",
+          "homepage": "主页",
+          "license": "开源许可协议",
+          "preview": "预览地址",
+          "version": "版本号"
+        }
+      },
+      "systemInfo": {
+        "loading": "加载中...",
+        "viewLink": "点击查看",
+        "sections": {
+          "framework": "关于项目",
+          "backend": "后端组件",
+          "frontend": "前端组件"
+        },
+        "items": {
+          "frameworkName": "项目名称",
+          "homepage": "项目官网",
+          "repositoryUrl": "仓库地址",
+          "version": "版本号",
+          "license": "开源许可",
+          "description": "项目介绍"
+        }
+      }
+    },
+    "plugin": {
+      "dynamicPage": {
+        "mountFailedTitle": "动态插件挂载失败",
+        "notFoundTitle": "插件页面未找到",
+        "notFoundSubtitle": "当前路由没有匹配到已注册的源码插件前端页面，也没有声明可用的动态插件内嵌挂载入口。",
+        "refreshNoticeTitle": "插件已更新",
+        "refreshNoticeDescription": "当前插件页面已有新代际生效，请刷新当前页面以切换到最新版本。",
+        "refreshNoticeAction": "刷新当前页面"
+      }
+    },
+    "routes": {
+      "about": {
+        "developerCenter": "开发中心",
+        "apiDocs": "接口文档",
+        "systemInfo": "版本信息"
+      },
+      "system": {
+        "accessManagement": "权限管理",
+        "userManagement": "用户管理",
+        "roleManagement": "角色管理",
+        "menuManagement": "菜单管理",
+        "roleUserManagement": "角色授权用户",
+        "systemSettings": "系统设置",
+        "dictManagement": "字典管理",
+        "configManagement": "参数设置",
+        "fileManagement": "文件管理",
+        "messageList": "消息列表",
+        "scheduler": "任务调度",
+        "jobManagement": "任务管理",
+        "jobGroupManagement": "分组管理",
+        "jobLogManagement": "执行日志",
+        "extensionCenter": "扩展中心",
+        "pluginManagement": "插件管理"
+      },
+      "platform": {
+        "title": "平台管理",
+        "tenants": "租户管理"
+      }
+    }
+  },
+  "pages": {
+    "common": {
+      "search": "搜索",
+      "add": "新增",
+      "edit": "编辑",
+      "delete": "删除",
+      "collapse": "折叠",
+      "expand": "展开",
+      "confirm": "确认",
+      "cancel": "取消",
+      "reset": "重置",
+      "save": "保存",
+      "export": "导出",
+      "import": "导入",
+      "more": "更多",
+      "back": "返回",
+      "preview": "预览",
+      "detail": "详情",
+      "upload": "上传",
+      "download": "下载",
+      "clear": "清空",
+      "actions": "操作",
+      "createdAt": "创建时间",
+      "updatedAt": "更新时间",
+      "remark": "备注",
+      "status": "状态",
+      "confirmTitle": "提示",
+      "deleteConfirm": "确认删除？",
+      "builtinDeleteDisabled": "系统内置数据不支持删除",
+      "deleteSuccess": "删除成功",
+      "createSuccess": "创建成功",
+      "updateSuccess": "更新成功",
+      "exportSuccess": "导出成功",
+      "exportFailed": "导出失败",
+      "yes": "是",
+      "no": "否",
+      "discardChangesConfirm": "当前表单有未保存的修改，确认放弃并关闭吗？"
+    },
+    "fields": {
+      "username": "用户名",
+      "nickname": "昵称",
+      "email": "邮箱",
+      "phone": "手机号码",
+      "dept": "部门",
+      "role": "角色",
+      "roles": "角色",
+      "avatar": "头像",
+      "sex": "性别",
+      "password": "密码",
+      "newPassword": "新的密码",
+      "sort": "排序",
+      "name": "名称",
+      "code": "编码",
+      "type": "类型",
+      "description": "描述"
+    },
+    "status": {
+      "enabled": "正常",
+      "disabled": "停用",
+      "unknown": "未知",
+      "male": "男",
+      "female": "女"
+    },
+    "layout": {
+      "notifications": {
+        "clearAllConfirm": "确认清空所有消息通知？"
+      }
+    },
+    "dashboard": {
+      "analytics": {
+        "overview": {
+          "users": {
+            "title": "用户量",
+            "total": "总用户量"
+          },
+          "visits": {
+            "title": "访问量",
+            "total": "总访问量"
+          },
+          "downloads": {
+            "title": "下载量",
+            "total": "总下载量"
+          },
+          "usage": {
+            "title": "使用量",
+            "total": "总使用量"
+          }
+        },
+        "tabs": {
+          "trends": "流量趋势",
+          "visits": "月访问量"
+        },
+        "cards": {
+          "channels": "访问数量",
+          "sources": "访问来源"
+        },
+        "sources": {
+          "search": "搜索引擎",
+          "direct": "直接访问",
+          "email": "邮件营销",
+          "ads": "联盟广告"
+        },
+        "channels": {
+          "visits": "访问",
+          "trend": "趋势",
+          "web": "网页",
+          "mobile": "移动端",
+          "client": "客户端",
+          "thirdParty": "第三方",
+          "other": "其它"
+        },
+        "sales": {
+          "title": "商业占比",
+          "outsourcing": "外包",
+          "customDevelopment": "定制",
+          "technicalSupport": "技术支持",
+          "remote": "远程"
+        }
+      },
+      "workspace": {
+        "greeting": "早安, {name}, 开始您一天的工作吧！",
+        "defaultName": "管理员",
+        "weather": "今日晴，20℃ - 32℃！",
+        "sections": {
+          "projects": "项目",
+          "trends": "最新动态",
+          "quickNav": "快捷导航",
+          "todos": "待办事项",
+          "trafficSources": "访问来源"
+        },
+        "stats": {
+          "todos": "待办",
+          "projects": "项目",
+          "team": "团队"
+        },
+        "quickNav": {
+          "userManagement": "用户管理",
+          "menuManagement": "菜单管理",
+          "systemParameters": "系统参数",
+          "extensionCenter": "扩展中心",
+          "apiDocs": "接口文档",
+          "scheduledJobs": "定时任务"
+        },
+        "projects": {
+          "linapro": {
+            "group": "全栈框架",
+            "content": "把复杂留给框架，把时间留给创造。"
+          },
+          "goframe": {
+            "group": "后端框架",
+            "content": "稳扎稳打，才能跑得更远。"
+          },
+          "vue": {
+            "group": "前端框架",
+            "content": "看见变化，也拥抱变化。"
+          },
+          "vben": {
+            "group": "管理工作台",
+            "content": "把细节做顺，效率自然提升。"
+          },
+          "antDesign": {
+            "group": "设计体系",
+            "content": "好的秩序，让体验更轻松。"
+          },
+          "typescript": {
+            "group": "类型系统",
+            "content": "清晰的边界，带来从容的交付。"
+          }
+        },
+        "todos": {
+          "reviewShortcuts": {
+            "title": "检查工作台快捷入口",
+            "content": "确认用户、菜单、参数、插件、接口文档和定时任务入口都能正确到达。"
+          },
+          "verifyI18n": {
+            "title": "验证工作台多语言资源",
+            "content": "检查简体中文和英文工作台文案是否保持一致。"
+          },
+          "preparePluginDemo": {
+            "title": "准备插件扩展示例",
+            "content": "整理动态插件安装、启用和页面刷新演示数据。"
+          },
+          "inspectJobLogs": {
+            "title": "回看定时任务日志",
+            "content": "确认内置任务和插件任务的触发结果可追踪。"
+          },
+          "syncApiDocs": {
+            "title": "同步接口文档示例",
+            "content": "更新核心宿主接口和插件接口的调试说明。"
+          }
+        },
+        "trends": {
+          "justNow": "刚刚",
+          "oneHourAgo": "1个小时前",
+          "oneDayAgo": "1天前",
+          "twoDaysAgo": "2天前",
+          "threeDaysAgo": "3天前",
+          "oneWeekAgo": "1周前",
+          "people": {
+            "platformTeam": "平台团队",
+            "accessTeam": "权限团队",
+            "extensionCenter": "扩展中心",
+            "apiDocs": "接口文档",
+            "scheduler": "任务调度",
+            "configCenter": "参数中心",
+            "aiWorkflow": "AI 工作流",
+            "testSuite": "测试套件",
+            "releasePipeline": "发布管道"
+          },
+          "items": {
+            "releasedWorkspaceNav": "发布了 <a>工作台快捷导航</a> 演示入口",
+            "alignedAccessMenus": "同步了 <a>用户管理</a> 与 <a>菜单管理</a> 页面权限",
+            "publishedPluginDemo": "上架了 <a>动态插件安装</a> 示例包",
+            "refreshedApiDocs": "刷新了 <a>OpenAPI 调试文档</a>",
+            "checkedSchedulerLogs": "完成了 <a>定时任务执行日志</a> 巡检",
+            "updatedPublicConfig": "更新了 <a>登录页展示参数</a>",
+            "draftedOpenSpec": "生成了 <a>OpenSpec 变更提案</a>",
+            "passedPlaywright": "通过了 <a>Playwright 回归验证</a>",
+            "archivedDemoIteration": "归档了 <a>LinaPro 示例迭代</a>"
+          }
+        }
+      }
+    },
+    "system": {
+      "user": {
+        "tableTitle": "用户列表",
+        "placeholders": {
+          "username": "请输入账号",
+          "nickname": "请输入昵称",
+          "email": "请输入邮箱",
+          "phone": "请输入手机号码",
+          "password": "请输入密码",
+          "passwordKeep": "留空则不修改",
+          "selectDept": "请选择",
+          "selectDeptFirst": "请先选择部门",
+          "selectRole": "请选择角色",
+          "remark": "请输入备注"
+        },
+        "labels": {
+          "account": "账号",
+          "userAccount": "用户账号",
+          "userNickname": "用户昵称",
+          "userStatus": "用户状态",
+          "unassignedDept": "未分配部门",
+          "unassignedRole": "未分配角色",
+          "na": "暂无",
+          "positions": "岗位",
+          "tenantMemberships": "所属租户"
+        },
+        "help": {
+          "positions": "选择部门后, 将自动加载该部门下所有的岗位",
+          "roles": "可分配多个角色给该用户",
+          "tenantMemberships": "平台上下文可维护用户所属租户, 不选择则为平台用户"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "确认删除选中的{count}条记录吗？",
+          "exportSelectedConfirm": "是否导出选中的记录？",
+          "exportAllConfirm": "是否导出全部数据？",
+          "deleteConfirm": "删除该用户吗？",
+          "noPosts": "该部门下暂无岗位",
+          "noDepartments": "无部门数据",
+          "passwordLength": "密码长度为5-20",
+          "resetPasswordSuccess": "重置密码成功"
+        },
+        "actions": {
+          "resetPassword": "重置密码",
+          "batchEdit": "编辑"
+        },
+        "more": "更多",
+        "drawer": {
+          "createTitle": "新增用户",
+          "editTitle": "编辑用户"
+        },
+        "import": {
+          "title": "用户导入",
+          "resultTitle": "提示",
+          "uploadHint": "点击或者拖拽到此处上传文件",
+          "fileHint": "允许导入xlsx, xls文件",
+          "downloadTemplate": "下载模板",
+          "overwrite": "是否更新/覆盖已存在的用户数据",
+          "downloadTemplateFailed": "下载模板失败",
+          "success": "成功导入 {count} 条用户数据",
+          "summary": "成功 {success} 条，失败 {fail} 条",
+          "rowReason": "第{row}行: {reason}"
+        },
+        "resetPassword": {
+          "title": "重置密码",
+          "newPassword": "新的密码",
+          "placeholder": "请输入新的密码，密码长度为5-20",
+          "userId": "用户ID"
+        },
+        "exportFileName": "用户数据导出.xlsx",
+        "batchEdit": {
+          "title": "批量编辑用户",
+          "selectedCount": "已选择 {count} 个用户",
+          "fields": {
+            "updateStatus": "更新状态",
+            "updateRoles": "更新角色",
+            "updateTenant": "更新租户"
+          },
+          "help": {
+            "roles": "启用后将用所选角色替换这些用户当前上下文下的角色",
+            "tenants": "启用后将用所选租户替换这些用户的所属租户"
+          },
+          "messages": {
+            "noFields": "请选择至少一个要批量更新的字段",
+            "statusRequired": "请选择目标用户状态",
+            "success": "批量编辑成功",
+            "roleTenantConflict": "请分两次批量更新角色和所属租户"
+          }
+        }
+      },
+      "role": {
+        "tableTitle": "角色列表",
+        "fields": {
+          "roleId": "角色ID",
+          "roleName": "角色名称",
+          "permissionKey": "权限字符",
+          "dataScope": "数据权限",
+          "roleSort": "角色排序",
+          "roleStatus": "角色状态",
+          "menuPermissions": "菜单权限"
+        },
+        "placeholders": {
+          "roleName": "请输入角色名称",
+          "permissionKey": "请输入权限字符",
+          "dataScope": "请选择数据权限",
+          "status": "请选择状态",
+          "sort": "请输入排序",
+          "remark": "请输入备注",
+          "permissionExample": "如: admin, user等",
+          "permissionHelp": "如: admin, simpleUser等"
+        },
+        "help": {
+          "status": "修改后, 拥有该角色的用户将自动下线",
+          "dataScope": "更改后需要用户重新登录才能生效"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "确认删除选中的{count}条记录吗？",
+          "deleteConfirm": "删除该角色吗？",
+          "statusUpdated": "状态更新成功"
+        },
+        "actions": {
+          "assign": "分配"
+        },
+        "roleAuth": {
+          "tableTitle": "已分配的用户列表",
+          "removeAssignment": "取消授权",
+          "back": "返回",
+          "removeConfirm": "确认取消授权用户[{username} - {nickname}]?",
+          "removeSelectedConfirm": "确认取消选中的{count}条授权记录吗？",
+          "removeSuccess": "取消授权成功",
+          "removeSelectedSuccess": "批量取消授权成功"
+        }
+      },
+      "config": {
+        "tableTitle": "参数设置列表",
+        "exportFileName": "参数设置导出.xlsx",
+        "fields": {
+          "name": "参数名称",
+          "key": "参数键名",
+          "value": "参数键值",
+          "valueType": "参数类型",
+          "options": "选项列表"
+        },
+        "drawer": {
+          "createTitle": "新增参数设置",
+          "editTitle": "编辑参数设置"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "确认删除选中的{count}条记录吗？",
+          "exportSelectedConfirm": "是否导出选中的记录？",
+          "exportAllConfirm": "是否导出全部数据？",
+          "optionsRequired": "枚举类型参数必须配置选项列表"
+        },
+        "import": {
+          "title": "参数设置导入",
+          "resultTitle": "提示",
+          "uploadHint": "点击或者拖拽到此处上传文件",
+          "fileHint": "允许导入xlsx, xls文件",
+          "downloadTemplate": "下载模板",
+          "overwrite": "是否更新/覆盖已存在的参数设置数据",
+          "downloadTemplateFailed": "下载模板失败",
+          "success": "成功导入 {count} 条参数设置数据",
+          "summary": "成功 {success} 条，失败 {fail} 条",
+          "rowReason": "第{row}行: {reason}"
+        },
+        "valueTypes": {
+          "text": "单行文本",
+          "textarea": "多行文本",
+          "number": "数字",
+          "boolean": "布尔",
+          "select": "下拉单选",
+          "radio": "单选",
+          "multi_select": "多选",
+          "richtext": "富文本"
+        },
+        "boolean": {
+          "true": "是",
+          "false": "否"
+        },
+        "help": {
+          "optionsJson": "JSON 数组，每项包含 label 与 value，例如 [{\"label\":\"左侧\",\"value\":\"panel-left\"}]",
+          "optionsSimple": "每行一个选项。格式：标签=值，或仅写值。例如：\n左侧=panel-left\n居中=panel-center"
+        },
+        "placeholders": {
+          "optionsJson": "[{\"label\":\"选项名\",\"value\":\"option-value\"}]",
+          "optionsSimple": "左侧=panel-left\n居中=panel-center\n右侧=panel-right",
+          "richtext": "请输入富文本内容"
+        }
+      },
+      "dict": {
+        "type": {
+          "tableTitle": "字典类型列表",
+          "exportFileName": "字典管理导出.xlsx",
+          "fields": {
+            "name": "字典名称",
+            "type": "字典类型"
+          },
+          "drawer": {
+            "createTitle": "新增字典类型",
+            "editTitle": "编辑字典类型"
+          },
+          "help": {
+            "typeRule": "使用英文/数字/下划线命名, 如:sys_normal_disable"
+          },
+          "messages": {
+            "typeRule": "字典类型只能使用英文/数字/下划线命名",
+            "deleteConfirm": "删除字典类型将同时删除该类型下的所有字典数据，确认删除？",
+            "deleteSelectedConfirm": "删除字典类型将同时删除该类型下的所有字典数据，确认删除选中的{count}条记录吗？",
+            "deleteFailed": "删除失败",
+            "exportSelectedConfirm": "是否导出选中的字典类型及其关联的字典数据？",
+            "exportAllConfirm": "是否导出全部字典类型和字典数据？"
+          },
+          "import": {
+            "title": "字典管理导入",
+            "resultTitle": "提示",
+            "uploadHint": "点击或者拖拽到此处上传文件",
+            "fileHint": "允许导入xlsx, xls文件",
+            "downloadTemplate": "下载模板",
+            "overwrite": "是否更新/覆盖已存在的字典类型和字典数据",
+            "downloadTemplateFailed": "下载模板失败",
+            "success": "成功导入 {typeCount} 条字典类型，{dataCount} 条字典数据",
+            "summary": "字典类型: 成功 {typeSuccess} 条，失败 {typeFail} 条。字典数据: 成功 {dataSuccess} 条，失败 {dataFail} 条。",
+            "rowReason": "[{sheet}] 第{row}行: {reason}"
+          }
+        },
+        "data": {
+          "tableTitle": "字典数据列表",
+          "fields": {
+            "label": "字典标签",
+            "value": "字典键值",
+            "tagStyle": "标签样式",
+            "dataLabel": "数据标签",
+            "dataValue": "数据键值",
+            "sortOrder": "显示排序",
+            "cssClass": "CSS类名"
+          },
+          "drawer": {
+            "createTitle": "新增字典数据",
+            "editTitle": "编辑字典数据"
+          },
+          "help": {
+            "cssClass": "标签的css样式, 可添加已经编译的css类名"
+          },
+          "messages": {
+            "deleteSelectedConfirm": "确认删除选中的{count}条记录吗？"
+          },
+          "import": {
+            "title": "字典数据导入",
+            "resultTitle": "提示",
+            "uploadHint": "点击或者拖拽到此处上传文件",
+            "fileHint": "允许导入xlsx, xls文件",
+            "downloadTemplate": "下载模板",
+            "overwrite": "是否更新/覆盖已存在的字典数据",
+            "downloadTemplateFailed": "下载模板失败",
+            "success": "成功导入 {count} 条字典数据",
+            "summary": "成功 {success} 条，失败 {fail} 条",
+            "rowReason": "第{row}行: {reason}"
+          },
+          "tagStyle": {
+            "options": {
+              "default": "默认颜色",
+              "custom": "自定义颜色"
+            },
+            "placeholders": {
+              "select": "请选择标签样式",
+              "custom": "输入十六进制颜色值，如 #1677ff"
+            },
+            "presets": {
+              "cyan": "青色",
+              "danger": "危险",
+              "default": "默认",
+              "green": "绿色",
+              "info": "信息",
+              "orange": "橙色",
+              "pink": "粉色",
+              "primary": "主要",
+              "purple": "紫色",
+              "red": "红色",
+              "success": "成功",
+              "warning": "警告"
+            }
+          }
+        }
+      },
+      "file": {
+        "tableTitle": "文件列表",
+        "fields": {
+          "originalName": "原始文件名",
+          "fileType": "文件类型",
+          "scene": "使用场景",
+          "preview": "文件预览",
+          "size": "文件大小",
+          "uploadedAt": "上传时间",
+          "uploader": "上传者"
+        },
+        "actions": {
+          "fileUpload": "文件上传",
+          "imageUpload": "图片上传"
+        },
+        "detail": {
+          "title": "文件详情",
+          "fileId": "文件ID",
+          "storedName": "存储文件名",
+          "url": "文件URL"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "确认删除选中的{count}条记录吗？",
+          "previewImages": "预览图片",
+          "pdfPreview": "PDF 预览"
+        }
+      },
+      "job": {
+        "tableTitle": "定时任务列表",
+        "fields": {
+          "group": "任务分组",
+          "status": "任务状态",
+          "keyword": "关键字",
+          "name": "任务名称",
+          "source": "任务来源",
+          "cronExpr": "定时表达式",
+          "timezone": "时区",
+          "scope": "调度范围",
+          "concurrency": "并发策略",
+          "executedCount": "已执行次数",
+          "stopReason": "停止原因",
+          "maxConcurrency": "最大并发数",
+          "maxExecutions": "最大执行次数",
+          "retention": "日志保留策略",
+          "retentionValue": "保留值",
+          "timeoutSeconds": "超时时间（秒）"
+        },
+        "placeholders": {
+          "selectGroup": "请选择分组",
+          "selectStatus": "请选择状态",
+          "cronExpr": "请输入 Cron 表达式",
+          "currentTimezone": "当前系统时区：{value}",
+          "description": "请输入描述",
+          "name": "请输入任务名称",
+          "selectRetention": "请选择保留策略",
+          "timezone": "请输入或选择时区"
+        },
+        "actions": {
+          "runNow": "立即执行",
+          "resetCount": "重置计数",
+          "preview": "预览"
+        },
+        "status": {
+          "enabled": "启用",
+          "disabled": "停用",
+          "pluginUnavailable": "不可用"
+        },
+        "source": {
+          "hostBuiltin": "宿主内置",
+          "pluginBuiltin": "插件内置",
+          "userCreated": "用户创建"
+        },
+        "scope": {
+          "masterOnly": "仅主节点执行",
+          "allNodes": "所有节点执行"
+        },
+        "concurrency": {
+          "singleton": "单例执行",
+          "parallel": "允许并行执行"
+        },
+        "retention": {
+          "summary": {
+            "count": "按条数保留日志",
+            "countWithValue": "按条数保留最近 {value} 条日志",
+            "days": "按天保留日志",
+            "daysWithValue": "按天保留最近 {value} 天日志",
+            "none": "不自动清理日志"
+          },
+          "followSystemHelp": "跟随系统：任务会按系统级日志保留策略执行清理。\n当前系统策略：{currentPolicy}。\n如果任务单独设置了覆盖策略，则优先使用任务级配置。",
+          "count": "按数量保留",
+          "days": "按天数保留",
+          "followSystem": "跟随系统策略",
+          "none": "不自动清理"
+        },
+        "help": {
+          "cron": "支持 5 段或 6 段 Cron。\n5 段按“分 时 日 月 周”解析，运行时会自动补 # 秒占位。\n6 段可显式配置秒位。",
+          "timeout": "任务实例单次运行允许的最长时长。\n超过该时长后，系统会尝试中断本次执行，并将执行日志标记为超时。\n建议按任务正常耗时预留一定余量，避免误判。",
+          "maxExecutions": "用于限制会计入执行计数的累计执行次数。\n达到上限后，任务会自动停用并记录停止原因。\n设置为 0 表示不限制执行次数；手动“立即执行”不会计入该次数。",
+          "scope": "仅主节点执行：只有当前主节点会执行。\n所有节点执行：每个在线节点都会各自执行一次。",
+          "concurrency": "单例执行：本节点已有实例运行时，新触发会跳过。\n允许并行执行：本节点可同时运行多个实例，并受“最大并发”限制。"
+        },
+        "messages": {
+          "pluginPausedTooltip": "该任务依赖插件提供的处理器；当插件被禁用、卸载或处理器未注册时，系统会自动暂停任务，待插件恢复后可重新启用。",
+          "noShellPermission": "当前账号缺少 Shell 任务权限",
+          "platformUnsupported": "当前平台不支持 Shell 任务",
+          "environmentDisabled": "当前环境未启用 Shell 任务",
+          "deleteSelectedConfirm": "确认删除选中的 {count} 个任务吗？",
+          "deleteConfirm": "确认删除该任务吗？",
+          "triggerConfirm": "确认立即执行该任务吗？",
+          "triggerSuccess": "已触发执行，日志编号 {logId}",
+          "resetSuccess": "执行次数已重置",
+          "builtinReadonly": "内建任务不允许在表单中直接修改。",
+          "formInvalid": "请先完善任务配置后再保存。",
+          "previewFailed": "预览后续执行时间失败。",
+          "saveFailed": "保存任务失败。",
+          "shellConfigInvalid": "Shell 任务配置无效。"
+        },
+        "builtin": {
+          "title": "内建任务详情",
+          "description": "内建任务由宿主或插件提供，此处仅支持查看配置详情。",
+          "handlerParams": "处理器参数",
+          "handlerRef": "处理器引用",
+          "taskType": "任务类型"
+        },
+        "drawer": {
+          "createTitle": "新增任务",
+          "detailTitle": "任务详情",
+          "editTitle": "编辑任务"
+        },
+        "handler": {
+          "fields": {
+            "handler": "处理器"
+          },
+          "help": {
+            "readonly": "内建任务使用固定处理器，此处仅展示处理器参数结构供查看。"
+          },
+          "messages": {
+            "empty": "请选择处理器以加载参数结构预览。",
+            "invalid": "请完善处理器配置。",
+            "loadFailed": "加载处理器结构失败。",
+            "readonly": "内建任务处理器为只读。",
+            "schemaInvalidObject": "处理器参数 Schema 不是合法对象：{schema}",
+            "schemaRootObject": "处理器参数 Schema 根节点必须为 object。",
+            "schemaUnsupportedKeyword": "处理器参数 Schema 包含当前前端不支持的关键字：{key}"
+          },
+          "placeholders": {
+            "inputField": "请输入{label}",
+            "select": "请选择处理器",
+            "selectField": "请选择{label}"
+          }
+        },
+        "preview": {
+          "title": "执行预览",
+          "description": "保存前先预览接下来的执行时间。",
+          "empty": "点击预览以加载后续执行时间。"
+        },
+        "shell": {
+          "actions": {
+            "addEnv": "新增变量"
+          },
+          "description": "配置可选的 Shell 步骤，运行时会结合当前任务上下文执行命令。",
+          "envHelp": "环境变量名必须唯一。若值当前被掩码，留空即可保持不变。",
+          "fields": {
+            "command": "命令",
+            "env": "环境变量",
+            "workDir": "工作目录"
+          },
+          "messages": {
+            "currentValueMasked": "当前值出于安全原因已隐藏，留空即可保持不变。",
+            "masked": "保留当前值"
+          },
+          "placeholders": {
+            "command": "请输入 Shell 命令",
+            "envKey": "变量名",
+            "envValue": "变量值",
+            "envValueMasked": "留空则保持当前值",
+            "workDir": "请输入工作目录"
+          },
+          "title": "Shell 任务配置",
+          "validation": {
+            "envKeyDuplicated": "存在重复的环境变量名：{keys}",
+            "envKeyRequired": "当填写了变量值时，变量名不能为空"
+          },
+          "warning": "Shell 任务会在宿主节点上执行命令，请在保存前仔细检查命令和环境变量。"
+        },
+        "validation": {
+          "cronInvalidCount": "Cron 表达式必须为 5 段或 6 段。",
+          "cronRequired": "请输入 Cron 表达式。",
+          "cronSecondInvalid": "秒字段必须为 * 或 0 到 59 之间的数值。",
+          "cronTooLong": "Cron 表达式过长。",
+          "groupRequired": "请选择任务分组。",
+          "integerRequired": "{label} 必须为整数。",
+          "invalidOption": "请选择有效的{label}。",
+          "maxValue": "{label} 不能大于 {max}。",
+          "minValue": "{label} 不能小于 {min}。",
+          "nameRequired": "请输入任务名称。",
+          "nameTooLong": "任务名称不能超过 128 个字符。",
+          "retentionValuePositive": "保留值必须大于 0。",
+          "timezoneInvalid": "请输入有效的时区，例如 Asia/Shanghai。",
+          "timezoneRequired": "请输入时区。"
+        }
+      },
+      "jobGroup": {
+        "tableTitle": "任务分组列表",
+        "fields": {
+          "code": "分组编码",
+          "name": "分组名称",
+          "sortOrder": "显示排序",
+          "jobCount": "任务数",
+          "defaultGroup": "默认分组"
+        },
+        "drawer": {
+          "createTitle": "新增任务分组",
+          "editTitle": "编辑任务分组"
+        },
+        "placeholders": {
+          "code": "请输入分组编码",
+          "name": "请输入分组名称",
+          "remark": "请输入备注"
+        },
+        "messages": {
+          "deleteSelectedConfirm": "确认删除选中的 {count} 个任务分组吗？分组下的任务将自动迁移到默认分组。",
+          "defaultDeleteDisabled": "默认分组不可删除",
+          "deleteConfirm": "确认删除该分组吗？任务将自动迁移到默认分组。"
+        }
+      },
+      "jobLog": {
+        "tableTitle": "执行日志列表",
+        "fields": {
+          "jobName": "任务名称",
+          "status": "执行状态",
+          "nodeId": "执行节点",
+          "startAt": "开始时间",
+          "endAt": "结束时间",
+          "trigger": "触发方式",
+          "durationMs": "耗时(ms)",
+          "errorSummary": "错误摘要"
+        },
+        "placeholders": {
+          "selectJob": "请选择任务",
+          "selectStatus": "请选择状态"
+        },
+        "actions": {
+          "terminate": "终止"
+        },
+        "detail": {
+          "title": "执行日志详情",
+          "logId": "日志编号",
+          "duration": "执行耗时",
+          "error": "异常信息",
+          "jobSnapshot": "任务快照",
+          "paramsSnapshot": "参数快照",
+          "result": "执行结果"
+        },
+        "status": {
+          "running": "运行中",
+          "success": "成功",
+          "failed": "失败",
+          "cancelled": "取消",
+          "timeout": "超时",
+          "skippedMaxConcurrency": "跳过：达到最大并发",
+          "skippedNotPrimary": "跳过：非主节点",
+          "skippedSingleton": "跳过：单例运行中"
+        },
+        "messages": {
+          "cancelSent": "终止指令已发送",
+          "deleteSelectedConfirm": "确认删除选中的 {count} 条执行日志吗？",
+          "deleteAllHint": "勾选后将忽略日期范围，删除当前权限范围内的所有执行日志。",
+          "deleteAllLabel": "删除所有执行日志",
+          "deleteRangeDescription": "请选择执行日志删除方式。默认按日期范围清理，勾选全部日志后将清理当前权限范围内的所有执行日志。",
+          "deleteRangeRequired": "请选择完整的执行日志日期范围",
+          "deleteRangeSuccess": "已删除 {count} 条执行日志",
+          "deleteRangeTitle": "删除执行日志",
+          "clearCurrentConfirm": "确认清空当前任务的执行日志吗？",
+          "clearAllConfirm": "确认清空全部执行日志吗？",
+          "clearSuccess": "清空成功",
+          "terminateConfirm": "确认终止当前任务实例吗？"
+        }
+      },
+      "menu": {
+        "tableTitle": "菜单列表",
+        "tableTitleHelp": "双击行可展开或折叠子菜单，修改后会立即刷新侧边栏和页签标题。",
+        "drawer": {
+          "createTitle": "新增菜单",
+          "editTitle": "编辑菜单"
+        },
+        "actions": {
+          "searchIcons": "搜索图标"
+        },
+        "fields": {
+          "parentMenu": "上级菜单",
+          "menuType": "菜单类型",
+          "menuIcon": "菜单图标",
+          "menuName": "菜单名称",
+          "permissionKey": "权限标识",
+          "displaySort": "显示排序",
+          "routePath": "路由地址",
+          "componentPath": "组件路径",
+          "icon": "图标",
+          "type": "类型",
+          "menuStatus": "菜单状态",
+          "visibleStatus": "显示状态",
+          "visible": "是否显示",
+          "isExternalLink": "是否外链",
+          "cache": "是否缓存",
+          "cascadeDelete": "级联删除",
+          "routeParams": "路由参数",
+          "componentType": "组件类型"
+        },
+        "help": {
+          "cache": "开启后使用 KeepAlive 缓存该路由页面，保留页面状态。",
+          "component": "填写相对于 views 目录的前端组件路径，例如 system/user/index。",
+          "externalLink": "外链地址必须使用以 http:// 或 https:// 开头的完整 URL。",
+          "icon": "填写 Iconify 图标名称，用于侧边栏和路由展示。",
+          "name": "用于侧边栏、面包屑和页签标题显示。",
+          "path": "内部页面使用相对路由地址，外链请填写完整 URL。",
+          "permission": "请使用唯一的权限标识，参与统一菜单和按钮鉴权。",
+          "queryParam": "可选的路由附加参数，例如 id=1&type=detail。",
+          "sort": "同级菜单中，值越小越靠前。",
+          "status": "停用后菜单将不会在正常导航中显示，也无法正常打开。",
+          "visible": "隐藏后仍保留路由访问能力，但不会出现在侧边栏中。"
+        },
+        "messages": {
+          "cascadeDeleteTooltip": "开启后，删除菜单时会同时删除其所有子孙菜单和按钮。",
+          "deleteConfirm": "确认删除菜单“{menuName}”吗？",
+          "deleteWithChildrenConfirm": "确认删除菜单“{menuName}”及其 {childCount} 个子项吗？",
+          "rootMenu": "根菜单"
+        },
+        "placeholders": {
+          "externalPath": "请输入完整外链地址",
+          "menuName": "请输入菜单名称",
+          "permissionKey": "请输入权限标识",
+          "queryParam": "请输入路由参数",
+          "remark": "请输入备注",
+          "routePath": "请输入路由地址"
+        },
+        "validation": {
+          "componentNoSlash": "组件路径不能以 / 开头",
+          "componentRequired": "请输入组件路径",
+          "linkInvalid": "外链地址必须以 http:// 或 https:// 开头",
+          "linkRequired": "请输入外链地址",
+          "permissionRequired": "请输入权限标识",
+          "routeRequired": "请输入路由地址"
+        },
+        "type": {
+          "directory": "目录",
+          "menu": "菜单",
+          "button": "按钮"
+        },
+        "visible": {
+          "shown": "显示",
+          "hidden": "隐藏"
+        }
+      },
+      "plugin": {
+        "tableTitle": "插件列表",
+        "columnHelp": {
+          "ariaLabel": "{label}列说明",
+          "type": "源码插件随宿主源码与编译产物交付，适合内建能力和可信扩展；动态插件以 wasm 制品上传和切换，适合运行时安装、升级与隔离治理。",
+          "runtimeState": "运行时状态表示插件文件发现版本与数据库有效版本、升级流程和异常诊断是否一致；状态列表示插件当前是否启用，决定业务入口是否开放。",
+          "mockData": "“是”表示插件随包提供示例数据，可在安装时选择加载；“否”表示没有可加载的示例数据。",
+          "supportsMultiTenant": "“是”表示插件声明支持多租户治理，可使用租户级安装模式和租户侧启停；“否”表示插件只能按平台全局能力治理。",
+          "tenantProvisioning": "控制租户级插件在新租户创建时是否自动启用；仅支持多租户且以租户级模式安装的插件可配置。"
+        },
+        "fields": {
+          "id": "插件标识",
+          "name": "插件名称",
+          "type": "插件类型",
+          "description": "插件描述",
+          "installed": "安装状态",
+          "installedAt": "安装时间",
+          "version": "版本号",
+          "authorizationStatus": "授权状态",
+          "startupManagement": "启动管理",
+          "distribution": "分发类型",
+          "hasMockData": "示例数据",
+          "supportsMultiTenant": "支持多租户",
+          "tenantProvisioning": "新租户启用",
+          "scopeNature": "作用域性质",
+          "installMode": "安装模式",
+          "pluginScope": "插件作用域",
+          "runtimeState": "运行时状态",
+          "pluginStatus": "插件状态",
+          "effectiveVersion": "有效版本",
+          "discoveredVersion": "发现版本"
+        },
+        "type": {
+          "source": "源码插件",
+          "dynamic": "动态插件"
+        },
+        "pluginStatus": {
+          "notInstalled": "未安装",
+          "disabled": "已停用",
+          "enabled": "已启用"
+        },
+        "pluginScope": {
+          "platformOnly": "仅平台",
+          "global": "全局",
+          "tenantScoped": "租户级"
+        },
+        "installed": {
+          "connected": "已安装",
+          "notInstalled": "未安装"
+        },
+        "actions": {
+          "syncPlugins": "同步插件",
+          "uploadPlugin": "上传插件",
+          "install": "安装",
+          "installAndEnable": "安装并启用",
+          "manage": "管理",
+          "upgrade": "升级",
+          "retryUpgrade": "重试升级",
+          "manualRepair": "人工修复",
+          "uninstall": "卸载",
+          "continueAction": "继续{actionLabel}",
+          "installMockDataLabel": "是否安装示例数据",
+          "installMockDataTooltip": "勾选后，宿主会在该插件安装 SQL 全部成功后将 manifest/sql/mock-data 目录的 SQL 文件以单一数据库事务执行；任一文件失败将整体回滚 mock 数据，但插件本身仍处于已安装状态。示例数据仅用于演示和功能验证，不建议在生产环境使用。",
+          "installMockDataHelpHint": "了解详情"
+        },
+        "auth": {
+          "installTitle": "安装插件",
+          "installWithAuthTitle": "安装前审核插件授权",
+          "enableTitle": "启用插件",
+          "enableWithAuthTitle": "启用前审核插件授权",
+          "confirmInstall": "确认安装",
+          "confirmInstallWithAuth": "确认安装",
+          "confirmEnable": "确认启用",
+          "confirmEnableWithAuth": "确认启用",
+          "enableBanner": "启用前请先确认当前宿主服务授权快照。",
+          "hostServiceAuthTitle": "宿主服务授权审核",
+          "hostServiceDeclareTitle": "声明的宿主服务",
+          "installBanner": "安装前请先确认以下插件元数据。",
+          "installBannerWithAuth": "该插件申请了宿主服务能力，请先确认申请范围后再安装。"
+        },
+        "authorization": {
+          "confirmed": "已确认",
+          "notRequired": "无需授权",
+          "pending": "待审核"
+        },
+        "autoEnableBadge": "自动启用",
+        "autoEnableManaged": "宿主管理自动启用",
+        "builtinBadge": "内置插件",
+        "builtinManaged": "项目内建",
+        "managedDistribution": "可管理",
+        "manualManaged": "手动控制",
+        "scopeNature": {
+          "platformOnly": "仅平台",
+          "tenantAware": "租户感知"
+        },
+        "runtimeState": {
+          "normal": "正常",
+          "pending_upgrade": "待升级",
+          "abnormal": "异常",
+          "upgrade_running": "升级中",
+          "upgrade_failed": "升级失败"
+        },
+        "runtimeStateHint": {
+          "normal": "文件元数据与数据库有效状态一致。",
+          "pendingUpgrade": "当前有效版本 {effectiveVersion} 低于发现版本 {discoveredVersion}，需要管理员确认运行时升级。",
+          "upgradeFailed": "最近一次运行时升级失败，修复原因后可重试。",
+          "upgradeFailedWithDetail": "最近一次运行时升级失败：{detail}",
+          "abnormal": "插件状态异常，需要人工修复：{reason}"
+        },
+        "abnormalReason": {
+          "discovered_version_lower_than_effective": "文件版本低于数据库有效版本",
+          "version_compare_failed": "版本号无法比较",
+          "unknown": "未知异常"
+        },
+        "failurePhase": {
+          "before_upgrade": "升级前置回调",
+          "upgrade_callback": "自定义升级回调",
+          "sql": "升级 SQL",
+          "governance": "治理资源同步",
+          "release_switch": "有效版本切换",
+          "cache_invalidation": "缓存失效",
+          "release": "发布状态",
+          "unknown": "未知阶段"
+        },
+        "detail": {
+          "title": "插件详情",
+          "hostServicesTitle": "宿主服务范围",
+          "routeListTitle": "声明的路由"
+        },
+        "dependency": {
+          "blocker": {
+            "dependency_cycle": "依赖存在循环",
+            "dependency_missing": "依赖插件缺失",
+            "dependency_snapshot_unknown": "依赖快照不可用",
+            "dependency_version_unsatisfied": "依赖版本不满足",
+            "framework_version_unsatisfied": "框架版本不满足",
+            "reverse_dependency": "存在下游依赖",
+            "reverse_dependency_version": "下游版本约束不满足"
+          },
+          "checkFailed": "刷新插件依赖检查结果失败",
+          "cycle": "检测到依赖循环，请调整相关插件的依赖关系后再继续。",
+          "frameworkUnsatisfied": "当前框架版本不符合该插件要求。",
+          "frameworkUnsatisfiedDescription": "要求版本：{required}；当前版本：{current}。",
+          "installBlocked": "依赖条件未满足，请根据下方提示处理后再安装。",
+          "loading": "正在检查插件依赖...",
+          "resolveBeforeInstall": "依赖条件未满足，请先处理后再安装该插件。",
+          "resolveBeforeUninstall": "请先卸载依赖此插件的下游插件，再继续卸载。",
+          "title": "依赖检查",
+          "uninstallBlocked": "仍有其他已安装插件依赖此插件，请先处理后再卸载。"
+        },
+        "hostServices": {
+          "identity": {
+            "owner": "来源插件",
+            "version": "能力版本"
+          },
+          "messages": {
+            "defaultEmpty": "未声明受限资源"
+          },
+          "scope": {
+            "authorized": "已授权范围",
+            "effective": "生效范围",
+            "requested": "申请范围"
+          },
+          "service": {
+            "ai": "AI",
+            "apidoc": "接口文档",
+            "auth": "认证授权",
+            "bizctx": "业务上下文",
+            "cache": "缓存",
+            "confidentialoutbound": "安全外部接口访问",
+            "data": "数据",
+            "dict": "字典",
+            "files": "文件",
+            "hostconfig": "宿主配置",
+            "jobs": "任务",
+            "lock": "分布式锁",
+            "manifest": "资源清单",
+            "network": "网络",
+            "notifications": "通知",
+            "org": "组织",
+            "plugins": "插件",
+            "route": "路由",
+            "runtime": "运行时",
+            "sessions": "会话",
+            "storage": "存储",
+            "tenant": "租户",
+            "unknown": "未知服务 ({service})",
+            "users": "用户"
+          },
+          "summary": {
+            "path": "路径",
+            "resource": "资源",
+            "storage": "存储路径",
+            "table": "数据表"
+          }
+        },
+        "messages": {
+          "autoEnableConfirmTitle": "确认{actionLabel}",
+          "autoEnableDetailAlert": "该插件由宿主自动启用策略管理，手动变更可能在下一次同步时被运行时恢复。",
+          "autoEnableRuntimeHint": "{actionLabel} 可能只是临时状态，运行时仍可能重新应用宿主管理的自动启用策略。",
+          "autoEnableTooltip": "插件 {pluginId} 由宿主自动启用策略管理。",
+          "autoEnableUninstallAlert": "该插件由宿主自动启用策略管理，后续若再次同步，运行时仍可能按宿主策略重新安装或启用。",
+          "builtinDetailAlert": "该插件为项目内建能力，不可在管理台安装、启停、卸载或手动升级；可查看详情，并在存在管理页时进入管理界面。",
+          "builtinTooltip": "插件 {pluginId} 为项目内建能力，不可卸载。",
+          "disabled": "插件已停用",
+          "emptyHostServices": "当前插件暂未暴露任何宿主服务范围。",
+          "enabled": "插件已启用",
+          "hostServiceSnapshot": "以下范围展示的是当前插件元数据与授权快照。",
+          "installFirst": "请先安装该插件",
+          "installSucceededEnableFailed": "安装成功，但启用失败，请检查授权结果和插件状态。",
+          "installed": "插件安装成功",
+          "installedAndEnabled": "插件已安装并启用",
+          "managementRouteUnavailable": "当前会话无法访问该插件管理页面，请确认插件已启用且账号具备对应菜单权限。",
+          "mockDataRolledBack": "插件 {pluginId} 已成功安装，但示例数据 {failedFile} 加载失败、已自动回滚：{cause}。您可以接受当前已安装状态，或修复示例数据 SQL 后卸载重装。",
+          "noInstallPermission": "当前账号没有安装或同步插件的权限",
+          "noManagementPage": "该插件没有管理页面",
+          "noUpgradePermission": "当前账号没有升级插件的权限",
+          "noPolicyPermission": "当前账号没有配置插件策略的权限",
+          "noStatusPermission": "当前账号没有修改插件状态的权限",
+          "noUninstallPermission": "当前账号没有卸载插件的权限",
+          "abnormalManualRepair": "插件文件与数据库有效状态不一致，无法自动升级，请人工修复插件文件或数据库状态。",
+          "upgradeFailed": "最近一次插件升级失败",
+          "upgraded": "插件升级成功",
+          "tenantProvisioningEffective": "当该租户级插件已安装且已启用时，新创建的租户会自动获得此插件。",
+          "tenantProvisioningUnsupported": "仅支持多租户且以租户级模式安装的插件支持此策略。",
+          "tenantProvisioningUpdated": "新租户插件策略已更新",
+          "syncSuccess": "已同步 {total} 条插件记录",
+          "uninstalled": "插件已卸载"
+        },
+        "routes": {
+          "authenticated": "登录访问",
+          "collapse": "收起",
+          "expand": "展开",
+          "public": "公开访问"
+        },
+        "uninstall": {
+          "title": "卸载插件",
+          "defaultWarning": "卸载该插件会移除其运行时注册信息，请先确认影响范围。",
+          "dynamicWarning": "卸载动态插件会移除已上传产物，并可选择同时清理插件自有数据和存储文件。",
+          "purgeStorage": "同时清理插件自有存储数据",
+          "purgeStorageWarning": "勾选后将执行插件卸载 SQL 并物理删除插件自有表数据、授权存储文件和治理资源引用；确认后不可恢复。若不勾选，卸载仅停用插件，业务表与配置数据会保留，重新安装后仍会看到旧配置。",
+          "sourceWarning": "卸载源码插件会移除其同步到宿主的治理记录，并可选择同时清理插件自有数据和存储文件。"
+        },
+        "upgrade": {
+          "title": "升级插件",
+          "titleWithName": "升级插件：{name}",
+          "confirm": "确认升级",
+          "banner": "升级会执行插件回调、升级 SQL、治理资源同步和有效版本切换。确认前请检查版本差异与风险提示。",
+          "retryBanner": "该插件上次升级失败。确认重试前请先修复失败原因，并确保升级 SQL 与回调可重复执行。",
+          "versionSection": "版本与 Manifest",
+          "fromManifest": "升级前",
+          "toManifest": "升级后",
+          "sqlSection": "SQL 摘要",
+          "installSqlCount": "安装/升级 SQL：{count}",
+          "runtimeSqlCount": "动态 SQL：{count}",
+          "uninstallSqlCount": "卸载 SQL：{count}",
+          "mockSqlExcluded": "示例数据不参与升级：{count}",
+          "hostServiceSection": "宿主服务变化",
+          "hostServiceChange": {
+            "added": "新增",
+            "changed": "变更",
+            "removed": "移除"
+          },
+          "resourceCount": "资源数 {count}",
+          "riskSection": "风险提示",
+          "noRiskHints": "暂无额外风险提示",
+          "resolveBeforeUpgrade": "依赖条件未满足，请先处理后再升级该插件。"
+        },
+        "upload": {
+          "acknowledge": "知道了",
+          "dragHint": "上传单个 .wasm 动态插件包，宿主会校验清单并注册插件产物。",
+          "dragText": "点击或拖拽 .wasm 插件包到此处上传",
+          "overwriteHint": "允许覆盖相同插件标识和版本的已有插件包",
+          "selectFile": "请先选择 .wasm 插件包",
+          "success": "插件包上传成功",
+          "title": "上传动态插件"
+        }
+      },
+      "message": {
+        "tableTitle": "消息列表",
+        "actions": {
+          "markAllRead": "全部已读",
+          "clearAll": "清空消息"
+        },
+        "messages": {
+          "clearAllConfirm": "确认清空所有消息？清空后不可恢复。"
+        },
+        "pagination": {
+          "total": "共 {total} 条"
+        }
+      }
+    },
+    "upload": {
+      "button": "上传",
+      "dragHint": "点击或拖拽文件到此区域上传",
+      "formatHint": "支持 {accept} 格式，单个文件不超过 {maxSize}MB",
+      "success": "上传成功",
+      "tooLarge": "文件大小不能超过{maxSize}MB"
+    },
+    "exportConfirm": {
+      "selected": "是否导出选中的记录？",
+      "all": "是否导出全部数据？"
+    },
+    "cropper": {
+      "title": "上传并裁剪图片",
+      "tooLarge": "所选图片超过大小限制",
+      "noImageSelected": "请先选择图片",
+      "avatarUploadSuccess": "头像更新成功",
+      "alt": {
+        "originalImage": "裁剪原图"
+      },
+      "actions": {
+        "selectImage": "选择图片",
+        "reset": "重置",
+        "rotateLeft": "向左旋转",
+        "rotateRight": "向右旋转",
+        "flipHorizontal": "水平翻转",
+        "flipVertical": "垂直翻转",
+        "zoomIn": "放大",
+        "zoomOut": "缩小"
+      },
+      "messages": {
+        "imageExportFailed": "图片导出失败：",
+        "imageLoadFailed": "图片加载失败：{message}",
+        "imageLoadTimeout": "图片加载超时，超时时间 10 秒",
+        "invalidAspectRatioFormat": "裁剪比例格式错误，应为“数字:数字”格式，如“16:9”。",
+        "invalidAspectRatioValue": "裁剪比例解析失败，宽高必须为正整数。"
+      }
+    },
+    "editor": {
+      "placeholder": "请输入内容...",
+      "actions": {
+        "undo": "撤销",
+        "redo": "重做",
+        "bold": "加粗",
+        "italic": "斜体",
+        "underline": "下划线",
+        "strike": "删除线",
+        "heading1": "标题1",
+        "heading2": "标题2",
+        "heading3": "标题3",
+        "bulletList": "无序列表",
+        "orderedList": "有序列表",
+        "blockquote": "引用",
+        "codeBlock": "代码块",
+        "horizontalRule": "分割线",
+        "image": "图片",
+        "link": "链接"
+      },
+      "link": {
+        "title": "插入链接",
+        "placeholder": "请输入链接地址"
+      },
+      "messages": {
+        "imageUploadFailed": "图片上传失败"
+      }
+    },
+    "profile": {
+      "tabs": {
+        "basic": "基本资料",
+        "password": "修改密码"
+      },
+      "actions": {
+        "updateProfile": "更新资料"
+      },
+      "placeholders": {
+        "nickname": "请输入昵称",
+        "email": "请输入邮箱地址",
+        "phone": "请输入手机号码"
+      },
+      "validation": {
+        "email": "请输入正确的邮箱地址",
+        "phone": "请输入正确的手机号码"
+      },
+      "panel": {
+        "account": "账号",
+        "lastLogin": "最后登录",
+        "noLoginRecord": "暂无登录记录",
+        "unboundEmail": "未绑定邮箱",
+        "unboundPhone": "未绑定手机号",
+        "uploadAvatar": "上传头像"
+      },
+      "password": {
+        "oldPassword": "当前密码",
+        "newPassword": "新密码",
+        "confirmPassword": "确认密码",
+        "submit": "修改密码",
+        "success": "密码修改成功",
+        "placeholders": {
+          "oldPassword": "请输入当前密码",
+          "newPassword": "请输入新密码",
+          "confirmPassword": "请再次输入新密码"
+        },
+        "validation": {
+          "oldPassword": "请输入当前密码",
+          "newPassword": "请输入新密码",
+          "confirmPassword": "请再次输入新密码",
+          "passwordLength": "密码长度至少 5 位",
+          "passwordMismatch": "两次输入的密码不一致"
+        }
+      },
+      "security": {
+        "accountPassword": "账户密码",
+        "accountPasswordDesc": "设置高强度密码并定期更新，保护账号安全。",
+        "securityPhone": "安全手机",
+        "securityPhoneDesc": "绑定手机号，用于安全验证和消息通知。",
+        "securityQuestion": "安全问题",
+        "securityQuestionDesc": "配置安全问题，用于找回账号时校验身份。",
+        "securityEmail": "安全邮箱",
+        "securityEmailDesc": "绑定恢复邮箱，用于接收验证码和安全提醒。",
+        "securityMfa": "多因素认证",
+        "securityMfaDesc": "为登录和敏感操作增加第二重验证。"
+      },
+      "notification": {
+        "accountPassword": "账号安全",
+        "accountPasswordDesc": "当密码或关键账号设置发生变化时接收提醒。",
+        "systemMessage": "系统消息",
+        "systemMessageDesc": "接收公告、维护通知和其他系统级更新。",
+        "todoTask": "待办任务",
+        "todoTaskDesc": "接收待办事项和工作流提醒。"
+      }
+    },
+    "multiTenant": {
+      "platformScope": "平台",
+      "placeholders": {
+        "selectTenant": "请选择租户"
+      },
+      "fields": {
+        "code": "租户编码",
+        "name": "租户名称",
+        "keyword": "关键字",
+        "tenantId": "租户 ID",
+        "userId": "用户 ID",
+        "joinedAt": "加入时间"
+      },
+      "status": {
+        "active": "正常",
+        "suspended": "暂停",
+        "deleted": "已删除",
+        "unknown": "未知"
+      },
+      "empty": {
+        "tenants": "暂无租户",
+        "members": "暂无成员",
+        "plugins": "暂无可由租户管理的插件"
+      },
+      "messages": {
+        "codeRule": "租户编码只能使用 2-32 位小写字母、数字或连字符",
+        "nameRequired": "请输入租户名称",
+        "deleteTenantConfirm": "确认删除租户 {name}？",
+        "deleteSelectedConfirm": "确认删除选中的 {count} 个租户？",
+        "removeMemberConfirm": "确认移除该成员？",
+        "switchSuccess": "租户已切换",
+        "statusUpdated": "租户状态已更新",
+        "tenantSelected": "已进入租户"
+      },
+      "login": {
+        "selectTenant": "选择租户",
+        "selectTenantSubtitle": "请选择本次要进入的租户，系统将根据所选租户加载对应的工作台和权限。",
+        "enteringTenant": "正在进入租户",
+        "enteringTenantSubtitle": "正在加载租户工作台与权限，请稍候。",
+        "enterTenant": "进入租户"
+      },
+      "impersonation": {
+        "banner": "正在以平台管理员身份代租户 {tenant} 操作",
+        "exit": "退出代操作"
+      },
+      "switcher": {
+        "placeholder": "切换租户"
+      },
+      "tenant": {
+        "tableTitle": "租户列表",
+        "actions": {
+          "create": "新增租户",
+          "edit": "编辑租户",
+          "suspend": "暂停",
+          "resume": "恢复",
+          "impersonate": "代操作"
+        },
+        "tooltips": {
+          "impersonate": "以平台身份进入该租户视角"
+        }
+      },
+      "platformMembers": {
+        "tableTitle": "租户成员列表"
+      },
+      "member": {
+        "tableTitle": "租户成员",
+        "status": {
+          "active": "正常",
+          "suspended": "已暂停",
+          "removed": "已移除"
+        }
+      },
+      "plugin": {
+        "tableTitle": "租户插件",
+        "installMode": "安装模式",
+        "platformOnlyGlobalHint": "不支持租户级安装模式的插件只能以全局模式安装。",
+        "installModes": {
+          "global": "全局",
+          "tenant_scoped": "租户级"
+        },
+        "installModeDescriptions": {
+          "global": "平台安装后所有租户共享启用状态。",
+          "tenant_scoped": "平台安装后由各租户管理员自行启用或停用。"
+        },
+        "lifecyclePrecondition": {
+          "title": "生命周期前置条件",
+          "summary": "插件返回了阻止当前操作的原因。",
+          "summaryHelp": "请先处理前置条件原因；只有确认风险后才使用强制卸载。",
+          "reasonTitle": "阻止原因",
+          "reasonCount": "{count} 项",
+          "forceTitle": "强制卸载确认",
+          "defaultReason": "当前资源仍有关联数据，无法继续操作。",
+          "blockedReason": "当前插件阻止操作，原因：",
+          "forceConfirm": "强制卸载会绕过上述前置条件并清理插件数据，请确认你理解该风险。",
+          "forceInputHint": "输入插件 ID \"{pluginId}\" 以启用强制卸载。",
+          "forceSubmitted": "强制通道请求已提交",
+          "reasons": {
+            "multiTenantUninstallBlocked": "仍存在租户，请先删除租户，再卸载插件。"
+          }
+        }
+      }
+    },
+    "tree": {
+      "association": {
+        "linked": "父子联动",
+        "independent": "独立选择"
+      },
+      "expandCollapseAll": "展开/折叠全部",
+      "selectAll": "全选",
+      "parentChildLinked": "父子节点联动",
+      "nodeStatus": "选择模式",
+      "messages": {
+        "fullscreenHint": "点击这里进入全屏模式，方便查看和选择权限。",
+        "selectedPrefix": "已选择",
+        "selectedSuffix": "项"
+      },
+      "permissionDisplay": {
+        "dynamicRoutePermission": "动态路由权限",
+        "dynamicRoutePermissionLabel": "动态路由权限（资源：{resource}，动作：{action}）",
+        "segments": {
+          "action": "动作",
+          "add": "新增",
+          "audit": "审计",
+          "auth": "授权",
+          "backend": "后端",
+          "config": "配置",
+          "create": "创建",
+          "delete": "删除",
+          "demo": "示例",
+          "dept": "部门",
+          "detail": "详情",
+          "dict": "字典",
+          "disable": "停用",
+          "edit": "编辑",
+          "enable": "启用",
+          "export": "导出",
+          "file": "文件",
+          "health": "健康",
+          "import": "导入",
+          "inspect": "检查",
+          "install": "安装",
+          "list": "列表",
+          "log": "日志",
+          "menu": "菜单",
+          "notice": "公告",
+          "plugin": "插件",
+          "post": "岗位",
+          "query": "查询",
+          "record": "记录",
+          "remove": "删除",
+          "resource": "资源",
+          "review": "审核",
+          "role": "角色",
+          "run": "执行",
+          "status": "状态",
+          "summary": "摘要",
+          "sync": "同步",
+          "uninstall": "卸载",
+          "update": "修改",
+          "user": "用户",
+          "view": "查看"
+        }
+      },
+      "validation": {
+        "menuChildInvalid": "菜单节点“{childLabel}”不能挂到菜单“{menuLabel}”下。",
+        "buttonChildInvalid": "节点“{childLabel}”不能挂到按钮“{menuLabel}”下。"
+      }
+    }
+  },
+  "presales": {
+    "accessExpired": "这个访问链接已经过期",
+    "accessExpiredHint": "重新验证原邮箱或手机号后，系统会发送一条新的访问链接，不需要注册账号。",
+    "accessUnavailable": "这个访问链接无法继续使用",
+    "accessUnavailableDescription": "链接可能已经到期、无效或暂时无法验证。页面不会显示任何咨询内容。",
+    "accessUntil": "本链接可使用至 {date}",
+    "accessibleChallenge": "无障碍算术题",
+    "actionsUnavailable": "部分操作当前不可用",
+    "actionsUnavailableDescription": "页面只显示服务端当前明确允许的动作，不会暴露内部处理动作或内部信息。",
+    "actionFailed": "操作未完成。页面已经重新读取当前状态，请核对后再试。",
+    "addAttachments": "添加附件",
+    "attachmentCountExceeded": "一次回复最多选择 20 个附件",
+    "attachmentEmpty": "不能上传空文件",
+    "attachmentHint": "支持图片、PDF、文本、日志、办公文档和 ZIP；最多 20 个，单个文件最多 20 MiB，一张咨询累计最多 200 MiB。文件内容由服务端安全检查。",
+    "attachmentTooLarge": "单个附件不能超过 20 MiB",
+    "attachmentTotalTooLarge": "这张咨询的附件累计不能超过 200 MiB",
+    "availableCategories": "可咨询的问题分类",
+    "backToCreate": "提交新的售前咨询",
+    "body": "咨询内容",
+    "categoriesEmpty": "暂时没有可用的问题分类",
+    "categoriesLoadFailed": "暂时无法读取问题分类，请稍后重试",
+    "category": "问题分类",
+    "categoryPlaceholder": "请选择问题分类",
+    "categoryRequired": "请选择问题分类",
+    "challengeAnswer": "请输入上方算术题答案",
+    "challengeUnavailable": "人机验证暂时不可用",
+    "challengeUnavailableDescription": "当前验证方式无法在这个页面完成，请稍后重试，或请站点管理员检查配置。",
+    "channel": "验证方式",
+    "close": "问题已解决",
+    "closeConfirm": "确认问题已经解决并关闭这张售前咨询吗？",
+    "closeSuccess": "售前咨询已关闭",
+    "code": "验证码",
+    "codePlaceholder": "请输入 6 位验证码",
+    "codeSent": "验证码请求已提交",
+    "codeSentDescription": "请查看 {destination}，验证码可使用至 {date}。",
+    "confirmCode": "完成验证",
+    "create": "提交咨询",
+    "createHint": "先验证邮箱或手机号，再填写售前问题。内部处理部门由系统自动安排，不会向你展示。",
+    "createTitle": "售前咨询",
+    "customFieldsInvalid": "请检查补充信息中的必填项和格式",
+    "customFieldsLoadFailed": "需要填写的补充信息加载失败，请刷新后再继续验证",
+    "customerLogin": "已有账号，前往登录",
+    "deliveryHint": "只绑定这张咨询的新访问链接已发送至 {destination}。请从消息中打开链接继续查看和回复。",
+    "destination": "邮箱或手机号",
+    "destinationPlaceholder": "请输入邮箱或手机号",
+    "destinationRequired": "请填写用于接收验证码和访问链接的邮箱或手机号",
+    "detailTitle": "售前咨询详情",
+    "email": "邮箱",
+    "expiresAt": "验证码可使用至 {date}",
+    "humanCheck": "人机验证",
+    "imageChallenge": "图片",
+    "imageChallengeAlt": "人机验证算术图片",
+    "linkDelivered": "访问链接已发送",
+    "linkDeliveryUncertain": "访问链接的发送结果暂时无法确认",
+    "linkDeliveryUncertainDescription": "咨询已经创建，当前浏览器可以安全继续查看。系统不会自动重发；如有需要，请在等待时间结束后重新验证同一联系方式。",
+    "linkLifetimeHint": "访问链接最长有效 2 小时；到期后需要重新验证原邮箱或手机号，系统才会发送新链接。",
+    "loadFailed": "暂时无法读取这张售前咨询，请检查链接或稍后重试",
+    "menu": "售前咨询",
+    "messageRequired": "请填写咨询内容",
+    "newLinkUntil": "新链接可使用至 {date}",
+    "rate": "评价本次处理",
+    "ratingComment": "补充评价（选填）",
+    "ratingLowHint": "如需继续处理，请重新打开这张咨询。",
+    "ratingSuccess": "感谢你的评价",
+    "reopen": "重新打开",
+    "reopenDeadline": "可重新打开至 {date}",
+    "reopenSuccess": "售前咨询已重新打开",
+    "reply": "发送回复",
+    "replyFailedDraftPreserved": "发送失败，回复内容和已选文件仍然保留，请检查后重试。",
+    "replyPlaceholder": "补充新的情况或回复客服",
+    "requestCode": "发送验证码",
+    "requestNewLink": "重新验证并获取新链接",
+    "retry": "重试",
+    "retryAfter": "{seconds} 秒后才能申请新验证码，页面不会自动申请。",
+    "retryReady": "等待时间已经结束；如需新验证码，请重新完成人机验证。",
+    "reverificationNeedsSafeTicket": "请打开完整链接后重新验证",
+    "reverificationNeedsSafeTicketDescription": "当前地址没有安全的咨询编号，页面不会从失败信息中猜测编号。请回到消息里的完整链接，或提交一张新的售前咨询。",
+    "restartHumanCheck": "重新完成人机验证后申请新验证码",
+    "sendAgain": "重新发送验证码",
+    "sms": "短信",
+    "stage": "状态",
+    "startVerification": "开始验证",
+    "subject": "咨询标题",
+    "subjectRequired": "请填写咨询标题",
+    "submissionUnknown": "咨询提交结果暂时无法确认",
+    "submissionUnknownDescription": "请求可能已经到达服务端，页面不会自动再次提交。请保留当前页面，稍后使用同一次操作重试或联系工作人员。",
+    "submitFailed": "提交失败，请检查后重试",
+    "submittedHint": "系统只会把访问链接发送到已验证的联系方式，不会在页面公开链接。",
+    "ticketNo": "咨询编号",
+    "unknownResult": "发送结果暂时无法确认",
+    "unknownResultDescription": "服务端暂时不能确认消息是否已被接收，页面不会自动重发。请等待服务端给出的时间结束后，再重新开始验证。",
+    "updatedAt": "最近更新",
+    "verificationFailed": "验证失败，请检查验证码后重试",
+    "verified": "联系方式已验证",
+    "verifyAndSendCode": "验证并发送验证码"
+  },
+  "privacy": {
+    "menu": "隐私与授权",
+    "title": "隐私与授权",
+    "eyebrow": "你的资料，由你了解和管理",
+    "heading": "隐私与授权",
+    "subtitle": "查看资料用途、保留期限和当前授权，也可以申请导出或删除本人的资料。",
+    "evidenceTitle": "撤回不会抹掉依法必须保留的记录",
+    "evidenceDescription": "撤回只停止依赖该授权的后续处理。合同、税务、争议、审计或法律要求保留的证据，会在期限结束且确认没有继续保留理由后再处理。",
+    "loadFailed": "隐私信息加载失败，请稍后重试",
+    "retry": "重新加载",
+    "noticeTitle": "我们如何处理资料",
+    "noticeEmpty": "当前没有已发布的资料处理说明",
+    "consentTitle": "我的授权",
+    "consentEmpty": "当前没有授权记录",
+    "requestTitle": "我的申请",
+    "requestEmpty": "还没有导出或删除申请",
+    "days": "天",
+    "fields": {
+      "purpose": "处理目的",
+      "necessity": "为什么需要",
+      "impact": "可能影响",
+      "recipients": "资料接收方",
+      "storage": "保存位置",
+      "retention": "保留期限",
+      "rights": "如何行使权利"
+    },
+    "assessment": {
+      "personal_verification": "个人实名认证",
+      "sensitive_personal_information": "敏感个人信息",
+      "enterprise_verification": "企业实名认证",
+      "electronic_contract": "电子合同",
+      "tax_invoice": "税务发票"
+    },
+    "consent": {
+      "granted": "已同意",
+      "withdrawn": "已撤回"
+    },
+    "withdraw": {
+      "action": "撤回未来授权",
+      "title": "确认撤回未来授权？",
+      "description": "撤回后，依赖这项授权的新处理会停止；已经形成且依法需要保留的证据不会立即删除。",
+      "confirm": "确认撤回"
+    },
+    "request": {
+      "export": "申请导出资料",
+      "delete": "申请删除资料",
+      "exportDescription": "提交后，系统会核对并准备仅属于你的资料。",
+      "deleteDescription": "提交后，系统会先核对合同、税务、争议、审计和法律保留要求，不会绕过这些要求立即删除。",
+      "submit": "确认提交"
+    },
+    "requestType": {
+      "export": "资料导出",
+      "delete": "资料删除"
+    },
+    "requestStatus": {
+      "submitted": "已提交",
+      "processing": "处理中",
+      "retention_blocked": "暂需保留",
+      "completed": "已完成",
+      "rejected": "未通过"
+    },
+    "hold": {
+      "contract": "合同证据仍需保留",
+      "tax": "税务证据仍需保留",
+      "dispute": "争议处理仍需保留",
+      "audit": "审计仍需保留",
+      "legal_hold": "法律要求仍需保留"
+    },
+    "messages": {
+      "withdrawn": "未来授权已撤回",
+      "requested": "申请已提交"
+    },
+    "common": {
+      "cancel": "取消"
+    }
+  },
+  "productDirectories": {
+    "menu": "我的服务",
+    "all": "全部服务",
+    "product": "商品",
+    "status": "状态",
+    "startedAt": "开始时间",
+    "expiresAt": "到期时间",
+    "actions": "操作",
+    "viewOrder": "查看订单",
+    "noExpiry": "无到期时间",
+    "empty": "商家尚未设置商品目录",
+    "loadFailed": "目录加载失败",
+    "retry": "重试",
+    "states": {
+      "pending": "待开通",
+      "active": "运行中",
+      "suspended": "已暂停",
+      "expired": "已到期",
+      "terminated": "已终止",
+      "cancelled": "已取消",
+      "failed": "失败",
+      "provisioning": "开通中",
+      "pending_activation": "待激活"
+    },
+    "notStarted": "未开始"
+  },
+  "purchaseConfiguration": {
+    "actions": {
+      "back": "返回",
+      "freeze": "确认配置并返回购物车",
+      "quote": "校验并查看价格"
+    },
+    "catalog": {
+      "configure": "选择配置",
+      "empty": "暂无可购买商品",
+      "loadFailed": "商品列表加载失败，请稍后重试",
+      "loadMore": "加载更多",
+      "loadMoreFailed": "更多商品加载失败，已加载的商品仍可继续查看",
+      "menu": "商品选购",
+      "refresh": "刷新",
+      "retry": "重试",
+      "title": "商品选购",
+      "unavailable": "暂不可购买",
+      "categories": "商品分类",
+      "allProducts": "全部商品"
+    },
+    "file": {
+      "drag": "点击或拖拽文件到这里上传",
+      "policy": "最多 {count} 个文件，单个不超过 {size} MB，支持 {extensions}",
+      "remove": "移除",
+      "removeFailed": "文件移除失败，请稍后重试",
+      "revoked": "文件已移除",
+      "uploaded": "文件检查通过",
+      "uploadFailed": "文件上传失败，请检查文件后重试"
+    },
+    "messages": {
+      "frozen": "购买配置已保存到当前商品",
+      "evaluateFailed": "配置校验暂时失败，请稍后重试",
+      "fieldInvalid": "请检查这一项的填写内容",
+      "changedDuringSubmit": "提交期间配置发生变化，请重新确认后再提交",
+      "freezeFailed": "购买配置保存失败，请稍后重试",
+      "invalid": "请检查购买配置中的必填项和填写内容",
+      "loadFailed": "购买配置加载失败，请稍后重试",
+      "navigationFailed": "配置已保存，请返回购物车继续操作",
+      "previewOnly": "当前未关联购物车商品，可以校验配置并查看价格；从商品购买入口进入后可以保存到购物车。",
+      "quoteFailed": "价格计算失败，请稍后重试",
+      "quoted": "配置校验通过，价格已更新"
+    },
+    "title": "商品购买配置"
+  },
+  "refunds": {
+    "actions": {
+      "cancel": "取消",
+      "chooseOrder": "选择要退款的订单",
+      "next": "下一页",
+      "preview": "查看退款影响",
+      "previous": "上一页",
+      "submit": "确认提交退款"
+    },
+    "application": {
+      "amountHelp": "先选择订单项和退款数量，再填写最小货币单位金额，例如人民币 12.99 元填写 1299。只有存在长期服务权益时才能继续选择具体权益，系统会重新核对可退上限。",
+      "amountMinor": "退款金额（最小单位）",
+      "entitlement": "只退这项长期服务权益",
+      "lineTotal": "原账单行金额",
+      "order": "订单：{orderNo}",
+      "quantity": "退款数量",
+      "refundable": "本次最多可退",
+      "title": "新建退款申请",
+      "wholeItem": "选择这个订单项"
+    },
+    "approval": {
+      "automatic": "符合规则后自动审核",
+      "manual": "需要后台人工审核"
+    },
+    "destination": {
+      "mixed": "部分原路退回，部分进入同币种余额",
+      "original_channel": "原付款来源",
+      "same_currency_balance": "同币种客户余额"
+    },
+    "balance": {
+      "accept": "同意不能原路退的部分进入余额",
+      "acceptDetail": "整笔退款金额为 {amount}。不能原路退的部分会进入同币种客户余额，其他部分仍原路退回；确认后所有部分才会一起开始执行。",
+      "acceptTitle": "确认整笔退款的去向",
+      "declineDetail": "选择继续等待后，整笔退款不会执行，也不会提前退回任何一部分。以后仍可回来同意。",
+      "declineTitle": "整笔退款继续等待",
+      "failed": "退款去向保存失败，请刷新后重试",
+      "keepPending": "暂不同意，整笔继续等待",
+      "saved": "退款去向已经保存",
+      "wholeHeld": "有一部分无法原路退，整笔退款目前全部暂停，任何部分都没有提前执行。"
+    },
+    "eyebrow": "在线退款",
+    "history": {
+      "destination": "退款去向",
+      "empty": "还没有退款申请",
+      "lead": "查看审核、退款执行和需要你确认余额退款的状态。",
+      "reason": "退款原因",
+      "submittedAt": "申请时间",
+      "title": "我的退款"
+    },
+    "lead": "先选择订单项、退款数量和金额；存在长期服务权益时再确认具体权益影响。金额、状态和退款去向始终由后台重新核对。",
+    "menu": "我的退款",
+    "messages": {
+      "confirmRequired": "请选择退款原因，并确认已经看懂服务影响",
+      "historyFailed": "退款记录暂时加载失败",
+      "orderFailed": "这个订单暂时不能建立退款申请，请返回订单页重新选择",
+      "otherDetailRequired": "选择“其他”时，请填写具体原因",
+      "previewFailed": "退款预览失败，金额、服务状态或可退额度可能已经变化",
+      "selectionRequired": "请至少选择一项，并填写大于零的退款金额",
+      "submitFailed": "退款提交失败，请重新预览后再试",
+      "submitted": "退款申请已经提交"
+    },
+    "preview": {
+      "amount": "预计退款金额",
+      "approval": "审核方式",
+      "confirmImpact": "我已经看懂并确认以上退款、长期权益终止和审核影响",
+      "dangerousWarning": "相关服务还有未完成或结果不明的危险操作，退款会等待资源核对。",
+      "reason": "退款原因",
+      "reasonDetail": "具体说明",
+      "entitlementImpact": "长期服务“{productName}”将按预览结果处理",
+      "entitlementTermination": "长期服务“{productName}”将被终止",
+      "terminationWarning": "退款会终止选中的长期服务权益，并可能造成服务中断或数据影响。请先处理重要数据。",
+      "title": "确认退款金额和服务影响"
+    },
+    "reason": {
+      "duplicate_purchase": "重复购买",
+      "no_longer_needed": "不再需要",
+      "other": "其他",
+      "service_issue": "服务问题",
+      "wrong_configuration": "配置选错"
+    },
+    "status": {
+      "approved": "已批准",
+      "awaiting_balance_consent": "等待确认退款去向",
+      "executing": "退款中",
+      "failed": "退款失败",
+      "manual_confirmation": "等待人工核对",
+      "pending_review": "等待审核",
+      "rejected": "已拒绝",
+      "result_unknown": "退款结果待核对",
+      "succeeded": "已退款"
+    },
+    "title": "退款与服务影响"
+  },
+  "salesChannel": {
+    "customer": {
+      "menu": "推荐与佣金",
+      "lead": "推荐关系和佣金始终按当前登录客户主体展示，结算申请会先冻结可用金额并进入审核。",
+      "refresh": "刷新",
+      "loadFailed": "推荐或佣金数据暂时无法加载，请稍后重试。",
+      "status": {
+        "first_touch": "首次归因",
+        "last_touch": "末次归因",
+        "pending": "待成熟",
+        "matured": "已成熟",
+        "reversed": "已冲回",
+        "pending_review": "待审核",
+        "approved": "已审核",
+        "paid": "已打款",
+        "failed": "失败"
+      },
+      "referral": {
+        "tab": "我的推荐",
+        "menu": "我的推荐",
+        "title": "我的推荐关系",
+        "linkTitle": "分享你的推荐链接",
+        "linkLead": "新客户通过此链接注册并完成符合条件的订单后，系统会按归因规则记录关系。",
+        "copy": "复制链接",
+        "copied": "推荐链接已复制。",
+        "copyFailed": "复制失败，请手动选择链接。",
+        "code": "推荐码",
+        "policy": "归因策略",
+        "expires": "有效期至",
+        "referred": "已推荐客户",
+        "attributed": "已归因订单",
+        "qualified": "符合条件订单",
+        "rejected": "被拒归因"
+      },
+      "commission": {
+        "tab": "我的佣金",
+        "menu": "我的佣金",
+        "title": "我的佣金",
+        "available": "可结算佣金",
+        "pending": "待成熟",
+        "matured": "已成熟累计",
+        "frozen": "结算冻结",
+        "requestTitle": "申请结算",
+        "requestLead": "只能申请当前币种的可用佣金，提交后金额会立即冻结，审核通过后再进入打款。",
+        "currency": "选择币种",
+        "amount": "申请金额（主币种）",
+        "request": "提交结算申请",
+        "invalidAmount": "请输入有效的正数金额。",
+        "insufficient": "申请金额超过当前可用佣金。",
+        "requested": "结算申请已提交，可在下方查看状态。",
+        "requestFailed": "结算申请未完成，佣金余额保持不变。",
+        "settlementsTitle": "结算申请记录",
+        "entriesTitle": "佣金流水",
+        "emptySettlements": "暂无结算申请。",
+        "emptyEntries": "暂无佣金流水。"
+      }
+    }
+  },
+  "servers": {
+    "actions": {
+      "backup_create": "创建备份",
+      "backup_delete": "删除备份",
+      "backup_restore": "从备份恢复",
+      "console": "控制台",
+      "ip_change": "更换 IP",
+      "nat_create": "创建 NAT 规则",
+      "nat_delete": "删除 NAT 规则",
+      "reboot": "重启",
+      "reinstall": "重装系统",
+      "reset_password": "重置密码",
+      "resize": "变更配置",
+      "security_group_attach": "绑定安全组",
+      "security_group_detach": "解绑安全组",
+      "snapshot_create": "创建快照",
+      "snapshot_delete": "删除快照",
+      "snapshot_restore": "从快照恢复",
+      "start": "开机",
+      "stop": "关机",
+      "traffic_add": "购买流量",
+      "virtual_media_mount": "挂载虚拟介质",
+      "virtual_media_unmount": "卸载虚拟介质"
+    },
+    "advanced": {
+      "formatDataDisk": "同时格式化数据盘",
+      "port": "登录端口",
+      "systemDiskSize": "系统盘大小（GiB）",
+      "title": "高级设置（默认不更改）"
+    },
+    "common": {
+      "back": "返回服务器列表",
+      "cancel": "取消",
+      "confirm": "确认执行",
+      "loadFailed": "服务器信息暂时无法读取，请稍后重试。",
+      "loading": "正在读取服务器信息…",
+      "refresh": "刷新",
+      "save": "保存"
+    },
+    "confirm": {
+      "backup_create": "将为所选磁盘创建备份。超出免费数量时，确认报价后才会进入付款。",
+      "backup_delete": "删除后无法恢复，请确认不再需要这份备份。",
+      "backup_restore": "恢复会覆盖当前磁盘数据，请核对影响并输入当前服务编号。",
+      "console": "将申请一个短期控制台入口，入口过期后需要重新申请。",
+      "ip_change": "更换 IP 可能导致原地址立即失效，请先确认业务已做好切换准备。",
+      "nat_create": "将新增一条端口转发规则，请确认端口和协议不会暴露不应公开的服务。",
+      "nat_delete": "删除后对应端口转发会立即停止。",
+      "reboot": "重启会短暂中断服务器上的业务。强制重启可能造成未保存数据丢失。",
+      "reinstall": "重装会覆盖当前系统。若选择格式化数据盘，数据盘内容也会被清除，此操作无法撤销。",
+      "reset_password": "密码修改成功后，原密码会立即失效。",
+      "resize": "配置变更可能需要重启，并可能产生费用。",
+      "security_group_attach": "绑定后网络访问规则可能立即改变，请先确认不会阻断必要连接。",
+      "security_group_detach": "解绑后网络访问规则可能立即改变，请先确认服务器仍受到必要保护。",
+      "snapshot_create": "将为所选磁盘创建快照。超出免费数量时，确认报价后才会进入付款。",
+      "snapshot_delete": "删除后无法恢复，请确认不再需要这份快照。",
+      "snapshot_restore": "恢复会覆盖当前磁盘数据，请核对影响并输入当前服务编号。",
+      "start": "确认启动这台服务器。",
+      "stop": "关机会中断服务器上的全部业务。强制关机可能造成未保存数据丢失。",
+      "traffic_add": "购买流量可能产生费用，确认报价并付款后才会生效。",
+      "virtual_media_mount": "挂载虚拟介质会改变服务器可见的安装介质，请确认当前业务允许。",
+      "virtual_media_unmount": "卸载后服务器将不能继续访问该虚拟介质。",
+      "title": "请再次确认本次操作"
+    },
+    "credential": {
+      "closeWarning": "关闭后将永久不能再次查看，请先安全保存。",
+      "savedAndClose": "我已安全保存，关闭",
+      "password": "新密码",
+      "port": "登录端口",
+      "reveal": "查看新密码（仅一次）",
+      "revealConfirm": "密码只会显示这一次。确认现在查看吗？",
+      "title": "重装后的登录信息",
+      "username": "用户名"
+    },
+    "accessories": {
+      "createTicket": "提交工单",
+      "empty": "暂未同步到附属资源",
+      "kind": {
+        "backup": "备份",
+        "disk": "磁盘",
+        "ip": "IP 地址",
+        "nat": "NAT 规则",
+        "security_group": "安全组",
+        "snapshot": "快照",
+        "virtual_media": "虚拟介质"
+      },
+      "observedAt": "资源清单同步时间",
+      "stale": "附属资源清单已过期。为避免操作错误，当前只能查看，请刷新；仍无可用操作时请联系商家。",
+      "title": "IP、磁盘与附属资源",
+      "unavailable": "当前服务商没有提供可安全执行的附属资源操作。如需处理，请联系商家。"
+    },
+    "detail": {
+      "actions": "服务器操作",
+      "configuration": "当前配置",
+      "emptyConfiguration": "暂无配置快照",
+      "history": "操作记录",
+      "imageUnavailable": "当前没有可用的系统镜像，请联系商家同步资源清单。",
+      "title": "服务器详情"
+    },
+    "fields": {
+      "expiresAt": "到期时间",
+      "product": "产品",
+      "runtime": "运行状态",
+      "serviceNo": "服务编号",
+      "status": "权益状态"
+    },
+    "form": {
+      "accessory": "选择资源",
+      "completeAccessory": "请把本次操作需要的信息填写完整",
+      "confirmServiceNo": "输入当前服务编号以确认覆盖数据",
+      "confirmServiceNoMismatch": "输入的服务编号与当前服务器不一致",
+      "confirmPassword": "再次输入新密码",
+      "disk": "选择磁盘",
+      "externalPort": "外部端口",
+      "force": "强制模式",
+      "graceful": "正常模式",
+      "image": "系统镜像",
+      "internalPort": "内部端口",
+      "mode": "执行方式",
+      "name": "名称",
+      "natRule": "选择 NAT 规则",
+      "newPassword": "新密码",
+      "passwordMismatch": "两次输入的密码不一致",
+      "passwordRequired": "请输入至少 8 位新密码",
+      "protocol": "协议",
+      "securityGroup": "选择安全组",
+      "selectAccessory": "请选择要操作的资源",
+      "selectImage": "请选择可用镜像",
+      "trafficGb": "购买流量（GB）",
+      "trafficRequired": "请输入大于 0 的流量数量",
+      "virtualMedia": "选择虚拟介质"
+    },
+    "list": {
+      "empty": "暂无服务器",
+      "open": "查看与操作",
+      "title": "我的服务器"
+    },
+    "ipChange": {
+      "checkout": "确认更换 IP",
+      "quoteSummary": "本次将更换 {quantity} 个 IP，应付 {amount}。确认后旧 IP 可能立即失效。"
+    },
+    "menu": "我的服务器",
+    "metadata": {
+      "alias": "服务器别名",
+      "edit": "编辑别名与备注",
+      "empty": "暂无备注",
+      "hint": "这里只适合填写方便自己识别服务器的非敏感信息，请不要填写密码或密钥。",
+      "product": "原产品名称",
+      "remark": "我的备注",
+      "saveFailed": "保存失败，服务器信息可能已经变化，已为你重新读取。",
+      "saved": "服务器别名与备注已保存。",
+      "title": "编辑服务器别名与备注"
+    },
+    "messages": {
+      "created": "操作已提交，请稍后刷新查看结果。",
+      "outputUnavailable": "这份一次性信息已查看、已过期或暂时不可用。",
+      "paymentRequired": "报价已确认，请完成付款后再查看执行结果。"
+    },
+    "operation": {
+      "openConsole": "打开控制台",
+      "processing": "处理中",
+      "submittedAt": "提交时间"
+    },
+    "quote": {
+      "checkout": "确认报价并继续",
+      "summary": "本次数量：{quantity}，应付：{amount}。免费额度会由服务端自动扣除，确认后不可更改本次报价。"
+    },
+    "refund": {
+      "none": "没有进行中的退款",
+      "open": "查看退款进度",
+      "title": "退款关联"
+    },
+    "renewal": {
+      "autoRenew": "自动续费",
+      "disabled": "未开启",
+      "enabled": "已开启，每次续费 {cycles} 个周期",
+      "manage": "管理续费"
+    },
+    "resize": {
+      "confirm": "确认配置变更",
+      "diskWarning": "磁盘容量只能增加，不能缩小；如果需要缩盘，请先迁移数据并联系商家处理。",
+      "downgradeSummary": "降配不退款，将在当前周期结束（{effectiveAt}）后生效；之后每周期费用为 {recurring}。",
+      "downgradeTitle": "确认下个续费周期降配",
+      "failed": "配置变更暂时无法提交。配置可能已变化，或服务器有进行中的操作，请刷新后重试。",
+      "loadFailed": "暂时无法读取可选配置，请刷新后重试。",
+      "open": "变更配置",
+      "paymentRequired": "升级账单已生成，付款完成后系统会立即执行配置变更。",
+      "quote": "查看费用并继续",
+      "scheduled": "降配已安排，将在下次续费时生效。",
+      "selectionRequired": "请按每个配置项目的要求完成选择。",
+      "title": "变更服务器配置",
+      "upgradeSummary": "本次按当前周期剩余时间补收 {charge}；付款后立即升级。升级后每周期费用为 {recurring}。",
+      "upgradeTitle": "确认立即升级"
+    },
+    "status": {
+      "active": "有效",
+      "attached": "已连接",
+      "available": "可用",
+      "cancelled": "已取消",
+      "changing": "变更中",
+      "expired": "已到期",
+      "failed": "失败",
+      "grace": "宽限期",
+      "manual_review": "等待人工处理",
+      "pending": "等待处理",
+      "pending_activation": "待生效",
+      "pending_provision": "待开通",
+      "provisioning": "开通中",
+      "ready": "等待执行",
+      "result_unknown": "结果待核对",
+      "resuming": "恢复中",
+      "running": "运行中",
+      "stopped": "已关机",
+      "succeeded": "已完成",
+      "suspended": "已暂停",
+      "terminated": "已终止",
+      "terminating": "终止中",
+      "unknown": "状态未知"
+    },
+    "traffic": {
+      "base": "套餐流量",
+      "observational": "这里显示的是服务商最近同步的观察数据，不作为账单结算依据。服务商未提供已用流量或重置时间时，系统不会猜测。",
+      "resetAt": "重置时间",
+      "temporary": "已购买流量包",
+      "title": "流量与用量",
+      "total": "当前总配额",
+      "unavailable": "服务商暂未提供",
+      "updatedAt": "数据更新时间",
+      "used": "本期已用"
+    },
+    "transfer": {
+      "accepted": "转移申请已受理。如果邮箱对应符合条件的客户，对方会在客户中心看到待确认记录。",
+      "confirm": "确认接收",
+      "confirmDescription": "确认后，服务器 {serviceNo} 将转入你的账号；原客户的历史账单、合同、发票和工单不会转给你，历史支付和退款也仍归原客户。已经付款、仍有效且只属于这台服务器的快照和备份会一同转入，自动续费会关闭，需要时请你重新开启。",
+      "confirmFailed": "当前无法完成转移。申请可能已过期，或服务器还有未付款的续费或增购账单、退款、操作或合同正在处理。",
+      "confirmTitle": "确认接收这台服务器",
+      "confirmed": "服务器已转入你的账号。",
+      "description": "请输入接收方已经注册并完成实名的邮箱。无论邮箱是否存在，系统都会显示相同的受理结果；对方须在 24 小时内确认。转移前请先处理完未付款的续费和增购账单，转移完成后原自动续费会关闭。",
+      "email": "接收方注册邮箱",
+      "expiresAt": "确认截止时间",
+      "failed": "暂时无法提交转移，请确认商家已开放转移，并先处理未付款的续费或增购账单、退款及正在执行的操作。",
+      "incomingTitle": "等待我确认的服务器转移",
+      "open": "转移服务器",
+      "submit": "提交转移申请",
+      "title": "把服务器转给其他客户"
+    }
+  },
+  "sshKeys": {
+    "actions": {
+      "add": "添加公钥",
+      "cancel": "取消",
+      "revoke": "撤销",
+      "save": "保存"
+    },
+    "confirm": {
+      "revoke": "确定撤销这把公钥吗？撤销后，新的开通或重装操作不能再选择它。"
+    },
+    "create": {
+      "placeholder": "请粘贴一整行以 ssh-ed25519、ssh-rsa 或 ecdsa-sha2-... 开头的内容",
+      "title": "添加 SSH 公钥",
+      "warning": "这里只能粘贴 .pub 公钥文件的内容。请勿粘贴私钥。"
+    },
+    "empty": "还没有保存 SSH 公钥",
+    "fields": {
+      "actions": "操作",
+      "algorithm": "算法",
+      "fingerprint": "SHA256 指纹",
+      "name": "名称",
+      "publicKey": "公钥内容",
+      "status": "状态"
+    },
+    "menu": "SSH 公钥",
+    "messages": {
+      "created": "公钥已保存",
+      "privateRejected": "这段内容像是私钥。为了安全，系统没有上传它。",
+      "required": "请填写名称并粘贴一把公钥",
+      "revoked": "公钥已撤销"
+    },
+    "notice": {
+      "description": "系统只保存公钥，页面只显示 SHA256 指纹。只有商品和服务器供应商都明确支持时，才会把你选择的公钥用于开通或重装。",
+      "title": "私钥必须始终留在你自己的设备上"
+    },
+    "status": {
+      "active": "可用",
+      "revoked": "已撤销"
+    },
+    "title": "SSH 公钥"
+  },
+  "support": {
+    "action": "操作",
+    "searchKeyword": "关键词",
+    "statusUnavailable": "状态暂不可用",
+    "viewDetail": "查看详情",
+    "additionalInformation": "补充信息",
+    "additionalInformationHint": "请按当前表单填写。提交后会保留创建时的名称、选项和值，不受后台以后改名或停用影响。",
+    "categoriesLoadFailed": "暂时无法读取工单分类，请稍后重试",
+    "addAttachments": "添加附件（选填）",
+    "attachmentDownload": "下载附件 {name}",
+    "attachmentDownloadFailed": "附件下载失败，请稍后重试",
+    "attachmentTooLarge": "单个附件不能超过 20 MiB",
+    "ratingStars": "已提交 {stars} 星评价",
+    "submittedRating": "我的评价",
+    "allStages": "全部状态",
+    "attachmentHint": "支持图片、PDF、文本、日志、办公文档和 ZIP；单个文件最多 20 MiB，一张工单累计最多 200 MiB。",
+    "back": "返回工单列表",
+    "body": "问题描述",
+    "category": "问题分类",
+    "chooseCustomFieldOption": "请选择",
+    "close": "问题已解决",
+    "closeConfirm": "确认问题已经解决并关闭这张工单吗？",
+    "closed": "已关闭",
+    "create": "提交工单",
+    "createIntro": "请选择公开问题分类，内部处理部门会由系统自动安排。",
+    "createSuccess": "工单已提交",
+    "createTitle": "提交新工单",
+    "createUnavailable": "暂时不能提交新工单",
+    "createUnavailableDescription": "客户可选的问题分类还没有从服务端开放。为避免提交到错误部门，请稍后再试；已有工单仍可正常查看和回复。",
+    "customFieldMultiLineTooLong": "多行内容不能超过 65536 个字符",
+    "customFieldDateInvalid": "请输入有效日期",
+    "customFieldNumberInvalid": "请输入最多 20 位整数和 10 位小数的数字",
+    "customFieldOptionInvalid": "选项已经变化，请刷新页面后重新选择",
+    "customFieldRequired": "请填写{name}",
+    "customFieldSingleLineTooLong": "单行内容不能超过 1024 个字符",
+    "customFieldsLoadFailed": "需要填写的补充信息加载失败，请刷新后再提交",
+    "detailTitle": "工单详情",
+    "empty": "还没有工单",
+    "in_progress": "处理中",
+    "loadFailed": "暂时无法读取工单，请稍后重试",
+    "menu": "我的工单",
+    "messageRequired": "请填写问题描述",
+    "new": "新提交",
+    "newTicket": "新建工单",
+    "no": "否",
+    "noEntitlementCandidates": "没有找到可关联的长期权益",
+    "notProvided": "未填写",
+    "nextPage": "下一页",
+    "pageNumber": "第 {page} 页",
+    "previousPage": "上一页",
+    "rate": "评价本次处理",
+    "ratingComment": "补充评价（选填）",
+    "ratingLowHint": "如需继续处理，请重新打开工单。",
+    "ratingRequired": "请先选择 1 至 5 星",
+    "ratingSuccess": "感谢你的评价",
+    "reopen": "重新打开",
+    "reopenDeadline": "可重新打开至 {date}",
+    "reopenSuccess": "工单已重新打开",
+    "retry": "重试",
+    "reply": "发送回复",
+    "replyPlaceholder": "补充新的情况或回复客服",
+    "resolved": "已解决",
+    "relatedEntitlement": "关联权益（选填）",
+    "entitlementAtCreation": "创建工单时",
+    "entitlementCurrent": "当前权益",
+    "entitlementCurrentUnavailable": "当前权益暂不可用，创建工单时的信息仍已保留。",
+    "entitlementOptionalHint": "只显示当前属于你的非终态长期权益；可以不选择。",
+    "entitlementPlaceholder": "不关联权益，或按商品名称搜索",
+    "entitlementsLoadFailed": "权益列表暂不可用",
+    "entitlementsLoadFailedHint": "暂时无法选择关联权益，你仍可不关联权益并正常提交工单。",
+    "entitlementStatusUnavailable": "状态暂不可用",
+    "entitlementStatus": {
+      "active": "有效",
+      "expired": "已到期",
+      "suspended": "已暂停",
+      "terminated": "已终止"
+    },
+    "stage": "状态",
+    "subject": "问题标题",
+    "subjectRequired": "请填写问题标题",
+    "submitRating": "提交评价",
+    "submitFailed": "提交失败，请检查后重试",
+    "supportTeam": "客服团队",
+    "system": "系统消息",
+    "ticketNo": "工单编号",
+    "updatedAt": "最近更新",
+    "waiting_customer": "等你回复",
+    "yes": "是",
+    "you": "我"
+  },
+  "taxInvoices": {
+    "menu": "我的发票",
+    "title": "我的发票",
+    "eyebrow": "电子发票",
+    "heading": "申请开票并查看处理进度",
+    "subtitle": "选择常用抬头和已付款账单，逐张填写本次开票金额。提交后由后台确认票种并审核。",
+    "refresh": "刷新",
+    "noticeTitle": "票种由后台确认",
+    "noticeDescription": "你不需要选择发票类型。提交后申请先进入待后台审核，并立即占用所选账单的可开票额度。",
+    "steps": {
+      "profile": "1. 选择发票抬头",
+      "invoices": "2. 选择账单并填写金额",
+      "submit": "3. 提交申请"
+    },
+    "profile": {
+      "placeholder": "请选择一个有效抬头",
+      "default": "默认",
+      "individual": "个人",
+      "enterprise": "企业",
+      "empty": "还没有可用抬头，请先到“发票抬头”新增或启用一个抬头。",
+      "manage": "管理发票抬头"
+    },
+    "invoice": {
+      "empty": "当前没有仍有可开票余额的已付款账单。",
+      "billNo": "账单编号",
+      "orderNo": "订单编号",
+      "settledAt": "付款时间",
+      "paid": "账单已付金额",
+      "allocated": "已申请或已开金额",
+      "remaining": "剩余可开金额",
+      "amount": "本次开票金额",
+      "amountPlaceholder": "请输入金额",
+      "differentCurrency": "一份申请只能合并同一币种的账单",
+      "selectionLimit": "一份申请最多选择 20 张账单",
+      "amountRequired": "请填写本次开票金额",
+      "amountInvalid": "请输入大于 0 且小数位正确的金额",
+      "amountTooLarge": "不能超过这张账单的剩余可开金额"
+    },
+    "selectionSummary": "已选择 {count} 张账单，申请总额 {amount}",
+    "submit": "提交开票申请",
+    "submitting": "正在提交",
+    "submitHint": "提交后本次抬头和账单分配会冻结，之后修改常用抬头不会改变这份申请。",
+    "messages": {
+      "created": "开票申请已提交，等待后台审核。",
+      "reused": "已恢复之前成功提交的同一份申请。",
+      "createFailed": "提交失败，请检查金额并刷新后重试。"
+    },
+    "history": {
+      "title": "申请记录",
+      "description": "这里只显示你自己的开票申请和后台可公开的处理原因。",
+      "empty": "还没有开票申请。",
+      "loadFailed": "申请记录暂时无法加载。",
+      "loadMore": "加载更多",
+      "requestNo": "申请编号",
+      "amount": "申请金额",
+      "submittedAt": "提交时间",
+      "invoiceType": "票种",
+      "invoiceNo": "发票号码",
+      "issuedAt": "开具时间",
+      "deliveredAt": "交付时间",
+      "reason": "处理原因"
+    },
+    "status": {
+      "draft": "草稿",
+      "pending_review": "待后台审核",
+      "approved_pending_submission": "待提交开票",
+      "rejected": "已驳回",
+      "queued": "等待提交",
+      "submitting": "正在开票",
+      "issued": "已开票",
+      "delivered": "已交付",
+      "failed": "开票失败",
+      "result_unknown": "结果确认中",
+      "red_letter_pending": "红字处理中",
+      "red_lettered": "已红冲",
+      "canceled": "已取消"
+    },
+    "invoiceType": {
+      "pending_confirmation": "待后台确认票种",
+      "vat_electronic_normal": "增值税电子普通发票",
+      "vat_electronic_special": "增值税电子专用发票",
+      "digital_electronic_normal": "数电普通发票",
+      "digital_electronic_special": "数电专用发票"
+    },
+    "reason": {
+      "buyer_or_tax_information_incorrect": "发票抬头或税务信息需要修改",
+      "amount_or_billing_invoice_adjustment_required": "申请金额或所选账单需要调整",
+      "duplicate_request": "这份申请与已有申请重复",
+      "business_not_invoiceable": "当前业务暂时不能开具发票",
+      "customer_requested_cancellation": "已按你的要求取消",
+      "order_or_refund_changed": "订单或退款情况发生变化",
+      "other": "申请未能继续处理，请联系商家了解详情"
+    },
+    "loadFailed": "可开票信息暂时无法加载，请稍后重试。"
+  },
+  "trafficPackages": {
+    "title": "购买流量包",
+    "name": "套餐名称",
+    "capacity": "流量容量",
+    "price": "一次性含税总价",
+    "availability": "销售状态",
+    "actions": "操作",
+    "available": "可购买",
+    "soldOut": "已售罄",
+    "buy": "购买",
+    "confirm": "确认流量包订单",
+    "createOrder": "确认下单",
+    "expiryWarning": "有效期按上游重置规则执行，暂未提供具体到期时间",
+    "executionWarning": "流量只增加到当前服务器。收费套餐须付款后执行，购买不会自动开机或解除暂停。",
+    "paymentRequired": "订单已生成，请完成付款后等待流量到账",
+    "created": "流量追加任务已提交"
+  },
+  "cancel": "取消",
+  "confirm": "确认",
+  "collapse": "收起",
+  "expand": "展开"
+}

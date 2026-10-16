@@ -24,4 +24,7 @@ type IAdminV1 interface {
 	ListTokens(ctx context.Context, req *v1.ListTokensReq) (res *v1.ListTokensRes, err error)
 	CreateToken(ctx context.Context, req *v1.CreateTokenReq) (res *v1.CreateTokenRes, err error)
 	RevokeToken(ctx context.Context, req *v1.RevokeTokenReq) (res *v1.RevokeTokenRes, err error)
+	CustomerPlatform(ctx context.Context, req *v1.CustomerPlatformReq) (res *v1.CustomerPlatformRes, err error)
+	CustomerAPICalls(ctx context.Context, req *v1.CustomerAPICallsReq) (res *v1.CustomerAPICallsRes, err error)
+	CustomerSecretRotate(ctx context.Context, req *v1.CustomerSecretRotateReq) (res *v1.CustomerSecretRotateRes, err error)
 }

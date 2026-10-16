@@ -53,6 +53,10 @@ type Projection struct {
 // Sink idempotently receives one resource-owned interface projection.
 type Sink interface {
 	Upsert(context.Context, Projection) error
+	// RefreshUnused locks the core-owned interface, rejects every historical
+	// reference, and atomically applies owner changes and new active evidence.
+	// The callback must use its transaction context and never mutate history.
+	RefreshUnused(context.Context, Projection, func(context.Context) error) error
 }
 
 // Usage is the staff-visible current local usage of one resource channel.
@@ -86,7 +90,7 @@ type CandidateRequest struct {
 }
 
 // Candidate is a safe label/value projection without provider credentials.
-type Candidate struct{ Value, LabelZhCN, LabelEnUS string }
+type Candidate struct{ Value, ParentValue, OptionToken, LabelZhCN, LabelEnUS string }
 
 // CandidateResult contains one bounded candidate list.
 type CandidateField struct {

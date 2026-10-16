@@ -72,6 +72,7 @@ const uploadBusy = reactive<Record<string, boolean>>({});
 const removingTokens = reactive<Record<string, boolean>>({});
 
 defineExpose({
+  clearValidation: () => formRef.value?.clearValidate(),
   markFilesBound: () => {
     for (const fieldKey of Object.keys(uploadedNames))
       delete uploadedNames[fieldKey];

@@ -35,6 +35,9 @@ func (s *serviceImpl) QueryCurrent(ctx context.Context, attemptNo string) (*Veri
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeNotAccessible)
 	}
+	if subject.ManualVerification {
+		return s.Current(ctx)
+	}
 	return s.query(ctx, attemptNo, subject.CustomerNo)
 }
 

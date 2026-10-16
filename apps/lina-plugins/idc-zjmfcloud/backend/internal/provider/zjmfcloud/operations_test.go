@@ -459,7 +459,7 @@ func TestProvisionUsesScopedPasswordAndDiscardsResponseCredentials(t *testing.T)
 		}
 		if request.Form.Get("client") != "91" || request.Form.Get("hostname") != "srv-001.example" ||
 			request.Form.Get("rootpass") != "G3nerated p@ss+word" || request.Form.Get("num") != "1" ||
-			request.Form.Has("password") {
+			request.Form.Get("data_disk_size") != "100" || request.Form.Has("password") {
 			t.Errorf("provision form did not preserve the verified contract: %v", request.Form)
 		}
 		writeJSON(t, writer, http.StatusAccepted,
@@ -472,7 +472,7 @@ func TestProvisionUsesScopedPasswordAndDiscardsResponseCredentials(t *testing.T)
 	fixture.secrets.put(password, []byte("G3nerated p@ss+word"))
 	request := resourcecap.OperationRequest{
 		RequestID: "request-provision-8001", Capability: resourcecap.CapabilityProvision,
-		Parameters:     []byte(`{"cpu":2,"memory":2048,"os":5,"client":91,"hostname":"srv-001.example"}`),
+		Parameters:     []byte(`{"cpu":2,"memory":2048,"os":5,"client":91,"hostname":"srv-001.example","data_disk_size":100}`),
 		SecretBindings: []resourcecap.SecretBinding{{Name: resetPasswordBinding, Handle: password}},
 	}
 	result, err := fixture.provider.Execute(context.Background(), request)

@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import "../../../vben-adapter/frontend/admin.css";
+import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { VbenFormProps } from "#/adapter/form";
 import type {
@@ -23,6 +25,7 @@ import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { fixedRightActionColumn } from "../../../vben-adapter/frontend/src";
 import { $t } from "#/locales";
 import ProviderCatalog from "./components/provider-catalog.vue";
+import PeerLifecycle from "./components/peer-lifecycle.vue";
 import {
   createProviderChannel,
   createProviderPool,
@@ -54,6 +57,7 @@ const channels = shallowRef<ProviderChannel[]>([]);
 const pools = shallowRef<ProviderPool[]>([]);
 const providerCandidates = ref<ProviderCandidate[]>([]);
 const loading = ref(false);
+const showDeletedChannels = ref(false);
 const channelPage = ref({ currentPage: 1, pageSize: 20, total: 0 });
 const poolPage = ref({ currentPage: 1, pageSize: 20, total: 0 });
 const detail = ref<ProviderChannel>();
@@ -93,6 +97,7 @@ const selectedInterfaceSchema = ref<InterfaceConfigurationSchema>({
   version: "",
 });
 const testingChannels = ref<string[]>([]);
+const refreshingChannels = ref<string[]>([]);
 const activeChannels = computed(() => channelOptions.value);
 
 const [ChannelForm, channelFormApi] = useVbenForm({
@@ -334,6 +339,7 @@ async function queryDirectory(
   try {
     const data = await getProviderConfigurations({
       channelPage: channel.currentPage, channelPageSize: channel.pageSize,
+      availableChannelsOnly: !showDeletedChannels.value,
       poolPage: pool.currentPage, poolPageSize: pool.pageSize,
     });
     if (generation !== loadGeneration) return;
@@ -449,6 +455,7 @@ async function initializeChannelForm(open: boolean) {
       providerPluginId: item?.providerPluginId || candidate?.pluginId || "",
       displayName: item?.displayName || "",
       endpoint: item?.endpoint || "",
+      tlsCertificateSha256: item?.tlsCertificateSha256 || "",
       ...(item?.nonSecretSettings || {}),
       status:
         item?.status === "deleted" ? "disabled" : item?.status || "disabled",
@@ -482,6 +489,7 @@ async function saveChannel() {
     const body = {
       displayName: String(values.displayName || ""),
       endpoint: String(values.endpoint || ""),
+      tlsCertificateSha256: String(values.tlsCertificateSha256 || "").trim().toLowerCase(),
       nonSecretSettings,
       providerPluginId: String(values.providerPluginId || ""),
       status: String(values.status || "disabled"),
@@ -680,6 +688,13 @@ function channelBaseSchema(item?: ProviderChannel): NonNullable<VbenFormProps["s
       label: tr("apiEndpoint"),
       rules: z.string().trim().url(),
     },
+    {
+      component: "Input",
+      fieldName: "tlsCertificateSha256",
+      label: tr("tlsCertificateSha256"),
+      componentProps: { placeholder: tr("tlsCertificateHint"), maxlength: 64 },
+      rules: z.string().trim().regex(/^(?:[a-fA-F0-9]{64})?$/).optional(),
+    },
     ...(item
       ? [
           {
@@ -782,11 +797,25 @@ async function savePool() {
     poolModalApi.unlock();
   }
 }
+function providerUpdateNeeded(item: ProviderChannel) {
+  const candidate = providerCandidates.value.find((value) => value.pluginId === item.providerPluginId);
+  return !!item.providerReleaseVersion && !!candidate && candidate.releaseVersion !== item.providerReleaseVersion;
+}
+async function refreshChannelProvider(item: ProviderChannel) {
+  if (refreshingChannels.value.includes(item.channelNo)) return;
+  refreshingChannels.value = [...refreshingChannels.value, item.channelNo];
+  try {
+    await updateProviderChannel(item, { displayName: item.displayName, endpoint: item.endpoint, status: item.status, refreshProvider: true });
+    message.success(tr("providerUpdated"));
+    await load();
+  } catch { message.error(tr("providerUpdateFailed")); } finally { refreshingChannels.value = refreshingChannels.value.filter((value) => value !== item.channelNo); }
+}
 async function setChannelStatus(item: ProviderChannel, status: string) {
   try {
     await updateProviderChannel(item, {
       displayName: item.displayName,
       endpoint: item.endpoint,
+      tlsCertificateSha256: item.tlsCertificateSha256 || "",
       status,
     });
     await load();
@@ -801,7 +830,7 @@ async function verifyChannel(item: ProviderChannel) {
   try {
     const result = await verifyProviderChannel(item.channelNo);
     if (result.verified) message.success(tr("connectionVerified"));
-    else message.warning(tr(`verification.${result.statusCode}`));
+    else message.warning(verificationMessage(result.statusCode));
     await load();
   } catch {
     message.error(tr("connectionFailed"));
@@ -812,7 +841,12 @@ async function verifyChannel(item: ProviderChannel) {
   }
 }
 
+function verificationMessage(status: string) {
+ const supported = ["configuration_incomplete", "verification_unsupported", "connection_failed", "tls_untrusted", "timeout", "dns", "network", "endpoint_not_found", "invalid_response", "auth_rejected", "local_auth_policy"];
+ return tr("verification." + (supported.includes(status) ? status : "connection_failed"));
+}
 function connectionStatusLabel(item: ProviderChannel) {
+  if (providerUpdateNeeded(item)) return tr("providerUpdateNeeded");
   if (item.connectionStatus === "healthy") return tr("connectionHealthy");
   if (item.connectionStatus === "degraded") return tr("connectionDegraded");
   return tr("connectionUnknown");
@@ -922,10 +956,11 @@ function resourceKindLabel(kind: string) {
 }
 
 onMounted(load);
+const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
 </script>
 
 <template>
-  <Page :auto-content-height="true" data-testid="provider-configuration-page">
+  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true" data-testid="provider-configuration-page">
     <Card
       :body-style="{
         display: 'flex',
@@ -938,11 +973,10 @@ onMounted(load);
       class="flex h-full min-h-0 flex-col"
     >
       <template #title>{{ tr("title") }}</template>
-      <template #extra
-        ><Button :loading="loading" @click="load()">{{
+      <template #extra>
+        <div class="flex flex-wrap gap-2"><PeerLifecycle /><Button :loading="loading" @click="load()">{{
           tr("refresh")
-        }}</Button></template
-      >
+        }}</Button></div></template>
       <Alert class="mb-4" :message="tr('subtitle')" show-icon type="info" />
       <Alert
         v-if="channels.some((item) => !item.interfaceConfiguration)"
@@ -957,7 +991,8 @@ onMounted(load);
       >
         <Tabs.TabPane key="channels" :tab="tr('channels')">
           <div class="flex h-full min-h-0 flex-col">
-            <div class="mb-3 flex justify-end">
+            <div class="mb-3 flex justify-end gap-2">
+              <Button data-testid="provider-show-deleted" @click="showDeletedChannels = !showDeletedChannels; channelGridApi.query()">{{ tr(showDeletedChannels ? 'hideDeleted' : 'showDeleted') }}</Button>
               <Button
                 :disabled="providerCandidates.length === 0"
                 type="primary"
@@ -980,7 +1015,7 @@ onMounted(load);
                 >
                 <template #account="{ row }">{{
                   tr(
-                    !row.interfaceConfiguration
+                    providerUpdateNeeded(row) ? "providerUpdateNeeded" : !row.interfaceConfiguration
                       ? "configurationMissing"
                       : channelSecretsComplete(row)
                         ? "configured"
@@ -998,6 +1033,7 @@ onMounted(load);
                 </template>
                 <template #action="{ row }"
                   ><div class="flex gap-2 whitespace-nowrap">
+                    <Button v-if="providerUpdateNeeded(row) && row.status !== 'deleted'" :loading="refreshingChannels.includes(row.channelNo)" size="small" type="link" @click="refreshChannelProvider(row)">{{ tr("updateProvider") }}</Button>
                     <Button size="small" type="link" @click="openDetail(row)">{{ tr("details") }}</Button>
                     <Button
                       :disabled="!row.interfaceConfiguration"
@@ -1007,7 +1043,7 @@ onMounted(load);
                       >{{ tr("edit") }}</Button
                     ><Button
                       :disabled="
-                        row.status === 'deleted' || !channelSecretsComplete(row)
+                        row.status === 'deleted' || providerUpdateNeeded(row) || !channelSecretsComplete(row)
                       "
                       :loading="testingChannels.includes(row.channelNo)"
                       size="small"

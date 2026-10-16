@@ -19,9 +19,30 @@ import (
 	"lina-core/pkg/plugin/capability/authcap/authz"
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
+
+// Compiled permission codes cannot be confused with credential assignments;
+// modifying or encoding them still goes through the ordinary secret scanner.
+func TestAuditCatalogedPermissionsRemainSafeIdentifiers(t *testing.T) {
+	for _, permission := range idccap.AdminPermissionCatalog() {
+		candidate := unitTransitionInput().Fields
+		candidate.RequiredPermission = permission
+		if _, err := normalizeFields(candidate); err != nil {
+			t.Fatalf("registered permission %q rejected: %v", permission, err)
+		}
+	}
+	for _, value := range []string{
+		"idc:admin:resource:channel-secret:leaked-value", "idc:admin:secret:leaked-value",
+		"idc:admin:token=leaked-value", "6170694b65793d736563726574",
+	} {
+		if validAuditPermission(value) {
+			t.Fatalf("unregistered sensitive permission accepted: %q", value)
+		}
+	}
+}
 
 var (
 	testDigestKey    = []byte("0123456789abcdef0123456789abcdef")

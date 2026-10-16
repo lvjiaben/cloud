@@ -9,6 +9,13 @@ import (
 )
 
 var (
+	// CodeVerificationRequired identifies an otherwise available customer whose
+	// identity has not passed the verification required by this operation.
+	CodeVerificationRequired = bizerr.MustDefine(
+		"IDC_CUSTOMER_VERIFICATION_REQUIRED",
+		"Customer identity verification is required before this operation",
+		gcode.CodeInvalidOperation,
+	)
 	// CodeProfileInvalid reports malformed self-service profile input.
 	CodeProfileInvalid = bizerr.MustDefine(
 		"IDC_CUSTOMER_PROFILE_INVALID",

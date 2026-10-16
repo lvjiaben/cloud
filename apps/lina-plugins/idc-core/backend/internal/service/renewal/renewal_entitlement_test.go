@@ -71,10 +71,20 @@ func TestGenericEntitlementRenewalEligibility(t *testing.T) {
 		EntitlementNo: "ENT_base", CustomerNo: "CUS_1", CustomerStatus: "active",
 		EntitlementStatusCode: "active", EntitlementExpiresAt: &expires, Version: 1,
 		PeriodUnitCode: "month", PeriodCount: 1, EntitlementOwnerID: "ssl-owner",
-		PluginID: "ssl-provider", PluginReleaseVersion: "1.0.0", ContractVersion: "v1",
+		ChargeTypeCode: string(catalog.ChargeTypeRecurring),
+		PluginID:       "ssl-provider", PluginReleaseVersion: "1.0.0", ContractVersion: "v1",
 		ConfigurationSnapshotNo: "SCF_customer", PriceConfigurationSnapshotNo: "CFG_price",
 		DeclarationDigest: strings.Repeat("a", 64),
 	}
+
+	t.Run("trial cannot use ordinary paid renewal", func(t *testing.T) {
+		trial := base
+		trial.RenewalModeCode = "local_entitlement"
+		trial.ChargeTypeCode = string(catalog.ChargeTypeTrial)
+		if err := validateEntitlementQuoteEligibility(&trial); !bizerr.Is(err, CodeCapabilityUnavailable) {
+			t.Fatalf("ordinary trial renewal returned %v", err)
+		}
+	})
 
 	t.Run("phone one-time delivery is rejected", func(t *testing.T) {
 		phone := base

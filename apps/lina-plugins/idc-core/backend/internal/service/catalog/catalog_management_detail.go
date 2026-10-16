@@ -28,9 +28,11 @@ type ProductManagementDetail struct {
 }
 
 type ProductManagementDetailProduct struct {
+	DirectoryNo                                                      string
 	ProductNo, CategoryNo, CategoryNameZhCN, CategoryNameEnUS        string
 	Status, PublicSlug, NameZhCN, NameEnUS, SummaryZhCN, SummaryEnUS string
 	SortOrder                                                        int
+	DescriptionVersion                                               int64
 	CreatedAt, UpdatedAt                                             time.Time
 }
 

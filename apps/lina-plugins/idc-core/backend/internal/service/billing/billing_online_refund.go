@@ -321,7 +321,7 @@ func (s *onlineRefundService) SubmitOnlineRefund(ctx context.Context, input Refu
 			return createErr
 		}
 		result = created
-		return s.appendRefundAudit(ctx, idccap.BusinessAuditTransition{
+		return s.appendRefundAudit(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": "not_created"},
 			IdempotencyScope: "billing.refund.submit", IdempotencyKey: created.RefundNo,
 			OperationCode: "billing.refund.submit", TargetType: "refund_request",
 			TargetNo: created.RefundNo, CustomerNo: audience.CustomerNo,

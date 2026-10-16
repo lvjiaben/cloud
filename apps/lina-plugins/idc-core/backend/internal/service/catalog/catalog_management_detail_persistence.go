@@ -4,6 +4,7 @@ package catalog
 
 import (
 	"context"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
@@ -11,12 +12,28 @@ import (
 	"lina-plugin-idc-core/backend/cap/idccap"
 )
 
+// Flat fields have distinct names as GoFrame recursively flattens anonymous
+// embeddings before matching column names; duplicate Status/CreatedAt names
+// would otherwise map a product value into its version.
 type productManagementDetailHeader struct {
-	ProductManagementDetailProduct
-	ProductManagementDetailVersion
-	InventoryTrackingEnabled  bool  `orm:"inventory_tracking_enabled"`
-	InventorySellableQuantity int64 `orm:"inventory_sellable_quantity"`
-	InventoryVersion          int64 `orm:"inventory_version"`
+	DirectoryNo                                                             string
+	ProductNo, CategoryNo, CategoryNameZhCN, CategoryNameEnUS               string
+	ProductStatus, PublicSlug, NameZhCN, NameEnUS, SummaryZhCN, SummaryEnUS string
+	SortOrder                                                               int
+	DescriptionVersion                                                      int64
+	ProductCreatedAt, ProductUpdatedAt                                      time.Time
+	VersionNo                                                               string
+	VersionNumber                                                           int
+	VersionStatus                                                           string
+	Source, SourceVersion, ChangeSummary                                    string
+	RequiresContract                                                        bool
+	ContractPolicyCode, ContractTemplateNo                                  string
+	ContractPolicyVersion                                                   int64
+	PublishedAt, RetiredAt                                                  *time.Time
+	VersionCreatedAt                                                        time.Time
+	InventoryTrackingEnabled                                                bool
+	InventorySellableQuantity                                               int64
+	InventoryVersion                                                        int64
 }
 
 const (
@@ -35,8 +52,8 @@ func loadProductManagementDetail(ctx context.Context, productNo string) (*Produc
 		return nil, nil
 	}
 	detail := &ProductManagementDetail{
-		Product:      header.ProductManagementDetailProduct,
-		Version:      header.ProductManagementDetailVersion,
+		Product:      ProductManagementDetailProduct{DirectoryNo: header.DirectoryNo, ProductNo: header.ProductNo, CategoryNo: header.CategoryNo, CategoryNameZhCN: header.CategoryNameZhCN, CategoryNameEnUS: header.CategoryNameEnUS, Status: header.ProductStatus, PublicSlug: header.PublicSlug, NameZhCN: header.NameZhCN, NameEnUS: header.NameEnUS, SummaryZhCN: header.SummaryZhCN, SummaryEnUS: header.SummaryEnUS, SortOrder: header.SortOrder, DescriptionVersion: header.DescriptionVersion, CreatedAt: header.ProductCreatedAt, UpdatedAt: header.ProductUpdatedAt},
+		Version:      ProductManagementDetailVersion{VersionNo: header.VersionNo, VersionNumber: header.VersionNumber, Status: header.VersionStatus, Source: header.Source, SourceVersion: header.SourceVersion, ChangeSummary: header.ChangeSummary, RequiresContract: header.RequiresContract, ContractPolicyCode: header.ContractPolicyCode, ContractTemplateNo: header.ContractTemplateNo, ContractPolicyVersion: header.ContractPolicyVersion, PublishedAt: header.PublishedAt, RetiredAt: header.RetiredAt, CreatedAt: header.VersionCreatedAt},
 		BillingRules: make([]ProductManagementDetailBillingRule, 0),
 		Prices:       make([]ProductManagementDetailPrice, 0),
 		TaxPolicies:  make([]ProductManagementDetailTaxPolicy, 0),
@@ -81,10 +98,10 @@ func loadBoundedProductDetailRows[T any](
 }
 
 const productManagementDetailHeaderSQL = `
-SELECT p.product_no, p.category_no, c.name_zh_cn AS category_name_zh_cn,
-       c.name_en_us AS category_name_en_us, p.status_code AS status,
+SELECT COALESCE(m.directory_no,'') AS directory_no, p.product_no, p.category_no, c.name_zh_cn AS category_name_zh_cn,
+       c.name_en_us AS category_name_en_us, p.status_code AS product_status,
        p.public_slug, p.name_zh_cn, p.name_en_us, p.summary_zh_cn, p.summary_en_us,
-       p.sort_order, p.created_at, p.updated_at,
+       p.sort_order, p.version AS description_version, p.created_at AS product_created_at, p.updated_at AS product_updated_at,
        v.version_no, v.version_number, v.status_code AS version_status,
 	       v.source_code AS source, v.source_version, v.change_summary,
 	       v.requires_contract, v.contract_policy_code, v.contract_template_no,
@@ -94,6 +111,7 @@ SELECT p.product_no, p.category_no, c.name_zh_cn AS category_name_zh_cn,
 	       inventory.sellable_quantity AS inventory_sellable_quantity,
 	       inventory.version AS inventory_version
 FROM plugin_idc_core_catalog_product p
+LEFT JOIN plugin_idc_core_product_directory_membership m ON m.tenant_id=p.tenant_id AND m.product_no=p.product_no
 JOIN plugin_idc_core_catalog_category c
   ON c.tenant_id = p.tenant_id AND c.category_no = p.category_no AND c.deleted_at IS NULL
 JOIN LATERAL (

@@ -3,14 +3,12 @@ package supportdesk
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
 
 	"lina-core/pkg/bizerr"
-	"lina-plugin-staff-access/backend/cap/staffaccesscap"
 )
 
 func (s *serviceImpl) CreateStaff(ctx context.Context, input CreateInput) (*Detail, error) {
@@ -152,12 +150,8 @@ func (s *serviceImpl) create(ctx context.Context, input CreateInput, staff *acto
 
 func (s *serviceImpl) resolveRoute(ctx context.Context, input CreateInput) (string, string, error) {
 	if input.TicketType == "internal" {
-		count, err := queryCount(ctx, s.database, `SELECT COUNT(1) FROM plugin_idc_core_support_department WHERE tenant_id=0 AND department_no=? AND status_code='active'`, input.DepartmentNo)
-		if err != nil {
+		if err := s.requireActiveOrganizationDepartment(ctx, input.DepartmentNo); err != nil {
 			return "", "", err
-		}
-		if count != 1 {
-			return "", "", bizNotAccessible()
 		}
 		return input.DepartmentNo, input.Priority, nil
 	}
@@ -182,80 +176,13 @@ func (s *serviceImpl) resolveRoute(ctx context.Context, input CreateInput) (stri
 	return department, priority, nil
 }
 
-func (s *serviceImpl) resolveInitialAssignee(ctx context.Context, departmentNo string) (int64, string, error) {
+// resolveInitialAssignee keeps every newly created or split ticket in its queue.
+// Legacy department assignment settings must never silently assign a person.
+func (s *serviceImpl) resolveInitialAssignee(_ context.Context, departmentNo string) (int64, string, error) {
 	if departmentNo == "" {
 		return 0, "public_queue", nil
 	}
-	var departments []struct {
-		AssignmentMode   string `orm:"assignment_mode"`
-		RoundRobinCursor int64  `orm:"round_robin_cursor"`
-	}
-	if err := s.database.GetScan(ctx, &departments, `SELECT assignment_mode,round_robin_cursor FROM plugin_idc_core_support_department WHERE tenant_id=0 AND department_no=? AND status_code='active' FOR UPDATE`, departmentNo); err != nil {
-		return 0, "", err
-	}
-	if len(departments) != 1 {
-		return 0, "department_queue", nil
-	}
-	mode := departments[0].AssignmentMode
-	if mode == string(AssignmentModeManualClaim) || s.staffAccess == nil {
-		return 0, mode, nil
-	}
-	var members []struct {
-		UserID int64 `orm:"user_id"`
-	}
-	if err := s.database.GetScan(ctx, &members, `SELECT DISTINCT user_id FROM plugin_idc_core_support_department_member WHERE tenant_id=0 AND department_no=? AND status_code='active' ORDER BY user_id LIMIT 100`, departmentNo); err != nil {
-		return 0, "", err
-	}
-	if len(members) == 0 {
-		return 0, mode, nil
-	}
-	ids := make([]int64, 0, len(members))
-	for _, member := range members {
-		ids = append(ids, member.UserID)
-	}
-	decisions, err := s.staffAccess.BatchCheck(ctx, staffaccesscap.BatchCheckRequest{UserIDs: ids, CapabilityCode: staffCapabilityHandle, ScopeType: staffaccesscap.ScopeDepartment, ScopeKey: departmentNo})
-	if err != nil {
-		return 0, "", err
-	}
-	eligible := make([]int64, 0, len(decisions))
-	for _, decision := range decisions {
-		if decision.Eligible {
-			eligible = append(eligible, decision.UserID)
-		}
-	}
-	if len(eligible) == 0 {
-		return 0, mode, nil
-	}
-	selected := eligible[0]
-	if mode == "round_robin" {
-		for _, userID := range eligible {
-			if userID > departments[0].RoundRobinCursor {
-				selected = userID
-				break
-			}
-		}
-		if _, err = s.database.Exec(ctx, `UPDATE plugin_idc_core_support_department SET round_robin_cursor=?,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND department_no=?`, selected, departmentNo); err != nil {
-			return 0, "", err
-		}
-	} else if mode == string(AssignmentModeLeastUnresolved) {
-		var workloads []struct {
-			UserID int64 `orm:"user_id"`
-			Open   int64 `orm:"open_count"`
-		}
-		args := make([]any, 0, len(eligible))
-		for _, userID := range eligible {
-			args = append(args, userID)
-		}
-		query := `SELECT candidate.user_id,COUNT(ticket.id) AS open_count FROM unnest(ARRAY[` + sqlPlaceholders(len(eligible)) + `]::bigint[]) AS candidate(user_id) LEFT JOIN plugin_idc_core_support_ticket ticket ON ticket.tenant_id=0 AND ticket.assignee_user_id=candidate.user_id AND ticket.base_stage NOT IN ('resolved','closed') GROUP BY candidate.user_id ORDER BY open_count,candidate.user_id LIMIT 1`
-		if err = s.database.GetScan(ctx, &workloads, query, args...); err != nil {
-			return 0, "", err
-		}
-		if len(workloads) != 1 {
-			return 0, "", bizerr.NewCode(CodeUnavailable)
-		}
-		selected = workloads[0].UserID
-	}
-	return selected, mode, nil
+	return 0, "manual_claim", nil
 }
 
 func (s *serviceImpl) ReplyStaff(ctx context.Context, input MessageInput) (*Detail, error) {
@@ -380,10 +307,10 @@ func (s *serviceImpl) Claim(ctx context.Context, input ClaimInput) (*Detail, err
 		if lockErr != nil {
 			return lockErr
 		}
-		if ticket.Version != input.TicketVersion || ticket.AssigneeUserID != 0 || ticket.BaseStage == "closed" || ticket.DepartmentNo == "" || !contains(a.Departments, ticket.DepartmentNo) {
+		if ticket.Version != input.TicketVersion || ticket.AssigneeUserID != 0 || (ticket.BaseStage == StageClosed || ticket.BaseStage == StageResolved) || ticket.DepartmentNo == "" || !contains(a.Departments, ticket.DepartmentNo) {
 			return bizerr.NewCode(CodeConflict)
 		}
-		allowed, allowErr := s.targetStaffAllowed(ctx, int64(a.UserID), staffCapabilityHandle, ticket.DepartmentNo, false)
+		allowed, allowErr := s.targetStaffAllowed(ctx, int64(a.UserID), PermissionClaim, ticket.DepartmentNo, false)
 		if allowErr != nil {
 			return allowErr
 		}
@@ -398,7 +325,10 @@ func (s *serviceImpl) Claim(ctx context.Context, input ClaimInput) (*Detail, err
 		if updateErr != nil {
 			return updateErr
 		}
-		changed, _ := result.RowsAffected()
+		changed, affectedErr := result.RowsAffected()
+		if affectedErr != nil {
+			return affectedErr
+		}
 		if changed != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
@@ -410,14 +340,14 @@ func (s *serviceImpl) Claim(ctx context.Context, input ClaimInput) (*Detail, err
 	return s.DetailStaff(ctx, input.TicketNo)
 }
 
-func (s *serviceImpl) Transfer(ctx context.Context, input TransferInput) (*Detail, error) {
+func (s *serviceImpl) Transfer(ctx context.Context, input TransferInput) error {
 	a, err := s.staffActor(ctx, PermissionTransfer)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	reason, ok := normalizeText(input.Reason, 512)
-	if !ok || !businessNoPattern.MatchString(input.TicketNo) || !businessNoPattern.MatchString(input.DepartmentNo) || input.TicketVersion <= 0 {
-		return nil, bizInvalid()
+	if !ok || !businessNoPattern.MatchString(input.TicketNo) || !businessNoPattern.MatchString(input.DepartmentNo) || input.TicketVersion <= 0 || input.AssigneeUserID != 0 {
+		return bizInvalid()
 	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
 		ticket, lockErr := s.lockAccessibleTicket(ctx, input.TicketNo, a, "")
@@ -427,39 +357,38 @@ func (s *serviceImpl) Transfer(ctx context.Context, input TransferInput) (*Detai
 		if ticket.Version != input.TicketVersion || ticket.BaseStage == "closed" {
 			return bizerr.NewCode(CodeConflict)
 		}
-		if !a.Global && ticket.AssigneeUserID != int64(a.UserID) {
+		leader := s.isDepartmentLeader(ctx, a.UserID, ticket.DepartmentNo)
+		if !a.Global && !leader && ticket.AssigneeUserID != int64(a.UserID) {
 			return bizNotAccessible()
 		}
-		if input.DepartmentNo != ticket.DepartmentNo && !a.Global && !s.isDepartmentLeader(ctx, a.UserID, ticket.DepartmentNo) {
+		if input.DepartmentNo != ticket.DepartmentNo && !a.Global && !leader {
 			return bizNotAccessible()
 		}
-		if input.AssigneeUserID > 0 {
-			allowed, allowErr := s.targetStaffAllowed(ctx, input.AssigneeUserID, staffCapabilityHandle, input.DepartmentNo, false)
-			if allowErr != nil {
-				return allowErr
-			}
-			if !allowed {
-				return bizNotAccessible()
-			}
+		if err := s.requireActiveOrganizationDepartment(ctx, input.DepartmentNo); err != nil {
+			return err
 		}
+
 		now, nowErr := databaseNow(ctx, s.database)
 		if nowErr != nil {
 			return nowErr
 		}
-		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET department_no=?,assignee_user_id=?,last_activity_at=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND ticket_no=? AND version=?`, input.DepartmentNo, nullableInt(input.AssigneeUserID), now, a.UserID, now, input.TicketNo, input.TicketVersion)
+		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_support_ticket SET department_no=?,assignee_user_id=NULL,last_activity_at=?,version=version+1,updated_by=?,updated_at=? WHERE tenant_id=0 AND ticket_no=? AND version=?`, input.DepartmentNo, now, a.UserID, now, input.TicketNo, input.TicketVersion)
 		if updateErr != nil {
 			return updateErr
 		}
-		changed, _ := result.RowsAffected()
+		changed, affectedErr := result.RowsAffected()
+		if affectedErr != nil {
+			return affectedErr
+		}
 		if changed != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
-		return s.appendAssignmentHistory(ctx, input.TicketNo, "transferred", ticket.DepartmentNo, input.DepartmentNo, ticket.AssigneeUserID, input.AssigneeUserID, a.UserID, "manual_transfer", reason, now)
+		return s.appendAssignmentHistory(ctx, input.TicketNo, "transferred", ticket.DepartmentNo, input.DepartmentNo, ticket.AssigneeUserID, 0, a.UserID, "manual_transfer", reason, now)
 	})
 	if err != nil {
-		return nil, wrapUnavailable(err, "transfer support ticket")
+		return wrapUnavailable(err, "transfer support ticket")
 	}
-	return s.DetailStaff(ctx, input.TicketNo)
+	return nil
 }
 
 func (s *serviceImpl) Resolve(ctx context.Context, input TransitionInput) (*Detail, error) {
@@ -572,7 +501,10 @@ func (s *serviceImpl) transition(ctx context.Context, input TransitionInput, sta
 		if updateErr != nil {
 			return updateErr
 		}
-		changed, _ := result.RowsAffected()
+		changed, affectedErr := result.RowsAffected()
+		if affectedErr != nil {
+			return affectedErr
+		}
 		if changed != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
@@ -625,11 +557,8 @@ func (s *serviceImpl) validateTransition(ctx context.Context, ticket *Ticket, st
 	if !allowed {
 		return false, bizerr.NewCode(CodeConflict)
 	}
-	if ticket.AssigneeUserID == 0 {
-		return false, nil
-	}
-	allowed, err = s.targetStaffAllowed(ctx, ticket.AssigneeUserID, staffCapabilityHandle, ticket.DepartmentNo, false)
-	return !allowed, err
+	// Reopened work is always returned to its original queue for a fresh claim.
+	return ticket.AssigneeUserID != 0, nil
 }
 
 func (s *serviceImpl) RateAccount(ctx context.Context, input RatingInput) (*Detail, error) {
@@ -639,9 +568,6 @@ func (s *serviceImpl) RateAccount(ctx context.Context, input RatingInput) (*Deta
 	}
 	if input.Stars < 1 || input.Stars > 5 || input.RoundNo <= 0 || input.TicketVersion <= 0 || len([]byte(input.Feedback)) > 2000 {
 		return nil, bizInvalid()
-	}
-	if input.Stars <= 3 && (s.staffAccess == nil || s.notifications == nil) {
-		return nil, bizerr.NewCode(CodeUnavailable)
 	}
 	ratingNo, err := s.newNo("RAT_")
 	if err != nil {
@@ -662,22 +588,6 @@ func (s *serviceImpl) RateAccount(ctx context.Context, input RatingInput) (*Deta
 		if ticket.ClosedAt != nil && now.Sub(*ticket.ClosedAt) > 7*24*time.Hour {
 			return bizerr.NewCode(CodeConflict)
 		}
-		recipients := []int64{}
-		if input.Stars <= 3 {
-			recipients, loadErr = s.eligibleRatingRecipients(ctx, ticket)
-			if loadErr != nil {
-				return loadErr
-			}
-			if len(recipients) == 0 {
-				return bizerr.NewCode(CodeUnavailable)
-			}
-			if input.Stars == 3 {
-				recipients = onlyRecipient(recipients, ticket.AssigneeUserID)
-				if len(recipients) == 0 {
-					return bizerr.NewCode(CodeUnavailable)
-				}
-			}
-		}
 		_, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_support_ticket_rating (tenant_id,rating_no,ticket_no,round_no,score,comment,author_type,created_at) VALUES (0,?,?,?,?,?,'customer',?)`, ratingNo, input.TicketNo, input.RoundNo, input.Stars, nullable(strings.TrimSpace(input.Feedback)), now)
 		if insertErr != nil {
 			return bizerr.NewCode(CodeConflict)
@@ -689,17 +599,6 @@ func (s *serviceImpl) RateAccount(ctx context.Context, input RatingInput) (*Deta
 			}
 			if changed, _ := result.RowsAffected(); changed != 1 {
 				return bizerr.NewCode(CodeConflict)
-			}
-			for _, recipient := range recipients {
-				if eventErr := s.enqueueStaffTicketEvent(ctx, ticket, supportEventTicketRatingLow, recipient, ticket.Version+1, map[string]string{"rating": strconv.Itoa(input.Stars)}); eventErr != nil {
-					return eventErr
-				}
-			}
-		} else if input.Stars == 3 {
-			for _, recipient := range recipients {
-				if eventErr := s.enqueueStaffTicketEvent(ctx, ticket, supportEventTicketRatingNeutral, recipient, ticket.Version, map[string]string{"rating": strconv.Itoa(input.Stars)}); eventErr != nil {
-					return eventErr
-				}
 			}
 		}
 		return nil
@@ -780,16 +679,14 @@ func (s *serviceImpl) withinReopenWindow(ctx context.Context, ticket *Ticket) (b
 	}
 	return !now.After(ticket.ClosedAt.Add(time.Duration(daysValue.Int()) * 24 * time.Hour)), nil
 }
+
+// isDepartmentLeader checks the current actor's explicit supervisor permission
+// and live organization membership; historical queue-member rows grant nothing.
 func (s *serviceImpl) isDepartmentLeader(ctx context.Context, userID int, departmentNo string) bool {
-	query := `SELECT COUNT(1) FROM plugin_idc_core_support_department_member WHERE tenant_id=0 AND user_id=? AND role_code='leader' AND status_code='active'`
-	args := []any{userID}
-	if departmentNo != "" {
-		query += " AND department_no=?"
-		args = append(args, departmentNo)
-	}
-	var count int
-	return s.database.GetScan(ctx, &count, query, args...) == nil && count > 0
+	allowed, err := s.targetDepartmentMember(ctx, int64(userID), departmentNo, true)
+	return err == nil && allowed
 }
+
 func databaseNow(ctx context.Context, database gdb.DB) (time.Time, error) {
 	value, err := database.GetValue(ctx, `SELECT CURRENT_TIMESTAMP`)
 	if err != nil {

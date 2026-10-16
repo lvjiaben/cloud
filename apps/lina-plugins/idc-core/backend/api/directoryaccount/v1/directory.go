@@ -4,6 +4,10 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type Directory struct {
+	NavigationType string `json:"navigationType" dc:"Member destination: product, system, custom or plugin; default product" eg:"product"`
+	TargetURL      string `json:"targetUrl" dc:"Internal page path for system or plugin; HTTP or HTTPS URL for custom; empty for product" eg:"/account/overview"`
+	Icon           string `json:"icon" dc:"Iconify icon identifier used in member navigation" eg:"lucide:folder"`
+
 	DirectoryNo  string `json:"directoryNo" dc:"Opaque merchant directory reference" eg:"pdr_example"`
 	NameZhCn     string `json:"nameZhCn" dc:"Chinese directory name" eg:"My cloud services"`
 	NameEnUs     string `json:"nameEnUs" dc:"English directory name" eg:"My cloud services"`

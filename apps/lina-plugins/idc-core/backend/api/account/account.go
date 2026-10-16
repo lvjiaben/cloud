@@ -11,6 +11,7 @@ import (
 )
 
 type IAccountV1 interface {
+	CommerceAddonTargets(ctx context.Context, req *v1.CommerceAddonTargetsReq) (res *v1.CommerceAddonTargetsRes, err error)
 	CommerceCartOpen(ctx context.Context, req *v1.CommerceCartOpenReq) (res *v1.CommerceCartOpenRes, err error)
 	CommerceCartGet(ctx context.Context, req *v1.CommerceCartGetReq) (res *v1.CommerceCartGetRes, err error)
 	CommerceGuestCartMerge(ctx context.Context, req *v1.CommerceGuestCartMergeReq) (res *v1.CommerceGuestCartMergeRes, err error)
@@ -79,4 +80,8 @@ type IAccountV1 interface {
 	SSHPublicKeyList(ctx context.Context, req *v1.SSHPublicKeyListReq) (res *v1.SSHPublicKeyListRes, err error)
 	SSHPublicKeyCreate(ctx context.Context, req *v1.SSHPublicKeyCreateReq) (res *v1.SSHPublicKeyCreateRes, err error)
 	SSHPublicKeyRevoke(ctx context.Context, req *v1.SSHPublicKeyRevokeReq) (res *v1.SSHPublicKeyRevokeRes, err error)
+	TrialConversionList(ctx context.Context, req *v1.TrialConversionListReq) (res *v1.TrialConversionListRes, err error)
+	TrialConversionQuoteCreate(ctx context.Context, req *v1.TrialConversionQuoteCreateReq) (res *v1.TrialConversionQuoteCreateRes, err error)
+	TrialConversionConfirm(ctx context.Context, req *v1.TrialConversionConfirmReq) (res *v1.TrialConversionConfirmRes, err error)
+	TrialConversionPay(ctx context.Context, req *v1.TrialConversionPayReq) (res *v1.TrialConversionPayRes, err error)
 }

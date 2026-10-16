@@ -79,7 +79,7 @@ function detail(
   relations: Array<Record<string, unknown>> = [],
 ) {
   const actions: Record<TicketKey, string[]> = {
-    global: ["merge_all", "split", "upstream", "public_reply"],
+    global: ["merge_all", "split", "upstream", "public_reply", "transfer", "escalate"],
     local: ["merge", "status_transition"],
     readonly: [],
   };
@@ -115,7 +115,7 @@ function detail(
             {
               baseStage: "closed",
               nameEnUS: "Force closed",
-              nameZhCN: "强制关闭",
+              nameZhCN: "关闭工单",
               requiresReason: true,
               statusNo: "STS_FORCE_CLOSED",
               version: 4,
@@ -302,6 +302,8 @@ export async function installSupportDeskMock(
       {
         assignmentMode: "manual_claim",
         departmentNo: "DEP_SUPPORT_CS",
+        orgDeptId: 21,
+        orgDeptName: "客户服务组织部",
         nameEnUS: "Customer support",
         nameZhCN: "客户支持部",
         parentDepartmentNo: "",
@@ -309,8 +311,10 @@ export async function installSupportDeskMock(
         version: 4,
       },
       {
-        assignmentMode: "least_unresolved",
+        assignmentMode: "manual_claim",
         departmentNo: "DEP_SUPPORT_NOC",
+        orgDeptId: 0,
+        orgDeptName: "",
         nameEnUS: "Network operations",
         nameZhCN: "网络运维部",
         parentDepartmentNo: "DEP_SUPPORT_CS",
@@ -439,6 +443,11 @@ export async function installSupportDeskMock(
       const request = route.request();
       const url = new URL(request.url());
       const path = url.pathname;
+
+      if (path.endsWith("/organization-departments")) {
+        await route.fulfill({ json: envelope({ items: [{ deptId: 21, deptName: "客户服务组织部", deptCode: "CS" }], total: 1 }) });
+        return;
+      }
 
       if (path.includes("/admin/support/settings/")) {
         const marker = "/admin/support/settings/";
@@ -634,7 +643,7 @@ export async function installSupportDeskMock(
                 version: 1,
               },
               {
-                assignmentMode: "least_unresolved",
+                assignmentMode: "manual_claim",
                 departmentNo: "DEP_SUPPORT_NOC",
                 nameEnUS: "Network operations",
                 nameZhCN: "网络运维部",
@@ -684,7 +693,7 @@ export async function installSupportDeskMock(
               {
                 baseStage: "closed",
                 nameEnUS: "Force closed",
-                nameZhCN: "强制关闭",
+                nameZhCN: "关闭工单",
                 status: "enabled",
                 statusNo: "STS_FORCE_CLOSED",
                 version: 4,

@@ -137,12 +137,12 @@ func (e *tlsConfidentialExecutor) Execute(_ string, _ uint8, payload json.RawMes
 		form.Set(key, value)
 	}
 	if instruction.Kind == resourcecap.ConfidentialHTTPKindAuthenticate {
-		for upstreamField, secretName := range instruction.CredentialFields {
-			form.Set(upstreamField, e.secrets[secretName])
+		for _, field := range []string{"username", "password"} {
+			form.Set(field, e.secrets[field])
 		}
 	} else {
-		for upstreamField, secretName := range instruction.SecretFormFields {
-			form.Set(upstreamField, e.secrets[secretName])
+		for _, binding := range instruction.SecretFormBindings {
+			form.Set(binding.Field, e.secrets[binding.Slot])
 		}
 	}
 	request, err := http.NewRequest(instruction.Method, e.baseURL+instruction.Path, strings.NewReader(form.Encode()))

@@ -14,6 +14,9 @@ import (
 type SinkFactory func(context.Context) (resourceinterfaceprojectioncap.Sink, error)
 type CandidateSourceFactory func(context.Context) (resourceinterfaceprojectioncap.CandidateSource, error)
 
+// ExistingBusinessOutboundFactory supplies the resource-owned credential boundary.
+type ExistingBusinessOutboundFactory func(context.Context) (resourceinterfaceprojectioncap.ExistingBusinessOutboundSource, error)
+
 // CatalogSourceFactory binds a direct-staff authorizer to the read-only source.
 type CatalogSourceFactory func(context.Context, managementcap.Authorizer) (resourceinterfaceprojectioncap.CatalogSource, error)
 
@@ -26,6 +29,7 @@ type Snapshot struct {
 	candidate CandidateSourceFactory
 	usage     UsageReaderFactory
 	catalog   CatalogSourceFactory
+	outbound  ExistingBusinessOutboundFactory
 }
 
 func (snapshot Snapshot) SinkFactory() SinkFactory                       { return snapshot.sink }
@@ -42,6 +46,7 @@ var registry = struct {
 	candidate CandidateSourceFactory
 	usage     UsageReaderFactory
 	catalog   CatalogSourceFactory
+	outbound  ExistingBusinessOutboundFactory
 }{}
 
 func DeclareSink(factory SinkFactory) error {
@@ -86,9 +91,25 @@ func DeclareCatalogSource(factory CatalogSourceFactory) error {
 	return nil
 }
 
+// DeclareExistingBusinessOutbound registers the source-only paid-business bridge.
+func DeclareExistingBusinessOutbound(factory ExistingBusinessOutboundFactory) error {
+	registry.Lock()
+	defer registry.Unlock()
+	if registry.frozen || factory == nil || registry.outbound != nil {
+		return gerror.New("resource existing-business outbound declaration is invalid")
+	}
+	registry.outbound = factory
+	return nil
+}
+
+// ExistingBusinessOutboundFactory returns the immutable owner bridge factory.
+func (snapshot Snapshot) ExistingBusinessOutboundFactory() ExistingBusinessOutboundFactory {
+	return snapshot.outbound
+}
+
 func Freeze() Snapshot {
 	registry.Lock()
 	defer registry.Unlock()
 	registry.frozen = true
-	return Snapshot{sink: registry.sink, candidate: registry.candidate, usage: registry.usage, catalog: registry.catalog}
+	return Snapshot{sink: registry.sink, candidate: registry.candidate, usage: registry.usage, catalog: registry.catalog, outbound: registry.outbound}
 }

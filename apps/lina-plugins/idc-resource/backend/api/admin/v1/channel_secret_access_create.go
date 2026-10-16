@@ -3,7 +3,7 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ChannelSecretAccessCreateReq struct {
-	g.Meta            `path:"/admin/resource/channels/{channelNo}/secrets/access-contexts" method:"post" tags:"IDC Resource Channels" summary:"Authorize one channel-secret operation" dc:"Issue a short-lived, signed and single-use context after exact staff authorization and a recent full login. The context is bound to one immutable operation preview." permission:"idc:admin:resource:channel-secret:manage"`
+	g.Meta            `path:"/admin/resource/channels/{channelNo}/secrets/access-contexts" method:"post" tags:"IDC Resource Channels" summary:"Authorize one channel-secret operation" dc:"Issue a short-lived, signed and single-use context after exact staff authorization and a current active session. The context is bound to one immutable operation preview." permission:"idc:admin:resource:channel-secret:manage"`
 	ChannelNo         string `json:"channelNo" in:"path" v:"required|max-length:128"`
 	Operation         string `json:"operation" v:"required|in:create,replace,revoke,rotate"`
 	BindingName       string `json:"bindingName" v:"max-length:128"`

@@ -23,6 +23,9 @@ func TestSourcePluginRegistration(t *testing.T) {
 	if definition.GetEmbeddedFiles() == nil {
 		t.Fatal("registered source plugin has no embedded files")
 	}
+	if definition.GetBusinessImpactHandler() == nil {
+		t.Fatal("registered website owner has no business-impact handler")
+	}
 	if len(definition.GetRouteRegistrars()) != 1 {
 		t.Fatalf("expected one password-reset route registrar, got %d", len(definition.GetRouteRegistrars()))
 	}
@@ -75,7 +78,10 @@ func TestEmbeddedDeliveryContract(t *testing.T) {
 			t.Fatal("retired Portal frontend is still embedded")
 		}
 	}
-	if _, err := fs.ReadFile(idcportal.EmbeddedFiles, "frontend/dist/mount.js"); err != nil {
+	if strings.Contains(string(manifest), "embedded-mount") || strings.Contains(string(manifest), "frontend/dist") {
+		t.Fatal("brand manifest still depends on retired mount assets")
+	}
+	if _, err := fs.ReadFile(idcportal.EmbeddedFiles, "frontend/pages/portal-brand.vue"); err != nil {
 		t.Fatalf("governed brand frontend is not embedded: %v", err)
 	}
 }

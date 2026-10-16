@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -795,6 +796,15 @@ func (s *marketingActionAuditIntegrationStub) AppendBusinessTransition(
 	_ context.Context,
 	input idccap.BusinessAuditTransition,
 ) error {
+	if input.BeforeSnapshot == nil || input.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch input.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
+
 	s.transitions = append(s.transitions, input)
 	fingerprint, marshalErr := json.Marshal(input)
 	if marshalErr != nil {

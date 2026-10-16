@@ -258,6 +258,18 @@ func installAutomationPublicationMigration(t *testing.T, ctx context.Context) {
 	if _, err = g.DB().Exec(ctx, pricingSQL[:commerceStart]+pricingSQL[indexStart:selectionStart]); err != nil {
 		t.Fatalf("install automation catalog pricing migration: %v", err)
 	}
+	quantityMigration, err := os.ReadFile(filepath.Join(root, "127-product-commerce-workflow.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	quantitySQL := string(quantityMigration)
+	quantityEnd := strings.Index(quantitySQL, "ALTER TABLE plugin_idc_core_commerce_configuration_price_selection")
+	if quantityEnd < 0 {
+		t.Fatal("quantity migration catalog boundary changed")
+	}
+	if _, err = g.DB().Exec(ctx, quantitySQL[:quantityEnd]); err != nil {
+		t.Fatal(err)
+	}
 	// Managed interface reads also use the origin columns and identity guard
 	// from migration 096; its fulfillment outbox is outside this test's scope.
 	resourceMigration, err := os.ReadFile(filepath.Join(root, "096-resource-owned-product-fulfillment.sql"))

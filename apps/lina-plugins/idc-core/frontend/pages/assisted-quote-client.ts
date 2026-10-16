@@ -1,7 +1,34 @@
 import { pluginApiPath, requestClient } from "#/api/request";
-import { requestPreservingHttpStatus } from "./commerce-request";
+import type { PurchaseValue } from "./assisted-purchase-client";
 
 const pluginID = "idc-core";
+
+export interface AssistedQuoteCreateItem {
+  publicSlug: string;
+  configurationRevision: string;
+  billingTermToken: string;
+  quantity: number;
+  purchaseCycles: number;
+  values: PurchaseValue[];
+}
+export interface AssistedQuoteCreateInput {
+  customerNo: string;
+  currencyCode: string;
+  manualDiscountMinor: string;
+  paymentDueAt: number;
+  contractPolicyCode: "inherit" | "none" | "required";
+  contractTemplateNo: string;
+  reason: string;
+  internalNote: string;
+  idempotencyKey: string;
+  items: AssistedQuoteCreateItem[];
+}
+export async function createAssistedQuote(input: AssistedQuoteCreateInput) {
+  const response = await requestClient.post<{ request: AssistedQuote }>(
+    pluginApiPath(pluginID, "admin/commerce/assisted-quotes"), input,
+  );
+  return response.request;
+}
 
 export type AssistedQuoteStatus =
   | "approved"
@@ -55,60 +82,6 @@ export interface AssistedQuote {
   totalAmountMinor: string;
 }
 
-export interface AssistedQuotePage {
-  total: number;
-  nextCursor: string;
-  requests: AssistedQuote[];
-}
-
-export function assistedQuotes(params: {
-  page?: number;
-  cursor?: string;
-  customerNo?: string;
-  limit?: number;
-  statusCode?: string;
-}) {
-  return requestPreservingHttpStatus<AssistedQuotePage>(requestClient,
-    pluginApiPath(pluginID, "admin/commerce/assisted-quotes"),
-    { method: "GET", params },
-  );
-}
-
-export async function assistedQuoteDetail(requestNo: string) {
-  const response = await requestClient.get<{ request: AssistedQuote }>(
-    pluginApiPath(
-      pluginID,
-      `admin/commerce/assisted-quotes/${encodeURIComponent(requestNo)}`,
-    ),
-  );
-  return response.request;
-}
-
-export async function decideAssistedQuote(
-  requestNo: string,
-  decision: "approval" | "rejection",
-  input: {
-    decisionReason: string;
-    idempotencyKey: string;
-  },
-) {
-  const response = await requestClient.put<{ request: AssistedQuote }>(
-    pluginApiPath(
-      pluginID,
-      `admin/commerce/assisted-quotes/${encodeURIComponent(requestNo)}/${decision}`,
-    ),
-    input,
-  );
-  return response.request;
-}
-
-export async function checkoutAssistedQuote(requestNo: string) {
-  const response = await requestClient.post<{ request: AssistedQuote }>(
-    pluginApiPath(
-      pluginID,
-      `admin/commerce/assisted-quotes/${encodeURIComponent(requestNo)}/checkout`,
-    ),
-    { idempotencyKey: crypto.randomUUID() },
-  );
-  return response.request;
+export function assistedOrderOptions(customerNo: string) {
+  return requestClient.get<{ currencies: string[] }>(pluginApiPath(pluginID, `admin/customers/${encodeURIComponent(customerNo)}/assisted-order-options`));
 }

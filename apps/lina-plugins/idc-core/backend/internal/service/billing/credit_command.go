@@ -235,7 +235,7 @@ func (s *accountCreditCommandImpl) SubmitCreditApplication(
 				return err
 			}
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": "not_created"},
 			IdempotencyScope: "billing.credit_application.submit",
 			IdempotencyKey:   result.ApplicationNo,
 			OperationCode:    "billing.credit_application.submit",
@@ -287,11 +287,21 @@ func (s *accountCreditCommandImpl) RepayCreditStatementFromBalance(
 		if ownerErr := requireCreditStatementCustomer(ctx, s.database, input.StatementNo, audience.CustomerNo); ownerErr != nil {
 			return ownerErr
 		}
+		before, loadErr := loadCreditStatementForUpdate(ctx, s.database, input.StatementNo)
+		if loadErr != nil {
+			return loadErr
+		}
+		if before == nil {
+			return bizerr.NewCode(CodeCreditConflict)
+		}
 		result, err = s.usage.RepayCreditStatementFromBalance(ctx, input)
 		if err != nil {
 			return err
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		if result.Reused {
+			return nil
+		}
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"state": before.StatusCode, "currency_code": before.CurrencyCode, "outstanding_minor": before.OutstandingMinor},
 			IdempotencyScope: "billing.credit_statement.balance_repayment",
 			IdempotencyKey:   result.Repayment.RepaymentNo,
 			OperationCode:    "billing.credit_statement.balance_repayment",
@@ -387,7 +397,7 @@ func (s *managementCreditCommandImpl) ConfigureCreditPolicy(
 		if err != nil {
 			return err
 		}
-		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{
+		return s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{BeforeSnapshot: map[string]any{"policy_no": ""},
 			IdempotencyScope: "billing.credit_policy.configure", IdempotencyKey: result.PolicyNo,
 			OperationCode: "billing.credit_policy.configure", TargetType: "credit_policy",
 			TargetNo: result.PolicyNo, ResultCode: "succeeded",

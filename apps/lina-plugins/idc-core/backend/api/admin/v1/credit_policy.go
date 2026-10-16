@@ -19,7 +19,7 @@ type ManagementCreditPolicyIntent struct {
 
 // ManagementCreditPolicyProofReq requests a proof bound to one policy preview.
 type ManagementCreditPolicyProofReq struct {
-	g.Meta `path:"/admin/billing/credit/policy-proofs" method:"post" tags:"IDC Credit Management" summary:"Issue a credit policy proof" dc:"Authorize the exact policy preview and issue a short-lived proof only after a recent full login." permission:"idc:admin:billing:credit-policy:write"`
+	g.Meta `path:"/admin/billing/credit/policy-proofs" method:"post" tags:"IDC Credit Management" summary:"Issue a credit policy proof" dc:"Authorize the exact policy preview and issue a short-lived proof only after a current active session." permission:"idc:admin:billing:credit-policy:write"`
 	ManagementCreditPolicyIntent
 }
 

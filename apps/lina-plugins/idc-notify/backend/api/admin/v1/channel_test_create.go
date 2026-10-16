@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // ChannelTestCreateReq carries one confirmed provider test without persisting its raw target.
 type ChannelTestCreateReq struct {
-	g.Meta          `path:"/admin/notifications/channels/{channelCode}/tests" method:"post" tags:"IDC Notification Channels" summary:"Send one real channel test" dc:"Performs one real provider delivery to an administrator-entered target after recent full login and explicit confirmation. The raw target and variable values are not persisted; ambiguous interrupted operations are never sent again automatically." permission:"idc:admin:notification:channel:manage"`
+	g.Meta          `path:"/admin/notifications/channels/{channelCode}/tests" method:"post" tags:"IDC Notification Channels" summary:"Send one real channel test" dc:"Performs one real provider delivery to an administrator-entered target after current active session and explicit confirmation. The raw target and variable values are not persisted; ambiguous interrupted operations are never sent again automatically." permission:"idc:admin:notification:channel:manage"`
 	ChannelCode     string            `json:"channelCode" in:"path" v:"required|in:email,sms,wechat_official,wechat_work" dc:"External channel to test; WeCom uses only the current operator's active self-service binding" eg:"sms"`
 	Target          string            `json:"target" v:"max-length:512" dc:"One-time email, E.164 phone number, or Official Account OpenID; it must be empty for WeCom" eg:"+8613800138000"`
 	TemplateNo      string            `json:"templateNo" v:"required|max-length:80" dc:"Active local template number used for this test" eg:"ntpl_service_expiry_sms_zh"`

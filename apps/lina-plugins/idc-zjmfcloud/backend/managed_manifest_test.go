@@ -37,7 +37,7 @@ type managedManifest struct {
 func TestManagedManifestSatisfiesProductAndServerOwnerContracts(t *testing.T) {
 	t.Parallel()
 	manifest := readManagedManifest(t)
-	if manifest.ID != pluginID || manifest.Version != "v0.2.6" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
+	if manifest.ID != pluginID || manifest.Version != "v0.2.9" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
 		t.Fatalf("connector is not a managed dynamic release: %#v", manifest)
 	}
 	if !strings.Contains(manifest.Description, "product configuration discovery") ||

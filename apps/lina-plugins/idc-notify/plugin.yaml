@@ -1,6 +1,6 @@
 id: idc-notify
 name: IDC Notifications
-version: v0.1.4
+version: v0.1.7
 type: source
 distribution: builtin
 scope_nature: platform_only

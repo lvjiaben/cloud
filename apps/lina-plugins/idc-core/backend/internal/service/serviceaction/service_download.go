@@ -265,10 +265,12 @@ func publicCertificatePEM(source []byte) ([]byte, error) {
 			remaining = bytes.TrimSpace(rest)
 		}
 	} else {
-		if _, err := x509.ParseCertificate(remaining); err != nil {
+		// DER is binary: a signature may legitimately end in a whitespace byte.
+		// Parse the exact original bytes so trailing material is also rejected.
+		if _, err := x509.ParseCertificate(source); err != nil {
 			return nil, err
 		}
-		certificates = append(certificates, bytes.Clone(remaining))
+		certificates = append(certificates, bytes.Clone(source))
 	}
 	var output bytes.Buffer
 	for _, certificate := range certificates {

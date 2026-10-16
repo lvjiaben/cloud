@@ -86,7 +86,7 @@ func TestOperationsSignalsPersistAndUpdatePostgreSQL(t *testing.T) {
 			t.Fatalf("apply operations migration: %v\n%s", err, statement)
 		}
 	}
-	service, err := New(database, operationsBizCtxStub{current: bizctxcap.CurrentContext{UserID: 1, TenantID: 0, DataScope: 2}})
+	service, err := New(database, operationsBizCtxStub{current: bizctxcap.CurrentContext{UserID: 1, TenantID: 0, DataScope: 2}}, operationsPresenceFixture{database: database}, operationsAuthorizationFixture{allowed: true})
 	if err != nil {
 		t.Fatal(err)
 	}

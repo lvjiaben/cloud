@@ -202,16 +202,18 @@ func TestCustomerDirectAccountCreatePostgreSQL(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	created, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "Direct Customer", CountryCode: "CN", PreferredLocale: "zh-CN", Email: "direct@example.test", InitialPassword: "initial-password-123", Reason: "Create an immediately active customer account.", IdempotencyKey: "direct-account-create-000001"})
+	created, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "Direct Customer", CountryCode: "CN", PreferredLocale: "zh-CN", Email: "direct@example.test", PhoneCountryCode: "+86", Phone: "13800138000", InitialPassword: "initial-password-123", Reason: "Create an immediately active customer account.", IdempotencyKey: "direct-account-create-000001"})
 	if err != nil || created.Status != "active" || created.UserID != 99 || len(notifications.requests) != 0 || len(audit.calls) != 1 {
 		t.Fatalf("created=%+v notifications=%d audits=%d err=%v", created, len(notifications.requests), len(audit.calls), err)
 	}
-	replayed, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "Direct Customer", CountryCode: "CN", PreferredLocale: "zh-CN", Email: "direct@example.test", InitialPassword: "initial-password-123", Reason: "Create an immediately active customer account.", IdempotencyKey: "direct-account-create-000001"})
+	replayed, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "Direct Customer", CountryCode: "CN", PreferredLocale: "zh-CN", Email: "direct@example.test", PhoneCountryCode: "+86", Phone: "13800138000", InitialPassword: "initial-password-123", Reason: "Create an immediately active customer account.", IdempotencyKey: "direct-account-create-000001"})
 	if err != nil || !replayed.Reused || replayed.CustomerNo != created.CustomerNo || len(audit.calls) != 1 {
 		t.Fatalf("replayed=%+v audits=%d err=%v", replayed, len(audit.calls), err)
 	}
 	assertActivationValue(t, database, `SELECT status_code FROM plugin_idc_core_customer_subject WHERE customer_no=?`, created.CustomerNo, "active")
-	assertActivationValue(t, database, `SELECT must_change_password::text FROM plugin_idc_core_customer_identity_binding WHERE customer_no=?`, created.CustomerNo, "true")
+	assertActivationValue(t, database, `SELECT email FROM plugin_idc_core_customer_contact WHERE customer_no=?`, created.CustomerNo, "direct@example.test")
+	assertActivationValue(t, database, `SELECT phone FROM plugin_idc_core_customer_contact WHERE customer_no=?`, created.CustomerNo, "13800138000")
+	assertActivationValue(t, database, `SELECT must_change_password::text FROM plugin_idc_core_customer_identity_binding WHERE customer_no=?`, created.CustomerNo, "false")
 }
 
 func TestCustomerInitialPasswordConfirmsPluginGateWithoutHostResetPostgreSQL(t *testing.T) {
@@ -228,6 +230,9 @@ func TestCustomerInitialPasswordConfirmsPluginGateWithoutHostResetPostgreSQL(t *
 	}
 	created, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "First Login Customer", CountryCode: "CN", PreferredLocale: "zh-CN", PhoneCountryCode: "+86", Phone: "13333333333", InitialPassword: "initial-password-123", Reason: "Create a customer for first login verification.", IdempotencyKey: "direct-first-login-000001"})
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(context.Background(), `UPDATE plugin_idc_core_customer_identity_binding SET must_change_password=TRUE WHERE customer_no=?`, created.CustomerNo); err != nil {
 		t.Fatal(err)
 	}
 	current.userID = created.UserID

@@ -14,6 +14,7 @@ import (
 	"golang.org/x/text/currency"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 )
 
@@ -22,6 +23,7 @@ const maximumImportPrices = 120
 var importRequestKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$`)
 
 type importPrice struct {
+	portable      *channelcommercecap.ImportPriceSchedule
 	definition    BillingRuleDefinition
 	currencyCode  string
 	amountMinor   int64
@@ -156,7 +158,14 @@ func prepareImportSource(input ImportInput, source *resourceinterfaceprojectionc
 		return nil, nil, false, bizerr.NewCode(CodeManagementInvalid)
 	}
 	if input.PricingMode == ImportPricingManual {
+		if source.ImportSnapshot != nil {
+			return nil, nil, false, bizerr.NewCode(CodeManagementInvalid)
+		}
 		prices, priceErr := calculateImportPrices(input.Prices, input.PricingMode, "")
+		return encoded, prices, false, priceErr
+	}
+	if source.ImportSnapshot != nil {
+		prices, priceErr := calculatePortableImportPrices(source.ImportSnapshot, input.MarkupPercent)
 		return encoded, prices, false, priceErr
 	}
 	if !source.PriceScheduleComplete || len(source.Options) > 0 || len(source.BasePrices) == 0 {

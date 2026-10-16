@@ -20,9 +20,11 @@ export type Channel = {
   connectionVerifiedAt?: number;
   displayName: string;
   endpoint: string;
+  tlsCertificateSha256?: string;
   interfaceConfiguration?: InterfaceConfigurationSchema;
   nonSecretSettings?: Record<string, unknown>;
   providerPluginId: string;
+  providerReleaseVersion?: string;
   secretFields: SecretField[];
   status: string;
   version: number;
