@@ -137,7 +137,7 @@ release 发布链路以`framework.version`为唯一 tag 基线。`linactl releas
 - `project-setup`承载项目初始化、运行时数据库、开发工作台入口和 E2E base path 当前契约；当前契约由`openspec/specs/project-setup/spec.md`承载，历史 owner 为`archive/foundation`，本分组只保留开发命令和环境入口影响。
 - `database-bootstrap-commands`承载 init/mock 确认、SQL asset source 和 statement-by-statement 执行；当前契约由`openspec/specs/database-bootstrap-commands/spec.md`承载，历史 owner 为`archive/database-engine`。
 - `cron-job-management`承载内置日志清理任务投射、任务权限和调度业务规则；当前契约由`openspec/specs/cron-job-management/spec.md`承载，历史 owner 为`archive/scheduled-jobs`。
-- `e2e-suite-organization`承载 Playwright 测试目录、TC 编号、host-only/plugin-full 和 nightly E2E 治理；当前契约由`openspec/specs/e2e-suite-organization/spec.md`承载，历史 owner 为`archive/e2e-testing`。
+- `e2e-suite-organization`承载 Playwright 测试目录、TC 编号、host-only/plugin-full 和 nightly E2E 治理；当前契约由`openspec/specs/e2e-suite-organization/spec.md`承载。
 - `release-image-build`同时影响 CI、workflow、image builder 和 demo Compose；本分组保留发布工具链历史 owner，但运行时容器行为以当前主规范为准。
 - `plugin-upgrade-governance`承载源码插件与动态插件的有效版本隔离、运行时升级、发布切换和失败诊断；当前契约由`openspec/specs/plugin-upgrade-governance/spec.md`承载，历史 owner 为`archive/plugin-framework`。本分组只保留开发期`upgrade`命令与插件路径隔离边界。
 - `config-management`承载参数设置投影与 config 展示键本地化；本分组保留`i18n.check`门禁与展示键契约交叉影响，完整配置管理行为以主规范为准。

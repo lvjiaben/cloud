@@ -32,5 +32,4 @@ type ICustomeraccountV1 interface {
 	ReferralLinkCreate(ctx context.Context, req *v1.ReferralLinkCreateReq) (res *v1.ReferralLinkCreateRes, err error)
 	CommissionOverviewGet(ctx context.Context, req *v1.CommissionOverviewGetReq) (res *v1.CommissionOverviewGetRes, err error)
 	CommissionSettlementsList(ctx context.Context, req *v1.CommissionSettlementsListReq) (res *v1.CommissionSettlementsListRes, err error)
-	CommissionSettlementRequestCreate(ctx context.Context, req *v1.CommissionSettlementRequestCreateReq) (res *v1.CommissionSettlementRequestCreateRes, err error)
 }

@@ -1,7 +1,9 @@
 # openspec-archive-document-governance Specification
 
 ## Purpose
-TBD - created by archiving change compact-openspec-archive-docs. Update Purpose after archive.
+
+规定当前规范与历史归档的分层职责，要求能力规范具有唯一所有者、非所有者不长期保存重复全文，并通过样板验证、按职责裁剪和量化报告控制归档文档整理质量。
+
 ## Requirements
 ### Requirement: OpenSpec 文档必须分层承载当前契约与历史信息
 

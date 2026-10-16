@@ -6,7 +6,7 @@ import type {
   CustomerReferralOverview,
 } from '#/api/idc/customer-sales-channel';
 
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
@@ -17,7 +17,6 @@ import {
   Card,
   Empty,
   Input,
-  Select,
   Skeleton,
   Space,
   Tag,
@@ -25,7 +24,6 @@ import {
 } from 'ant-design-vue';
 
 import {
-  createCustomerCommissionSettlementRequest,
   getCustomerCommissionOverview,
   getCustomerReferralOverview,
   listCustomerCommissionSettlements,
@@ -36,13 +34,10 @@ const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
 const failed = ref(false);
-const submitting = ref(false);
 const referral = ref<CustomerReferralOverview>();
 const accounts = ref<CustomerCommissionAccount[]>([]);
 const entries = ref<CustomerCommissionEntry[]>([]);
 const settlements = ref<CustomerCommissionSettlement[]>([]);
-const nextSettlementCursor = ref('');
-const settlementForm = reactive({ currencyCode: '', amountMajor: '' });
 
 const view = computed(() =>
   route.name === 'CustomerCommissions' || route.query.tab === 'commission'
@@ -54,16 +49,6 @@ const title = computed(() =>
     ? $t('salesChannel.customer.commission.title')
     : $t('salesChannel.customer.referral.title'),
 );
-const currencyOptions = computed(() =>
-  accounts.value.map((item) => ({
-    label: item.currencyCode,
-    value: item.currencyCode,
-  })),
-);
-const selectedAccount = computed(() =>
-  accounts.value.find((item) => item.currencyCode === settlementForm.currencyCode),
-);
-
 function amount(value: string | undefined, currencyCode: string) {
   const minor = Number(value || 0);
   if (!Number.isFinite(minor)) return '—';
@@ -82,12 +67,6 @@ function statusLabel(status: string) {
   return translated === key ? status : translated;
 }
 
-function syncCurrency() {
-  if (!currencyOptions.value.some((item) => item.value === settlementForm.currencyCode)) {
-    settlementForm.currencyCode = currencyOptions.value[0]?.value || '';
-  }
-}
-
 async function load() {
   loading.value = true;
   failed.value = false;
@@ -101,42 +80,10 @@ async function load() {
     accounts.value = commissionResult.accounts || [];
     entries.value = commissionResult.entries || [];
     settlements.value = settlementResult.items || [];
-    nextSettlementCursor.value = settlementResult.nextCursor || '';
-    syncCurrency();
   } catch {
     failed.value = true;
   } finally {
     loading.value = false;
-  }
-}
-
-async function submitSettlement() {
-  const amountValue = settlementForm.amountMajor.trim();
-  const account = selectedAccount.value;
-  if (!account || !/^\d+(?:\.\d{1,2})?$/u.test(amountValue) || submitting.value) {
-    message.warning($t('salesChannel.customer.commission.invalidAmount'));
-    return;
-  }
-  const [integerPart = '0', decimalPart = ''] = amountValue.split('.');
-  const amountMinor = `${integerPart}${decimalPart.padEnd(2, '0')}`.replace(/^0+(?=\d)/u, '') || '0';
-  if (BigInt(amountMinor) <= 0n || BigInt(amountMinor) > BigInt(account.availableAmountMinor)) {
-    message.warning($t('salesChannel.customer.commission.insufficient'));
-    return;
-  }
-  submitting.value = true;
-  try {
-    await createCustomerCommissionSettlementRequest({
-      amountMinor,
-      currencyCode: account.currencyCode,
-      idempotencyKey: `customer-settlement-${account.currencyCode}-${amountMinor}`,
-    });
-    settlementForm.amountMajor = '';
-    message.success($t('salesChannel.customer.commission.requested'));
-    await load();
-  } catch {
-    message.error($t('salesChannel.customer.commission.requestFailed'));
-  } finally {
-    submitting.value = false;
   }
 }
 
@@ -199,14 +146,6 @@ onMounted(load);
             <div class="facts"><div><span>{{ $t('salesChannel.customer.commission.pending') }}</span><strong>{{ amount(account.pendingAmountMinor, account.currencyCode) }}</strong></div><div><span>{{ $t('salesChannel.customer.commission.matured') }}</span><strong>{{ amount(account.maturedAmountMinor, account.currencyCode) }}</strong></div><div><span>{{ $t('salesChannel.customer.commission.frozen') }}</span><strong>{{ amount(account.frozenAmountMinor, account.currencyCode) }}</strong></div></div>
           </Card>
         </div>
-        <Card :title="$t('salesChannel.customer.commission.requestTitle')">
-          <p class="lead">{{ $t('salesChannel.customer.commission.requestLead') }}</p>
-          <div class="settlement-form">
-            <Select v-model:value="settlementForm.currencyCode" :options="currencyOptions" :placeholder="$t('salesChannel.customer.commission.currency')" />
-            <Input v-model:value="settlementForm.amountMajor" :placeholder="$t('salesChannel.customer.commission.amount')" inputmode="decimal" />
-            <Button :loading="submitting" type="primary" data-testid="customer-commission-settlement" @click="submitSettlement">{{ $t('salesChannel.customer.commission.request') }}</Button>
-          </div>
-        </Card>
         <Card :title="$t('salesChannel.customer.commission.settlementsTitle')">
           <Empty v-if="!settlements.length" :description="$t('salesChannel.customer.commission.emptySettlements')" />
           <div v-else class="settlement-list"><article v-for="item in settlements" :key="item.settlementNo" class="settlement-item"><div><strong>{{ item.settlementNo }}</strong><small>{{ formatTime(item.submittedAt) }}</small></div><div>{{ amount(item.amountMinor, item.currencyCode) }}</div><Tag>{{ statusLabel(item.statusCode) }}</Tag></article></div>
@@ -231,11 +170,9 @@ onMounted(load);
 .row-heading, .facts > div, .settlement-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .facts { display: grid; gap: 10px; margin-top: 16px; }
 .facts strong { text-align: right; }
-.settlement-form { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
-.settlement-form :deep(.ant-select), .settlement-form :deep(.ant-input) { width: min(100%, 280px); }
 .settlement-list { display: grid; gap: 10px; }
 .settlement-item { padding: 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; }
 .settlement-item > div:first-child { display: grid; gap: 4px; }
 .settlement-item small { color: hsl(var(--muted-foreground)); }
-@media (max-width: 720px) { .sales-toolbar, .settlement-form { align-items: stretch; flex-direction: column; } .settlement-form :deep(.ant-select), .settlement-form :deep(.ant-input), .settlement-form :deep(.ant-btn) { width: 100%; } .settlement-item { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 720px) { .sales-toolbar { align-items: stretch; flex-direction: column; } .settlement-item { align-items: flex-start; flex-direction: column; } }
 </style>

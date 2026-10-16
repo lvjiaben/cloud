@@ -79,3 +79,11 @@
 - 验证：`temp/open-platform-pg-tests.log`通过真实数据库隔离、并发仅一重置成功、权限／来源／期限不变、旧密钥拒绝、暂停历史及分页；迁移执行两次成功。`temp/open-platform-lint.log`、`temp/open-platform-page-types.log`、`temp/open-platform-test-types.log`、`temp/open-platform-i18n.log`、`temp/open-platform-final-build.log`通过。
 - `TC006`两条真实浏览器页面用例通过，覆盖授权与未授权菜单、文档、分页、重置确认及秘密关闭后不回显。`TC012`真实后端与独立客户登录用例通过，覆盖本人隔离、密钥轮换、成功／失败调用12条、分页及暂停；测试创建和清理自有用户采用宿主公开接口，业务夹具只在插件表内。
 - 实际页面截图已检查中文、菜单、标签页、数据与分页，无重叠或原始翻译键：`temp/20261012/open-platform/1791785953382-real-customer-platform.png`。已更新本地`6030`及`6032`服务；`temp/open-platform-host-check.json`为`changed=[]`、`extra=[]`。
+
+## 12. 废弃佣金申请链清理（2026-10-16）
+
+- [x] 删除只返回废弃错误的后台新建批量打款和客户结算申请接口，以及专用DTO、控制器、服务拒绝桩、翻译和前端申请表单。
+- [x] 保留历史结算查询、冻结资金释放和推广链接能力；客户页面改为查看管理员线下结算记录。
+- [x] 完成后端定向测试、lint、客户类型检查、API测试、中英文真实页面失败恢复回归及语言键检查。
+
+证据：`temp/20261016/cleanup-backend-tests.log`、`cleanup-backend-lint.log`、`140500-customer-browser.log`、`140500-cleanup-customer-typecheck.log`、`140600-customer-api-tests.log`、`cleanup-i18n.log`。本轮不改历史资金数据与宿主，未用“无前端调用”作为删除公开接口的唯一依据。

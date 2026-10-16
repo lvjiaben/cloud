@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	idcchannel "lina-plugin-idc-channel"
 )
 
 func TestCreateTokenValidationFailsClosedBeforeDatabase(t *testing.T) {
@@ -287,8 +289,11 @@ func TestWebhookDeliverySchemaIncludesLeaseAndReplayFields(t *testing.T) {
 			t.Fatalf("webhook schema is missing %s", field)
 		}
 	}
-	scaffold, err := os.ReadFile(filepath.Join(base, "scaffold.json"))
-	if err != nil || !strings.Contains(string(scaffold), "002-channel-webhook-delivery.sql") {
-		t.Fatal("webhook delivery migration must be included in the plugin install manifest")
+	embedded, err := idcchannel.EmbeddedFiles.ReadFile("manifest/sql/002-channel-webhook-delivery.sql")
+	if err != nil {
+		t.Fatalf("webhook delivery migration must be embedded for installation: %v", err)
+	}
+	if string(embedded) != string(second) {
+		t.Fatal("embedded webhook delivery migration differs from its SQL source")
 	}
 }

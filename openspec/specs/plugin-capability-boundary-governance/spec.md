@@ -1,7 +1,9 @@
 # plugin-capability-boundary-governance Specification
 
 ## Purpose
-TBD - created by archiving change refine-plugin-capability-boundaries. Update Purpose after archive.
+
+明确插件公共组件、领域能力、提供方接口和内部实现的职责边界，约束源码与动态插件共享语义、核心数据访问及能力命名空间，并以治理验证防止重复协议和越界依赖。
+
 ## Requirements
 ### Requirement: 插件相关公共组件必须保持单一职责
 

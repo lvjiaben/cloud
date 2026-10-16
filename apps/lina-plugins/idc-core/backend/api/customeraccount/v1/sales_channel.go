@@ -109,15 +109,3 @@ type CustomerCommissionSettlement struct {
 	PaidAt            int64  `json:"paidAt"`
 	FailureReasonCode string `json:"failureReasonCode"`
 }
-
-type CommissionSettlementRequestCreateReq struct {
-	g.Meta         `path:"/account/sales-channel/commission/settlement-requests" method:"post" tags:"IDC Customer Sales" summary:"Retired customer commission settlement endpoint" dc:"This endpoint always rejects writes. Commission is paid offline and recorded by an administrator; no customer spending balance is modified."`
-	CurrencyCode   string `json:"currencyCode" v:"required|length:3"`
-	AmountMinor    int64  `json:"amountMinor" v:"required|min:1"`
-	IdempotencyKey string `json:"idempotencyKey" v:"required|min-length:16|max-length:128"`
-}
-
-type CommissionSettlementRequestCreateRes struct {
-	Item   *CustomerCommissionSettlement `json:"item"`
-	Reused bool                          `json:"reused"`
-}

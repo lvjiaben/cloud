@@ -1,7 +1,8 @@
 # 定时任务 Shell 执行规范
 
 ## Purpose
-待定 - 由归档变更 scheduled-job-management 创建。归档后更新目的。
+
+规定 Shell 定时任务的开关、独立权限、平台限制和执行上下文，覆盖超时、手动终止、进程组回收及输出截断，并明确环境变量展示和操作审计边界，防止任务执行状态失真。
 
 ## Requirements
 ### Requirement:Shell 任务全局开关

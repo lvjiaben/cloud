@@ -1,7 +1,9 @@
 # plugin-host-layer-simplification Specification
 
 ## Purpose
-TBD - created by archiving change simplify-plugin-host-layers. Update Purpose after archive.
+
+规定新增宿主服务方法使用统一 JSON 信封，冻结专用编解码方法集合并统一线协议常量来源，同时将插件升级编排归入生命周期门面，减少平行适配层和重复协议。
+
 ## Requirements
 ### Requirement: 新增 host service 方法必须使用 JSON envelope
 

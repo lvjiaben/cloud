@@ -31,6 +31,7 @@ var adminPermissionCatalog = [...]string{
 	"idc:admin:customer:tag:batch",
 	"idc:admin:customer:contract-policy:write",
 	"idc:admin:portal:brand",
+	"idc:admin:portal:customer-template",
 	"idc:admin:portal:external-menu:view",
 	"idc:admin:portal:external-menu:manage",
 	"idc:admin:contract-policy:template:list",

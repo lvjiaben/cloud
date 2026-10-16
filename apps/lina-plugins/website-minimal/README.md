@@ -1,6 +1,6 @@
 # website-minimal
 
-Each website plugin carries its own application source and build tools. The old `apps/lina-websites/sites/default` application is not required. Enter `apps/lina-plugins/website-minimal`, or copy the entire plugin outside the repository, then run:
+Each website plugin carries its own application source and build tools. The retired `apps/lina-websites` workspace has been removed. Enter `apps/lina-plugins/website-minimal`, or copy the entire plugin outside the repository, then run:
 
 ```sh
 make install build

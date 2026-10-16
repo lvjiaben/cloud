@@ -92,14 +92,3 @@ export function listCustomerCommissionSettlements(
     params: { limit: 20, ...params },
   });
 }
-
-export function createCustomerCommissionSettlementRequest(input: {
-  amountMinor: string;
-  currencyCode: string;
-  idempotencyKey: string;
-}) {
-  return requestClient.post<{
-    item: CustomerCommissionSettlement;
-    reused: boolean;
-  }>(path('account/sales-channel/commission/settlement-requests'), input);
-}

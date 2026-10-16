@@ -1,7 +1,9 @@
 # 规范治理规范
 
 ## Purpose
-规范 OpenSpec 主规范的结构、归档残留治理与归档前校验要求，保障规格资产可持续维护。
+
+统一 OpenSpec 主规范结构、当前契约与历史增量残留的治理方式，要求归档前验证主规范，并明确外部规则必须由项目执行入口显式加载，避免隐含流程约束。
+
 ## Requirements
 ### Requirement: 主规范结构统一
 系统 SHALL 将 `openspec/specs/` 下的主规范统一为当前 OpenSpec schema 要求的标准结构，至少包含 `## Purpose` 和 `## Requirements` 两个核心章节。

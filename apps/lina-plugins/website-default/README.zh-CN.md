@@ -1,6 +1,6 @@
 # website-default
 
-官网源码和构建工具随各官网插件提供，不再依赖旧`apps/lina-websites/sites/default`目录。进入`apps/lina-plugins/website-default`（也可将整个插件复制到仓库外），执行：
+官网源码和构建工具随各官网插件提供，旧`apps/lina-websites`目录已移除。进入`apps/lina-plugins/website-default`（也可将整个插件复制到仓库外），执行：
 
 ```sh
 make install build

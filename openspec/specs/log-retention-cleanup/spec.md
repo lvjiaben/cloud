@@ -1,7 +1,9 @@
 # log-retention-cleanup Specification
 
 ## Purpose
-TBD - created by archiving change add-log-retention-cleanup-policy. Update Purpose after archive.
+
+定义运行时日志最长保留天数及清理任务的统一约束，使各日志清理遵守全局保留上限，并规定验证与性能边界，避免清理策略分散或批量删除无界执行。
+
 ## Requirements
 ### Requirement: 日志最长保留天数运行时参数
 

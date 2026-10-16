@@ -87,7 +87,7 @@ Capability-constraint error copy uses capability semantics rather than official 
 - `online-user`、`server-monitor`和`user-message`分别受在线会话索引、服务器监控可见性感知轮询和消息未读轮询影响；当前契约由系统治理或通知相关主规范承载，历史 owner 分别为`archive/system-governance`和`archive/notification`。
 - `module-decoupling`影响模块禁用时的后端降级边界；当前契约由`openspec/specs/module-decoupling/spec.md`承载，历史 owner 为`archive/host-plugin-boundary`。
 - `spec-governance`影响 OpenSpec 主规范结构、归档残留、规则加载矩阵和`i18n`影响记录；当前契约由`openspec/specs/spec-governance/spec.md`承载，历史 owner 为`archive/devops-tooling`。
-- `e2e-suite-organization`受 E2E 质量审查结果级要求增强影响；当前契约由`openspec/specs/e2e-suite-organization/spec.md`承载，历史 owner 为`archive/e2e-testing`。
+- `e2e-suite-organization`受 E2E 质量审查结果级要求增强影响；当前契约由`openspec/specs/e2e-suite-organization/spec.md`承载。
 
 ## Governance Notes
 

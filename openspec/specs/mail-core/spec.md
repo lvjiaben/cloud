@@ -1,7 +1,9 @@
 # mail-core Specification
 
 ## Purpose
-TBD - created by archiving change plugin-mail-foundation. Update Purpose after archive.
+
+明确 mail-core 对邮件连接、账户、传输类型解析和发送探测能力的领域所有权，规定管理面资源边界及全局生命周期冲突检测，使邮件协议插件复用统一事实源。
+
 ## Requirements
 ### Requirement: 邮件领域由 mail-core 作为 plugin-owned owner
 

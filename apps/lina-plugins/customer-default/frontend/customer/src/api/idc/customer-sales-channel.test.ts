@@ -36,25 +36,6 @@ describe('customer sales-channel API', () => {
     );
   });
 
-  it('submits an explicit settlement request with an idempotency key', async () => {
-    const { createCustomerCommissionSettlementRequest } = await import(
-      './customer-sales-channel'
-    );
-    await createCustomerCommissionSettlementRequest({
-      amountMinor: '12500',
-      currencyCode: 'CNY',
-      idempotencyKey: 'settlement-cny-001',
-    });
-    expect(requestClient.post).toHaveBeenCalledWith(
-      '/x/idc-core/api/v1/account/sales-channel/commission/settlement-requests',
-      {
-        amountMinor: '12500',
-        currencyCode: 'CNY',
-        idempotencyKey: 'settlement-cny-001',
-      },
-    );
-  });
-
   it('creates a referral link through the customer-scoped plugin path', async () => {
     const { createCustomerReferralLink } = await import('./customer-sales-channel');
     await createCustomerReferralLink({

@@ -1,7 +1,9 @@
 # ai-core-multimodal-plugin Specification
 
 ## Purpose
-TBD - created by archiving change extend-ai-multimodal-capabilities. Update Purpose after archive.
+
+明确智能中心对多模态能力元数据、服务商端点、能力档位和调用日志的管理职责，区分模型配置与调用参数，并约定多模态页面组织、敏感数据脱敏和方法级缓存一致性。
+
 ## Requirements
 ### Requirement: 智能中心必须只管理 AI 能力元数据和 provider 实现
 

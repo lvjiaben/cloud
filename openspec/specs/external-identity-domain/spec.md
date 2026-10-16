@@ -1,7 +1,9 @@
 # external-identity-domain Specification
 
 ## Purpose
-TBD - created by archiving change expand-external-identity-domain. Update Purpose after archive.
+
+确定外部身份领域由 extlogin-core 插件拥有，统一身份解析、验证票据绑定与扩展身份模型的契约，并规定插件缺失时的降级行为，使协议实现与身份领域职责分离。
+
 ## Requirements
 ### Requirement: extlogin-core 为 managed 外部身份领域 owner
 

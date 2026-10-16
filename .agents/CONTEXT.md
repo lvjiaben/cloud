@@ -8,7 +8,6 @@
 
 官网、用户中心和首次启动的交接入口：[开发与协作指南](../DEVELOPMENT.zh-CN.md)及[安装说明](../INSTALL.zh-CN.md)。后续`AI`先定位目标插件，不在旧官网或已移除的宿主客户应用开发。
 
-跨模块定位可先查[项目结构与业务链路地图](../localdocs/project-code-map.md)和[源码定位清单](../localdocs/project-source-index.md)。它们是`2026-10-10`的结构快照，不是业务规范或全量正确性审查结论；按目标模块展开，不默认全读。
 
 ```bash
 # 规范与偏好，只输出少量命中位置。
@@ -64,4 +63,4 @@ rg -n '^### Requirement:|^#### Scenario:' openspec/changes/<change>/specs/<能�
 
 新增插件、能力或偏好主题时更新对应入口；代码与业务正文优先于导航提示。主题原文迁移记录在`memory/preferences/migration-manifest.json`，不默认读取。当前读取和复用约束见`rules/context-loading.md`，流程门槛见`rules/openspec.md`。
 
-当前官网源码与SSR/gateway由各`website-*`插件自带；旧`apps/lina-websites/sites/default`不参与当前构建或运行。客户模板源码在`apps/lina-plugins/customer-default/frontend/customer`，旧`apps/lina-vben/apps/web-customer`已按精确授权备份删除。其他宿主目录仍严格禁止修改。
+当前官网源码与SSR/gateway由各`website-*`插件自带；旧`apps/lina-websites`目录已移除，不得重新创建旧工作区。客户模板源码在`apps/lina-plugins/customer-default/frontend/customer`，旧`apps/lina-vben/apps/web-customer`已按精确授权备份删除。其他宿主目录仍严格禁止修改。

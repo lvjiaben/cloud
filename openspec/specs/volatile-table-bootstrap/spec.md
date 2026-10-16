@@ -1,7 +1,9 @@
 # volatile-table-bootstrap Specification
 
 ## Purpose
-TBD - created by archiving change switch-default-database-to-postgres. Update Purpose after archive.
+
+明确会话等易失性数据使用普通持久表且不在启动时清空，要求读取前判断过期、通过 TTL 与统一注册清单完成兜底清理，使数据库重启和服务启动不破坏有效状态。
+
 ## Requirements
 ### Requirement: 易失性表 MUST 使用普通持久表存储而非引擎特定的临时存储
 

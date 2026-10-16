@@ -1,7 +1,9 @@
 # auth-account-recovery-and-register Specification
 
 ## Purpose
-TBD - created by archiving change login-forgot-password-and-register. Update Purpose after archive.
+
+定义登录页的注册与密码找回入口，以及通过系统参数控制入口、展示可配置注册协议和创建平台账号的行为；明确邮件密码重置流程，使公开账号入口具有一致的业务范围。
+
 ## Requirements
 ### Requirement: 登录页提供忘记密码与创建账号入口
 

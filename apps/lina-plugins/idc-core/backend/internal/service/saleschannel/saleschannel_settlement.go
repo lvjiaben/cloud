@@ -19,19 +19,6 @@ type SettlementReviewRequest struct {
 	ReviewerUserID                                         int
 }
 
-// PayoutBatchRequest creates a bounded, single-currency payout batch.
-type PayoutBatchRequest struct {
-	CurrencyCode  string
-	SettlementNos []string
-	CreatedBy     int
-}
-
-type PayoutBatchResult struct {
-	BatchNo, CurrencyCode string
-	ItemCount             int
-	TotalAmountMinor      int64
-}
-
 // PayoutResultRequest confirms a historical payout failure and releases its freeze.
 type PayoutResultRequest struct {
 	BatchNo, SettlementNo, StatusCode, FailureReasonCode string
@@ -108,11 +95,6 @@ func (s *serviceImpl) ReviewSettlement(ctx context.Context, request SettlementRe
 		return err
 	})
 	return err
-}
-
-// CreatePayoutBatch rejects the retired approval/batch workflow; administrators record offline payments instead.
-func (s *serviceImpl) CreatePayoutBatch(context.Context, PayoutBatchRequest) (PayoutBatchResult, error) {
-	return PayoutBatchResult{}, bizerr.NewCode(codeSettlementRetired)
 }
 
 // RecordPayoutResult records failure of a historical batch item without issuing payments.

@@ -1,4 +1,0 @@
-{
-  "owner": "idc-payment",
-  "uninstallSql": ["003-exception-fund-operations.sql", "002-reconciliation-operations.sql", "001-payment-foundation.sql"]
-}

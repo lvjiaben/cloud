@@ -1,7 +1,9 @@
 # community-pr-review-skill Specification
 
 ## Purpose
-TBD - created by archiving change add-community-pr-review-skill. Update Purpose after archive.
+
+规定社区 PR 审查技能如何选择审查对象、避免重复审查并依据项目规范核对代码，明确随描述语言发布问题、添加通过标签和无法可靠处理时人工升级的协作流程。
+
 ## Requirements
 ### Requirement: 技能必须审查 LinaPro 社区 PR
 

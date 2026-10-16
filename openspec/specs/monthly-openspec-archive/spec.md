@@ -1,7 +1,9 @@
 # monthly-openspec-archive Specification
 
 ## Purpose
-TBD - created by archiving change monthly-openspec-archive. Update Purpose after archive.
+
+规定月度 OpenSpec 自动归档与后续聚合工作流的先后关系、工具选择和运行凭据注入方式，要求共享提示词、流式日志、阶段失败即停止及产物校验，约束生成变更后创建 PR 的条件。
+
 ## Requirements
 ### Requirement: Monthly workflow must archive completed OpenSpec changes
 系统 SHALL provide a GitHub Actions monthly workflow that scans `openspec/changes/` on the target branch for completed active changes and runs repository auto-archive logic through the configured AI coding tool runtime before archive consolidation.

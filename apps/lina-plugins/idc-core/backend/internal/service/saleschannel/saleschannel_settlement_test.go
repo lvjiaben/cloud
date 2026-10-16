@@ -11,9 +11,6 @@ import (
 
 func TestLegacyCommissionWritesAreRetired(t *testing.T) {
 	service := New()
-	if _, err := service.CreatePayoutBatch(context.Background(), PayoutBatchRequest{}); !bizerr.Is(err, codeSettlementRetired) {
-		t.Fatalf("batch retirement=%v", err)
-	}
 	for _, decision := range []string{"approved", "manual_review"} {
 		if err := service.ReviewSettlement(context.Background(), SettlementReviewRequest{DecisionCode: decision}); !bizerr.Is(err, codeSettlementRetired) {
 			t.Fatalf("review retirement=%v", err)
@@ -21,10 +18,6 @@ func TestLegacyCommissionWritesAreRetired(t *testing.T) {
 	}
 	if err := service.RecordPayoutResult(context.Background(), PayoutResultRequest{StatusCode: "succeeded"}); !bizerr.Is(err, codeSettlementRetired) {
 		t.Fatalf("payout retirement=%v", err)
-	}
-	customerService := service.(CustomerService)
-	if _, err := customerService.RequestCustomerCommissionSettlement(context.Background(), "customer", CustomerCommissionSettlementRequest{}); !bizerr.Is(err, codeSettlementRetired) {
-		t.Fatalf("customer request retirement=%v", err)
 	}
 }
 

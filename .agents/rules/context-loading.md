@@ -16,6 +16,7 @@
 
 - 搜索片段、标题、索引和摘要不算读完规范。相关条款必须完整读取，明确的依赖继续补读；不能因上下文预算忽略权限、资金、秘密和失败语义。
 - 大文件先查标题和行号，只读相关完整条目、任务或章节；输出过大时拆成相关逻辑单元，不能截断后宣称已完整读取。
+- 遇到超长单行或广泛命中时，先用有界`locate`定位，或用`rg -l`只找文件、按目标文件查标题；不要直接输出整个目录的匹配正文。检索片段仅供定位，随后仍读完整相关条款。
 - 同一任务、同一内容版本、正文仍在当前上下文时，可在实现、反馈和审查之间复用。文件变化、范围扩展、新会话或压缩后正文已不可用时，仅重读受影响条款；旧会话摘要不能替代当前权威正文。
 - 验证证据可复用，但必须仍覆盖当前改动及相关依赖。新增变化、失败或覆盖缺口才补跑相应检查，已通过且未受影响的验证不反复运行。
 - 领域规则的相关条款及其共同门禁仍必须遵守；未命中的领域可合并写一条无影响说明，不自动扩成全项目审计。
@@ -34,6 +35,9 @@ go run ./.agents/tools/context.go locate 退款
 go run ./.agents/tools/context.go locate --limit 20 idc-payment refund
 go run ./.agents/tools/context.go read .agents/memory/preferences/36-refunds.md
 go run ./.agents/tools/context.go read openspec/changes/add-idc-server-operations-platform/tasks.md FB-52
+# 大文件先列标题，再按任务ID或完整章节读取。
+rg -n '^#{1,6} ' openspec/changes/add-idc-server-operations-platform/design.md
+go run ./.agents/tools/context.go read openspec/changes/add-idc-server-operations-platform/tasks.md 1.7
 ```
 
 工具默认只检索当前规则、偏好和OpenSpec正文，最多输出12条定位结果。`read`输出完整选中块；超过12 KiB或选择存在歧义时拒绝全量输出，并要求按章节、任务ID或`@行号`缩小范围。也可用`rg`与普通文件工具按完整逻辑单元读取。工具是辅助入口，不替代权威规则或业务判断。

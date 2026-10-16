@@ -150,18 +150,6 @@ type SalesChannelSettlementReviewRes struct {
 	Success bool `json:"success"`
 }
 
-type SalesChannelPayoutBatchCreateReq struct {
-	g.Meta        `path:"/admin/sales-channel/commission/payout-batches" method:"post" tags:"IDC Sales Channel" summary:"Retired commission payout batch endpoint" dc:"This endpoint always rejects writes. Administrators record offline commission payments in sales management." permission:"idc:admin:sales-channel:commission:payout"`
-	CurrencyCode  string   `json:"currencyCode" v:"required|length:3"`
-	SettlementNos []string `json:"settlementNos" v:"required"`
-}
-type SalesChannelPayoutBatchCreateRes struct {
-	BatchNo          string `json:"batchNo"`
-	CurrencyCode     string `json:"currencyCode"`
-	ItemCount        int    `json:"itemCount"`
-	TotalAmountMinor int64  `json:"totalAmountMinor"`
-}
-
 type SalesChannelPayoutResultReq struct {
 	g.Meta            `path:"/admin/sales-channel/commission/payout-batches/{batchNo}/items/{settlementNo}/result" method:"post" tags:"IDC Sales Channel" summary:"Release failed historical commission payout" dc:"Only failed is accepted after confirming a historical payment did not occur. Successful payments and new payout batches are retired." permission:"idc:admin:sales-channel:commission:payout"`
 	BatchNo           string `json:"batchNo" v:"required|max-length:40"`

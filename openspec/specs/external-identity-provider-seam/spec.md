@@ -1,7 +1,9 @@
 # external-identity-provider-seam Specification
 
 ## Purpose
-TBD - created by archiving change refactor-external-identity-to-provider-plugin. Update Purpose after archive.
+
+定义宿主与外部身份提供方之间的服务接缝，区分身份解析、最小权限建号及会话签发职责，并规定提供方缺失时拒绝外部登录、跨提供方身份隔离和归属校验。
+
 ## Requirements
 ### Requirement: 宿主外部身份 Provider SPI 契约
 

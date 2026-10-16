@@ -1,7 +1,9 @@
 # external-identity-protocol-plugins Specification
 
 ## Purpose
-TBD - created by archiving change expand-external-identity-domain. Update Purpose after archive.
+
+限定外部登录协议插件只负责协议验签和身份提供方归属，要求其依赖 extlogin-core 并随启停控制登录入口，使协议实现通过统一身份领域完成后续登录操作。
+
 ## Requirements
 ### Requirement: 协议插件硬依赖 extlogin-core
 

@@ -1,7 +1,9 @@
 # framework-ai-text-capability Specification
 
 ## Purpose
-TBD - created by archiving change add-ai-text-capability-center. Update Purpose after archive.
+
+定义稳定且可扩展的文本 AI 请求响应、推理强度和方法级可用状态，约束敏感输入输出的处理，并明确动态 SDK 的领域所有者及与后续多模态能力的边界。
+
 ## Requirements
 ### Requirement: 宿主必须发布文本 AI 抽象能力
 

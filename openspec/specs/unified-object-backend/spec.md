@@ -1,7 +1,9 @@
 # unified-object-backend Specification
 
 ## Purpose
-TBD - created by archiving change unified-object-storage-backend. Update Purpose after archive.
+
+规定文件中心内容操作通过统一对象后端选择，避免元数据与字节操作使用不一致的存储来源；在后端具备直连能力时允许客户端绕过宿主字节中转，同时沿用统一后端契约。
+
 ## Requirements
 ### Requirement: 文件中心内容操作必须使用统一对象后端选择
 

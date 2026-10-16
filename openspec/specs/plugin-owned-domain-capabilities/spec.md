@@ -1,7 +1,9 @@
 # plugin-owned-domain-capabilities Specification
 
 ## Purpose
-TBD - created by archiving change plugin-owned-domain-capabilities. Update Purpose after archive.
+
+规定非核心领域由所有者插件发布契约与能力描述符，明确动态消费者声明所有者和版本的方式，并约束调用继续遵守宿主治理边界及关键运行时缓存一致性。
+
 ## Requirements
 ### Requirement: 非核心领域能力必须由领域 owner 插件拥有
 

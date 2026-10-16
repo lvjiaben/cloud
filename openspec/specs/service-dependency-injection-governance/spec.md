@@ -1,7 +1,9 @@
 # service-dependency-injection-governance Specification
 
 ## Purpose
-TBD - created by archiving change explicit-service-dependency-injection. Update Purpose after archive.
+
+规定运行期组件通过启动期显式依赖注入装配，禁止用全局定位器或回注掩盖依赖，明确共享缓存实例、能力管理器和窄消费契约，并要求构造错误与包依赖边界可审查验证。
+
 ## Requirements
 ### Requirement: 后端组件必须通过显式依赖注入管理运行期依赖
 系统 SHALL 要求宿主和源码插件的生产后端组件通过构造函数参数逐项显式接收运行期依赖。Controller、Middleware、Service、插件宿主服务适配器和 WASM host service MUST 不在业务构造函数、请求处理、插件回调或 host service 调用路径中隐式创建关键服务依赖，MUST NOT 通过聚合依赖结构体整体传递多个接口型运行期依赖。

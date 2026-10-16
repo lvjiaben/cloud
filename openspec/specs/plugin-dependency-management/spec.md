@@ -1,7 +1,9 @@
 # plugin-dependency-management Specification
 
 ## Purpose
-TBD - created by archiving change plugin-dependency-management. Update Purpose after archive.
+
+规定插件依赖声明的结构校验及安装、启用、停用和卸载时的阻断规则，要求 API 与页面呈现依赖结果，并统一能力所有者依赖、可选降级、缓存失效和有界批量检查。
+
 ## Requirements
 ### Requirement: 插件清单必须支持依赖声明
 

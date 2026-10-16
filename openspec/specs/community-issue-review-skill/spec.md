@@ -1,7 +1,9 @@
 # community-issue-review-skill Specification
 
 ## Purpose
-TBD - created by archiving change add-community-issue-review-skill. Update Purpose after archive.
+
+定义社区 Issue 审查技能的可信依据、语言选择和重复处理识别方式，规定疑问、需求、缺陷及无效内容的分类动作，并要求核实已解决问题及汇报实际处理结果。
+
 ## Requirements
 ### Requirement: 技能必须审查 LinaPro 社区 Issue
 

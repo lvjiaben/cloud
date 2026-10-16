@@ -1,7 +1,9 @@
 # login-home-sql-efficiency Specification
 
 ## Purpose
-TBD - created by archiving change optimize-login-home-sql. Update Purpose after archive.
+
+约束登录后首页元数据读取和每请求会话校验的数据库往返成本，要求复用可共享的运行期数据，并通过自动化验证证明 SQL 优化有效而不改变认证和首页行为。
+
 ## Requirements
 ### Requirement: 登录后首页运行期 SQL 必须避免可复用元数据重复读取
 

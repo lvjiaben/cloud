@@ -1,7 +1,9 @@
 # plugin-service-layout Specification
 
 ## Purpose
-TBD - created by archiving change refactor-plugin-service-layout. Update Purpose after archive.
+
+划分插件服务门面与清单、存储、生命周期、迁移、升级和投影子组件的职责，约束显式构造和单向依赖，并通过统一缓存快照、稳定消费契约及失败反馈减少重复实现。
+
 ## Requirements
 ### Requirement: 插件服务根包必须保持 facade 职责清晰
 

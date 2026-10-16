@@ -1,7 +1,7 @@
 {
   "customer": {
     "menu": "推荐与佣金",
-    "lead": "推荐关系和佣金始终按当前登录客户主体展示，结算申请会先冻结可用金额并进入审核。",
+    "lead": "查看你的推荐关系和佣金。可结算佣金由管理员线下打款，并登记结算记录。",
     "refresh": "刷新",
     "loadFailed": "推荐或佣金数据暂时无法加载，请稍后重试。",
     "status": {
@@ -40,18 +40,9 @@
       "pending": "待成熟",
       "matured": "已成熟累计",
       "frozen": "结算冻结",
-      "requestTitle": "申请结算",
-      "requestLead": "只能申请当前币种的可用佣金，提交后金额会立即冻结，审核通过后再进入打款。",
-      "currency": "选择币种",
-      "amount": "申请金额（主币种）",
-      "request": "提交结算申请",
-      "invalidAmount": "请输入有效的正数金额。",
-      "insufficient": "申请金额超过当前可用佣金。",
-      "requested": "结算申请已提交，可在下方查看状态。",
-      "requestFailed": "结算申请未完成，佣金余额保持不变。",
-      "settlementsTitle": "结算申请记录",
+      "settlementsTitle": "结算记录",
       "entriesTitle": "佣金流水",
-      "emptySettlements": "暂无结算申请。",
+      "emptySettlements": "暂无结算记录。",
       "emptyEntries": "暂无佣金流水。"
     }
   }

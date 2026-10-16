@@ -1,28 +1,20 @@
 # idc-portal
 
-`idc-portal`负责`IDC`运营平台的官网包管理、无代码品牌修订、公开与客户接口装配、客户入口路由、购物车交接和认证桥接，不再拥有官网或客户中心应用源码。
+`idc-portal`管理官网和用户中心模板、公共品牌配置、模板独立配置、导航和密码重置桥接。前端模板是可独立安装的插件。
 
 [English](README.md) | 简体中文
 
 ## 能力范围
 
-- 发布内建的`website-template`业务扩展，并让托管官网包交付继续留在本插件边界内。
-- 唯一硬插件依赖继续是`idc-core`。
-- 支付、资源、合规、通知、渠道和`AI`接入继续保持运行时能力边界。
-- 嵌入插件清单和一个受治理的品牌管理页面，不嵌入可编辑官网源码或客户中心应用源码。
-- 通过`GET /x/idc-portal/api/v1/public/brand`提供已发布品牌投影，管理员可在受保护接口中暂存、预览、发布和回滚不可变品牌修订。
-- 只注册宿主密码重置邮件需要的精确`GET /admin/auth/reset-password`桥接。
+- 拥有`website-template`和`customer-template`扩展点，唯一硬插件依赖为`idc-core`。
+- 提供已安装模板、公共品牌、模板配置、官网导航和会员导航的后台管理页面。
+- 通过`GET /x/idc-portal/api/v1/public/brand`提供当前官网配置投影，直接读取现行官网配置；已删除另一套废弃的品牌修订存储及暂存、发布、回滚接口。
+- 保留仍被使用的客户外链菜单配置和公开配置接口。
 
-公开官网源码由`apps/lina-websites/`负责。登录后的客户页面由`apps/lina-vben/apps/web-customer/`负责。本插件的品牌管理页面位于`frontend/pages/portal-brand.vue`，通过源码插件页面注册表加载，并使用宿主的`Vben`表单和请求适配器。
+官网源码和渲染资源位于`apps/lina-plugins/website-default/`及`apps/lina-plugins/website-minimal/`，独立用户中心模板位于`apps/lina-plugins/customer-default/`。旧`apps/lina-websites/`工作区已经删除。本插件负责模板管理，不嵌入模板应用。
+
+模板契约、构建和启动方式见[开发说明](../../../DEVELOPMENT.zh-CN.md)及[安装说明](../../../INSTALL.zh-CN.md)。
 
 ## 密码重置桥接
 
-桥接只从`LINAPRO_IDC_CUSTOMER_PUBLIC_ORIGIN`读取客户应用地址。生产地址必须使用`HTTPS`，本地开发允许明确的环回`HTTP`地址。处理器以`302`跳转到`/auth/reset-password`，只保留一个非空`token`查询值，不采用请求`Host`、来源页或其他查询参数。其余所有`/admin/*`路径继续由`LinaPro`管理后台处理。
-
-## 交付
-
-官网包生命周期以及公开或客户接口装配继续属于本插件后端边界；删除旧前端不会把这些职责搬进任一前端应用。公开官网由当前已验证并发布的官网包渲染。客户认证、购物车、结账、账户、财务、合规和技术支持页面由`@lina/web-customer`提供；本插件不再构建、嵌入或提供已经退休的`portal/`单页应用。
-
-## 依赖
-
-唯一硬插件依赖是`idc-core`。缺少可选运行时能力时，只让对应旅程失败关闭，不改变权威业务数据的所有权。
+仅为现有密码重置邮件注册`GET /admin/auth/reset-password`。客户应用地址来自`LINAPRO_IDC_CUSTOMER_PUBLIC_ORIGIN`；生产要求`HTTPS`，本地允许明确的环回`HTTP`地址。通过`302`跳转到`/auth/reset-password`，只保留一个非空`token`，忽略请求主机、来源和其他参数。其余`/admin/*`路由仍由管理后台负责。

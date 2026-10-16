@@ -1,7 +1,9 @@
 # cloud-storage-provider-plugins Specification
 
 ## Purpose
-TBD - created by archiving change cloud-storage-providers. Update Purpose after archive.
+
+定义云对象存储厂商与协议插件的对象操作、配置页面和连通性探测能力，明确配置不完整时的失败行为，并统一客户端直传、分片上传及浏览器跨域配置的交付要求。
+
 ## Requirements
 ### Requirement: 系统必须提供云对象存储 provider 源码插件（厂商 + 协议）
 

@@ -1,7 +1,9 @@
 # framework-upgrade Specification
 
 ## Purpose
-TBD - created by archiving change make-upgrade-framework. Update Purpose after archive.
+
+规定框架源码升级的跨平台命令、官方来源和目标版本选择方式，要求升级前检查本地改动、失败后保持可恢复且不自动更新插件，并限定仅下载所选目标引用。
+
 ## Requirements
 ### Requirement: 框架升级命令必须提供统一跨平台入口
 

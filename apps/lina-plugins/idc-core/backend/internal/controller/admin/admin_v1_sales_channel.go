@@ -150,17 +150,6 @@ func (c *ControllerV1) SalesChannelSettlementReview(ctx context.Context, req *v1
 	return &v1.SalesChannelSettlementReviewRes{Success: true}, nil
 }
 
-func (c *ControllerV1) SalesChannelPayoutBatchCreate(ctx context.Context, req *v1.SalesChannelPayoutBatchCreateReq) (*v1.SalesChannelPayoutBatchCreateRes, error) {
-	if c.salesChannel == nil {
-		return nil, gerror.New("sales channel service is unavailable")
-	}
-	result, err := c.salesChannel.CreatePayoutBatch(ctx, saleschannel.PayoutBatchRequest{CurrencyCode: req.CurrencyCode, SettlementNos: req.SettlementNos})
-	if err != nil {
-		return nil, err
-	}
-	return &v1.SalesChannelPayoutBatchCreateRes{BatchNo: result.BatchNo, CurrencyCode: result.CurrencyCode, ItemCount: result.ItemCount, TotalAmountMinor: result.TotalAmountMinor}, nil
-}
-
 func (c *ControllerV1) SalesChannelPayoutResult(ctx context.Context, req *v1.SalesChannelPayoutResultReq) (*v1.SalesChannelPayoutResultRes, error) {
 	if c.salesChannel == nil {
 		return nil, gerror.New("sales channel service is unavailable")

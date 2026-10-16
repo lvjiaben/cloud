@@ -1,7 +1,9 @@
 # plugin-package-boundary-governance Specification
 
 ## Purpose
-TBD - created by archiving change refactor-plugin-package-boundaries. Update Purpose after archive.
+
+规范插件公共包集中到 pkg/plugin 后各组件的职责、可导入边界与依赖方向，区分普通能力契约和提供方接口，要求迁移保留运行语义并由静态治理阻止旧入口与跨层耦合。
+
 ## Requirements
 ### Requirement: 插件公共命名空间必须集中到`pkg/plugin`
 

@@ -13,7 +13,6 @@ import (
 	admincontroller "lina-plugin-idc-portal/backend/internal/controller/admin"
 	publiccontroller "lina-plugin-idc-portal/backend/internal/controller/public"
 	"lina-plugin-idc-portal/backend/internal/portalroute"
-	"lina-plugin-idc-portal/backend/internal/service/brand"
 	"lina-plugin-idc-portal/backend/internal/service/customerconfiguration"
 	"lina-plugin-idc-portal/backend/internal/service/externalmenu"
 	"lina-plugin-idc-portal/backend/internal/service/siteconfiguration"
@@ -52,10 +51,6 @@ func registerRoutes(_ context.Context, registrar pluginhost.HTTPRegistrar) error
 	if registrar == nil {
 		return gerror.New("portal routes require host registrar")
 	}
-	brands, err := brand.New("")
-	if err != nil {
-		return err
-	}
 	sites, err := siteconfiguration.New(registrar.BusinessExtensions(), "")
 	if err != nil {
 		return err
@@ -77,11 +72,11 @@ func registerRoutes(_ context.Context, registrar pluginhost.HTTPRegistrar) error
 		group.Group("/api/v1", func(group pluginhost.RouteGroup) {
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(), middlewares.RequestBodyLimit(), middlewares.Ctx())
-				group.Bind(publiccontroller.NewV1(brands, externalMenus, sites, customers))
+				group.Bind(publiccontroller.NewV1(externalMenus, sites, customers))
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(), middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy(), middlewares.Permission())
-				group.Bind(admincontroller.NewV1(brands, externalMenus, sites, customers))
+				group.Bind(admincontroller.NewV1(externalMenus, sites, customers))
 			})
 		})
 	})

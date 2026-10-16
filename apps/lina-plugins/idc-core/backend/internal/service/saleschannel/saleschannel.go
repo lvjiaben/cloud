@@ -40,7 +40,6 @@ type Service interface {
 	DecideMaturity(ctx context.Context, request MaturityRequest) (MaturityDecision, error)
 	DecideSettlement(ctx context.Context, request SettlementRequest) (SettlementDecision, error)
 	ReviewSettlement(ctx context.Context, request SettlementReviewRequest) error
-	CreatePayoutBatch(ctx context.Context, request PayoutBatchRequest) (PayoutBatchResult, error)
 	RecordPayoutResult(ctx context.Context, request PayoutResultRequest) error
 	MatureDueCommissions(ctx context.Context, now time.Time, limit int) (int, error)
 	ValidateQualificationTransition(ctx context.Context, request QualificationTransitionRequest) (QualificationTransitionDecision, error)

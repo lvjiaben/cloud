@@ -12,7 +12,6 @@ type ICustomerAccountV1 interface {
 	ReferralLinkCreate(context.Context, *v1.ReferralLinkCreateReq) (*v1.ReferralLinkCreateRes, error)
 	CommissionOverviewGet(context.Context, *v1.CommissionOverviewGetReq) (*v1.CommissionOverviewGetRes, error)
 	CommissionSettlementsList(context.Context, *v1.CommissionSettlementsListReq) (*v1.CommissionSettlementsListRes, error)
-	CommissionSettlementRequestCreate(context.Context, *v1.CommissionSettlementRequestCreateReq) (*v1.CommissionSettlementRequestCreateRes, error)
 	ProfileGet(context.Context, *v1.ProfileGetReq) (*v1.ProfileGetRes, error)
 	ProfileUpdate(context.Context, *v1.ProfileUpdateReq) (*v1.ProfileUpdateRes, error)
 	ContactList(context.Context, *v1.ContactListReq) (*v1.ContactListRes, error)

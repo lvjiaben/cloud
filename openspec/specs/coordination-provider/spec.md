@@ -1,7 +1,9 @@
 # coordination-provider Specification
 
 ## Purpose
-TBD - created by archiving change redis-cluster-coordination. Update Purpose after archive.
+
+定义宿主访问 Redis 协调能力的统一提供方，覆盖锁、键值、修订号和事件接口，集中管理键命名空间与健康诊断，使各领域通过稳定接缝共享协调基础设施。
+
 ## Requirements
 ### Requirement: 宿主必须通过 coordination provider 访问 Redis
 系统 SHALL 提供内部 coordination provider 抽象，用于承载集群模式下的分布式锁、KV、revision、event 和 health 能力。业务模块 MUST 依赖 coordination provider 的窄接口，不得直接导入 Redis 客户端或手写 Redis key。

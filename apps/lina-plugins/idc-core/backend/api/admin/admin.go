@@ -222,7 +222,6 @@ type IAdminV1 interface {
 	SalesChannelOverviewGet(ctx context.Context, req *v1.SalesChannelOverviewGetReq) (res *v1.SalesChannelOverviewGetRes, err error)
 	SalesChannelCustomerReferrerGet(ctx context.Context, req *v1.SalesChannelCustomerReferrerGetReq) (res *v1.SalesChannelCustomerReferrerGetRes, err error)
 	SalesChannelSettlementReview(ctx context.Context, req *v1.SalesChannelSettlementReviewReq) (res *v1.SalesChannelSettlementReviewRes, err error)
-	SalesChannelPayoutBatchCreate(ctx context.Context, req *v1.SalesChannelPayoutBatchCreateReq) (res *v1.SalesChannelPayoutBatchCreateRes, err error)
 	SalesChannelPayoutResult(ctx context.Context, req *v1.SalesChannelPayoutResultReq) (res *v1.SalesChannelPayoutResultRes, err error)
 	SalesManagementAgentList(ctx context.Context, req *v1.SalesManagementAgentListReq) (res *v1.SalesManagementAgentListRes, err error)
 	SalesManagementAgentCreate(ctx context.Context, req *v1.SalesManagementAgentCreateReq) (res *v1.SalesManagementAgentCreateRes, err error)

@@ -1,7 +1,9 @@
 # dynamic-external-login Specification
 
 ## Purpose
-TBD - created by archiving change publish-external-login-to-dynamic-plugins. Update Purpose after archive.
+
+定义动态插件调用外部身份登录及最小权限建号的能力，要求身份提供方归属受到校验，使动态实现能够复用宿主会话与开户接缝，同时保留插件身份和授权范围。
+
 ## Requirements
 ### Requirement: 动态插件可调用外部登录换会话
 

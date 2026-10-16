@@ -11,7 +11,6 @@ import (
 
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
-	"lina-core/pkg/bizerr"
 )
 
 type CustomerService interface {
@@ -20,7 +19,6 @@ type CustomerService interface {
 	CreateCustomerReferralLink(ctx context.Context, customerNo string, input CustomerReferralLinkRequest) (CustomerReferralLinkResult, error)
 	LoadCustomerCommissionOverview(ctx context.Context, customerNo, currencyCode string, limit int) (CustomerCommissionOverview, error)
 	ListCustomerCommissionSettlements(ctx context.Context, customerNo, currencyCode string, limit int) (CustomerCommissionSettlementPage, error)
-	RequestCustomerCommissionSettlement(ctx context.Context, customerNo string, input CustomerCommissionSettlementRequest) (CustomerCommissionSettlementResult, error)
 }
 
 type CustomerSnapshot struct {
@@ -83,16 +81,6 @@ type CustomerCommissionSettlement struct {
 
 type CustomerCommissionSettlementPage struct {
 	Items []CustomerCommissionSettlement
-}
-
-type CustomerCommissionSettlementRequest struct {
-	CurrencyCode, IdempotencyKey string
-	AmountMinor                  int64
-}
-
-type CustomerCommissionSettlementResult struct {
-	Item   CustomerCommissionSettlement
-	Reused bool
 }
 
 var _ CustomerService = (*serviceImpl)(nil)
@@ -229,9 +217,4 @@ func (s *serviceImpl) ListCustomerCommissionSettlements(ctx context.Context, cus
 		result.Items = append(result.Items, CustomerCommissionSettlement{SettlementNo: row["settlement_no"].String(), CurrencyCode: row["currency_code"].String(), AmountMinor: row["requested_amount_minor"].Int64(), StatusCode: row["status_code"].String(), SubmittedAt: row["requested_at"].Time().UnixMilli(), PaidAt: completed.UnixMilli()})
 	}
 	return result, nil
-}
-
-// RequestCustomerCommissionSettlement rejects the retired customer approval workflow without freezing money.
-func (s *serviceImpl) RequestCustomerCommissionSettlement(context.Context, string, CustomerCommissionSettlementRequest) (CustomerCommissionSettlementResult, error) {
-	return CustomerCommissionSettlementResult{}, bizerr.NewCode(codeSettlementRetired)
 }

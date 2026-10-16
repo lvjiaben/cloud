@@ -1,7 +1,9 @@
 # plugin-workspace-management Specification
 
 ## Purpose
-TBD - created by archiving change plugin-workspace-management. Update Purpose after archive.
+
+规定插件来源配置、固定安装目录和普通工作区管理方式，明确复制安装、保护本地修改的更新、只读状态诊断与工具维护锁定记录，使插件来源和版本状态可追踪。
+
 ## Requirements
 ### Requirement: 插件工作区必须支持从 submodule 转为普通目录
 

@@ -1,7 +1,9 @@
 # oidc-generic Specification
 
 ## Purpose
-TBD - created by archiving change add-generic-oidc-plugin. Update Purpose after archive.
+
+定义通用 OIDC 登录插件的依赖、提供方标识与授权码流程，明确 PKCE、令牌验证、默认开户策略及管理配置边界，并规定登录入口降级和本地化文档要求。
+
 ## Requirements
 ### Requirement: 插件标识、分发与依赖
 

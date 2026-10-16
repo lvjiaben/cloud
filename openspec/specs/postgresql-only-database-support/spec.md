@@ -1,7 +1,9 @@
 # postgresql-only-database-support Specification
 
 ## Purpose
-TBD - created by archiving change remove-sqlite-support. Update Purpose after archive.
+
+明确运行时、交付、配置和验证仅支持 PostgreSQL 数据库，要求移除 SQLite 通道并统一文档支持矩阵，使安装和测试不再依赖未承诺支持的数据库后端。
+
 ## Requirements
 ### Requirement: 运行时数据库支持必须收敛到 PostgreSQL
 

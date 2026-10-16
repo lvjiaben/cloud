@@ -1,7 +1,9 @@
 # file-upload-storage-path Specification
 
 ## Purpose
-TBD - created by archiving change simplify-upload-storage-path. Update Purpose after archive.
+
+统一新上传文件的租户分区对象路径，去除多余的租户缩写目录，同时兼容历史访问与相同哈希的物理文件复用，确保直传和分片上传沿用相同的路径生成规则。
+
 ## Requirements
 ### Requirement: 新上传文件路径必须省略 tenant 缩写目录
 

@@ -1,7 +1,9 @@
 # ai-core-plugin Specification
 
 ## Purpose
-TBD - created by archiving change add-ai-text-capability-center. Update Purpose after archive.
+
+定义智能中心插件的渠道、模型、文本能力档位和调用监控功能，明确插件自有存储、平台管理权限和缓存边界，并规定其作为 AI 领域能力所有者发布契约、描述符及动态 SDK 的职责。
+
 ## Requirements
 ### Requirement: 官方插件必须提供智能中心菜单和页面
 

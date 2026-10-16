@@ -46,7 +46,7 @@ make dev
 | 会员导航、商品菜单归属 | `apps/lina-plugins/idc-core/backend/internal/service/productdirectory/` |
 | 标准安装启动工具 | `apps/lina-plugins/idc-compliance/hack/tools/installation/main.go` |
 
-官网和用户中心都是独立托管动态插件：`plugin.yaml`声明能力，`WASM`交付插件及公开资源，浏览器运行`HTML/JS/CSS`；默认官网还可单独运行`SSR`。前端不限`Vue`、`React`、`jQuery`或原生脚本。旧`apps/lina-vben/apps/web-customer`已移除，旧`apps/lina-websites/sites/default`不是当前官网入口，不要继续在旧目录开发。
+官网和用户中心都是独立托管动态插件：`plugin.yaml`声明能力，`WASM`交付插件及公开资源，浏览器运行`HTML/JS/CSS`；默认官网还可单独运行`SSR`。前端不限`Vue`、`React`、`jQuery`或原生脚本。旧`apps/lina-vben/apps/web-customer`已移除，旧`apps/lina-websites`工作区也已移除，不要重建旧目录或继续在旧路径开发。
 
 详细契约直接阅读以下文档，后台对应配置页面的开发说明也使用这些文件：
 

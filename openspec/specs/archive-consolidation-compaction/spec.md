@@ -1,7 +1,9 @@
 # archive-consolidation-compaction Specification
 
 ## Purpose
-TBD - created by archiving change improve-archive-consolidation-compaction. Update Purpose after archive.
+
+规定历史变更聚合时如何提取高价值决策、约束与验证证据，要求先完整理解原始语义再分层压缩，并在清理原文前检查覆盖情况、记录压缩结果，避免归档整理丢失维护依据。
+
 ## Requirements
 ### Requirement: 归档聚合必须执行高价值摘要压缩
 

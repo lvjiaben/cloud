@@ -1,7 +1,9 @@
 # login-external-auth-presentation Specification
 
 ## Purpose
-TBD - created by archiving change refactor-external-identity-to-provider-plugin. Update Purpose after archive.
+
+规定外部登录入口按不同交互形态挂载到登录页插槽的展示方式，使协议和目录认证与社交认证入口各有明确位置，同时保持入口由相应插件提供和管理。
+
 ## Requirements
 ### Requirement: 登录页外部登录入口按形态分槽展示
 宿主登录页 SHALL 将外部登录入口按展示形态拆分为两个独立宿主槽位，避免平台账号与协议/目录登录混用同一布局：

@@ -1,7 +1,9 @@
 # plugin-lifecycle-global-hooks Specification
 
 ## Purpose
-TBD - created by archiving change plugin-mail-foundation. Update Purpose after archive.
+
+定义目标插件与全局前置生命周期 Hook 的注册和聚合调用规则，覆盖启用、安装及可选停用卸载检查，并区分全局拦截与插件自身安装回调的语义。
+
 ## Requirements
 ### Requirement: 目标插件必须支持 BeforeEnable 与 AfterEnable
 

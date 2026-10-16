@@ -1,7 +1,9 @@
 # tenant-platform-access-control Specification
 
 ## Purpose
-TBD - created by archiving change tenant-permission-boundary-hardening. Update Purpose after archive.
+
+划分平台租户控制面和普通租户业务上下文的访问边界，要求平台操作具有相应权限、错误可本地化且可审计，并使前端租户候选加载遵守同样的控制面门禁。
+
 ## Requirements
 ### Requirement: 平台租户控制面必须要求平台上下文
 

@@ -25,9 +25,9 @@
 | `apps/lina-core` | 基于`GoFrame v2`的通用宿主，提供用户、角色、菜单、认证、存储、插件运行等能力 |
 | `apps/lina-plugins` | 业务插件、通用扩展与外部适配器，当前发现25份插件清单 |
 | `apps/lina-vben/apps/web-antd` | 运营管理后台，含宿主页面及插件页面加载入口 |
-| `apps/lina-vben/apps/web-customer` | 客户中心，含购买、账户、财务、服务及售后页面 |
+| `apps/lina-plugins/customer-default/frontend/customer` | 独立动态客户模板，含购买、账户、财务、服务及售后页面 |
 | `apps/lina-vben/packages` | 前端共享组件、布局、状态、工具和基础能力 |
-| `apps/lina-websites` | 独立官网工作区，含默认站点、模板、契约、打包工具及开发文档 |
+| `apps/lina-plugins/website-*` | 独立官网插件，自带源码、依赖、构建、静态资源和适用的渲染服务 |
 | `hack/tools/linactl` | 仓库开发和交付工具入口 |
 | `hack/tests` | 跨模块测试、运行脚本和测试支持 |
 | `openspec` | 正式能力规范、活跃变更与历史归档 |
@@ -69,7 +69,7 @@ flowchart LR
 - 服务路径包括`/account/servers`和`/account/product-directories`；目录派生路由仍需结合实际菜单检查。
 - 同一个`commerce/index.vue`承接购物车和订单，同一个`finance/index.vue`承接多个财务入口，同一个`servers/index.vue`承接列表与详情。改组件时需要检查路由对应的其他模式。
 
-官网与客户中心是两个工作区。`apps/lina-websites/README.zh-CN.md`明确说明`sites/default`是迁移基线，不能仅凭该目录存在认定官网包契约及页面拆分全部完成。
+2026-10-16路径修正：官网与客户中心均已独立为动态模板插件；旧官网工作区和宿主客户应用已移除。其余源码分析仍是原日期快照，当前开发入口以根`DEVELOPMENT.zh-CN.md`为准。
 
 ## 核心业务链路与源码证据
 

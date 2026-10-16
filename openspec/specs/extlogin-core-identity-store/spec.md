@@ -1,7 +1,9 @@
 # extlogin-core-identity-store Specification
 
 ## Purpose
-TBD - created by archiving change refactor-external-identity-to-provider-plugin. Update Purpose after archive.
+
+明确 extlogin-core 对外部身份链接存储、身份解析及开户编排的所有权，覆盖无邮箱开户、绑定解绑与并发一致性，并规定插件停用卸载及链接数据访问的边界。
+
 ## Requirements
 ### Requirement: extlogin-core 插件拥有外部身份链接存储
 

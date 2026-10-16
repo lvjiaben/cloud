@@ -1,7 +1,9 @@
 # mail-transport-plugins Specification
 
 ## Purpose
-TBD - created by archiving change plugin-mail-foundation. Update Purpose after archive.
+
+规定官方邮件协议插件实现传输接口并依赖 mail-core，区分协议实现、连接权威数据及类型冲突检测的职责，使各协议插件不重复维护邮件连接或领域管理逻辑。
+
 ## Requirements
 ### Requirement: 官方协议插件实现邮件 transport SPI
 

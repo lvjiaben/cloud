@@ -1,7 +1,9 @@
 # session-hot-state Specification
 
 ## Purpose
-TBD - created by archiving change redis-cluster-coordination. Update Purpose after archive.
+
+定义集群会话热状态在 Redis 中的租户与令牌隔离、活跃时间节流写回和强制下线一致性，规定协调故障时拒绝认证及数据库投影清理，保持会话事实的可追踪性。
+
 ## Requirements
 ### Requirement: 集群模式会话热状态必须存储在 Redis
 系统 SHALL 在 `cluster.enabled=true` 且 `cluster.coordination=redis` 时，将请求路径使用的在线会话热状态存储到 Redis。PostgreSQL `sys_online_session` SHALL 保留为在线用户管理、数据权限过滤、登录信息展示和清理投影。

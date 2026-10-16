@@ -1,7 +1,9 @@
 # host-object-storage Specification
 
 ## Purpose
-TBD - created by archiving change unify-host-object-storage. Update Purpose after archive.
+
+定义宿主中立对象存储的命名空间隔离、有界列表和分片能力透传契约，明确对象字节操作与业务元数据、领域访问地址的职责分离，使上层领域能够共享存储后端。
+
 ## Requirements
 ### Requirement: 宿主必须提供中立对象存储服务
 

@@ -83,7 +83,7 @@ node ./temp/output/admin/server.mjs
 
 在后台插件列表安装并启用官网插件，然后进入“系统设置 → 官网配置”。可以安装多个官网插件，但在官网配置中只能选择一个展示。切换后旧官网自动退出展示，不需要停用或卸载旧插件，各模板配置保留。公共信息在这里统一设置；首页图片、菜单等配置由所选官网插件提供。未启用官网时显示“官网尚未启用”。
 
-完整安装构建已输出官网WASM及SSR服务到`temp/output/websites/`。官网源码和构建工具随各官网插件提供，不再依赖旧`apps/lina-websites/sites/default`目录。进入`apps/lina-plugins/website-default`（也可将整个插件复制到仓库外），执行：
+完整安装构建已输出官网WASM及SSR服务到`temp/output/websites/`。官网源码和构建工具随各官网插件提供，旧`apps/lina-websites`目录已移除。进入`apps/lina-plugins/website-default`（也可将整个插件复制到仓库外），执行：
 
 ```text
 make install build

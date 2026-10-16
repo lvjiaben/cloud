@@ -1,7 +1,9 @@
 # auth-ldap Specification
 
 ## Purpose
-TBD - created by archiving change add-ldap-auth-plugin. Update Purpose after archive.
+
+定义独立 LDAP 登录插件的依赖、目录身份标识和 bind 验真流程，明确 TLS、默认关闭自动开户、登录与管理入口及国际化要求，使目录登录复用宿主会话能力而不接管密码登录。
+
 ## Requirements
 ### Requirement: 插件标识、分发与依赖
 

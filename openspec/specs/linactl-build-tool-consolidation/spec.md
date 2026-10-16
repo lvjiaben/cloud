@@ -1,7 +1,9 @@
 # linactl-build-tool-consolidation Specification
 
 ## Purpose
-TBD - created by archiving change consolidate-linactl-build-tools. Update Purpose after archive.
+
+明确仓库开发工具由 linactl 统一承载，保持公开命令与参数契约稳定，覆盖隔离的 GoFrame 代码生成、插件本地构建配置和源码插件自动聚合，并同步文档及国际化校验引用。
+
 ## Requirements
 ### Requirement: `linactl`必须统一承载仓库工具实现
 

@@ -1,7 +1,9 @@
 # sql-source-syntax Specification
 
 ## Purpose
-TBD - created by archiving change switch-default-database-to-postgres. Update Purpose after archive.
+
+规定 PostgreSQL SQL 源文件的类型、标识符、主键、注释、索引和幂等写入约定，禁止不兼容的数据库创建及自动更新时间语法，并要求使用高级特性前评估执行边界。
+
 ## Requirements
 ### Requirement: 项目所有 SQL 源文件 MUST 使用 PostgreSQL 14+ 语法子集编写
 

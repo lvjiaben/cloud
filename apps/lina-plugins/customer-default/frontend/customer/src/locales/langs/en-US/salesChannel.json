@@ -1,7 +1,7 @@
 {
   "customer": {
     "menu": "Referrals & commissions",
-    "lead": "Referral relationships and commissions are scoped to the signed-in customer. Settlement requests freeze available funds before review.",
+    "lead": "View your referrals and commissions. Administrators pay available commissions offline and record each settlement.",
     "refresh": "Refresh",
     "loadFailed": "Referral or commission data is temporarily unavailable. Please try again.",
     "status": {
@@ -40,18 +40,9 @@
       "pending": "Pending maturity",
       "matured": "Matured total",
       "frozen": "Frozen for settlement",
-      "requestTitle": "Request settlement",
-      "requestLead": "Only available commission in the selected currency can be requested. The amount is frozen immediately and paid after review.",
-      "currency": "Currency",
-      "amount": "Amount (major unit)",
-      "request": "Request settlement",
-      "invalidAmount": "Enter a valid positive amount.",
-      "insufficient": "The amount exceeds your available commission.",
-      "requested": "Settlement request submitted. Check its status below.",
-      "requestFailed": "Settlement request failed; your commission balance was unchanged.",
-      "settlementsTitle": "Settlement requests",
+      "settlementsTitle": "Settlement records",
       "entriesTitle": "Commission ledger",
-      "emptySettlements": "No settlement requests yet.",
+      "emptySettlements": "No settlement records yet.",
       "emptyEntries": "No commission entries yet."
     }
   }

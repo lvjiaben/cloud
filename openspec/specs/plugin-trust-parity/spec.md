@@ -1,7 +1,9 @@
 # plugin-trust-parity Specification
 
 ## Purpose
-TBD - created by archiving change publish-external-login-to-dynamic-plugins. Update Purpose after archive.
+
+明确源码插件与动态插件在安装授权后的同权同信原则，使相同领域能力不因分发形态受到不同的业务信任待遇，同时保留既有安装授权和能力治理边界。
+
 ## Requirements
 ### Requirement: 安装授权后源码与动态插件同权同信
 

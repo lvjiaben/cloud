@@ -1,7 +1,9 @@
 # plugin-management-manage-entry Specification
 
 ## Purpose
-TBD - created by archiving change plugin-management-manage-entry. Update Purpose after archive.
+
+定义插件管理列表中进入插件自有管理页面的操作入口，使管理员能够从插件记录直接打开对应配置或业务管理位置，并保持入口与插件声明的管理页面关联。
+
 ## Requirements
 ### Requirement: 插件管理列表操作列提供管理入口
 

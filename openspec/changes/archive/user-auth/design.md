@@ -76,7 +76,7 @@ LifecycleGuard 让插件在卸载、禁用、租户禁用、租户删除和安�
 - `notice-management`和`user-message`受消息、公告、投递和未读数的当前租户/当前用户边界影响；当前契约由`archive/notification`及主规范承载。
 - `framework-i18n-runtime-performance`、`management-workbench-i18n`、`login-page-presentation`和`dashboard-workbench`只保留租户术语、登录挑选器、工作台租户切换和运行时翻译缓存边界；长期 owner 为`archive/i18n`和工作台主规范。
 - `database-bootstrap-commands`、`project-setup`和`framework-bootstrap-installer`受`make db.init`/`make db.mock`写入 PLATFORM、开发入口、多租户启动校验和 PostgreSQL-only 初始化影响；当前契约由`archive/database-engine`、`archive/foundation`或开发工具主规范承载。
-- `e2e-suite-organization`只保留多租户测试矩阵和插件自有测试目录归属影响；当前契约由`archive/e2e-testing`和测试主规范承载。
+- `e2e-suite-organization`只保留多租户测试矩阵和插件自有测试目录归属影响；当前契约由`openspec/specs/e2e-suite-organization/spec.md`和`openspec/specs/e2e-suite-execution-efficiency/spec.md`承载。
 - `backend-conformance`、`core-host-boundary-governance`、`module-decoupling`和`spec-governance`提供 DAO 注入纪律、宿主接缝、可选插件降级和 OpenSpec 规则加载要求；当前契约由主规范和对应治理分组承载，本分组通过设计记录多租户相关约束。
 
 ## 角色权限树选择模式

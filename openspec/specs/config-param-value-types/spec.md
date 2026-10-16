@@ -1,7 +1,9 @@
 # config-param-value-types Specification
 
 ## Purpose
-TBD - created by archiving change config-param-value-types. Update Purpose after archive.
+
+规定系统参数可使用的值类型和枚举选项存储方式，要求写入按类型校验、内置类型与选项受到保护，并由管理界面选择相应编辑组件，避免参数配置与运行时取值不一致。
+
 ## Requirements
 ### Requirement: 参数项必须声明封闭的值类型集合
 

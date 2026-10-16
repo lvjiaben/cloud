@@ -1,7 +1,9 @@
 # workspace-route-boundary Specification
 
 ## Purpose
-TBD - created by archiving change decouple-workspace-plugin-routes. Update Purpose after archive.
+
+规定默认管理工作台可配置入口与宿主保留命名空间的优先级，明确源码插件自行维护公开路由且以框架注册结果判断冲突，并统一动态插件的公开 API 命名空间。
+
 ## Requirements
 ### Requirement: 默认管理工作台入口必须可配置且不默认独占根路径
 

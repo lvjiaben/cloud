@@ -2,7 +2,8 @@
 
 ## Purpose
 
-定义宿主二进制跨平台构建、多架构 Docker 镜像发布和 nightly 发布工作流能力。
+规定宿主跨平台二进制、多架构容器镜像和 nightly 发布流程，明确共享验证门禁、版本标签校验及 GitHub Release 创建时机，并约束演示部署和开发容器的手动入口。
+
 ## Requirements
 ### Requirement:发布构建命令必须支持跨平台宿主二进制构建
 

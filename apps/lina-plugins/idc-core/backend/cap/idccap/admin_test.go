@@ -89,3 +89,11 @@ func TestCurrencyPermissionsAreCataloged(t *testing.T) {
 		}
 	}
 }
+
+// TestCustomerTemplatePermissionIsCataloged keeps the published template
+// management routes available under the same concrete authorization catalog.
+func TestCustomerTemplatePermissionIsCataloged(t *testing.T) {
+	if !IsCatalogedAdminPermission("idc:admin:portal:customer-template") {
+		t.Fatal("customer template management permission is missing")
+	}
+}

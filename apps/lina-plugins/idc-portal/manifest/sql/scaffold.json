@@ -1,4 +1,0 @@
-{
-  "owner": "idc-portal",
-  "installSql": ["001-customer-external-menu.sql"]
-}

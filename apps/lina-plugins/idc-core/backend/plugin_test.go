@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/fs"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -91,7 +92,6 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 		t.Fatalf("embedded manifest does not identify %s", pluginID)
 	}
 	for _, fragment := range []string{
-		"version: v0.1.101",
 		"      - provision",
 		"      - query",
 		"key: plugin:idc-core:catalog-automation-interfaces",
@@ -105,10 +105,14 @@ func TestPluginRegistrationIncludesEmbeddedManifest(t *testing.T) {
 		t.Fatal("product-fulfillment owner must not declare a provider fulfillment contract")
 	}
 	var declaration struct {
+		Version            string                                   `yaml:"version"`
 		BusinessExtensions []*capmodel.BusinessExtensionDeclaration `yaml:"business_extensions"`
 	}
 	if err := yaml.Unmarshal(manifest, &declaration); err != nil {
 		t.Fatalf("decode embedded owner manifest: %v", err)
+	}
+	if !regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$`).MatchString(declaration.Version) {
+		t.Fatalf("embedded manifest has invalid release version %q", declaration.Version)
 	}
 	var ownerCount int
 	for _, extension := range declaration.BusinessExtensions {

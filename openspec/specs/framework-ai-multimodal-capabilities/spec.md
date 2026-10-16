@@ -1,7 +1,9 @@
 # framework-ai-multimodal-capabilities Specification
 
 ## Purpose
-TBD - created by archiving change extend-ai-multimodal-capabilities. Update Purpose after archive.
+
+定义图像、音频等多模态 AI 的类型化子能力、方法族与可用状态，规定大结果使用资产引用、异步渠道使用操作引用，并明确敏感数据保护及动态方法编解码的归属。
+
 ## Requirements
 ### Requirement: 宿主必须通过 AI 命名空间暴露类型化多模态子能力
 

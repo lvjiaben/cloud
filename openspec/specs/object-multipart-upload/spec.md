@@ -1,7 +1,9 @@
 # object-multipart-upload Specification
 
 ## Purpose
-TBD - created by archiving change storage-multipart-auto-upload. Update Purpose after archive.
+
+定义对象与文件中心的分片上传能力，统一服务端中转和客户端直传的执行契约，规定按阈值自动选择分片策略以及大小、分片参数的运行时配置，使通用上传客户端自动完成传输。
+
 ## Requirements
 ### Requirement: 系统必须提供可探测的对象 Multipart 上传契约
 

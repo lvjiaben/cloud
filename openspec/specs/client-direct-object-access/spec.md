@@ -1,7 +1,9 @@
 # client-direct-object-access Specification
 
 ## Purpose
-TBD - created by archiving change client-direct-object-storage. Update Purpose after archive.
+
+定义与存储厂商无关的客户端直连上传和下载契约，覆盖上传初始化、完成确认、作用域绑定、哈希复用和短时读授权，并规定通道编码、分片授权与失败结果的表达方式。
+
 ## Requirements
 ### Requirement: 系统必须提供可探测的客户端直连对象访问契约
 

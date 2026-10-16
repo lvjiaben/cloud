@@ -1,7 +1,9 @@
 # framework-ai-capability-namespace Specification
 
 ## Purpose
-TBD - created by archiving change refactor-ai-capability-namespace. Update Purpose after archive.
+
+规定 AI 能力通过统一命名空间聚合并保持子能力职责独立，明确文本调用来源身份注入和方法状态批量查询，并要求能力归属迁移覆盖全部已发布方法而不形成平行接口。
+
 ## Requirements
 ### Requirement: 宿主能力目录必须通过 AI 命名空间暴露 AI 能力
 

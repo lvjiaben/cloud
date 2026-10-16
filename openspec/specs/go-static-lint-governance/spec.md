@@ -1,7 +1,9 @@
 # go-static-lint-governance Specification
 
 ## Purpose
-TBD - created by archiving change add-go-static-lint. Update Purpose after archive.
+
+统一 Go 静态检查工具版本、仓库配置与跨平台命令入口，规定官方插件工作区覆盖、多构建目标死代码判定和组件定向检查，并将检查结果纳入 CI 及维护证据。
+
 ## Requirements
 ### Requirement: 仓库必须固定`golangci-lint`配置和版本
 

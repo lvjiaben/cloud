@@ -1,7 +1,9 @@
 # external-login-handoff Specification
 
 ## Purpose
-TBD - created by archiving change expand-external-identity-domain. Update Purpose after archive.
+
+规定外部登录完成后通过一次性交接码向前端交付登录结果，并由 SPA 交换会话；明确错误回跳的脱敏要求，避免在跳转地址暴露会话令牌或内部错误详情。
+
 ## Requirements
 ### Requirement: 外部登录结果经一次性 handoff 交付
 

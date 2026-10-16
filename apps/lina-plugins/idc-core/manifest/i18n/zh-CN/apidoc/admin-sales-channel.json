@@ -83,9 +83,6 @@
   "plugins.idc_core.api.admin.v1.SalesChannelSettlementReviewReq.meta.tags": "IDC 销售渠道",
   "plugins.idc_core.api.admin.v1.SalesChannelSettlementReviewReq.meta.summary": "释放历史佣金申请",
   "plugins.idc_core.api.admin.v1.SalesChannelSettlementReviewReq.meta.dc": "只接受拒绝操作，用于释放尚未审核的历史申请；审批和新申请已停用。",
-  "plugins.idc_core.api.admin.v1.SalesChannelPayoutBatchCreateReq.meta.tags": "IDC 销售渠道",
-  "plugins.idc_core.api.admin.v1.SalesChannelPayoutBatchCreateReq.meta.summary": "已停用的佣金批量打款入口",
-  "plugins.idc_core.api.admin.v1.SalesChannelPayoutBatchCreateReq.meta.dc": "本接口不再接受操作。管理员请在代理销售中登记线下佣金打款。",
   "plugins.idc_core.api.admin.v1.SalesChannelPayoutResultReq.meta.tags": "IDC 销售渠道",
   "plugins.idc_core.api.admin.v1.SalesChannelPayoutResultReq.meta.summary": "释放打款失败的历史佣金",
   "plugins.idc_core.api.admin.v1.SalesChannelPayoutResultReq.meta.dc": "确认历史打款没有发生后，只接受失败结果来释放冻结款项；新打款和批次已停用。"

@@ -1,7 +1,9 @@
 # release-changelog-skill Specification
 
 ## Purpose
-TBD - created by archiving change add-release-changelog-skill. Update Purpose after archive.
+
+定义手动生成版本更新日志的技能流程，支持默认和显式 Git 比较范围，要求依据源码差异、提交及规范证据整理详尽的双语 Markdown，并保持输出格式和两种语言事实一致。
+
 ## Requirements
 ### Requirement: 技能必须手动生成版本更新日志
 

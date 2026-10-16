@@ -1,7 +1,9 @@
 # framework-capability-registry Specification
 
 ## Purpose
-TBD - created by archiving change refine-plugin-capability-boundaries. Update Purpose after archive.
+
+规定框架能力按领域组件注册与消费，通过提供方工厂封装插件内部实现，统一版本、冲突、描述符及运行状态治理，使能力发现与缓存失效具有可验证的单一规则。
+
 ## Requirements
 ### Requirement: 框架能力必须按领域归属独立 pluginservice 组件
 

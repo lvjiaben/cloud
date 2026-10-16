@@ -1,7 +1,9 @@
 # frontend-theme-switching Specification
 
 ## Purpose
-TBD - created by archiving change fix-theme-switch-performance. Update Purpose after archive.
+
+定义管理工作台主题切换的双向圆形揭幕、更新范围和即时持久化行为，要求图表等主题消费者保持实例稳定，并以自动化性能门禁检查交互关键路径。
+
 ## Requirements
 ### Requirement: 主题圆形揭幕必须保持双向方向
 

@@ -6,17 +6,17 @@ license: MIT
 
 # Karpathy Guidelines
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+Apply these guidelines proportionally to the task. Follow the user's confirmed intent and the repository's decision and validation rules.
 
-## 1. Think Before Coding
+## 1. Resolve Material Ambiguity
 
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
+**Use available evidence and distinguish business decisions from implementation choices.**
 
 Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
+- Check relevant code, requirements, and confirmed decisions before asking.
+- Ask only when unresolved alternatives materially change business results, permissions, cost, data ownership, safety boundaries, or the main user workflow. Pause dependent work and continue independent authorized work. Actual tool authorization requirements still apply.
+- Choose routine internal names, code organization, and equivalent implementations using project conventions; explain a tradeoff only when it helps the user assess the result.
+- Report conclusions, key evidence, and material assumptions concisely, following the project's communication preferences.
 
 ## 2. Simplicity First
 
@@ -26,7 +26,7 @@ Before implementing:
 - No abstractions for single-use code.
 - No "flexibility" or "configurability" that wasn't requested.
 - No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
+- Prefer the simplest implementation that preserves required behavior, error handling, and maintainability; line count alone is not a reason to rewrite.
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
@@ -50,16 +50,16 @@ The test: Every changed line should trace directly to the user's request.
 
 **Define success criteria. Loop until verified.**
 
-Transform tasks into verifiable goals:
+Choose validation that matches the change and the repository's requirements. Reuse passing evidence that still covers unchanged files and dependencies; do not add tests that merely repeat wording or implementation details. Examples for behavior changes:
 - "Add validation" → "Write tests for invalid inputs, then make them pass"
 - "Fix the bug" → "Write a test that reproduces it, then make it pass"
 - "Refactor X" → "Ensure tests pass before and after"
 
-For multi-step tasks, state a brief plan:
-```
+For multi-step tasks, state a brief plan when it helps coordinate the work:
+```text
 1. [Step] → verify: [check]
 2. [Step] → verify: [check]
 3. [Step] → verify: [check]
 ```
 
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+Use observable success criteria to complete authorized work independently.

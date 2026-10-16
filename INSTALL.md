@@ -83,7 +83,7 @@ On `Windows`, use `./temp/output/lina.exe` for the backend executable. Install a
 
 Install and enable a website plugin in the administration plugin list, then open “System settings → Website configuration”. Multiple website plugins can be installed, but only one is selected for display. Switching the selection removes the previous website from display without disabling or uninstalling its plugin; each template retains its settings. Set shared information here; the selected plugin defines its image, menu, and other fields. A website without an enabled template displays “Website is not enabled”.
 
-A full installation build already places website WASM and SSR services under `temp/output/websites/`. Each website plugin carries its own application source and build tools. The old `apps/lina-websites/sites/default` application is not required. Enter `apps/lina-plugins/website-default`, or copy the entire plugin outside the repository, then run:
+A full installation build already places website WASM and SSR services under `temp/output/websites/`. Each website plugin carries its own application source and build tools. The retired `apps/lina-websites` workspace has been removed. Enter `apps/lina-plugins/website-default`, or copy the entire plugin outside the repository, then run:
 
 ```text
 make install build

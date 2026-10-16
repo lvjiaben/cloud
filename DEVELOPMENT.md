@@ -46,7 +46,7 @@ Persist and back up `.site-runtime/installation/`, which contains instance keys,
 | Member navigation and product assignment | `apps/lina-plugins/idc-core/backend/internal/service/productdirectory/` |
 | Installation and startup tool | `apps/lina-plugins/idc-compliance/hack/tools/installation/main.go` |
 
-Website and customer templates are independent managed dynamic plugins. `plugin.yaml` declares capabilities; WASM delivers the plugin and public assets; browsers run HTML, JavaScript, and CSS. Default website templates can also run independent SSR services. Vue, React, jQuery, and plain scripts are all valid. The old `apps/lina-vben/apps/web-customer` has been removed; `apps/lina-websites/sites/default` is not the current website entry. Do not develop against those old locations.
+Website and customer templates are independent managed dynamic plugins. `plugin.yaml` declares capabilities; WASM delivers the plugin and public assets; browsers run HTML, JavaScript, and CSS. Default website templates can also run independent SSR services. Vue, React, jQuery, and plain scripts are all valid. The old `apps/lina-vben/apps/web-customer` has been removed; the retired `apps/lina-websites` workspace has also been removed. Do not recreate or develop against those old locations.
 
 The following detailed contracts are also displayed by the corresponding admin settings pages:
 

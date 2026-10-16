@@ -1,7 +1,9 @@
 # host-storage-menu-catalog Specification
 
 ## Purpose
-TBD - created by archiving change cloud-storage-providers. Update Purpose after archive.
+
+规定云对象存储插件配置入口挂载到系统设置的菜单归属，使不同存储提供方沿用统一的管理导航，而不在宿主菜单中为每个厂商建立相互独立的顶层入口。
+
 ## Requirements
 ### Requirement: 云存储配置菜单挂载到系统设置
 

@@ -1,7 +1,9 @@
 # plugin-host-domain-capabilities Specification
 
 ## Purpose
-TBD - created by archiving change add-plugin-host-domain-capabilities. Update Purpose after archive.
+
+定义插件经类型化领域能力访问宿主数据的分层接口、调用上下文和动态授权边界，要求方法级治理、租户及插件作用域隔离、有界批量性能和一致缓存，避免直接耦合宿主内部实现。
+
 ## Requirements
 ### Requirement: 插件宿主数据必须通过领域能力访问
 

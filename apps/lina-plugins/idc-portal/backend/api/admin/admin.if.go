@@ -11,11 +11,6 @@ import (
 )
 
 type IAdminV1 interface {
-	BrandGet(ctx context.Context, req *v1.BrandGetReq) (res *v1.BrandGetRes, err error)
-	BrandSave(ctx context.Context, req *v1.BrandSaveReq) (res *v1.BrandSaveRes, err error)
-	BrandPreview(ctx context.Context, req *v1.BrandPreviewReq) (res *v1.BrandPreviewRes, err error)
-	BrandPublish(ctx context.Context, req *v1.BrandPublishReq) (res *v1.BrandPublishRes, err error)
-	BrandRollback(ctx context.Context, req *v1.BrandRollbackReq) (res *v1.BrandRollbackRes, err error)
 	CustomerCenterConfigurationGet(ctx context.Context, req *v1.CustomerCenterConfigurationGetReq) (res *v1.CustomerCenterConfigurationGetRes, err error)
 	CustomerCenterConfigurationSave(ctx context.Context, req *v1.CustomerCenterConfigurationSaveReq) (res *v1.CustomerCenterConfigurationSaveRes, err error)
 	ExternalMenuList(ctx context.Context, req *v1.ExternalMenuListReq) (res *v1.ExternalMenuListRes, err error)

@@ -1,7 +1,9 @@
 # 分布式锁规范
 
 ## Purpose
-待定 - 由归档变更 distributed-locker 创建。归档后更新目的。
+
+定义分布式锁的获取、释放、状态检查和租约续期契约，明确集群协调后端、所有者令牌校验与 fencing token 预留，并约束动态插件协调使用按插件隔离的锁。
+
 ## Requirements
 ### Requirement: 分布式锁获取
 系统 SHALL 提供分布式锁获取功能，支持基于唯一名称的锁抢占。

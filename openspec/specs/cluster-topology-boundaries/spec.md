@@ -1,7 +1,9 @@
 # 集群拓扑边界规范
 
 ## Purpose
-待定 - 由归档变更 plugin-framework 创建。归档后更新目的。
+
+划分集群拓扑、节点身份与领导选举的职责归属，要求拓扑通过统一协调组件注入、事件携带节点身份，并以 Redis 锁状态判断主节点，避免多个组件维护相互矛盾的集群事实。
+
 ## Requirements
 ### Requirement: Cluster Topology Ownership
 

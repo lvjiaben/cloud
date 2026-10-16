@@ -1,7 +1,9 @@
 # cluster-coordination-config Specification
 
 ## Purpose
-TBD - created by archiving change redis-cluster-coordination. Update Purpose after archive.
+
+规定集群模式的协调后端、Redis 命名空间和启动探活配置，明确数据库支持检查的执行顺序以及配置模板表达，使集群启动在协调依赖不可用时给出确定的失败结果。
+
 ## Requirements
 ### Requirement: 集群模式必须声明协调后端
 系统 SHALL 在 `cluster.enabled=true` 时要求配置 `cluster.coordination`。当前版本唯一合法值 MUST 为 `redis`。当 `cluster.enabled=false` 时，系统 MUST 不要求 `cluster.coordination` 存在，也不得因为 Redis 配置缺失而影响单机启动。

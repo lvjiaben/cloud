@@ -1,7 +1,9 @@
 # go-unit-test-execution-efficiency Specification
 
 ## Purpose
-TBD - created by archiving change optimize-go-unit-test-runtime. Update Purpose after archive.
+
+规定 Go 单元测试在保留并发安全检测和测试隔离的前提下控制运行成本，限定真实 Wasm 样例的执行边界、复用插件测试设施，并输出可审计的耗时及基础设施诊断结果。
+
 ## Requirements
 ### Requirement: Go 单元测试必须保留并发安全检测覆盖
 Go 单元测试主路径 SHALL 保留 `-race` 对并发敏感代码的检测能力。降低总体耗时的实现 MUST 优先减少重复重型 fixture、真实链路执行和无测试包扫描成本，不得以无说明地移除主路径 race 覆盖作为默认优化手段。
