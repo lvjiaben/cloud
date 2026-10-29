@@ -18,7 +18,6 @@ func TestAcceptanceMockUsesRuntimeConfigurationIdentifiers(t *testing.T) {
 	sql := string(content)
 	for _, identifier := range []string{
 		"compliance-provider-aliyun-face",
-		"local-supplier-tencent_essbasic",
 		"local-supplier-nuonuo_invoice",
 	} {
 		if !strings.Contains(sql, identifier) {

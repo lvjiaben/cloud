@@ -4,8 +4,13 @@
 package provisionsource
 
 import (
+	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
+	"lina-plugin-idc-core/backend/cap/secretcap"
+	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	"strings"
 	"testing"
 
@@ -94,7 +99,7 @@ func TestGenerationRulesReachPersistedProvisionTask(t *testing.T) {
 	ctx, database := newProvisionSourceDatabase(t)
 	seedProvisionRoute(t, ctx, database)
 	secrets := newProvisionSecretSource(t)
-	service, err := New(database, secrets, principalReady, nil, provisionManagedBuilder{})
+	service, err := New(database, secrets, principalReady, nil, nil, provisionManagedBuilder{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,5 +148,151 @@ func TestGenerationRulesReachPersistedProvisionTask(t *testing.T) {
 	replay, err := service.CreateTask(ctx, request)
 	if err != nil || replay == nil || !replay.Reused || replay.ProviderTaskNo != created.ProviderTaskNo || secrets.createCalls() != 1 {
 		t.Fatalf("replay changed generated credentials: %v", err)
+	}
+}
+
+type recoveredProvisionManager struct {
+	secretcap.Manager
+	stored  secretcap.CreateResult
+	creates int
+}
+
+func (m *recoveredProvisionManager) RecoverCreate(context.Context, string) (secretcap.CreateResult, error) {
+	return m.stored, nil
+}
+func (m *recoveredProvisionManager) Create(context.Context, string, secretcap.PlaintextProducer) (secretcap.CreateResult, error) {
+	m.creates++
+	return secretcap.CreateResult{}, errors.New("fresh random plaintext conflicts with committed credential")
+}
+func TestPreparationRetryRecoversCredentialBeforeGenerating(t *testing.T) {
+	handle, err := secretcap.NewHandle("sec_preparation_retry")
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager := &recoveredProvisionManager{stored: secretcap.CreateResult{Handle: handle, Metadata: secretcap.Metadata{Configured: true}, Reused: true}}
+	service := &Service{random: bytes.NewReader(nil)}
+	for range 2 {
+		result, err := service.createProvisionCredential(t.Context(), manager, provisionresourcecap.TaskRequest{}, resourcecap.ServerGenerationPolicy{})
+		if err != nil || result.Handle != handle || !result.Reused {
+			t.Fatalf("preparation credential recovery err=%v", err)
+		}
+	}
+	if manager.creates != 0 {
+		t.Fatal("preparation retry generated another random credential")
+	}
+	manager.stored.Metadata.Configured = false
+	if _, err = service.createProvisionCredential(t.Context(), manager, provisionresourcecap.TaskRequest{}, resourcecap.ServerGenerationPolicy{}); err == nil {
+		t.Fatal("revoked credential resurrected")
+	}
+}
+
+func TestDefaultProvisionPasswordMatchesDeclaredCloudLimits(t *testing.T) {
+	service := &Service{random: rand.Reader}
+	err := service.passwordProducer()(func(value []byte) error {
+		if len(value) != 20 {
+			t.Fatal("default cloud password exceeds declared maximum")
+		}
+		for _, class := range []string{"abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "0123456789", "!@#$%*-_=+?"} {
+			if !strings.ContainsAny(string(value), class) {
+				t.Fatal("default cloud password misses required class")
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCustomerHostnameKeepsExactValueWithoutGeneratedPrefix(t *testing.T) {
+	request := provisionresourcecap.TaskRequest{Fulfillment: provisionresourcecap.FrozenFulfillmentIdentity{Quantity: 1}, ServerLogin: &provisionresourcecap.ServerLoginChoice{Hostname: "customer.example"}}
+	policy := resourcecap.ServerGenerationPolicy{HostnameCustomerInput: true, HostnamePrefix: "other"}
+	actual, err := generatedServerHostname(request, policy)
+	if err != nil || actual != "customer.example" {
+		t.Fatal("manual hostname changed")
+	}
+	policy.HostnameCustomerInput = false
+	if _, err = generatedServerHostname(request, policy); err == nil {
+		t.Fatal("disabled manual hostname accepted")
+	}
+	policy.HostnameCustomerInput = true
+	request.Fulfillment.Quantity = 2
+	if _, err = generatedServerHostname(request, policy); err == nil {
+		t.Fatal("manual hostname copied across servers")
+	}
+	request.ServerLogin = nil
+	if _, err = generatedServerHostname(request, policy); err != nil {
+		t.Fatal("historical automatic generation failed")
+	}
+}
+
+func TestCustomerPasswordUsesOwnedSecretWithoutGeneratingAnother(t *testing.T) {
+	secrets := newProvisionSecretSource(t)
+	original, err := secrets.Create(t.Context(), "customer-input", func(consume secretcap.Consumer) error { return consume([]byte("TypedPass123")) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := provisionresourcecap.TaskRequest{Fulfillment: provisionresourcecap.FrozenFulfillmentIdentity{Quantity: 1}, ServerLogin: &provisionresourcecap.ServerLoginChoice{PasswordSecretRef: original.Handle.OpaqueRef()}}
+	service := &Service{}
+	result, err := service.createProvisionCredential(t.Context(), secrets, request, resourcecap.ServerGenerationPolicy{PasswordCustomerInput: true})
+	if err != nil || !result.Handle.Equal(original.Handle) || secrets.producerCount != 1 {
+		t.Fatal("customer password was not reused privately")
+	}
+	if _, err = service.createProvisionCredential(t.Context(), secrets, request, resourcecap.ServerGenerationPolicy{}); err == nil {
+		t.Fatal("disabled customer password accepted")
+	}
+	request.Fulfillment.Quantity = 2
+	if _, err = service.createProvisionCredential(t.Context(), secrets, request, resourcecap.ServerGenerationPolicy{PasswordCustomerInput: true}); err == nil {
+		t.Fatal("customer password copied to multiple servers")
+	}
+}
+
+func TestCustomerServerLoginReachesDurableProvisionTaskPostgreSQL(t *testing.T) {
+	ctx, database := newProvisionSourceDatabase(t)
+	seedProvisionRoute(t, ctx, database)
+	secrets := newProvisionSecretSource(t)
+	stored, err := secrets.Create(ctx, "customer-purchase", func(consume secretcap.Consumer) error { return consume([]byte("ExactTypedPass7")) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	owner, err := New(database, secrets, principalReady, nil, nil, provisionManagedBuilder{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := frozenProvisionSourceRequest(t)
+	var product map[string]json.RawMessage
+	if err = json.Unmarshal(request.ProductConfiguration, &product); err != nil {
+		t.Fatal(err)
+	}
+	product["hostname_customer_input"] = json.RawMessage(`true`)
+	product["password_customer_input"] = json.RawMessage(`true`)
+	request.ProductConfiguration, err = json.Marshal(product)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.ServerLogin = &provisionresourcecap.ServerLoginChoice{Hostname: "customer.example", PasswordSecretRef: stored.Handle.OpaqueRef(), ChannelNo: "channel-provision-1"}
+	request.Fulfillment.Quantity = 1
+	request.RequestDigest, err = provisionresourcecap.TaskRequestDigest(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := owner.CreateTask(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var persisted struct{ Parameters, OwnerMetadata, PasswordSecretRef string }
+	err = database.GetScan(ctx, &persisted, `SELECT task.sanitized_parameters::text AS parameters, task.owner_metadata::text AS owner_metadata,binding.secret_ref AS password_secret_ref FROM plugin_idc_resource_task task JOIN plugin_idc_resource_task_secret_binding binding ON binding.task_no=task.task_no AND binding.binding_name='password' WHERE task.task_no=?`, task.ProviderTaskNo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(persisted.Parameters, `"hostname": "customer.example"`) || persisted.PasswordSecretRef != stored.Handle.OpaqueRef() || secrets.producerCount != 1 {
+		t.Fatal("customer choices did not reach durable provision task")
+	}
+	if strings.Contains(persisted.Parameters, "ExactTypedPass7") || strings.Contains(persisted.OwnerMetadata, "ExactTypedPass7") {
+		t.Fatal("plaintext password persisted in task")
+	}
+	replayed, err := owner.CreateTask(ctx, request)
+	if err != nil || replayed.ProviderTaskNo != task.ProviderTaskNo || secrets.producerCount != 1 {
+		t.Fatal("retry changed customer server credentials")
 	}
 }

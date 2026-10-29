@@ -48,8 +48,12 @@ type Task struct {
 	Version                                  int64
 }
 
+// DirectoryFilter restricts one plugin-owned customer list without changing ownership.
+type DirectoryFilter struct{ DirectoryNo, PluginID string }
+
 type Service interface {
-	ListEntitlements(context.Context, Actor, int64, int) ([]Entitlement, int64, error)
+	// ListEntitlements pages authorized customer-paid services or data-scoped staff results; optional directory/plugin filters are applied before paging. Invalid filters fail without broadening access.
+	ListEntitlements(context.Context, Actor, int64, int, ...DirectoryFilter) ([]Entitlement, int64, error)
 	GetEntitlement(context.Context, string, Actor) (*Entitlement, error)
 	Create(context.Context, CreateInput) (*Task, error)
 	Get(context.Context, string, Actor) (*Task, error)

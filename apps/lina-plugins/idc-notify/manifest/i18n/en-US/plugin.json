@@ -1,4 +1,4 @@
 {
   "plugin.idc-notify.name": "IDC Notifications",
-  "plugin.idc-notify.description": "Notification events, bilingual templates, delivery channels, retries, preferences, and delivery evidence."
+  "plugin.idc-notify.description": "Email and SMS notifications, bilingual templates, delivery channels, retries, and delivery records."
 }

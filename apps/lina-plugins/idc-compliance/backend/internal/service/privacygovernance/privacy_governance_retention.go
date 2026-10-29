@@ -28,28 +28,8 @@ type retentionRow struct {
 func validDataType(value DataType) bool {
 	switch value {
 	case DataPersonalVerificationMaterial, DataEnterpriseVerificationMaterial,
-		DataElectronicContractEvidence, DataTaxInvoiceEvidence,
-		DataSensitiveAccessAudit, DataLocalSensitiveExport:
+		DataTaxInvoiceEvidence:
 		return true
-	default:
-		return false
-	}
-}
-
-func assessmentOwnsData(assessment AssessmentType, dataType DataType) bool {
-	switch assessment {
-	case AssessmentPersonalVerification:
-		return dataType == DataPersonalVerificationMaterial
-	case AssessmentEnterpriseVerification:
-		return dataType == DataEnterpriseVerificationMaterial
-	case AssessmentElectronicContract:
-		return dataType == DataElectronicContractEvidence
-	case AssessmentTaxInvoice:
-		return dataType == DataTaxInvoiceEvidence
-	case AssessmentLocalSensitiveExport:
-		return dataType == DataLocalSensitiveExport
-	case AssessmentAISafeProjection:
-		return dataType == DataSensitiveAccessAudit
 	default:
 		return false
 	}
@@ -60,7 +40,7 @@ func (s *serviceImpl) ListRetentionPolicies(ctx context.Context) ([]RetentionPol
 		return nil, err
 	}
 	var rows []retentionRow
-	if err := s.database.GetScan(ctx, &rows, `SELECT policy_no, data_type_code, version, retention_days, status_code, created_by_user_id, created_at FROM plugin_idc_compliance_privacy_retention_policy WHERE tenant_id = ? AND status_code = 'active' ORDER BY data_type_code`, idccap.DefaultTenantID); err != nil {
+	if err := s.database.GetScan(ctx, &rows, `SELECT policy_no, data_type_code, version, retention_days, status_code, created_by_user_id, created_at FROM plugin_idc_compliance_privacy_retention_policy WHERE tenant_id = ? AND status_code = 'active' AND data_type_code IN ('personal_verification_material','enterprise_verification_material','tax_invoice_evidence') ORDER BY data_type_code`, idccap.DefaultTenantID); err != nil {
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
 	}
 	return projectRetentionRows(rows), nil
@@ -146,30 +126,27 @@ func (s *serviceImpl) SetRetentionPolicy(ctx context.Context, input RetentionPol
 	return s.getRetentionPolicy(ctx, policyNo)
 }
 
-func (s *serviceImpl) RequireCollection(ctx context.Context, assessmentType AssessmentType, dataType DataType) (*CollectionDecision, error) {
-	if s == nil || ctx == nil || ctx.Err() != nil || !assessmentOwnsData(assessmentType, dataType) {
-		return nil, bizerr.NewCode(CodePolicyRequired)
+func (s *serviceImpl) RequireSensitiveCollection(ctx context.Context, collectionOwner string, dataTypeCode string) (time.Time, error) {
+	dataType := DataType(dataTypeCode)
+	if s == nil || ctx == nil || ctx.Err() != nil || !validCollectionPair(collectionOwner, dataType) {
+		return time.Time{}, bizerr.NewCode(CodePolicyRequired)
 	}
 	var rows []struct {
-		AssessmentNo  string    `json:"assessment_no"`
 		PolicyNo      string    `json:"policy_no"`
 		RetentionDays int       `json:"retention_days"`
 		DatabaseNow   time.Time `json:"database_now"`
 	}
-	if err := s.database.GetScan(ctx, &rows, `SELECT a.assessment_no, p.policy_no, p.retention_days, CURRENT_TIMESTAMP AS database_now FROM plugin_idc_compliance_privacy_assessment a JOIN plugin_idc_compliance_privacy_retention_policy p ON p.tenant_id = a.tenant_id AND p.data_type_code = ? AND p.status_code = 'active' WHERE a.tenant_id = ? AND a.assessment_type_code = ? AND a.status_code = 'published' LIMIT 1`, dataType, idccap.DefaultTenantID, assessmentType); err != nil {
-		return nil, bizerr.NewCode(CodeUnavailable)
+	if err := s.database.GetScan(ctx, &rows, `SELECT policy_no, retention_days, CURRENT_TIMESTAMP AS database_now FROM plugin_idc_compliance_privacy_retention_policy WHERE tenant_id = ? AND data_type_code = ? AND status_code = 'active' LIMIT 1`, idccap.DefaultTenantID, dataType); err != nil {
+		return time.Time{}, bizerr.NewCode(CodeUnavailable)
 	}
 	if len(rows) != 1 {
-		return nil, bizerr.NewCode(CodePolicyRequired)
+		return time.Time{}, bizerr.NewCode(CodePolicyRequired)
 	}
 	row := rows[0]
-	if row.AssessmentNo == "" || row.PolicyNo == "" || row.RetentionDays <= 0 || row.DatabaseNow.IsZero() {
-		return nil, bizerr.NewCode(CodePolicyRequired)
+	if row.PolicyNo == "" || row.RetentionDays <= 0 || row.DatabaseNow.IsZero() {
+		return time.Time{}, bizerr.NewCode(CodePolicyRequired)
 	}
-	return &CollectionDecision{
-		AssessmentNo: row.AssessmentNo, PolicyNo: row.PolicyNo,
-		RetentionUntil: row.DatabaseNow.UTC().AddDate(0, 0, row.RetentionDays),
-	}, nil
+	return row.DatabaseNow.UTC().AddDate(0, 0, row.RetentionDays), nil
 }
 
 func (s *serviceImpl) getRetentionPolicy(ctx context.Context, policyNo string) (*RetentionPolicy, error) {
@@ -194,4 +171,18 @@ func projectRetentionRows(rows []retentionRow) []RetentionPolicy {
 		})
 	}
 	return items
+}
+
+// validCollectionPair binds a sensitive owner to its own retention category.
+func validCollectionPair(owner string, dataType DataType) bool {
+	switch owner {
+	case "personal_verification":
+		return dataType == DataPersonalVerificationMaterial
+	case "enterprise_verification":
+		return dataType == DataEnterpriseVerificationMaterial
+	case "tax_invoice":
+		return dataType == DataTaxInvoiceEvidence
+	default:
+		return false
+	}
 }

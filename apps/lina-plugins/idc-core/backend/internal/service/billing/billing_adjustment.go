@@ -1,5 +1,5 @@
 // This file owns immutable adjustment policy revisions, reviewed receipt and
-// waiver intents, idempotent replay, and second-person decisions.
+// waiver intents, idempotent replay, and authorized decisions.
 
 package billing
 
@@ -178,22 +178,17 @@ func (s *serviceImpl) createFinancialAdjustment(
 				return accountErr
 			}
 		}
-		policy, policyErr := loadAdjustmentPolicySnapshot(
-			ctx, s.database, command.CurrencyCode, command.AmountMinor,
-		)
-		if policyErr != nil {
-			return policyErr
+		if command.AdjustmentType == adjustmentTypeBalanceDebit {
+			if balanceErr := s.requireAvailableAdjustmentBalance(ctx, command.AccountNo, command.AmountMinor); balanceErr != nil {
+				return balanceErr
+			}
 		}
-		if isMarketingGrantAdjustment(command.AdjustmentType) {
-			policy.ApprovalRequired = true
-		}
+		// Exact action authorization is handled by the management owner. Historic
+		// review policies remain immutable evidence but do not delay new postings.
+		policy := adjustmentPolicySnapshot{}
 		request, insertErr := s.insertAdjustmentRequest(ctx, command, policy, requestDigest)
 		if insertErr != nil {
 			return insertErr
-		}
-		if policy.ApprovalRequired {
-			result = projectAdjustmentRequest(request, false)
-			return nil
 		}
 		result, insertErr = s.postFinancialAdjustment(
 			ctx, request, invoice, statement, false,
@@ -234,8 +229,7 @@ func (s *serviceImpl) ReviewAdjustment(
 			result, loadErr = s.projectFinancialAdjustment(ctx, request, true)
 			return loadErr
 		}
-		if !request.ApprovalRequired || request.StatusCode != string(AdjustmentStatusPendingReview) ||
-			request.RequestedBy == normalized.ReviewerID {
+		if !request.ApprovalRequired || request.StatusCode != string(AdjustmentStatusPendingReview) {
 			return bizerr.NewCode(CodeInvoiceConflict)
 		}
 		if insertErr := s.insertAdjustmentApproval(ctx, request, normalized); insertErr != nil {
@@ -395,30 +389,6 @@ func loadCurrentAdjustmentPolicy(
 	return policy, nil
 }
 
-func loadAdjustmentPolicySnapshot(
-	ctx context.Context,
-	database gdb.DB,
-	currency string,
-	amountMinor int64,
-) (adjustmentPolicySnapshot, error) {
-	policy, err := loadCurrentAdjustmentPolicy(ctx, database, currency)
-	if err != nil {
-		return adjustmentPolicySnapshot{}, err
-	}
-	if policy == nil {
-		return adjustmentPolicySnapshot{ApprovalRequired: true}, nil
-	}
-	if !canonicalDigestPattern.MatchString(policy.ContentDigest) ||
-		policy.ReviewThresholdMinor <= 0 || policy.Version <= 0 {
-		return adjustmentPolicySnapshot{}, bizerr.NewCode(CodeInvoiceIntegrity)
-	}
-	return adjustmentPolicySnapshot{
-		PolicyNo: policy.PolicyNo, Version: policy.Version,
-		ReviewThresholdMinor: policy.ReviewThresholdMinor,
-		ApprovalRequired:     amountMinor >= policy.ReviewThresholdMinor,
-	}, nil
-}
-
 func projectAdjustmentPolicy(row *entity.BillingAdjustmentPolicy, reused bool) *AdjustmentPolicy {
 	return &AdjustmentPolicy{
 		PolicyNo: row.PolicyNo, CurrencyCode: row.CurrencyCode,
@@ -509,11 +479,6 @@ func customerAdjustmentAccountSpec(command adjustmentCommand) accountSpec {
 		}
 	}
 	return customerBalanceSpec(command.CustomerNo)
-}
-
-func isMarketingGrantAdjustment(adjustmentType string) bool {
-	return adjustmentType == adjustmentTypeMarketingGrantPost ||
-		adjustmentType == adjustmentTypeMarketingGrantReverse
 }
 
 func nullableAdjustmentValue(value string) any {

@@ -1031,9 +1031,9 @@ export async function installMarketingOperationsMock(
         currencyCode: "CNY",
         customerNo: "CUS_marketing_customer_0002",
         grantNo: "grant-pending-002",
-        ledgerTransactionNo: "",
+        ledgerTransactionNo: "ledger-direct-grant",
         reused: false,
-        status: "pending_review",
+        status: "posted",
       }),
   );
   await page.route(
@@ -1046,9 +1046,9 @@ export async function installMarketingOperationsMock(
         currencyCode: "CNY",
         customerNo: "CUS_marketing_customer_0001",
         grantNo: "grant-ledger-001",
-        ledgerTransactionNo: "",
+        ledgerTransactionNo: "ledger-direct-grant",
         reused: false,
-        status: "pending_review",
+        status: "posted",
       }),
   );
   await page.route(

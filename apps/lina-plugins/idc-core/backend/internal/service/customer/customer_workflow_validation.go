@@ -247,7 +247,7 @@ func validateClosureBatch(
 func validClosureFindingCode(code ClosureFindingCode) bool {
 	switch code {
 	case ClosureFindingUnsettledFunds, ClosureFindingActiveServices,
-		ClosureFindingUnsettledInvoices, ClosureFindingActiveContracts,
+		ClosureFindingUnsettledInvoices,
 		ClosureFindingInProgressOperations, ClosureFindingLegalRetention:
 		return true
 	default:

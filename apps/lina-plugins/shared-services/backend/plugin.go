@@ -56,7 +56,7 @@ func registerRuntime(ctx context.Context, registrar pluginhost.HTTPRegistrar) er
 	if ctx == nil || ctx.Err() != nil || registrar == nil || registrar.Services() == nil {
 		return gerror.New("shared-services runtime requires host services")
 	}
-	runtime, err := composition.Build()
+	runtime, err := composition.Build(registrar.Services().Notifications(), registrar.Services().BizCtx())
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if ctx == nil || ctx.Err() != nil || registrar == nil || registrar.Services() == nil {
 		return gerror.New("shared-services jobs require host services")
 	}
-	runtime, err := composition.Build()
+	runtime, err := composition.Build(registrar.Services().Notifications(), registrar.Services().BizCtx())
 	if err != nil {
 		return err
 	}

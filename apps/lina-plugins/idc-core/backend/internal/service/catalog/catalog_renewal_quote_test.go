@@ -58,6 +58,11 @@ func TestBuildRenewalQuoteUsesRenewalScheduleWithoutSetupOrInventory(t *testing.
 			t.Fatalf("stopped status %s accepted renewal: %v", status, err)
 		}
 	}
+	products[0].Deleted = true
+	if _, err = buildRenewalQuote(input, products, rules, prices, taxes); err != nil {
+		t.Fatalf("deleted product blocked renewal: %v", err)
+	}
+	products[0].Deleted = false
 	products[0].ProductStatusCode = "active"
 
 	prices[0].RenewalAmountMinor = nil

@@ -10,6 +10,7 @@ const deliveryStatuses = new Set([
 const serviceStatuses = new Set(["active", "suspended", "expired", "terminated"]);
 
 export function deliveryStatusKey(status: string) {
+  if(status === "manual_processing") return "plugin.idc-core.fulfillment.status.manual_processing";
   return deliveryStatuses.has(status)
     ? `plugin.idc-core.commerce.orders.status.${status}`
     : "plugin.idc-core.commerce.orders.delivery.statusUnavailable";

@@ -41,9 +41,15 @@ func TestManagedManifestSatisfiesOwnerContracts(t *testing.T) {
 		t.Fatalf("resource owner rejected declaration: %v", err)
 	}
 	now := time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC)
-	contract := resourcecap.ServerFulfillmentContract{Version: resourcecap.ServerFulfillmentContractVersion, Fulfillment: fulfillment[0], Capabilities: finance.DeclaredCapabilitySnapshot(now), AdminSurfaces: manifest.AdminSurfaces, CustomerSurfaces: manifest.CustomerSurfaces}
-	if err = contract.ValidateAt(now); err != nil {
-		t.Fatalf("server owner rejected release: %v", err)
+	if err = finance.DeclaredCapabilitySnapshot(now).ValidateAt(now); err != nil {
+		t.Fatalf("invalid native provider capability evidence: %v", err)
+	}
+	if err = resourcecap.ValidateNativeProductEvidence(&capmodel.BusinessExtensionProviderEvidence{Point: fulfillment[0].Point, ContractVersion: fulfillment[0].Version, ProductConfiguration: fulfillment[0].ProductConfiguration, CustomerConfiguration: fulfillment[0].CustomerConfiguration, AuthorizedMethods: fulfillment[0].Methods, ProviderMetadata: fulfillment[0].ProviderMetadata}); err != nil {
+		t.Fatalf("resource owner rejected native purchase declaration: %v", err)
+	}
+	declared, err := productfulfillmentcap.ParseProviderDeclaration(fulfillment[0].ProviderMetadata, fulfillment[0].Methods)
+	if err != nil || declared.SaleImportProtocol != productfulfillmentcap.SaleImportProtocolNativeFinanceV1 || len(fulfillment[0].ProductConfiguration.Fields) != 2 {
+		t.Fatalf("native sale protocol or product identity fields missing: %+v %v", declared, err)
 	}
 	if fulfillment[0].InterfaceConfiguration != nil || providers[0].InterfaceConfiguration == nil ||
 		providers[0].InterfaceConfigurationCardinality != capmodel.InterfaceConfigurationCardinalityMultiple {

@@ -13,6 +13,8 @@ import {
   ref,
   watch,
 } from "vue";
+const props = defineProps<{initialRefundNo?: string}>();
+
 import { createNumberedPage } from "../numbered-page";
 
 import { useAccess } from "../plugin-access";
@@ -242,7 +244,6 @@ function reviewFormSchema(): VbenFormSchema[] {
       },
       fieldName: "evidence",
       label: t("refunds.evidenceRequired"),
-      rules: z.string().trim().min(1),
     },
   ];
 }
@@ -328,7 +329,7 @@ async function searchCustomers(keyword = "") {
   }
 }
 
-async function openDetail(refund: RefundSummary) {
+async function openDetail(refund: Pick<RefundSummary, "refundNo">) {
   if (!canQuery.value) return;
   detailOpen.value = true;
   detailLoading.value = true;
@@ -384,7 +385,7 @@ async function submitReview() {
     await reviewRefund(reviewTarget.value, {
       commentDigest: await digest(values.comment || "", false),
       decisionCode: values.decisionCode,
-      evidenceDigest: await digest(values.evidence, true),
+      evidenceDigest: await digest(values.evidence || "", false),
       expectedVersion: reviewTarget.value.version,
       requestNo: requestNo(),
     });
@@ -402,6 +403,10 @@ async function submitReview() {
     reviewLoading.value = false;
   }
 }
+
+watch(() => props.initialRefundNo, refundNo => {
+  if (refundNo && /^[A-Za-z0-9_:-]{1,40}$/.test(refundNo)) void openDetail({refundNo});
+}, {immediate: true});
 
 onBeforeUnmount(() => {
   sequence += 1;

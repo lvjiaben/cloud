@@ -38,7 +38,8 @@ func (c *ControllerV1) PurchaseConfigurationFreeze(ctx context.Context, req *v1.
 		return nil, err
 	}
 	frozen, err := c.commerce.FreezeAccountQuoteItemConfiguration(ctx, commerce.FreezeQuoteItemConfigurationInput{
-		QuoteItemNo: req.QuoteItemNo,
+		ServerLoginToken: req.ServerLoginToken,
+		QuoteItemNo:      req.QuoteItemNo,
 		Purchase: catalog.PublicPurchaseConfigurationInput{
 			PublicSlug: req.PublicSlug, ConfigurationRevision: req.ConfigurationRevision, Values: values,
 		},

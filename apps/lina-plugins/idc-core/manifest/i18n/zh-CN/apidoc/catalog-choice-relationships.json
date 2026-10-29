@@ -1,0 +1,12 @@
+{
+  "Read-only connector choice relationships for the current local directory; at most 16 relationships and 8192 value pairs": "当前本地接口目录中的只读选项关联，最多十六条关系和八千一百九十二个选项值对。",
+  "Read-only frozen commercial candidate filters keyed by customer field; never accepted as update input": "按客户配置项索引的只读商业选项限制，不作为更新输入接收。",
+  "Interface-declared parent parameter key": "接口声明的父参数标识。",
+  "Interface-declared child parameter key": "接口声明的子参数标识。",
+  "Allowed parent and child option value pairs": "允许使用的父子选项值对。",
+  "Parent option value from the connector directory": "接口目录中的父选项值。",
+  "Child option value from the connector directory": "接口目录中的子选项值。",
+  "Explicitly resolve a retained configuration as customer information only; true cannot accompany a product parameter binding": "明确将保留配置设为仅记录客户资料；为真时不能同时绑定商品参数",
+  "Read-only retained fields needing explicit parameter mapping or information-only selection after an interface change; at most 128 field keys": "只读的待重新对应接口字段，须选择新参数或明确仅记录资料；最多一百二十八个字段标识",
+  "Optional explicit upstream values keyed by local single-choice identifiers; at most 512 bindings of 256 bytes each; requires a declared product parameter binding and does not change commercial prices": "本地单选子项标识对应的可选上游值；最多五百一十二项，每个值最多二百五十六字节；必须绑定声明的商品参数，不改变商业价格"
+}

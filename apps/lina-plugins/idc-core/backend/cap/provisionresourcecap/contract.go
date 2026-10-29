@@ -16,11 +16,18 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 )
 
 const (
 	// ContractVersion is the exact resource-owner provisioning protocol version.
 	ContractVersion = "v1"
+	// FailureNonAcceptanceVerified distinguishes staff verification from supplier rejection.
+	FailureNonAcceptanceVerified = "operator_non_acceptance_verified"
+	// FailureRequestNotSent requires an immutable resource-owner proof that the
+	// provisioning invocation attempted no business HTTP submission.
+	FailureRequestNotSent = "provider_request_not_sent"
 	// OwnerID selects the built-in server resource owner without teaching the
 	// generic fulfillment core any server field semantics.
 	OwnerID = "idc-resource"
@@ -63,6 +70,12 @@ type OutcomeStatus string
 // Provider identifiers nor credentials; the resource owner resolves both from
 // the exact frozen interface instance and revision.
 type TaskRequest struct {
+	ServerLogin *ServerLoginChoice `json:",omitempty"`
+
+	// NativePurchase is one immutable imported unit. It never supplies account,
+	// callback or credential data; nil retains ordinary server provisioning.
+	NativePurchaseProtocol         productfulfillmentcap.SaleImportProtocol `json:",omitempty"`
+	NativePurchase                 *channelcommercecap.Purchase
 	OperationNo                    string
 	CustomerNo                     string
 	ConfigurationSnapshotNo        string
@@ -73,6 +86,14 @@ type TaskRequest struct {
 	ProductConfigurationDigest     string
 	CustomerConfiguration          json.RawMessage
 	RequestDigest                  string
+}
+
+// ServerLoginChoice carries only trusted resource-owned references. Password
+// plaintext never crosses the core/resource fulfillment boundary.
+type ServerLoginChoice struct {
+	Hostname          string
+	PasswordSecretRef string
+	ChannelNo         string
 }
 
 // FrozenFulfillmentIdentity is the provider-neutral paid order identity. Core
@@ -91,16 +112,20 @@ type FrozenFulfillmentIdentity struct {
 
 // TaskReadRequest binds a resource-owned task to its immutable core request.
 type TaskReadRequest struct {
-	ProviderTaskNo string
-	Request        TaskRequest
+	// RecoveryConfiguration is used only by a durably authorized recovery.
+	RecoveryConfiguration *RecoveryConfiguration
+	ProviderTaskNo        string
+	Request               TaskRequest
 }
 
 // Task is the bounded, secret-free resource-owner projection consumed by core.
 type Task struct {
-	ProviderTaskNo           string
-	ChannelNo                string
-	Status                   TaskStatus
-	FailureCode              string
+	ProviderTaskNo string
+	ChannelNo      string
+	Status         TaskStatus
+	FailureCode    string
+	// ResponseExcerpt is at most 4096 bytes, sanitized and credential-scanned by the resource owner.
+	ResponseExcerpt          string
 	CapabilityEvidenceNo     string
 	CapabilityEvidenceDigest string
 	EvidenceDigest           string
@@ -120,11 +145,33 @@ type OutcomeReport struct {
 	CoreEvidenceDigest string
 }
 
+// NonAcceptanceVerification carries an authorized staff fact, never a provider response.
+// Implementations require the caller transaction in the resource database group,
+// so audit failure rolls back both owners. Credentials change only after commit.
+type NonAcceptanceVerification struct {
+	Task        TaskReadRequest
+	ActorUserID int
+	Note        string
+	Digest      string
+}
+
 // Source is implemented by idc-resource and injected at startup.
 type Source interface {
-	CreateTask(context.Context, TaskRequest) (*Task, error)
+	// VerifyNonAcceptance records staff proof inside the caller shared database transaction.
+	// It never calls upstream; unknown history remains intact and accepted work is denied.
+	VerifyNonAcceptance(context.Context, NonAcceptanceVerification) error
+	// InspectRecovery reads bounded upstream choices after caller intent authorization.
+	InspectRecovery(context.Context, RecoverySelectionRequest) (*RecoveryEditor, error)
+	// ValidateRecovery freezes a compatible selection without changing paid terms.
+	ValidateRecovery(context.Context, RecoverySelectionRequest) (*RecoveryConfiguration, error)
+	CreateTask(context.Context, TaskRequest, ...*RecoveryConfiguration) (*Task, error)
 	ReadTask(context.Context, TaskReadRequest) (*Task, error)
 	ReportOutcome(context.Context, OutcomeReport) error
+	// RecoverRejected creates or reuses one successor for a definitively
+	// rejected or independently staff-verified task of the same paid intent.
+	// Unverified unknown or accepted work is denied.
+	// The caller must authorize and durably record the staff recovery command.
+	RecoverRejected(context.Context, TaskReadRequest) (*Task, error)
 }
 
 // ValidateTaskRequest rejects unbounded, ambiguous, or unfenced requests.
@@ -152,7 +199,22 @@ func TaskRequestDigest(request TaskRequest) (string, error) {
 }
 
 func validateTaskRequestFields(request TaskRequest) error {
-	return validateFrozenFulfillmentTaskRequest(request)
+	if err := validateFrozenFulfillmentTaskRequest(request); err != nil {
+		return err
+	}
+	if request.ServerLogin != nil && (request.Fulfillment.Quantity != 1 || !validReference(request.ServerLogin.ChannelNo, 64) || len(request.ServerLogin.Hostname) > 63 || len(request.ServerLogin.PasswordSecretRef) > 256) {
+		return gerror.New("server login choice is invalid")
+	}
+	if purchase := request.NativePurchase; purchase != nil {
+		input := channelcommercecap.ConfigurationInput{PublicSlug: purchase.PublicSlug, ConfigurationRevision: purchase.ConfigurationRevision, CurrencyCode: purchase.CurrencyCode, Values: purchase.Values}
+		if !request.NativePurchaseProtocol.NativePurchase() || input.Validate() != nil || len(purchase.CurrencyCode) != 3 || purchase.BillingTermToken == "" || len(purchase.BillingTermToken) > 4096 || purchase.PurchaseCycles != 1 || purchase.Quantity != 1 {
+			return gerror.New("native imported purchase must contain one paid unit and cycle")
+		}
+	}
+	if request.NativePurchase == nil && request.NativePurchaseProtocol != "" {
+		return gerror.New("native purchase protocol requires a purchase")
+	}
+	return nil
 }
 
 func validateFrozenFulfillmentTaskRequest(request TaskRequest) error {
@@ -178,6 +240,7 @@ func validateFrozenFulfillmentTaskRequest(request TaskRequest) error {
 
 func taskRequestDigest(request TaskRequest) (string, error) {
 	payload, err := json.Marshal(struct {
+		ServerLogin                    *ServerLoginChoice `json:",omitempty"`
 		ContractVersion                string
 		OperationNo                    string
 		CustomerNo                     string
@@ -188,7 +251,10 @@ func taskRequestDigest(request TaskRequest) (string, error) {
 		ProductConfiguration           json.RawMessage
 		ProductConfigurationDigest     string
 		CustomerConfiguration          json.RawMessage
+		NativePurchaseProtocol         productfulfillmentcap.SaleImportProtocol `json:",omitempty"`
+		NativePurchase                 *channelcommercecap.Purchase             `json:",omitempty"`
 	}{
+		ServerLogin:     request.ServerLogin,
 		ContractVersion: ContractVersion, OperationNo: request.OperationNo,
 		CustomerNo: request.CustomerNo, ConfigurationSnapshotNo: request.ConfigurationSnapshotNo,
 		Fulfillment: request.Fulfillment, InterfaceInstanceNo: request.InterfaceInstanceNo,
@@ -196,6 +262,8 @@ func taskRequestDigest(request TaskRequest) (string, error) {
 		ProductConfiguration:           request.ProductConfiguration,
 		ProductConfigurationDigest:     request.ProductConfigurationDigest,
 		CustomerConfiguration:          request.CustomerConfiguration,
+		NativePurchaseProtocol:         request.NativePurchaseProtocol,
+		NativePurchase:                 request.NativePurchase,
 	})
 	if err != nil {
 		return "", gerror.Wrap(err, "encode resource provisioning task request")
@@ -233,6 +301,7 @@ func ValidateTask(task Task) error {
 		!digestPattern.MatchString(task.CapabilityEvidenceDigest) ||
 		!digestPattern.MatchString(task.EvidenceDigest) || task.ObservedAt.IsZero() ||
 		!validTaskStatus(task.Status) ||
+		len(task.ResponseExcerpt) > 4096 || (task.ResponseExcerpt != "" && !json.Valid([]byte(task.ResponseExcerpt))) ||
 		(task.FailureCode != "" && !errorCodePattern.MatchString(task.FailureCode)) ||
 		(requiresFailure && task.FailureCode == "") || (forbidsFailure && task.FailureCode != "") ||
 		(terminal && (task.CompletedAt.IsZero() || task.CompletedAt.Before(task.ObservedAt))) ||

@@ -11,6 +11,7 @@ import (
 )
 
 type ICustomeraccountV1 interface {
+	AvatarUpload(ctx context.Context, req *v1.AvatarUploadReq) (res *v1.AvatarUploadRes, err error)
 	ProfileGet(ctx context.Context, req *v1.ProfileGetReq) (res *v1.ProfileGetRes, err error)
 	ProfileUpdate(ctx context.Context, req *v1.ProfileUpdateReq) (res *v1.ProfileUpdateRes, err error)
 	ContactList(ctx context.Context, req *v1.ContactListReq) (res *v1.ContactListRes, err error)

@@ -17,17 +17,23 @@ import (
 const testDownstreamToken = "supplier-callback-token-value"
 
 type nativeFinanceSupplier struct {
-	mu           sync.Mutex
-	server       *httptest.Server
-	invoiceID    string
-	hostID       string
-	addCount     int
-	settleCount  int
-	creditCount  int
-	settleStatus int
-	settleBody   string
-	creditStatus int
-	creditBody   string
+	catalogue      json.RawMessage
+	quote          json.RawMessage
+	quoteCount     int
+	receivedQuote  url.Values
+	receivedAdd    url.Values
+	receivedSettle url.Values
+	mu             sync.Mutex
+	server         *httptest.Server
+	invoiceID      string
+	hostID         string
+	addCount       int
+	settleCount    int
+	creditCount    int
+	settleStatus   int
+	settleBody     string
+	creditStatus   int
+	creditBody     string
 }
 
 func newNativeFinanceSupplier(t *testing.T) *nativeFinanceSupplier {
@@ -59,6 +65,12 @@ func (s *nativeFinanceSupplier) serveHTTP(response http.ResponseWriter, request 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	switch request.URL.Path {
+	case "/cart/get_product_config":
+		_, _ = response.Write(s.catalogue)
+	case "/cart/get_total":
+		s.receivedQuote = request.Form
+		s.quoteCount++
+		_, _ = response.Write(s.quote)
 	case "/cart/clear":
 		if request.Form.Get("downstream_token") != testDownstreamToken || request.Form.Get("downstream_id") != "1001" || request.Form.Get("downstream_url") != "https://platform.example.test/api/plugins/idc-resource/provider-callback" {
 			_, _ = response.Write([]byte(`{"status":422}`))
@@ -76,6 +88,7 @@ func (s *nativeFinanceSupplier) serveHTTP(response http.ResponseWriter, request 
 	case "/user_info":
 		_, _ = response.Write([]byte(`{"status":200,"user":{"currency":1}}`))
 	case "/cart/add_to_shop":
+		s.receivedAdd = request.Form
 		if request.Form.Get("pid") != "42" || request.Form.Get("configoption[11]") != "102" || request.Form.Get("password") != "" {
 			_, _ = response.Write([]byte(`{"status":422}`))
 			return
@@ -83,6 +96,7 @@ func (s *nativeFinanceSupplier) serveHTTP(response http.ResponseWriter, request 
 		s.addCount++
 		_, _ = response.Write([]byte(`{"status":200}`))
 	case "/cart/settle":
+		s.receivedSettle = request.Form
 		if request.Form.Get("downstream_token") != testDownstreamToken {
 			_, _ = response.Write([]byte(`{"status":422}`))
 			return
@@ -145,7 +159,11 @@ func (e *tlsConfidentialExecutor) Execute(_ string, _ uint8, payload json.RawMes
 			form.Set(binding.Field, e.secrets[binding.Slot])
 		}
 	}
-	request, err := http.NewRequest(instruction.Method, e.baseURL+instruction.Path, strings.NewReader(form.Encode()))
+	endpoint := e.baseURL + instruction.Path
+	if len(instruction.Query) > 0 {
+		endpoint += "?" + url.Values(instruction.Query).Encode()
+	}
+	request, err := http.NewRequest(instruction.Method, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}

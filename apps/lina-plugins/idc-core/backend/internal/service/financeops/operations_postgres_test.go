@@ -62,6 +62,9 @@ func (s *financeOperationsAuthorizerStub) AuthorizeAdjustmentDetail(context.Cont
 func (s *financeOperationsAuthorizerStub) AuthorizeManualReceiptCreate(context.Context) (int, error) {
 	return s.allow()
 }
+func (s *financeOperationsAuthorizerStub) AuthorizeBalanceAdjustmentCreate(context.Context) (int, error) {
+	return s.allow()
+}
 func (s *financeOperationsAuthorizerStub) AuthorizeInvoiceWaiverCreate(context.Context) (int, error) {
 	return s.allow()
 }
@@ -91,8 +94,14 @@ func (s *financeOperationsAuthorizerStub) AuthorizeFinancialExport(context.Conte
 type financeOperationsAuditStub struct{}
 
 func (financeOperationsAuditStub) AppendBusinessTransition(_ context.Context, input idccap.BusinessAuditTransition) error {
- if input.BeforeSnapshot == nil || input.AfterSnapshot == nil { return errors.New("missing audit snapshots") }
- switch input.ResultCode { case "succeeded", "denied", "failed", "result_unknown": default: return errors.New("invalid audit result") }
+	if input.BeforeSnapshot == nil || input.AfterSnapshot == nil {
+		return errors.New("missing audit snapshots")
+	}
+	switch input.ResultCode {
+	case "succeeded", "denied", "failed", "result_unknown":
+	default:
+		return errors.New("invalid audit result")
+	}
 
 	return nil
 }

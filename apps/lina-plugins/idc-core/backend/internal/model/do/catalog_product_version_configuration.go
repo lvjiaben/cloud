@@ -29,4 +29,5 @@ type CatalogProductVersionConfiguration struct {
 	ChangedBy                      any        //
 	CreatedAt                      *time.Time //
 	ChangedAt                      *time.Time //
+	CustomerPresentationSnapshot   any        //
 }

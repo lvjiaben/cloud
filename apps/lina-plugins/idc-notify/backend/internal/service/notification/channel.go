@@ -19,23 +19,36 @@ import (
 
 const channelTable = "plugin_idc_notify_channel"
 
+// supportedChannelCodes bounds active channel configuration to shipped channel kinds.
+var supportedChannelCodes = []string{
+	string(channelcap.KindEmail), string(channelcap.KindSMS),
+}
+
+// validChannelCode rejects removed and unknown channels before any operation.
+func validChannelCode(code string) bool {
+	for _, supported := range supportedChannelCodes {
+		if code == supported {
+			return true
+		}
+	}
+	return false
+}
+
 type channelRow struct {
-	ChannelCode                string     `orm:"channel_code"`
-	ChannelKind                string     `orm:"channel_kind"`
-	ProviderCode               *string    `orm:"provider_code"`
-	DisplayName                string     `orm:"display_name"`
-	StatusCode                 string     `orm:"status_code"`
-	BalanceState               string     `orm:"balance_state"`
-	ConfigurationGeneration    int64      `orm:"configuration_generation"`
-	ConfigurationVersion       int64      `orm:"configuration_version"`
-	CredentialSecretRef        *string    `orm:"credential_secret_ref"`
-	CredentialMaskedTail       string     `orm:"credential_masked_tail"`
-	CredentialUpdatedAt        *time.Time `orm:"credential_updated_at"`
-	NonSecretConfiguration     string     `orm:"non_secret_configuration"`
-	CallbackVerifiedGeneration int64      `orm:"callback_verified_generation"`
-	CallbackVerifiedAt         *time.Time `orm:"callback_verified_at"`
-	UpdatedAt                  time.Time  `orm:"updated_at"`
-	PendingQueryCount          int        `orm:"pending_query_count"`
+	ChannelCode             string     `orm:"channel_code"`
+	ChannelKind             string     `orm:"channel_kind"`
+	ProviderCode            *string    `orm:"provider_code"`
+	DisplayName             string     `orm:"display_name"`
+	StatusCode              string     `orm:"status_code"`
+	BalanceState            string     `orm:"balance_state"`
+	ConfigurationGeneration int64      `orm:"configuration_generation"`
+	ConfigurationVersion    int64      `orm:"configuration_version"`
+	CredentialSecretRef     *string    `orm:"credential_secret_ref"`
+	CredentialMaskedTail    string     `orm:"credential_masked_tail"`
+	CredentialUpdatedAt     *time.Time `orm:"credential_updated_at"`
+	NonSecretConfiguration  string     `orm:"non_secret_configuration"`
+	UpdatedAt               time.Time  `orm:"updated_at"`
+	PendingQueryCount       int        `orm:"pending_query_count"`
 }
 
 func (s *serviceImpl) ListChannels(ctx context.Context) ([]Channel, error) {
@@ -47,11 +60,11 @@ func (s *serviceImpl) ListChannels(ctx context.Context) ([]Channel, error) {
 		Fields(`c.channel_code,c.channel_kind,c.provider_code,c.display_name,c.status_code,
             c.balance_state,c.configuration_generation,c.configuration_version,
 			c.credential_secret_ref,c.credential_masked_tail,c.credential_updated_at,c.non_secret_configuration,
-			c.callback_verified_generation,c.callback_verified_at,c.updated_at,
+			c.updated_at,
             (SELECT COUNT(*) FROM plugin_idc_notify_delivery_task t
              WHERE t.tenant_id=c.tenant_id AND t.channel_code=c.channel_code AND t.external_boundary_crossed=TRUE
                AND t.status_code IN ('submitted','result_unknown','manual_review')) AS pending_query_count`).
-		Where("c.tenant_id", notificationTenantID).
+		Where("c.tenant_id", notificationTenantID).WhereIn("c.channel_code", supportedChannelCodes).
 		OrderAsc("c.channel_code").Scan(&rows)
 	if err != nil {
 		return nil, publicError(err)
@@ -112,7 +125,7 @@ func (s *serviceImpl) ConfigureChannel(ctx context.Context, input ChannelConfigu
 }
 
 func validateChannelConfigurationInput(input ChannelConfigurationInput) error {
-	if !stableCodePattern.MatchString(input.ChannelCode) || !stableCodePattern.MatchString(input.ProviderCode) ||
+	if !validChannelCode(input.ChannelCode) || !stableCodePattern.MatchString(input.ProviderCode) ||
 		input.ExpectedVersion <= 0 || !validateIdempotencyKey(input.IdempotencyKey) || len(input.Secrets) == 0 {
 		return bizerr.NewCode(CodeInvalid)
 	}
@@ -146,7 +159,7 @@ func (s *serviceImpl) changeChannelStatus(ctx context.Context, input ChannelLife
 			return loadErr
 		}
 		if row.ChannelCode == "" || row.ConfigurationVersion != input.ExpectedVersion ||
-			row.CredentialSecretRef == nil && input.ChannelCode != "in_app" {
+			row.CredentialSecretRef == nil {
 			return bizerr.NewCode(CodeConflict)
 		}
 		if ChannelStatus(row.StatusCode) == target {
@@ -182,10 +195,6 @@ SELECT count(*) FROM cancelled`, notificationTenantID, input.ChannelCode)
 				return bizerr.NewCode(CodeConflict)
 			}
 		}
-		if target == ChannelEnabled && input.ChannelCode == "wechat_official" &&
-			(row.CallbackVerifiedAt == nil || row.CallbackVerifiedGeneration != row.ConfigurationGeneration) {
-			return bizerr.NewCode(CodeChannelUnavailable)
-		}
 		result, updateErr := s.database.Model(channelTable).Ctx(ctx).
 			Where(tenantIDColumn, notificationTenantID).Where("channel_code", input.ChannelCode).
 			Where("configuration_version", input.ExpectedVersion).
@@ -202,7 +211,7 @@ SELECT count(*) FROM cancelled`, notificationTenantID, input.ChannelCode)
 }
 
 func (s *serviceImpl) ClearChannel(ctx context.Context, input ChannelLifecycleInput) (*Channel, error) {
-	if !validLifecycleInput(input) || input.ChannelCode == "in_app" {
+	if !validLifecycleInput(input) {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	actor, err := s.authorize(ctx, "notification-channel-"+input.ChannelCode)
@@ -262,7 +271,7 @@ func projectChannel(row channelRow) Channel {
 	item := Channel{
 		Code: row.ChannelCode, Kind: row.ChannelKind, ProviderCode: provider, DisplayName: row.DisplayName,
 		Status: ChannelStatus(row.StatusCode), BalanceState: row.BalanceState,
-		Configured:           row.CredentialSecretRef != nil || row.ChannelCode == "in_app",
+		Configured:           row.CredentialSecretRef != nil,
 		CredentialMaskedTail: row.CredentialMaskedTail, ConfigurationGeneration: row.ConfigurationGeneration,
 		PendingQueryCount: row.PendingQueryCount, Version: row.ConfigurationVersion, UpdatedAt: row.UpdatedAt.UTC(),
 	}
@@ -281,15 +290,6 @@ func projectChannel(row channelRow) Channel {
 			case providerTencentSMS:
 				item.Configuration.TencentSMS = &TencentSMSPublicConfiguration{Region: values["region"], SmsSdkAppID: values["sms_sdk_app_id"], SignName: values["sign_name"]}
 			}
-		case "wechat_official":
-			item.Configuration.WeChatOfficial = &WeChatOfficialPublicConfiguration{AppID: values["app_id"],
-				CallbackVerified:   row.CallbackVerifiedAt != nil && row.CallbackVerifiedGeneration == row.ConfigurationGeneration,
-				CallbackVerifiedAt: utcTimePointer(row.CallbackVerifiedAt)}
-		case "wechat_work":
-			agentID, _ := strconv.ParseInt(values["agent_id"], 10, 64)
-			item.Configuration.WeCom = &WeComPublicConfiguration{CorpID: values["corp_id"], AgentID: agentID}
-		case "signed_webhook":
-			item.Configuration.SignedWebhook = &SignedWebhookPublicConfiguration{EndpointURL: values["endpoint_url"]}
 		}
 	}
 	return item
@@ -328,7 +328,7 @@ func validateAdapterConfiguration(descriptor channelcap.Descriptor, nonSecret ma
 }
 
 func validLifecycleInput(input ChannelLifecycleInput) bool {
-	return stableCodePattern.MatchString(input.ChannelCode) && input.ExpectedVersion > 0 &&
+	return validChannelCode(input.ChannelCode) && input.ExpectedVersion > 0 &&
 		validateIdempotencyKey(input.IdempotencyKey) && input.Confirmed
 }
 

@@ -65,7 +65,7 @@ func projectImportPrices(
 		if _, ok := schema.fields[d.FieldKey]; !ok {
 			return nil, gerror.New("import price dimension field is unavailable")
 		}
-		quantity := d.PricingMode == ConfigurationPricePerUnit || d.PricingMode == ConfigurationPriceBandTotal
+		quantity := d.PricingMode == ConfigurationPricePerUnit || d.PricingMode == ConfigurationPriceBandTotal || d.PricingMode == ConfigurationPriceGraduated
 		if !validConfigurationPriceMode(d.PricingMode) {
 			return nil, gerror.New("invalid import configuration algorithm")
 		}
@@ -163,7 +163,7 @@ func projectImportPrices(
 		if field = schema.fields[field]; field == "" {
 			return nil, gerror.New("import price option field is invalid")
 		}
-		if mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal {
+		if mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal || mode == ConfigurationPriceGraduated {
 			value = ""
 		} else {
 			var err error

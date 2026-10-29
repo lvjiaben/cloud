@@ -4,10 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm run typecheck && vite build && pnpm run verify:bundle",
-    "test": "vitest run pages/provider-interface-configuration.test.ts pages/resource-page.test.ts pages/provider-catalog-state.test.ts pages/provider-catalog-import.test.ts",
+    "build": "pnpm run typecheck && vite build && pnpm run build:customer && pnpm run verify:bundle",
+    "test": "vitest run pages/provider-interface-configuration.test.ts pages/resource-page.test.ts pages/provider-catalog-state.test.ts pages/provider-catalog-import.test.ts && pnpm run test:management",
+    "test:management": "node ../../../lina-vben/node_modules/vitest/vitest.mjs run --config vitest.management.config.mjs",
     "typecheck": "vue-tsc --noEmit",
-    "verify:bundle": "node scripts/verify-build.mjs"
+    "verify:bundle": "node scripts/verify-build.mjs",
+    "build:customer": "pnpm --dir ../customer-ui install --frozen-lockfile && pnpm --dir ../customer-ui build"
   },
   "dependencies": {
     "@linapro/vben-plugin-adapter": "file:..\\..\\vben-adapter\\frontend",

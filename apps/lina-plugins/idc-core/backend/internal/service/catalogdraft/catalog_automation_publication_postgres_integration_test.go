@@ -76,6 +76,36 @@ func TestCatalogAutomationPublicationPostgreSQLIntegration(t *testing.T) {
 		t.Fatalf("publish accepting bound product: %v", err)
 	}
 
+	// Sale-state changes preserve the exact published pointer and reject stale commands.
+	product, loadErr := g.DB().GetOne(ctx, `SELECT product_no,version FROM plugin_idc_core_catalog_product WHERE current_version_no=?`, automationVersionNo(2))
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	sale := catalog.ProductSaleStateInput{ProductNo: product["product_no"].String(), VersionNo: automationVersionNo(2), ExpectedVersion: product["version"].Int64(), Active: false}
+	next, saleErr := publication.SetSaleState(ctx, sale)
+	if saleErr != nil {
+		t.Fatalf("stop sale: %v", saleErr)
+	}
+	if _, saleErr = publication.SetSaleState(ctx, sale); !bizerr.Is(saleErr, catalog.CodePublicationState) {
+		t.Fatalf("stale sale state: %v", saleErr)
+	}
+	// Stopping remains available with a stopped interface; resuming requires its admission.
+	if saleErr = automation.StopNewBusiness(ctx, interfaceRow.InterfaceInstanceNo); saleErr != nil {
+		t.Fatal(saleErr)
+	}
+	sale.ExpectedVersion = next
+	sale.Active = true
+	if _, saleErr = publication.SetSaleState(ctx, sale); saleErr == nil {
+		t.Fatal("resumed stopped provider")
+	}
+	if saleErr = automation.ResumeNewBusiness(ctx, interfaceRow.InterfaceInstanceNo); saleErr != nil {
+		t.Fatal(saleErr)
+	}
+	if _, saleErr = publication.SetSaleState(ctx, sale); saleErr != nil {
+		t.Fatalf("resume sale: %v", saleErr)
+	}
+	assertAutomationPublicationVersionStatus(t, ctx, automationVersionNo(2), "published")
+
 	if _, err = automation.Bind(ctx, productautomation.BindInput{
 		VersionNo: automationVersionNo(3), InterfaceInstanceNo: interfaceRow.InterfaceInstanceNo,
 	}); err != nil {
@@ -128,7 +158,7 @@ func TestCatalogAutomationPublicationPostgreSQLIntegration(t *testing.T) {
 	mismatched := *evidence
 	mismatched.DeclarationDigest = strings.Repeat("c", 64)
 	extensions.setEvidence(&mismatched)
-	assertAutomationPreviewCheck(t, ctx, publicationPreview, extensions, automationVersionNo(6), false, 0)
+	assertAutomationPreviewCheck(t, ctx, publicationPreview, extensions, automationVersionNo(6), true, 1)
 	extensions.setEvidence(evidence)
 
 	if _, err = automation.Bind(ctx, productautomation.BindInput{
@@ -232,6 +262,7 @@ func installAutomationPublicationMigration(t *testing.T, ctx context.Context) {
 		"019-catalog-tax-policy.sql",
 		"073-general-product-catalog.sql",
 		"074-product-automation-binding.sql",
+		"132-local-product-revision-binding.sql",
 	} {
 		migration, err := os.ReadFile(filepath.Join(root, name))
 		if err != nil {
@@ -308,6 +339,9 @@ CREATE TABLE IF NOT EXISTS sys_dict_data (
 );`
 
 const automationPublicationFulfillmentPolicyFixtureSQL = `
+CREATE TABLE IF NOT EXISTS plugin_idc_core_catalog_product_import(
+ id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,tenant_id INT,product_no TEXT,version_no TEXT,interface_instance_no TEXT,upstream_reference TEXT,source_snapshot JSONB);
+
 CREATE TABLE IF NOT EXISTS plugin_idc_core_product_automation_interface_configuration_revision (
  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
  tenant_id INT NOT NULL DEFAULT 0,

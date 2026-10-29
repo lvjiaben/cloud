@@ -12,7 +12,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/catalogdraft"
 	"lina-plugin-idc-core/backend/internal/service/commerce"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/customer"
 	"lina-plugin-idc-core/backend/internal/service/customermanagement"
 	"lina-plugin-idc-core/backend/internal/service/financeops"
@@ -48,7 +48,7 @@ type ControllerV1 struct {
 	financeCommands           billing.ManagementFinanceCommandService
 	credit                    billing.ManagementCreditReader
 	creditCommands            billing.ManagementCreditCommandService
-	contractPolicies          contractpolicy.ManagementService
+
 	financialOperations       financeops.Service
 	refunds                   billing.ManagementRefundService
 	marketingInsights         marketing.MarketingInsightsService
@@ -90,10 +90,6 @@ func NewV1(
 		}
 	}
 	return &ControllerV1{customerManagement: customerManagement, customerMutation: customerMutation, catalogManagement: catalogManagement, catalogWriter: catalogWriter, catalogPublication: catalogPublication, catalogPublicationPreview: catalogPublicationPreview, marketingOverview: marketingOverview, marketingDirectory: marketingDirectory, marketingAssetDirectory: marketingAssetDirectory, marketingActions: marketingActions, commerceRiskReview: commerceRiskReview, commerceOrders: commerceOrders, commerceAssistedQuotes: commerceAssistedQuotes, finance: finance, financeCommands: financeCommands, credit: credit, creditCommands: creditCommands}, nil
-}
-
-func BindContractPolicies(controller *ControllerV1, service contractpolicy.ManagementService) error {
-	return bindAdminDependency(controller, service, controller.contractPolicies != nil, func() { controller.contractPolicies = service })
 }
 
 // BindCatalogCopy attaches the existing owner services before route binding.

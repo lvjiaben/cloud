@@ -243,7 +243,7 @@ func (p *Provider) readSnapshotAccessories(ctx context.Context, resourceReferenc
 			return nil, errInvalidResponse
 		}
 		items = append(items, resourcecap.AccessoryItem{Kind: kind, ExternalRef: reference,
-			DisplayName: name, State: resourcecap.AccessoryStateAvailable, Data: projection})
+			DisplayName: name, State: resourcecap.AccessoryStateUnknown, Data: projection})
 	}
 	return items, nil
 }

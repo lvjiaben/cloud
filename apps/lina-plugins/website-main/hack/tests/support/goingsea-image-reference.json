@@ -1,0 +1,118 @@
+{
+  "images": [
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138729853995.png",
+      "local": "/lina/goingsea-assets/remoteL17138729853995.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17139321999715.png",
+      "local": "/lina/goingsea-assets/remoteL17139321999715.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138729205869.png",
+      "local": "/lina/goingsea-assets/remoteL17138729205869.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17139341909320.png",
+      "local": "/lina/goingsea-assets/remoteL17139341909320.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681798362.png",
+      "local": "/lina/goingsea-assets/remoteL17063681798362.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/local65b51d7304309.jpg",
+      "local": "/lina/goingsea-assets/local65b51d7304309.jpg"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/local65b51d681ab80.jpeg",
+      "local": "/lina/goingsea-assets/local65b51d681ab80.jpeg"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681802376.png",
+      "local": "/lina/goingsea-assets/remoteL17063681802376.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/local65b51d6d7b96f.jpeg",
+      "local": "/lina/goingsea-assets/local65b51d6d7b96f.jpeg"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681807597.png",
+      "local": "/lina/goingsea-assets/remoteL17063681807597.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681819770.png",
+      "local": "/lina/goingsea-assets/remoteL17063681819770.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681816166.png",
+      "local": "/lina/goingsea-assets/remoteL17063681816166.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681811685.png",
+      "local": "/lina/goingsea-assets/remoteL17063681811685.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681815858.png",
+      "local": "/lina/goingsea-assets/remoteL17063681815858.png"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/local65b51d70398c6.jpg",
+      "local": "/lina/goingsea-assets/local65b51d70398c6.jpg"
+    },
+    {
+      "source": "/themes/web/www/static/Partner/remoteL17063681823466.png",
+      "local": "/lina/goingsea-assets/remoteL17063681823466.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138728737820.png",
+      "local": "/lina/goingsea-assets/remoteL17138728737820.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138729853995.png",
+      "local": "/lina/goingsea-assets/remoteL17138729853995.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138729852306.png",
+      "local": "/lina/goingsea-assets/remoteL17138729852306.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138729502939.png",
+      "local": "/lina/goingsea-assets/remoteL17138729502939.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL17138730145615.png",
+      "local": "/lina/goingsea-assets/remoteL17138730145615.png"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL16905328288110.svg",
+      "local": "/lina/goingsea-assets/remoteL16905328288110.svg"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL16905328285515.svg",
+      "local": "/lina/goingsea-assets/remoteL16905328285515.svg"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL16905328293623.svg",
+      "local": "/lina/goingsea-assets/remoteL16905328293623.svg"
+    },
+    {
+      "source": "/themes/web/www/static/picture/remoteL16905328292905.svg",
+      "local": "/lina/goingsea-assets/remoteL16905328292905.svg"
+    }
+  ],
+  "variables": {
+    "banner_background": "/themes/web/www/static/banner/remoteL17139312433523.jpg",
+    "partner_background": "/themes/web/www/static/banner/remoteL17138735335796.png",
+    "navleft_banner": "/themes/web/www/static/picture/remoteL17017764609130.png"
+  },
+  "backgrounds": [
+    "/themes/web/www/static/banner/remoteL17139312433523.jpg",
+    "/themes/web/www/static/banner/remoteL17138735335796.png",
+    "/themes/web/www/static/picture/remoteL17017764609130.png",
+    "/themes/web/www/static/picture/remoteL17063678634493.jpg",
+    "/themes/web/www/static/picture/a_select.png",
+    "/themes/web/www/static/picture/remoteL17063679119861.png",
+    "/themes/web/www/static/picture/remoteL17128148186845.png"
+  ]
+}

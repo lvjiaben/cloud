@@ -7,7 +7,6 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        admin: resolve(import.meta.dirname, 'admin/certificates/index.html'),
         customer: resolve(import.meta.dirname, 'customer/certificates/index.html'),
       },
     },

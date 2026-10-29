@@ -1,0 +1,2382 @@
+﻿
+:root {
+  --sky-gap: 20px;
+  --borderS: #e1e6f0;
+  --primary: #165dff;
+  --primary-hover: #0f4bcc;
+  --primary-active: #0c3a99;
+  --secondary: #00b42a;
+  --secondary-hover: #009a22;
+  --secondary-active: #007a1a;
+  --success: #52c41a;
+  --success-hover: #3db014;
+  --success-active: #2f8c10;
+  --danger: #ff4d4f;
+  --danger-hover: #e33e41;
+  --danger-active: #c32f33;
+  --warning: #faad14;
+  --warning-hover: #d48806;
+  --warning-active: #b77905;
+  --info: #1890ff;
+  --info-hover: #1577e0;
+  --info-active: #135cb8;
+  --light: #f0f0f0;
+  --light-hover: #e6e6e6;
+  --light-active: #cccccc;
+  --dark: #333333;
+  --dark-hover: #262626;
+  --dark-active: #1a1a1a;
+  --text-color: #212529;
+  --light-text: #212529;
+  /*渐变按钮*/
+  /* 基础按钮渐变颜色 */
+  --buttPrimary: linear-gradient(180deg, #3D7FFF 0%, #0053FC 64%, #003BFC 100%);
+  --buttSuccess: linear-gradient(180deg, #00B610 0%, #009207 100%);
+  --buttWarning: linear-gradient(180deg, #FFA800 0%, #FF8A00 100%);
+  --buttDanger: linear-gradient(180deg, #FF4D4D 0%, #FF0000 100%);
+  --buttInfo: linear-gradient(180deg, #00A8FF 0%, #007AFF 100%);
+  --buttDefault: linear-gradient(180deg, #F5F5F5 0%, #E6E6E6 100%);
+  /* Hover状态渐变颜色 */
+  --buttPrimaryHover: linear-gradient(180deg, #559eff 0%, #0068fc 64%, #0052fc 100%);
+  --buttSuccessHover: linear-gradient(180deg, #12c81a 0%, #00a506 100%);
+  --buttWarningHover: linear-gradient(180deg, #ffb600 0%, #ff9700 100%);
+  --buttDangerHover: linear-gradient(180deg, #ff5e5e 0%, #ff0101 100%);
+  --buttInfoHover: linear-gradient(180deg, #22b8ff 0%, #008eff 100%);
+  --buttDefaultHover: linear-gradient(180deg, #ffffff 0%, #dcdcdc 100%);
+  /* Active状态渐变颜色 */
+  --buttPrimaryActive: linear-gradient(180deg, #2e6cdb 0%, #0046ca 64%, #003eda 100%);
+  --buttSuccessActive: linear-gradient(180deg, #008d07 0%, #007806 100%);
+  --buttWarningActive: linear-gradient(180deg, #e69500 0%, #e57c00 100%);
+  --buttDangerActive: linear-gradient(180deg, #e53b3b 0%, #e50000 100%);
+  --buttInfoActive: linear-gradient(180deg, #0091ea 0%, #0061ca 100%);
+  --buttDefaultActive: linear-gradient(180deg, #cbcbcb 0%, #bdbdbd 100%);
+  --disabled-bg: #e0e0e0;
+  --disabled-border: #d3d3d3;
+  --disabled-text: #a9a9a9;
+  --disabled-opacity: 0.65;
+  --btn-radius: 1px;
+  --btn-padding: 6px 15px;
+  --btn-height: 30px;
+  --btn-font-size: 12px;
+  --not-color: #999;
+}
+
+body.inherit {
+  background: #f7f7f9;
+  /* 自定义提示工具样式 */
+}
+body.inherit .btn {
+  padding: var(--btn-padding);
+  border-radius: var(--btn-radius);
+}
+body.inherit .btn-primary {
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+body.inherit .btn-primary:active {
+  background-color: var(--primary-active);
+}
+body.inherit .btn-primary:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--primary);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-primary.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-primary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-primary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-primary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-primary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-primary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-primary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-primary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-primary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-primary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-primary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-secondary {
+  background-color: var(--secondary);
+  border: 1px solid var(--secondary);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-secondary:hover {
+  background-color: var(--secondary-hover);
+}
+body.inherit .btn-secondary:active {
+  background-color: var(--secondary-active);
+}
+body.inherit .btn-secondary:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--secondary);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-secondary.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-secondary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-secondary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-secondary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-secondary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-secondary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-secondary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-secondary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-secondary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-secondary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-secondary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-success {
+  background-color: var(--success);
+  border: 1px solid var(--success);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-success:hover {
+  background-color: var(--success-hover);
+}
+body.inherit .btn-success:active {
+  background-color: var(--success-active);
+}
+body.inherit .btn-success:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--success);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-success.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-success.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-success.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-success.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-success.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-success.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-success.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-success.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-success.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-success.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-success.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-danger {
+  background-color: var(--danger);
+  border: 1px solid var(--danger);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-danger:hover {
+  background-color: var(--danger-hover);
+}
+body.inherit .btn-danger:active {
+  background-color: var(--danger-active);
+}
+body.inherit .btn-danger:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--danger);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-danger.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-danger.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-danger.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-danger.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-danger.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-danger.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-danger.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-danger.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-danger.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-danger.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-danger.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-warning {
+  background-color: var(--warning);
+  border: 1px solid var(--warning);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-warning:hover {
+  background-color: var(--warning-hover);
+}
+body.inherit .btn-warning:active {
+  background-color: var(--warning-active);
+}
+body.inherit .btn-warning:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--warning);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-warning.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-warning.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-warning.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-warning.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-warning.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-warning.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-warning.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-warning.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-warning.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-warning.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-warning.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-info {
+  background-color: var(--info);
+  border: 1px solid var(--info);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-info:hover {
+  background-color: var(--info-hover);
+}
+body.inherit .btn-info:active {
+  background-color: var(--info-active);
+}
+body.inherit .btn-info:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--info);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-info.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-info.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-info.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-info.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-info.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-info.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-info.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-info.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-info.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-info.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-info.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-light {
+  background-color: var(--light);
+  border: 1px solid var(--light);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+  color: var(--light-text);
+}
+body.inherit .btn-light:hover {
+  background-color: var(--light-hover);
+}
+body.inherit .btn-light:active {
+  background-color: var(--light-active);
+}
+body.inherit .btn-light:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--light);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-light.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-light.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-light.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-light.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-light.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-light.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-light.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-light.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-light.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-light.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-light.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-dark {
+  background-color: var(--dark);
+  border: 1px solid var(--dark);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-dark:hover {
+  background-color: var(--dark-hover);
+}
+body.inherit .btn-dark:active {
+  background-color: var(--dark-active);
+}
+body.inherit .btn-dark:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--dark);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-dark.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-dark.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-dark.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-dark.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-dark.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-dark.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-dark.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-dark.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-dark.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-dark.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-dark.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-primary-gradient {
+  background: var(--buttPrimary);
+  border: 1px solid var(--buttPrimary);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-primary-gradient:hover {
+  background: var(--buttPrimaryHover);
+}
+body.inherit .btn-primary-gradient:active {
+  background: var(--buttPrimaryActive);
+}
+body.inherit .btn-primary-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttPrimary);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-primary-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-primary-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-primary-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-primary-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-primary-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-primary-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-primary-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-primary-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-primary-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-primary-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-primary-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-success-gradient {
+  background: var(--buttSuccess);
+  border: 1px solid var(--buttSuccess);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-success-gradient:hover {
+  background: var(--buttSuccessHover);
+}
+body.inherit .btn-success-gradient:active {
+  background: var(--buttSuccessActive);
+}
+body.inherit .btn-success-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttSuccess);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-success-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-success-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-success-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-success-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-success-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-success-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-success-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-success-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-success-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-success-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-success-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-warning-gradient {
+  background: var(--buttWarning);
+  border: 1px solid var(--buttWarning);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-warning-gradient:hover {
+  background: var(--buttWarningHover);
+}
+body.inherit .btn-warning-gradient:active {
+  background: var(--buttWarningActive);
+}
+body.inherit .btn-warning-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttWarning);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-warning-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-warning-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-warning-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-warning-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-warning-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-warning-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-warning-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-warning-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-warning-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-warning-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-warning-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-danger-gradient {
+  background: var(--buttDanger);
+  border: 1px solid var(--buttDanger);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-danger-gradient:hover {
+  background: var(--buttDangerHover);
+}
+body.inherit .btn-danger-gradient:active {
+  background: var(--buttDangerActive);
+}
+body.inherit .btn-danger-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttDanger);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-danger-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-danger-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-danger-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-danger-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-danger-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-danger-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-danger-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-danger-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-danger-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-danger-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-danger-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-info-gradient {
+  background: var(--buttInfo);
+  border: 1px solid var(--buttInfo);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-info-gradient:hover {
+  background: var(--buttInfoHover);
+}
+body.inherit .btn-info-gradient:active {
+  background: var(--buttInfoActive);
+}
+body.inherit .btn-info-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttInfo);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-info-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-info-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-info-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-info-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-info-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-info-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-info-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-info-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-info-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-info-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-info-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-default-gradient {
+  background: var(--buttDefault);
+  border: 1px solid var(--buttDefault);
+  color: #fff;
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+  color: var(--light-text);
+}
+body.inherit .btn-default-gradient:hover {
+  background: var(--buttDefaultHover);
+}
+body.inherit .btn-default-gradient:active {
+  background: var(--buttDefaultActive);
+}
+body.inherit .btn-default-gradient:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--buttDefault);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-default-gradient.not-allowed {
+  background-color: #fff;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .btn-default-gradient.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-default-gradient.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-default-gradient.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-default-gradient.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-default-gradient.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-default-gradient.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-default-gradient.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-default-gradient.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-default-gradient.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-default-gradient.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-primary {
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-primary:hover {
+  background-color: var(--primary-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-primary:active {
+  background-color: var(--primary-active);
+  color: #fff;
+}
+body.inherit .btn-outline-primary:disabled {
+  border-color: currentColor;
+  color: var(--primary);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-primary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-primary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-primary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-primary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-primary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-primary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-primary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-primary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-primary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-primary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-secondary {
+  background-color: transparent;
+  border: 1px solid var(--secondary);
+  color: var(--secondary);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-secondary:hover {
+  background-color: var(--secondary-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-secondary:active {
+  background-color: var(--secondary-active);
+  color: #fff;
+}
+body.inherit .btn-outline-secondary:disabled {
+  border-color: currentColor;
+  color: var(--secondary);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-secondary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-secondary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-secondary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-secondary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-secondary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-secondary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-secondary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-secondary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-secondary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-secondary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-success {
+  background-color: transparent;
+  border: 1px solid var(--success);
+  color: var(--success);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-success:hover {
+  background-color: var(--success-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-success:active {
+  background-color: var(--success-active);
+  color: #fff;
+}
+body.inherit .btn-outline-success:disabled {
+  border-color: currentColor;
+  color: var(--success);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-success.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-success.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-success.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-success.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-success.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-success.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-success.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-success.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-success.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-success.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-danger {
+  background-color: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-danger:hover {
+  background-color: var(--danger-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-danger:active {
+  background-color: var(--danger-active);
+  color: #fff;
+}
+body.inherit .btn-outline-danger:disabled {
+  border-color: currentColor;
+  color: var(--danger);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-danger.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-danger.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-danger.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-danger.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-danger.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-danger.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-danger.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-danger.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-danger.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-danger.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-warning {
+  background-color: transparent;
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-warning:hover {
+  background-color: var(--warning-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-warning:active {
+  background-color: var(--warning-active);
+  color: #fff;
+}
+body.inherit .btn-outline-warning:disabled {
+  border-color: currentColor;
+  color: var(--warning);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-warning.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-warning.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-warning.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-warning.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-warning.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-warning.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-warning.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-warning.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-warning.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-warning.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-info {
+  background-color: transparent;
+  border: 1px solid var(--info);
+  color: var(--info);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-info:hover {
+  background-color: var(--info-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-info:active {
+  background-color: var(--info-active);
+  color: #fff;
+}
+body.inherit .btn-outline-info:disabled {
+  border-color: currentColor;
+  color: var(--info);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-info.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-info.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-info.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-info.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-info.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-info.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-info.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-info.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-info.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-info.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-default {
+  background-color: transparent;
+  border: 1px solid #d3d3d3;
+  color: #262626;
+}
+body.inherit .btn-outline-default:hover {
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+body.inherit .btn-outline-light {
+  background-color: transparent;
+  border: 1px solid var(--light);
+  color: var(--light);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+  color: var(--not-color);
+  border: 1px solid #e1e6f0;
+}
+body.inherit .btn-outline-light:hover {
+  background-color: var(--light-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-light:active {
+  background-color: var(--light-active);
+  color: #fff;
+}
+body.inherit .btn-outline-light:disabled {
+  border-color: currentColor;
+  color: var(--light);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-light.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-light.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-light.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-light.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-light.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-light.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-light.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-light.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-light.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-light.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-light:hover, body.inherit .btn-outline-light:active {
+  color: var(--light-text);
+}
+body.inherit .btn-outline-dark {
+  background-color: transparent;
+  border: 1px solid var(--dark);
+  color: var(--dark);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-outline-dark:hover {
+  background-color: var(--dark-hover);
+  color: #fff;
+}
+body.inherit .btn-outline-dark:active {
+  background-color: var(--dark-active);
+  color: #fff;
+}
+body.inherit .btn-outline-dark:disabled {
+  border-color: currentColor;
+  color: var(--dark);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-outline-dark.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-outline-dark.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-outline-dark.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-outline-dark.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-outline-dark.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-outline-dark.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-outline-dark.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-outline-dark.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-outline-dark.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-outline-dark.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-primary {
+  background-color: transparent;
+  border: none;
+  color: var(--primary);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-primary:hover {
+  color: var(--primary-hover);
+}
+body.inherit .btn-text-primary:disabled {
+  color: var(--primary);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-primary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-primary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-primary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-primary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-primary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-primary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-primary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-primary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-primary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-primary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-secondary {
+  background-color: transparent;
+  border: none;
+  color: var(--secondary);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-secondary:hover {
+  color: var(--secondary-hover);
+}
+body.inherit .btn-text-secondary:disabled {
+  color: var(--secondary);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-secondary.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-secondary.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-secondary.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-secondary.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-secondary.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-secondary.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-secondary.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-secondary.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-secondary.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-secondary.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-success {
+  background-color: transparent;
+  border: none;
+  color: var(--success);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-success:hover {
+  color: var(--success-hover);
+}
+body.inherit .btn-text-success:disabled {
+  color: var(--success);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-success.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-success.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-success.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-success.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-success.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-success.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-success.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-success.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-success.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-success.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-danger {
+  background-color: transparent;
+  border: none;
+  color: var(--danger);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-danger:hover {
+  color: var(--danger-hover);
+}
+body.inherit .btn-text-danger:disabled {
+  color: var(--danger);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-danger.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-danger.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-danger.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-danger.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-danger.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-danger.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-danger.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-danger.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-danger.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-danger.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-warning {
+  background-color: transparent;
+  border: none;
+  color: var(--warning);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-warning:hover {
+  color: var(--warning-hover);
+}
+body.inherit .btn-text-warning:disabled {
+  color: var(--warning);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-warning.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-warning.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-warning.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-warning.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-warning.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-warning.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-warning.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-warning.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-warning.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-warning.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-info {
+  background-color: transparent;
+  border: none;
+  color: var(--info);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-info:hover {
+  color: var(--info-hover);
+}
+body.inherit .btn-text-info:disabled {
+  color: var(--info);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-info.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-info.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-info.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-info.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-info.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-info.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-info.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-info.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-info.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-info.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-light {
+  background-color: transparent;
+  border: none;
+  color: var(--light);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+  color: var(--not-color);
+}
+body.inherit .btn-text-light:hover {
+  color: var(--light-hover);
+}
+body.inherit .btn-text-light:disabled {
+  color: var(--light);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-light.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-light.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-light.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-light.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-light.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-light.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-light.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-light.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-light.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-light.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-text-dark {
+  background-color: transparent;
+  border: none;
+  color: var(--dark);
+  font-size: var(--btn-font-size);
+  font-weight: 400;
+}
+body.inherit .btn-text-dark:hover {
+  color: var(--dark-hover);
+}
+body.inherit .btn-text-dark:disabled {
+  color: var(--dark);
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .btn-text-dark.fz12 {
+  font-size: 12px;
+}
+body.inherit .btn-text-dark.fz13 {
+  font-size: 13px;
+}
+body.inherit .btn-text-dark.fz14 {
+  font-size: 14px;
+}
+body.inherit .btn-text-dark.fz15 {
+  font-size: 15px;
+}
+body.inherit .btn-text-dark.fz16 {
+  font-size: 16px;
+}
+body.inherit .btn-text-dark.fz18 {
+  font-size: 18px;
+}
+body.inherit .btn-text-dark.fw300 {
+  font-weight: 300;
+}
+body.inherit .btn-text-dark.fw500 {
+  font-weight: 500;
+}
+body.inherit .btn-text-dark.fw700 {
+  font-weight: 900;
+}
+body.inherit .btn-text-dark.fw900 {
+  font-weight: 900;
+}
+body.inherit .text-primary {
+  color: var(--primary) !important;
+}
+body.inherit .text-secondary {
+  color: var(--secondary) !important;
+}
+body.inherit .text-success {
+  color: var(--success) !important;
+}
+body.inherit .text-danger {
+  color: var(--danger) !important;
+}
+body.inherit .text-warning {
+  color: var(--warning) !important;
+}
+body.inherit .text-info {
+  color: var(--info) !important;
+}
+body.inherit .text-light {
+  color: var(--light) !important;
+}
+body.inherit .text-dark {
+  color: var(--dark) !important;
+}
+body.inherit .bg-dark {
+  background-color: var(--dark) !important;
+}
+body.inherit .bg-primary {
+  background: var(--primary) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-primary:hover {
+  background: var(--primary-hover) !important;
+}
+body.inherit .bg-primary:active {
+  background: var(--primary-active) !important;
+}
+body.inherit .bg-primary:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--primary) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-primary.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-primary.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-primary.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-primary.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-primary.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-primary.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-primary.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-primary.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-primary.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-primary.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-primary.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-secondary {
+  background: var(--secondary) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-secondary:hover {
+  background: var(--secondary-hover) !important;
+}
+body.inherit .bg-secondary:active {
+  background: var(--secondary-active) !important;
+}
+body.inherit .bg-secondary:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--secondary) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-secondary.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-secondary.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-secondary.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-secondary.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-secondary.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-secondary.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-secondary.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-secondary.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-secondary.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-secondary.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-secondary.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-success {
+  background: var(--success) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-success:hover {
+  background: var(--success-hover) !important;
+}
+body.inherit .bg-success:active {
+  background: var(--success-active) !important;
+}
+body.inherit .bg-success:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--success) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-success.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-success.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-success.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-success.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-success.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-success.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-success.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-success.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-success.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-success.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-success.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-danger {
+  background: var(--danger) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-danger:hover {
+  background: var(--danger-hover) !important;
+}
+body.inherit .bg-danger:active {
+  background: var(--danger-active) !important;
+}
+body.inherit .bg-danger:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--danger) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-danger.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-danger.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-danger.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-danger.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-danger.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-danger.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-danger.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-danger.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-danger.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-danger.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-danger.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-warning {
+  background: var(--warning) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-warning:hover {
+  background: var(--warning-hover) !important;
+}
+body.inherit .bg-warning:active {
+  background: var(--warning-active) !important;
+}
+body.inherit .bg-warning:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--warning) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-warning.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-warning.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-warning.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-warning.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-warning.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-warning.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-warning.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-warning.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-warning.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-warning.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-warning.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-info {
+  background: var(--info) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-info:hover {
+  background: var(--info-hover) !important;
+}
+body.inherit .bg-info:active {
+  background: var(--info-active) !important;
+}
+body.inherit .bg-info:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--info) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-info.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-info.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-info.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-info.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-info.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-info.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-info.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-info.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-info.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-info.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-info.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-dark {
+  background: var(--dark) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-dark:hover {
+  background: var(--dark-hover) !important;
+}
+body.inherit .bg-dark:active {
+  background: var(--dark-active) !important;
+}
+body.inherit .bg-dark:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--dark) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-dark.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-dark.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-dark.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-dark.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-dark.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-dark.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-dark.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-dark.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-dark.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-dark.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-dark.fw900 {
+  font-weight: 900;
+}
+body.inherit .bg-error {
+  background: var(--danger) !important;
+  color: #fff;
+  font-weight: 400;
+}
+body.inherit .bg-error:hover {
+  background: var(--danger-hover) !important;
+}
+body.inherit .bg-error:active {
+  background: var(--danger-active) !important;
+}
+body.inherit .bg-error:disabled {
+  opacity: var(--disabled-opacity);
+  background-color: var(--danger) !important;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+body.inherit .bg-error.not-allowed {
+  background-color: #fff !important;
+  border-color: #e1e6f0;
+  color: var(--not-color);
+  opacity: 0.8;
+}
+body.inherit .bg-error.fz12 {
+  font-size: 12px;
+}
+body.inherit .bg-error.fz13 {
+  font-size: 13px;
+}
+body.inherit .bg-error.fz14 {
+  font-size: 14px;
+}
+body.inherit .bg-error.fz15 {
+  font-size: 15px;
+}
+body.inherit .bg-error.fz16 {
+  font-size: 16px;
+}
+body.inherit .bg-error.fz18 {
+  font-size: 18px;
+}
+body.inherit .bg-error.fw300 {
+  font-weight: 300;
+}
+body.inherit .bg-error.fw500 {
+  font-weight: 500;
+}
+body.inherit .bg-error.fw700 {
+  font-weight: 900;
+}
+body.inherit .bg-error.fw900 {
+  font-weight: 900;
+}
+body.inherit .btn-size2 {
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  font-weight: 500;
+}
+body.inherit .custom-button.text-white,
+body.inherit .btn-size4 {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}
+body.inherit .btn-size6 {
+  padding: 6px 12px !important;
+  font-size: 13px;
+}
+body.inherit #toast-container > div {
+  opacity: 0.99;
+  box-shadow: 0 2px 4px 0 rgba(54, 58, 80, 0.32);
+}
+body.inherit .toast-success {
+  border: 1px solid #00A870 !important;
+  background-color: rgba(0, 168, 112, 0.96) !important;
+}
+body.inherit .toast-info {
+  border: 1px solid #165DFF !important;
+  background-color: rgba(22, 93, 255, 0.96) !important;
+}
+body.inherit .toast-warning {
+  border: 1px solid #FFA940 !important;
+  background-color: rgba(255, 169, 64, 0.96) !important;
+}
+body.inherit .toast-error {
+  background-color: rgba(255, 77, 79, 0.96) !important;
+  border: 1px solid #FF4D4F !important;
+}
+body.inherit .h1, body.inherit .h2, body.inherit .h3, body.inherit .h4, body.inherit .h5, body.inherit .h6, body.inherit h1, body.inherit h2, body.inherit h3, body.inherit h4, body.inherit h5, body.inherit h6 {
+  color: var(--txtcolor);
+}
+body.inherit.modal-open .modal {
+  background: rgba(0, 0, 0, 0.85);
+}
+body.inherit.modal-open .modal .modal-content {
+  border-radius: 1px;
+}
+body.inherit .search-box .form-control {
+  border: 1px solid var(--borderS);
+  border-radius: 1px;
+}
+body.inherit .search-box .search-icon {
+  font-size: 24px;
+  color: var(--primary);
+  left: 8px;
+  top: -1px;
+}
+body.inherit .bx-search-alt:before {
+  content: "\e6ec";
+  font-family: "Uicon" !important;
+}
+body.inherit .custom-control-input:checked ~ .custom-control-label::before {
+  color: #fff;
+  border-color: var(--cart_mainColor);
+  background-color: var(--cart_mainColor);
+  border-radius: 1px;
+}
+body.inherit .custom-checkbox .custom-control-label::before {
+  border-radius: 1px;
+}
+body.inherit .bootstrap-select .bs-ok-default:after {
+  width: 7px !important;
+  color: var(--primary);
+  height: 10px !important;
+  margin-top: 8px;
+  border-width: 0 2px 2px 0 !important;
+}
+body.inherit .bootstrap-select .dropdown-menu li a {
+  height: 40px;
+  line-height: 40px;
+  padding: 0px 20px;
+  color: #666;
+  border-bottom: 1px solid rgba(220, 223, 238, 0.26);
+  width: 100%;
+}
+body.inherit .bootstrap-select .dropdown-menu > div.inner {
+  display: block;
+}
+body.inherit .bootstrap-select .dropdown-menu li a.selected {
+  background: #f5f5f5;
+  color: #000;
+}
+body.inherit textarea.form-control {
+  min-height: 230px !important;
+  max-height: max-content;
+}
+body.inherit .sk-table-pageinfo .bootstrap-select:not([class*=col-]):not([class*=form-control]):not(.input-group-btn) {
+  width: 66px;
+}
+body.inherit .sk-table-pageinfo .bootstrap-select > .dropdown-toggle {
+  padding: 4px;
+}
+body.inherit .sk-table-pageinfo .bootstrap-select::after {
+  top: 13px;
+}
+body.inherit .toggle-switch {
+  position: relative;
+  display: inline-block;
+  height: 24px;
+  min-width: 46px;
+}
+body.inherit .toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+body.inherit .toggle-switch .toggle-label {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgb(201, 205, 212);
+  transition: 0.4s;
+  height: 24px;
+  min-width: 46px;
+  border-radius: 2px;
+}
+body.inherit .toggle-switch .toggle-label:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: white;
+  transition: 0.4s;
+  border: none;
+  border-radius: 2px;
+}
+body.inherit .toggle-switch input:checked + .toggle-label {
+  background-color: var(--primary);
+}
+body.inherit .toggle-switch input:checked + .toggle-label:before {
+  transform: translateX(22px) translateY(-50%);
+}
+body.inherit .card {
+  border-radius: 1px;
+}
+body.inherit .input-group-text {
+  border-radius: 1px;
+}
+body.inherit .form-control {
+  border: 1px solid var(--cart-background) !important;
+  border-radius: 1px !important;
+}
+body.inherit input[type=radio],
+body.inherit input[type=checkbox] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  border: 1px solid #ccc;
+  border-radius: 1px;
+  outline: none;
+  background-color: white;
+  transition: background-color 0.3s;
+  margin-top: 0;
+  cursor: pointer;
+}
+body.inherit input[type=radio]::after,
+body.inherit input[type=checkbox]::after {
+  background: transparent;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+  transition: border-color 0.1s cubic-bezier(0, 0, 1, 1);
+  content: "";
+  border: 2px solid transparent;
+}
+body.inherit input[type=radio]:hover,
+body.inherit input[type=checkbox]:hover {
+  border-color: #e0e0e0;
+}
+body.inherit input[type=radio]:hover::after,
+body.inherit input[type=checkbox]:hover::after {
+  border-color: #eee;
+}
+body.inherit input[type=radio]:checked,
+body.inherit input[type=checkbox]:checked {
+  background-color: var(--cart_mainColor);
+  border: 1px solid var(--cart_mainColor);
+}
+body.inherit input[type=radio]:checked::before,
+body.inherit input[type=checkbox]:checked::before {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  content: "";
+  background-repeat: no-repeat;
+  background-position: 43% 46%;
+  background-size: 50%;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23fff' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
+  cursor: pointer;
+}
+body.inherit .tooltip-inner {
+  background-color: #fff;
+  color: #000;
+  font-size: 14px;
+  border-radius: 4px;
+  padding: 8px 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+body.inherit .tooltip.bs-tooltip-right .arrow::before,
+body.inherit .tooltip.bs-tooltip-left .arrow::before,
+body.inherit .tooltip.bs-tooltip-top .arrow::before,
+body.inherit .tooltip.bs-tooltip-bottom .arrow::before {
+  border-color: transparent;
+}
+body.inherit .tooltip.bs-tooltip-right .arrow::before {
+  border-right-color: #fff;
+}
+body.inherit .tooltip.bs-tooltip-left .arrow::before {
+  border-left-color: #fff;
+}
+body.inherit .tooltip.bs-tooltip-top .arrow::before {
+  border-top-color: #fff;
+}
+body.inherit .tooltip.bs-tooltip-bottom .arrow::before {
+  border-bottom-color: #fff;
+}
+body.inherit .spinner-border-sm {
+  color: rgb(0, 86, 255);
+  width: 15px;
+  height: 15px;
+  border-width: 3px;
+  top: 1px;
+  position: relative;
+}
+body.inherit .progress-toolbar {
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.inherit .progress-toolbar .sky-config-decrease,
+body.inherit .progress-toolbar .sky-config-increase {
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  background-color: var(--cart-background);
+  color: #999;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+  font-size: 22px;
+}
+body.inherit .progress-toolbar .sky-config-decrease:hover,
+body.inherit .progress-toolbar .sky-config-increase:hover {
+  background-color: var(--cart_mainColor);
+  color: #fff;
+}
+body.inherit .progress-toolbar .input-value::-webkit-outer-spin-button,
+body.inherit .progress-toolbar .input-value::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+body.inherit .progress-toolbar .input-value {
+  width: 60px;
+  text-align: center;
+  border: 1px solid var(--cart-background);
+  transition: border-color 0.3s ease;
+  height: 32px;
+  border-left-color: #fff;
+  border-right-color: #fff;
+  background: var(--cart-background);
+}
+body.inherit .progress-toolbar .input-value:hover, body.inherit .progress-toolbar .input-value:focus {
+  background: #fff;
+  border-color: var(--cart_mainColor);
+  outline: none;
+}
+
+/*# sourceMappingURL=inherit.css.map */

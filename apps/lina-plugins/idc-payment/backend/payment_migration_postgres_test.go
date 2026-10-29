@@ -115,11 +115,12 @@ type paymentSecretFake struct {
 }
 
 type paymentRefundAdapterFake struct {
-	refundCalls   int
-	queryCalls    int
-	refundStatus  string
-	queryStatus   string
-	callbackValue *paymentcap.VerifiedResult
+	refundNotifyURL string
+	refundCalls     int
+	queryCalls      int
+	refundStatus    string
+	queryStatus     string
+	callbackValue   *paymentcap.VerifiedResult
 }
 
 type paymentRoundTripFunc func(*http.Request) (*http.Response, error)
@@ -155,6 +156,7 @@ func (a *paymentRefundAdapterFake) Close(context.Context, paymentcap.Credentials
 }
 func (a *paymentRefundAdapterFake) Refund(_ context.Context, _ paymentcap.Credentials, input paymentcap.RefundRequest) (*paymentcap.VerifiedResult, error) {
 	a.refundCalls++
+	a.refundNotifyURL = input.NotifyURL
 	status := a.refundStatus
 	if status == "" {
 		status = "succeeded"
@@ -219,6 +221,9 @@ func (f *paymentSecretFake) Rotate(context.Context, int) (secretcap.RotationResu
 	return secretcap.RotationResult{}, nil
 }
 func (f *paymentSecretFake) Access(_ context.Context, request secretcap.AccessRequest, consume secretcap.Consumer) error {
+	if request.Purpose != secretcap.Purpose("payment.channel-use") {
+		return errors.New("ungranted payment credential purpose")
+	}
 	if !request.Handle.Equal(f.handle) {
 		return errors.New("foreign handle")
 	}
@@ -296,7 +301,7 @@ func TestPaymentFoundationMigrationPostgreSQL(t *testing.T) {
 		t.Fatal("resolve migration path")
 	}
 	paths, err := filepath.Glob(filepath.Join(filepath.Dir(file), "..", "manifest", "sql", "[0-9][0-9][0-9]-*.sql"))
-	if err != nil || len(paths) != 5 {
+	if err != nil || len(paths) != 6 {
 		t.Fatalf("migration paths=%v err=%v", paths, err)
 	}
 	for attempt := 0; attempt < 2; attempt++ {
@@ -315,7 +320,7 @@ SELECT count(*) AS table_count
 FROM information_schema.tables
 WHERE table_schema = current_schema()
   AND table_name LIKE 'plugin_idc_payment_%'`)
-	if err != nil || row["table_count"].Int() != 15 {
+	if err != nil || row["table_count"].Int() != 16 {
 		t.Fatalf("table count row=%v err=%v", row, err)
 	}
 	if _, err = database.Exec(ctx, `
@@ -583,7 +588,7 @@ VALUES ('refund-1','request-1','attempt-1','channel-epay','USD',10,repeat('e',64
 		t.Fatal(err)
 	}
 	configured, err := channels.Save(ctx, channelconfig.SaveInput{ChannelNo: "channel-configured", Provider: paymentcap.ProviderEPay, DisplayName: "备用易支付", EndpointOrigin: "https://www.ezfp.cn/submit.php", MerchantReference: "1001", Credential: channelconfig.CredentialEnvelope{MerchantID: "1001", Secret: "merchant-key"}, IdempotencyKey: "configure-1", ActorID: 1})
-	if err != nil || configured.StatusCode != "disabled" || !configured.VerifiedAt.IsZero() || len(configured.Modes) != 1 || len(configured.Currencies) != 1 {
+	if err != nil || configured.StatusCode != "disabled" || !configured.VerifiedAt.IsZero() || len(configured.Modes) != 3 || len(configured.Currencies) != 1 {
 		t.Fatalf("configured=%+v err=%v", configured, err)
 	}
 	configured, err = channels.VerifyConnection(ctx, configured.ChannelNo, configured.Version, 1)
@@ -734,6 +739,9 @@ VALUES ('attempt-refund-success','channel-refund-alipay','invoice-refund-success
 		refundAdapter.refundCalls != refundCallsBeforeException+2 || len(billing.refundReports) != 3 ||
 		billing.refundReports[2].Status != billingcap.RefundExecutionResultSucceeded {
 		t.Fatalf("supported refund execution worked=%v calls=%d reports=%+v err=%v", worked, refundAdapter.refundCalls, billing.refundReports, err)
+	}
+	if refundAdapter.refundNotifyURL != "https://customer.example/x/idc-payment/api/v1/callbacks/refunds/channel-refund-alipay" {
+		t.Fatalf("generated refund notification misses registered plugin route: %q", refundAdapter.refundNotifyURL)
 	}
 	refundState, err := database.GetOne(ctx, `
 SELECT status_code,result_code,result_evidence_digest

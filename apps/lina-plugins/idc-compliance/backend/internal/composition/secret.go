@@ -18,14 +18,11 @@ const (
 	localSupplierScope      = "compliance.local-supplier-credential"
 	personalSnapshotScope   = "compliance.personal-identity-snapshot"
 	enterpriseMaterialScope = "compliance.enterprise-material-encryption"
-	contractTemplateScope   = "compliance.contract-template-content"
-	contractSnapshotScope   = "compliance.contract-snapshot"
-	contractSignerScope     = "compliance.contract-signer-profile"
 	taxInvoiceSnapshotScope = "compliance.tax-invoice-snapshot"
 )
 
 // BindTaxInvoiceSnapshotSecrets isolates immutable buyer, seller, allocation,
-// and tax-item snapshots from provider credentials and contract content.
+// and tax-item snapshots from provider credentials.
 func BindTaxInvoiceSnapshotSecrets(
 	source secretcap.Source,
 ) (secretcap.Accessor, secretcap.Manager, error) {
@@ -46,57 +43,6 @@ func BindTaxInvoiceSnapshotSecrets(
 	}
 	if nilInterface(accessor) || nilInterface(manager) {
 		return nil, nil, gerror.New("tax invoice snapshot secret boundary is unavailable")
-	}
-	return accessor, manager, nil
-}
-
-// BindContractSignerSecrets isolates enterprise signer names, identity
-// numbers, and phone numbers from contract snapshots and provider credentials.
-func BindContractSignerSecrets(source secretcap.Source) (secretcap.Accessor, secretcap.Manager, error) {
-	if nilInterface(source) {
-		return nil, nil, gerror.New("compliance secret source is required")
-	}
-	scope := secretcap.Scope{TenantID: idccap.DefaultTenantID, OwnerPluginID: complianceOwnerPluginID,
-		CallerScope: contractSignerScope}
-	accessor, err := source.Accessor(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract signer accessor")
-	}
-	manager, err := source.Manager(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract signer manager")
-	}
-	if nilInterface(accessor) || nilInterface(manager) {
-		return nil, nil, gerror.New("contract signer secret boundary is unavailable")
-	}
-	return accessor, manager, nil
-}
-
-// BindContractSnapshotSecrets isolates immutable order, signer, variable, and
-// preview snapshots from template-authoring keys and provider credentials.
-func BindContractSnapshotSecrets(
-	source secretcap.Source,
-) (secretcap.Accessor, secretcap.Manager, error) {
-	if nilInterface(source) {
-		return nil, nil, gerror.New("compliance secret source is required")
-	}
-	scope := secretcap.Scope{
-		TenantID: idccap.DefaultTenantID, OwnerPluginID: complianceOwnerPluginID,
-		CallerScope: contractSnapshotScope,
-	}
-	accessor, err := source.Accessor(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract snapshot accessor")
-	}
-	manager, err := source.Manager(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract snapshot manager")
-	}
-	if nilInterface(accessor) || nilInterface(manager) {
-		return nil, nil, gerror.New("contract snapshot secret boundary is unavailable")
-	}
-	if _, ok := manager.(secretcap.GeneratedManager); !ok {
-		return nil, nil, gerror.New("contract snapshot generated-secret boundary is unavailable")
 	}
 	return accessor, manager, nil
 }
@@ -123,35 +69,6 @@ func LoadSecretSource(ctx context.Context) (secretcap.Source, error) {
 		return nil, gerror.New("compliance secret source factory returned nil")
 	}
 	return source, nil
-}
-
-// BindContractTemplateContentSecrets returns an isolated generated-key and
-// callback-only access boundary for encrypted source and PDF revisions.
-func BindContractTemplateContentSecrets(
-	source secretcap.Source,
-) (secretcap.Accessor, secretcap.Manager, error) {
-	if nilInterface(source) {
-		return nil, nil, gerror.New("compliance secret source is required")
-	}
-	scope := secretcap.Scope{
-		TenantID: idccap.DefaultTenantID, OwnerPluginID: complianceOwnerPluginID,
-		CallerScope: contractTemplateScope,
-	}
-	accessor, err := source.Accessor(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract template content accessor")
-	}
-	manager, err := source.Manager(scope)
-	if err != nil {
-		return nil, nil, gerror.Wrap(err, "bind contract template content manager")
-	}
-	if nilInterface(accessor) || nilInterface(manager) {
-		return nil, nil, gerror.New("contract template content secret boundary is unavailable")
-	}
-	if _, ok := manager.(secretcap.GeneratedManager); !ok {
-		return nil, nil, gerror.New("contract template generated-secret boundary is unavailable")
-	}
-	return accessor, manager, nil
 }
 
 // BindEnterpriseMaterialSecrets returns the isolated callback-only boundary
@@ -241,7 +158,7 @@ func BindAliyunCredentialSecrets(
 }
 
 // BindLocalSupplierCredentialSecrets returns only the lifecycle manager for
-// merchant-owned Tencent and Nuonuo credential envelopes. No plaintext
+// merchant-owned Nuonuo credential envelopes. No plaintext
 // accessor is composed before an independently confirmed real client exists.
 func BindLocalSupplierCredentialSecrets(source secretcap.Source) (secretcap.Manager, error) {
 	if nilInterface(source) {

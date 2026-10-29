@@ -16,7 +16,7 @@ type Channel struct {
 	ProviderId                string     `json:"providerId"                orm:"provider_id"                 description:"Provider descriptor identifier declared through resourcecap SPI"`
 	ProviderPluginId          string     `json:"providerPluginId"          orm:"provider_plugin_id"          description:"Plugin that owns the frozen Provider implementation"`
 	DisplayName               string     `json:"displayName"               orm:"display_name"                description:""`
-	Endpoint                  string     `json:"endpoint"                  orm:"endpoint"                    description:"Administrator-approved HTTPS API origin without credentials"`
+	Endpoint                  string     `json:"endpoint"                  orm:"endpoint"                    description:"Administrator-approved explicit HTTP(S) API origin without credentials"`
 	NonSecretSettings         string     `json:"nonSecretSettings"         orm:"non_secret_settings"         description:"Adapter settings validated to exclude credentials and secret references"`
 	StatusCode                string     `json:"statusCode"                orm:"status_code"                 description:""`
 	Version                   int64      `json:"version"                   orm:"version"                     description:""`

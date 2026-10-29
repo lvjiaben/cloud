@@ -12,6 +12,8 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -73,8 +75,15 @@ func (s *serviceImpl) Access(
 			return gerror.Wrap(err, "resource Provider authentication session access failed")
 		}
 		if selected.ready {
-			if err = s.consumeReady(waitCtx, selected, consume); err == nil {
+			// A failed business request does not prove the cached token is bad.
+			// Keep that error outside the secret callback so it cannot invalidate
+			// authentication or cause an already-sent write to be replayed.
+			var consumeErr error
+			if err = s.consumeReady(waitCtx, selected, func(token []byte, generation int64) error {
+				consumeErr = consume(token, generation)
 				return nil
+			}); err == nil {
+				return consumeErr
 			}
 			if invalidateErr := s.Invalidate(waitCtx, resourcecap.AuthenticationSessionInvalidation{
 				ChannelRef: s.channelRef, Generation: selected.generation,
@@ -183,15 +192,17 @@ func (s *serviceImpl) refresh(
 		return nil
 	})
 	if err != nil || len(plaintext) == 0 {
+		logger.Warningf(ctx, "provider authentication refresh failed stage=login_producer code=%s", authenticationFailureClass(err))
 		clear(plaintext)
 		if releaseErr := s.releaseFailed(ctx, selected); releaseErr != nil {
 			return gerror.New("resource Provider authentication refresh failed")
 		}
-		return gerror.New("resource Provider authentication refresh failed")
+		return authenticationRefreshFailure(err)
 	}
 	defer clear(plaintext)
 	secretRef, err := s.storeToken(ctx, selected, plaintext)
 	if err != nil {
+		logger.Warningf(ctx, "provider authentication refresh failed stage=token_storage code=%s", authenticationFailureClass(err))
 		if releaseErr := s.releaseFailed(ctx, selected); releaseErr != nil {
 			return gerror.New("resource Provider authentication refresh failed")
 		}
@@ -250,7 +261,11 @@ func (s *serviceImpl) consumeReady(
 }
 
 func (s *serviceImpl) releaseFailed(ctx context.Context, selected claim) error {
-	_, err := s.database.Exec(ctx, `UPDATE `+tableName+`
+	// Login timeouts must not strand this exact database claim for 150 seconds.
+	// A detached short cleanup still matches generation and lease digest.
+	releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	_, err := s.database.Exec(releaseCtx, `UPDATE `+tableName+`
 SET status_code=?,expires_at=NULL,lease_token_digest=NULL,
     lease_expires_at=NULL,version=version+1
 WHERE tenant_id=? AND channel_no=? AND status_code=? AND generation=?
@@ -271,6 +286,7 @@ func (s *serviceImpl) storeToken(ctx context.Context, selected claim, plaintext 
 	}
 	metadata, err := s.manager.Metadata(ctx, handle)
 	if err != nil {
+		logger.Warningf(ctx, "provider authentication token metadata failed code=%s", authenticationFailureClass(err))
 		return "", gerror.New("resource Provider authentication token storage failed")
 	}
 	if !metadata.Configured {
@@ -281,6 +297,7 @@ func (s *serviceImpl) storeToken(ctx context.Context, selected claim, plaintext 
 	}
 	replaced, err := s.manager.Replace(ctx, handle, metadata.UpdatedAt, idempotencyKey, producer)
 	if err != nil || !replaced.Metadata.Configured {
+		logger.Warningf(ctx, "provider authentication token replacement failed code=%s", authenticationFailureClass(err))
 		return "", gerror.New("resource Provider authentication token storage failed")
 	}
 	return selected.secretRef, nil
@@ -312,4 +329,29 @@ func (s *serviceImpl) newLeaseDigest() (string, error) {
 func sessionIdempotencyKey(channelRef string, generation int64) string {
 	digest := sha256.Sum256([]byte(channelRef))
 	return fmt.Sprintf("provider-auth-%s-%d", hex.EncodeToString(digest[:16]), generation)
+}
+
+// authenticationRefreshFailure preserves reviewed connection classes without
+// keeping producer causes, credentials or arbitrary business error messages.
+func authenticationRefreshFailure(cause error) error {
+	if safe := resourcecap.SafeProviderConnectionError(cause); safe != nil {
+		return safe
+	}
+	return gerror.New("resource Provider authentication refresh failed")
+}
+
+// authenticationFailureClass logs only fixed trusted secret or connection codes.
+func authenticationFailureClass(err error) string {
+	if safe := resourcecap.SafeProviderConnectionError(err); safe != nil {
+		if metadata, ok := bizerr.As(safe); ok {
+			return metadata.RuntimeCode()
+		}
+	}
+	if metadata, ok := bizerr.As(err); ok {
+		switch code := metadata.RuntimeCode(); code {
+		case "IDC_SECRET_INVALID", "IDC_SECRET_ACCESS_DENIED", "IDC_SECRET_NOT_CONFIGURED", "IDC_SECRET_IDEMPOTENCY_CONFLICT", "IDC_SECRET_VERSION_CONFLICT", "IDC_SECRET_CONSUMER_FAILED", "IDC_SECRET_UNAVAILABLE":
+			return code
+		}
+	}
+	return "unclassified"
 }

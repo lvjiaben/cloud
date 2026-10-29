@@ -22,5 +22,9 @@
     "provisioning": "开通中",
     "pending_activation": "待激活"
   },
-  "notStarted": "未开始"
+  "notStarted": "未开始",
+  "management": {
+    "preparing": "管理入口准备中，请稍后刷新。",
+    "needs_attention": "管理入口需要管理员处理，请联系支持。"
+  }
 }

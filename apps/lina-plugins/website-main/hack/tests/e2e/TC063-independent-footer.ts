@@ -1,0 +1,24 @@
+import {test,expect} from '../support/source-site';
+import {BrandSyncPage} from '../pages/BrandSyncPage';
+import {previewBrand,previewResponse} from '../support/home-preview-data.mjs';
+test.use({baseURL:'http://localhost:6680',viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+test('TC-63a: 官网独立页脚字段展示、更新清空和危险值隔离',async({page},info)=>{
+ let details:Record<string,string>={copyright:'本方品牌 © 2026 版权所有',businessQq:'123456789',companyAddress:'本方公司办公地址',footerLogoUrl:'/static/picture/sidebar-newspaper.svg',enterpriseWechatQrCodeUrl:'/static/picture/sidebar-newspaper.svg',wechatOfficialQrCodeUrl:'/static/picture/sidebar-newspaper.svg'};
+ await page.route('**/x/**',async route=>{const req=route.request(),u=new URL(req.url()),r=previewResponse(u,req.method());if(u.pathname.endsWith('/brand'))r.data={brand:{...previewBrand,footer:{zhCN:'本方独立公司'},contactPhone:'4001234567',contactEmail:'our@example.test',...details}};await route.fulfill({status:r.status,json:{code:0,data:r.data}});});
+ const site=new BrandSyncPage(page);await site.open('/');
+ const footer=page.locator('.sky-footer-left');
+ await expect(footer.locator('[data-footer-copyright]')).toHaveText(details.copyright);
+ await expect(footer.locator('[data-footer-detail=qq]')).toContainText('商务QQ：');
+ await expect(footer.locator('[data-footer-detail=qq] a')).toHaveAttribute('href','https://wpa.qq.com/msgrd?v=3&uin=123456789&site=qq&menu=yes');
+ await expect(footer.locator('[data-footer-detail=address] a')).toHaveText(details.companyAddress);
+ await expect(footer.locator('[data-footer-identity-logo] img')).toHaveAttribute('alt','本方独立公司');
+ await expect(footer.locator('.sky-footer-ewm-title')).toHaveText(['企业微信','微信公众号']);
+ await expect(footer.locator('img')).toHaveCount(3);
+ details={...details,icpNumber:'本方ICP备案',icpUrl:'https://example.test/icp',publicSecurityNumber:'本方公安备案',publicSecurityUrl:'javascript:alert(1)'};await page.reload();
+ await expect(page.locator('[data-filing-kind=icp]')).toHaveAttribute('href','https://example.test/icp');
+ await expect(page.locator('[data-filing-kind=public-security] .filing-title')).toHaveText('本方公安备案');
+ await expect(page.locator('[data-filing-kind=public-security]')).not.toHaveAttribute('href',/.+/);
+ await site.captureSection('.sky-footer-container',info.outputPath('independent-footer.png'));
+ details={};await site.refreshBrand();await expect(footer.locator('[data-footer-copyright]')).toBeHidden();await expect(footer.locator('[data-footer-detail=qq]')).toBeHidden();await expect(footer.locator('[data-footer-socials]')).toBeHidden();await expect(footer.locator('[data-footer-identity-logo]')).toHaveCount(0);
+ details={businessQq:'123&uin=456',footerLogoUrl:'javascript:alert(1)',enterpriseWechatQrCodeUrl:'//evil.test/qr.png',wechatOfficialQrCodeUrl:'https://user:pass@evil.test/qr.png',companyAddress:'<script>alert(1)</script>'};await page.reload();await expect(footer.locator('img')).toHaveCount(0);await expect(footer.locator('[data-footer-detail=qq] a')).not.toHaveAttribute('href',/.+/);await expect(footer.locator('[data-footer-detail=address] a')).toHaveText(details.companyAddress);await expect(footer.locator('script')).toHaveCount(0);
+});

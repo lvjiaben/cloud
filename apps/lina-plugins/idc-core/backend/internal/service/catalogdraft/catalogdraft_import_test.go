@@ -54,6 +54,7 @@ type importTestWriter struct {
 	lookupCalls, commitCalls int
 	previous                 *catalog.ImportResult
 	err                      error
+	concurrentReplay         bool
 }
 
 func (w *importTestWriter) LookupImport(context.Context, catalog.ImportInput) (*catalog.ImportResult, error) {
@@ -62,12 +63,13 @@ func (w *importTestWriter) LookupImport(context.Context, catalog.ImportInput) (*
 }
 func (w *importTestWriter) CommitImport(context.Context, catalog.ImportInput, *resourceinterfaceprojectioncap.CatalogDetail, []catalog.ImportMissingConfiguration) (*catalog.ImportResult, bool, error) {
 	w.commitCalls++
-	return &catalog.ImportResult{Item: catalog.ProductDraft{VersionNo: "created"}}, true, w.err
+	return &catalog.ImportResult{Item: catalog.ProductDraft{VersionNo: "created"}}, !w.concurrentReplay, w.err
 }
 
 type importTestSource struct {
-	calls int
-	err   error
+	complete bool
+	calls    int
+	err      error
 }
 
 func (s *importTestSource) ListCatalog(context.Context, string, resourceinterfaceprojectioncap.CatalogQuery) (*resourceinterfaceprojectioncap.CatalogPage, error) {
@@ -75,7 +77,7 @@ func (s *importTestSource) ListCatalog(context.Context, string, resourceinterfac
 }
 func (s *importTestSource) ReadCatalogProduct(context.Context, string, resourceinterfaceprojectioncap.CatalogProductQuery) (*resourceinterfaceprojectioncap.CatalogDetail, error) {
 	s.calls++
-	return &resourceinterfaceprojectioncap.CatalogDetail{Product: resourceinterfaceprojectioncap.CatalogProduct{Reference: "101", Name: "Supplier"}}, s.err
+	return &resourceinterfaceprojectioncap.CatalogDetail{Product: resourceinterfaceprojectioncap.CatalogProduct{Reference: "101", Name: "Supplier"}, PriceScheduleComplete: s.complete, BasePrices: []resourceinterfaceprojectioncap.CatalogPrice{{CurrencyCode: "CNY", Period: resourceinterfaceprojectioncap.CatalogPeriodMonth, PeriodCount: 1, Amount: "1", SetupFee: "0"}}}, s.err
 }
 
 type importTestAutomation struct {
@@ -145,5 +147,54 @@ func TestImportRemoteFailureAndSuccessfulAtomicCallback(t *testing.T) {
 		if err != nil || result == nil || writer.commitCalls != 1 || automation.commitCalls != 1 || source.calls != 1 {
 			t.Fatalf("non-atomic workflow result=%+v err=%v", result, err)
 		}
+	}
+}
+
+// Existing-version assignment cannot use the creation endpoint, and a partial
+// supplier definition never enters the local mutation callback.
+func TestImportExistingRejectsCreationEntryAndIncompleteSource(t *testing.T) {
+	authorizer := &importTestAuthorizer{}
+	writer := &importTestWriter{}
+	source := &importTestSource{}
+	automation := &importTestAutomation{}
+	service, err := New(authorizer, source, writer, automation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := catalog.ImportInput{TargetVersionNo: "ver_11111111111111111111111111111111", Reference: "101"}
+	if _, err = service.Import(context.Background(), input); !bizerr.Is(err, catalog.CodeManagementInvalid) || source.calls != 0 {
+		t.Fatalf("creation entry accepted target: %v", err)
+	}
+	_, err = service.(*serviceImpl).importProduct(context.Background(), input, nil, nil, "")
+	if !bizerr.Is(err, catalog.CodeUpstreamDefinitionIncomplete) || writer.commitCalls != 0 || automation.commitCalls != 0 {
+		t.Fatalf("partial source crossed write boundary: %v", err)
+	}
+}
+
+type importReplayPublication struct {
+	catalog.PublicationService
+	applied bool
+}
+
+func (p *importReplayPublication) WithSavedSettings(ctx context.Context, _ string, save func(context.Context) error) error {
+	if err := save(ctx); err != nil {
+		return err
+	}
+	p.applied = true
+	return nil
+}
+func TestImportExistingConcurrentReplayDoesNotApplySettingsAgain(t *testing.T) {
+	writer := &importTestWriter{concurrentReplay: true}
+	source := &importTestSource{complete: true}
+	service, err := New(&importTestAuthorizer{}, source, writer, &importTestAutomation{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	publication := &importReplayPublication{}
+	// Replay must return before calling automation policy writes; a nil runtime
+	// would panic if an already-committed request attempted a second mutation.
+	result, err := service.(*serviceImpl).importProduct(t.Context(), catalog.ImportInput{Reference: "101", TargetVersionNo: "ver_11111111111111111111111111111111"}, publication, nil, "")
+	if err != nil || result == nil || result.Item.VersionNo != "created" || publication.applied || writer.commitCalls != 1 {
+		t.Fatalf("replay mutated applied settings: %+v %v", result, err)
 	}
 }

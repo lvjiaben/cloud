@@ -306,50 +306,23 @@ func TestDocumentedRejectionIsFailedWithoutRawErrorBody(t *testing.T) {
 	}
 }
 
-func TestChangeIPAlwaysRequiresOwnerReconciliation(t *testing.T) {
+// The old contract only adjusts quantity. Even an old queued request must
+// fail before login or PUT; a task-shaped fake response cannot make it valid.
+func TestChangeIPNeverCallsQuantityAdjustment(t *testing.T) {
 	t.Parallel()
-	for name, body := range map[string]string{
-		"empty response": `{}`,
-		"task response":  `{"taskid":7102}`,
-	} {
-		name, body := name, body
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			var loginCount int
-			var mu sync.Mutex
-			login := loginHandler(t, &loginCount, &mu, "token-one")
-			var actionCount atomic.Int64
-			fixture := newProviderFixture(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				if request.URL.Path == "/administrator/v1/login" {
-					login(writer, request)
-					return
-				}
-				actionCount.Add(1)
-				if request.Method != http.MethodPut || request.URL.Path != "/administrator/v1/clouds/41/ip" {
-					t.Errorf("IP change request=%s %s", request.Method, request.URL.RequestURI())
-				}
-				if err := request.ParseForm(); err != nil {
-					t.Errorf("parse IP change form: %v", err)
-				}
-				if request.Form.Encode() != "ip_group=9&num=2" || request.Form.Has("ip_num") {
-					t.Errorf("IP change form=%v, want normalized num and ip_group", request.Form)
-				}
-				writeJSON(t, writer, http.StatusOK, body)
-			}))
-			result, err := fixture.provider.Execute(context.Background(), resourcecap.OperationRequest{
-				RequestID: "request-ip-change-" + strconv.Itoa(len(name)), Capability: resourcecap.CapabilityChangeIP,
-				ResourceRef: "41", Parameters: []byte(`{"ip_num":2,"ip_group":9}`),
-			})
-			if err != nil {
-				t.Fatal(err)
-			}
-			if result.Status != resourcecap.TaskStatusUnknown || result.Failure == nil || !result.Failure.ResultUnknown {
-				t.Fatalf("IP change escaped owner reconciliation: %+v", result)
-			}
-			if actionCount.Load() != 1 {
-				t.Fatalf("IP change attempts=%d, want exactly 1", actionCount.Load())
-			}
-		})
+	var calls atomic.Int64
+	fixture := newProviderFixture(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		writeJSON(t, w, http.StatusOK, `{"taskid":7102}`)
+	}))
+	for _, parameters := range []string{`{"ip_num":2}`, `{"ip_num":2,"ip_group":9}`} {
+		result, err := fixture.provider.Execute(context.Background(), resourcecap.OperationRequest{RequestID: "old-ip-replacement", Capability: resourcecap.CapabilityChangeIP, ResourceRef: "41", Parameters: []byte(parameters)})
+		if !errors.Is(err, errUnsupported) || result != nil {
+			t.Fatal("unverified replacement was submitted", err)
+		}
+	}
+	if calls.Load() != 0 {
+		t.Fatal("unsupported replacement reached upstream or login")
 	}
 }
 
@@ -459,7 +432,7 @@ func TestProvisionUsesScopedPasswordAndDiscardsResponseCredentials(t *testing.T)
 		}
 		if request.Form.Get("client") != "91" || request.Form.Get("hostname") != "srv-001.example" ||
 			request.Form.Get("rootpass") != "G3nerated p@ss+word" || request.Form.Get("num") != "1" ||
-			request.Form.Get("data_disk_size") != "100" || request.Form.Has("password") {
+			request.Form.Get("other_data_disk[0][size]") != "100" || request.Form.Has("data_disk_size") || request.Form.Has("password") || request.Form.Get("扩展备注") != "客户 & + = 备注" || request.Form.Get("vendor_profile") != "500,500,2000,2000" {
 			t.Errorf("provision form did not preserve the verified contract: %v", request.Form)
 		}
 		writeJSON(t, writer, http.StatusAccepted,
@@ -472,7 +445,7 @@ func TestProvisionUsesScopedPasswordAndDiscardsResponseCredentials(t *testing.T)
 	fixture.secrets.put(password, []byte("G3nerated p@ss+word"))
 	request := resourcecap.OperationRequest{
 		RequestID: "request-provision-8001", Capability: resourcecap.CapabilityProvision,
-		Parameters:     []byte(`{"cpu":2,"memory":2048,"os":5,"client":91,"hostname":"srv-001.example","data_disk_size":100}`),
+		Parameters:     []byte(`{"cpu":2,"memory":2048,"os":5,"client":91,"hostname":"srv-001.example","data_disk_size":100,"custom_parameters":{"扩展备注":"客户 & + = 备注","vendor_profile":"500,500,2000,2000"}}`),
 		SecretBindings: []resourcecap.SecretBinding{{Name: resetPasswordBinding, Handle: password}},
 	}
 	result, err := fixture.provider.Execute(context.Background(), request)

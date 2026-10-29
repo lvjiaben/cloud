@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS plugin_idc_notify_login_contact_guard;

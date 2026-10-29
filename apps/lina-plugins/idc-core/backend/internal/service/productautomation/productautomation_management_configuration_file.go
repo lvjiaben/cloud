@@ -328,7 +328,7 @@ func (s *serviceImpl) authorizeManagementFileTarget(ctx context.Context, input M
 			return Authorization{}, nil, bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{PluginID: binding.PluginId, ReleaseVersion: binding.PluginReleaseVersion, Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion, ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest})
-		if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
+		if err != nil || !sameProviderContract(bindingEvidence(binding), exact) {
 			return Authorization{}, nil, bizerr.NewCode(CodeEvidenceUnavailable)
 		}
 		var current struct{ Version int64 }

@@ -1,0 +1,94 @@
+{
+  "CheckedAt": "2026-10-18T12:51:03.1229621+08:00",
+  "ReadOnly": true,
+  "FingerprintScope": "Executable file on disk at the process-associated path; not a memory measurement",
+  "Processes": [
+    {
+      "Port": 16634,
+      "ProcessId": 32728,
+      "ExecutablePath": "D:\\project1\\temp\\20261017\\lina-website-download-v2.exe",
+      "ProcessCreated": "2026-10-17T23:08:57.349438+08:00",
+      "DiskSHA256": "e948799a88e40e16c0de4057471a4970508286c232487ee06ebd8da04551ab57",
+      "DiskLength": 116576768,
+      "BuildInfo": [
+        "\tpath\tlina-core",
+        "\tmod\tlina-core\t(devel)\t",
+        "\tbuild\tGOARCH=amd64",
+        "\tbuild\tGOOS=windows",
+        "\tbuild\tvcs.revision=a00c6a6c39bb5c36a3212d2e96185b5f0959b21b",
+        "\tbuild\tvcs.time=2026-10-16T06:14:11Z",
+        "\tbuild\tvcs.modified=true"
+      ]
+    },
+    {
+      "Port": 16630,
+      "ProcessId": 6596,
+      "ExecutablePath": "D:\\project1\\temp\\20261017\\lina-website-validation.exe",
+      "ProcessCreated": "2026-10-17T21:31:34.985378+08:00",
+      "DiskSHA256": "3e7f40aad2fae2be87f6d06057971e653f179a4a3e5059ca27c7dd1036cda5ce",
+      "DiskLength": 116573696,
+      "BuildInfo": [
+        "\tpath\tlina-core",
+        "\tmod\tlina-core\t(devel)\t",
+        "\tbuild\tGOARCH=amd64",
+        "\tbuild\tGOOS=windows",
+        "\tbuild\tvcs.revision=a00c6a6c39bb5c36a3212d2e96185b5f0959b21b",
+        "\tbuild\tvcs.time=2026-10-16T06:14:11Z",
+        "\tbuild\tvcs.modified=true"
+      ]
+    },
+    {
+      "Port": 6030,
+      "ProcessId": 16312,
+      "ExecutablePath": "D:\\project1\\temp\\output\\lina.exe",
+      "ProcessCreated": "2026-10-16T15:16:36.119088+08:00",
+      "DiskSHA256": "50e35d57ad5936a205b7de6d3d9c5beeb79177b53002842ba4cb316b8b782e39",
+      "DiskLength": 116156416,
+      "BuildInfo": [
+        "\tpath\tlina-core",
+        "\tmod\tlina-core\t(devel)\t",
+        "\tbuild\tGOARCH=amd64",
+        "\tbuild\tGOOS=windows",
+        "\tbuild\tvcs.revision=a00c6a6c39bb5c36a3212d2e96185b5f0959b21b",
+        "\tbuild\tvcs.time=2026-10-16T06:14:11Z",
+        "\tbuild\tvcs.modified=true"
+      ]
+    }
+  ],
+  "SearchComparisons": [
+    {
+      "port": 6030,
+      "path": "/x/idc-core/api/v1/public/content/items?type=news&limit=1&query=runtime-build-readonly-20261018",
+      "httpStatus": 200,
+      "code": 50,
+      "errorCode": "IDC_CONTENT_UNAVAILABLE",
+      "itemCount": null
+    },
+    {
+      "port": 16630,
+      "path": "/x/idc-core/api/v1/public/content/items?type=news&limit=1&query=runtime-build-readonly-20261018",
+      "httpStatus": 200,
+      "code": 0,
+      "itemCount": 0
+    },
+    {
+      "port": 16634,
+      "path": "/x/idc-core/api/v1/public/content/items?type=news&limit=1&query=runtime-build-readonly-20261018",
+      "httpStatus": 200,
+      "code": 0,
+      "itemCount": 0
+    }
+  ],
+  "SourceFix": {
+    "path": "apps/lina-plugins/idc-core/backend/internal/service/contenthub/contenthub_read.go",
+    "line": 72,
+    "workingTreeAlreadyChanged": true,
+    "changedThisRun": false
+  },
+  "Limitations": [
+    "Go vcs.time is the commit timestamp, not the build timestamp.",
+    "All artifacts have vcs.modified=true; revision alone does not identify individual source changes.",
+    "Public failures do not expose the SQL cause.",
+    "No authenticated runtime-system-info read, live SQL access or process memory inspection was performed."
+  ]
+}

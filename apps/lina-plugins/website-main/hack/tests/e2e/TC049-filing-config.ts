@@ -1,0 +1,14 @@
+import {test,expect} from '../support/source-site';import {HomeDetailPage} from '../pages/HomeDetailPage';import {previewBrand,previewResponse} from '../support/home-preview-data.mjs';
+test.use({baseURL:'http://localhost:6680',viewport:{width:1440,height:900},reducedMotion:'reduce'});
+test.describe('TC-49 本方备案六字段',()=>{
+ test('TC-49a: 十页三项2+1、空值、部分、长号与安全链接',async({page},info)=>{
+  let config:Record<string,string>={telecomlicensenumber:'模拟许可（非真实资质）',telecomlicenseurl:'https://example.invalid/licence',publicsecuritynumber:'模拟公安（非真实资质）',publicsecurityurl:'https://example.invalid/security?recordcode=test-only',icpnumber:'模拟ICP（非真实资质）'};
+  await page.route('**/x/**',async r=>{const q=r.request(),u=new URL(q.url()),v=previewResponse(u,q.method());if(u.pathname.endsWith('/brand'))v.data={brand:{...previewBrand,templateConfig:config}};await r.fulfill({status:v.status,json:{code:0,data:v.data}});});
+  const site=new HomeDetailPage(page);
+  for(const path of ['index','products','configure','news','announcements','help','downloads','content','about','contact']){await site.open('/'+path+'.html');await expect(page.locator('.filing-itme:visible')).toHaveCount(3);const rows=page.locator('.filing-itme');await expect(rows.first()).toHaveAttribute('rel','noopener noreferrer');await expect(rows.nth(2)).not.toHaveAttribute('href');const positions=await rows.evaluateAll(ns=>ns.map(n=>({y:n.getBoundingClientRect().y,loaded:(n.querySelector('img') as HTMLImageElement).naturalWidth>0})));expect(positions.every(n=>n.loaded)).toBe(true);expect(positions[0].y).toBe(positions[1].y);expect(positions[2].y).toBeGreaterThan(positions[0].y);}
+  await expect(page.locator('.filing-title')).toHaveText(['电信增值业务许可证：模拟许可（非真实资质）','公网安备：模拟公安（非真实资质）','网站备案号：模拟ICP（非真实资质）']);await site.captureSection('.sky-footer-info',info.outputPath('three-synthetic.png'));
+  config={};await site.open('/');await expect(page.locator('.filing-itme:visible')).toHaveCount(0);
+  for(const url of ['javascript:alert(1)','data:text/html,test','https://user:pass@example.invalid','https://example.invalid/\npath','//example.invalid/path','https:\\example.invalid','https://example.invalid/\u007f']){config={publicsecuritynumber:'模拟公安，非真实资质',publicsecurityurl:url};await site.open('/');await expect(page.locator('.filing-itme:visible')).toHaveCount(1);await expect(page.locator('[data-filing-kind=public-security]')).not.toHaveAttribute('href');}
+  config={icpnumber:'模拟非真实资质'.repeat(25)};await page.setViewportSize({width:390,height:844});await site.open('/');await site.captureSection('.sky-footer-info',info.outputPath('long-synthetic-mobile.png'));const box=await page.locator('[data-filing-kind=icp]').boundingBox();expect(box!.x+box!.width).toBeLessThanOrEqual(390);await expect(page.locator('.filing-itme:visible')).toHaveCount(1);
+ });
+});

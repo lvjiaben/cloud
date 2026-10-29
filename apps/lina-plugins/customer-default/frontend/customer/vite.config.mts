@@ -523,7 +523,7 @@ export default defineConfig(async (config) => {
       },
       server: {
         fs: {
-          allow: sourcePluginsEnabled ? [vbenRoot, pluginRoot] : [vbenRoot],
+          allow: sourcePluginsEnabled ? [import.meta.dirname, vbenRoot, pluginRoot] : [import.meta.dirname, vbenRoot],
         },
         proxy: {
           '/api': {

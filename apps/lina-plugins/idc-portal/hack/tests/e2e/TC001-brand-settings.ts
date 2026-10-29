@@ -8,6 +8,7 @@ const common = {
   siteName: "测试官网",
   siteTitle: "测试标题",
   companyName: "测试公司",
+  icpNumber:"", icpUrl:"", policeNumber:"", policeUrl:"",
   contactEmail: "help@example.test",
   contactPhone: "",
   logoUrl: "",
@@ -36,17 +37,17 @@ const plugins = [
       version: "v1",
       fields: [
         {
-          key: "menutext",
+          key: "partners",
           type: "multi_line",
-          label: { zhCN: "官网菜单", enUS: "Website menu" },
-          description: { zhCN: "每行一个：商品|/products", enUS: "One per line: Products|/products" },
+          label: { zhCN: "合作伙伴", enUS: "Partners" },
+          description: { zhCN: "每行一个合作伙伴名称", enUS: "One partner name per line" },
         },
       ],
     },
   },
 ];
 async function screenshot(portal: PortalBrandPage, suffix: string) {
-  const dir = path.resolve(process.cwd(), "../../temp/20261016");
+  const dir = process.env.E2E_OUTPUT_DIR || path.resolve(__dirname, "../../../../../../", "temp", new Date().toISOString().slice(0,10).replaceAll("-", ""));
   await mkdir(dir, { recursive: true });
   await portal.page.screenshot({
     path: path.join(dir, `${Date.now()}-website-${suffix}.png`),
@@ -68,7 +69,7 @@ test.describe("TC-1 官网配置", () => {
       config: { herotitle: "欢迎访问" } as Record<string, string>,
       configurations: {
         "website-carousel": { herotitle: "欢迎访问" },
-        "website-menu": { menutext: "已有菜单|/help" },
+        "website-menu": { partners: "已有合作伙伴" },
       } as Record<string, Record<string, string>>,
     };
     let saves = 0;
@@ -94,11 +95,15 @@ test.describe("TC-1 官网配置", () => {
     await expect(portal.root).not.toContainText("修订号");
     await screenshot(portal, "loaded");
     await portal.field("网站名称").fill("更新后的官网");
+    await portal.field("网站备案号").fill("粤ICP备123号");
+    await portal.field("网站备案查询链接").fill("https://records.example/icp");
+    await portal.field("公安备案号").fill("粤公网安备456号");
+    await portal.field("公安备案查询链接").fill("https://records.example/police");
     await portal.root.getByRole("button", { name: "菜单官网" }).click();
     await expect(portal.field("首页标题")).toHaveCount(0);
-    await expect(portal.field("官网菜单")).toHaveValue("已有菜单|/help");
-    await expect(portal.field("官网菜单")).toHaveAttribute("placeholder", "每行一个：商品|/products");
-    await portal.field("官网菜单").fill("产品|/products");
+    await expect(portal.field("合作伙伴")).toHaveValue("已有合作伙伴");
+    await expect(portal.field("合作伙伴")).toHaveAttribute("placeholder", "每行一个合作伙伴名称");
+    await portal.field("合作伙伴").fill("合作伙伴 A");
     await portal.expectActivePlugin("轮播官网");
     expect(saves).toBe(0);
     await portal.button("保存并启用").click();
@@ -108,11 +113,16 @@ test.describe("TC-1 官网配置", () => {
     expect(saves).toBe(1);
     expect(state.selectedPlugin).toBe("website-menu");
     expect(state.common.siteName).toBe("更新后的官网");
-    expect(state.config).toEqual({ menutext: "产品|/products" });
+    expect(state.common.icpNumber).toBe("粤ICP备123号");
+    expect(state.common.policeNumber).toBe("粤公网安备456号");
+    expect(state.common.icpUrl).toBe("https://records.example/icp");
+    expect(state.common.policeUrl).toBe("https://records.example/police");
+    expect(state.config).toEqual({ partners: "合作伙伴 A" });
     await portal.expectActivePlugin("菜单官网");
     await screenshot(portal, "saved");
     await portal.button("刷新").click();
-    await expect(portal.field("官网菜单")).toHaveValue("产品|/products");
+    await expect(portal.field("网站备案号")).toHaveValue("粤ICP备123号");
+    await expect(portal.field("合作伙伴")).toHaveValue("合作伙伴 A");
     await portal.root.getByRole("button", { name: "轮播官网" }).click();
     await expect(portal.field("首页标题")).toHaveValue("欢迎访问");
     await portal.expectActivePlugin("菜单官网");
@@ -185,13 +195,13 @@ test.describe("TC-1 官网配置", () => {
     await portal.goto();
     await portal.field("网站名称").fill("需要保留的官网");
     await portal.selectPlugin("菜单官网");
-    await portal.field("官网菜单").fill("失败后保留|/help");
+    await portal.field("合作伙伴").fill("失败后保留的伙伴");
     await portal.button("保存并启用").click();
     await expect(
       adminPage.getByText("保存失败，请重试", { exact: true }),
     ).toBeVisible();
     await expect(portal.field("网站名称")).toHaveValue("需要保留的官网");
-    await expect(portal.field("官网菜单")).toHaveValue("失败后保留|/help");
+    await expect(portal.field("合作伙伴")).toHaveValue("失败后保留的伙伴");
     await portal.expectActivePlugin("轮播官网");
     fail = false;
     await portal.button("保存并启用").click();

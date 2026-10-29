@@ -11,8 +11,8 @@ import (
 
 func TestRuntimeConfigurationHasOnlyInstallationLocalDependencies(t *testing.T) {
 	typeOfRuntime := reflect.TypeOf(RuntimeConfig{})
-	if typeOfRuntime.NumField() != 7 {
-		t.Fatalf("runtime dependency field count=%d want=7", typeOfRuntime.NumField())
+	if typeOfRuntime.NumField() != 6 {
+		t.Fatalf("runtime dependency field count=%d want=6", typeOfRuntime.NumField())
 	}
 	want := map[string]reflect.Type{
 		"DatabaseDSNFile":             reflect.TypeOf(""),
@@ -20,7 +20,6 @@ func TestRuntimeConfigurationHasOnlyInstallationLocalDependencies(t *testing.T) 
 		"ProcessAuthKeyringFile":      reflect.TypeOf(""),
 		"SupplierIdentityKeyringFile": reflect.TypeOf(""),
 		"CallbackEvidenceKeyringFile": reflect.TypeOf(""),
-		"TencentESSBasicConfigFile":   reflect.TypeOf(""),
 		"ProcessAuthWindow":           reflect.TypeOf(time.Duration(0)),
 	}
 	found := make(map[string]bool, len(want))

@@ -38,6 +38,8 @@ type ManagementRefundReviewIntent struct {
 
 // ManagementRefundService owns staff refund reading, review proofs, decisions, and policy versions.
 type ManagementRefundService interface {
+	// RefundFailedFulfillment records a staff-selected refund for a proven failed, unfulfilled item.
+	RefundFailedFulfillment(context.Context, FailedFulfillmentRefundInput) (*OnlineRefund, error)
 	// ListRefunds returns one bounded newest-first staff directory after exact list authorization.
 	ListRefunds(context.Context, RefundDirectoryFilter) (*RefundDirectoryPage, error)
 	// GetRefundDetail returns one exact request and its immutable item and service-impact snapshots.
@@ -56,6 +58,7 @@ type managementRefundService struct {
 	recentAuth reauth.Service
 	audit      idccap.BusinessAuditWriter
 	random     io.Reader
+	commands   *onlineRefundService
 }
 
 var _ ManagementRefundService = (*managementRefundService)(nil)
@@ -65,8 +68,9 @@ func NewManagementRefundService(
 	authorizer ManagementRefundAuthorizer,
 	recentAuth reauth.Service,
 	auditWriter idccap.BusinessAuditWriter,
+	creditRefunds CreditUsageService,
 ) (ManagementRefundService, error) {
-	for _, dependency := range []any{database, authorizer, recentAuth, auditWriter} {
+	for _, dependency := range []any{database, authorizer, recentAuth, auditWriter, creditRefunds} {
 		if isNilFinanceDirectoryDependency(dependency) {
 			return nil, gerror.New("management refunds require database, authorization, and recent authentication")
 		}
@@ -74,6 +78,7 @@ func NewManagementRefundService(
 	return &managementRefundService{
 		database: database, authorizer: authorizer, recentAuth: recentAuth,
 		audit: auditWriter, random: rand.Reader,
+		commands: &onlineRefundService{database: database, audit: auditWriter, credit: creditRefunds, random: rand.Reader},
 	}, nil
 }
 
@@ -106,10 +111,7 @@ func (s *managementRefundService) ReviewRefund(
 		return replayed, nil
 	}
 	proofToken = strings.TrimSpace(proofToken)
-	if normalized.Decision == RefundReviewApprove && request.HighAmount {
-		if proofToken == "" {
-			return nil, bizerr.NewCode(CodeRefundInvalid)
-		}
+	if proofToken != "" {
 		proof, consumeErr := s.recentAuth.Consume(ctx, proofToken, binding)
 		if consumeErr != nil {
 			return nil, consumeErr
@@ -118,8 +120,6 @@ func (s *managementRefundService) ReviewRefund(
 			proof.Purpose != binding.Purpose || proof.TargetDigest != binding.TargetDigest {
 			return nil, bizerr.NewCode(CodeRefundNotAccessible)
 		}
-	} else if proofToken != "" {
-		return nil, bizerr.NewCode(CodeRefundInvalid)
 	}
 
 	var result *OnlineRefund
@@ -293,6 +293,7 @@ func (s *managementRefundService) prepareRefundReview(
 	intent.RefundNo = strings.TrimSpace(intent.RefundNo)
 	intent.CommentDigest = strings.TrimSpace(intent.CommentDigest)
 	intent.EvidenceDigest = strings.TrimSpace(intent.EvidenceDigest)
+	_, intent.EvidenceDigest = adjustmentMetadata("", intent.EvidenceDigest, "", intent.RequestNo)
 	actor, err := s.authorizer.AuthorizeRefundReview(ctx, intent.RefundNo)
 	if err != nil {
 		return 0, intent, nil, reauth.Binding{}, "", err

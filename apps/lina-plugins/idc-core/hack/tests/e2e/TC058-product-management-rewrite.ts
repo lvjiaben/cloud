@@ -1,0 +1,107 @@
+import { test, expect } from '../support/merchant-auth';
+import { installCatalogManagementMock, mockProductDetail, products } from '../support/catalog-mock';
+import { CatalogWorkspacePage } from '../pages/CatalogWorkspacePage';
+import { ProductMemberMenuPage } from '../pages/ProductMemberMenuPage';
+
+test.describe('TC-58 商品列表与编辑抽屉',()=>{
+ test('TC-58a: 状态筛选、核心创建、三个页签、刷新与返回保留商品',async({adminPage})=>{
+  const state=await installCatalogManagementMock(adminPage);
+  const detail:any=mockProductDetail('product-manual-service');
+  detail.product.productNo='product-created';detail.product.nameZhCn='新商品';detail.version.versionNo='version-created-1';detail.version.status='draft';
+  await adminPage.route('**/admin/catalog/products/product-created',r=>r.fulfill({json:{code:0,data:detail}}));
+  await adminPage.route('**/admin/catalog/product-versions/version-created-1/configuration',r=>r.fulfill({json:{code:0,data:{configuration:null}}}));
+  const view=new ProductMemberMenuPage(adminPage);await view.goto();
+  await new CatalogWorkspacePage(adminPage).filterStatus('已下架');
+  await expect.poll(()=>state.listRequests.at(-1)?.searchParams.get('status')).toBe('suspended');
+  await new CatalogWorkspacePage(adminPage).filterStatus('全部商品');
+  await expect.poll(()=>state.listRequests.at(-1)?.searchParams.get('status')||'').toBe('');
+  await new CatalogWorkspacePage(adminPage).openProductMore('product-ssl');
+  const saleAction=adminPage.getByTestId('catalog-product-sale-state-product-ssl');
+  await expect(saleAction).toBeVisible();
+  await adminPage.keyboard.press('Escape');
+  await view.screenshot('rewritten-product-list');
+  await view.openProductCreate(false);
+  await expect(view.productCreateModal.getByText('填写名称、分类、访问地址和商品介绍，再设置开通与售价。')).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-name-zh')).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-summary-zh')).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-inventory-tracking')).toBeHidden();
+  await view.selectProductCategory();
+  await view.productCreateModal.getByTestId('catalog-product-create-name-zh').fill('新商品');
+  await view.productCreateModal.getByTestId('catalog-product-create-name-en').fill('New product');
+  await view.productCreateModal.getByTestId('catalog-product-create-slug').fill('new-product');
+  await view.createProduct();await expect(view.productCreateModal).toBeVisible();expect(state.productCreateRequests).toHaveLength(0);
+  await view.productCreateModal.getByTestId('catalog-product-create-summary-zh').fill('新商品说明');
+  await view.productCreateModal.getByTestId('catalog-product-create-summary-en').fill('New product description');
+  await view.screenshot('rewritten-create-core-fields');await view.createProduct();
+  await expect(adminPage.getByRole('dialog').filter({has:view.detailDrawer})).toBeVisible();
+  await expect(adminPage.getByTestId('catalog-editor-tab-basic')).toContainText('基本资料');
+  await expect(adminPage.getByTestId('catalog-editor-tab-fulfillment')).toContainText('自动开通');
+  await expect(adminPage.getByTestId('catalog-editor-tab-configuration')).toContainText('用户选配与价格');
+  await expect(adminPage.locator('[data-testid^="catalog-editor-tab-"]')).toHaveCount(3);
+  await expect(adminPage.getByTestId('catalog-editor-tab-publication')).toHaveCount(0);
+  await expect(view.detailDrawer).toContainText('保存后立即生效');
+  expect(state.productCreateRequests[0]!.body).toMatchObject({nameZhCn:'新商品',nameEnUs:'New product',publicSlug:'new-product',contractPolicyCode:'inherit',inventoryTrackingEnabled:false});
+  await adminPage.reload();await expect(view.detailDrawer).toContainText('新商品');
+  await expect(adminPage.getByTestId('catalog-editor-back')).toBeVisible();
+  await view.selectEditSection('购买配置');await expect(adminPage.getByTestId('catalog-detail-base-prices')).toBeVisible();await expect(adminPage.getByTestId('catalog-settings-failed')).toBeHidden();
+  await view.selectEditSection('价格与税务');await expect(view.detailDrawer).toContainText('套餐售价');
+  await view.selectEditSection('附加商品');await expect(view.detailDrawer).toContainText('附加商品');
+  await view.screenshot('rewritten-product-direct-settings');
+  await view.closeProductDetail();await expect(adminPage).not.toHaveURL(/editProduct=/);
+  await expect(adminPage.getByTestId('catalog-product-create-open')).toBeVisible();
+  expect(state.publishRequests).toHaveLength(0);
+ });
+ test('TC-58b: 更多设置可展开收起，保存失败保留已填核心信息',async({adminPage})=>{
+  await installCatalogManagementMock(adminPage);
+  await adminPage.route('**/admin/catalog/products',async r=>{if(r.request().method()==='POST')await r.fulfill({status:409,json:{code:50,message:'商品地址已被使用'}});else await r.fallback();});
+  const view=new ProductMemberMenuPage(adminPage);await view.goto();await view.openProductCreate(false);
+  await view.productCreateModal.getByTestId('catalog-create-advanced').click();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-summary-zh')).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-contract-policy')).toBeVisible();
+  await view.productCreateModal.getByTestId('catalog-product-create-summary-zh').fill('保留商品介绍');
+  await view.productCreateModal.getByTestId('catalog-create-advanced').click();
+  await view.selectProductCategory();
+  await view.productCreateModal.getByTestId('catalog-product-create-name-zh').fill('重复商品');
+  await view.productCreateModal.getByTestId('catalog-product-create-name-en').fill('Duplicate product');
+  await view.productCreateModal.getByTestId('catalog-product-create-summary-en').fill('Retain the English description');
+  await view.createProduct();
+  await expect(view.productCreateModal).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-name-zh')).toHaveValue('重复商品');
+  await expect(adminPage.getByText('商品地址已被使用',{exact:true})).toBeVisible();
+  await view.productCreateModal.getByTestId('catalog-create-advanced').click();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-summary-zh')).toHaveValue('保留商品介绍');
+  await view.screenshot('rewritten-create-error-keeps-form');
+ });
+ test('TC-58c: 基础售价周期、零价、缺价与分类状态筛选独立准确',async({adminPage})=>{
+  const state=await installCatalogManagementMock(adminPage);
+  await adminPage.route('**/admin/catalog/products?*',async r=>{
+   const url=new URL(r.request().url());state.listRequests.push(url);
+   const rows=products.filter(row=>(!url.searchParams.get('categoryNo')||row.categoryNo===url.searchParams.get('categoryNo'))&&(!url.searchParams.get('status')||row.status===url.searchParams.get('status'))).map(row=>({...row,basePrice:row.productNo==='product-manual-service'?null:{currencyCode:row.productNo==='product-phone'?'JPY':'CNY',amountMinor:row.productNo==='product-phone'?'0':'1100',setupFeeMinor:row.productNo==='product-phone'?'0':'50',periodCount:1,periodUnit:'month',chargeType:'recurring'}}));
+   await r.fulfill({json:{code:0,data:{products:rows,total:rows.length,nextCursor:''}}});
+  });
+  const view=new ProductMemberMenuPage(adminPage);await view.goto();
+  await expect(adminPage.getByTestId('catalog-product-price-product-ssl')).toContainText('CNY 11.00');await expect(adminPage.getByTestId('catalog-product-price-product-ssl')).toContainText('/ 1 月');await expect(adminPage.getByTestId('catalog-product-price-product-ssl')).toContainText('CNY 0.50');
+  await expect(adminPage.getByTestId('catalog-product-price-product-phone')).toContainText('JPY 0');await expect(adminPage.getByTestId('catalog-product-price-product-manual-service')).toHaveText('未设置基础售价');
+  await expect(adminPage.getByTestId('catalog-search-status')).toBeVisible();await expect(adminPage.getByTestId('catalog-search-category')).toHaveCount(0);await expect(view.pageRoot).not.toContainText('版本来源');await expect(view.pageRoot).not.toContainText('0 币种');
+  await view.screenshot('product-list-real-price-preview');
+  await view.selectCategory('ctg_00000000000000000000000000000002');await new CatalogWorkspacePage(adminPage).filterStatus('销售中');
+  await expect.poll(()=>state.listRequests.at(-1)!.searchParams.get('categoryNo')).toBe('ctg_00000000000000000000000000000002');await expect.poll(()=>state.listRequests.at(-1)!.searchParams.get('status')).toBe('active');
+  await view.screenshot('product-list-combined-filters');
+ });
+
+ test('TC-58d: 英文创建直接展示完整商品介绍，未填必需内容不发送请求',async({adminPage,mainLayout})=>{
+  const state=await installCatalogManagementMock(adminPage);
+  await mainLayout.switchLanguage('English');
+  const view=new ProductMemberMenuPage(adminPage);await view.goto();await view.openProductCreate(false);
+  await expect(view.productCreateModal).toContainText('Enter names, category, URL and descriptions, then configure provisioning and prices.');
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-summary-zh')).toBeVisible();
+  await expect(view.productCreateModal.getByTestId('catalog-product-create-summary-en')).toBeVisible();
+  await expect(view.productCreateModal).toContainText('Chinese description');
+  await expect(view.productCreateModal).toContainText('English description');
+  await expect(view.productCreateModal).not.toContainText('plugin.idc-core.');
+  await adminPage.getByRole('dialog').filter({has:view.productCreateModal}).getByRole('button',{name:'Create product',exact:true}).click();
+  await expect(view.productCreateModal).toBeVisible();expect(state.productCreateRequests).toHaveLength(0);
+  await view.screenshot('create-product-required-copy-english');
+ });
+
+});

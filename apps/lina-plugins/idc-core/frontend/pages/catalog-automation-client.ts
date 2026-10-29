@@ -18,6 +18,7 @@ export interface AutomationProviderCandidate {
 }
 
 export interface AutomationInterface {
+  catalogAvailable?: boolean;
   canDelete: boolean;
   changedAt: number;
   createdAt: number;
@@ -28,6 +29,7 @@ export interface AutomationInterface {
 }
 
 export interface ProductFulfillmentBinding {
+  catalogAvailable?: boolean;
   boundAt: number;
   evidenceVerified: boolean;
   interfaceDisplayName: string;
@@ -36,6 +38,7 @@ export interface ProductFulfillmentBinding {
 }
 
 export interface AutomationInterfaceListParams {
+  forProductBinding?: boolean;
   namePrefix?: string;
   newBusinessState?: "" | AutomationInterfaceNewBusinessState;
   page?: number;
@@ -232,14 +235,5 @@ export function productFulfillmentBindingPut(
       `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/fulfillment-binding`,
     ),
     { interfaceInstanceNo },
-  );
-}
-
-export function productFulfillmentBindingDelete(versionNo: string) {
-  return requestClient.delete(
-    pluginApiPath(
-      pluginID,
-      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/fulfillment-binding`,
-    ),
   );
 }

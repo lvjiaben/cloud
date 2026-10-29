@@ -58,11 +58,13 @@ type ClaimInput struct {
 type ClaimedTask struct {
 	ID                    int64
 	TaskNo                string
+	RequestIDDigest       string
 	CapabilityCode        string
 	LocalResourceNo       string
 	ChannelNo             string
 	ConfigurationRevision string
 	PoolNo                string
+	OwnerMetadata         string
 	SanitizedParameters   string
 	AttemptNo             int
 	MaxAttempts           int
@@ -159,11 +161,13 @@ func (s *Store) Claim(ctx context.Context, input ClaimInput) ([]ClaimedTask, err
 			claimed = append(claimed, ClaimedTask{
 				ID:                    rows[index].Id,
 				TaskNo:                rows[index].TaskNo,
+				RequestIDDigest:       rows[index].RequestIdDigest,
 				CapabilityCode:        rows[index].CapabilityCode,
 				LocalResourceNo:       rows[index].LocalResourceNo,
 				ChannelNo:             rows[index].ChannelNo,
 				ConfigurationRevision: taskConfigurationRevision(rows[index].OwnerMetadata),
 				PoolNo:                rows[index].PoolNo,
+				OwnerMetadata:         rows[index].OwnerMetadata,
 				SanitizedParameters:   rows[index].SanitizedParameters,
 				AttemptNo:             rows[index].AttemptCount + 1,
 				MaxAttempts:           rows[index].MaxAttempts,
@@ -300,6 +304,7 @@ func loadClaimableTasks(
 		Fields(
 			columns.Id,
 			columns.TaskNo,
+			columns.RequestIdDigest,
 			columns.CapabilityCode,
 			columns.LocalResourceNo,
 			columns.ChannelNo,

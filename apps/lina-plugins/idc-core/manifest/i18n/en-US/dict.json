@@ -646,9 +646,6 @@
       }
     },
     "idc_customer_closure_finding": {
-      "active_contracts": {
-        "label": "Active contracts exist"
-      },
       "active_services": {
         "label": "Active services exist"
       },
@@ -826,9 +823,6 @@
       },
       "wechat_official": {
         "label": "WeChat Official Account"
-      },
-      "wechat_work": {
-        "label": "WeCom"
       }
     },
     "idc_notification_topic": {
@@ -1539,7 +1533,7 @@
     },
     "idc_billing_adjustment_type": {
       "balance_credit": {
-        "label": "Balance credit"
+        "label": "Manual gift credit"
       },
       "balance_debit": {
         "label": "Balance debit"

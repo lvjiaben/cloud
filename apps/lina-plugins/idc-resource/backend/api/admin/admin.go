@@ -16,6 +16,7 @@ type IAdminV1 interface {
 	ChannelSecretReplace(ctx context.Context, req *v1.ChannelSecretReplaceReq) (res *v1.ChannelSecretReplaceRes, err error)
 	ChannelSecretRevoke(ctx context.Context, req *v1.ChannelSecretRevokeReq) (res *v1.ChannelSecretRevokeRes, err error)
 	ChannelSecretRotate(ctx context.Context, req *v1.ChannelSecretRotateReq) (res *v1.ChannelSecretRotateRes, err error)
+	ProviderAPILogList(ctx context.Context, req *v1.ProviderAPILogListReq) (res *v1.ProviderAPILogListRes, err error)
 	ProviderCapacityObservationList(ctx context.Context, req *v1.ProviderCapacityObservationListReq) (res *v1.ProviderCapacityObservationListRes, err error)
 	ProviderCapacityRefreshCreate(ctx context.Context, req *v1.ProviderCapacityRefreshCreateReq) (res *v1.ProviderCapacityRefreshCreateRes, err error)
 	ProviderCatalogList(ctx context.Context, req *v1.ProviderCatalogListReq) (res *v1.ProviderCatalogListRes, err error)

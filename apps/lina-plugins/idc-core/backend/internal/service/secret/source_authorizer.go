@@ -31,7 +31,6 @@ var notifySecretChannels = map[string]struct{}{
 	"email":           {},
 	"sms":             {},
 	"wechat-official": {},
-	"wechat-work":     {},
 	"signed-webhook":  {},
 }
 

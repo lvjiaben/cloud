@@ -16,8 +16,6 @@ import type {
   EventItem,
   EventPolicy,
   TemplateItem,
-  WeComAuthorization,
-  WeComBinding,
 } from "./notification/api";
 import { createNotificationAPI } from "./notification/api";
 import { messages } from "./notification/messages";
@@ -38,16 +36,13 @@ type TemplateEditor = {
   providerTemplateId: string;
   smsVariableOrder: string[];
   smsDataRows: MappingRow[];
-  weChatRows: MappingRow[];
 };
 
 const props = defineProps<{ context: PluginHostMountContext }>();
 const api = createNotificationAPI(() => props.context);
 const tr = createTranslator(() => props.context, messages);
 const page = computed(() =>
-  props.context.routePath.includes("/wechat-work-binding")
-    ? "wecomBinding"
-    : props.context.routePath.includes("/templates")
+  props.context.routePath.includes("/templates")
       ? "templates"
       : props.context.routePath.includes("/deliveries")
         ? "deliveries"
@@ -74,7 +69,7 @@ const editor = reactive<TemplateEditor>({
   templateNo: "",
   version: 0,
   eventCode: "",
-  channelCode: "in_app",
+  channelCode: "email",
   locale: "zh-CN",
   subject: "",
   body: "",
@@ -83,7 +78,6 @@ const editor = reactive<TemplateEditor>({
   providerTemplateId: "",
   smsVariableOrder: [],
   smsDataRows: [],
-  weChatRows: [],
 });
 const selectedChannel = ref<Channel | null>(null);
 const channelPanel = ref<"configuration" | "test">("configuration");
@@ -106,14 +100,6 @@ const config = reactive({
   smsBaoUsername: "",
   smsBaoApiKey: "",
   productId: "",
-  appId: "",
-  appSecret: "",
-  callbackToken: "",
-  encodingAesKey: "",
-  corpId: "",
-  agentId: 0,
-  endpointUrl: "",
-  signingSecret: "",
 });
 const testForm = reactive({
   target: "",
@@ -122,17 +108,12 @@ const testForm = reactive({
   variables: {} as Record<string, string>,
 });
 const testResult = ref<ChannelTestResult | null>(null);
-const weComBinding = ref<WeComBinding | null>(null);
-const weComAuthorization = ref<WeComAuthorization | null>(null);
-const bindingPolling = ref(false);
-let bindingPollTimer: number | undefined;
 const cooldownClock = ref(Date.now());
 const eligibilityObservedAt = ref(0);
 let cooldownTimer: number | undefined;
 let deliverySelectionGeneration = 0;
 let eligibilityRequestGeneration = 0;
 let lastCooldownRefreshKey = "";
-const wechatCallbackURL = `${window.location.origin}/x/idc-notify/api/v1/callbacks/wechat-official`;
 
 const title = computed(() =>
   tr(`title${page.value[0].toUpperCase()}${page.value.slice(1)}`),
@@ -175,9 +156,6 @@ const visibleTemplates = computed(() =>
 const configurableChannelCodes = new Set([
   "email",
   "sms",
-  "wechat_official",
-  "wechat_work",
-  "signed_webhook",
 ]);
 const resendCooldownRemainingSeconds = computed(() => {
   const current = eligibility.value;
@@ -212,9 +190,6 @@ function resultLabel(value: string) {
   const key = `result_${value}`;
   return key in messages ? tr(key) : statusLabel(value);
 }
-function targetMaskLabel(value: string) {
-  return value === "current_staff_binding" ? tr("currentStaffBinding") : value;
-}
 function channelLabel(value: string, displayName = "") {
   const key = `channel_${value}`;
   return key in messages ? tr(key) : displayName || tr("channelUnknown");
@@ -241,9 +216,7 @@ function providerLabel(item: Channel) {
     : saved;
 }
 function recipientLabel(item: Delivery) {
-  return item.channelCode === "signed_webhook"
-    ? tr("configuredExternalSystem")
-    : item.recipientMask || "—";
+  return item.recipientMask || "—";
 }
 function reasonLabel(value: string) {
   const key = `reason_${value}`;
@@ -299,9 +272,6 @@ async function load() {
       events.value = eventPage.items;
       templates.value = templatePage.items;
     }
-    if (page.value === "wecomBinding") {
-      weComBinding.value = (await api.weComBinding()).item;
-    }
     if (page.value === "templates") {
       const [channelPage, eventPage, policyPage, templatePage] =
         await Promise.all([
@@ -329,75 +299,6 @@ async function load() {
     }
   } catch {
     error.value = tr("reason_unavailable");
-  } finally {
-    loading.value = false;
-  }
-}
-
-function stopBindingPolling() {
-  if (bindingPollTimer !== undefined) window.clearInterval(bindingPollTimer);
-  bindingPollTimer = undefined;
-  bindingPolling.value = false;
-}
-
-async function refreshWeComBinding(silent = false) {
-  if (bindingPolling.value && silent) return;
-  bindingPolling.value = true;
-  if (!silent) clearNotices();
-  try {
-    weComBinding.value = (await api.weComBinding()).item;
-    if (
-      weComBinding.value.bound ||
-      weComBinding.value.status === "invalidated" ||
-      Date.now() >=
-        (weComAuthorization.value?.expiresAt ?? Number.MAX_SAFE_INTEGER)
-    ) {
-      stopBindingPolling();
-      if (weComBinding.value.bound) {
-        weComAuthorization.value = null;
-        success.value = tr("wecomBindingCompleted");
-      }
-    }
-  } catch {
-    if (!silent) error.value = tr("wecomBindingUnavailable");
-  } finally {
-    bindingPolling.value = false;
-  }
-}
-
-function beginBindingPolling() {
-  stopBindingPolling();
-  bindingPollTimer = window.setInterval(() => {
-    void refreshWeComBinding(true);
-  }, 2500);
-}
-
-async function startWeComBinding() {
-  loading.value = true;
-  clearNotices();
-  try {
-    weComAuthorization.value = await api.startWeComBinding();
-    success.value = tr("wecomBindingStarted");
-    beginBindingPolling();
-  } catch {
-    error.value = tr("wecomBindingUnavailable");
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function removeWeComBinding() {
-  const binding = weComBinding.value;
-  if (!binding?.bound || !confirm(tr("confirmRemoveWecomBinding"))) return;
-  loading.value = true;
-  clearNotices();
-  stopBindingPolling();
-  try {
-    weComBinding.value = (await api.removeWeComBinding(binding)).item;
-    weComAuthorization.value = null;
-    success.value = tr("wecomBindingRemoved");
-  } catch {
-    error.value = tr("wecomBindingUnavailable");
   } finally {
     loading.value = false;
   }
@@ -472,14 +373,6 @@ function openConfiguration(item: Channel) {
     smsBaoUsername: "",
     smsBaoApiKey: "",
     productId: "",
-    appId: "",
-    appSecret: "",
-    callbackToken: "",
-    encodingAesKey: "",
-    corpId: "",
-    agentId: 0,
-    endpointUrl: "",
-    signingSecret: "",
   });
   if (item.configuration.smtp) Object.assign(config, item.configuration.smtp);
   if (item.configuration.aliyunSms)
@@ -488,11 +381,6 @@ function openConfiguration(item: Channel) {
     Object.assign(config, item.configuration.smsBao);
   if (item.configuration.tencentSms)
     Object.assign(config, item.configuration.tencentSms);
-  if (item.configuration.weChatOfficial)
-    Object.assign(config, item.configuration.weChatOfficial);
-  if (item.configuration.weCom) Object.assign(config, item.configuration.weCom);
-  if (item.configuration.signedWebhook)
-    Object.assign(config, item.configuration.signedWebhook);
 }
 
 function clearSMSSecrets() {
@@ -554,31 +442,9 @@ async function saveConfiguration() {
             fromAddress: config.fromAddress,
             fromName: config.fromName,
           })
-        : item.code === "sms"
-          ? await saveSMSConfiguration(item)
-          : item.code === "wechat_official"
-            ? await api.configureWeChatOfficial(item, {
-                appId: config.appId,
-                appSecret: config.appSecret,
-                callbackToken: config.callbackToken,
-                encodingAesKey: config.encodingAesKey,
-              })
-            : item.code === "signed_webhook"
-              ? await api.configureSignedWebhook(item, {
-                  endpointUrl: config.endpointUrl,
-                  signingSecret: config.signingSecret,
-                })
-              : await api.configureWeCom(item, {
-                  corpId: config.corpId,
-                  agentId: Number(config.agentId),
-                  appSecret: config.appSecret,
-                });
+        : await saveSMSConfiguration(item);
     config.password = "";
     clearSMSSecrets();
-    config.appSecret = "";
-    config.callbackToken = "";
-    config.encodingAesKey = "";
-    config.signingSecret = "";
     const index = channels.value.findIndex(
       (channel) => channel.code === item.code,
     );
@@ -588,10 +454,6 @@ async function saveConfiguration() {
   } catch {
     config.password = "";
     clearSMSSecrets();
-    config.appSecret = "";
-    config.callbackToken = "";
-    config.encodingAesKey = "";
-    config.signingSecret = "";
     error.value = tr("configurationFailed");
   } finally {
     loading.value = false;
@@ -635,29 +497,18 @@ async function sendTest() {
   if (
     !item ||
     !testForm.templateNo ||
-    (item.code !== "wechat_work" && !testForm.target)
+    !testForm.target
   )
     return;
   const prompt =
     item.code === "sms"
       ? tr("confirmSmsTest")
-      : item.code === "wechat_work"
-        ? tr("confirmWecomTest")
-        : tr("confirmRealTest");
+      : tr("confirmRealTest");
   if (!confirm(prompt)) return;
   loading.value = true;
   clearNotices();
   try {
-    testResult.value =
-      item.code === "wechat_work"
-        ? (
-            await api.testOwnWeCom(item, {
-              templateNo: testForm.templateNo,
-              templateVersion: testForm.templateVersion,
-              variables: { ...testForm.variables },
-            })
-          ).item
-        : (
+    testResult.value = (
             await api.testChannel(item, {
               target: testForm.target,
               templateNo: testForm.templateNo,
@@ -687,12 +538,9 @@ function editTemplate(item: TemplateItem) {
     status: item.status,
     smsProviderCode: item.sms?.providerCode ?? "",
     providerTemplateId:
-      item.sms?.templateId ?? item.weChatOfficial?.templateId ?? "",
+      item.sms?.templateId ?? "",
     smsVariableOrder: [...(item.sms?.variableOrder ?? [])],
     smsDataRows: Object.entries(item.sms?.dataMapping ?? {}).map(
-      ([key, variable]) => ({ key, variable }),
-    ),
-    weChatRows: Object.entries(item.weChatOfficial?.dataMapping ?? {}).map(
       ([key, variable]) => ({ key, variable }),
     ),
   });
@@ -706,7 +554,6 @@ function resetProviderMapping() {
   editor.providerTemplateId = "";
   editor.smsVariableOrder = [];
   editor.smsDataRows = [];
-  editor.weChatRows = [];
 }
 async function updateEventPolicy(item: EventPolicy) {
   clearNotices();
@@ -735,9 +582,6 @@ function addSMSDataMapping() {
     variable: editorVariables.value[0] ?? "",
   });
 }
-function addWeChatMapping() {
-  editor.weChatRows.push({ key: "", variable: editorVariables.value[0] ?? "" });
-}
 async function saveTemplate() {
   loading.value = true;
   clearNotices();
@@ -746,7 +590,6 @@ async function saveTemplate() {
       ...editor,
       smsVariableOrder: [...editor.smsVariableOrder],
       smsDataRows: editor.smsDataRows.map((row) => ({ ...row })),
-      weChatRows: editor.weChatRows.map((row) => ({ ...row })),
     };
     if (editor.channelCode === "sms")
       payload.sms = {
@@ -755,13 +598,6 @@ async function saveTemplate() {
         variableOrder: [...editor.smsVariableOrder],
         dataMapping: Object.fromEntries(
           editor.smsDataRows.map((row) => [row.key, row.variable]),
-        ),
-      };
-    if (editor.channelCode === "wechat_official")
-      payload.weChatOfficial = {
-        templateId: editor.providerTemplateId,
-        dataMapping: Object.fromEntries(
-          editor.weChatRows.map((row) => [row.key, row.variable]),
         ),
       };
     await api.saveTemplate(payload);
@@ -896,9 +732,7 @@ async function closeUnknown() {
   }
 }
 watch(page, () => {
-  stopBindingPolling();
   resetDeliverySelection();
-  weComAuthorization.value = null;
   void load();
 });
 watch(resendCooldownRemainingSeconds, (current, previous) => {
@@ -922,7 +756,6 @@ onMounted(() => {
   }, 1000);
 });
 onBeforeUnmount(() => {
-  stopBindingPolling();
   if (cooldownTimer !== undefined) window.clearInterval(cooldownTimer);
   cooldownTimer = undefined;
   resetDeliverySelection();
@@ -944,95 +777,8 @@ onBeforeUnmount(() => {
     <p v-if="success" class="notice success" role="status">{{ success }}</p>
     <p v-if="loading" class="notice info">{{ tr("loading") }}</p>
 
-    <section v-if="page === 'wecomBinding'" class="binding-layout">
-      <article class="panel binding-card">
-        <div class="card-heading">
-          <div>
-            <p class="eyebrow">{{ tr("wecomSelfServiceEyebrow") }}</p>
-            <h2>{{ tr("wecomBindingState") }}</h2>
-          </div>
-          <span
-            class="status"
-            :data-state="weComBinding?.status ?? 'unbound'"
-            >{{ statusLabel(weComBinding?.status ?? "unbound") }}</span
-          >
-        </div>
-        <p class="binding-lead">{{ tr("wecomBindingPrivacy") }}</p>
-        <dl>
-          <div>
-            <dt>{{ tr("status") }}</dt>
-            <dd>{{ statusLabel(weComBinding?.status ?? "unbound") }}</dd>
-          </div>
-          <div v-if="weComBinding?.boundAt">
-            <dt>{{ tr("wecomBoundAt") }}</dt>
-            <dd>{{ formatTime(weComBinding.boundAt) }}</dd>
-          </div>
-        </dl>
-        <p class="notice warning">{{ tr("wecomRecentLogin") }}</p>
-        <div class="actions">
-          <button
-            v-if="
-              !weComBinding ||
-              ['unbound', 'invalidated'].includes(weComBinding.status)
-            "
-            class="button primary"
-            type="button"
-            :disabled="loading"
-            @click="startWeComBinding"
-          >
-            {{ tr("startWecomBinding") }}
-          </button>
-          <button
-            v-if="weComBinding?.bound"
-            class="button danger"
-            type="button"
-            :disabled="loading"
-            @click="removeWeComBinding"
-          >
-            {{ tr("removeWecomBinding") }}
-          </button>
-        </div>
-      </article>
-      <aside class="panel authorization-card">
-        <template v-if="weComAuthorization">
-          <p class="eyebrow">{{ tr("officialAuthorizationEyebrow") }}</p>
-          <h2>{{ tr("startWecomBinding") }}</h2>
-          <p class="notice info">{{ tr("wecomAuthorizationHint") }}</p>
-          <dl>
-            <div>
-              <dt>{{ tr("authorizationExpiresAt") }}</dt>
-              <dd>{{ formatTime(weComAuthorization.expiresAt) }}</dd>
-            </div>
-          </dl>
-          <div class="authorization-actions">
-            <a
-              class="button primary"
-              :href="weComAuthorization.qrLoginUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ tr("openWecomQR") }}</a
-            >
-            <a
-              class="button secondary"
-              :href="weComAuthorization.authorizationUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ tr("openWecomMobile") }}</a
-            >
-          </div>
-        </template>
-        <template v-else>
-          <div class="binding-mark" aria-hidden="true">
-            {{ tr("wecomMark") }}
-          </div>
-          <h2>{{ tr("startWecomBinding") }}</h2>
-          <p class="binding-lead">{{ tr("wecomAuthorizationHint") }}</p>
-        </template>
-      </aside>
-    </section>
-
     <section
-      v-else-if="page === 'channels'"
+      v-if="page === 'channels'"
       class="channel-layout"
       :class="{ 'single-column': !selectedChannel }"
     >
@@ -1064,23 +810,13 @@ onBeforeUnmount(() => {
                 <dt>{{ tr("provider") }}</dt>
                 <dd>{{ providerLabel(item) }}</dd>
               </div>
-              <div v-if="item.code === 'wechat_official'">
-                <dt>{{ tr("callbackVerification") }}</dt>
-                <dd>
-                  {{
-                    item.configuration.weChatOfficial?.callbackVerified
-                      ? tr("verified")
-                      : tr("notVerified")
-                  }}
-                </dd>
-              </div>
               <div>
                 <dt>{{ tr("pending") }}</dt>
                 <dd>{{ item.pendingQueryCount }}</dd>
               </div>
             </dl>
             <p
-              v-if="item.code !== 'in_app' && !configurableChannel(item)"
+              v-if="!configurableChannel(item)"
               class="notice info"
             >
               {{ tr("channelAdapterPending") }}
@@ -1100,7 +836,7 @@ onBeforeUnmount(() => {
               ><button
                 v-if="
                   item.configured &&
-                  ['email', 'sms', 'wechat_official', 'wechat_work'].includes(
+                  ['email', 'sms'].includes(
                     item.code,
                   ) &&
                   item.status === 'enabled'
@@ -1110,7 +846,7 @@ onBeforeUnmount(() => {
               >
                 {{ tr("testSend") }}</button
               ><button
-                v-if="item.status === 'enabled' && item.code !== 'in_app'"
+                v-if="item.status === 'enabled'"
                 class="button secondary"
                 @click="channelAction(item, 'disable')"
               >
@@ -1118,10 +854,6 @@ onBeforeUnmount(() => {
               ><button
                 v-if="item.status === 'disabled'"
                 class="button secondary"
-                :disabled="
-                  item.code === 'wechat_official' &&
-                  !item.configuration.weChatOfficial?.callbackVerified
-                "
                 @click="channelAction(item, 'enable')"
               >
                 {{ tr("enable") }}</button
@@ -1331,88 +1063,6 @@ onBeforeUnmount(() => {
                   autocomplete="new-password" /></label
             ></template>
           </template>
-          <template v-else-if="selectedChannel.code === 'wechat_official'"
-            ><p class="notice warning">{{ tr("wechatCallbackPending") }}</p>
-            <label
-              >{{ tr("wechatCallbackAddress")
-              }}<input :value="wechatCallbackURL" readonly /></label
-            ><label
-              >{{ tr("appId")
-              }}<input
-                v-model.trim="config.appId"
-                required
-                maxlength="64" /></label
-            ><label
-              >{{ tr("appSecret")
-              }}<input
-                v-model="config.appSecret"
-                required
-                type="password"
-                maxlength="256"
-                autocomplete="new-password" /></label
-            ><label
-              >{{ tr("callbackToken")
-              }}<input
-                v-model="config.callbackToken"
-                required
-                type="password"
-                minlength="3"
-                maxlength="64"
-                autocomplete="new-password" /></label
-            ><label
-              >{{ tr("encodingAesKey")
-              }}<input
-                v-model="config.encodingAesKey"
-                required
-                type="password"
-                minlength="43"
-                maxlength="43"
-                autocomplete="new-password" /></label
-          ></template>
-          <template v-else-if="selectedChannel.code === 'wechat_work'"
-            ><p class="notice warning">{{ tr("wecomMappingPending") }}</p>
-            <label
-              >{{ tr("corpId")
-              }}<input
-                v-model.trim="config.corpId"
-                required
-                maxlength="64" /></label
-            ><label
-              >{{ tr("agentId")
-              }}<input
-                v-model.number="config.agentId"
-                required
-                type="number"
-                min="1" /></label
-            ><label
-              >{{ tr("appSecret")
-              }}<input
-                v-model="config.appSecret"
-                required
-                type="password"
-                maxlength="256"
-                autocomplete="new-password" /></label
-          ></template>
-          <template v-else-if="selectedChannel.code === 'signed_webhook'"
-            ><p class="notice warning">{{ tr("signedWebhookHelp") }}</p>
-            <label
-              >{{ tr("webhookEndpoint")
-              }}<input
-                v-model.trim="config.endpointUrl"
-                required
-                type="url"
-                maxlength="2048"
-                placeholder="https://hooks.example.com/lina/events" /></label
-            ><label
-              >{{ tr("webhookSigningSecret")
-              }}<input
-                v-model="config.signingSecret"
-                required
-                type="password"
-                minlength="32"
-                maxlength="512"
-                autocomplete="new-password" /></label
-          ></template>
           <button class="button primary" type="submit" :disabled="loading">
             {{ tr("saveConfiguration") }}
           </button>
@@ -1422,13 +1072,8 @@ onBeforeUnmount(() => {
             {{
               selectedChannel.code === "sms"
                 ? tr("smsCostWarning")
-                : selectedChannel.code === "wechat_work"
-                  ? tr("wecomDeliveryWarning")
-                  : tr("realDeliveryWarning")
+                : tr("realDeliveryWarning")
             }}
-          </p>
-          <p v-if="selectedChannel.code === 'wechat_work'" class="notice info">
-            {{ tr("wecomSelfTestTarget") }}
           </p>
           <label
             >{{ tr("testTemplate")
@@ -1456,7 +1101,7 @@ onBeforeUnmount(() => {
                 · v{{ item.version }}
               </option>
             </select></label
-          ><label v-if="selectedChannel.code !== 'wechat_work'"
+          ><label
             >{{ tr(`testTarget_${selectedChannel.code}`)
             }}<input
               v-model="testForm.target"
@@ -1486,7 +1131,7 @@ onBeforeUnmount(() => {
             <strong>{{ resultLabel(testResult.resultClass) }}</strong>
             <p>
               {{ tr("maskedTarget") }}：{{
-                targetMaskLabel(testResult.targetMask)
+                testResult.targetMask
               }}
             </p>
           </div>
@@ -1767,53 +1412,6 @@ onBeforeUnmount(() => {
           >
             {{ tr("smsBaoBodyMappingHelp") }}
           </p>
-        </fieldset>
-        <fieldset
-          v-if="editor.channelCode === 'wechat_official'"
-          class="mapping"
-        >
-          <legend>{{ tr("wechatTemplateMapping") }}</legend>
-          <label
-            >{{ tr("providerTemplateId")
-            }}<input
-              v-model.trim="editor.providerTemplateId"
-              required
-              maxlength="128"
-          /></label>
-          <div
-            v-for="(row, index) in editor.weChatRows"
-            :key="index"
-            class="mapping-row"
-          >
-            <input
-              v-model.trim="row.key"
-              required
-              :placeholder="tr('wechatDataKey')"
-              maxlength="64"
-            /><select v-model="row.variable">
-              <option
-                v-for="variable in editorVariables"
-                :key="variable"
-                :value="variable"
-              >
-                {{ variableLabel(variable) }}
-              </option></select
-            ><button
-              class="button danger"
-              type="button"
-              @click="editor.weChatRows.splice(index, 1)"
-            >
-              {{ tr("remove") }}
-            </button>
-          </div>
-          <button
-            class="button secondary"
-            type="button"
-            :disabled="!editorVariables.length"
-            @click="addWeChatMapping"
-          >
-            {{ tr("addDataMapping") }}
-          </button>
         </fieldset>
         <label
           >{{ tr("status")

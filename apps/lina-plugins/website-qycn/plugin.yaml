@@ -1,0 +1,122 @@
+id: website-qycn
+name: Qycn-style website
+version: v0.1.18
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: Independent bilingual website with public catalog and website checkout.
+i18n:
+  enabled: true
+  default: zh-CN
+  locales:
+    - locale: en-US
+      nativeName: English
+    - locale: zh-CN
+      nativeName: 简体中文
+author: linapro
+license: Proprietary
+dependencies:
+  plugins:
+    - id: idc-portal
+      version: ">=0.1.11 <1.0.0"
+    - id: idc-core
+      version: ">=0.1.167 <1.0.0"
+public_assets:
+  - source: frontend/dist
+    mount: /
+    index: index.html
+business_extensions:
+  - point: website-template
+    version: v1
+    role: provider
+    owner: idc-portal
+    methods: [capabilities.describe]
+    interface_configuration_cardinality: singleton
+    interface_configuration:
+      version: v1
+      fields:
+        - key: herotitle
+          type: single_line
+          label: { en-US: Home title, zh-CN: 首页主标题 }
+          maximum_length: 120
+        - key: herodescription
+          type: single_line
+          label: { en-US: Home description, zh-CN: 首页副标题 }
+          maximum_length: 240
+        - key: herotitleen
+          type: single_line
+          label: { en-US: English home title, zh-CN: 英文首页主标题 }
+          maximum_length: 120
+        - key: herodescriptionen
+          type: single_line
+          label: { en-US: English home description, zh-CN: 英文首页副标题 }
+          maximum_length: 240
+        - key: partners
+          type: multi_line
+          label: { en-US: Partners (one name per line), zh-CN: 合作伙伴（每行一个名称） }
+          maximum_length: 2000
+        - key: partnersen
+          type: multi_line
+          label: { en-US: Partners in English (one per line), zh-CN: 英文合作伙伴（每行一个名称） }
+          maximum_length: 2000
+        - key: heroimage
+          type: single_line
+          label: { en-US: Home image URL, zh-CN: 首页背景图片地址 }
+          maximum_length: 500
+    provider_metadata:
+      type: website-template-contract
+      version: v1
+      values:
+        entry: index.html
+        spa: false
+        pages:
+          - { id: configure, nameZh: 配置产品, nameEn: Configure product, path: /configure.html }
+          - { id: cart, nameZh: 购物车, nameEn: Cart, path: /cart.html }
+          - { id: home, nameZh: 首页, nameEn: Home, path: / }
+          - {
+              id: products,
+              nameZh: 产品与服务,
+              nameEn: Products,
+              path: /products.html,
+            }
+          - {
+              id: services,
+              nameZh: 服务方案,
+              nameEn: Services,
+              path: /services.html,
+            }
+          - {
+              id: datacenters,
+              nameZh: 数据中心,
+              nameEn: Data centers,
+              path: /datacenters.html,
+            }
+          - { id: news, nameZh: 企业资讯, nameEn: News, path: /news.html }
+          - {
+              id: announcements,
+              nameZh: 活动公告,
+              nameEn: Announcements,
+              path: /announcements.html,
+            }
+          - {
+              id: knowledge,
+              nameZh: 技术资讯,
+              nameEn: Knowledge,
+              path: /knowledge.html,
+            }
+          - {
+              id: downloads,
+              nameZh: 下载中心,
+              nameEn: Downloads,
+              path: /downloads.html,
+            }
+          - { id: help, nameZh: 帮助中心, nameEn: Help, path: /help.html }
+          - { id: about, nameZh: 关于我们, nameEn: About, path: /about.html }
+          - {
+              id: contact,
+              nameZh: 联系我们,
+              nameEn: Contact,
+              path: /contact.html,
+            }

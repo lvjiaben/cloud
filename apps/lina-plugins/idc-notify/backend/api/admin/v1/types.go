@@ -2,7 +2,7 @@ package v1
 
 type ChannelItem struct {
 	Code                    string                         `json:"code" dc:"Stable notification channel code" eg:"email"`
-	Kind                    string                         `json:"kind" dc:"Adapter kind: in_app, email, sms, wechat_official, wechat_work, signed_webhook, dingtalk, or feishu" eg:"email"`
+	Kind                    string                         `json:"kind" dc:"Adapter kind: email or sms" eg:"email"`
 	ProviderCode            string                         `json:"providerCode" dc:"Installed provider adapter code; empty when no adapter is configured" eg:"provider_code"`
 	DisplayName             string                         `json:"displayName" dc:"Merchant-visible channel display name" eg:"Email"`
 	Status                  string                         `json:"status" dc:"Channel status: unconfigured, configuring, enabled, or disabled" eg:"enabled"`
@@ -17,13 +17,10 @@ type ChannelItem struct {
 }
 
 type ChannelPublicConfigurationItem struct {
-	SMTP           *SMTPPublicConfigurationItem           `json:"smtp,omitempty" dc:"SMTP public settings when email is configured" eg:"{}"`
-	AliyunSMS      *AliyunSMSPublicConfigurationItem      `json:"aliyunSms,omitempty" dc:"Aliyun SMS public settings when selected" eg:"{}"`
-	SMSBao         *SMSBaoPublicConfigurationItem         `json:"smsBao,omitempty" dc:"SMSBao public settings when selected" eg:"{}"`
-	TencentSMS     *TencentSMSPublicConfigurationItem     `json:"tencentSms,omitempty" dc:"Tencent Cloud SMS public settings when SMS is configured" eg:"{}"`
-	WeChatOfficial *WeChatOfficialPublicConfigurationItem `json:"weChatOfficial,omitempty" dc:"WeChat Official Account public settings when configured" eg:"{}"`
-	WeCom          *WeComPublicConfigurationItem          `json:"weCom,omitempty" dc:"WeCom public settings when configured" eg:"{}"`
-	SignedWebhook  *SignedWebhookPublicConfigurationItem  `json:"signedWebhook,omitempty" dc:"Signed Webhook public settings when configured" eg:"{}"`
+	SMTP       *SMTPPublicConfigurationItem       `json:"smtp,omitempty" dc:"SMTP public settings when email is configured" eg:"{}"`
+	AliyunSMS  *AliyunSMSPublicConfigurationItem  `json:"aliyunSms,omitempty" dc:"Aliyun SMS public settings when selected" eg:"{}"`
+	SMSBao     *SMSBaoPublicConfigurationItem     `json:"smsBao,omitempty" dc:"SMSBao public settings when selected" eg:"{}"`
+	TencentSMS *TencentSMSPublicConfigurationItem `json:"tencentSms,omitempty" dc:"Tencent Cloud SMS public settings when SMS is configured" eg:"{}"`
 }
 
 type AliyunSMSPublicConfigurationItem struct {
@@ -48,19 +45,6 @@ type TencentSMSPublicConfigurationItem struct {
 	SmsSdkAppID string `json:"smsSdkAppId" dc:"Tencent Cloud SMS application ID" eg:"1400000000"`
 	SignName    string `json:"signName" dc:"Approved Tencent Cloud SMS signature" eg:"Example IDC"`
 }
-type WeChatOfficialPublicConfigurationItem struct {
-	AppID              string `json:"appId" dc:"Configured verified WeChat Official Account AppID" eg:"wx1234567890abcdef"`
-	CallbackVerified   bool   `json:"callbackVerified" dc:"Whether the encrypted callback challenge passed for the current configuration generation" eg:"true"`
-	CallbackVerifiedAt *int64 `json:"callbackVerifiedAt" dc:"Encrypted callback verification time as Unix timestamp in milliseconds; null before verification" eg:"1786752000000"`
-}
-type WeComPublicConfigurationItem struct {
-	CorpID  string `json:"corpId" dc:"Configured WeCom enterprise ID" eg:"ww1234567890abcdef"`
-	AgentID int64  `json:"agentId" dc:"Configured WeCom custom application agent ID" eg:"1000002"`
-}
-
-type SignedWebhookPublicConfigurationItem struct {
-	EndpointURL string `json:"endpointUrl" dc:"Configured public HTTPS Webhook endpoint" eg:"https://hooks.example.com/lina/events"`
-}
 
 type ChannelTestItem struct {
 	OperationNo string `json:"operationNo" dc:"Opaque test operation number" eg:"ntest_01jnotify00000000000000001"`
@@ -82,18 +66,17 @@ type EventItem struct {
 }
 
 type TemplateItem struct {
-	TemplateNo     string                             `json:"templateNo" dc:"Opaque notification template number" eg:"ntpl_support_ticket_updated_in_app_zh"`
-	Version        int64                              `json:"version" dc:"Immutable template version" eg:"2"`
-	EventCode      string                             `json:"eventCode" dc:"Registered notification event code" eg:"support.ticket_updated"`
-	ChannelCode    string                             `json:"channelCode" dc:"Notification channel code for this template" eg:"in_app"`
-	Locale         string                             `json:"locale" dc:"Template locale: zh-CN or en-US" eg:"zh-CN"`
-	Subject        string                             `json:"subject" dc:"Template subject exactly as stored" eg:"Ticket {{ticketNo}} was updated"`
-	Body           string                             `json:"body" dc:"Template body exactly as stored" eg:"Your ticket {{ticketNo}} has a new reply."`
-	Status         string                             `json:"status" dc:"Template status: draft=not used, active=eligible for delivery, disabled=retained but unavailable" eg:"active"`
-	CreatedBy      int64                              `json:"createdBy" dc:"Host administrator user ID that created this version" eg:"1"`
-	CreatedAt      int64                              `json:"createdAt" dc:"Template-version creation time as Unix timestamp in milliseconds" eg:"1786752000000"`
-	SMS            *SMSTemplateMappingItem            `json:"sms,omitempty" dc:"Frozen mapping for the selected SMS provider" eg:"{}"`
-	WeChatOfficial *WeChatOfficialTemplateMappingItem `json:"weChatOfficial,omitempty" dc:"Frozen WeChat Official Account data mapping" eg:"{}"`
+	TemplateNo  string                  `json:"templateNo" dc:"Opaque notification template number" eg:"ntpl_support_ticket_updated_email_zh"`
+	Version     int64                   `json:"version" dc:"Immutable template version" eg:"2"`
+	EventCode   string                  `json:"eventCode" dc:"Registered notification event code" eg:"support.ticket_updated"`
+	ChannelCode string                  `json:"channelCode" dc:"Notification channel code for this template" eg:"email"`
+	Locale      string                  `json:"locale" dc:"Template locale: zh-CN or en-US" eg:"zh-CN"`
+	Subject     string                  `json:"subject" dc:"Template subject exactly as stored" eg:"Ticket {{ticketNo}} was updated"`
+	Body        string                  `json:"body" dc:"Template body exactly as stored" eg:"Your ticket {{ticketNo}} has a new reply."`
+	Status      string                  `json:"status" dc:"Template status: draft=not used, active=eligible for delivery, disabled=retained but unavailable" eg:"active"`
+	CreatedBy   int64                   `json:"createdBy" dc:"Host administrator user ID that created this version" eg:"1"`
+	CreatedAt   int64                   `json:"createdAt" dc:"Template-version creation time as Unix timestamp in milliseconds" eg:"1786752000000"`
+	SMS         *SMSTemplateMappingItem `json:"sms,omitempty" dc:"Frozen mapping for the selected SMS provider" eg:"{}"`
 }
 
 type SMSTemplateMappingInput struct {
@@ -102,12 +85,7 @@ type SMSTemplateMappingInput struct {
 	VariableOrder []string          `json:"variableOrder" dc:"Event variables in Tencent Cloud parameter order" eg:"[]"`
 	DataMapping   map[string]string `json:"dataMapping" dc:"Aliyun template parameter name to event variable mapping" eg:"{}"`
 }
-type WeChatOfficialTemplateMappingInput struct {
-	TemplateID  string            `json:"templateId" v:"required|max-length:128" dc:"WeChat Official Account template ID" eg:"template-id"`
-	DataMapping map[string]string `json:"dataMapping" dc:"Provider data key to event variable name mapping" eg:"{}"`
-}
 type SMSTemplateMappingItem = SMSTemplateMappingInput
-type WeChatOfficialTemplateMappingItem = WeChatOfficialTemplateMappingInput
 
 type DeliveryItem struct {
 	TaskNo              string `json:"taskNo" dc:"Opaque notification delivery task number" eg:"ntask_01jnotify000000000000000001"`
@@ -115,7 +93,7 @@ type DeliveryItem struct {
 	PreviousTaskNo      string `json:"previousTaskNo" dc:"Previous delivery task in the linear resend chain; empty for the root task" eg:"ntask_01jnotify000000000000000000"`
 	EventCode           string `json:"eventCode" dc:"Stable notification event code" eg:"support.ticket_updated"`
 	Topic               string `json:"topic" dc:"Notification topic: account, billing, service, security, support, or marketing" eg:"support"`
-	ChannelCode         string `json:"channelCode" dc:"Notification channel code" eg:"in_app"`
+	ChannelCode         string `json:"channelCode" dc:"Notification channel code" eg:"email"`
 	Locale              string `json:"locale" dc:"Locale frozen when the delivery task was created" eg:"zh-CN"`
 	RecipientMask       string `json:"recipientMask" dc:"Masked recipient evidence that never exposes the raw destination" eg:"c***@example.com"`
 	BusinessObjectType  string `json:"businessObjectType" dc:"Authoritative business-object type referenced by the notification" eg:"support_ticket"`

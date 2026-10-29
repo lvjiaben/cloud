@@ -33,19 +33,20 @@ type ImportConfigurationIssue struct {
 // ImportBinding is an opaque, validated preparation, usable only with its
 // originating service and direct staff actor. It contains no supplier secrets.
 type ImportBinding struct {
-	MissingConfiguration []ImportConfigurationIssue
-	owner                *serviceImpl
-	actor                int
-	interfaceNo          string
-	interfaceVersion     int64
-	interfaceRevision    int64
-	readEvidence         resourceinterfaceprojectioncap.CatalogReadEvidence
-	exact                *capmodel.BusinessExtensionProviderEvidence
-	product              *canonicalConfiguration
-	customerJSON         []byte
-	customerSchema       *capmodel.ConfigurationSchemaDeclaration
-	portable             *channelcommercecap.ImportSnapshot
-	interfaceCandidates  configurationcontract.ResolvedCandidates
+	MissingConfiguration     []ImportConfigurationIssue
+	owner                    *serviceImpl
+	actor                    int
+	interfaceNo              string
+	interfaceVersion         int64
+	interfaceRevision        int64
+	readEvidence             resourceinterfaceprojectioncap.CatalogReadEvidence
+	exact                    *capmodel.BusinessExtensionProviderEvidence
+	product                  *canonicalConfiguration
+	customerJSON             []byte
+	customerPresentationJSON []byte
+	customerSchema           *capmodel.ConfigurationSchemaDeclaration
+	portable                 *channelcommercecap.ImportSnapshot
+	interfaceCandidates      configurationcontract.ResolvedCandidates
 }
 
 // ImportBindingService is the same-owner atomic draft import admission seam.
@@ -118,6 +119,10 @@ func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo stri
 		}
 		customerSchema = portable.Schema
 	}
+	customerPresentationJSON, err := portableCustomerPresentationJSON(portable)
+	if err != nil {
+		return nil, bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
 	customerJSON, err := configurationDeclarationJSON(customerSchema)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
@@ -153,7 +158,7 @@ func (s *serviceImpl) PrepareImportBinding(ctx context.Context, interfaceNo stri
 	frozenRead := *readEvidence
 	frozenRead.AuthorizedMethods = append([]string(nil), readEvidence.AuthorizedMethods...)
 	return &ImportBinding{MissingConfiguration: missing, owner: s, actor: authorization.ActorUserID, interfaceNo: interfaceNo, readEvidence: frozenRead,
-		interfaceVersion: instance.Version, interfaceRevision: revision.Revision, exact: exact, product: product, customerJSON: customerJSON, customerSchema: customerSchema, portable: portable, interfaceCandidates: interfaceCandidates}, nil
+		interfaceVersion: instance.Version, interfaceRevision: revision.Revision, exact: exact, product: product, customerJSON: customerJSON, customerPresentationJSON: customerPresentationJSON, customerSchema: customerSchema, portable: portable, interfaceCandidates: interfaceCandidates}, nil
 }
 
 // matchesImportReadEvidence joins the resource-owned read snapshot to the
@@ -268,7 +273,7 @@ func (s *serviceImpl) WithImportBinding(ctx context.Context, prepared *ImportBin
 		return bizerr.NewCode(catalog.CodeManagementNotAccessible)
 	}
 	return normalizeManagementWriteError(s.extensions.WithNewBusinessAdmission(ctx, admissionInput(prepared.exact), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(prepared.exact, evidence) {
+		if !sameProviderContract(prepared.exact, evidence) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		return s.database.Transaction(guardCtx, func(txCtx context.Context, _ gdb.TX) error {
@@ -276,7 +281,7 @@ func (s *serviceImpl) WithImportBinding(ctx context.Context, prepared *ImportBin
 			if err != nil {
 				return err
 			}
-			if instance == nil || instance.Version != prepared.interfaceVersion || instance.NewBusinessState != InterfaceStateAccepting || !sameExactEvidence(interfaceEvidence(instance), evidence) {
+			if instance == nil || instance.Version != prepared.interfaceVersion || instance.NewBusinessState != InterfaceStateAccepting || !sameProviderContract(interfaceEvidence(instance), evidence) {
 				return bizerr.NewCode(catalog.CodeManagementConflict)
 			}
 			revision, err := s.loadLatestInterfaceConfigurationRevision(txCtx, prepared.interfaceNo, true)
@@ -320,7 +325,7 @@ func (s *serviceImpl) WithImportBinding(ctx context.Context, prepared *ImportBin
 			_, err = s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(txCtx).Data(do.CatalogProductVersionConfiguration{
 				TenantId: idccap.DefaultTenantID, VersionNo: versionNo, InterfaceInstanceNo: prepared.interfaceNo, InterfaceConfigurationRevision: prepared.interfaceRevision,
 				ProductSchemaVersion: configurationSchemaVersion(evidence.ProductConfiguration), ProductDeclarationSnapshot: string(prepared.product.DeclarationJSON),
-				MerchantValueSnapshot: string(prepared.product.ValuesJSON), CustomerSchemaVersion: configurationSchemaVersion(prepared.customerSchema), CustomerDeclarationSnapshot: string(prepared.customerJSON),
+				MerchantValueSnapshot: string(prepared.product.ValuesJSON), CustomerSchemaVersion: configurationSchemaVersion(prepared.customerSchema), CustomerDeclarationSnapshot: string(prepared.customerJSON), CustomerPresentationSnapshot: string(prepared.customerPresentationJSON),
 				DeclarationDigest: configurationDigest(append(append([]byte{}, prepared.product.DeclarationJSON...), prepared.customerJSON...)), MerchantValueDigest: configurationDigest(prepared.product.ValuesJSON), Version: 1, ChangedBy: prepared.actor,
 			}).Insert()
 			if err != nil {

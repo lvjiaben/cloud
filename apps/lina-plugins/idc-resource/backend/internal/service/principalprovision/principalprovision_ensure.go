@@ -2,6 +2,7 @@ package principalprovision
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"regexp"
@@ -65,6 +66,19 @@ WHERE pool.tenant_id = ? AND pool.pool_no = ?
 
 func (s *serviceImpl) ensureTask(ctx context.Context, customerNo string, channelNo string) error {
 	taskNo := principalTaskNo(customerNo, channelNo)
+	// Existing tasks retain their exact credential handles, including unknown writes.
+	var existing *struct {
+		TaskNo string `orm:"task_no"`
+	}
+	if err := s.database.GetScan(ctx, &existing, `SELECT task_no FROM plugin_idc_resource_principal_task WHERE tenant_id=? AND channel_no=? AND customer_no=?`, idccap.DefaultTenantID, channelNo, customerNo); err != nil {
+		return provisionresourcecap.ErrSourceUnavailable
+	}
+	if existing != nil {
+		if existing.TaskNo != taskNo {
+			return provisionresourcecap.ErrSourceUnavailable
+		}
+		return nil
+	}
 	manager, err := s.binder(channelNo)
 	if err != nil {
 		return provisionresourcecap.ErrSourceUnavailable
@@ -76,17 +90,18 @@ func (s *serviceImpl) ensureTask(ctx context.Context, customerNo string, channel
 	if err != nil || usernameResult.Handle.IsZero() {
 		return provisionresourcecap.ErrSourceUnavailable
 	}
-	generated, ok := manager.(secretcap.GeneratedManager)
-	if !ok || generated == nil {
-		return provisionresourcecap.ErrSourceUnavailable
-	}
-	passwordResult, err := generated.CreateGenerated(
-		ctx, "resource-principal-password-"+taskNo,
-		secretcap.GeneratedSecretPolicyURLSafe256,
-	)
+	passwordKey := "resource-principal-password-20-" + taskNo
+	passwordResult, err := manager.RecoverCreate(ctx, passwordKey)
 	if err != nil || passwordResult.Handle.IsZero() {
+		passwordResult, err = manager.Create(ctx, passwordKey, principalPasswordProducer(rand.Reader))
+		if err != nil {
+			passwordResult, err = manager.RecoverCreate(ctx, passwordKey)
+		}
+	}
+	if err != nil || passwordResult.Handle.IsZero() || !passwordResult.Metadata.Configured {
 		return provisionresourcecap.ErrSourceUnavailable
 	}
+
 	_, err = s.database.Exec(ctx, `
 INSERT INTO plugin_idc_resource_principal_task
     (tenant_id, task_no, customer_no, channel_no, username_secret_ref, password_secret_ref)

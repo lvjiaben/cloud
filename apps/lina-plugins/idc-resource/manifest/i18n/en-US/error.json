@@ -111,6 +111,16 @@
               "accessible": "The server is not accessible"
             }
           }
+        },
+        "customer": {
+          "operation": {
+            "unavailable": "The server is missing or currently unavailable",
+            "conflict": "The server state changed or a task is unfinished. Refresh before retrying.",
+            "invalid": "Provide a valid operation and confirm its impact."
+          },
+          "configuration": {
+            "timeout": "Server configuration could not be loaded in time; retry shortly"
+          }
         }
       }
     }

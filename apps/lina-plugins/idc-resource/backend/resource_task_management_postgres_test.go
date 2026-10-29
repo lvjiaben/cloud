@@ -75,7 +75,7 @@ VALUES
 	if err != nil || !managementTaskFound || page.NextCursor != "" {
 		t.Fatalf("list Provider tasks page=%+v err=%v", page, err)
 	}
-	detail, err := management.Detail(ctx, "task-management-unknown")
+	detail, err := management.Detail(ctx, "task-management-unknown", resourcetask.TaskScope{ServiceNo: "resource-management", ChannelNo: "channel-test"})
 	if err != nil || len(detail.Evidence) != 1 || detail.Evidence[0].Summary != "task.unknown" ||
 		detail.Task.Takeover != nil {
 		t.Fatalf("query Provider task detail=%+v err=%v", detail, err)
@@ -106,6 +106,7 @@ VALUES
 	}
 	input := resourcetask.ManualTakeoverInput{
 		TaskNo: "task-management-unknown", ExpectedVersion: 3,
+		Scope:       resourcetask.TaskScope{ServiceNo: "resource-management", ChannelNo: "channel-test"},
 		ReasonCode:  resourcetask.TakeoverReasonProviderResultUnresolved,
 		EvidenceNos: []string{"evidence_11111111111111111111111111111111"},
 	}

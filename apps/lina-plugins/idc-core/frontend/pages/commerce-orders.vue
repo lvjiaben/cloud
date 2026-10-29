@@ -12,7 +12,7 @@ import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { VbenFormProps } from "@vben/common-ui";
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import OperationsDetailPanel from "./components/operations-detail-panel.vue";
 
 import { useAccess } from "./plugin-access";
@@ -25,9 +25,6 @@ import {
   Card,
   Descriptions,
   DescriptionsItem,
-  message,
-  Modal as AntModal,
-  Select,
   Space,
   Tag,
 } from "ant-design-vue";
@@ -45,24 +42,10 @@ import {
   type CommerceOrderSummary,
 } from "./commerce-client";
 import { deliveryStatusKey, serviceStatusKey } from "./commerce-delivery-state";
-import type {
-  ContractPolicyOrderRule,
-} from "./contract-policy-client";
-import ContractPolicyEditor from "./components/contract-policy-editor.vue";
 import { customerDisplay, searchCustomerOptions, type CustomerSelectOption } from "./customer-selection";
-import {
-  createOptionalElectronicContract,
-  electronicContractSignerCandidates,
-  electronicContractTemplateCandidates,
-  submitElectronicContractSigning,
-  type ElectronicContractPreview,
-  type ElectronicContractSignerCandidate,
-  type ElectronicContractSigningSubmission,
-  type ElectronicContractTemplateCandidate,
-} from "./electronic-contract-client";
-
 const loading = ref(false);
 const route = useRoute();
+const router = useRouter();
 const operationsDetail = computed(() => ['orders', 'products'].includes(String(route.query.operationsMetric || '')));
 const detailLoading = ref(false);
 const detailError = ref("");
@@ -70,20 +53,6 @@ const detailReference = ref("");
 const errorMessage = ref("");
 const rows = ref<CommerceOrderSummary[]>([]);
 const detail = ref<CommerceOrderDetail>();
-const contractRule = ref<ContractPolicyOrderRule>();
-const contractTemplates = ref<ElectronicContractTemplateCandidate[]>([]);
-const selectedContractTemplateNo = ref<string>();
-const contractSigners = ref<ElectronicContractSignerCandidate[]>([]);
-const selectedContractSignerNo = ref<string>();
-const contractPreview = ref<ElectronicContractPreview>();
-const contractSubmission = ref<ElectronicContractSigningSubmission>();
-const contractCandidateLoading = ref(false);
-const contractSignerLoading = ref(false);
-const contractCreateLoading = ref(false);
-const contractSubmitLoading = ref(false);
-const contractError = ref("");
-const contractIdempotencyKey = ref("");
-const contractSubmissionIdempotencyKey = ref("");
 const drawerOpen = ref(false);
 let detailGeneration = 0;
 const customerOptions = ref<CustomerSelectOption[]>([]);
@@ -92,60 +61,25 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const total = ref(0);
 const { hasAccessByCodes } = useAccess();
+const canReadDeliveryTasks = computed(() =>
+  ["idc:admin:product-fulfillment:task:list", "idc:admin:product-fulfillment:task:query"].every(code => hasAccessByCodes([code])),
+);
+const deliveryNeedsAttention = computed(() => detail.value?.deliveries.some(
+  delivery => ["manual_processing", "not_completed"].includes(delivery.statusCode),
+));
+
+async function openDeliveryTasks() {
+  const orderNo = detail.value?.summary.orderNo;
+  if (!canReadDeliveryTasks.value || !orderNo) return;
+  await router.push({path: "/idc/product-fulfillment/tasks", query: {orderNo}});
+  drawerOpen.value = false;
+}
 const canApproveRisk = computed(() =>
   hasAccessByCodes(["idc:admin:commerce:risk-review:approve"]),
 );
 const canRejectRisk = computed(() =>
   hasAccessByCodes(["idc:admin:commerce:risk-review:reject"]),
 );
-const canCreateOptionalContract = computed(() =>
-  hasAccessByCodes(["idc:admin:compliance:contract:create"]),
-);
-const canEditContractPolicy = computed(
-  () =>
-    Boolean(detail.value) &&
-    ["manual_review", "payment_processing", "pending_payment"].includes(
-      detail.value?.summary.statusCode ?? "",
-    ) &&
-    !contractPreview.value &&
-    hasAccessByCodes(["idc:admin:commerce:contract-policy:write"]),
-);
-const showOptionalContract = computed(
-  () =>
-    canCreateOptionalContract.value &&
-    Boolean(detail.value) &&
-    !detail.value?.summary.requiresContract &&
-    Boolean(detail.value?.items.length),
-);
-const contractTemplateOptions = computed(() =>
-  contractTemplates.value.map((item) => ({
-    label: `${item.templateName} · ${item.languageCode} · ${contractSigningOrderLabel(item.signingOrderCode)}`,
-    value: item.templateNo,
-  })),
-);
-const contractSignerOptions = computed(() =>
-  contractSigners.value.map((item) => ({
-    label: `${item.maskedName} · ${item.maskedPhone}`,
-    value: item.signerNo,
-  })),
-);
-const enterpriseContractOrder = computed(
-  () => detail.value?.summary.customerTypeCode === "enterprise",
-);
-const contractPreviewReady = computed(
-  () =>
-    Boolean(selectedContractTemplateNo.value) &&
-    (!enterpriseContractOrder.value || Boolean(selectedContractSignerNo.value)),
-);
-const contractSubmissionUnknown = computed(
-  () => contractSubmission.value?.statusCode === "result_unknown",
-);
-
-function applyContractPolicy(rule: ContractPolicyOrderRule) {
-  contractRule.value = rule;
-  if (detail.value) detail.value.summary.requiresContract = rule.requiresContract;
-}
-
 function columns(): VxeGridProps<CommerceOrderSummary>["columns"] {
   return [
   {
@@ -193,7 +127,7 @@ function columns(): VxeGridProps<CommerceOrderSummary>["columns"] {
     field: "amount",
     slots: { default: "amount" },
     title: $t("plugin.idc-core.commerce.orders.table.amount"),
-    width: 180,
+    width: 240,
   },
   { field: "remark", slots: { default: "plainValue" }, title: $t("plugin.idc-core.commerce.orders.table.remark"), minWidth: 160 },
   { field: "action", slots: { default: "action" }, title: $t("plugin.idc-core.commerce.orders.detail"), width: 100, fixed: "right" },
@@ -302,16 +236,8 @@ function statusColor(value: string) {
   if (["active", "approved", "completed", "ready", "succeeded", "consumed"].includes(value)) return "success";
   if (["cancelled", "expired", "rejected", "released", "terminated"].includes(value)) return "default";
   if (value === "not_completed") return "error";
-  if (["manual_review", "awaiting_identity", "suspended"].includes(value)) return "warning";
+  if (["manual_review", "manual_processing", "awaiting_identity", "suspended"].includes(value)) return "warning";
   return "processing";
-}
-
-function contractSigningOrderLabel(value: string) {
-  const key = `plugin.idc-core.commerce.orders.contract.signingOrder.${value}`;
-  const translated = $t(key);
-  return translated === key
-    ? $t("plugin.idc-core.commerce.orders.contract.signingOrder.unavailable")
-    : translated;
 }
 
 function amount(value: unknown, currency: string) {
@@ -320,7 +246,7 @@ function amount(value: unknown, currency: string) {
     new Intl.NumberFormat(undefined, { currency, style: "currency" })
       .resolvedOptions().maximumFractionDigits ?? 2;
   const raw = BigInt(`${value}`);
-  const divisor = 10n ** BigInt(digits);
+  const divisor = BigInt(`1${"0".repeat(digits)}`);
   const absolute = raw < 0n ? -raw : raw;
   const fraction = (absolute % divisor).toString().padStart(digits, "0");
   return `${raw < 0n ? "-" : ""}${currency} ${absolute / divisor}${digits ? `.${fraction}` : ""}`;
@@ -366,18 +292,6 @@ async function load(targetPage = currentPage.value, size = pageSize.value) {
       drawerOpen.value = false;
       detailLoading.value = false;
       detail.value = undefined;
-      contractRule.value = undefined;
-      contractTemplates.value = [];
-      contractSigners.value = [];
-      contractPreview.value = undefined;
-      contractSubmission.value = undefined;
-      selectedContractTemplateNo.value = undefined;
-      selectedContractSignerNo.value = undefined;
-      contractCandidateLoading.value = false;
-      contractSignerLoading.value = false;
-      contractError.value = "";
-      contractIdempotencyKey.value = "";
-      contractSubmissionIdempotencyKey.value = "";
     }
     errorMessage.value = $t("plugin.idc-core.commerce.orders.loadFailed");
   } finally {
@@ -406,180 +320,17 @@ async function openDetail(orderNo: string) {
   drawerOpen.value = true;
   detailLoading.value = true;
   detail.value = undefined;
-  contractRule.value = undefined;
-  contractTemplates.value = [];
-  selectedContractTemplateNo.value = undefined;
-  contractSigners.value = [];
-  selectedContractSignerNo.value = undefined;
-  contractPreview.value = undefined;
-  contractSubmission.value = undefined;
-  contractError.value = "";
-  contractIdempotencyKey.value = "";
-  contractSubmissionIdempotencyKey.value = "";
   errorMessage.value = "";
   try {
     const result = await commerceOrderDetail(orderNo);
     if (generation !== detailGeneration) return;
     detail.value = result.order;
-    contractRule.value = result.contractRule;
-    // Optional-contract preparation needs immutable order-item evidence. A
-    // legacy/demo order without items is still a valid read-only detail and
-    // must not trigger a failing contract-only request while the drawer opens.
-    if (
-      canCreateOptionalContract.value &&
-      !result.order.summary.requiresContract &&
-      result.order.items.length > 0
-    ) {
-      await Promise.all([
-        loadContractTemplateCandidates(result.order.summary.orderNo),
-        result.order.summary.customerTypeCode === "enterprise"
-          ? loadContractSignerCandidates(result.order.summary.customerNo)
-          : Promise.resolve(),
-      ]);
-    }
   } catch {
     if (generation !== detailGeneration) return;
     detailError.value = $t("plugin.idc-core.commerce.orders.detailLoadFailed");
   } finally {
     if (generation === detailGeneration) detailLoading.value = false;
   }
-}
-
-async function loadContractSignerCandidates(customerNo: string) {
-  const generation = detailGeneration;
-  contractSignerLoading.value = true;
-  contractError.value = "";
-  try {
-    const result = await electronicContractSignerCandidates(customerNo);
-    if (generation !== detailGeneration) return;
-    contractSigners.value = result.items;
-    selectedContractSignerNo.value = result.items[0]?.signerNo;
-  } catch {
-    if (generation !== detailGeneration) return;
-    contractSigners.value = [];
-    selectedContractSignerNo.value = undefined;
-    contractError.value = $t(
-      "plugin.idc-core.commerce.orders.contract.signersFailed",
-    );
-  } finally {
-    if (generation === detailGeneration) contractSignerLoading.value = false;
-  }
-}
-
-
-async function loadContractTemplateCandidates(orderNo: string) {
-  const generation = detailGeneration;
-  contractCandidateLoading.value = true;
-  contractError.value = "";
-  try {
-    const result = await electronicContractTemplateCandidates(orderNo);
-    if (generation !== detailGeneration) return;
-    contractTemplates.value = result.items;
-    selectedContractTemplateNo.value = result.items[0]?.templateNo;
-  } catch {
-    if (generation !== detailGeneration) return;
-    contractTemplates.value = [];
-    contractError.value = $t(
-      "plugin.idc-core.commerce.orders.contract.candidatesFailed",
-    );
-  } finally {
-    if (generation === detailGeneration) contractCandidateLoading.value = false;
-  }
-}
-
-function changeContractTemplate() {
-  contractIdempotencyKey.value = "";
-}
-
-function changeContractSigner() {
-  contractIdempotencyKey.value = "";
-}
-
-function requestContractPreview() {
-  const orderNo = detail.value?.summary.orderNo;
-  const templateNo = selectedContractTemplateNo.value;
-  const signerNo = selectedContractSignerNo.value;
-  if (
-    !orderNo ||
-    !templateNo ||
-    (enterpriseContractOrder.value && !signerNo) ||
-    contractCreateLoading.value
-  ) return;
-  AntModal.confirm({
-    cancelText: $t("plugin.idc-core.commerce.orders.contract.cancel"),
-    content: $t("plugin.idc-core.commerce.orders.contract.confirmBody"),
-    okText: $t("plugin.idc-core.commerce.orders.contract.confirmCreate"),
-    title: $t("plugin.idc-core.commerce.orders.contract.confirmTitle"),
-    async onOk() {
-      contractCreateLoading.value = true;
-      contractError.value = "";
-      if (!contractIdempotencyKey.value) {
-        contractIdempotencyKey.value = `contract-create-${crypto.randomUUID()}`;
-      }
-      try {
-        const result = await createOptionalElectronicContract({
-          idempotencyKey: contractIdempotencyKey.value,
-          orderNo,
-          signerNo: enterpriseContractOrder.value ? signerNo : undefined,
-          templateNo,
-        });
-        contractPreview.value = result.item;
-        message.success(
-          $t("plugin.idc-core.commerce.orders.contract.created"),
-        );
-      } catch (error) {
-        contractError.value = $t(
-          "plugin.idc-core.commerce.orders.contract.createFailed",
-        );
-        throw error;
-      } finally {
-        contractCreateLoading.value = false;
-      }
-    },
-  });
-}
-
-
-function requestSigningSubmission() {
-  const preview = contractPreview.value;
-  if (!preview || contractSubmission.value || contractSubmitLoading.value) return;
-  AntModal.confirm({
-    cancelText: $t("plugin.idc-core.commerce.orders.contract.submitCancel"),
-    content: $t("plugin.idc-core.commerce.orders.contract.submitConfirmBody"),
-    okText: $t("plugin.idc-core.commerce.orders.contract.submitConfirm"),
-    title: $t("plugin.idc-core.commerce.orders.contract.submitConfirmTitle"),
-    async onOk() {
-      contractSubmitLoading.value = true;
-      contractError.value = "";
-      if (!contractSubmissionIdempotencyKey.value) {
-        contractSubmissionIdempotencyKey.value = `contract-submit-${crypto.randomUUID()}`;
-      }
-      try {
-        const result = await submitElectronicContractSigning({
-          contractNo: preview.contractNo,
-          expectedVersion: preview.version,
-          idempotencyKey: contractSubmissionIdempotencyKey.value,
-        });
-        contractSubmission.value = result.item;
-        if (result.item.statusCode === "result_unknown") {
-          message.warning(
-            $t("plugin.idc-core.commerce.orders.contract.resultUnknown"),
-          );
-        } else {
-          message.success(
-            $t("plugin.idc-core.commerce.orders.contract.submitted"),
-          );
-        }
-      } catch (error) {
-        contractError.value = $t(
-          "plugin.idc-core.commerce.orders.contract.submitFailed",
-        );
-        throw error;
-      } finally {
-        contractSubmitLoading.value = false;
-      }
-    },
-  });
 }
 
 watch(drawerOpen, open => { if (!open) detailGeneration += 1; });
@@ -635,175 +386,11 @@ const layoutRoot = useAdminGridLayout(gridApi);
             <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.paymentTerm')">{{ paymentTermLabel(detail.summary.paymentTermCode) }}</DescriptionsItem>
           </Descriptions>
 
-          <ContractPolicyEditor
-            v-if="contractRule && canEditContractPolicy"
-            class="drawer-section"
-            level="order"
-            :policy-code="contractRule.policyCode"
-            :target-no="detail.summary.orderNo"
-            :template-no="contractRule.templateNo"
-            :version="contractRule.version"
-            @updated="applyContractPolicy($event as ContractPolicyOrderRule)"
-          />
-
-          <Alert
-            v-else-if="contractRule"
-            class="page-alert"
-            :description="contractRule.template?.name || undefined"
-            :message="$t(`plugin.idc-core.contractPolicy.policy.${contractRule.policyCode}`)"
-            show-icon
-            type="info"
-          />
-
-          <section
-            v-if="showOptionalContract"
-            class="drawer-section contract-section"
-            data-testid="optional-contract-section"
-          >
-            <h3>{{ $t("plugin.idc-core.commerce.orders.contract.title") }}</h3>
-            <Alert
-              v-if="contractError"
-              class="page-alert"
-              :message="contractError"
-              show-icon
-              type="error"
-            />
-            <Card v-if="!contractPreview" class="detail-card" size="small">
-              <p class="section-copy">
-                {{ $t("plugin.idc-core.commerce.orders.contract.description") }}
-              </p>
-              <Alert
-                v-if="enterpriseContractOrder && !contractSignerLoading && contractSigners.length === 0"
-                class="page-alert"
-                :description="$t('plugin.idc-core.commerce.orders.contract.noSignersDescription')"
-                :message="$t('plugin.idc-core.commerce.orders.contract.noSigners')"
-                show-icon
-                type="warning"
-              />
-              <div
-                class="contract-create-row"
-                :class="{ 'contract-create-row--enterprise': enterpriseContractOrder }"
-              >
-                <Select
-                  v-model:value="selectedContractTemplateNo"
-                  :loading="contractCandidateLoading"
-                  :not-found-content="$t('plugin.idc-core.commerce.orders.contract.noTemplates')"
-                  :options="contractTemplateOptions"
-                  :placeholder="$t('plugin.idc-core.commerce.orders.contract.selectTemplate')"
-                  data-testid="optional-contract-template"
-                  @change="changeContractTemplate"
-                />
-                <Select
-                  v-if="enterpriseContractOrder"
-                  v-model:value="selectedContractSignerNo"
-                  :loading="contractSignerLoading"
-                  :not-found-content="$t('plugin.idc-core.commerce.orders.contract.noSigners')"
-                  :options="contractSignerOptions"
-                  :placeholder="$t('plugin.idc-core.commerce.orders.contract.selectSigner')"
-                  data-testid="optional-contract-signer"
-                  @change="changeContractSigner"
-                />
-                <Button
-                  :disabled="!contractPreviewReady"
-                  :loading="contractCreateLoading"
-                  data-testid="optional-contract-create"
-                  type="primary"
-                  @click="requestContractPreview"
-                >
-                  {{ $t("plugin.idc-core.commerce.orders.contract.generatePreview") }}
-                </Button>
-              </div>
-            </Card>
-
-            <Card
-              v-else
-              class="detail-card contract-preview"
-              data-testid="optional-contract-preview"
-              size="small"
-            >
-              <div class="detail-row contract-preview-heading">
-                <div>
-                  <strong>{{ contractPreview.templateName }}</strong>
-                  <div class="contract-number">{{ contractPreview.contractNo }}</div>
-                </div>
-                <Tag color="gold">
-                  {{
-                    contractSubmissionUnknown
-                      ? $t("plugin.idc-core.commerce.orders.contract.resultUnknown")
-                      : contractSubmission
-                      ? $t("plugin.idc-core.commerce.orders.contract.signing")
-                      : $t("plugin.idc-core.commerce.orders.contract.pendingLaunch")
-                  }}
-                </Tag>
-              </div>
-              <Alert
-                class="page-alert"
-                :message="$t('plugin.idc-core.commerce.orders.contract.previewNotice')"
-                show-icon
-                type="warning"
-              />
-              <Descriptions :column="1" bordered size="small">
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.parties')">
-                  {{ contractPreview.customerName }} / {{ contractPreview.merchantName }}
-                </DescriptionsItem>
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.signer')">
-                  {{ contractPreview.signerName }} · {{ contractPreview.signerPhoneMasked }}
-                </DescriptionsItem>
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.language')">
-                  {{ contractPreview.languageCode }}
-                </DescriptionsItem>
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.signingOrderLabel')">
-                  {{ contractSigningOrderLabel(contractPreview.signingOrderCode) }}
-                </DescriptionsItem>
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.expiresAt')">
-                  {{ formatTimestamp(contractPreview.signingExpiresAt) }}
-                </DescriptionsItem>
-                <DescriptionsItem :label="$t('plugin.idc-core.commerce.orders.contract.signingDate')">
-                  {{ $t("plugin.idc-core.commerce.orders.contract.signingDatePending") }}
-                </DescriptionsItem>
-              </Descriptions>
-              <div class="contract-lines">
-                <div
-                  v-for="line in contractPreview.lines"
-                  :key="line.orderItemNo"
-                  class="contract-line"
-                >
-                  <div>
-                    <strong>{{ line.serviceName }}</strong>
-                    <small>
-                      {{ line.quantity }} × {{ line.purchaseCycles }} ·
-                      {{ line.periodCount }} {{ line.periodUnitCode }}
-                    </small>
-                  </div>
-                  <strong>{{ amount(line.amountMinor, contractPreview.currencyCode) }}</strong>
-                </div>
-                <div class="contract-line contract-total">
-                  <strong>{{ $t("plugin.idc-core.commerce.orders.contract.total") }}</strong>
-                  <strong>{{ amount(contractPreview.totalAmountMinor, contractPreview.currencyCode) }}</strong>
-                </div>
-              </div>
-              <Alert
-                v-if="contractSubmission"
-                class="page-alert"
-                :message="$t(contractSubmissionUnknown
-                  ? 'plugin.idc-core.commerce.orders.contract.resultUnknownNotice'
-                  : 'plugin.idc-core.commerce.orders.contract.submittedNotice')"
-                show-icon
-                :type="contractSubmissionUnknown ? 'warning' : 'success'"
-              />
-              <Button
-                v-else
-                block
-                class="contract-submit"
-                data-testid="optional-contract-submit"
-                :loading="contractSubmitLoading"
-                type="primary"
-                @click="requestSigningSubmission"
-              >
-                {{ $t("plugin.idc-core.commerce.orders.contract.submit") }}
-              </Button>
-            </Card>
-          </section>
+          <Alert v-if="deliveryNeedsAttention" class="drawer-section" type="warning" show-icon :message="$t('plugin.idc-core.commerce.orders.deliveryAttention')" data-testid="order-delivery-attention">
+            <template v-if="canReadDeliveryTasks" #action>
+              <Button data-testid="order-open-delivery-tasks" @click="openDeliveryTasks">{{ $t('plugin.idc-core.commerce.orders.openDeliveryTasks') }}</Button>
+            </template>
+          </Alert>
 
           <Alert
             v-if="detail.canApproveRisk || detail.canRejectRisk"
@@ -818,7 +405,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
             <Button v-if="canRejectRisk" danger disabled>{{ $t("plugin.idc-core.commerce.orders.rejectRisk") }}</Button>
           </Space>
 
-          <section class="drawer-section">
+          <section class="drawer-section" data-testid="commerce-order-items">
             <h3>{{ $t("plugin.idc-core.commerce.orders.items") }}</h3>
             <Card v-for="item in detail.items" :key="String(item.orderItemNo)" class="detail-card" size="small">
               <div class="detail-row"><strong>{{ localized(item) }}</strong><span>{{ amount(item.totalAmountMinor, detail.summary.currencyCode) }}</span></div>
@@ -893,20 +480,9 @@ const layoutRoot = useAdminGridLayout(gridApi);
 .detail-card small { color: hsl(var(--muted-foreground)); }
 .detail-time { display: block; margin-top: 4px; }
 .fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.contract-section { border-top: 1px solid hsl(var(--border)); padding-top: 20px; }
 .section-copy { margin: 0 0 12px; color: hsl(var(--muted-foreground)); }
-.contract-create-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
-.contract-create-row--enterprise { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
-.contract-preview { border-color: hsl(var(--warning)); }
-.contract-preview-heading { align-items: flex-start; }
-.contract-number { margin-top: 4px; color: hsl(var(--muted-foreground)); font-size: 12px; }
-.contract-lines { margin-top: 14px; }
-.contract-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid hsl(var(--border)); }
-.contract-line > div { display: grid; gap: 3px; }
-.contract-total { border-bottom: 0; }
-.contract-submit { margin-top: 14px; }
 @media (max-width: 760px) {
-  .filters, .fact-grid, .contract-create-row, .contract-create-row--enterprise { grid-template-columns: 1fr; }
+  .filters, .fact-grid { grid-template-columns: 1fr; }
   .filters .ant-btn { width: 100%; }
 }
 </style>

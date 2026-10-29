@@ -133,7 +133,6 @@ function channelFields(): IsolatedFormField[] {
   const fields: IsolatedFormField[] = [];
   if (!editingChannel.value) fields.push({ name: "providerPluginId", label: tr("connector"), component: "Select", required: true, props: { options: candidates.value.map(item => ({label: `${item.displayName} · ${item.releaseVersion}`, value: item.pluginId})) } });
   fields.push({ name: "displayName", label: tr("channelName"), component: "Input", required: true }, { name: "endpoint", label: tr("apiEndpoint"), component: "Input", required: true, props: { type: "url" } });
-  fields.push({name:"tlsCertificateSha256",label:tr("tlsCertificateSha256"),component:"Input",props:{placeholder:tr("tlsCertificateHint"),maxlength:64}});
   for (const field of schema.value.fields.filter(item => item.key !== "endpoint")) {
     let component: IsolatedFormField["component"] = "Input";
     const props: Record<string, unknown> = { placeholder: field.type === "secret" && readyMap(editingChannel.value)[field.key] ? tr("secretConfiguredHint") : interfaceFieldDescription(field, locale()) };
@@ -294,10 +293,7 @@ async function saveSecret(
   else await api.createSecret(channelNo, body);
 }
 async function saveChannel() {
-  if (!/^(?:[a-fA-F0-9]{64})?$/.test(String(channelForm.tlsCertificateSha256 || "").trim())) {
-    error.value = tr("tlsCertificateInvalid");
-    return false;
-  }
+
 
   const revision = formRevision;
   const values = splitInterfaceConfigurationValues(schema.value, channelForm);
@@ -318,7 +314,7 @@ async function saveChannel() {
     const body = {
       displayName: String(channelForm.displayName || ""),
       endpoint: String(channelForm.endpoint || ""),
-      tlsCertificateSha256: String(channelForm.tlsCertificateSha256 || "").trim().toLowerCase(),
+      tlsCertificateSha256: undefined,
       providerPluginId: String(channelForm.providerPluginId || ""),
       status: String(channelForm.status || "disabled"),
       nonSecretSettings: values.nonSecretSettings,

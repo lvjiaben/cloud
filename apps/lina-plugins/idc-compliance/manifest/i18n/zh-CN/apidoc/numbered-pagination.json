@@ -1,12 +1,8 @@
 {
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListReq.fields.page.dc": "请求页码；不传时使用游标分页",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListRes.fields.total.dc": "当前授权及筛选范围内的准确总数",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractListReq.fields.page.dc": "请求页码；不传时使用游标分页",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractListRes.fields.total.dc": "当前授权及筛选范围内的准确总数",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceListReq.fields.page.dc": "请求页码；不传时使用游标分页",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceListRes.fields.total.dc": "当前授权及筛选范围内的准确总数",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskListReq.fields.page.dc": "请求页码；不传时使用游标分页",
-  "plugins.idc_compliance.api.admin.v1.RedLetterTaskListRes.fields.total.dc": "当前授权及筛选范围内的准确总数",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractTemplateListReq.fields.pageSize.dc": "每页最大条数，默认十条，最多一百条",
-  "plugins.idc_compliance.api.admin.v1.ElectronicContractAutoSignAuthorizationListReq.fields.pageSize.dc": "每页最大条数，默认十条，最多一百条"
+  "plugins.idc_compliance.api.admin.v1.RedLetterTaskListRes.fields.total.dc": "当前授权及筛选范围内的准确总数"
 }

@@ -19,8 +19,11 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/logger"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	providerspi "lina-plugin-idc-resource/backend/cap/resourcecap/spi"
@@ -32,6 +35,7 @@ import (
 const capabilityEvidenceLifetime = 24 * time.Hour
 
 type Service struct {
+	candidates         resourceinterfaceprojectioncap.CandidateSource
 	database           gdb.DB
 	tasks              *resourcetask.Store
 	secrets            secretcap.Source
@@ -39,13 +43,6 @@ type Service struct {
 	principal          PrincipalEnsurer
 	managedParameters  ManagedProvisionParameterBuilder
 	publicOriginSource func() string
-}
-
-// SetPublicOrigin freezes the host-configured public origin used only by
-// callback-required provider profiles. Invalid origins remain fail-closed at
-// task creation without disabling unrelated connectors.
-func (s *Service) SetPublicOrigin(origin string) {
-	s.SetPublicOriginSource(func() string { return origin })
 }
 
 func (s *Service) SetPublicOriginSource(source func() string) { s.publicOriginSource = source }
@@ -61,10 +58,14 @@ func New(
 	database gdb.DB,
 	secrets secretcap.Source,
 	principal PrincipalEnsurer,
+	candidates resourceinterfaceprojectioncap.CandidateSource,
 	_ []providerspi.Declaration,
 	managed ...ManagedProvisionParameterBuilder,
 ) (*Service, error) {
 	service, err := newWithRandomAndPrincipal(database, secrets, rand.Reader, principal)
+	if err == nil {
+		service.candidates = candidates
+	}
 	if err == nil && len(managed) > 0 {
 		service.managedParameters = managed[0]
 	}
@@ -193,17 +194,30 @@ INNER JOIN plugin_idc_resource_capability_snapshot_item capability
 func (s *Service) CreateTask(
 	ctx context.Context,
 	request provisionresourcecap.TaskRequest,
+	corrections ...*provisionresourcecap.RecoveryConfiguration,
 ) (*provisionresourcecap.Task, error) {
+	return s.createTask(ctx, request, taskRequestID(request.OperationNo), "", corrections...)
+}
+
+// createTask retains the frozen paid identity while allowing a separately
+// authorized rejected attempt to have its own task and credential identity.
+func (s *Service) createServerTask(ctx context.Context, request provisionresourcecap.TaskRequest, requestID, credentialKey string, corrections ...*provisionresourcecap.RecoveryConfiguration) (*provisionresourcecap.Task, error) {
+	var correction *provisionresourcecap.RecoveryConfiguration
+	if len(corrections) > 1 {
+		return nil, provisionresourcecap.ErrTaskConflict
+	}
+	if len(corrections) == 1 {
+		correction = corrections[0]
+	}
 	if !s.canCreateTask(ctx, request) {
 		return nil, provisionresourcecap.ErrSourceUnavailable
 	}
-	requestID := taskRequestID(request.OperationNo)
 	existing, err := s.loadTaskByRequest(ctx, requestID)
 	if err != nil {
-		return nil, err
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureLookup, err)
 	}
 	if existing != nil {
-		if !sameTaskRequest(existing, request) {
+		if !sameTaskRequest(existing, request) || !sameTaskCorrection(existing, correction) {
 			return nil, provisionresourcecap.ErrTaskConflict
 		}
 		if err = s.healProvisionCredential(ctx, existing); err != nil {
@@ -217,36 +231,45 @@ func (s *Service) CreateTask(
 		}
 		return result, readErr
 	}
-	route, parameters, localResourceNo, err := s.prepareProvisionParameters(ctx, request)
+	effective := request
+	if len(corrections) == 1 && corrections[0] != nil {
+		effective, err = s.correctedRequest(ctx, request, *corrections[0])
+		if err != nil {
+			return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, err)
+		}
+	}
+	route, parameters, localResourceNo, err := s.prepareProvisionParameters(ctx, effective, correction != nil)
 	if err != nil {
-		return nil, err
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, err)
 	}
 	if validationErr := validateCapabilityParameters(route.Constraints, parameters); validationErr != nil {
-		return nil, validationErr
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, validationErr)
 	}
 	capabilityDigest, err := capabilityEvidenceDigest(route, parameters)
 	if err != nil {
-		return nil, err
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, err)
 	}
-	metadata, err := taskOwnerMetadata(request, route.SnapshotNo, capabilityDigest)
+	metadata, err := taskOwnerMetadataWithRevision(request, effective.InterfaceConfigurationRevision, route.SnapshotNo, capabilityDigest, correction)
 	if err != nil {
-		return nil, err
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, err)
 	}
 	manager, err := composition.BindProviderSecretManager(s.secrets, route.ChannelNo)
 	if err != nil {
-		return nil, errors.Join(provisionresourcecap.ErrSourceUnavailable, err)
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureCredential, errors.Join(provisionresourcecap.ErrSourceUnavailable, err))
 	}
-	generationPolicy, err := parseServerGenerationPolicy(request.ProductConfiguration)
+	generationPolicy, err := parseServerGenerationPolicy(effective.ProductConfiguration)
 	if err != nil {
-		return nil, err
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureParameters, err)
 	}
-	secretResult, err := manager.Create(ctx, provisionSecretIdempotencyKey(request), s.generatedPasswordProducer(generationPolicy))
+	secretResult, err := s.createProvisionCredential(ctx, manager, request, generationPolicy, credentialKey)
 	if err != nil || secretResult.Handle.IsZero() {
-		return nil, provisionresourcecap.ErrSourceUnavailable
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=credential_storage")
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureCredential, provisionresourcecap.ErrSourceUnavailable)
 	}
-	correlation, err := s.providerCorrelationInput(ctx, manager, route, request, requestID)
+	correlation, err := s.providerCorrelationInput(ctx, manager, route, effective, requestID)
 	if err != nil {
-		return nil, err
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=callback_configuration")
+		return nil, provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureCallback, err)
 	}
 	created, err := s.tasks.Create(ctx, resourcetask.CreateInput{
 		RequestID: requestID, Capability: resourcecap.CapabilityProvision,
@@ -256,8 +279,9 @@ func (s *Service) CreateTask(
 		ProviderCorrelation: correlation,
 	})
 	if err != nil {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=task_storage validation_failed=%t", strings.Contains(gerror.Current(err).Error(), "invalid"))
 		recovered, recoveryErr := s.loadTaskByRequest(ctx, requestID)
-		if recoveryErr == nil && recovered != nil && sameTaskRequest(recovered, request) {
+		if recoveryErr == nil && recovered != nil && sameTaskRequest(recovered, request) && sameTaskCorrection(recovered, correction) {
 			recovered.SecretRef = secretResult.Handle.OpaqueRef()
 			if recoveryErr = s.healProvisionCredential(ctx, recovered); recoveryErr == nil {
 				result, readErr := s.ReadTask(ctx, provisionresourcecap.TaskReadRequest{
@@ -269,17 +293,17 @@ func (s *Service) CreateTask(
 				return result, readErr
 			}
 		}
-		if recoveryErr == nil && recovered == nil {
-			if revokeErr := compensateUnboundProvisionSecret(
-				ctx, manager, secretResult,
-			); revokeErr != nil {
-				return nil, errors.Join(provisionresourcecap.ErrSourceUnavailable, err, revokeErr)
-			}
+		// No durable task means the supplier write executor cannot consume the
+		// credential. Keep this encrypted staging value for the exact retry key.
+
+		failure := provisionresourcecap.PreparationFailureTaskStorage
+		if errors.Is(err, resourcetask.ErrInvalidInput) {
+			failure = provisionresourcecap.PreparationFailureTaskInput
 		}
-		return nil, errors.Join(
+		return nil, provisionresourcecap.WrapPreparationFailure(failure, errors.Join(
 			provisionresourcecap.ErrSourceUnavailable,
 			gerror.Wrap(errors.Join(err, recoveryErr), "create Provider provisioning task"),
-		)
+		))
 	}
 	row, err := s.loadTaskByNumber(ctx, created.TaskNo)
 	if err != nil || row == nil || !sameTaskRequest(row, request) {
@@ -362,28 +386,20 @@ func governedCallbackURL(origin string) (string, error) {
 	return callback, nil
 }
 
-func compensateUnboundProvisionSecret(
-	ctx context.Context,
-	manager secretcap.Manager,
-	result secretcap.CreateResult,
-) error {
-	if manager == nil || result.Handle.IsZero() || !result.Metadata.Configured ||
-		result.Metadata.UpdatedAt.IsZero() {
-		return provisionresourcecap.ErrSourceUnavailable
-	}
-	_, err := manager.Revoke(ctx, result.Handle, result.Metadata.UpdatedAt)
-	return err
-}
-
 type taskOwnerFacts struct {
-	ContractVersion                string            `json:"contractVersion"`
-	InterfaceConfigurationRevision string            `json:"interfaceConfigurationRevision"`
-	OperationNo                    string            `json:"operationNo"`
-	CustomerNo                     string            `json:"customerNo"`
-	ConfigurationSnapshotNo        string            `json:"configurationSnapshotNo"`
-	RequestDigest                  [sha256.Size]byte `json:"requestDigest"`
-	CapabilityEvidenceNo           string            `json:"capabilityEvidenceNo"`
-	CapabilityEvidenceDigest       [sha256.Size]byte `json:"capabilityEvidenceDigest"`
+	SaleImportProtocol productfulfillmentcap.SaleImportProtocol `json:"saleImportProtocol,omitempty"`
+	// PurchasedInterfaceInstanceNo retains the original paid identity when an
+	// independently authorized correction selects another execution channel.
+	PurchasedInterfaceInstanceNo   string                                      `json:"purchasedInterfaceInstanceNo,omitempty"`
+	RecoveryConfiguration          *provisionresourcecap.RecoveryConfiguration `json:"recoveryConfiguration,omitempty"`
+	ContractVersion                string                                      `json:"contractVersion"`
+	InterfaceConfigurationRevision string                                      `json:"interfaceConfigurationRevision"`
+	OperationNo                    string                                      `json:"operationNo"`
+	CustomerNo                     string                                      `json:"customerNo"`
+	ConfigurationSnapshotNo        string                                      `json:"configurationSnapshotNo"`
+	RequestDigest                  [sha256.Size]byte                           `json:"requestDigest"`
+	CapabilityEvidenceNo           string                                      `json:"capabilityEvidenceNo"`
+	CapabilityEvidenceDigest       [sha256.Size]byte                           `json:"capabilityEvidenceDigest"`
 }
 
 type taskRow struct {
@@ -420,7 +436,7 @@ func (s *Service) ReadTask(
 	if row == nil {
 		return nil, provisionresourcecap.ErrTaskUnavailable
 	}
-	if !sameTaskRequest(row, request.Request) || row.SecretRef == "" {
+	if !sameTaskRequest(row, request.Request) || (request.Request.NativePurchase == nil && row.SecretRef == "") {
 		return nil, provisionresourcecap.ErrTaskConflict
 	}
 	facts, err := decodeTaskOwnerFacts(row.OwnerMetadata)
@@ -428,6 +444,11 @@ func (s *Service) ReadTask(
 		return nil, provisionresourcecap.ErrTaskConflict
 	}
 	status, failureCode := projectTaskStatus(row)
+	if status == provisionresourcecap.TaskStatusFailed && failureCode == provisionresourcecap.FailureRequestNotSent {
+		if err = s.validateNonSubmissionProof(ctx, row); err != nil {
+			return nil, err
+		}
+	}
 	evidenceDigest, err := taskEvidenceDigest(row)
 	if err != nil {
 		return nil, err
@@ -438,12 +459,25 @@ func (s *Service) ReadTask(
 		CapabilityEvidenceDigest: hex.EncodeToString(facts.CapabilityEvidenceDigest[:]),
 		EvidenceDigest:           evidenceDigest, ObservedAt: row.UpdatedAt.UTC(),
 	}
+	response, err := s.database.GetValue(ctx, `SELECT summary FROM plugin_idc_resource_task_evidence WHERE tenant_id=0 AND task_no=? AND evidence_kind IN (?,?) ORDER BY CASE WHEN evidence_kind=? THEN 0 ELSE 1 END,observed_at DESC,id DESC LIMIT 1`, row.TaskNo, resourcecap.EvidenceKindHTTPResponse, resourcecap.EvidenceKindCallDiagnostic, resourcecap.EvidenceKindHTTPResponse)
+	if err != nil {
+		return nil, provisionresourcecap.ErrSourceUnavailable
+	}
+	if excerpt := response.String(); excerpt != "" {
+		if (resourcecap.Evidence{Kind: resourcecap.EvidenceKindHTTPResponse, Summary: excerpt, ObservedAt: row.UpdatedAt}).Validate() != nil {
+			return nil, provisionresourcecap.ErrSourceUnavailable
+		}
+		result.ResponseExcerpt = excerpt
+	}
 	if row.FinishedAt != nil {
 		result.CompletedAt = row.FinishedAt.UTC()
 		// A terminal task is observed at the exact persisted completion fact.
 		// Database-maintained updated_at may be a few microseconds later, which
 		// must not make a valid completed projection contradict itself.
 		result.ObservedAt = result.CompletedAt
+	}
+	if err = s.applyNonAcceptanceVerification(ctx, row, result); err != nil {
+		return nil, err
 	}
 	if provisionresourcecap.ValidateTask(*result) != nil {
 		return nil, provisionresourcecap.ErrTaskConflict
@@ -502,14 +536,19 @@ LEFT JOIN LATERAL (
 func sameTaskRequest(row *taskRow, request provisionresourcecap.TaskRequest) bool {
 	localResourceNo, _ := frozenServerIdentity(request)
 	poolMatches := row != nil && row.PoolNo != ""
+	if request.NativePurchase != nil {
+		localResourceNo = frozenNativeIdentity(request)
+		poolMatches = row != nil && row.PoolNo == ""
+	}
 	if row == nil || row.CapabilityCode != string(resourcecap.CapabilityProvision) ||
 		row.LocalResourceNo != localResourceNo || !poolMatches {
 		return false
 	}
 	facts, err := decodeTaskOwnerFacts(row.OwnerMetadata)
-	return err == nil && facts.ContractVersion == provisionresourcecap.ContractVersion &&
+	return err == nil && facts.SaleImportProtocol == request.NativePurchaseProtocol && facts.ContractVersion == provisionresourcecap.ContractVersion &&
 		facts.OperationNo == request.OperationNo && facts.CustomerNo == request.CustomerNo &&
 		facts.ConfigurationSnapshotNo == request.ConfigurationSnapshotNo &&
+		(facts.PurchasedInterfaceInstanceNo == "" || facts.PurchasedInterfaceInstanceNo == request.InterfaceInstanceNo) &&
 		subtle.ConstantTimeCompare(
 			[]byte(hex.EncodeToString(facts.RequestDigest[:])), []byte(request.RequestDigest),
 		) == 1
@@ -528,9 +567,15 @@ func taskOwnerMetadata(
 	if err != nil {
 		return nil, provisionresourcecap.ErrCapabilityUnavailable
 	}
+	protocol := productfulfillmentcap.SaleImportProtocol("")
+	if request.NativePurchase != nil {
+		protocol = request.NativePurchaseProtocol
+	}
 	return json.Marshal(taskOwnerFacts{
-		ContractVersion: provisionresourcecap.ContractVersion, OperationNo: request.OperationNo,
+		SaleImportProtocol: protocol,
+		ContractVersion:    provisionresourcecap.ContractVersion, OperationNo: request.OperationNo,
 		InterfaceConfigurationRevision: request.InterfaceConfigurationRevision,
+		PurchasedInterfaceInstanceNo:   request.InterfaceInstanceNo,
 		CustomerNo:                     request.CustomerNo, ConfigurationSnapshotNo: request.ConfigurationSnapshotNo,
 		RequestDigest: requestDigest, CapabilityEvidenceNo: capabilityEvidenceNo,
 		CapabilityEvidenceDigest: capabilityDigest,
@@ -546,6 +591,8 @@ func decodeTaskOwnerFacts(payload string) (taskOwnerFacts, error) {
 	}
 	if err := decoder.Decode(&struct{}{}); err != io.EOF ||
 		facts.ContractVersion != provisionresourcecap.ContractVersion ||
+		(facts.SaleImportProtocol != "" && !facts.SaleImportProtocol.NativePurchase()) ||
+		(facts.PurchasedInterfaceInstanceNo != "" && !recoveryInterfacePattern.MatchString(facts.PurchasedInterfaceInstanceNo)) ||
 		!configurationRevisionPattern.MatchString(facts.InterfaceConfigurationRevision) ||
 		facts.CapabilityEvidenceNo == "" || allZeroDigest(facts.RequestDigest) ||
 		allZeroDigest(facts.CapabilityEvidenceDigest) {
@@ -623,19 +670,19 @@ func projectTaskStatus(row *taskRow) (provisionresourcecap.TaskStatus, string) {
 	case resourcetask.StatusSucceeded:
 		return provisionresourcecap.TaskStatusSucceeded, ""
 	case resourcetask.StatusFailed, resourcetask.StatusCanceled:
-		code := row.FailureCode
+		code := strings.ToLower(row.FailureCode)
 		if code == "" {
 			code = "resource.task_failed"
 		}
 		return provisionresourcecap.TaskStatusFailed, code
 	case resourcetask.StatusResultUnknown:
-		code := row.FailureCode
+		code := strings.ToLower(row.FailureCode)
 		if code == "" {
 			code = "resource.result_unknown"
 		}
 		return provisionresourcecap.TaskStatusResultUnknown, code
 	case resourcetask.StatusManualTakeover:
-		code := row.FailureCode
+		code := strings.ToLower(row.FailureCode)
 		if code == "" {
 			code = "resource.manual_review"
 		}
@@ -651,18 +698,11 @@ func provisionSecretIdempotencyKey(request provisionresourcecap.TaskRequest) str
 	return "resource-provision-password-" + request.RequestDigest
 }
 
+// passwordProducer keeps the default inside the same 6..20-character contract
+// as merchant-configured cloud passwords and guarantees every character class.
 func (s *Service) passwordProducer() secretcap.PlaintextProducer {
-	return func(consume secretcap.Consumer) error {
-		var randomBytes [32]byte
-		if _, err := io.ReadFull(s.random, randomBytes[:]); err != nil {
-			return gerror.Wrap(err, "generate provisioning credential")
-		}
-		encoded := make([]byte, base64.RawURLEncoding.EncodedLen(len(randomBytes)))
-		base64.RawURLEncoding.Encode(encoded, randomBytes[:])
-		clear(randomBytes[:])
-		defer clear(encoded)
-		return consume(encoded)
-	}
+	length := 20
+	return s.generatedPasswordProducer(resourcecap.ServerGenerationPolicy{PasswordLength: &length, PasswordCharacters: []string{"lowercase", "uppercase", "digits", "symbols"}})
 }
 
 func (s *Service) healProvisionCredential(ctx context.Context, row *taskRow) error {

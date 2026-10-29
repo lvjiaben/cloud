@@ -7,9 +7,10 @@ import (
 )
 
 type CloudServerListReq struct {
-	g.Meta `path:"/admin/resource/zjmfcloud-servers" method:"get" tags:"IDC Server Directory" summary:"List ZJMFCloud servers" dc:"Return one bounded staff-authorized page of local ZJMFCloud projections without credentials or supplier payloads" permission:"idc:admin:resource:server-batch:view" pageBridgeCapability:"zjmfcloud-servers.admin.v1" pageBridgeHost:"admin"`
-	Page   int `json:"page" d:"1" v:"between:1,1000000" dc:"One-based page number"`
-	Limit  int `json:"limit" d:"20" v:"between:1,100" dc:"Maximum local servers in one page"`
+	EntitlementNo string `json:"entitlementNo" in:"query" v:"max-length:40" dc:"Optional exact delivered entitlement number; limits both rows and count to this product" eg:"ENT_0123456789abcdef"`
+	g.Meta        `path:"/admin/resource/zjmfcloud-servers" method:"get" tags:"IDC Server Directory" summary:"List ZJMFCloud servers" dc:"Return one bounded staff-authorized page of local ZJMFCloud projections without credentials or supplier payloads" permission:"idc:admin:resource:server-batch:view" pageBridgeCapability:"zjmfcloud-servers.admin.v1" pageBridgeHost:"admin"`
+	Page          int `json:"page" d:"1" v:"between:1,1000000" dc:"One-based page number"`
+	Limit         int `json:"limit" d:"20" v:"between:1,100" dc:"Maximum local servers in one page"`
 }
 type CloudServerListRes struct {
 	Total      int                     `json:"total" dc:"Exact count within the same staff and fixed connector scope"`

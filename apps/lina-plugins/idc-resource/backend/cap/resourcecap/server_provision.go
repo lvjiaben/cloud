@@ -53,7 +53,7 @@ type ServerProvisionComponent struct {
 	SelectionQuantity int64
 }
 
-// ServerProvisionPlan is the only input supplied to a connector parameter
+// ServerProvisionPlan is the server-specific input supplied to a connector parameter
 // builder. Selector is connector-owned but must remain bounded and secret-free.
 // Credentials are supplied later through OperationRequest.SecretBindings and
 // therefore never enter this plan or a managed guest's request memory.

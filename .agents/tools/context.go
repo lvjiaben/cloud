@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -66,10 +67,73 @@ func findRoot(start string) (string, error) {
 
 func run(root string, args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "--help" || args[0] == "help" {
-		fmt.Fprintln(out, "用法: context locate [--limit 1..50] <关键词...> | read <仓库相对路径> [标题/任务ID/@行号]")
+		fmt.Fprintln(out, "用法: context status [仓库相对路径] | audit --thread ID|--file JSONL | check --path 路径 [--change 变更] [--plan] | handoff <活跃变更> <任务ID> | order --order <订单号> [--session-file 私有会话JSON] | locate [--limit 1..50] <关键词...> | read <仓库相对路径> [标题/任务ID/@行号]")
 		return nil
 	}
 	switch args[0] {
+	case "audit", "check":
+		tool := filepath.Join(root, ".agents", "tools", "workflow")
+		command := exec.Command("go", append([]string{"run", filepath.Join(tool, "main.go"), filepath.Join(tool, "audit.go"), filepath.Join(tool, "check.go"), "--root", root}, args...)...)
+		command.Stdout, command.Stderr = out, out
+		if err := command.Run(); err != nil {
+			return errors.New("工作流命令未完成，参见以上摘要")
+		}
+		return nil
+	case "handoff":
+		if len(args) != 3 || !regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,63}$`).MatchString(args[1]) || !regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$`).MatchString(args[2]) {
+			return errors.New("handoff 需要一个活跃变更名称和一个任务ID")
+		}
+		name := "openspec/changes/" + args[1] + "/tasks.md"
+		p, err := safePath(root, name)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		block, err := selectBlock(string(data), args[2])
+		if err != nil {
+			return err
+		}
+		if len(block) > 4096 {
+			return errors.New("交接任务超过4 KiB；缩小到具体子任务，不截断任务正文")
+		}
+		message := fmt.Sprintf("请在新会话处理以下任务或以其作为后续目标的背景；已完成项不自动重做。\n来源：%s，任务：%s。\n先读取当前AGENTS.md与相关权威条款，再确定本任务的验收结果和必要验证；交接不替代规范。\n%s\n只携带该任务的关键路径、仍有效的验证证据和未决条件；证据不足时如实补查，不复制整个旧会话。\n本命令只生成交接文字，没有创建会话或发送消息。\n", name, args[2], block)
+		if len(message) > 4096 {
+			return errors.New("交接总输出超过4 KiB；缩小到具体子任务，不截断任务正文")
+		}
+		fmt.Fprint(out, message)
+		return nil
+	case "order":
+		tool := filepath.Join(root, "apps", "lina-plugins", "idc-core", "hack", "tools", "order-diagnose")
+		command := exec.Command("go", append([]string{"run", filepath.Join(tool, "main.go"), filepath.Join(tool, "diagnose.go")}, args[1:]...)...)
+		command.Stdout, command.Stderr = out, out
+		if err := command.Run(); err != nil {
+			return errors.New("订单诊断未完成，参见以上摘要；不会自动重试或执行开通")
+		}
+		return nil
+	case "status":
+		if len(args) > 2 {
+			return errors.New("status 最多接受一个仓库相对路径；缩小路径查看具体文件")
+		}
+		scope := ""
+		if len(args) == 2 {
+			scope = strings.ReplaceAll(args[1], "\\", "/")
+			if strings.HasPrefix(scope, "/") || strings.Contains(scope, ":") || strings.HasPrefix(scope, "-") {
+				return errors.New("status 只接受仓库内相对路径")
+			}
+			for _, part := range strings.Split(scope, "/") {
+				if part == ".." {
+					return errors.New("禁止 .. 路径")
+				}
+			}
+			scope = strings.TrimPrefix(filepath.ToSlash(filepath.Clean(filepath.FromSlash(scope))), "./")
+			if scope == "." {
+				scope = ""
+			}
+		}
+		return workspaceStatus(root, scope, out)
 	case "locate":
 		limit := 12
 		var words []string
@@ -119,6 +183,121 @@ func run(root string, args []string, out io.Writer) error {
 	default:
 		return fmt.Errorf("未知命令 %s；使用 --help", args[0])
 	}
+}
+
+type statusEntry struct {
+	code, path, original string
+}
+
+// Git -z preserves spaces, newlines, and Unicode in filenames and emits rename
+// destinations before sources. Keep both so moves out of a scope remain visible.
+func parseStatus(data []byte) ([]statusEntry, error) {
+	var entries []statusEntry
+	parts := strings.Split(string(data), "\x00")
+	if parts[len(parts)-1] != "" {
+		return nil, errors.New("Git 状态缺少 NUL 终止符")
+	}
+	for i := 0; i < len(parts)-1; i++ {
+		part := parts[i]
+		if len(part) < 4 || part[2] != ' ' {
+			return nil, errors.New("无法解析 Git 状态记录")
+		}
+		e := statusEntry{code: part[:2], path: part[3:]}
+		if strings.ContainsAny(e.code, "RC") {
+			i++
+			if i >= len(parts)-1 || parts[i] == "" {
+				return nil, errors.New("Git 重命名状态缺少原路径")
+			}
+			e.original = parts[i]
+		}
+		entries = append(entries, e)
+	}
+	return entries, nil
+}
+
+func inScope(path, scope string) bool {
+	return scope == "" || path == scope || strings.HasPrefix(path, scope+"/")
+}
+
+func workspaceStatus(root, scope string, out io.Writer) error {
+	cmd := exec.Command("git", "-C", root, "status", "--porcelain=v1", "-z", "--untracked-files=all")
+	data, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("读取 Git 状态失败：%w", err)
+	}
+	entries, err := parseStatus(data)
+	if err != nil {
+		return err
+	}
+	groups := map[string]int{}
+	var selected []statusEntry
+	for _, e := range entries {
+		parts := strings.Split(e.path, "/")
+		n := 2
+		if len(parts) >= 3 && parts[0] == "apps" && parts[1] == "lina-plugins" {
+			n = 3
+		}
+		if n > len(parts) {
+			n = len(parts)
+		}
+		groups[strings.Join(parts[:n], "/")]++
+		if inScope(e.path, scope) || (e.original != "" && inScope(e.original, scope)) {
+			selected = append(selected, e)
+		}
+	}
+	fmt.Fprintf(out, "工作区：%d 条状态记录（含未跟踪文件和生成产物；重命名计一条）。\n", len(entries))
+	if scope != "" {
+		fmt.Fprintf(out, "范围 %s：%d 条；最多显示12条，过长路径仅作定位。\n", strconv.Quote(short(scope, 160)), len(selected))
+		for i, e := range selected {
+			if i == 12 {
+				fmt.Fprintf(out, "另有 %d 条未展开；缩小路径或定向执行 Git 命令。\n", len(selected)-i)
+				break
+			}
+			fmt.Fprintf(out, "  %s %s", e.code, strconv.Quote(short(e.path, 240)))
+			if e.original != "" {
+				fmt.Fprintf(out, " <- %s", strconv.Quote(short(e.original, 240)))
+			}
+			fmt.Fprintln(out)
+		}
+		return nil
+	}
+	changes, err := os.ReadDir(filepath.Join(root, "openspec", "changes"))
+	if err != nil {
+		return fmt.Errorf("读取活跃变更失败：%w", err)
+	}
+	var active []string
+	for _, entry := range changes {
+		if entry.IsDir() && entry.Name() != "archive" {
+			active = append(active, entry.Name())
+		}
+	}
+	var names []string
+	for name := range groups {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		if groups[names[i]] != groups[names[j]] {
+			return groups[names[i]] > groups[names[j]]
+		}
+		return names[i] < names[j]
+	})
+	for i, name := range names {
+		if i == 12 {
+			fmt.Fprintf(out, "另有 %d 个目录分组未展开。\n", len(names)-i)
+			break
+		}
+		fmt.Fprintf(out, "  %s：%d\n", strconv.Quote(short(name, 160)), groups[name])
+	}
+	fmt.Fprintf(out, "活跃变更：%d 个。\n", len(active))
+	for i, name := range active {
+		if i == 12 {
+			fmt.Fprintf(out, "另有 %d 个活跃变更未展开；按相关变更路径查询。\n", len(active)-i)
+			break
+		}
+		fmt.Fprintf(out, "  %s\n", strconv.Quote(short(name, 160)))
+	}
+	fmt.Fprintln(out, "具体文件未展开；使用 status <仓库相对路径>，必要时定向执行 Git 命令。")
+	return nil
 }
 
 func safePath(root, name string) (string, error) {

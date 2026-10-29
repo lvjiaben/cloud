@@ -30,12 +30,6 @@ const routes: RouteRecordRaw[] = [
         path: '/account/support/:ticketNo',
       },
       {
-        component: () => import('#/views/account/notifications/index.vue'),
-        meta: { icon: 'lucide:bell-ring', title: 'notifications.menu' },
-        name: 'CustomerNotifications',
-        path: '/account/notifications',
-      },
-      {
         component: () => import('#/views/account/ai/index.vue'),
         meta: { icon: 'lucide:sparkles', title: 'aiAssistant.menu' },
         name: 'CustomerAIAssistant',

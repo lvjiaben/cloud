@@ -20,7 +20,6 @@ import (
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/marketing"
 )
 
 const (
@@ -96,11 +95,20 @@ type calculatedQuoteLine struct {
 	contentDigest string
 }
 
+// quotePurpose separates ordinary purchase quotes from owned configuration targets.
+type quotePurpose string
+
+const (
+	quotePurposeNewPurchase quotePurpose = "new_purchase"
+	quotePurposeChange      quotePurpose = "change"
+)
+
 type assistedQuoteBuild struct {
 	requestNo     string
 	requestDigest string
 	createdBy     int
 	sourceCode    string
+	purposeCode   quotePurpose
 }
 
 // QuoteGuestCart persists a final owner-scoped quote without customer discounts.
@@ -238,7 +246,7 @@ func (s *serviceImpl) lockQuoteCartGraph(
 	quantityRows := make([]cartQuantityRow, 0, len(items))
 	if err = s.database.GetScan(ctx, &quantityRows, `SELECT quantity.cart_item_no,quantity.quantity FROM plugin_idc_core_commerce_cart_item_quantity quantity
 JOIN plugin_idc_core_commerce_cart_item item ON item.tenant_id=quantity.tenant_id AND item.cart_item_no=quantity.cart_item_no
-WHERE item.tenant_id=0 AND item.cart_no=? ORDER BY item.sort_order,item.id LIMIT ?`, cart.CartNo, maximumCartItems+1); err != nil || len(quantityRows) != len(items) {
+WHERE item.tenant_id=0 AND item.cart_no=? AND item.status_code<>'removed' ORDER BY item.sort_order,item.id LIMIT ?`, cart.CartNo, maximumCartItems+1); err != nil || len(quantityRows) != len(items) {
 		return nil, bizerr.NewCode(CodeQuoteNotAvailable)
 	}
 	quantities := make(map[string]int, len(quantityRows))
@@ -347,7 +355,8 @@ func quoteCatalogInput(
 			return catalog.PurchaseQuoteInput{}, bizerr.NewCode(CodeQuoteNotAvailable)
 		}
 		line := catalog.PurchaseQuoteLineInput{
-			ReferenceNo: item.CartItemNo, ProductNo: item.ProductNo,
+			ConfigurationSnapshotNo: item.ConfigurationSnapshotNo,
+			ReferenceNo:             item.CartItemNo, ProductNo: item.ProductNo,
 			VersionNo: item.VersionNo, BillingRuleNo: item.BillingRuleNo,
 			Quantity: quantity, PurchaseCycles: item.PurchaseCycles,
 			PriceSelections: append([]catalog.ConfigurationPriceSelection(nil), graph.priceSelections[item.ConfigurationSnapshotNo]...),
@@ -474,12 +483,18 @@ func (s *serviceImpl) evaluateQuoteAdjustments(
 	assets []string,
 	lines []calculatedQuoteLine,
 ) (*QuoteAdjustmentResult, error) {
+	return s.evaluateQuoteAdjustmentsForPurpose(ctx, quoteNo, currency, now, customer, assets, lines, quotePurposeNewPurchase)
+}
+
+// evaluateQuoteAdjustmentsForPurpose preserves explicit merchant applicability;
+// change quotes cannot reserve assets restricted to new purchase or renewal.
+func (s *serviceImpl) evaluateQuoteAdjustmentsForPurpose(ctx context.Context, quoteNo, currency string, now time.Time, customer *quoteCustomerFact, assets []string, lines []calculatedQuoteLine, purpose quotePurpose) (*QuoteAdjustmentResult, error) {
 	if customer == nil {
 		return &QuoteAdjustmentResult{Adjustments: []QuoteAdjustment{}}, nil
 	}
 	input := QuoteAdjustmentInput{
 		QuoteNo: quoteNo, CustomerNo: customer.CustomerNo, CurrencyCode: currency,
-		PurchasePhase: marketing.PurchasePhaseNewPurchase, CycleNumber: 1,
+		PurchasePhase: string(purpose), CycleNumber: 1,
 		IssuedAt: now, AssetNumbers: append([]string(nil), assets...),
 		Lines: make([]QuoteAdjustmentLineInput, 0, len(lines)),
 	}
@@ -753,9 +768,8 @@ func (s *serviceImpl) buildQuoteRows(
 			ChargeTypeCode: line.catalogLine.ChargeTypeCode, PeriodUnitCode: line.catalogLine.PeriodUnitCode,
 			TrialLimitQuantity: line.catalogLine.TrialLimitQuantity,
 			PriorTrialUses:     line.catalogLine.PriorTrialUses,
-			PeriodCount:        line.catalogLine.PeriodCount, RequiresContract: line.catalogLine.RequiresContract,
-			ContractPolicyCode:    line.catalogLine.ContractPolicyCode,
-			ContractTemplateNo:    nullableCommerceContractTemplate(line.catalogLine.ContractTemplateNo),
+			PeriodCount:        line.catalogLine.PeriodCount,
+
 			FulfillmentModeCode:   line.catalogLine.FulfillmentModeCode,
 			RiskDecisionCode:      line.catalogLine.RiskDecisionCode,
 			InventoryDecisionCode: line.catalogLine.InventoryDecisionCode,
@@ -958,7 +972,7 @@ func (s *serviceImpl) buildQuoteRows(
 	header := do.CommerceQuoteSnapshot{
 		TenantId: idccap.DefaultTenantID, QuoteNo: quoteNo, CartNo: cartNo,
 		CustomerNo: customerNo, CustomerSubjectVersion: customerVersion,
-		PurposeCode: "new_purchase", SourceCode: source, CurrencyCode: graph.cart.CurrencyCode,
+		PurposeCode: quoteSnapshotPurpose(assisted), SourceCode: source, CurrencyCode: graph.cart.CurrencyCode,
 		ItemCount: len(lines), SubtotalMinor: quote.SubtotalMinor,
 		DiscountMinor: quote.DiscountMinor, NetAmountMinor: quote.NetAmountMinor,
 		TaxAmountMinor: quote.TaxAmountMinor, TotalAmountMinor: quote.TotalAmountMinor,
@@ -969,18 +983,20 @@ func (s *serviceImpl) buildQuoteRows(
 	return quote, header, itemRows, quantityRows, inventoryRows, chargeRows, adjustmentRows, nil
 }
 
+// quoteSnapshotPurpose preserves ordinary purchase behavior unless an internal
+// owner explicitly creates a non-checkout target quote.
+func quoteSnapshotPurpose(assisted *assistedQuoteBuild) quotePurpose {
+	if assisted != nil && assisted.purposeCode != "" {
+		return assisted.purposeCode
+	}
+	return quotePurposeNewPurchase
+}
+
 func assistedQuoteCartNo(graph *quoteCartGraph, assisted *assistedQuoteBuild) string {
 	if assisted != nil {
 		return ""
 	}
 	return graph.cart.CartNo
-}
-
-func nullableCommerceContractTemplate(value string) any {
-	if value == "" {
-		return nil
-	}
-	return value
 }
 
 func quoteCartItemNo(line *calculatedQuoteLine, assisted *assistedQuoteBuild) string {

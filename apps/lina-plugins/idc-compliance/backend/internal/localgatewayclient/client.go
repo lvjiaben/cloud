@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -23,21 +24,17 @@ import (
 
 const (
 	// BaseURLEnvironment names the loopback-only gateway address setting.
-	BaseURLEnvironment  = "LINAPRO_COMPLIANCE_GATEWAY_INTERNAL_BASE_URL"
-	defaultBaseURL      = "http://127.0.0.1:9088"
-	requestTimeout      = 5 * time.Second
-	onboardingTimeout   = 45 * time.Second
-	contractFlowTimeout = 35 * time.Second
-	maximumResponse     = 16 << 10
+	BaseURLEnvironment = "LINAPRO_COMPLIANCE_GATEWAY_INTERNAL_BASE_URL"
+	defaultBaseURL     = "http://127.0.0.1:9088"
+	requestTimeout     = 5 * time.Second
+	maximumResponse    = 16 << 10
 )
 
 // Client sends signed supplier-subject writes to the colocated gateway process.
 type Client struct {
-	baseURL              *url.URL
-	httpClient           *http.Client
-	onboardingHTTPClient *http.Client
-	contractHTTPClient   *http.Client
-	signer               *localgatewayauth.Signer
+	baseURL    *url.URL
+	httpClient *http.Client
+	signer     *localgatewayauth.Signer
 }
 
 var _ supplierconfig.SubjectGateway = (*Client)(nil)
@@ -55,7 +52,7 @@ func LoadFromEnvironment(getenv func(string) string) (*Client, error) {
 	if baseURL == "" {
 		baseURL = defaultBaseURL
 	}
-	client, err := New(baseURL, signer, &http.Client{Timeout: requestTimeout})
+	client, err := New(baseURL, signer, &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: requestTimeout})
 	if err != nil {
 		signer.Close()
 		return nil, err
@@ -72,20 +69,15 @@ func New(baseURL string, signer *localgatewayauth.Signer, httpClient *http.Clien
 		httpClient.Timeout > requestTimeout {
 		return nil, fmt.Errorf("local compliance gateway client configuration is invalid")
 	}
-	onboardingHTTPClient := *httpClient
-	onboardingHTTPClient.Timeout = onboardingTimeout
-	contractHTTPClient := *httpClient
-	contractHTTPClient.Timeout = contractFlowTimeout
 	return &Client{
 		baseURL: parsed, signer: signer, httpClient: httpClient,
-		onboardingHTTPClient: &onboardingHTTPClient, contractHTTPClient: &contractHTTPClient,
 	}, nil
 }
 
 // RecognizerAvailable reports the one production recognizer implemented from
 // Tencent's public contract. NuoNuo remains closed behind its separate gate.
 func (c *Client) RecognizerAvailable(provider string) bool {
-	return c != nil && provider == supplierconfig.ProviderTencentESSBasic
+	return false
 }
 
 // Bind sends one provider authorization result to the local binding route.

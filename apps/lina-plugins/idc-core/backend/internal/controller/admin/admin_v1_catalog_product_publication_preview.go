@@ -20,7 +20,7 @@ func (c *ControllerV1) CatalogProductPublicationPreview(
 	checks := make([]*v1.CatalogProductPublicationCheck, 0, len(preview.Checks))
 	for _, check := range preview.Checks {
 		checks = append(checks, &v1.CatalogProductPublicationCheck{
-			Code: string(check.Code), Passed: check.Passed,
+			Code: string(check.Code), Passed: check.Passed, ReasonCode: string(check.ReasonCode),
 		})
 	}
 	return &v1.CatalogProductPublicationPreviewRes{

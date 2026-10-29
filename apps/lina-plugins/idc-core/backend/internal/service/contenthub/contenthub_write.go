@@ -1,3 +1,5 @@
+// Content writes persist versioned changes and acknowledge deletion without reopening tombstones.
+
 package contenthub
 
 import (
@@ -10,6 +12,9 @@ import (
 
 	"lina-core/pkg/bizerr"
 )
+
+// contentStatusDeleted is the existing terminal status acknowledged by deletion.
+const contentStatusDeleted = "deleted"
 
 type normalizedWrite struct{ WriteInput }
 
@@ -32,24 +37,13 @@ func normalizeWrite(input WriteInput) (normalizedWrite, error) {
 		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
 	}
 	input.SEODescription, ok = trimBound(input.SEODescription, 2000, false)
-	if !ok || !contentTypeValid(input.Type) || !visibilityValid(input.Type, input.Visibility) {
+	if !ok || !contentTypeValid(input.Type) || !visibilityValid(input.Visibility) {
 		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
 	}
-	if input.Type == "announcement" && input.CategoryNo != "" {
-		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
-	}
-	if input.Type != "announcement" && input.CategoryNo != "" && !businessNumberPattern.MatchString(input.CategoryNo) {
+	if input.CategoryNo != "" && !businessNumberPattern.MatchString(input.CategoryNo) {
 		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
 	}
 	var valid bool
-	input.TargetCustomerNos, valid = uniqueBusinessNos(input.TargetCustomerNos, 500)
-	if !valid {
-		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
-	}
-	input.TargetServiceNos, valid = uniqueBusinessNos(input.TargetServiceNos, 500)
-	if !valid {
-		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
-	}
 	input.TargetCustomerGroupNos, valid = uniqueBusinessNos(input.TargetCustomerGroupNos, 500)
 	if !valid {
 		return normalizedWrite{}, bizerr.NewCode(CodeInvalid)
@@ -62,13 +56,10 @@ func normalizeWrite(input WriteInput) (normalizedWrite, error) {
 func targetsMatchVisibility(input WriteInput) bool {
 	switch input.Visibility {
 	case "customer_group":
-		return len(input.TargetCustomerGroupNos) > 0 && len(input.TargetCustomerNos) == 0 && len(input.TargetServiceNos) == 0
-	case "specific_customers":
-		return input.Type == "announcement" && len(input.TargetCustomerNos) > 0 && len(input.TargetServiceNos) == 0 && len(input.TargetCustomerGroupNos) == 0
-	case "specific_services":
-		return input.Type == "announcement" && len(input.TargetServiceNos) > 0 && len(input.TargetCustomerNos) == 0 && len(input.TargetCustomerGroupNos) == 0
+		return len(input.TargetCustomerGroupNos) > 0
+
 	default:
-		return len(input.TargetCustomerNos) == 0 && len(input.TargetServiceNos) == 0 && len(input.TargetCustomerGroupNos) == 0
+		return len(input.TargetCustomerGroupNos) == 0
 	}
 }
 
@@ -136,8 +127,6 @@ func (s *serviceImpl) Create(ctx context.Context, input WriteInput) (*Item, erro
 func contentPublicPath(contentType, contentNo string) string {
 	segment := contentType
 	switch contentType {
-	case "announcement":
-		segment = "announcements"
 	case "download":
 		segment = "downloads"
 	}
@@ -313,12 +302,6 @@ func (s *serviceImpl) Delete(ctx context.Context, contentNo string, version int6
                    OR (role_code='candidate' AND status_code IN ('checking','ready')))`, now, now, contentNo); err != nil {
 			return err
 		}
-		if _, err = s.database.Exec(ctx, `DELETE FROM plugin_idc_core_content_customer_scope WHERE tenant_id=0 AND content_no=?`, contentNo); err != nil {
-			return err
-		}
-		if _, err = s.database.Exec(ctx, `DELETE FROM plugin_idc_core_content_service_scope WHERE tenant_id=0 AND content_no=?`, contentNo); err != nil {
-			return err
-		}
 		if _, err = s.database.Exec(ctx, `DELETE FROM plugin_idc_core_content_group_scope WHERE tenant_id=0 AND content_no=?`, contentNo); err != nil {
 			return err
 		}
@@ -328,7 +311,9 @@ func (s *serviceImpl) Delete(ctx context.Context, contentNo string, version int6
 	if err != nil {
 		return nil, contentWrap(err, "delete content")
 	}
-	return s.DetailAdmin(ctx, contentNo)
+	// Deletion is already committed. Return an acknowledgement rather than
+	// reopening a tombstone through the ordinary detail reader.
+	return &Item{ContentNo: contentNo, Status: contentStatusDeleted, Version: version + 1}, nil
 }
 
 func (s *serviceImpl) validateReferences(ctx context.Context, input WriteInput) error {
@@ -344,7 +329,7 @@ func (s *serviceImpl) validateReferences(ctx context.Context, input WriteInput) 
 	checks := []struct {
 		values []string
 		query  string
-	}{{input.TargetCustomerNos, `SELECT COUNT(1) FROM plugin_idc_core_customer_subject WHERE tenant_id=0 AND customer_no IN (%s) AND status_code IN ('active','restricted')`}, {input.TargetServiceNos, `SELECT COUNT(1) FROM plugin_idc_core_service_entitlement WHERE tenant_id=0 AND entitlement_no IN (%s) AND status_code IN ('active','suspended')`}, {input.TargetCustomerGroupNos, `SELECT COUNT(1) FROM plugin_idc_core_customer_group WHERE tenant_id=0 AND group_no IN (%s) AND status_code='active'`}}
+	}{{input.TargetCustomerGroupNos, `SELECT COUNT(1) FROM plugin_idc_core_customer_group WHERE tenant_id=0 AND group_no IN (%s) AND status_code='active'`}}
 	for _, check := range checks {
 		if len(check.values) == 0 {
 			continue
@@ -371,10 +356,6 @@ func (s *serviceImpl) visibilityTargetsChanged(ctx context.Context, contentNo, p
 	var table, column string
 	var expected []string
 	switch input.Visibility {
-	case "specific_customers":
-		table, column, expected = "plugin_idc_core_content_customer_scope", "customer_no", input.TargetCustomerNos
-	case "specific_services":
-		table, column, expected = "plugin_idc_core_content_service_scope", "service_no", input.TargetServiceNos
 	case "customer_group":
 		table, column, expected = "plugin_idc_core_content_group_scope", "group_no", input.TargetCustomerGroupNos
 	default:
@@ -400,24 +381,27 @@ func (s *serviceImpl) visibilityTargetsChanged(ctx context.Context, contentNo, p
 }
 
 func (s *serviceImpl) replaceTargets(ctx context.Context, contentNo string, input WriteInput) error {
-	tables := []string{"plugin_idc_core_content_customer_scope", "plugin_idc_core_content_service_scope", "plugin_idc_core_content_group_scope"}
-	for _, table := range tables {
-		if _, err := s.database.Exec(ctx, "DELETE FROM "+table+" WHERE tenant_id=0 AND content_no=?", contentNo); err != nil {
+	// The input is normalized and authorized before the enclosing transaction.
+	// One delete and one batch insert, independent of audience size.
+	scopes := []struct {
+		table, column string
+		values        []string
+	}{
+		{"plugin_idc_core_content_group_scope", "group_no", input.TargetCustomerGroupNos},
+	}
+	for _, scope := range scopes {
+		if _, err := s.database.Exec(ctx, "DELETE FROM "+scope.table+" WHERE tenant_id=0 AND content_no=?", contentNo); err != nil {
 			return err
 		}
-	}
-	for _, value := range input.TargetCustomerNos {
-		if _, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_customer_scope (tenant_id,content_no,customer_no) VALUES (0,?,?)`, contentNo, value); err != nil {
-			return err
+		if len(scope.values) == 0 {
+			continue
 		}
-	}
-	for _, value := range input.TargetServiceNos {
-		if _, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_service_scope (tenant_id,content_no,service_no) VALUES (0,?,?)`, contentNo, value); err != nil {
-			return err
+		args := make([]any, 0, len(scope.values)*2)
+		for _, value := range scope.values {
+			args = append(args, contentNo, value)
 		}
-	}
-	for _, value := range input.TargetCustomerGroupNos {
-		if _, err := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_group_scope (tenant_id,content_no,group_no) VALUES (0,?,?)`, contentNo, value); err != nil {
+		rows := strings.TrimSuffix(strings.Repeat("(0,?,?),", len(scope.values)), ",")
+		if _, err := s.database.Exec(ctx, "INSERT INTO "+scope.table+" (tenant_id,content_no,"+scope.column+") VALUES "+rows, args...); err != nil {
 			return err
 		}
 	}

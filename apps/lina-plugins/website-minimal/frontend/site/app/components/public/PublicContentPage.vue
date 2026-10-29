@@ -24,6 +24,7 @@ import {
   publicDownloadURL,
 } from './content-client';
 import { contentCopy } from './content-i18n';
+import { announcementHtml } from './announcement-html';
 
 const props = defineProps<{
   kind: PublicContentKind | 'help';
@@ -253,7 +254,7 @@ async function startDownload() {
                     : detail.category.nameZhCN || detail.category.nameEnUS
                 }}
               </p>
-              <div class="content-body">{{ detail.bodyText }}</div>
+              <div class="content-body" :class="{ 'rich-content-body': /<[a-z][^>]*>/i.test(detail.bodyText) }" v-html="announcementHtml(detail.bodyText)"></div>
 
               <section v-if="kind === 'downloads' && detail.hasDownload" class="download-panel">
                 <AButton
@@ -343,6 +344,9 @@ h1 { max-width: 900px; margin-bottom: 14px; color: #111827; font-size: clamp(28p
 .content-article > time { color: #7a8496; font-size: 13px; }
 .content-category { margin-top: 10px; color: #667085; font-size: 13px; }
 .content-body { margin-top: 38px; color: #273244; font-size: 16px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rich-content-body { white-space: normal; }
+.rich-content-body :deep(img) { max-width: 100%; height: auto; margin: 12px 0; }
+.rich-content-body :deep(p) { margin: 8px 0; }
 .download-panel { margin-top: 40px; padding: 22px; border: 1px solid #b9d7ff; border-radius: 0; background: #f5f9ff; }
 @media (max-width: 720px) {
   .content-main { padding-top: 38px; }

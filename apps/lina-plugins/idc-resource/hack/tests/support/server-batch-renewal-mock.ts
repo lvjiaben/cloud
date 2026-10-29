@@ -26,7 +26,7 @@ function nestedMessages(messages: Record<string, string>) {
   return root;
 }
 
-export async function installServerBatchRenewalMock(page: Page) {
+export async function installServerBatchRenewalMock(page: Page, options: {currencyCode?:string;amountMinor?:string}={}) {
   const previews: Record<string, unknown>[] = [];
   const confirmations: Record<string, unknown>[] = [];
   await page.route("**/api/v1/user/info", async (route: Route) => {
@@ -120,7 +120,7 @@ export async function installServerBatchRenewalMock(page: Page) {
           requestKey: body.requestKey,
           renewalCycles: body.renewalCycles,
           items: serverNos.map((serverNo, index) => ({
-            currencyCode: "CNY",
+            currencyCode: options.currencyCode ?? "CNY",
             eligible: index === 0,
             failureCode: index === 0 ? "" : "quote_unavailable",
             originalExpiresAt: 1786464000000,
@@ -130,7 +130,7 @@ export async function installServerBatchRenewalMock(page: Page) {
             projectedExpiresAt: 1818000000000,
             quoteExpiresAt: 1786464300000,
             serverNo,
-            totalAmountMinor: index === 0 ? "129900" : "0",
+            totalAmountMinor: index === 0 ? (options.amountMinor ?? "129900") : "0",
           })),
         }),
       });
@@ -147,14 +147,14 @@ export async function installServerBatchRenewalMock(page: Page) {
           requestKey: body.requestKey,
           renewalCycles: body.renewalCycles,
           items: serverNos.map((serverNo, index) => ({
-            currencyCode: "CNY",
+            currencyCode: options.currencyCode ?? "CNY",
             failureCode: index === 0 ? "" : "confirmation_failed",
             productNameEnUS: "Server",
             productNameZhCN: "服务器",
             serverNo,
             status: index === 0 ? "pending_payment" : "",
             succeeded: index === 0,
-            totalAmountMinor: index === 0 ? "129900" : "0",
+            totalAmountMinor: index === 0 ? (options.amountMinor ?? "129900") : "0",
           })),
         }),
       });

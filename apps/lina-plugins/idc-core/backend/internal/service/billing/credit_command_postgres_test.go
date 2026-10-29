@@ -122,7 +122,7 @@ func TestCreditCommandsPostgreSQLBindExactProofsDeriveCustomerAndAudit(t *testin
 		t.Fatal(err)
 	}
 	reviewed, err := management.ReviewCreditApplication(ctx, reviewIntent, proof.Token)
-	if err != nil || reviewed.ReviewCount != 1 || reviewed.StatusCode != "pending_review" ||
+	if err != nil || reviewed.ReviewCount != 1 || reviewed.StatusCode != "approved" ||
 		len(managementAudit.transitions) != 2 ||
 		managementAudit.transitions[1].RequiredPermission != permissionCreditApplicationReview {
 		t.Fatalf("review credit application=%+v audit=%+v err=%v", reviewed, managementAudit.transitions, err)

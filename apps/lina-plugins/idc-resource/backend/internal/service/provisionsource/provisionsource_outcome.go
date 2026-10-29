@@ -15,6 +15,7 @@ import (
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/internal/composition"
+	"lina-plugin-idc-resource/backend/internal/model/do"
 )
 
 type provisionCredentialRow struct {
@@ -58,19 +59,18 @@ func (s *Service) ReportOutcome(
 	if row == nil {
 		return provisionresourcecap.ErrTaskUnavailable
 	}
-	if !sameTaskRequest(row, report.Request) || row.SecretRef == "" {
+	if !sameTaskRequest(row, report.Request) || (report.Request.NativePurchase == nil && row.SecretRef == "") {
 		return provisionresourcecap.ErrTaskConflict
 	}
-	status, _ := projectTaskStatus(row)
-	if string(status) != string(report.Status) {
-		return provisionresourcecap.ErrTaskConflict
-	}
-	evidence, err := taskEvidenceDigest(row)
+	projection, err := s.ReadTask(ctx, provisionresourcecap.TaskReadRequest{ProviderTaskNo: row.TaskNo, Request: report.Request})
 	if err != nil {
 		return err
 	}
-	if subtle.ConstantTimeCompare([]byte(evidence), []byte(report.TaskEvidenceDigest)) != 1 {
+	if string(projection.Status) != string(report.Status) || subtle.ConstantTimeCompare([]byte(projection.EvidenceDigest), []byte(report.TaskEvidenceDigest)) != 1 {
 		return provisionresourcecap.ErrTaskConflict
+	}
+	if report.Request.NativePurchase != nil {
+		return s.persistOutcomeReceipt(ctx, row, report)
 	}
 	if err = s.healProvisionCredential(ctx, row); err != nil {
 		return err
@@ -127,13 +127,20 @@ func (s *Service) persistOutcomeReceipt(
 	report provisionresourcecap.OutcomeReport,
 ) error {
 	return s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
-		credential, err := loadProvisionCredential(ctx, s.database, task.TaskNo, true)
-		if err != nil {
-			return err
-		}
-		if credential == nil || credential.ServiceNo != task.LocalResourceNo ||
-			credential.ChannelNo != task.ChannelNo || credential.SecretRef != task.SecretRef {
-			return provisionresourcecap.ErrTaskConflict
+		var credential *provisionCredentialRow
+		var err error
+		if report.Request.NativePurchase == nil {
+			credential, err = loadProvisionCredential(ctx, s.database, task.TaskNo, true)
+			if err != nil {
+				return err
+			}
+			if credential == nil || credential.ServiceNo != task.LocalResourceNo || credential.ChannelNo != task.ChannelNo || credential.SecretRef != task.SecretRef {
+				return provisionresourcecap.ErrTaskConflict
+			}
+		} else {
+			if _, err = s.database.Model(do.Task{}).Ctx(ctx).Where(do.Task{TenantId: 0, TaskNo: task.TaskNo}).Fields("task_no").LockUpdate().One(); err != nil {
+				return err
+			}
 		}
 		var existing *provisionOutcomeReceiptRow
 		if err = s.database.GetScan(ctx, &existing, `
@@ -154,38 +161,40 @@ WHERE tenant_id = ? AND task_no = ?`, idccap.DefaultTenantID, task.TaskNo); err 
 		if err != nil {
 			return err
 		}
-		switch report.Status {
-		case provisionresourcecap.OutcomeStatusSucceeded:
-			if credential.StatusCode == "pending" {
-				if err = requireOutcomeUpdate(ctx, s.database, `
+		if credential != nil {
+			switch report.Status {
+			case provisionresourcecap.OutcomeStatusSucceeded:
+				if credential.StatusCode == "pending" {
+					if err = requireOutcomeUpdate(ctx, s.database, `
 UPDATE plugin_idc_resource_provision_credential
 SET status_code = 'revealable', version = version + 1, updated_at = ?
 WHERE tenant_id = ? AND task_no = ? AND status_code = 'pending' AND version = ?`,
-					now, idccap.DefaultTenantID, task.TaskNo, credential.Version); err != nil {
-					return err
-				}
-			} else if credential.StatusCode != "revealable" && credential.StatusCode != "revealed" {
-				return provisionresourcecap.ErrTaskConflict
-			}
-		case provisionresourcecap.OutcomeStatusFailed:
-			if credential.StatusCode != "revoked" {
-				if credential.StatusCode != "pending" && credential.StatusCode != "revealable" {
+						now, idccap.DefaultTenantID, task.TaskNo, credential.Version); err != nil {
+						return err
+					}
+				} else if credential.StatusCode != "revealable" && credential.StatusCode != "revealed" {
 					return provisionresourcecap.ErrTaskConflict
 				}
-				if err = requireOutcomeUpdate(ctx, s.database, `
+			case provisionresourcecap.OutcomeStatusFailed:
+				if credential.StatusCode != "revoked" {
+					if credential.StatusCode != "pending" && credential.StatusCode != "revealable" {
+						return provisionresourcecap.ErrTaskConflict
+					}
+					if err = requireOutcomeUpdate(ctx, s.database, `
 UPDATE plugin_idc_resource_provision_credential
 SET status_code = 'revoked', revoked_at = ?, version = version + 1, updated_at = ?
 WHERE tenant_id = ? AND task_no = ? AND status_code IN ('pending', 'revealable')
   AND version = ?`, now, now, idccap.DefaultTenantID, task.TaskNo, credential.Version); err != nil {
-					return err
+						return err
+					}
 				}
-			}
-		case provisionresourcecap.OutcomeStatusManualReview:
-			if credential.StatusCode != "pending" {
+			case provisionresourcecap.OutcomeStatusManualReview:
+				if credential.StatusCode != "pending" {
+					return provisionresourcecap.ErrTaskConflict
+				}
+			default:
 				return provisionresourcecap.ErrTaskConflict
 			}
-		default:
-			return provisionresourcecap.ErrTaskConflict
 		}
 		digest := sha256.Sum256([]byte("provision-outcome/v1\x00" + task.TaskNo))
 		_, err = s.database.Exec(ctx, `

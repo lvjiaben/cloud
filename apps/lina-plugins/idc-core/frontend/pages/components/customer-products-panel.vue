@@ -7,6 +7,7 @@ import { requestClient } from "#/api/request";
 import { useVbenDrawer } from "@vben/common-ui";
 import { $te } from "@vben/locales";
 import ServerEditDrawer from "./customer-server-edit-drawer.vue";
+import ProductManagementDrawer from "./customer-product-management-drawer.vue";
 import { preferences } from "@vben/preferences";
 import { Alert, Button, Tag, message } from "ant-design-vue";
 import { $t } from "#/locales";
@@ -14,11 +15,13 @@ import { formatTimestamp } from "#/utils/time";
 import { useAccess } from "../plugin-access";
 import { minorToMajorAmount } from "../catalog-money";
 import { customerProducts } from "../customer-client";
+import { productManagementKind, productManagementPermissions } from "../customer-product-management";
 
 const props = defineProps<{ customerNo: string }>();
 const router = useRouter();
 const { hasAccessByCodes } = useAccess();
 const failed = ref(false);
+const ownersFailed = ref(false);
 const owners = ref<
   {
     id: string;
@@ -30,8 +33,9 @@ const text = (key: string) => $t(`plugin.idc-core.customer.workspace.${key}`);
 const [EditDrawer, editDrawer] = useVbenDrawer({
   connectedComponent: ServerEditDrawer,
 });
+const [ManagementDrawer, managementDrawer] = useVbenDrawer({ connectedComponent: ProductManagementDrawer });
 let sequence = 0;
-let pluginsLoaded = false;
+let managementSequence = 0;
 let page = 1;
 let pageSize = 10;
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -71,7 +75,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       {
         field: "action",
         title: text("actions"),
-        width: 90,
+        width: 145,
         fixed: "right",
         slots: { default: "action" },
       },
@@ -117,6 +121,7 @@ function editor(row: CustomerProduct) {
         }
       : undefined;
   }
+  if (row.pluginId === "yunsu-ssl" && canManage(row)) return { path: "", query: {} };
   const owner = owners.value.find(
     (item) =>
       item.id === row.pluginId && item.installed === 1 && item.enabled === 1,
@@ -138,7 +143,36 @@ function editor(row: CustomerProduct) {
     query: { pluginPath: `entitlements/${encodeURIComponent(row.number)}` },
   };
 }
-function edit(row: CustomerProduct) {
+function canManage(row: CustomerProduct) {
+  const kind = productManagementKind(row);
+  if (!kind) return false;
+  const requiredPlugins = kind === "legacy-server" ? ["idc-resource"] : kind === "native-server" ? ["idc-resource", row.pluginId] : [row.pluginId];
+  return requiredPlugins.every(id => owners.value.some(item => item.id === id && item.installed === 1 && item.enabled === 1)) &&
+    productManagementPermissions(kind).some(code => hasAccessByCodes([code]));
+}
+async function refreshEntryOwners() {
+  const current = ++managementSequence;
+  const directory = sequence;
+  try {
+    const plugins = await requestClient.get<{ list: typeof owners.value }>("/plugins/dynamic");
+    if (current !== managementSequence || directory !== sequence) return false;
+    owners.value = plugins.list;
+    ownersFailed.value = false;
+  } catch {
+    if (current === managementSequence && directory === sequence) { owners.value = []; ownersFailed.value = true; }
+    return false;
+  }
+  return true;
+}
+async function manage(row: CustomerProduct) {
+  const kind = productManagementKind(row);
+  if (!kind || !canManage(row) || !await refreshEntryOwners()) return;
+  if (!canManage(row)) return;
+  managementDrawer.setData({ serviceNo: row.number, name: productName(row), kind }).open();
+}
+async function edit(row: CustomerProduct) {
+  if (row.pluginId === "yunsu-ssl") { await manage(row); return; }
+  if (row.deliveryKind === "server" && !await refreshEntryOwners()) return;
   const target = editor(row);
   if (!target) return;
   if (row.deliveryKind === "server") {
@@ -161,7 +195,7 @@ function status(row: CustomerProduct) {
 function type(row: CustomerProduct) {
   return row.pluginId === "yunsu-ssl"
     ? text("ssl")
-    : ["cloud_server", "bare_metal"].includes(row.productType) ||
+    : ["cloud_server", "bare_metal", "idc-resource"].includes(row.productType) ||
         row.deliveryKind === "server"
       ? text("server")
       : text("otherProduct");
@@ -173,20 +207,18 @@ function period(row: CustomerProduct) {
 }
 async function load() {
   const current = ++sequence;
+  ++managementSequence;
   failed.value = false;
+  ownersFailed.value = false;
   gridApi.setLoading(true);
   try {
     const [result, plugins] = await Promise.all([
       customerProducts(props.customerNo, page, pageSize),
-      pluginsLoaded
-        ? Promise.resolve({ list: owners.value })
-        : requestClient
-            .get<{ list: typeof owners.value }>("/plugins/dynamic")
-            .catch(() => ({ list: [] })),
+      requestClient.get<{ list: typeof owners.value }>("/plugins/dynamic").catch(() => undefined),
     ]);
     if (current !== sequence) return;
-    owners.value = plugins.list;
-    pluginsLoaded = true;
+    owners.value = plugins?.list ?? [];
+    ownersFailed.value = !plugins;
     gridApi.setGridOptions({
       data: result.items,
       pagerConfig: {
@@ -199,7 +231,7 @@ async function load() {
     await nextTick();
     if (current === sequence) await gridApi.grid.recalculate(true);
   } catch {
-    if (current === sequence) failed.value = true;
+    if (current === sequence) { failed.value = true; owners.value = []; }
   } finally {
     if (current === sequence) gridApi.setLoading(false);
   }
@@ -217,15 +249,19 @@ watch(
   () => {
     page = 1;
     pageSize = 10;
+    gridApi.setGridOptions({ data: [], pagerConfig: { currentPage: 1, pageSize: 10, total: 0 } });
+    void managementDrawer.close?.();
+    void editDrawer.close?.();
     void load();
   },
   { immediate: true },
 );
-onBeforeUnmount(() => ++sequence);
+onBeforeUnmount(() => { ++sequence; ++managementSequence; });
 </script>
 
 <template>
   <section class="products-panel" data-testid="customer-products-panel">
+    <Alert v-if="ownersFailed" type="warning" :message="text('managementUnavailable')"><template #action><Button @click="load">{{ text('retry') }}</Button></template></Alert>
     <Alert v-if="failed" type="error" :message="text('loadFailed')"
       ><template #action
         ><Button @click="load">{{ text("retry") }}</Button></template
@@ -281,16 +317,18 @@ onBeforeUnmount(() => ++sequence);
           >{{ status(row) }}</Tag
         ></template
       >
-      <template #action="{ row }"
-        ><ghost-button
-          v-if="editor(row)"
+      <template #action="{ row }">
+        <ghost-button v-if="canManage(row)" :data-testid="`customer-product-manage-${row.number}`" @click="manage(row)">{{ text("manage") }}</ghost-button>
+        <ghost-button
+          v-if="row.pluginId !== 'yunsu-ssl' && editor(row)"
           :data-testid="`customer-product-edit-${row.number}`"
           @click="edit(row)"
           >{{ text("edit") }}</ghost-button
-        ><span v-else>—</span></template
+        ><span v-if="!editor(row) && !canManage(row)">—</span></template
       >
     </Grid>
     <EditDrawer @changed="load" />
+    <ManagementDrawer @changed="load" />
   </section>
 </template>
 

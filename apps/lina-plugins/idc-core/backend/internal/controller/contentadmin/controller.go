@@ -1,3 +1,5 @@
+// Content administration forwards authorized API inputs and projects service results without per-row reads.
+
 package contentadmin
 
 import (
@@ -17,8 +19,10 @@ func NewV1(service contenthub.Service) (*ControllerV1, error) {
 	}
 	return &ControllerV1{service: service}, nil
 }
+
+// ContentList preserves filters, numbered pagination, and the service-authorized total.
 func (c *ControllerV1) ContentList(ctx context.Context, req *v1.ContentListReq) (*v1.ContentListRes, error) {
-	page, err := c.service.SearchAdmin(ctx, contenthub.SearchInput{Type: req.Type, CategoryNo: req.CategoryNo, Status: req.Status, Visibility: req.Visibility, Query: req.Query, Cursor: req.Cursor, Limit: req.Limit})
+	page, err := c.service.SearchAdmin(ctx, contenthub.SearchInput{Type: req.Type, CategoryNo: req.CategoryNo, Status: req.Status, Visibility: req.Visibility, Query: req.Query, Cursor: req.Cursor, Limit: req.Limit, Page: req.Page})
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +30,7 @@ func (c *ControllerV1) ContentList(ctx context.Context, req *v1.ContentListReq) 
 	for _, item := range page.Items {
 		items = append(items, ToItem(item))
 	}
-	return &v1.ContentListRes{Items: items, NextCursor: page.NextCursor}, nil
+	return &v1.ContentListRes{Items: items, NextCursor: page.NextCursor, Total: page.Total}, nil
 }
 func (c *ControllerV1) ContentUploadPolicy(ctx context.Context, _ *v1.ContentUploadPolicyReq) (*v1.ContentUploadPolicyRes, error) {
 	policy, err := c.service.GetUploadPolicy(ctx)
@@ -73,7 +77,7 @@ func (c *ControllerV1) ContentDetail(ctx context.Context, req *v1.ContentDetailR
 	return &v1.ContentDetailRes{Item: ToItem(item)}, nil
 }
 func writeInput(input v1.ContentWriteFields) contenthub.WriteInput {
-	return contenthub.WriteInput{ContentNo: input.ContentNo, Type: input.Type, CategoryNo: input.CategoryNo, Visibility: input.Visibility, Title: input.Title, Summary: input.Summary, Body: input.Body, SEOTitle: input.SEOTitle, SEODescription: input.SEODescription, Status: input.Status, Version: input.Version, TargetCustomerNos: input.TargetCustomerNos, TargetServiceNos: input.TargetServiceNos, TargetCustomerGroupNos: input.TargetCustomerGroupNos}
+	return contenthub.WriteInput{ContentNo: input.ContentNo, Type: input.Type, CategoryNo: input.CategoryNo, Visibility: input.Visibility, Title: input.Title, Summary: input.Summary, Body: input.Body, SEOTitle: input.SEOTitle, SEODescription: input.SEODescription, Status: input.Status, Version: input.Version, TargetCustomerGroupNos: input.TargetCustomerGroupNos}
 }
 func (c *ControllerV1) ContentCreate(ctx context.Context, req *v1.ContentCreateReq) (*v1.ContentCreateRes, error) {
 	item, err := c.service.Create(ctx, writeInput(req.ContentWriteFields))
@@ -122,28 +126,6 @@ func (c *ControllerV1) ContentDelete(ctx context.Context, req *v1.ContentDeleteR
 }
 func audienceInput(req v1.AudienceSearchReq) contenthub.AudienceSearchInput {
 	return contenthub.AudienceSearchInput{Keyword: req.Keyword, Cursor: req.Cursor, Limit: req.Limit}
-}
-func (c *ControllerV1) AudienceCustomerSearch(ctx context.Context, req *v1.AudienceCustomerSearchReq) (*v1.AudienceCustomerSearchRes, error) {
-	page, err := c.service.SearchAudienceCustomers(ctx, audienceInput(req.AudienceSearchReq))
-	if err != nil {
-		return nil, err
-	}
-	items := make([]v1.AudienceCandidate, 0, len(page.Items))
-	for _, item := range page.Items {
-		items = append(items, v1.AudienceCandidate{CustomerNo: item.Number, Label: item.Label})
-	}
-	return (*v1.AudienceCustomerSearchRes)(&v1.AudienceSearchRes{Items: items, NextCursor: page.NextCursor}), nil
-}
-func (c *ControllerV1) AudienceServiceSearch(ctx context.Context, req *v1.AudienceServiceSearchReq) (*v1.AudienceServiceSearchRes, error) {
-	page, err := c.service.SearchAudienceServices(ctx, audienceInput(req.AudienceSearchReq))
-	if err != nil {
-		return nil, err
-	}
-	items := make([]v1.AudienceCandidate, 0, len(page.Items))
-	for _, item := range page.Items {
-		items = append(items, v1.AudienceCandidate{ServiceNo: item.Number, Label: item.Label})
-	}
-	return (*v1.AudienceServiceSearchRes)(&v1.AudienceSearchRes{Items: items, NextCursor: page.NextCursor}), nil
 }
 func (c *ControllerV1) AudienceCustomerGroupSearch(ctx context.Context, req *v1.AudienceCustomerGroupSearchReq) (*v1.AudienceCustomerGroupSearchRes, error) {
 	page, err := c.service.SearchAudienceCustomerGroups(ctx, audienceInput(req.AudienceSearchReq))
@@ -223,7 +205,7 @@ func ToItem(item *contenthub.Item) *v1.ContentItem {
 	if item == nil {
 		return nil
 	}
-	result := &v1.ContentItem{ContentNo: item.ContentNo, Type: item.Type, CategoryNo: item.CategoryNo, Visibility: item.Visibility, Title: item.Title, Summary: item.Summary, Body: item.Body, SEOTitle: item.SEOTitle, SEODescription: item.SEODescription, PublicPath: item.PublicPath, Status: item.Status, CurrentFileNo: item.CurrentFileNo, ValidityVersion: item.ValidityVersion, Version: item.Version, TargetCustomerNos: item.TargetCustomerNos, TargetServiceNos: item.TargetServiceNos, TargetCustomerGroupNos: item.TargetCustomerGroupNos, ActiveUpload: ToActiveUpload(item.ActiveUpload), CandidateFile: ToCandidate(item.CandidateFile), AvailableActions: item.AvailableActions}
+	result := &v1.ContentItem{ContentNo: item.ContentNo, Type: item.Type, CategoryNo: item.CategoryNo, Visibility: item.Visibility, Title: item.Title, Summary: item.Summary, Body: item.Body, SEOTitle: item.SEOTitle, SEODescription: item.SEODescription, PublicPath: item.PublicPath, Status: item.Status, CurrentFileNo: item.CurrentFileNo, ValidityVersion: item.ValidityVersion, Version: item.Version, TargetCustomerGroupNos: item.TargetCustomerGroupNos, ActiveUpload: ToActiveUpload(item.ActiveUpload), CandidateFile: ToCandidate(item.CandidateFile), AvailableActions: item.AvailableActions}
 	if item.CurrentFile != nil {
 		result.CurrentFile = &v1.CurrentContentFile{FileNo: item.CurrentFile.FileNo, FileName: item.CurrentFile.FileName, MediaType: item.CurrentFile.MediaType, ContentKind: item.CurrentFile.ContentKind, SizeBytes: item.CurrentFile.SizeBytes, SHA256: item.CurrentFile.SHA256, Version: item.CurrentFile.Version}
 	}

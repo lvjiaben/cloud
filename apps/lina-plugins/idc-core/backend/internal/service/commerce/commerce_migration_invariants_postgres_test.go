@@ -47,6 +47,7 @@ func TestRefundCompositionUsesOneDeferredValidationPerRefundPostgreSQL(t *testin
 	management, err := billingservice.NewManagementRefundService(
 		scenario.database, refundManagementAuthorizerStub{actor: reviewerID},
 		&refundRecentAuthStub{actor: reviewerID}, refundBusinessAuditStub{},
+		newFinancialSettlementCreditService(t, scenario),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -175,6 +176,7 @@ func TestRefundWithoutEntitlementImpactPostgreSQL(t *testing.T) {
 	management, err := billingservice.NewManagementRefundService(
 		scenario.database, refundManagementAuthorizerStub{actor: reviewerID},
 		&refundRecentAuthStub{actor: reviewerID}, refundBusinessAuditStub{},
+		newFinancialSettlementCreditService(t, scenario),
 	)
 	if err != nil {
 		t.Fatal(err)

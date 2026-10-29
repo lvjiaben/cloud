@@ -98,7 +98,9 @@ func fulfillmentCapability(declaration *productfulfillmentcap.ProviderDeclaratio
 }
 
 // ListInterfaces performs one count and one bounded data query without provider
-// lookups, so result size cannot create N+1 host or database access.
+// lookups, so result size cannot create N+1 host or database access. A provider
+// selection requests product-binding candidates from both managed interfaces and
+// resource-owned projections; the management directory remains managed-only.
 func (s *serviceImpl) ListInterfaces(ctx context.Context, page PageInput) (*InterfacePage, error) {
 	authorization, err := s.authorizer.AuthorizeInterfaceList(ctx)
 	if err != nil {
@@ -113,7 +115,7 @@ func (s *serviceImpl) ListInterfaces(ctx context.Context, page PageInput) (*Inte
 	}
 	model := s.database.Model(do.ProductAutomationInterfaceInstance{}).Ctx(ctx).
 		Where(do.ProductAutomationInterfaceInstance{
-			TenantId: idccap.DefaultTenantID, InterfaceOriginCode: "managed",
+			TenantId: idccap.DefaultTenantID,
 		})
 	if page.ProviderSelectionToken != "" {
 		selected, decodeErr := s.codec.DecodeProviderSelection(ctx, page.ProviderSelectionToken)
@@ -121,10 +123,11 @@ func (s *serviceImpl) ListInterfaces(ctx context.Context, page PageInput) (*Inte
 			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 		}
 		model = model.Where(do.ProductAutomationInterfaceInstance{
-			PluginId: selected.PluginID, PluginReleaseVersion: selected.ReleaseVersion,
+			PluginId:           selected.PluginID,
 			ExtensionPointCode: selected.Point, ContractVersion: selected.ContractVersion,
-			ReleaseDigest: selected.ReleaseDigest, DeclarationDigest: selected.DeclarationDigest,
 		})
+	} else if !page.ForProductBinding {
+		model = model.Where(do.ProductAutomationInterfaceInstance{InterfaceOriginCode: "managed"})
 	}
 	if page.NamePrefix != "" {
 		model = model.Where("display_name LIKE ? ESCAPE '\\'", escapeLikePrefix(page.NamePrefix))
@@ -139,19 +142,27 @@ func (s *serviceImpl) ListInterfaces(ctx context.Context, page PageInput) (*Inte
 	var rows []*entity.ProductAutomationInterfaceInstance
 	if err = model.Fields(
 		"interface_instance_no", "display_name", "plugin_release_version", "contract_version",
-		"new_business_state", "ever_referenced", "version", "created_at", "changed_at",
+		"new_business_state", "ever_referenced", "version", "created_at", "changed_at", "interface_origin_code", "authorized_methods",
 	).OrderDesc("id").Page(page.Page, page.PageSize).Scan(&rows); err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
+	availability, err := s.interfaceCatalogAvailability(ctx, rows)
+	if err != nil {
+		return nil, err
+	}
 	result := &InterfacePage{Items: make([]InterfaceInstance, 0, len(rows)), Total: total}
 	for _, row := range rows {
-		result.Items = append(result.Items, safeInterface(row))
+		item := safeInterface(row)
+		item.CatalogAvailable = availability[row.InterfaceInstanceNo]
+		result.Items = append(result.Items, item)
 	}
 	return result, nil
 }
 
 // GetBinding authorizes before storage access, then validates immutable evidence
 // through the host historical exact-read path without applying current-sale state.
+// Unavailable evidence is shown as unverified in this read-only summary; all
+// configuration, publication and execution gates retain their strict checks.
 func (s *serviceImpl) GetBinding(ctx context.Context, versionNo string) (*Binding, error) {
 	authorization, err := s.authorizer.AuthorizeBindingRead(ctx, versionNo)
 	if err != nil {
@@ -170,26 +181,28 @@ func (s *serviceImpl) GetBinding(ctx context.Context, versionNo string) (*Bindin
 	if row == nil {
 		return nil, nil
 	}
+	result := safeBinding(row)
+	instance, err := s.loadInterface(ctx, row.InterfaceInstanceNo, false)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	}
+	if instance == nil {
+		return &result, nil
+	}
+	result.InterfaceNewBusinessState = instance.NewBusinessState
+	availability, availabilityErr := s.interfaceCatalogAvailability(ctx, []*entity.ProductAutomationInterfaceInstance{instance})
+	if availabilityErr != nil {
+		return nil, availabilityErr
+	}
+	result.CatalogAvailable = availability[instance.InterfaceInstanceNo]
 	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
 		PluginID: row.PluginId, ReleaseVersion: row.PluginReleaseVersion,
 		Point: row.ExtensionPointCode, ContractVersion: row.ContractVersion,
 		ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.DeclarationDigest,
 	})
-	if err != nil {
-		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	if err != nil || !sameProviderContract(bindingEvidence(row), exact) || !sameEvidence(bindingEvidence(row), interfaceEvidence(instance)) {
+		return &result, nil
 	}
-	if !sameExactEvidence(bindingEvidence(row), exact) {
-		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
-	}
-	instance, err := s.loadInterface(ctx, row.InterfaceInstanceNo, false)
-	if err != nil {
-		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
-	}
-	if instance == nil || !sameEvidence(bindingEvidence(row), interfaceEvidence(instance)) {
-		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
-	}
-	result := safeBinding(row)
-	result.InterfaceNewBusinessState = instance.NewBusinessState
 	result.EvidenceVerified = true
 	return &result, nil
 }
@@ -240,7 +253,7 @@ func (s *serviceImpl) loadFrozenFulfillmentContract(ctx context.Context, version
 		Point: row.ExtensionPointCode, ContractVersion: row.ContractVersion,
 		ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(bindingEvidence(row), exact) {
+	if err != nil || !sameProviderContract(bindingEvidence(row), exact) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	instance, err := s.loadInterface(ctx, row.InterfaceInstanceNo, false)
@@ -265,7 +278,7 @@ func (s *serviceImpl) loadFrozenFulfillmentContract(ctx context.Context, version
 		RenewalMode:       renewalMode, RenewalMethod: contract.MethodRoles.Renewal,
 		EntitlementOwnerID: contract.EntitlementOwnerID,
 		ProvisionMethod:    contract.MethodRoles.Provision, QueryMethod: contract.MethodRoles.Query,
-		DeclarationDigest: exact.DeclarationDigest,
+		DeclarationDigest: row.DeclarationDigest,
 	}
 	if err = s.applyImportedFulfillmentContract(ctx, versionNo, exact, result); err != nil {
 		return nil, err

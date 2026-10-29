@@ -28,6 +28,7 @@ type ProductManagementDetail struct {
 }
 
 type ProductManagementDetailProduct struct {
+	CurrentVersionNo                                                 string
 	DirectoryNo                                                      string
 	ProductNo, CategoryNo, CategoryNameZhCN, CategoryNameEnUS        string
 	Status, PublicSlug, NameZhCN, NameEnUS, SummaryZhCN, SummaryEnUS string
@@ -37,19 +38,16 @@ type ProductManagementDetailProduct struct {
 }
 
 type ProductManagementDetailVersion struct {
-	VersionNo             string
-	VersionNumber         int
-	Status                string `orm:"version_status"`
-	Source                string
-	SourceVersion         string
-	ChangeSummary         string
-	RequiresContract      bool
-	ContractPolicyCode    string
-	ContractTemplateNo    string
-	ContractPolicyVersion int64
-	PublishedAt           *time.Time
-	RetiredAt             *time.Time
-	CreatedAt             time.Time `orm:"version_created_at"`
+	VersionNo     string
+	VersionNumber int
+	Status        string `orm:"version_status"`
+	Source        string
+	SourceVersion string
+	ChangeSummary string
+
+	PublishedAt *time.Time
+	RetiredAt   *time.Time
+	CreatedAt   time.Time `orm:"version_created_at"`
 }
 
 type ProductManagementDetailBillingRule struct {
@@ -64,6 +62,7 @@ type ProductManagementDetailBillingRule struct {
 type ProductManagementDetailPrice struct {
 	PriceNo, BillingRuleNo, CurrencyCode, Status                     string
 	ConfigurationPriceDimensionNo                                    string
+	ConfigurationPricingMode                                         ConfigurationPriceMode
 	ConfigurationFieldLabelZhCN, ConfigurationFieldLabelEnUS         string
 	ConfigurationCandidateLabelZhCN, ConfigurationCandidateLabelEnUS string
 	AmountMinor, SetupFeeMinor, MinimumQuantity                      int64

@@ -73,5 +73,7 @@
   "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.granularityZhCn.dc": "面向商家的简体中文数量处理说明",
   "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.granularityEnUs.dc": "面向商家的英文数量处理说明",
   "plugins.idc_core.api.admin.v1.CatalogProductDetailRes.fields.fulfillmentPolicy.dc": "已设置的安全履约方式摘要；尚未设置时为空",
-  "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.trialSupported.dc": "当前自动交付插件是否明确支持试用暂停和恢复；不支持时不显示试用设置"
+  "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicySummary.fields.trialSupported.dc": "当前自动交付插件是否明确支持试用暂停和恢复；不支持时不显示试用设置",
+  "plugins.idc_core.api.admin.v1.CatalogAutomationInterfaceListReq.fields.forProductBinding.dc": "为商品关联接口时包含资源拥有方的本地投影；默认不包含，仅列出通用接口。实际关联仍执行准入校验。",
+  "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicyUpdateReq.fields.interfaceInstanceNo.dc": "可选接口，与开通方式同一事务保存；不传保留原关联，空字符串解除关联，否则须为已授权本地接口编号。"
 }

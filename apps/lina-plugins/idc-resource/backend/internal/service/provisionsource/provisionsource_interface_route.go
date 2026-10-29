@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-core/pkg/logger"
 
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
@@ -36,6 +37,9 @@ func (s *Service) resolveInterfacePools(
 	interfaceInstanceNo string,
 	configurationRevision string,
 ) ([]interfacePoolCandidate, error) {
+	if err := s.ensureDefaultInterfacePool(ctx, interfaceInstanceNo, configurationRevision); err != nil {
+		return nil, err
+	}
 	var rows []interfacePoolCandidate
 	if err := s.database.GetScan(ctx, &rows, `
 SELECT pool.pool_no, binding.channel_no
@@ -65,8 +69,24 @@ LIMIT ?`, configurationRevision, idccap.DefaultTenantID, interfaceInstanceNo, ma
 func (s *Service) prepareProvisionParameters(
 	ctx context.Context,
 	request provisionresourcecap.TaskRequest,
+	operationalCorrection ...bool,
 ) (*routeEvidence, json.RawMessage, string, error) {
 	policy, err := parseServerGenerationPolicy(request.ProductConfiguration)
+	if err != nil {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=generation_policy")
+		return nil, nil, "", err
+	}
+	// Password generation belongs to the local credential owner. Do not send
+	// its policy keys through the connector's secret-free parameter contract.
+	var connectorConfiguration map[string]json.RawMessage
+	if err = json.Unmarshal(request.ProductConfiguration, &connectorConfiguration); err != nil {
+		return nil, nil, "", err
+	}
+	delete(connectorConfiguration, "hostname_customer_input")
+	delete(connectorConfiguration, "password_customer_input")
+	delete(connectorConfiguration, "password_length")
+	delete(connectorConfiguration, "password_characters")
+	connectorProduct, err := json.Marshal(connectorConfiguration)
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -74,17 +94,21 @@ func (s *Service) prepareProvisionParameters(
 		request.ProductConfiguration, request.CustomerConfiguration,
 	)
 	if err != nil {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=frozen_configuration")
 		return nil, nil, "", err
 	}
 	pools, err := s.resolveInterfacePools(ctx, request.InterfaceInstanceNo, request.InterfaceConfigurationRevision)
 	if err != nil {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=interface_pools")
 		return nil, nil, "", err
 	}
 	ready, err := s.principal(ctx, request.CustomerNo, pools[0].PoolNo)
 	if err != nil {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=upstream_principal")
 		return nil, nil, "", err
 	}
 	if !ready {
+		logger.Warningf(ctx, "server provisioning preparation blocked stage=upstream_principal_pending")
 		return nil, nil, "", provisionresourcecap.ErrSourceUnavailable
 	}
 	localResourceNo, _ := frozenServerIdentity(request)
@@ -95,11 +119,20 @@ func (s *Service) prepareProvisionParameters(
 	for _, pool := range pools {
 		route, routeErr := s.resolveRoute(ctx, pool.PoolNo, request.CustomerNo)
 		if routeErr != nil || route.ChannelNo != pool.ChannelNo {
+			logger.Warningf(ctx, "server provisioning preparation blocked stage=resource_route")
 			continue
+		}
+		if len(operationalCorrection) == 1 && operationalCorrection[0] {
+			// This per-attempt selector maps the selected native IDs directly and
+			// never mutates a merchant pool or its historical selector.
+			route.Selector = directPoolSelector
+		}
+		if request.ServerLogin != nil && request.ServerLogin.ChannelNo != route.ChannelNo {
+			return nil, nil, "", provisionresourcecap.ErrParametersUnavailable
 		}
 		plan := resourcecap.ServerProvisionPlan{ExternalPrincipalRef: route.ExternalPrincipalRef,
 			Hostname: hostname, Selector: json.RawMessage(route.Selector),
-			ProductConfiguration:  append(json.RawMessage(nil), request.ProductConfiguration...),
+			ProductConfiguration:  connectorProduct,
 			CustomerConfiguration: append(json.RawMessage(nil), request.CustomerConfiguration...),
 			Components:            components}
 		if route.ProviderRuntimeType != "dynamic" || s.managedParameters == nil {
@@ -107,6 +140,7 @@ func (s *Service) prepareProvisionParameters(
 		}
 		parameters, parameterErr := s.managedParameters.Build(ctx, route.ChannelNo, request.InterfaceConfigurationRevision, plan)
 		if parameterErr != nil || validateCapabilityParameters(route.Constraints, parameters) != nil {
+			logger.Warningf(ctx, "server provisioning preparation blocked stage=parameter_mapping")
 			continue
 		}
 		return route, parameters, localResourceNo, nil

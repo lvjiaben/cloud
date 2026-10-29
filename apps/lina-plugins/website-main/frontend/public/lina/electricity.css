@@ -1,0 +1,36 @@
+/* Only the solution page; shared reference CSS supplies typography and card geometry. */
+body[data-page=electricity]{--banner_height:420px;--banner_background:url('/static/homepage/remoteL17136807293281.jpg');--advantage_max:3;--problem_max:2;--correlation_max:3;--partner_max:6}
+[data-electricity] .globalBanner>.comp_container{height:100%}
+body[data-page=electricity]>.sky-footer-container.footer_deep{display:block!important}
+body[data-page=electricity]>.lina-brand-error{position:fixed;right:24px;bottom:24px;z-index:10001;max-width:calc(100vw - 48px);margin:0;box-shadow:0 4px 24px #0002}
+[data-electricity] .et-container{position:sticky;top:0;z-index:1000;background:#fff}
+[data-electricity] .et-container.is-stuck{box-shadow:0 0 5px #0003}
+[data-electricity] .et-container.is-stuck .et-hero-tabs-container{justify-content:center}
+[data-electricity] .et-hero-tabs-container{position:relative}
+[data-electricity] .et-slide{scroll-margin-top:74px}
+body[data-page=electricity].electricity-reading>.nav-layoutcontainer{transform:translateY(-100%);pointer-events:none}
+[data-electricity] .electricity-empty{color:var(--txtdesc);padding:30px;text-align:center}
+[data-electricity] .partner_bg:before{background:linear-gradient(135deg,#edf4ff,#f9fbff)}
+[data-electricity] .architecture-item-img img{object-fit:contain!important}
+[data-electricity] .more-Content-row{background-image:none;background-color:#f5f8fd}
+[data-electricity] :is(.et-hero-tab a,.more-Content-item):focus-visible{outline:2px solid var(--Original);outline-offset:3px}
+@media(max-width:767px){
+ [data-electricity] .globalBanner .pagebanner .pagebanner-text{width:100%}
+ [data-electricity] .globalBanner .pagebanner .pagebanner-text .pagebanner-title{font-size:30px;margin-top:80px}
+ [data-electricity] .globalBanner .pagebanner .pagebanner-text .pagebanner-description{font-size:15px}
+ [data-electricity] .et-container .et-hero-tabs-container{justify-content:flex-start;flex-wrap:nowrap;width:max-content}
+ [data-electricity] .et-container .et-hero-tab{display:block;margin:0 12px}
+ [data-electricity] .et-container .et-hero-tab a{line-height:60px;font-size:14px}
+ [data-electricity] .et-container .et-hero-tab:after{display:none}
+ [data-electricity] .problem-Content-left{height:auto!important;padding:24px!important}
+ [data-electricity] .problem-left-Content{flex-direction:column;align-items:flex-start!important;gap:20px!important}
+ [data-electricity] .problem-left-ul{flex-wrap:wrap;gap:12px}
+ [data-electricity] .problem-Content-btn-title{gap:16px!important}
+ [data-electricity] .architecture-Content-row{flex-direction:column;align-items:stretch}
+ [data-electricity] .architecture-Content-left{min-width:0;max-width:none;width:100%;height:auto;min-height:480px}
+ [data-electricity] .architecture-item-img{height:auto!important;padding:0!important}
+ [data-electricity] .architecture-item-img img{height:auto!important}
+ [data-electricity] .more-Content-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));height:auto;gap:12px;padding:12px}
+ [data-electricity] .more-Content-item{min-height:150px;border:0!important}
+}
+@media(prefers-reduced-motion:reduce){[data-electricity] *,[data-electricity] *:before,[data-electricity] *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

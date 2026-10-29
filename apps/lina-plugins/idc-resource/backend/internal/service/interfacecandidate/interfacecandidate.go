@@ -16,6 +16,8 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
@@ -87,7 +89,21 @@ func (source *LazySource) ResolveCandidates(
 	if request.Method != resourcecap.DynamicProviderMethodConfigurationCandidates {
 		return nil, gerror.New("resource interface candidate method is unavailable")
 	}
-	response, evidence, err := source.invokeRead(ctx, request, []string{"StatusCode", "Data", "Authenticated", "Fields", "FieldKey", "Items", "Value", "ParentValue", "OptionToken", "LabelZhCN", "LabelEnUS"})
+	if !peer && source != nil && ctx != nil && ctx.Err() == nil && resourceinterfaceprojectioncap.ValidateCandidateRequest(request) == nil {
+		source.mu.RLock()
+		deps := source.deps
+		source.mu.RUnlock()
+		if deps != nil {
+			current, err := loadBinding(ctx, deps.database, request.InterfaceInstanceNo)
+			if err != nil {
+				return nil, err
+			}
+			if current.PluginID == "idc-zjmfcloud" {
+				return source.readCandidateSnapshot(ctx, deps, request, current)
+			}
+		}
+	}
+	response, evidence, err := source.invokeRead(ctx, request, []string{"StatusCode", "Data", "Authenticated", "Fields", "FieldKey", "Items", "Value", "ParentValue", "OptionToken", "LabelZhCN", "LabelEnUS", "Relationships", "ParentFieldKey", "ChildFieldKey", "Links", "ChildValue"})
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +151,7 @@ func (source *LazySource) invokeRead(
 		Point: resourcecap.DynamicProviderPoint, ContractVersion: binding.ContractVersion,
 		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !matchesEvidence(binding, evidence, request.Method) {
+	if err != nil || !matchesResolvedEvidence(ctx, deps.extensions, binding, evidence, request.Method) {
 		return nil, nil, gerror.New("resource interface candidate connector evidence is unavailable")
 	}
 	reader, err := channelconfig.NewReader(deps.database)
@@ -165,22 +181,37 @@ func (source *LazySource) invokeRead(
 		ProviderPluginID: binding.PluginID, Point: resourcecap.DynamicProviderPoint,
 		ContractVersion: binding.ContractVersion, ProviderMethod: request.Method,
 		OutboundMethod: "resource-provider." + request.Method,
-		ReleaseVersion: binding.PluginReleaseVersion, ReleaseDigest: binding.ReleaseDigest,
-		DeclarationDigest: binding.DeclarationDigest, InterfaceInstanceID: binding.ChannelNo,
+		ReleaseVersion: evidence.ReleaseVersion, ReleaseDigest: evidence.ReleaseDigest,
+		DeclarationDigest: evidence.DeclarationDigest, InterfaceInstanceID: binding.ChannelNo,
 		Purpose:             capmodel.BusinessExtensionInvocationPurposeNewBusiness,
-		ExpiresAfter:        5 * time.Second,
+		ExpiresAfter:        30 * time.Second,
 		AllowedResultFields: resultFields,
 		Handler:             handler,
 	}, func(callCtx context.Context, runtimeContext *capmodel.BusinessExtensionRuntimeContext) error {
 		result, invokeErr := deps.extensions.InvokeProviderMethod(callCtx, pluginhost.BusinessExtensionMethodInvokeInput{
 			PluginID: binding.PluginID, Point: resourcecap.DynamicProviderPoint,
 			ContractVersion: binding.ContractVersion, Method: request.Method,
-			ReleaseVersion: binding.PluginReleaseVersion, ReleaseDigest: binding.ReleaseDigest,
+			ReleaseVersion: evidence.ReleaseVersion, ReleaseDigest: evidence.ReleaseDigest,
 			DeclarationDigest: binding.DeclarationDigest,
 			Purpose:           capmodel.BusinessExtensionInvocationPurposeNewBusiness,
 			RuntimeContext:    runtimeContext, Payload: payload,
 		})
 		if invokeErr != nil || result == nil {
+			diagnostic := "unclassified"
+			if invokeErr != nil {
+				switch gerror.Current(invokeErr).Error() {
+				case "dynamic business extension provider invocation failed":
+					diagnostic = "connector_runtime_failed"
+				case "dynamic business extension provider rejected the governed invocation":
+					diagnostic = "connector_rejected_invocation"
+				case "dynamic business extension provider returned an invalid response envelope":
+					diagnostic = "connector_invalid_envelope"
+				}
+			}
+			if businessError, ok := bizerr.As(invokeErr); ok {
+				diagnostic = businessError.RuntimeCode()
+			}
+			logger.Warningf(callCtx, "resource candidate provider invocation failed code=%s", diagnostic)
 			return gerror.New("resource interface candidate connector invocation failed")
 		}
 		response = append([]byte(nil), result.Payload...)
@@ -262,15 +293,6 @@ func sameReadBinding(left, right binding) bool {
 		slices.Equal(left.ProductAuthorizedMethods, right.ProductAuthorizedMethods)
 }
 
-func matchesEvidence(value binding, evidence *capmodel.BusinessExtensionProviderEvidence, method string) bool {
-	return evidence != nil && evidence.PluginID == value.PluginID &&
-		evidence.Point == resourcecap.DynamicProviderPoint &&
-		evidence.ReleaseVersion == value.PluginReleaseVersion &&
-		evidence.ContractVersion == value.ContractVersion &&
-		evidence.ReleaseDigest == value.ReleaseDigest &&
-		evidence.DeclarationDigest == value.DeclarationDigest && contains(evidence.AuthorizedMethods, method)
-}
-
 func matchesConfiguration(value binding, configuration channelconfig.Configuration) bool {
 	return configuration.PluginID == value.PluginID &&
 		configuration.ReleaseVersion == value.PluginReleaseVersion &&
@@ -342,6 +364,19 @@ func projectCandidates(payload []byte, peer bool) (*resourceinterfaceprojectionc
 			}
 		}
 	}
+	for _, relation := range value.Relationships {
+		_, parentAllowed := allowedKeys[relation.ParentFieldKey]
+		_, childAllowed := allowedKeys[relation.ChildFieldKey]
+		if peer {
+			parentAllowed, childAllowed = peerCandidateKey.MatchString(relation.ParentFieldKey), peerCandidateKey.MatchString(relation.ChildFieldKey)
+		}
+		if !parentAllowed || !childAllowed {
+			return nil, gerror.New("resource interface candidate relationship field is invalid")
+		}
+	}
+	if err := value.ValidateRelationships(); err != nil {
+		return nil, err
+	}
 	return &value, nil
 }
 
@@ -355,4 +390,10 @@ func safeText(value string) bool {
 		}
 	}
 	return true
+}
+
+// matchesResolvedEvidence follows the current enabled provider identity and
+// current method authority. Historical packages are not an execution dependency.
+func matchesResolvedEvidence(_ context.Context, _ pluginhost.BusinessExtensionRegistrar, value binding, evidence *capmodel.BusinessExtensionProviderEvidence, method string) bool {
+	return evidence != nil && evidence.PluginID == value.PluginID && evidence.Point == resourcecap.DynamicProviderPoint && evidence.ContractVersion == value.ContractVersion && len(evidence.ReleaseDigest) == 64 && len(evidence.DeclarationDigest) == 64 && contains(evidence.AuthorizedMethods, method)
 }

@@ -360,6 +360,11 @@ CREATE TABLE plugin_idc_core_server_operation_execution(tenant_id INT,execution_
 CREATE UNIQUE INDEX active_service ON plugin_idc_core_server_operation_execution(service_no) WHERE status_code IN('ready','pending','running','result_unknown');
 CREATE TABLE plugin_idc_core_business_operation_event(tenant_id INT,event_no TEXT PRIMARY KEY,operation_no TEXT,service_no TEXT,event_sequence INT,from_status_code TEXT,to_status_code TEXT,reason_code TEXT,actor_type_code TEXT,actor_reference TEXT,evidence_digest TEXT,content_digest TEXT,created_at TIMESTAMPTZ,UNIQUE(operation_no,event_sequence));
 CREATE TABLE plugin_idc_core_financial_settlement_delivery(tenant_id INT,delivery_no TEXT PRIMARY KEY,event_no TEXT UNIQUE,settlement_no TEXT UNIQUE,event_type TEXT,order_no TEXT,invoice_no TEXT,customer_no TEXT,currency_code TEXT,fulfillment_count INT,ready_count INT,waiting_gate_count INT,manual_review_count INT,evidence_digest TEXT,content_digest TEXT,created_at TIMESTAMPTZ);
+ALTER TABLE plugin_idc_core_business_operation ADD COLUMN subject_type_code TEXT DEFAULT 'service', ADD COLUMN subject_no TEXT, ADD COLUMN expected_subject_version BIGINT, ADD COLUMN channel_no TEXT, ADD COLUMN execution_started_at TIMESTAMPTZ, ADD COLUMN completed_at TIMESTAMPTZ;
+ALTER TABLE plugin_idc_core_server_accessory_quote ADD COLUMN subject_type_code TEXT DEFAULT 'service', ADD COLUMN subject_no TEXT, ADD COLUMN expected_subject_version BIGINT, ADD COLUMN native_target_snapshot JSONB DEFAULT '{}'::JSONB;
+ALTER TABLE plugin_idc_core_service_price_snapshot ADD COLUMN subject_type_code TEXT DEFAULT 'service', ADD COLUMN subject_no TEXT;
+ALTER TABLE plugin_idc_core_business_operation_event ADD COLUMN subject_type_code TEXT DEFAULT 'service', ADD COLUMN subject_no TEXT;
+CREATE TABLE plugin_idc_core_service_entitlement(tenant_id INT DEFAULT 0,entitlement_no TEXT PRIMARY KEY,customer_no TEXT,currency_code TEXT,version BIGINT,status_code TEXT,entitlement_owner_id TEXT,upstream_service_no TEXT);
 INSERT INTO plugin_idc_core_commerce_order(order_no) VALUES('ord_1');
 INSERT INTO plugin_idc_core_commerce_quote_snapshot(quote_no) VALUES('quo_1');
 INSERT INTO plugin_idc_core_business_operation(operation_no) VALUES('aop_1');

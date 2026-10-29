@@ -1,3 +1,5 @@
+// This file defines owned customer cart, quote and checkout HTTP contracts.
+// Cart changes use optimistic versions; prices and ownership remain server facts.
 package v1
 
 import (
@@ -27,10 +29,11 @@ type CommerceGuestCartMergeReq struct {
 
 type CommerceGuestCartMergeRes struct {
 	Merged bool          `json:"merged" dc:"Whether an anonymous cart credential was consumed" eg:"true"`
-	Cart   *CommerceCart `json:"cart,omitempty" dc:"Merged current customer shopping cart, when a credential was consumed"`
+	Cart   *CommerceCart `json:"cart" dc:"Current customer shopping cart after credential handling; null when no active cart exists"`
 }
 
 type CommerceCartItemAddReq struct {
+	ServerLoginToken      string `json:"serverLoginToken,omitempty" v:"max-length:128" dc:"Owned product-version server login token for one independent server; omitted for automatic generation" eg:"SLI_0123456789ABCDEF0123456789ABCDEF"`
 	g.Meta                `path:"/account/commerce/cart-items" method:"post" tags:"IDC Customer Commerce" summary:"Add product to shopping cart" dc:"Resolve current signed public catalog facts and append one product configuration with optimistic concurrency."`
 	ExpectedCartVersion   int64                                  `json:"expectedCartVersion" v:"required|min:1" dc:"Expected optimistic cart version"`
 	Quantity              int                                    `json:"quantity" v:"required|min:1|max:1000" dc:"Number of product units"`
@@ -39,8 +42,35 @@ type CommerceCartItemAddReq struct {
 	BillingTermToken      string                                 `json:"billingTermToken" v:"required|length:1,128" dc:"Opaque selected billing term token"`
 	CurrencyCode          string                                 `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Exact configured currency"`
 	PurchaseCycles        int                                    `json:"purchaseCycles" v:"required|min:1|max:120" dc:"Requested billing cycles"`
-	Values                []*publicv1.PurchaseConfigurationValue `json:"values" v:"required" dc:"Complete governed values bound to the selected quoted term"`
+	Values                []*publicv1.PurchaseConfigurationValue `json:"values" dc:"Complete governed values bound to the selected quoted term" eg:"[]"`
 }
+
+// CommerceCartItemUpdateReq replaces an owned quantity or complete configuration.
+type CommerceCartItemUpdateReq struct {
+	g.Meta              `path:"/account/commerce/cart-items/{cartItemNo}" method:"put" tags:"IDC Customer Commerce" summary:"Update shopping cart item" dc:"Atomically update an owned item quantity or replace its complete published configuration, checking cart and item versions and invalidating its quote."`
+	CartItemNo          string                    `json:"cartItemNo" in:"path" v:"required|max-length:40" dc:"Owned stable cart item number" eg:"CIT_01"`
+	ExpectedItemVersion int64                     `json:"expectedItemVersion" v:"required|min:1" dc:"Expected item optimistic version" eg:"1"`
+	ExpectedCartVersion int64                     `json:"expectedCartVersion" v:"required|min:1" dc:"Expected optimistic cart version" eg:"1"`
+	Quantity            int                       `json:"quantity" v:"required|min:1|max:1000" dc:"Number of product units" eg:"1"`
+	Purchase            *CommerceCartItemPurchase `json:"purchase,omitempty" dc:"Complete replacement configuration, omitted for quantity-only updates" eg:"{}"`
+}
+
+// CommerceCartItemUpdateRes returns the new authoritative cart projection.
+type CommerceCartItemUpdateRes struct {
+	Cart *CommerceCart `json:"cart" dc:"Updated owned cart with old quote invalidated" eg:"{}"`
+}
+
+// CommerceCartItemPurchase reuses published catalog tokens for full replacement.
+type CommerceCartItemPurchase struct {
+	ServerLoginToken      string                                 `json:"serverLoginToken,omitempty" v:"max-length:128" dc:"Owned product-version server login token for one independent server; omitted for automatic generation" eg:"SLI_0123456789ABCDEF0123456789ABCDEF"`
+	PublicSlug            string                                 `json:"publicSlug" v:"required|length:1,128" dc:"Public product slug" eg:"cloud-server"`
+	ConfigurationRevision string                                 `json:"configurationRevision" v:"required|length:43,43" dc:"Opaque published configuration revision" eg:"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"`
+	BillingTermToken      string                                 `json:"billingTermToken" v:"required|length:1,128" dc:"Opaque selected billing term token" eg:"term-month"`
+	CurrencyCode          string                                 `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Exact configured currency" eg:"CNY"`
+	PurchaseCycles        int                                    `json:"purchaseCycles" v:"required|min:1|max:120" dc:"Requested billing cycles" eg:"1"`
+	Values                []*publicv1.PurchaseConfigurationValue `json:"values" dc:"Complete governed values bound to the selected quoted term" eg:"[]"`
+}
+
 type CommerceCartItemAddRes struct {
 	Cart *CommerceCart `json:"cart" dc:"Updated current customer shopping cart"`
 }

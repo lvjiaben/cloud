@@ -34,6 +34,7 @@ import (
 	providerspi "lina-plugin-idc-resource/backend/cap/resourcecap/spi"
 	"lina-plugin-idc-resource/backend/internal/composition"
 	accountcontroller "lina-plugin-idc-resource/backend/internal/controller/account"
+	accountnativecontroller "lina-plugin-idc-resource/backend/internal/controller/accountnative"
 	admincontroller "lina-plugin-idc-resource/backend/internal/controller/admin"
 	"lina-plugin-idc-resource/backend/internal/controller/adminserver"
 	serverpagecontroller "lina-plugin-idc-resource/backend/internal/controller/serverpage"
@@ -41,17 +42,23 @@ import (
 	"lina-plugin-idc-resource/backend/internal/service/accessorydirectory"
 	"lina-plugin-idc-resource/backend/internal/service/batchrenewal"
 	"lina-plugin-idc-resource/backend/internal/service/businessimpact"
+	"lina-plugin-idc-resource/backend/internal/service/channelconfig"
 	"lina-plugin-idc-resource/backend/internal/service/channelinvocation"
 	"lina-plugin-idc-resource/backend/internal/service/channelsecret"
+	"lina-plugin-idc-resource/backend/internal/service/cron"
 	"lina-plugin-idc-resource/backend/internal/service/customer360summary"
+	"lina-plugin-idc-resource/backend/internal/service/customeroperations"
 	"lina-plugin-idc-resource/backend/internal/service/interfacecandidate"
 	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 	"lina-plugin-idc-resource/backend/internal/service/lifecyclesource"
 	"lina-plugin-idc-resource/backend/internal/service/managedparameters"
+	"lina-plugin-idc-resource/backend/internal/service/nativecommercial"
 	"lina-plugin-idc-resource/backend/internal/service/poolcandidate"
 	"lina-plugin-idc-resource/backend/internal/service/principalprovision"
+	"lina-plugin-idc-resource/backend/internal/service/providercapability"
 	"lina-plugin-idc-resource/backend/internal/service/providercapacity"
 	"lina-plugin-idc-resource/backend/internal/service/providerconfiguration"
+	"lina-plugin-idc-resource/backend/internal/service/providerexecution"
 	"lina-plugin-idc-resource/backend/internal/service/providerhealth"
 	"lina-plugin-idc-resource/backend/internal/service/providerverification"
 	"lina-plugin-idc-resource/backend/internal/service/provisionsource"
@@ -60,6 +67,7 @@ import (
 	"lina-plugin-idc-resource/backend/internal/service/resourceprojection"
 	"lina-plugin-idc-resource/backend/internal/service/resourcetask"
 	"lina-plugin-idc-resource/backend/internal/service/serverdirectory"
+	"lina-plugin-idc-resource/backend/internal/service/serverfacts"
 	"lina-plugin-idc-resource/backend/internal/service/serveroperationsource"
 	"lina-plugin-idc-resource/backend/internal/service/serverownership"
 	"lina-plugin-idc-resource/backend/internal/service/serverprojection"
@@ -135,7 +143,7 @@ func init() {
 			return nil, sourceErr
 		}
 		source, sourceErr := provisionsource.New(
-			dao.Task.DB(), secrets, principal.EnsureForPool, providerSnapshot.Declarations(),
+			dao.Task.DB(), secrets, principal.EnsureForPool, resourceInterfaceCandidates, providerSnapshot.Declarations(),
 			managedProvisionParameters,
 		)
 		if sourceErr != nil {
@@ -225,7 +233,11 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return err
 	}
-	if err = managedProvisionParameters.Bind(dao.Channel.DB(), registrar.BusinessExtensions()); err != nil {
+	businessExtensions, adapterErr := providerexecution.NewRecorded(registrar.BusinessExtensions(), dao.Channel.DB())
+	if adapterErr != nil {
+		return adapterErr
+	}
+	if err = managedProvisionParameters.Bind(dao.Channel.DB(), businessExtensions); err != nil {
 		return err
 	}
 	projectionFactory := resourceinterfaceprojectionspi.Freeze().SinkFactory()
@@ -248,11 +260,18 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 		ctx,
 		declarations.Declarations(),
 		composition.WithDynamicBusinessExtensions(
-			registrar.BusinessExtensions(),
+			businessExtensions,
 			composition.NewProductionDynamicOutboundFactory(dynamicSecrets, invocationLeases),
 		),
 	)
 	if err != nil {
+		return err
+	}
+	capabilityCollector, err := providercapability.New(dao.Channel.DB(), runtime.ConstructSession)
+	if err != nil {
+		return err
+	}
+	if err = composition.RegisterProviderCapabilityJob(ctx, registrar, capabilityCollector); err != nil {
 		return err
 	}
 	taskStore, err := resourcetask.NewStore(dao.Task.DB())
@@ -270,8 +289,40 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return err
 	}
+	customerSnapshot, err := customerauthspi.Freeze()
+	if err != nil {
+		return err
+	}
+	customerFactory := customerSnapshot.Factory()
+	if customerFactory == nil {
+		return gerror.New("queued entitlement source factory is unavailable")
+	}
+	customers, err := customerFactory(ctx, registrar.Services(), customerauthcap.AllowedCallerPluginID)
+	if err != nil {
+		return err
+	}
+	queuedEntitlements, ok := customers.(customerauthcap.QueuedEntitlementAccess)
+	if !ok {
+		return gerror.New("queued entitlement source is unavailable")
+	}
+	operationSource, err := serveroperationsource.NewWithSecrets(dao.Task.DB(), dynamicSecrets)
+	if err != nil {
+		return err
+	}
+	commercialOwner, err := loadNativeCommercialOwner(ctx, registrar.Services(), operationSource)
+	if err != nil {
+		return err
+	}
+	commercialWorker, err := nativecommercial.New(dao.Task.DB(), commercialOwner, operationSource)
+	if err != nil {
+		return err
+	}
+	writeAdmission, err := customeroperations.NewWriteAdmission(dao.Task.DB(), queuedEntitlements, operationSource, commercialOwner)
+	if err != nil {
+		return err
+	}
 	taskExecutor, err := resourcetask.NewExecutor(
-		taskStore, runtime.ConstructRevisionSession, taskStore.ResolveResources, healthService,
+		taskStore, runtime.ConstructRevisionSession, taskStore.ResolveResources, healthService, commercialWorker.Admission(writeAdmission),
 	)
 	if err != nil {
 		return err
@@ -286,10 +337,36 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err != nil {
 		return err
 	}
+	facts, factsErr := serverfacts.New(dao.Task.DB(), runtime)
+	if factsErr != nil {
+		return factsErr
+	}
+	writeReceipts, receiptErr := customeroperations.NewWriteReconciler(dao.Task.DB(), commercialOwner)
+	if receiptErr != nil {
+		return receiptErr
+	}
+	if err = cron.StartNativeWriteReceipts(ctx, registrar, writeReceipts); err != nil {
+		return err
+	}
+	if err = cron.StartNativeCommerce(ctx, registrar, commercialWorker); err != nil {
+		return err
+	}
+	if err = cron.StartServerFacts(ctx, registrar, facts); err != nil {
+		return err
+	}
+	if err = cron.Start(ctx, registrar, resourceInterfaceCandidates); err != nil {
+		return err
+	}
 	return composition.RegisterResourceJobs(ctx, registrar, worker, accessoryWorker, taskExecutor, principalWorker, projectionWorker)
 }
 
+//nolint:cyclop // Keep startup dependency validation and explicit route assembly in one ordered boundary.
 func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, resourceInvoker *resourceprojection.CapabilityInvoker) error {
+	businessExtensions, adapterErr := providerexecution.NewRecorded(registrar.BusinessExtensions(), dao.Channel.DB())
+	if adapterErr != nil {
+		return adapterErr
+	}
+
 	if ctx == nil || ctx.Err() != nil || registrar.Services() == nil {
 		return gerror.New("idc-resource management routes require host services")
 	}
@@ -345,7 +422,7 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 		ctx,
 		providerDeclarations,
 		composition.WithDynamicBusinessExtensions(
-			registrar.BusinessExtensions(),
+			businessExtensions,
 			composition.NewProductionDynamicOutboundFactory(secretSource, verificationLeases),
 		),
 	)
@@ -382,7 +459,7 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 		return err
 	}
 	configurations, err := providerconfiguration.New(
-		dao.Channel.DB(), runtime, providerDeclarations, usageReader, configurationProjection, registrar.BusinessExtensions(),
+		dao.Channel.DB(), runtime, providerDeclarations, usageReader, configurationProjection, businessExtensions,
 	)
 	if err != nil {
 		return err
@@ -423,6 +500,30 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 	if err != nil {
 		return err
 	}
+	nativeOperationsSource, err := serveroperationsource.NewWithSecrets(dao.Task.DB(), secretSource)
+	if err != nil {
+		return err
+	}
+	nativeFacts, err := serverfacts.New(dao.Task.DB(), verificationProviders)
+	if err != nil {
+		return err
+	}
+	commercialOwner, err := loadNativeCommercialOwner(ctx, registrar.Services(), nativeOperationsSource)
+	if err != nil {
+		return err
+	}
+	nativeOperations, err := customeroperations.New(dao.Task.DB(), customers, verificationProviders, nativeOperationsSource, runtime.Audit, secretSource, nativeFacts, commercialOwner)
+	if err != nil {
+		return err
+	}
+	nativeCommercial, err := customeroperations.NewCommercial(nativeOperations, commercialOwner)
+	if err != nil {
+		return err
+	}
+	nativeController, err := accountnativecontroller.NewV1(nativeOperations, nativeCommercial)
+	if err != nil {
+		return err
+	}
 	accountController := accountcontroller.NewV1(currentCustomerServers)
 	serverPageController, err := serverpagecontroller.NewV1(accountController)
 	if err != nil {
@@ -438,6 +539,7 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar, res
 					middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy(),
 				)
 				group.Bind(accountController)
+				group.Bind(nativeController)
 			})
 			bindCustomerServerPageRoutes(group, middlewares, customers, serverPageController)
 			group.Middleware(
@@ -468,9 +570,16 @@ func bindResourceInterfaceCandidates(
 	if err != nil {
 		return err
 	}
+	businessExtensions, adapterErr := providerexecution.NewRecorded(registrar.BusinessExtensions(), dao.Channel.DB())
+	if adapterErr != nil {
+		return adapterErr
+	}
+	outbound := composition.NewProductionDynamicOutboundFactory(secretSource, invocationLeases)
 	if err = resourceInterfaceCandidates.Bind(
-		dao.Channel.DB(), registrar.BusinessExtensions(),
-		composition.NewProductionDynamicOutboundFactory(secretSource, invocationLeases),
+		dao.Channel.DB(), businessExtensions,
+		func(ctx context.Context, configuration channelconfig.Configuration, method string, secrets []resourcecap.SecretBinding) (pluginhost.ConfidentialOutboundHandler, func(), error) {
+			return outbound(ctx, configuration, method, secrets)
+		},
 	); err != nil {
 		return err
 	}

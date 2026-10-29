@@ -16,13 +16,13 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
+
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/customer"
 )
 
@@ -97,22 +97,9 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 			reused = true
 			return nil
 		}
-		customerRow, lockErr := lockAssistedQuoteCustomer(ctx, tx, normalized.CustomerNo)
+		_, lockErr := lockAssistedQuoteCustomer(ctx, tx, normalized.CustomerNo)
 		if lockErr != nil {
 			return lockErr
-		}
-		if normalized.ContractPolicyCode == contractpolicy.PolicyRequired {
-			_, contractErr := s.commerce.contractPolicy.Resolve(ctx, contractpolicy.ResolveInput{
-				CustomerType:   contracttemplatecap.CustomerType(customerRow.CustomerTypeCode),
-				EnterpriseRule: contractpolicy.Rule{Policy: contractpolicy.PolicyNone},
-				ProductRules:   []contractpolicy.Rule{{Policy: contractpolicy.PolicyInherit}},
-				OrderOverride: contractpolicy.Rule{
-					Policy: normalized.ContractPolicyCode, TemplateNo: normalized.ContractTemplateNo,
-				},
-			})
-			if contractErr != nil {
-				return mapContractPolicyResolveError(contractErr)
-			}
 		}
 		now, nowErr := checkoutDatabaseNow(ctx, tx)
 		if nowErr != nil {
@@ -136,12 +123,9 @@ func (s *assistedQuoteServiceImpl) CreateAssistedQuote(
 			PaymentTermCode:     string(paymentTerm), PaymentDueSeconds: paymentDueSeconds,
 			Reason: normalized.Reason, InternalNote: normalized.InternalNote,
 			IdempotencyDigest: normalized.idempotencyDigest, RequestDigest: normalized.requestDigest,
-			ContractOverridePolicyCode: string(normalized.ContractPolicyCode),
-			ExpiresAt:                  &expiresAt, RequestedBy: actor, Version: 1,
+
+			ExpiresAt: &expiresAt, RequestedBy: actor, Version: 1,
 			CreatedAt: &now, UpdatedAt: &now,
-		}
-		if normalized.ContractTemplateNo != "" {
-			requestRow.ContractOverrideTemplateNo = normalized.ContractTemplateNo
 		}
 		if _, err = tx.Model(dao.CommerceAssistedQuoteRequest.Table()).Ctx(ctx).
 			Data(requestRow).Insert(); err != nil {
@@ -250,18 +234,6 @@ func normalizeAssistedQuoteCreate(input AssistedQuoteCreateInput) (normalizedAss
 	input.Reason = strings.TrimSpace(input.Reason)
 	input.InternalNote = strings.TrimSpace(input.InternalNote)
 	input.IdempotencyKey = strings.TrimSpace(input.IdempotencyKey)
-	input.ContractTemplateNo = strings.TrimSpace(input.ContractTemplateNo)
-	if input.ContractPolicyCode == "" {
-		input.ContractPolicyCode = contractpolicy.PolicyInherit
-	}
-	rule, contractErr := contractpolicy.NormalizeRule(contractpolicy.Rule{
-		Policy: input.ContractPolicyCode, TemplateNo: input.ContractTemplateNo,
-	}, true)
-	if contractErr != nil {
-		return normalizedAssistedQuoteCreate{}, bizerr.NewCode(CodeAssistedQuoteInvalid)
-	}
-	input.ContractPolicyCode = rule.Policy
-	input.ContractTemplateNo = rule.TemplateNo
 	if !validAssistedQuoteCreateHeader(input) {
 		return normalizedAssistedQuoteCreate{}, bizerr.NewCode(CodeAssistedQuoteInvalid)
 	}
@@ -275,13 +247,12 @@ func normalizeAssistedQuoteCreate(input AssistedQuoteCreateInput) (normalizedAss
 		ManualDiscountMinor      int64
 		PaymentDueAt             int64
 		Reason, InternalNote     string
-		ContractPolicyCode       contractpolicy.Policy
-		ContractTemplateNo       string
-		Items                    []AssistedQuoteItemInput
+
+		Items []AssistedQuoteItemInput
 	}{
 		input.CustomerNo, input.CurrencyCode, input.ManualDiscountMinor,
 		input.PaymentDueAt, input.Reason,
-		input.InternalNote, input.ContractPolicyCode, input.ContractTemplateNo,
+		input.InternalNote,
 		input.Items,
 	})
 	if err != nil {
@@ -501,10 +472,7 @@ func mapAssistedQuoteWriteError(err error) error {
 	if bizerr.Is(err, CodeAssistedConfigurationMissing) || bizerr.Is(err, CodeAssistedQuoteInvalid) || bizerr.Is(err, CodeAssistedQuoteNotAccessible) ||
 		bizerr.Is(err, CodeAssistedQuoteConflict) ||
 		bizerr.Is(err, CodeQuoteNotAvailable) || bizerr.Is(err, CodeInvalid) ||
-		bizerr.Is(err, CodeConflict) || bizerr.Is(err, CodeNotAccessible) ||
-		bizerr.Is(err, CodeContractPolicyInvalid) ||
-		bizerr.Is(err, CodeContractTemplateUnavailable) ||
-		bizerr.Is(err, CodeContractTemplateConflict) {
+		bizerr.Is(err, CodeConflict) || bizerr.Is(err, CodeNotAccessible) {
 		return err
 	}
 	return bizerr.WrapCode(err, CodeAssistedQuoteUnavailable)

@@ -4,5 +4,15 @@
   "error.idc.payment.reconciliation.page.invalid": "支付列表分页参数无效，请刷新后重试",
   "error.idc.payment.reconciliation.page.unavailable": "支付列表暂时不可用，请稍后重试",
   "error.idc.payment.exception.fund.page.invalid": "支付列表分页参数无效，请刷新后重试",
-  "error.idc.payment.exception.fund.page.unavailable": "支付列表暂时不可用，请稍后重试"
+  "error.idc.payment.exception.fund.page.unavailable": "支付列表暂时不可用，请稍后重试",
+  "error.idc.payment.public.address.invalid": "请填写有效的 HTTPS 通知根地址和支付返回根地址",
+  "error.idc.payment.public.address.conflict": "支付地址已被修改，请重新加载后保存",
+  "error.idc.payment.public.address.unavailable": "暂时无法读取或保存支付地址，请稍后重试",
+  "error.idc.payment.public.address.unconfigured": "请先在支付后台配置通知公网入口和支付返回地址",
+  "error.idc.payment.public.address.forbidden": "请使用员工本人账号修改支付地址，不能代客户操作。",
+  "error.idc.payment.channel.modes.invalid": "请选择该支付渠道支持的支付方式",
+  "error.idc.payment.channel.modes.conflict": "支付渠道已变化，请重新加载后保存",
+  "error.idc.payment.channel.modes.unavailable": "支付渠道设置暂不可用，请稍后重试",
+  "error.idc.payment.channel.modes.forbidden": "请使用员工本人账号修改支付场景",
+  "error.idc.payment.epay.notification.invalid": "易支付通知无效，请核对支付渠道及通知参数"
 }

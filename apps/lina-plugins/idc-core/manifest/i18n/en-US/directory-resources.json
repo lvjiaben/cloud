@@ -1,13 +1,13 @@
 {
   "menu": {
     "plugin:idc-core:product-directories": {
-      "title": "Member Navigation"
+      "title": "Customer Center Menu"
     },
     "plugin:idc-core:product-directories:create": {
-      "title": "Create Member Navigation"
+      "title": "Create Customer Center Menu"
     },
     "plugin:idc-core:product-directories:update": {
-      "title": "Edit Member Navigation"
+      "title": "Edit Customer Center Menu"
     }
   },
   "error": {

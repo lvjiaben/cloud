@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import PublicNavigation from './PublicNavigation.vue';
 import { Button as AButton, ConfigProvider as AConfigProvider } from 'ant-design-vue';
 
 import { publicCopy, type Locale } from './public-i18n';
+import { loginForWebsite, syncWebsiteSession, websiteSignedIn, websiteCustomerOrigin } from './website-commerce-client';
 
 type BrandText = { enUS: string; zhCN: string };
 type BrandNavigation = { label: BrandText; href: string; group?: boolean; customer?: boolean; external?: boolean; children?: BrandNavigation[] };
@@ -19,7 +20,8 @@ type BrandResponse = { data?: { brand?: PublishedBrand } };
 
 const localePath = useLocalePath();
 const { locale, setLocale } = useI18n();
-const config = useRuntimeConfig();
+const customerOrigin = ref(String(useRuntimeConfig().public.customerUrl));
+onMounted(async()=>{try{customerOrigin.value=await websiteCustomerOrigin();await syncWebsiteSession();}catch{/* Checkout provides an actionable retry. */}});
 const { data: brandResponse } = await useFetch<BrandResponse>(
   '/x/idc-portal/api/v1/public/brand',
   { default: () => ({}) },
@@ -59,8 +61,12 @@ const theme = computed(() => ({
   },
 }));
 
-function customerURL(path: '/account' | '/auth/login') {
-  return new URL(path, `${config.public.customerUrl.replace(/\/+$/u, '')}/`).toString();
+function customerURL(path: '/account' | '/account/cart' | '/auth/login') {
+  return new URL(path, `${customerOrigin.value || (import.meta.client ? location.origin : 'http://localhost')}/`).toString();
+}
+
+async function signIn() {
+  try{if (await loginForWebsite()) window.location.reload();}catch{window.location.assign(await websiteCustomerOrigin()+'/auth/login');}
 }
 
 async function toggleLocale() {
@@ -79,10 +85,11 @@ async function toggleLocale() {
             <span v-else aria-hidden="true">L</span><strong>{{ text.brand }}</strong>
           </NuxtLink>
           <nav class="site-navigation" :aria-label="text.navigation">
-            <PublicNavigation :items="navigation" :locale="currentLocale" :customer-origin="config.public.customerUrl" />
+            <PublicNavigation :items="navigation" :locale="currentLocale" :customer-origin="customerOrigin" />
           </nav>
           <div class="site-actions">
-            <AButton data-testid="public-sign-in" :href="customerURL('/auth/login')">{{ text.signIn }}</AButton>
+            <AButton data-testid="public-cart" :href="localePath('/cart')">{{ text.cart }}</AButton>
+            <AButton v-if="!websiteSignedIn" data-testid="public-sign-in" @click="signIn">{{ text.signIn }}</AButton>
             <AButton data-testid="public-customer-center" :href="customerURL('/account')" type="primary">{{ text.customerCenter }}</AButton>
             <AButton data-testid="public-locale-switch" size="small" @click="toggleLocale">{{ text.language }}</AButton>
           </div>
@@ -92,7 +99,7 @@ async function toggleLocale() {
       <main v-else class="website-unavailable" data-testid="website-unavailable"><h1>{{ currentLocale === 'en-US' ? 'Website is not enabled' : '官网尚未启用' }}</h1></main>
       <footer v-if="brand" class="site-footer">
         <div class="site-footer-inner">
-          <strong>{{ text.brand }}</strong><PublicNavigation :items="brand.footerNavigation ?? []" :locale="currentLocale" :customer-origin="config.public.customerUrl" footer /><span>{{ text.footer }}</span>
+          <strong>{{ text.brand }}</strong><PublicNavigation :items="brand.footerNavigation ?? []" :locale="currentLocale" :customer-origin="customerOrigin" footer /><span>{{ text.footer }}</span>
         </div>
       </footer>
     </div>

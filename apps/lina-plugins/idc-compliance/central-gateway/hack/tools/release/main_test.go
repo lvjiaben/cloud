@@ -44,13 +44,7 @@ func TestGatewayDependencyGraphUsesOnlyReviewedLocalSupplierSDK(t *testing.T) {
 		t.Fatalf("list dependency graph: %v: %s", err, output)
 	}
 	dependencies := strings.ToLower(string(output))
-	if !strings.Contains(
-		dependencies,
-		"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/essbasic/v20210526",
-	) {
-		t.Fatal("dependency graph is missing the reviewed Tencent eSign 2021-05-26 SDK")
-	}
-	for _, forbidden := range []string{"lina-core", "lina-plugin-", "nuonuo"} {
+	for _, forbidden := range []string{"lina-core", "lina-plugin-", "nuonuo", "tencentcloud"} {
 		if strings.Contains(dependencies, forbidden) {
 			t.Fatalf("dependency graph unexpectedly contains %q", forbidden)
 		}
@@ -85,7 +79,6 @@ func TestDeliverySourcesContainConfigurationDocsAndMigrations(t *testing.T) {
 	}
 	for _, required := range []string{
 		"config/local-gateway.env.example",
-		"config/tencent-essbasic.json.example",
 		"docs/README.md",
 		"docs/README.zh-CN.md",
 		"docs/DATA-LIFECYCLE.md",
@@ -99,8 +92,6 @@ func TestDeliverySourcesContainConfigurationDocsAndMigrations(t *testing.T) {
 		"migrations/016-local-active-query-takeover.sql",
 		"migrations/017-local-supplier-usage-runtime.sql",
 		"migrations/018-local-data-lifecycle-runtime.sql",
-		"migrations/019-tencent-callback-evidence.sql",
-		"migrations/020-tencent-contract-status.sql",
 	} {
 		if !strings.Contains(joined, required) {
 			t.Fatalf("delivery sources are missing %s:\n%s", required, joined)

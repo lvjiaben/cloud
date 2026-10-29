@@ -68,8 +68,6 @@ function contentDetail() {
     body: "选择文件前必须先读取当前实例的真实上传限制。",
     targetAudiences: [],
     targetCustomerGroupNos: [],
-    targetCustomerNos: [],
-    targetServiceNos: [],
   };
 }
 
@@ -111,7 +109,11 @@ export async function installContentManagementMock(
       }
       if (request.method() === "GET" && path.endsWith("/items")) {
         await route.fulfill({
-          json: envelope({ items: [contentSummary()], nextCursor: "" }),
+          json: envelope({
+            items: [contentSummary()],
+            nextCursor: "",
+            total: 1,
+          }),
         });
         return;
       }
@@ -184,5 +186,135 @@ export async function installContentManagementMock(
       await route.fulfill({ status: 404, json: envelope({}) });
     },
   );
+  return state;
+}
+
+// Mutable API fixture proves persisted CRUD results and failure recovery through the real page.
+export async function installContentCRUDMock(page: Page) {
+  const state = {
+    failSave: false,
+    authenticated: false,
+    failDetailNo: "",
+    deletedNos: [] as string[],
+    actions: [] as Record<string, unknown>[],
+    writes: [] as Record<string, unknown>[],
+    queries: [] as URLSearchParams[],
+    items: Array.from({ length: 12 }, (_, index) => ({
+      ...contentDetail(),
+      contentNo: `CNT_NEWS_${index + 1}`,
+      type: "news",
+      title: `新闻 ${index + 1}`,
+      categoryNo: "CAT_NEWS",
+      version: 1,
+    })),
+    categories: [
+      {
+        categoryNo: "CAT_NEWS",
+        name: "公司新闻",
+        type: "news",
+        version: 1,
+        synthetic: false,
+      },
+    ],
+  };
+  await page.route("**/x/idc-core/api/v1/admin/content/**", async (route) => {
+    const req = route.request();
+    state.authenticated = Boolean(
+      req.headers().authorization?.startsWith("Bearer "),
+    );
+    const url = new URL(req.url());
+    const path = url.pathname;
+    const respond = (data: unknown) => route.fulfill({ json: envelope(data) });
+    if (path.endsWith("/upload-policy")) return respond(defaultUploadPolicy);
+    if (path.endsWith("/categories")) {
+      if (req.method() === "POST") {
+        const body = req.postDataJSON();
+        const item = {
+          ...body,
+          categoryNo: "CAT_NEW",
+          version: 1,
+          synthetic: false,
+        };
+        state.categories.push(item);
+        return respond({ item });
+      }
+      return respond({ items: state.categories, nextCursor: "" });
+    }
+    if (path.includes("/categories/") && req.method() === "DELETE") {
+      const no = path.split("/").pop();
+      state.categories = state.categories.filter(
+        (item) => item.categoryNo !== no,
+      );
+      state.items.forEach((item) => {
+        if (item.categoryNo === no) item.categoryNo = "";
+      });
+      return respond({});
+    }
+    if (path.endsWith("/items") && req.method() === "GET") {
+      state.queries.push(url.searchParams);
+      const rows = state.items.filter(
+        (item) =>
+          (!url.searchParams.get("type") ||
+            item.type === url.searchParams.get("type")) &&
+          (!url.searchParams.get("query") ||
+            item.title.startsWith(url.searchParams.get("query")!)) &&
+          (!url.searchParams.get("categoryNo") ||
+            item.categoryNo === url.searchParams.get("categoryNo")),
+      );
+      const limit = Number(url.searchParams.get("limit") || 10),
+        offset = (Number(url.searchParams.get("page") || 1) - 1) * limit;
+      return respond({
+        items: rows.slice(offset, offset + limit),
+        total: rows.length,
+        nextCursor: "",
+      });
+    }
+    if (
+      (req.method() === "POST" && path.endsWith("/items")) ||
+      req.method() === "PUT"
+    ) {
+      if (state.failSave)
+        return route.fulfill({
+          status: 503,
+          json: { code: 503, message: "Unavailable" },
+        });
+      const body = req.postDataJSON();
+      state.writes.push(body);
+      const existing = state.items.find((item) =>
+        path.endsWith(`/items/${item.contentNo}`),
+      );
+      const item = {
+        ...contentDetail(),
+        ...existing,
+        ...body,
+        contentNo: existing?.contentNo || "CNT_CREATED",
+        version: (existing?.version || 0) + 1,
+        status: existing?.status || body.status,
+      };
+      if (existing) Object.assign(existing, item);
+      else state.items.unshift(item);
+      return respond({ item });
+    }
+    const no = path.split("/items/")[1]?.split("/")[0];
+    const item = state.items.find((item) => item.contentNo === no);
+    if (item && req.method() === "GET" && state.failDetailNo === no)
+      return route.fulfill({ status: 503, json: { code: 503 } });
+    if (item && req.method() === "DELETE") {
+      state.deletedNos.push(item.contentNo);
+      state.items = state.items.filter((row) => row !== item);
+      return respond({ item });
+    }
+    if (item && req.method() === "POST") {
+      state.actions.push({
+        action: path.split("/").pop(),
+        ...req.postDataJSON(),
+      });
+      item.status = path.endsWith("/unpublications") ? "offline" : "published";
+      item.version++;
+      return respond({ item });
+    }
+    if (item) return respond({ item });
+    return route.fulfill({ status: 404, json: envelope({}) });
+  });
   return state;
 }

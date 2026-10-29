@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 
 	"github.com/gogf/gf/v2/database/gdb"
 
@@ -25,6 +26,10 @@ import (
 )
 
 const maximumWorkerBatch = 64
+
+// The explicit casts keep PostgreSQL's CASE parameter inference numeric.
+// Both claim queries use the same bounded owner-specific observation policy.
+const fulfillmentQueryBudgetSQL = `CASE WHEN intent.entitlement_owner_id=? AND task.phase_code='post_submit_query' THEN CAST(? AS INTEGER) ELSE CAST(? AS INTEGER) END`
 
 type fulfillmentWorker struct {
 	database       gdb.DB
@@ -47,6 +52,8 @@ type claimedFulfillment struct {
 	OrderNo, OrderItemNo, ProductNo, VersionNo                  string
 	ConfigurationRevision, ConfigurationSnapshotNo              string
 	CustomerDeclaration                                         string
+	CustomerPresentation                                        string
+	ProductDeclaration                                          string
 	CustomerNo, EntitlementOwnerID                              string
 	CustomerConfiguration                                       json.RawMessage
 	ProductConfiguration                                        json.RawMessage
@@ -58,6 +65,7 @@ type claimedFulfillment struct {
 	ResourceInterfaceConfigurationRevision                      string
 	UnitSequence, Quantity, AttemptNo                           int
 	QueryAttempts, SubmitAttempts, MaximumAttempts              int
+	RecoveryCount                                               int
 	RetryBaseSeconds                                            int
 	Action                                                      productfulfillmentcap.Action
 }
@@ -116,7 +124,7 @@ func (w *fulfillmentWorker) recoverOneExpiredLease(ctx context.Context) error {
 			TakeoverRequested, CancelRequested                         bool
 			Version                                                    int64
 		}
-		if err := w.database.GetScan(txCtx, &expired, `SELECT task_no,intent_no,status_code,phase_code,external_reference,attempt_count,query_attempt_count,maximum_attempts,takeover_requested,cancel_requested,version FROM plugin_idc_core_product_fulfillment_task WHERE tenant_id=0 AND task_no=? AND intent_no=? AND status_code IN ('querying','submitting') AND lease_expires_at<=CURRENT_TIMESTAMP FOR UPDATE`, candidate.TaskNo, candidate.IntentNo); err != nil || expired == nil {
+		if err := w.database.GetScan(txCtx, &expired, `SELECT task_no,intent_no,status_code,phase_code,external_reference,attempt_count,query_attempt_count-recovery_query_baseline AS query_attempt_count,maximum_attempts,takeover_requested,cancel_requested,version FROM plugin_idc_core_product_fulfillment_task WHERE tenant_id=0 AND task_no=? AND intent_no=? AND status_code IN ('querying','submitting') AND lease_expires_at<=CURRENT_TIMESTAMP FOR UPDATE`, candidate.TaskNo, candidate.IntentNo); err != nil || expired == nil {
 			return err
 		}
 		safeEvidence := []byte(`{"status":"result_unknown","recovery":"lease_expired"}`)
@@ -168,7 +176,7 @@ func (w *fulfillmentWorker) claimOne(ctx context.Context) (*claimedFulfillment, 
 	var claimed *claimedFulfillment
 	err := w.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
 		var candidate *struct{ TaskNo, IntentNo string }
-		if err := w.database.GetScan(txCtx, &candidate, `SELECT task.task_no,task.intent_no FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.lease_token='' AND task.next_attempt_at<=CURRENT_TIMESTAMP AND task.status_code IN ('pending_query','pending_submit','retry_wait','accepted','running') AND ((task.phase_code='submit_allowed' AND task.submit_attempt_count<3) OR (task.phase_code<>'submit_allowed' AND task.query_attempt_count<10)) ORDER BY task.next_attempt_at,task.task_no LIMIT 1 FOR UPDATE OF intent SKIP LOCKED`); err != nil || candidate == nil {
+		if err := w.database.GetScan(txCtx, &candidate, `SELECT task.task_no,task.intent_no FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND intent.status_code IN ('queued','processing') AND task.lease_token='' AND task.next_attempt_at<=CURRENT_TIMESTAMP AND task.status_code IN ('pending_query','pending_submit','retry_wait','accepted','running') AND ((task.phase_code='submit_allowed' AND task.submit_attempt_count-task.recovery_submit_baseline<?) OR (task.phase_code<>'submit_allowed' AND task.query_attempt_count-task.recovery_query_baseline<`+fulfillmentQueryBudgetSQL+`)) ORDER BY task.next_attempt_at,task.task_no LIMIT 1 FOR UPDATE OF intent SKIP LOCKED`, maximumSubmitAttempts, provisionresourcecap.OwnerID, resourceOwnerMaximumQueryAttempts, maximumQueryAttempts); err != nil || candidate == nil {
 			return err
 		}
 		var row *claimedFulfillment
@@ -179,20 +187,23 @@ intent.order_no,intent.order_item_no,intent.product_no,intent.version_no,intent.
 intent.customer_no,intent.entitlement_owner_id,
 order_item.currency_code,order_item.billing_rule_no,order_item.charge_type_code,order_item.period_unit_code,order_item.period_count,order_item.purchase_cycles,
 snapshot.configuration_revision,version_configuration.customer_declaration_snapshot::text AS customer_declaration,
+version_configuration.customer_presentation_snapshot::text AS customer_presentation,
+version_configuration.product_declaration_snapshot::text AS product_declaration,
 snapshot.typed_value_snapshot AS customer_configuration,
 version_configuration.merchant_value_snapshot AS product_configuration,version_configuration.merchant_value_digest AS product_configuration_digest,
-intent.unit_sequence,intent.quantity,task.attempt_count+1 AS attempt_no,task.query_attempt_count,task.submit_attempt_count,
-		task.maximum_attempts,task.retry_base_seconds,task.external_reference AS previous_external_reference
+intent.unit_sequence,intent.quantity,task.attempt_count+1 AS attempt_no,task.query_attempt_count-task.recovery_query_baseline AS query_attempts,task.submit_attempt_count-task.recovery_submit_baseline AS submit_attempts,
+		task.maximum_attempts,task.retry_base_seconds,task.recovery_count,task.external_reference AS previous_external_reference
 FROM plugin_idc_core_product_fulfillment_task task
 JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.tenant_id=task.tenant_id AND intent.intent_no=task.intent_no
 JOIN plugin_idc_core_commerce_order_item order_item ON order_item.tenant_id=intent.tenant_id AND order_item.order_no=intent.order_no AND order_item.order_item_no=intent.order_item_no
 JOIN plugin_idc_core_commerce_structured_configuration_snapshot snapshot ON snapshot.tenant_id=intent.tenant_id AND snapshot.snapshot_no=intent.configuration_snapshot_no AND snapshot.order_no=intent.order_no AND snapshot.order_item_no=intent.order_item_no
-JOIN plugin_idc_core_catalog_product_version_configuration version_configuration ON version_configuration.tenant_id=intent.tenant_id AND version_configuration.version_no=intent.version_no AND version_configuration.interface_instance_no=intent.interface_instance_no AND version_configuration.interface_configuration_revision=intent.interface_configuration_revision
+JOIN plugin_idc_core_catalog_product_version_configuration version_configuration ON version_configuration.tenant_id=intent.tenant_id AND version_configuration.version_no=intent.version_no AND version_configuration.interface_instance_no=intent.interface_instance_no
 JOIN plugin_idc_core_product_automation_interface_configuration_revision interface_configuration ON interface_configuration.tenant_id=intent.tenant_id AND interface_configuration.interface_instance_no=intent.interface_instance_no AND interface_configuration.revision=intent.interface_configuration_revision
-WHERE task.tenant_id=0 AND task.task_no=? AND task.intent_no=? AND task.lease_token='' AND task.next_attempt_at<=CURRENT_TIMESTAMP
+WHERE task.tenant_id=0 AND intent.status_code IN ('queued','processing') AND task.task_no=? AND task.intent_no=? AND task.lease_token='' AND task.next_attempt_at<=CURRENT_TIMESTAMP
+AND (version_configuration.interface_configuration_revision=intent.interface_configuration_revision OR (interface_configuration.schema_version='resource-owner-v1' AND interface_configuration.resource_owner_configuration_revision<>''))
 AND task.status_code IN ('pending_query','pending_submit','retry_wait','accepted','running')
-AND ((task.phase_code='submit_allowed' AND task.submit_attempt_count<3) OR (task.phase_code<>'submit_allowed' AND task.query_attempt_count<10))
-LIMIT 1 FOR UPDATE OF task`, candidate.TaskNo, candidate.IntentNo)
+AND ((task.phase_code='submit_allowed' AND task.submit_attempt_count-task.recovery_submit_baseline<?) OR (task.phase_code<>'submit_allowed' AND task.query_attempt_count-task.recovery_query_baseline<`+fulfillmentQueryBudgetSQL+`))
+LIMIT 1 FOR UPDATE OF task`, candidate.TaskNo, candidate.IntentNo, maximumSubmitAttempts, provisionresourcecap.OwnerID, resourceOwnerMaximumQueryAttempts, maximumQueryAttempts)
 		if err != nil || row == nil {
 			return err
 		}
@@ -240,11 +251,15 @@ func (row *claimedFulfillment) request() (*productfulfillmentcap.Request, error)
 	if err != nil {
 		return nil, err
 	}
+	productConfiguration, productDigest, err := row.boundProductConfiguration()
+	if err != nil {
+		return nil, err
+	}
 	request := &productfulfillmentcap.Request{Version: productfulfillmentcap.RequestVersion, IntentNo: row.IntentNo,
 		IdempotencyKey: row.IntentNo, OrderNo: row.OrderNo, OrderItemNo: row.OrderItemNo, UnitSequence: row.UnitSequence,
 		Quantity: row.Quantity, ProductNo: row.ProductNo, ProductVersionNo: row.VersionNo,
 		ConfigurationRevision: row.ConfigurationRevision, CustomerConfiguration: customerConfiguration,
-		ProductConfiguration: row.ProductConfiguration, ProductConfigurationDigest: row.ProductConfigurationDigest,
+		ProductConfiguration: productConfiguration, ProductConfigurationDigest: productDigest,
 		CustomerConfigurationID: row.ConfigurationSnapshotNo,
 		Billing: &productfulfillmentcap.BillingSchedule{
 			CurrencyCode: row.CurrencyCode, ChargeType: productfulfillmentcap.BillingChargeType(row.ChargeTypeCode),
@@ -268,7 +283,7 @@ func safeProviderCustomerConfiguration(declarationRaw string, valuesRaw json.Raw
 	}
 	if declaration != nil {
 		for _, field := range declaration.Fields {
-			if field != nil && field.Type == "file" {
+			if field != nil && (field.Type == "file" || strings.HasPrefix(field.Key, "local_")) {
 				delete(values, field.Key)
 			}
 		}
@@ -393,7 +408,7 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 		if err := w.database.GetScan(txCtx, &current, `SELECT status_code,phase_code,lease_token,takeover_requested,cancel_requested,version FROM plugin_idc_core_product_fulfillment_task WHERE tenant_id=0 AND task_no=? LIMIT 1 FOR UPDATE`, claimed.TaskNo); err != nil || current == nil || current.LeaseToken != claimed.LeaseToken {
 			return errorsNew(taskConflictCode)
 		}
-		decision = decideWorkerResult(claimed.PreviousStatus, claimed.PreviousPhase, claimed.Action, result, invokeFailed, providerBoundaryCrossed, current.TakeoverRequested, current.CancelRequested, claimed.QueryAttempts, claimed.SubmitAttempts)
+		decision = decideWorkerResult(claimed.PreviousStatus, claimed.PreviousPhase, claimed.Action, result, invokeFailed, providerBoundaryCrossed, current.TakeoverRequested, current.CancelRequested, resourceWorkerQueryAttempts(claimed), claimed.SubmitAttempts)
 		decision = peerRecoveryDecision(claimed, decision, current.TakeoverRequested, current.CancelRequested)
 		if resourceManualReview {
 			decision = workerDecision{TaskStatus: "manual_takeover", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
@@ -404,9 +419,19 @@ func (w *fulfillmentWorker) finalize(ctx context.Context, claimed *claimedFulfil
 			resultCode = "provider_result_unavailable"
 			stored = &productfulfillmentcap.Result{Version: productfulfillmentcap.RequestVersion, Status: productfulfillmentcap.StatusResultUnknown}
 		}
-		safeEvidence, marshalErr := json.Marshal(map[string]any{
+		safeFacts := map[string]any{
 			"status": stored.Status, "externalReference": stored.ExternalReference,
-		})
+		}
+		if resourceOutcome != nil && resourceOutcome.failureCode != "" {
+			safeFacts["failureCode"] = resourceOutcome.failureCode
+		}
+		if resourceOutcome != nil && resourceOutcome.responseExcerpt != "" {
+			safeFacts["responseExcerpt"] = resourceOutcome.responseExcerpt
+		}
+		if resourceOutcome != nil && resourceOutcome.recoverableRejection {
+			safeFacts["recoverableRejection"] = true
+		}
+		safeEvidence, marshalErr := json.Marshal(safeFacts)
 		if marshalErr != nil {
 			return marshalErr
 		}
@@ -458,7 +483,7 @@ func (w *fulfillmentWorker) finalizeTaskState(ctx context.Context, claimed *clai
 		}
 		deliveries = string(raw)
 	}
-	taskResult, err := w.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,phase_code=?,next_attempt_at=CURRENT_TIMESTAMP+INTERVAL '30 seconds',lease_token='',lease_expires_at=NULL,external_reference=?,last_result_code=?,upstream_deliveries=COALESCE(?::jsonb,upstream_deliveries),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND version=? AND lease_token=? AND status_code IN ('querying','submitting') AND (?::jsonb IS NULL OR upstream_deliveries='[]'::jsonb OR upstream_deliveries=?::jsonb)`, decision.TaskStatus, decision.PhaseCode, externalReference, resultCode, deliveries, claimed.TaskNo, version, claimed.LeaseToken, deliveries, deliveries)
+	taskResult, err := w.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_task SET status_code=?,phase_code=?,next_attempt_at=CURRENT_TIMESTAMP+(? * INTERVAL '1 second'),lease_token='',lease_expires_at=NULL,external_reference=?,last_result_code=?,upstream_deliveries=COALESCE(?::jsonb,upstream_deliveries),version=version+1,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND version=? AND lease_token=? AND status_code IN ('querying','submitting') AND (?::jsonb IS NULL OR upstream_deliveries='[]'::jsonb OR upstream_deliveries=?::jsonb)`, decision.TaskStatus, decision.PhaseCode, resourceWorkerScheduleSeconds(claimed, decision, result), externalReference, resultCode, deliveries, claimed.TaskNo, version, claimed.LeaseToken, deliveries, deliveries)
 	if err != nil {
 		return err
 	}
@@ -497,7 +522,7 @@ func (w *fulfillmentWorker) enqueueResourceOutcome(ctx context.Context, claimed 
 	if err != nil {
 		return err
 	}
-	insert, err := w.database.Exec(ctx, `INSERT INTO plugin_idc_core_product_fulfillment_resource_outcome_outbox(tenant_id,task_no,provider_task_no,report_payload,report_digest,status_code,next_attempt_at) VALUES(0,?,?,?,?,'pending',CURRENT_TIMESTAMP) ON CONFLICT(task_no) DO NOTHING`, claimed.TaskNo, report.ProviderTaskNo, payload, sha256Hex(payload))
+	insert, err := w.database.Exec(ctx, `INSERT INTO plugin_idc_core_product_fulfillment_resource_outcome_outbox(tenant_id,task_no,provider_task_no,report_payload,report_digest,status_code,next_attempt_at) VALUES(0,?,?,?,?,'pending',CURRENT_TIMESTAMP) ON CONFLICT(task_no,provider_task_no) DO NOTHING`, claimed.TaskNo, report.ProviderTaskNo, payload, sha256Hex(payload))
 	if err != nil || affected(insert) != 1 {
 		return errorsNew("product_fulfillment_resource_outcome_conflict")
 	}

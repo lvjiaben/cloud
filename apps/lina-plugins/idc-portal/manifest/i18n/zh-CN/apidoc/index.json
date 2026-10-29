@@ -38,5 +38,20 @@
   "plugins.idc_portal.api.admin.v1.SiteConfigurationSaveReq.meta.dc": "保存公共信息和所选已安装官网模板配置",
   "plugins.idc_portal.api.admin.v1.WebsiteCandidate.Pages.dc": "当前已安装官网模板声明的公开页面",
   "plugins.idc_portal.api.admin.v1.SiteConfigurationGetRes.Navigation.dc": "商家配置的官网头部与底部导航",
-  "plugins.idc_portal.api.admin.v1.SiteConfigurationSaveReq.Navigation.dc": "头部和底部导航树，各最多100项，最多三级"
+  "plugins.idc_portal.api.admin.v1.SiteConfigurationSaveReq.Navigation.dc": "头部和底部导航树，各最多100项，最多三级",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.ICPNumber.dc": "网站备案号，选填",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.ICPURL.dc": "网站备案查询链接，选填",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.PoliceNumber.dc": "公安备案号，选填",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.PoliceURL.dc": "公安备案查询链接，选填",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.PublicSecurityNumber.dc": "公安备案编号（页脚展示；选填）",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.PublicSecurityURL.dc": "公安备案查询链接（选填；仅HTTP/HTTPS）",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.TelecomLicenseNumber.dc": "增值电信业务经营许可证号",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.TelecomLicenseURL.dc": "增值电信业务经营许可证查询链接",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.HeaderLogoURL.dc": "顶部 Logo 图片地址",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.FooterLogoURL.dc": "底部 Logo 图片地址",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.Copyright.dc": "版权信息",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.BusinessQQ.dc": "商务 QQ",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.CompanyAddress.dc": "公司地址",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.EnterpriseWechatQRCodeURL.dc": "企业微信二维码图片地址",
+  "plugins.idc_portal.api.admin.v1.WebsiteCommon.WechatOfficialQRCodeURL.dc": "微信公众号二维码图片地址"
 }

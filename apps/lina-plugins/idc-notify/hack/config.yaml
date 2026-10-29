@@ -9,12 +9,11 @@ gfcli:
       - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
         path: "internal"
         tables: >-
+          plugin_idc_notify_login_contact_guard,
+          plugin_idc_notify_revoked_login_session,
           plugin_idc_notify_event_catalog,
           plugin_idc_notify_event_policy,
           plugin_idc_notify_event_materialization,
-          plugin_idc_notify_wecom_oauth_intent,
-          plugin_idc_notify_wecom_employee_binding,
-          plugin_idc_notify_wecom_binding_audit,
           plugin_idc_notify_channel,
           plugin_idc_notify_channel_operation,
           plugin_idc_notify_channel_intent,
@@ -126,26 +125,4 @@ gfcli:
           plugin_idc_notify_delivery_task.completed_at:
             type: any
           plugin_idc_notify_wechat_callback_event.applied_task_no:
-            type: any
-          plugin_idc_notify_wecom_oauth_intent.lease_token:
-            type: any
-          plugin_idc_notify_wecom_oauth_intent.lease_expires_at:
-            type: any
-          plugin_idc_notify_wecom_oauth_intent.completed_at:
-            type: any
-          plugin_idc_notify_wecom_oauth_intent.expires_at:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.identity_secret_ref:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.identity_secret_updated_at:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.available_at:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.lease_token:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.lease_expires_at:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.bound_at:
-            type: any
-          plugin_idc_notify_wecom_employee_binding.terminal_at:
             type: any

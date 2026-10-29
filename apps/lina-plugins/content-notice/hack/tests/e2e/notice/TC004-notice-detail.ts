@@ -1,84 +1,25 @@
-import { test, expect } from "@host-tests/fixtures/auth";
-import { ensureSourcePluginEnabled } from "@host-tests/fixtures/plugin";
-import {
-  config,
-  pluginApiPath,
-  workspacePath,
-} from "@host-tests/fixtures/config";
-import { LoginPage } from "@host-tests/pages/LoginPage";
-import {
-  createAdminApiContext,
-  expectSuccess,
-} from "@host-tests/support/api/job";
+import { test, expect } from '@host-tests/fixtures/auth';
+import { pluginApiPath } from '@host-tests/fixtures/config';
+import { createAdminApiContext, expectSuccess } from '@host-tests/support/api/job';
+const path = (suffix: string) => pluginApiPath('content-notice', suffix);
+import { NoticePage } from '../../pages/NoticePage';
 
-import {
-  createMessageRecipient,
-  unreadCount,
-} from "../../support/message-recipient";
-
-const PLUGIN_ID = "content-notice";
-
-test.describe("TC004 消息列表预览弹窗查看通知详情", () => {
-  test.beforeEach(async ({ adminPage }) => {
-    await ensureSourcePluginEnabled(adminPage, "content-notice");
-  });
-
-  test("TC004a: 从消息列表点击消息弹出预览窗口", async ({ browser }) => {
-    const adminApi = await createAdminApiContext();
-    const recipient = await createMessageRecipient("tc004a");
-    let noticeId = 0;
-    const title = `预览测试通知_${Date.now()}`;
-    const content = "<p>这是预览测试的通知内容</p>";
-    const context = await browser.newContext({ baseURL: config.baseURL });
-    const page = await context.newPage();
-    const loginPage = new LoginPage(page);
-
+test.describe('TC-4 公告预览', () => {
+  test('TC-4a: 标题正文图片来自公告详情', async ({adminPage}) => {
+    const api = await createAdminApiContext();
+    let id = 0;
+    const title = `预览公告_${Date.now()}`;
     try {
-      const createData = await expectSuccess<{ id: number }>(
-        await adminApi.post(pluginApiPath(PLUGIN_ID, "notice"), {
-          data: { title, type: 1, content, status: 1 },
-        }),
-      );
-      noticeId = createData.id;
-
-      await expect
-        .poll(() => unreadCount(recipient.api), {
-          message:
-            "expected recipient unread-count to include the published notice",
-          timeout: 10_000,
-        })
-        .toBeGreaterThan(0);
-
-      await loginPage.goto();
-      await loginPage.loginAndWaitForRedirect(
-        recipient.username,
-        recipient.password,
-      );
-
-      await page.goto(workspacePath("/system/message"));
-      await page.waitForLoadState("networkidle");
-      await expect(page.getByText(title, { exact: true }).first()).toBeVisible({
-        timeout: 10_000,
-      });
-      await page.getByText(title, { exact: true }).first().click();
-
-      const modal = page.locator('[role="dialog"]');
-      await expect(modal).toBeVisible({ timeout: 10000 });
-      await expect(modal.getByText("这是预览测试的通知内容")).toBeVisible({
-        timeout: 5000,
-      });
-      await expect(modal.locator(".ant-descriptions")).toBeVisible({
-        timeout: 5000,
-      });
+      id = (await expectSuccess<{id:number}>(await api.post(path('notice'), {data:{title, content:'<p>公告预览正文</p><img src="/favicon.ico" alt="公告图片">', status:1}}))).id;
+      const notice = new NoticePage(adminPage);
+      await notice.goto();
+      await notice.previewNotice(title);
+      await expect(notice.modal.getByText(title, {exact:true})).toBeVisible();
+      await expect(notice.modal.getByText('公告预览正文', {exact:true})).toBeVisible();
+      await expect(notice.modal.getByAltText('公告图片')).toBeVisible();
     } finally {
-      if (noticeId > 0) {
-        await adminApi
-          .delete(pluginApiPath(PLUGIN_ID, `notice?ids[]=${noticeId}`))
-          .catch(() => {});
-      }
-      await recipient.cleanup();
-      await adminApi.dispose();
-      await context.close();
+      if (id) await expectSuccess(await api.delete(path(`notice?ids[]=${id}`)));
+      await api.dispose();
     }
   });
 });

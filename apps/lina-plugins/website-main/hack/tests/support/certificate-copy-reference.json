@@ -1,0 +1,23 @@
+{
+  "source": "user-attachment:d73aa243-90af-4cf3-9600-8b091db8c490",
+  "copy": [
+    {
+      "section": "hero",
+      "order": 0,
+      "parent": "section.globalBanner/div.comp_container/div.pagebanner-relative/div.pagebanner/div.pagebanner-text",
+      "tag": "h1",
+      "headingLevel": 1,
+      "text": "资质荣誉",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 1,
+      "parent": "section.globalBanner/div.comp_container/div.pagebanner-relative/div.pagebanner/div.pagebanner-text",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "我们是一家拥有丰富资质荣誉的云服务商，为您提供卓越的技术支持和可靠的服务，助您在竞争激烈的市场中脱颖而出。",
+      "interaction": "visible"
+    }
+  ]
+}

@@ -80,10 +80,10 @@ func TestCatalogImportAtomicPersistencePostgreSQL(t *testing.T) {
 		t.Fatalf("bad draft result: %+v", result)
 	}
 	productNo := result.Item.ProductNo
-	row, err := database.GetOne(ctx, `SELECT p.name_zh_cn,p.name_en_us,p.current_version_no,v.contract_policy_code,i.tracking_enabled,i.sellable_quantity
+	row, err := database.GetOne(ctx, `SELECT p.name_zh_cn,p.name_en_us,p.current_version_no,i.tracking_enabled,i.sellable_quantity
 FROM plugin_idc_core_catalog_product p JOIN plugin_idc_core_catalog_product_version v USING(product_no)
 JOIN plugin_idc_core_catalog_product_version_inventory i USING(version_no) WHERE p.product_no=?`, productNo)
-	if err != nil || row["name_zh_cn"].String() != source.Product.Name || row["name_en_us"].String() != source.Product.Name || !row["current_version_no"].IsNil() || row["contract_policy_code"].String() != "inherit" || row["tracking_enabled"].Bool() || row["sellable_quantity"].Int64() != 0 {
+	if err != nil || row["name_zh_cn"].String() != source.Product.Name || row["name_en_us"].String() != source.Product.Name || !row["current_version_no"].IsNil() || row["tracking_enabled"].Bool() || row["sellable_quantity"].Int64() != 0 {
 		t.Fatalf("ordinary draft defaults changed: %+v %v", row, err)
 	}
 	prices, err := database.GetAll(ctx, `SELECT currency_code,amount_minor,renewal_amount_minor FROM plugin_idc_core_catalog_price ORDER BY currency_code`)
@@ -141,8 +141,8 @@ const catalogImportPersistenceFixtureSQL = `
 ALTER TABLE plugin_idc_core_catalog_product ADD COLUMN category_no TEXT,ADD COLUMN public_slug TEXT UNIQUE,ADD COLUMN name_zh_cn TEXT,ADD COLUMN name_en_us TEXT,
 ADD COLUMN summary_zh_cn TEXT,ADD COLUMN summary_en_us TEXT,ADD COLUMN current_version_no TEXT,ADD COLUMN sort_order INT,ADD COLUMN created_by INT,ADD COLUMN updated_by INT,
 ADD COLUMN created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,ADD COLUMN updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,ADD COLUMN deleted_at TIMESTAMPTZ;
-ALTER TABLE plugin_idc_core_catalog_product_version ADD COLUMN version_number INT,ADD COLUMN source_code TEXT,ADD COLUMN requires_contract BOOL,
-ADD COLUMN contract_policy_code TEXT,ADD COLUMN contract_template_no TEXT,ADD COLUMN contract_policy_version BIGINT,ADD COLUMN created_by INT,ADD COLUMN created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE plugin_idc_core_catalog_product_version ADD COLUMN version_number INT,ADD COLUMN source_code TEXT,
+ADD COLUMN created_by INT,ADD COLUMN created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 CREATE TABLE plugin_idc_core_catalog_category(tenant_id INT,category_no TEXT,status_code TEXT,name_zh_cn TEXT,name_en_us TEXT);
 INSERT INTO plugin_idc_core_catalog_category VALUES(0,'ctg_11111111111111111111111111111111','active','分类','Category');
 CREATE TABLE plugin_idc_core_catalog_product_version_inventory(version_no TEXT PRIMARY KEY,tracking_enabled BOOL,sellable_quantity BIGINT,version BIGINT,updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);

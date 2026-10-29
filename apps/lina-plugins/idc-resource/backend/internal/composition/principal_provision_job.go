@@ -1,7 +1,10 @@
+// This file schedules lookup-fenced upstream account preparation with bounded single batches.
+
 package composition
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
@@ -10,7 +13,7 @@ import (
 )
 
 const (
-	principalProvisionJobPattern     = "@every 5s"
+	principalProvisionJobPattern     = "@every 1s"
 	principalProvisionJobName        = "idc-resource-principal-provision"
 	principalProvisionJobDisplayName = "IDC Resource Upstream Principal Provisioning"
 	principalProvisionJobDescription = "Performs exact lookup, bounded lookup-fenced creates, verification, and secret cleanup."
@@ -29,10 +32,17 @@ func RegisterPrincipalProvisionJob(
 	if !registrar.IsPrimaryNode() {
 		return nil
 	}
+	// Coalesce ticks during an active batch; database leases remain the
+	// authority across primary-node changes and process failures.
+	var running atomic.Bool
 	return registrar.AddWithMetadata(
 		ctx, principalProvisionJobPattern, principalProvisionJobName,
 		principalProvisionJobDisplayName, principalProvisionJobDescription,
 		func(jobCtx context.Context) error {
+			if !running.CompareAndSwap(false, true) {
+				return nil
+			}
+			defer running.Store(false)
 			for index := 0; index < principalProvisionBatchLimit; index++ {
 				worked, err := worker.RunOne(jobCtx)
 				if err != nil || !worked {

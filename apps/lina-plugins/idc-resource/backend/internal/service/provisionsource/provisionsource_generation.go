@@ -4,10 +4,13 @@
 package provisionsource
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
 	"io"
+	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"math/big"
 	"strings"
 
@@ -27,6 +30,12 @@ func parseServerGenerationPolicy(payload json.RawMessage) (resourcecap.ServerGen
 }
 
 func generatedServerHostname(request provisionresourcecap.TaskRequest, policy resourcecap.ServerGenerationPolicy) (string, error) {
+	if request.ServerLogin != nil && request.ServerLogin.Hostname != "" {
+		if !policy.HostnameCustomerInput || request.Fulfillment.Quantity != 1 {
+			return "", provisionresourcecap.ErrParametersUnavailable
+		}
+		return request.ServerLogin.Hostname, nil
+	}
 	_, previous := frozenServerIdentity(request)
 	if policy.HostnameLength == nil {
 		return previous, nil
@@ -95,4 +104,47 @@ func randomGenerationIndex(source io.Reader, count int) (int, error) {
 		return 0, provisionresourcecap.ErrParametersUnavailable
 	}
 	return int(value.Int64()), nil
+}
+
+// createProvisionCredential recovers the same committed secret before generating
+// randomness. A preparation retry must not conflict with an earlier credential.
+func (s *Service) createProvisionCredential(ctx context.Context, manager secretcap.Manager, request provisionresourcecap.TaskRequest, policy resourcecap.ServerGenerationPolicy, recoveryKeys ...string) (secretcap.CreateResult, error) {
+	if choice := request.ServerLogin; choice != nil && choice.PasswordSecretRef != "" && (len(recoveryKeys) == 0 || recoveryKeys[0] == "") {
+		if !policy.PasswordCustomerInput || request.Fulfillment.Quantity != 1 {
+			return secretcap.CreateResult{}, provisionresourcecap.ErrParametersUnavailable
+		}
+		handle, err := secretcap.NewHandle(choice.PasswordSecretRef)
+		if err != nil {
+			return secretcap.CreateResult{}, provisionresourcecap.ErrParametersUnavailable
+		}
+		metadata, err := manager.Metadata(ctx, handle)
+		if err != nil || !metadata.Configured {
+			return secretcap.CreateResult{}, provisionresourcecap.ErrSourceUnavailable
+		}
+		return secretcap.CreateResult{Handle: handle, Metadata: metadata, Reused: true}, nil
+	}
+	key := provisionSecretIdempotencyKey(request)
+	if len(recoveryKeys) == 1 && recoveryKeys[0] != "" {
+		key = recoveryKeys[0]
+	}
+	if recovered, err := manager.RecoverCreate(ctx, key); err == nil && !recovered.Handle.IsZero() {
+		if !recovered.Metadata.Configured {
+			return secretcap.CreateResult{}, provisionresourcecap.ErrSourceUnavailable
+		}
+		return recovered, nil
+	}
+	created, err := manager.Create(ctx, key, s.generatedPasswordProducer(policy))
+	if err != nil {
+		if code, ok := bizerr.As(err); ok {
+			logger.Warningf(ctx, "provision credential create rejected code=%s", code.RuntimeCode())
+		}
+		created, err = manager.RecoverCreate(ctx, key)
+	}
+	if err != nil || created.Handle.IsZero() || !created.Metadata.Configured {
+		if code, ok := bizerr.As(err); ok {
+			logger.Warningf(ctx, "provision credential recovery rejected code=%s", code.RuntimeCode())
+		}
+		return secretcap.CreateResult{}, provisionresourcecap.ErrSourceUnavailable
+	}
+	return created, nil
 }

@@ -27,6 +27,7 @@ import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { $t } from "#/locales";
 import { formatTimestamp } from "#/utils/time";
 
+import MaterialRetentionDrawer from "./components/material-retention-drawer.vue";
 import EnterpriseVerificationDetailDrawer from "./components/enterprise-verification-detail-drawer.vue";
 import { enterpriseCaseList } from "./enterprise-verification-client";
 
@@ -52,6 +53,7 @@ const pager = createNumberedPage<EnterpriseCaseItem>((state) => {
 onBeforeUnmount(() => { loadSequence++; pager.invalidate(); });
 
 async function load(currentPage = pageState.value.currentPage, pageSize = pageState.value.pageSize) {
+  if (!canList.value) return;
   const sequence = ++loadSequence;
   const filters = { ...activeFilters };
   loading.value = true;
@@ -67,6 +69,7 @@ async function load(currentPage = pageState.value.currentPage, pageSize = pageSt
 }
 
 const { hasAccessByCodes } = useAccess();
+const canList = computed(() => hasAccessByCodes(["idc:admin:compliance:enterprise-verification:list"]));
 const canQuery = computed(() =>
   hasAccessByCodes(["idc:admin:compliance:enterprise-verification:query"]),
 );
@@ -193,6 +196,9 @@ const [Grid, gridApi] = useVbenVxeGrid({
   },
 });
 
+const [RetentionDrawer, retentionDrawerApi] = useVbenDrawer({ connectedComponent: MaterialRetentionDrawer });
+const canRetention = computed(() => hasAccessByCodes(["idc:admin:compliance:privacy:query"]));
+
 const [DetailDrawerRef, detailDrawerApi] = useVbenDrawer({
   connectedComponent: EnterpriseVerificationDetailDrawer,
 });
@@ -211,6 +217,7 @@ function openDetail(row: EnterpriseCaseItem) {
 }
 
 onMounted(async () => {
+  if (!canList.value) return;
   gridApi.setGridOptions({ columns: columns() });
   gridApi.formApi.setState({ schema: searchSchema() });
   await load();
@@ -222,7 +229,8 @@ const layoutRoot = useAdminGridLayout(gridApi);
   <Page :ref="layoutRoot" :auto-content-height="true" class="plugin-admin-page min-w-0 w-full" content-class="min-h-0 min-w-0" data-testid="enterprise-verification-page">
     <div class="enterprise-shell">
 
-      <section class="metric-rail">
+      <div v-if="canRetention" class="flex justify-end"><a-button data-testid="material-retention-open" @click="retentionDrawerApi.open()">{{ $t("plugin.idc-compliance.materialRetention.title") }}</a-button></div>
+      <section v-if="canList" class="metric-rail">
         <article>
           <span>{{
             $t("plugin.idc-compliance.enterprise.metrics.pending")
@@ -251,7 +259,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
         </article>
       </section>
 
-      <section class="enterprise-grid">
+      <section v-if="canList" class="enterprise-grid">
         <Grid :loading="loading" class="min-h-0 min-w-0">
           <template #case="{ row }">
             <div class="case-cell">
@@ -291,6 +299,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
         </Grid>
       </section>
       <DetailDrawerRef @success="load()" />
+      <RetentionDrawer />
     </div>
   </Page>
 </template>

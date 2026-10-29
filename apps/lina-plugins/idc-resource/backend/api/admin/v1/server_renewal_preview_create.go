@@ -3,6 +3,7 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ServerRenewalPreviewCreateReq struct {
+	EntitlementNo string `json:"entitlementNo" v:"max-length:40" dc:"Optional exact product context; every selected server must belong to this entitlement" eg:"ENT_0123456789abcdef"`
 	g.Meta        `path:"/admin/resource/server-renewals/previews" method:"post" tags:"IDC Server Renewals" summary:"Preview selected server renewals" dc:"Quote each of at most 20 servers selected from the resource-owned list for one shared renewal cycle count. Each item reports independent eligibility without exposing internal entitlement identifiers." permission:"idc:admin:resource:server-batch:safe"`
 	RequestKey    string   `json:"requestKey" v:"required|length:8,128" dc:"Client-generated idempotency key reused for confirmation" eg:"renewal-20260828-001"`
 	RenewalCycles int      `json:"renewalCycles" v:"required|between:1,120" dc:"One renewal cycle count applied to every selected server" eg:"12"`

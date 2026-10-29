@@ -21,4 +21,5 @@ type InboxDeliveryEvidence struct {
 	EvidenceType   any        //
 	ContentDigest  any        //
 	CreatedAt      *time.Time //
+	HostMessageId  any        //
 }

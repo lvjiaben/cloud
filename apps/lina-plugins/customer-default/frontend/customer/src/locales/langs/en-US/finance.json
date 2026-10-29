@@ -46,7 +46,13 @@
     "pending_payment": "Awaiting payment",
     "refunded": "Refunded",
     "submitted": "Submitted, awaiting provider confirmation",
-    "succeeded": "Completed"
+    "succeeded": "Completed",
+    "created": "Payment created",
+    "closed": "Closed",
+    "late_success": "Late payment received",
+    "manual_review": "Review required",
+    "disputed": "Payment disputed",
+    "unavailable": "Status unavailable"
   },
   "invoice": {
     "detailTitle": "Invoice {invoiceNo}",
@@ -58,7 +64,9 @@
     "change": "Account change",
     "posted": "Posted"
   },
-  "filters": { "currency": "Currency, e.g. CNY" },
+  "filters": {
+    "currency": "Currency, e.g. CNY"
+  },
   "empty": {
     "balances": "No balance accounts yet",
     "invoices": "No invoices yet",
@@ -88,7 +96,9 @@
       "wechat_h5": "WeChat H5",
       "wechat_native": "WeChat QR code",
       "wechat_jsapi": "WeChat Official Account",
-      "epay_cashier": "EPay cashier"
+      "epay_cashier": "EPay cashier",
+      "epay_alipay": "EPay · Alipay",
+      "epay_wechat": "EPay · WeChat Pay"
     },
     "unavailable": "No payment channel has passed the capability gate, so recharge is unavailable. Existing balance payments still work."
   },
@@ -97,12 +107,19 @@
     "eyebrow": "Secure payment status",
     "complete": "Recharge credited",
     "confirming": "Waiting for payment confirmation",
-    "description": "This page shows the server-confirmed result. Returning from a cashier never credits the balance by itself.",
+    "description": "This page shows the confirmed payment result. Returning from the payment provider does not by itself confirm receipt.",
     "attemptNo": "Payment reference",
     "currency": "Currency",
     "refresh": "Refresh status",
     "back": "Back to finance",
-    "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly."
+    "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly.",
+    "orderComplete": "Payment confirmed",
+    "orderDescription": "The payment has been recorded against your invoice. Provisioning is processed separately; open your order for its latest progress and delivered services.",
+    "unsuccessful": "Payment was not completed",
+    "viewDelivery": "View provisioning progress",
+    "creditComplete": "Repayment confirmed",
+    "needsReview": "Payment needs review",
+    "reviewDescription": "This payment requires review. Keep the payment reference and contact support."
   },
   "merge": {
     "action": "Merge selected invoices",
@@ -146,5 +163,15 @@
     "merged": "Invoices were merged safely and the list was refreshed.",
     "paid": "Balance payment succeeded and invoice facts were refreshed.",
     "renewalSaved": "Automatic-renewal policy updated."
+  },
+  "onlinePayment": {
+    "action": "Pay online",
+    "title": "Choose payment method",
+    "continue": "Confirm and pay",
+    "failed": "Could not prepare payment. Your order and selection are preserved. Please retry.",
+    "identity": "Complete identity verification before paying this invoice.",
+    "noChannels": "No online payment channel is available for this currency. Contact the merchant or use your account balance.",
+    "notPayable": "This order cannot be paid now. Check its status or contact the merchant.",
+    "alreadyPaid": "This invoice is paid. Do not pay again; check the order for processing progress."
   }
 }

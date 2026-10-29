@@ -1,8 +1,5 @@
 {
   "menu": {
-    "plugin:idc-notify:wecom-self-binding": {
-      "title": "我的企业微信绑定"
-    },
     "plugin:idc-notify:channels": {
       "title": "通知渠道"
     },

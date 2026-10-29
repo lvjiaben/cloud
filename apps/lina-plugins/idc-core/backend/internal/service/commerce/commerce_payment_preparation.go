@@ -43,8 +43,7 @@ const (
 	PaymentPreparationOrderNotPayable    = "order_not_payable"
 )
 
-// PaymentPreparation is a bounded recovery projection. RequiresContract is
-// informational only and never participates in payment readiness.
+// PaymentPreparation is a bounded recovery projection for order payment readiness.
 type PaymentPreparation struct {
 	ContextNo          string
 	OrderNo            string
@@ -55,11 +54,11 @@ type PaymentPreparation struct {
 	IdentityStatusCode string
 	CurrencyCode       string
 	AmountDueMinor     int64
-	RequiresContract   bool
-	PaymentDueAt       time.Time
-	LastEvaluatedAt    time.Time
-	Ready              bool
-	Reused             bool
+
+	PaymentDueAt    time.Time
+	LastEvaluatedAt time.Time
+	Ready           bool
+	Reused          bool
 }
 
 // PaymentPreparationService creates and resumes one customer-owned payment
@@ -485,7 +484,7 @@ func projectPaymentPreparation(
 		CustomerTypeCode: contextRow.CustomerTypeCode, StatusCode: contextRow.StatusCode,
 		ReasonCode: contextRow.ReasonCode, IdentityStatusCode: contextRow.IdentityStatusCode,
 		CurrencyCode: order.CurrencyCode, AmountDueMinor: order.TotalAmountMinor,
-		RequiresContract: order.RequiresContract, PaymentDueAt: *contextRow.ExpiresAt,
+		PaymentDueAt:    *contextRow.ExpiresAt,
 		LastEvaluatedAt: *contextRow.LastEvaluatedAt,
 		Ready:           contextRow.StatusCode == PaymentPreparationReady, Reused: reused,
 	}, nil

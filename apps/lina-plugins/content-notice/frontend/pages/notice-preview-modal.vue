@@ -1,29 +1,23 @@
 <script setup lang="ts">
-import type { Notice } from './notice-client';
+import type { Notice } from "./notice-client";
 
-import { computed, ref } from 'vue';
+import { computed, ref } from "vue";
 
-import { useVbenModal } from '@vben/common-ui';
+import { useVbenModal } from "@vben/common-ui";
 
-import { Descriptions, DescriptionsItem } from 'ant-design-vue';
+import { Descriptions, DescriptionsItem } from "ant-design-vue";
 
-import { noticeInfo } from './notice-client';
-import { DictTag } from '#/components/dict';
-import { $t } from '#/locales';
-import { useDictStore } from '#/store/dict';
-import { formatTimestamp } from '#/utils/time';
+import { noticeInfo } from "./notice-client";
+import { $t } from "#/locales";
+import { formatTimestamp } from "#/utils/time";
 
 const notice = ref<Notice | null>(null);
-const dictStore = useDictStore();
-const noticeTypeDicts = ref<any[]>([]);
 const title = computed(() =>
-  notice.value
-    ? notice.value.title
-    : $t('pages.common.preview'),
+  notice.value ? notice.value.title : $t("pages.common.preview"),
 );
 
 const [Modal, modalApi] = useVbenModal({
-  class: 'w-[800px]',
+  class: "w-[800px]",
   fullscreenButton: true,
   footer: false,
   onOpenChange: async (isOpen: boolean) => {
@@ -32,8 +26,6 @@ const [Modal, modalApi] = useVbenModal({
     if (data?.id) {
       modalApi.setState({ loading: true });
       try {
-        noticeTypeDicts.value =
-          await dictStore.getDictOptionsAsync('sys_notice_type');
         const record = await noticeInfo(data.id);
         notice.value = record;
       } finally {
@@ -47,18 +39,18 @@ const [Modal, modalApi] = useVbenModal({
 <template>
   <Modal :title="title">
     <div v-if="notice" class="p-2">
-      <Descriptions :column="3" size="small" bordered class="mb-4">
-        <DescriptionsItem :label="$t('plugin.content-notice.fields.type')">
-          <DictTag :dicts="noticeTypeDicts" :value="String(notice.type)" />
-        </DescriptionsItem>
+      <Descriptions :column="2" size="small" bordered class="mb-4">
         <DescriptionsItem :label="$t('plugin.content-notice.fields.createdBy')">
-          {{ notice.createdByName || '-' }}
+          {{ notice.createdByName || "-" }}
         </DescriptionsItem>
         <DescriptionsItem :label="$t('pages.common.createdAt')">
           {{ formatTimestamp(notice.createdAt) }}
         </DescriptionsItem>
       </Descriptions>
-      <div class="notice-content prose mt-6 max-w-none" v-html="notice.content" />
+      <div
+        class="notice-content prose mt-6 max-w-none"
+        v-html="notice.content"
+      />
     </div>
   </Modal>
 </template>

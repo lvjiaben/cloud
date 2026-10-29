@@ -11,11 +11,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
@@ -69,6 +71,9 @@ type PublicPurchaseNewBusinessAvailability interface {
 	CheckPublicPurchaseAvailability(context.Context, string) (bool, error)
 }
 
+// PublicPurchaseDynamicCandidateResolver reads candidate choices from their owner.
+// External calls retain provider admission; local projections use stored bindings.
+// Missing or disabled local bindings fail closed; purchase admission is checked separately.
 type PublicPurchaseDynamicCandidateResolver interface {
 	ResolvePublicPurchaseCandidates(
 		context.Context,
@@ -153,16 +158,26 @@ type PublicPurchaseConfigurationUploadPolicy struct {
 
 // PublicPurchaseConfigurationField contains no plugin key or raw candidate value.
 type PublicPurchaseConfigurationField struct {
-	FieldToken   string
-	Type         string
-	Label        PublicLocalizedText
-	Description  PublicLocalizedText
-	Visible      bool
-	Required     bool
-	Disabled     bool
-	Constraints  PublicPurchaseConfigurationConstraints
-	Options      []PublicPurchaseConfigurationOption
-	UploadPolicy *PublicPurchaseConfigurationUploadPolicy
+	Presentation string
+
+	GroupZhCN      string
+	GroupEnUS      string
+	Unit           string
+	Advanced       bool
+	NumericLabels  map[string]*capmodel.LocalizedText
+	DisplayControl string
+	QuantityStep   string
+	NumericChoices []string
+	FieldToken     string
+	Type           string
+	Label          PublicLocalizedText
+	Description    PublicLocalizedText
+	Visible        bool
+	Required       bool
+	Disabled       bool
+	Constraints    PublicPurchaseConfigurationConstraints
+	Options        []PublicPurchaseConfigurationOption
+	UploadPolicy   *PublicPurchaseConfigurationUploadPolicy
 }
 
 // PublicPurchaseConfigurationValue uses exactly one explicit typed arm.
@@ -183,6 +198,9 @@ type PublicPurchaseConfigurationValue struct {
 
 // PublicPurchaseConfigurationView is one current published configuration revision.
 type PublicPurchaseConfigurationView struct {
+	ServerLoginPolicy *PublicServerLoginPolicy
+
+	Ready                 bool
 	ConfigurationRevision string
 	Fields                []PublicPurchaseConfigurationField
 	Values                []PublicPurchaseConfigurationValue
@@ -237,6 +255,11 @@ type PublicPurchaseConfigurationQuote struct {
 }
 
 type publicStructuredConfigurationTarget struct {
+	ProductDeclaration string `orm:"product_declaration"`
+	BindingPluginID    string `orm:"binding_plugin_id"`
+
+	MerchantValues            string `orm:"merchant_values"`
+	CustomerPresentation      string `orm:"customer_presentation"`
 	ProductNo                 string `orm:"product_no"`
 	VersionNo                 string `orm:"version_no"`
 	ConfigurationVersion      int64  `orm:"configuration_version"`
@@ -255,12 +278,24 @@ type publicStructuredConfigurationSnapshot struct {
 func (s *publicCatalogReaderImpl) GetPurchaseConfiguration(
 	ctx context.Context,
 	publicSlug string,
-) (*PublicPurchaseConfigurationView, error) {
-	snapshot, err := s.loadStructuredConfiguration(ctx, publicSlug, "")
+) (_ *PublicPurchaseConfigurationView, resultErr error) {
+	defer func() {
+		if resultErr == nil || !bizerr.Is(resultErr, CodePublicCatalogUnavailable) {
+			return
+		}
+		codes := []string{}
+		for cause := resultErr; cause != nil; cause = errors.Unwrap(cause) {
+			if typed, ok := bizerr.As(cause); ok {
+				codes = append(codes, typed.RuntimeCode())
+			}
+		}
+		logger.Warningf(ctx, "public purchase configuration failed codes=%s", strings.Join(codes, ","))
+	}()
+	snapshot, err := s.loadStructuredConfigurationForEvaluation(ctx, publicSlug, "")
 	if err != nil {
 		return nil, err
 	}
-	evaluation, resolved, err := s.evaluateStructuredConfiguration(ctx, snapshot, nil)
+	evaluation, resolved, err := s.evaluateInteractiveStructuredConfiguration(ctx, snapshot, nil)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
@@ -276,7 +311,7 @@ func (s *publicCatalogReaderImpl) EvaluatePurchaseConfiguration(
 	ctx context.Context,
 	input PublicPurchaseConfigurationInput,
 ) (*PublicPurchaseConfigurationEvaluation, error) {
-	snapshot, err := s.loadStructuredConfiguration(ctx, input.PublicSlug, input.ConfigurationRevision)
+	snapshot, err := s.loadStructuredConfigurationForEvaluation(ctx, input.PublicSlug, input.ConfigurationRevision)
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +322,7 @@ func (s *publicCatalogReaderImpl) EvaluatePurchaseConfiguration(
 	if err = s.verifyStructuredFiles(ctx, snapshot, values); err != nil {
 		return nil, bizerr.NewCode(CodePublicConfigurationInvalid)
 	}
-	evaluation, resolved, err := s.evaluateStructuredConfiguration(ctx, snapshot, values)
+	evaluation, resolved, err := s.evaluateInteractiveStructuredConfiguration(ctx, snapshot, values)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
@@ -315,7 +350,7 @@ func (s *publicCatalogReaderImpl) FreezePurchaseConfiguration(
 	ctx context.Context,
 	input PublicPurchaseConfigurationInput,
 ) (*FrozenPurchaseConfiguration, error) {
-	snapshot, err := s.loadStructuredConfiguration(ctx, input.PublicSlug, input.ConfigurationRevision)
+	snapshot, err := s.loadStructuredConfigurationForEvaluation(ctx, input.PublicSlug, input.ConfigurationRevision)
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +361,8 @@ func (s *publicCatalogReaderImpl) FreezePurchaseConfiguration(
 	if err = s.verifyStructuredFiles(ctx, snapshot, values); err != nil {
 		return nil, bizerr.NewCode(CodePublicConfigurationInvalid)
 	}
+	// Freezing is an explicit purchase, never an interactive correction. A
+	// stale parent/child pair must be rejected before producing sale evidence.
 	evaluation, resolved, err := s.evaluateStructuredConfiguration(ctx, snapshot, values)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
@@ -348,12 +385,23 @@ func (s *publicCatalogReaderImpl) FreezePurchaseConfiguration(
 		InterfaceInstanceNo            string `orm:"interface_instance_no"`
 		InterfaceConfigurationRevision int64  `orm:"interface_configuration_revision"`
 	}
-	if err = s.database.GetScan(ctx, &binding, `
-SELECT configuration.interface_instance_no, configuration.interface_configuration_revision
+	if snapshot.Target.HasAutomationBinding {
+		if err = s.database.GetScan(ctx, &binding, `
+SELECT configuration.interface_instance_no,
+CASE WHEN interface.interface_origin_code='resource' THEN
+    (SELECT MAX(current_revision.revision)
+     FROM plugin_idc_core_product_automation_interface_configuration_revision current_revision
+     WHERE current_revision.tenant_id=configuration.tenant_id
+       AND current_revision.interface_instance_no=configuration.interface_instance_no)
+ELSE configuration.interface_configuration_revision END AS interface_configuration_revision
 FROM plugin_idc_core_catalog_product_version_configuration configuration
+JOIN plugin_idc_core_product_automation_interface_instance interface
+  ON interface.tenant_id=configuration.tenant_id
+ AND interface.interface_instance_no=configuration.interface_instance_no
 WHERE configuration.tenant_id = 0 AND configuration.version_no = ?
 LIMIT 1`, snapshot.Target.VersionNo); err != nil || binding.InterfaceInstanceNo == "" || binding.InterfaceConfigurationRevision < 1 {
-		return nil, bizerr.NewCode(CodePublicCatalogUnavailable)
+			return nil, bizerr.NewCode(CodePublicCatalogUnavailable)
+		}
 	}
 	fileFields, err := frozenPublicFileInputs(snapshot, values)
 	if err != nil {
@@ -362,7 +410,7 @@ LIMIT 1`, snapshot.Target.VersionNo); err != nil || binding.InterfaceInstanceNo 
 	if err = s.recheckStructuredConfiguration(ctx, snapshot); err != nil {
 		return nil, err
 	}
-	_, priceSelectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values)
+	_, priceSelectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values, snapshot.Target.CustomerPresentation)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
@@ -421,7 +469,7 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	if err := s.admitCurrency(ctx, currency); err != nil {
 		return nil, err
 	}
-	snapshot, err := s.loadStructuredConfiguration(ctx, input.PublicSlug, input.ConfigurationRevision)
+	snapshot, err := s.loadStructuredConfigurationForEvaluation(ctx, input.PublicSlug, input.ConfigurationRevision)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +487,7 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	if !evaluation.Valid {
 		return nil, bizerr.NewCode(CodePublicQuoteInvalid)
 	}
-	selections, selectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values)
+	selections, selectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values, snapshot.Target.CustomerPresentation)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
 	}
@@ -447,7 +495,7 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
 	}
-	baseQuote, err := buildPublicConfigurationQuote(snapshot.Revision, currency, source, configurationPriceSelectionMap(selections))
+	baseQuote, err := s.quoteStructuredPurchasePrices(ctx, snapshot.Target.VersionNo, snapshot.Revision, currency, source, configurationPriceSelectionMap(selections), values)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +546,7 @@ func (s *publicCatalogReaderImpl) QuotePurchaseConfiguration(
 	if len(terms) == 0 {
 		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
-	if err = s.recheckStructuredConfiguration(ctx, snapshot); err != nil {
+	if err = s.recheckStructuredConfigurationRevision(ctx, snapshot); err != nil {
 		return nil, err
 	}
 	return &PublicPurchaseConfigurationQuote{
@@ -511,6 +559,16 @@ func (s *publicCatalogReaderImpl) loadStructuredConfiguration(
 	publicSlug string,
 	expectedRevision string,
 ) (*publicStructuredConfigurationSnapshot, error) {
+	return s.loadStructuredConfigurationSnapshot(ctx, publicSlug, expectedRevision, false)
+}
+
+// Interactive configuration is a database-backed price preview. Provider
+// admission belongs to freezing/purchasing and actual provider execution.
+func (s *publicCatalogReaderImpl) loadStructuredConfigurationForEvaluation(ctx context.Context, publicSlug, expectedRevision string) (*publicStructuredConfigurationSnapshot, error) {
+	return s.loadStructuredConfigurationSnapshot(ctx, publicSlug, expectedRevision, true)
+}
+
+func (s *publicCatalogReaderImpl) loadStructuredConfigurationSnapshot(ctx context.Context, publicSlug, expectedRevision string, preview bool) (*publicStructuredConfigurationSnapshot, error) {
 	slug := strings.ToLower(strings.TrimSpace(publicSlug))
 	if !validPublicConfigurationSlug(slug) || s.revision == nil {
 		return nil, bizerr.NewCode(CodePublicCatalogInvalid)
@@ -523,11 +581,6 @@ func (s *publicCatalogReaderImpl) loadStructuredConfiguration(
 	}
 	if target.VersionNo == "" {
 		return nil, bizerr.NewCode(CodePublicCatalogNotFound)
-	}
-	if target.HasAutomationBinding {
-		if availabilityErr := s.ensurePublicPurchaseAvailability(ctx, target); availabilityErr != nil {
-			return nil, availabilityErr
-		}
 	}
 	digest := target.CustomerDeclarationDigest
 	if digest == "" {
@@ -551,16 +604,25 @@ func (s *publicCatalogReaderImpl) loadStructuredConfiguration(
 		return nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 	}
 	snapshot := &publicStructuredConfigurationSnapshot{Target: target, Revision: revision, Schema: schema}
+	if preview {
+		// This query already checks published version, product and category state.
+		return snapshot, nil
+	}
 	if err = s.recheckStructuredConfiguration(ctx, snapshot); err != nil {
 		return nil, err
 	}
 	return snapshot, nil
 }
 
-func (s *publicCatalogReaderImpl) recheckStructuredConfiguration(
-	ctx context.Context,
-	snapshot *publicStructuredConfigurationSnapshot,
-) error {
+// recheckStructuredConfiguration retains full admission for purchase freezing.
+func (s *publicCatalogReaderImpl) recheckStructuredConfiguration(ctx context.Context, snapshot *publicStructuredConfigurationSnapshot) error {
+	if err := s.recheckStructuredConfigurationRevision(ctx, snapshot); err != nil {
+		return err
+	}
+	return s.ensurePublicPurchaseAvailability(ctx, snapshot.Target)
+}
+
+func (s *publicCatalogReaderImpl) recheckStructuredConfigurationRevision(ctx context.Context, snapshot *publicStructuredConfigurationSnapshot) error {
 	current, err := s.database.GetValue(ctx, publicStructuredConfigurationStillCurrentSQL,
 		snapshot.Target.VersionNo, snapshot.Target.ConfigurationVersion,
 		snapshot.Target.CustomerDeclarationDigest,
@@ -570,9 +632,6 @@ func (s *publicCatalogReaderImpl) recheckStructuredConfiguration(
 	}
 	if !current.Bool() {
 		return bizerr.NewCode(CodePublicConfigurationStale)
-	}
-	if snapshot.Target.HasAutomationBinding {
-		return s.ensurePublicPurchaseAvailability(ctx, snapshot.Target)
 	}
 	return nil
 }
@@ -602,6 +661,14 @@ func (s *publicCatalogReaderImpl) evaluateStructuredConfiguration(
 	snapshot *publicStructuredConfigurationSnapshot,
 	values []configurationcontract.ConfigurationValue,
 ) (*configurationcontract.Evaluation, configurationcontract.ResolvedCandidates, error) {
+	presentations, err := configurationcontract.DecodePresentations(snapshot.Target.CustomerPresentation)
+	if err != nil {
+		return nil, nil, err
+	}
+	values, err = configurationcontract.ApplyHiddenDefaults(snapshot.Schema, presentations, values)
+	if err != nil {
+		return nil, nil, err
+	}
 	resolved := make(configurationcontract.ResolvedCandidates)
 	if schemaHasDynamicCandidates(snapshot.Schema) {
 		if s.dynamicCandidateResolver == nil {
@@ -615,11 +682,40 @@ func (s *publicCatalogReaderImpl) evaluateStructuredConfiguration(
 			return nil, nil, bizerr.WrapCode(err, CodePublicCatalogUnavailable)
 		}
 	}
+	evaluation, err := evaluateStructuredResolved(snapshot, values, resolved)
+	return evaluation, resolved, err
+}
+
+// evaluateStructuredResolved applies existing declarations and commercial
+// restrictions to one directory observation without additional owner calls.
+func evaluateStructuredResolved(snapshot *publicStructuredConfigurationSnapshot, values []configurationcontract.ConfigurationValue, resolved configurationcontract.ResolvedCandidates) (*configurationcontract.Evaluation, error) {
+	presentations, err := configurationcontract.DecodePresentations(snapshot.Target.CustomerPresentation)
+	if err != nil {
+		return nil, err
+	}
+	if err = configurationcontract.ValidatePresentations(snapshot.Schema, presentations); err != nil {
+		return nil, err
+	}
+	values, err = configurationcontract.ApplyHiddenDefaults(snapshot.Schema, presentations, values)
+	if err != nil {
+		return nil, err
+	}
+	// Evaluate commercial restrictions after exact directory admission, while
+	// retaining the provider declaration used by frozen evidence and digests.
+	effective, err := configurationcontract.WithPresentationChoiceRules(snapshot.Schema, presentations)
+	if err != nil {
+		return nil, err
+	}
 	evaluation, err := configurationcontract.EvaluateResolved(
-		snapshot.Schema, values, configurationcontract.SurfaceCustomer,
+		effective, values, configurationcontract.SurfaceCustomer,
 		authorizedDynamicMethods(snapshot.Schema), resolved,
 	)
-	return evaluation, resolved, err
+	if err == nil {
+		evaluation.Issues = append(evaluation.Issues, configurationcontract.PresentationIssues(snapshot.Schema, presentations, evaluation.Values)...)
+		evaluation.Issues = append(evaluation.Issues, missingPurchaseChoiceIssues(snapshot.Schema, presentations, evaluation)...)
+		evaluation.Valid = len(evaluation.Issues) == 0
+	}
+	return evaluation, err
 }
 
 func schemaHasDynamicCandidates(schema *capmodel.ConfigurationSchemaDeclaration) bool {
@@ -705,7 +801,11 @@ func (s *publicCatalogReaderImpl) decodePublicStructuredValues(
 		mapped.FileTokens = row.FileTokens
 		result = append(result, mapped)
 	}
-	return result, nil
+	presentations, err := configurationcontract.DecodePresentations(snapshot.Target.CustomerPresentation)
+	if err != nil {
+		return nil, err
+	}
+	return configurationcontract.ApplyHiddenDefaults(snapshot.Schema, presentations, result)
 }
 
 func (s *publicCatalogReaderImpl) decodeOpaqueOptions(tokens []string, revision, fieldKey string) ([]string, error) {
@@ -729,12 +829,23 @@ func (s *publicCatalogReaderImpl) projectStructuredConfiguration(
 	resolved configurationcontract.ResolvedCandidates,
 ) (*PublicPurchaseConfigurationView, error) {
 	view := &PublicPurchaseConfigurationView{
+		ServerLoginPolicy:     publicServerLoginPolicy(snapshot.Target.MerchantValues),
+		Ready:                 evaluation.Valid,
 		ConfigurationRevision: snapshot.Revision,
 		Fields:                []PublicPurchaseConfigurationField{}, Values: []PublicPurchaseConfigurationValue{},
 	}
 	if snapshot.Schema == nil {
 		return view, nil
 	}
+	presentations, err := configurationcontract.DecodePresentations(snapshot.Target.CustomerPresentation)
+	if err != nil {
+		return nil, err
+	}
+	roles, err := publicPurchasePresentationRoles(snapshot.Target, snapshot.Schema, presentations)
+	if err != nil {
+		return nil, err
+	}
+	orders := map[string]int{}
 	for _, field := range snapshot.Schema.Fields {
 		state := evaluation.States[field.Key]
 		fieldToken, err := s.revision.encodeStructuredField(snapshot.Revision, field.Key)
@@ -742,13 +853,19 @@ func (s *publicCatalogReaderImpl) projectStructuredConfiguration(
 			return nil, err
 		}
 		projected := PublicPurchaseConfigurationField{
-			FieldToken: fieldToken, Type: field.Type,
+			Presentation: roles[field.Key],
+			FieldToken:   fieldToken, Type: field.Type,
+			GroupZhCN: presentations[field.Key].GroupZhCN, GroupEnUS: presentations[field.Key].GroupEnUS, Unit: presentations[field.Key].Unit, Advanced: presentations[field.Key].Advanced, NumericLabels: presentations[field.Key].NumericLabels,
+			DisplayControl: presentations[field.Key].Control, QuantityStep: presentations[field.Key].Step, NumericChoices: presentations[field.Key].NumericChoices,
 			Label: publicLocalized(field.Label), Description: publicLocalized(field.Description),
-			Visible: state.Visible, Required: state.Required, Disabled: state.Disabled,
+			Visible: state.Visible && (presentations[field.Key].CustomerVisible == nil || *presentations[field.Key].CustomerVisible), Required: state.Required, Disabled: state.Disabled,
 			Constraints: PublicPurchaseConfigurationConstraints{
 				Format: field.TextFormat, Minimum: field.Minimum, Maximum: field.Maximum,
 				MinimumLength: field.MinimumLength, MaximumLength: field.MaximumLength,
 			},
+		}
+		if p := presentations[field.Key]; p.DescriptionZhCN != "" || p.DescriptionEnUS != "" {
+			projected.Description = PublicLocalizedText{ZhCN: p.DescriptionZhCN, EnUS: p.DescriptionEnUS}
 		}
 		projected.Options, err = s.projectStructuredOptions(snapshot.Revision, field, state.CandidateValues, resolved[field.Key])
 		if err != nil {
@@ -767,8 +884,33 @@ func (s *publicCatalogReaderImpl) projectStructuredConfiguration(
 				SafetyScanRequired: policy.SafetyScanRequired,
 			}
 		}
+		if presentation, exists := presentations[field.Key]; exists {
+			orders[fieldToken] = presentation.SortOrder
+		} else {
+			orders[fieldToken] = len(view.Fields)
+		}
 		view.Fields = append(view.Fields, projected)
 	}
+	groups := map[string]int{}
+	for _, field := range view.Fields {
+		key := field.GroupZhCN + "\x00" + field.GroupEnUS
+		rank, exists := groups[key]
+		if !exists || orders[field.FieldToken] < rank {
+			groups[key] = orders[field.FieldToken]
+		}
+	}
+	sort.SliceStable(view.Fields, func(i, j int) bool {
+		left, right := view.Fields[i], view.Fields[j]
+		leftGroup, rightGroup := groups[left.GroupZhCN+"\x00"+left.GroupEnUS], groups[right.GroupZhCN+"\x00"+right.GroupEnUS]
+		if leftGroup != rightGroup {
+			return leftGroup < rightGroup
+		}
+		leftKey, rightKey := left.GroupZhCN+"\x00"+left.GroupEnUS, right.GroupZhCN+"\x00"+right.GroupEnUS
+		if leftKey != rightKey {
+			return leftKey < rightKey
+		}
+		return orders[left.FieldToken] < orders[right.FieldToken]
+	})
 	for _, value := range evaluation.Values {
 		projected, err := s.projectStructuredValue(snapshot, value)
 		if err != nil {
@@ -920,7 +1062,9 @@ func (s *publicCatalogReaderImpl) projectStructuredValue(
 		return PublicPurchaseConfigurationValue{}, err
 	}
 	row := PublicPurchaseConfigurationValue{
-		FieldToken: fieldToken, Type: field.Type, TextValue: value.TextValue,
+		FieldToken: fieldToken, Type: field.Type,
+
+		TextValue:    value.TextValue,
 		DecimalValue: value.DecimalValue, BooleanValue: value.BooleanValue,
 		DateValue: value.DateValue, DateTimeValue: value.DateTimeValue,
 	}
@@ -1007,6 +1151,10 @@ func publicBillingTermLabel(term PublicQuoteTerm, resources PublicBillingLabelRe
 const publicStructuredConfigurationTargetSQL = `
 SELECT product.product_no, product.current_version_no AS version_no,
        COALESCE(configuration.version, 0) AS configuration_version,
+       COALESCE(configuration.merchant_value_snapshot,'{}'::jsonb)::text AS merchant_values,
+       COALESCE(configuration.product_declaration_snapshot,'{}'::jsonb)::text AS product_declaration,
+       COALESCE((SELECT binding.plugin_id FROM plugin_idc_core_catalog_product_version_fulfillment_binding binding WHERE binding.tenant_id=version.tenant_id AND binding.version_no=version.version_no LIMIT 1),'') AS binding_plugin_id,
+       COALESCE(configuration.customer_presentation_snapshot,'{}'::jsonb)::text AS customer_presentation,
 	   COALESCE(configuration.customer_declaration_snapshot, '{}'::jsonb)::text AS customer_declaration,
        COALESCE(configuration.declaration_digest, '') AS customer_declaration_digest,
        EXISTS (

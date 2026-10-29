@@ -19,8 +19,7 @@
     "avatarMenu": {
       "profile": "Account profile",
       "addresses": "Contacts & addresses",
-      "dataRights": "Data & account",
-      "privacy": "Privacy settings"
+      "dataRights": "Data & account"
     },
     "summary": {
       "welcome": "Welcome back",

@@ -21,52 +21,58 @@ type ProductFulfillmentTaskDao struct {
 
 // ProductFulfillmentTaskColumns defines and stores column names for the table plugin_idc_core_product_fulfillment_task.
 type ProductFulfillmentTaskColumns struct {
-	TenantId           string //
-	TaskNo             string //
-	IntentNo           string //
-	StatusCode         string //
-	PhaseCode          string //
-	AttemptCount       string //
-	QueryAttemptCount  string //
-	SubmitAttemptCount string //
-	MaximumAttempts    string //
-	RetryBaseSeconds   string //
-	NextAttemptAt      string //
-	LeaseToken         string //
-	LeaseExpiresAt     string //
-	ExternalReference  string //
-	LastResultCode     string //
-	TakeoverRequested  string //
-	CancelRequested    string //
-	Version            string //
-	CreatedAt          string //
-	UpdatedAt          string //
-	UpstreamDeliveries string //
+	TenantId               string //
+	TaskNo                 string //
+	IntentNo               string //
+	StatusCode             string //
+	PhaseCode              string //
+	AttemptCount           string //
+	QueryAttemptCount      string //
+	SubmitAttemptCount     string //
+	MaximumAttempts        string //
+	RetryBaseSeconds       string //
+	NextAttemptAt          string //
+	LeaseToken             string //
+	LeaseExpiresAt         string //
+	ExternalReference      string //
+	LastResultCode         string //
+	TakeoverRequested      string //
+	CancelRequested        string //
+	Version                string //
+	CreatedAt              string //
+	UpdatedAt              string //
+	UpstreamDeliveries     string //
+	RecoveryCount          string //
+	RecoveryQueryBaseline  string //
+	RecoverySubmitBaseline string //
 }
 
 // productFulfillmentTaskColumns holds the columns for the table plugin_idc_core_product_fulfillment_task.
 var productFulfillmentTaskColumns = ProductFulfillmentTaskColumns{
-	TenantId:           "tenant_id",
-	TaskNo:             "task_no",
-	IntentNo:           "intent_no",
-	StatusCode:         "status_code",
-	PhaseCode:          "phase_code",
-	AttemptCount:       "attempt_count",
-	QueryAttemptCount:  "query_attempt_count",
-	SubmitAttemptCount: "submit_attempt_count",
-	MaximumAttempts:    "maximum_attempts",
-	RetryBaseSeconds:   "retry_base_seconds",
-	NextAttemptAt:      "next_attempt_at",
-	LeaseToken:         "lease_token",
-	LeaseExpiresAt:     "lease_expires_at",
-	ExternalReference:  "external_reference",
-	LastResultCode:     "last_result_code",
-	TakeoverRequested:  "takeover_requested",
-	CancelRequested:    "cancel_requested",
-	Version:            "version",
-	CreatedAt:          "created_at",
-	UpdatedAt:          "updated_at",
-	UpstreamDeliveries: "upstream_deliveries",
+	TenantId:               "tenant_id",
+	TaskNo:                 "task_no",
+	IntentNo:               "intent_no",
+	StatusCode:             "status_code",
+	PhaseCode:              "phase_code",
+	AttemptCount:           "attempt_count",
+	QueryAttemptCount:      "query_attempt_count",
+	SubmitAttemptCount:     "submit_attempt_count",
+	MaximumAttempts:        "maximum_attempts",
+	RetryBaseSeconds:       "retry_base_seconds",
+	NextAttemptAt:          "next_attempt_at",
+	LeaseToken:             "lease_token",
+	LeaseExpiresAt:         "lease_expires_at",
+	ExternalReference:      "external_reference",
+	LastResultCode:         "last_result_code",
+	TakeoverRequested:      "takeover_requested",
+	CancelRequested:        "cancel_requested",
+	Version:                "version",
+	CreatedAt:              "created_at",
+	UpdatedAt:              "updated_at",
+	UpstreamDeliveries:     "upstream_deliveries",
+	RecoveryCount:          "recovery_count",
+	RecoveryQueryBaseline:  "recovery_query_baseline",
+	RecoverySubmitBaseline: "recovery_submit_baseline",
 }
 
 // NewProductFulfillmentTaskDao creates and returns a new DAO object for table data access.

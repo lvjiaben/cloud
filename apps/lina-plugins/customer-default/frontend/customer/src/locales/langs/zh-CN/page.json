@@ -19,8 +19,7 @@
     "avatarMenu": {
       "profile": "账户资料",
       "addresses": "联系人与地址",
-      "dataRights": "数据与账号",
-      "privacy": "隐私设置"
+      "dataRights": "数据与账号"
     },
     "summary": {
       "welcome": "欢迎回来",

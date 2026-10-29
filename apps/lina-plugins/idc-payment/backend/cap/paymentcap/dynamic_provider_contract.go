@@ -99,7 +99,7 @@ func metadataModes(raw any, provider ProviderCode) ([]Mode, error) {
 	allowed := map[ProviderCode]map[Mode]bool{
 		ProviderAlipay:    {ModeAlipayPage: true, ModeAlipayWAP: true},
 		ProviderWechatPay: {ModeWechatH5: true, ModeWechatNative: true, ModeWechatJSAPI: true},
-		ProviderEPay:      {ModeEPayCashier: true},
+		ProviderEPay:      {ModeEPayCashier: true, ModeEPayAlipay: true, ModeEPayWechat: true},
 		ProviderUnionPay:  {ModeUnionPayWeb: true, ModeUnionPayWAP: true},
 	}
 	result := make([]Mode, 0, len(values))

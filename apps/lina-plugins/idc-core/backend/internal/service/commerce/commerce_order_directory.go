@@ -51,38 +51,29 @@ type OrderDirectoryFilter struct {
 
 // OrderSummary is one bounded list row.
 type OrderSummary struct {
-	OrderNo                    string
-	CustomerNo                 string
-	CustomerCode               string
-	CustomerDisplayName        string
-	CustomerPrimaryPhone       string
-	CustomerTypeCode           string
-	ProductSummary             string
-	IPAddress                  string
-	PaymentMethodCode          string
-	Remark                     string
-	StatusCode                 string
-	RiskDecisionCode           string
-	CurrencyCode               string
-	ItemCount                  int
-	TotalAmountMinor           int64
-	RequiresContract           bool
-	PaymentDueAt               *time.Time
-	CreatedAt                  time.Time
-	CanCancel                  bool
-	CanPreparePayment          bool
-	AssistedRequestNo          string
-	PaymentTermCode            string
-	Version                    int64
-	ContractOverridePolicyCode string
-	ContractOverrideTemplateNo string
-	ContractDecisionSourceCode string
-	ContractTemplateNo         string
-	ContractTemplateVersionNo  int64
-	ContractTemplateName       string
-	ContractLanguageCode       string
-	ContractScopeCode          string
-	ContractSigningOrderCode   string
+	OrderNo              string
+	CustomerNo           string
+	CustomerCode         string
+	CustomerDisplayName  string
+	CustomerPrimaryPhone string
+	CustomerTypeCode     string
+	ProductSummary       string
+	IPAddress            string
+	PaymentMethodCode    string
+	Remark               string
+	StatusCode           string
+	RiskDecisionCode     string
+	CurrencyCode         string
+	ItemCount            int
+	TotalAmountMinor     int64
+
+	PaymentDueAt      *time.Time
+	CreatedAt         time.Time
+	CanCancel         bool
+	CanPreparePayment bool
+	AssistedRequestNo string
+	PaymentTermCode   string
+	Version           int64
 }
 
 // OrderPage contains bounded rows and a count from the same authorized filter.
@@ -111,16 +102,16 @@ type OrderInvoice struct {
 }
 
 type OrderItemView struct {
-	OrderItemNo           string
-	LineNumber            int
-	ProductNameZhCN       string
-	ProductNameEnUS       string
-	Quantity              int
-	PurchaseCycles        int
-	ChargeTypeCode        string
-	PeriodUnitCode        string
-	PeriodCount           int
-	RequiresContract      bool
+	OrderItemNo     string
+	LineNumber      int
+	ProductNameZhCN string
+	ProductNameEnUS string
+	Quantity        int
+	PurchaseCycles  int
+	ChargeTypeCode  string
+	PeriodUnitCode  string
+	PeriodCount     int
+
 	FulfillmentModeCode   string
 	RiskDecisionCode      string
 	InventoryDecisionCode string
@@ -309,12 +300,8 @@ func (s *orderDirectoryImpl) list(ctx context.Context, filter OrderDirectoryFilt
 	projectionFields := []string{
 		columns.Id, columns.OrderNo, columns.CustomerNo, columns.StatusCode,
 		columns.RiskDecisionCode, columns.CurrencyCode, columns.ItemCount,
-		columns.TotalAmountMinor, columns.RequiresContract, columns.PaymentDueAt, columns.CreatedAt,
+		columns.TotalAmountMinor, columns.PaymentDueAt, columns.CreatedAt,
 		columns.AssistedRequestNo, columns.PaymentTermCode, columns.Version,
-		columns.ContractOverridePolicyCode, columns.ContractOverrideTemplateNo,
-		columns.ContractDecisionSourceCode, columns.ContractTemplateNo,
-		columns.ContractTemplateVersionNo, columns.ContractTemplateName,
-		columns.ContractLanguageCode, columns.ContractScopeCode, columns.ContractSigningOrderCode,
 	}
 	query := s.database.Model(dao.CommerceOrder.Table()).Ctx(ctx).Where(do.CommerceOrder{TenantId: idccap.DefaultTenantID})
 	if input.CustomerNo != "" {
@@ -595,8 +582,8 @@ func loadOrderAggregate(ctx context.Context, tx gdb.TX, order entity.CommerceOrd
 			ProductNameZhCN: item.ProductNameZhCn, ProductNameEnUS: item.ProductNameEnUs,
 			Quantity: quantities[item.OrderItemNo], PurchaseCycles: item.PurchaseCycles,
 			ChargeTypeCode: item.ChargeTypeCode, PeriodUnitCode: item.PeriodUnitCode, PeriodCount: item.PeriodCount,
-			RequiresContract: item.RequiresContract, FulfillmentModeCode: item.FulfillmentModeCode,
-			RiskDecisionCode: item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
+			FulfillmentModeCode: item.FulfillmentModeCode,
+			RiskDecisionCode:    item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
 			SetupSubtotalMinor: item.SetupSubtotalMinor, PeriodSubtotalMinor: item.PeriodSubtotalMinor,
 			SubtotalMinor: item.SubtotalMinor, DiscountMinor: item.DiscountMinor, NetAmountMinor: item.NetAmountMinor,
 			TaxAmountMinor: item.TaxAmountMinor, TotalAmountMinor: item.TotalAmountMinor,
@@ -670,18 +657,10 @@ func orderSummaryFromEntity(order entity.CommerceOrder) OrderSummary {
 		OrderNo: order.OrderNo, CustomerNo: order.CustomerNo, StatusCode: order.StatusCode,
 		RiskDecisionCode: order.RiskDecisionCode, CurrencyCode: order.CurrencyCode,
 		ItemCount: order.ItemCount, TotalAmountMinor: order.TotalAmountMinor,
-		RequiresContract: order.RequiresContract, PaymentDueAt: order.PaymentDueAt,
-		CreatedAt: createdAt, CanCancel: canCancel, CanPreparePayment: canPreparePayment,
+		PaymentDueAt: order.PaymentDueAt,
+		CreatedAt:    createdAt, CanCancel: canCancel, CanPreparePayment: canPreparePayment,
 		AssistedRequestNo: optionalString(order.AssistedRequestNo), PaymentTermCode: order.PaymentTermCode,
-		Version: order.Version, ContractOverridePolicyCode: order.ContractOverridePolicyCode,
-		ContractOverrideTemplateNo: order.ContractOverrideTemplateNo,
-		ContractDecisionSourceCode: order.ContractDecisionSourceCode,
-		ContractTemplateNo:         order.ContractTemplateNo,
-		ContractTemplateVersionNo:  order.ContractTemplateVersionNo,
-		ContractTemplateName:       order.ContractTemplateName,
-		ContractLanguageCode:       order.ContractLanguageCode,
-		ContractScopeCode:          order.ContractScopeCode,
-		ContractSigningOrderCode:   order.ContractSigningOrderCode,
+		Version: order.Version,
 	}
 }
 

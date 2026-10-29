@@ -1,7 +1,10 @@
+// This file schedules bounded provider task batches without overlapping slow callbacks.
+
 package composition
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -11,7 +14,7 @@ import (
 )
 
 const (
-	resourceTaskJobPattern     = "@every 5s"
+	resourceTaskJobPattern     = "@every 1s"
 	resourceTaskJobName        = "idc-resource-provider-tasks"
 	resourceTaskJobDisplayName = "IDC Resource Provider Tasks"
 	resourceTaskJobDescription = "Submits and observes bounded idempotent Provider operation batches."
@@ -31,10 +34,17 @@ func RegisterResourceTaskJob(
 	if !registrar.IsPrimaryNode() {
 		return nil
 	}
+	// Coalesce ticks during an active batch; database leases remain the
+	// authority across primary-node changes and process failures.
+	var running atomic.Bool
 	return registrar.AddWithMetadata(
 		ctx, resourceTaskJobPattern, resourceTaskJobName,
 		resourceTaskJobDisplayName, resourceTaskJobDescription,
 		func(jobCtx context.Context) error {
+			if !running.CompareAndSwap(false, true) {
+				return nil
+			}
+			defer running.Store(false)
 			if _, err := executor.RunWrites(jobCtx, resourcetask.ClaimInput{
 				WorkerID: resourceTaskWorkerID, Limit: resourceTaskBatchLimit,
 				LeaseDuration: resourceTaskLeaseDuration,

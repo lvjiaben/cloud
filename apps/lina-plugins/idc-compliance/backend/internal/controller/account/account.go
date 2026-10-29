@@ -5,11 +5,9 @@
 package account
 
 import (
-	"strconv"
 	"time"
 
 	"lina-plugin-idc-compliance/backend/api/account/v1"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontractpreparation"
 	"lina-plugin-idc-compliance/backend/internal/service/enterpriseverification"
 	"lina-plugin-idc-compliance/backend/internal/service/personalverification"
 	"lina-plugin-idc-core/backend/cap/identitycap"
@@ -78,19 +76,6 @@ func personalVerificationItem(value *personalverification.Verification) *v1.Pers
 		ContinuationURL: value.ContinuationURL, ReasonCode: value.ReasonCode,
 		SubmittedAt: unixMilliseconds(value.SubmittedAt), VerifiedAt: unixMilliseconds(value.VerifiedAt),
 		ExpiresAt: unixMilliseconds(value.ExpiresAt),
-	}
-}
-
-func customerContractItem(value *electroniccontractpreparation.CustomerContract) *v1.CustomerContractItem {
-	if value == nil {
-		return nil
-	}
-	return &v1.CustomerContractItem{
-		ContractNo: value.ContractNo, OrderNo: value.OrderNo, TemplateName: value.TemplateName,
-		LanguageCode: value.LanguageCode, AmountMinor: strconv.FormatInt(value.AmountMinor, 10), CurrencyCode: value.CurrencyCode,
-		StatusCode: value.StatusCode, CreatedAt: value.CreatedAt.UTC().UnixMilli(),
-		SigningExpiresAt: value.SigningExpiresAt.UTC().UnixMilli(),
-		CanOpenSigning:   value.CanOpenSigning, CanRecheck: value.CanRecheck, Version: value.Version,
 	}
 }
 

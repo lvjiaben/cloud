@@ -48,3 +48,21 @@ func TestProductFulfillmentTaskListRejectsPreSettlementFilter(t *testing.T) {
 		t.Fatalf("post-settlement task status was rejected: %v", err)
 	}
 }
+
+// Verification requires its own explicit assertion and note, not a selected
+// failure reason; DTO validation must match the real staff form payload.
+func TestNonAcceptanceVerificationRequiresExplicitAssertion(t *testing.T) {
+	request := &ProductFulfillmentNonAcceptanceVerificationReq{IntentNo: "pft_123", ExpectedVersion: 3, IdempotencyKey: "verification-00000001", Note: "Checked upstream: no instance or task exists.", ConfirmedNoCreation: true}
+	if err := g.Validator().Data(request).Run(t.Context()); err != nil {
+		t.Fatalf("valid verification rejected: %v", err)
+	}
+	request.ConfirmedNoCreation = false
+	if err := g.Validator().Data(request).Run(t.Context()); err == nil {
+		t.Fatal("missing explicit assertion accepted")
+	}
+	request.ConfirmedNoCreation = true
+	request.Note = "short"
+	if err := g.Validator().Data(request).Run(t.Context()); err == nil {
+		t.Fatal("insufficient note accepted")
+	}
+}

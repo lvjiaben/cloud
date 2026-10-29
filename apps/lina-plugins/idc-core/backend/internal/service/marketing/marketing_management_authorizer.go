@@ -156,7 +156,7 @@ func (a *managementOverviewAuthorizerImpl) AuthorizeGrantReverse(ctx context.Con
 	return a.authorize(ctx, permissionMarketingGrantReverse, CodeManagementActionNotAccessible)
 }
 
-// AuthorizeGrantReview requires the independent second-person review permission.
+// AuthorizeGrantReview requires the adjustment processing permission.
 func (a *managementOverviewAuthorizerImpl) AuthorizeGrantReview(ctx context.Context) (int, error) {
 	return a.authorize(ctx, permissionMarketingGrantReview, CodeManagementActionNotAccessible)
 }

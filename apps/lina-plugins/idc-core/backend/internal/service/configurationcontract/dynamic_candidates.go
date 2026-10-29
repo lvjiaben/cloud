@@ -1,3 +1,6 @@
+// This file validates method-batched choice directories and optional generic
+// relationships without embedding cloud product types or supplier credentials.
+
 package configurationcontract
 
 import (
@@ -9,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 )
 
 const (
@@ -46,8 +50,9 @@ type DynamicCandidateItem struct {
 }
 
 type DynamicCandidateResponse struct {
-	SchemaVersion string                 `json:"schemaVersion"`
-	Items         []DynamicCandidateItem `json:"items"`
+	Relationships []resourceinterfaceprojectioncap.ChoiceRelationship `json:"relationships,omitempty"`
+	SchemaVersion string                                              `json:"schemaVersion"`
+	Items         []DynamicCandidateItem                              `json:"items"`
 }
 
 // DynamicCandidateBatch contains all fields owned by one exact authorized
@@ -117,29 +122,29 @@ func BuildDynamicCandidateBatches(
 	return batches, nil
 }
 
-func DecodeDynamicCandidateResponse(payload []byte, expectedQueries []DynamicCandidateQuery) (ResolvedCandidates, error) {
+func DecodeDynamicCandidateResponse(payload []byte, expectedQueries []DynamicCandidateQuery) (ResolvedCandidates, []resourceinterfaceprojectioncap.ChoiceRelationship, error) {
 	if len(payload) == 0 || len(payload) > MaximumDynamicCandidatePayload || len(expectedQueries) == 0 || len(expectedQueries) > MaximumDynamicCandidateFields {
-		return nil, gerror.New("dynamic candidate response bound is invalid")
+		return nil, nil, gerror.New("dynamic candidate response bound is invalid")
 	}
 	var response DynamicCandidateResponse
 	decoder := json.NewDecoder(bytes.NewReader(payload))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&response); err != nil {
-		return nil, gerror.Wrap(err, "decode dynamic candidate response")
+		return nil, nil, gerror.Wrap(err, "decode dynamic candidate response")
 	}
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
-		return nil, gerror.New("dynamic candidate response contains trailing data")
+		return nil, nil, gerror.New("dynamic candidate response contains trailing data")
 	}
 	if response.SchemaVersion != DynamicCandidateProtocolV1 || len(response.Items) != len(expectedQueries) {
-		return nil, gerror.New("dynamic candidate response version or field set is invalid")
+		return nil, nil, gerror.New("dynamic candidate response version or field set is invalid")
 	}
 	expected := make(map[string]DynamicCandidateQuery, len(expectedQueries))
 	for _, query := range expectedQueries {
 		if !validConfigurationKey(query.FieldKey) {
-			return nil, gerror.New("dynamic candidate expected field is invalid")
+			return nil, nil, gerror.New("dynamic candidate expected field is invalid")
 		}
 		if _, duplicate := expected[query.FieldKey]; duplicate {
-			return nil, gerror.New("dynamic candidate expected fields are duplicated")
+			return nil, nil, gerror.New("dynamic candidate expected fields are duplicated")
 		}
 		expected[query.FieldKey] = query
 	}
@@ -147,17 +152,17 @@ func DecodeDynamicCandidateResponse(payload []byte, expectedQueries []DynamicCan
 	for _, item := range response.Items {
 		query, ok := expected[item.FieldKey]
 		if !ok {
-			return nil, gerror.New("dynamic candidate response contains an unknown field")
+			return nil, nil, gerror.New("dynamic candidate response contains an unknown field")
 		}
 		if _, duplicate := resolved[item.FieldKey]; duplicate {
-			return nil, gerror.New("dynamic candidate response fields are duplicated")
+			return nil, nil, gerror.New("dynamic candidate response fields are duplicated")
 		}
 		if len(item.Candidates) > MaximumDynamicCandidatesPerField {
-			return nil, gerror.New("dynamic candidate response candidate bound exceeded")
+			return nil, nil, gerror.New("dynamic candidate response candidate bound exceeded")
 		}
 		candidates := cloneCandidates(item.Candidates)
 		if err := validateDynamicCandidateSet(candidates, query.ParentValues); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		sort.Slice(candidates, func(i, j int) bool {
 			if candidates[i].ParentValue != candidates[j].ParentValue {
@@ -167,7 +172,18 @@ func DecodeDynamicCandidateResponse(payload []byte, expectedQueries []DynamicCan
 		})
 		resolved[item.FieldKey] = candidates
 	}
-	return resolved, nil
+	projection := &resourceinterfaceprojectioncap.CandidateResult{Relationships: response.Relationships}
+	for key, candidates := range resolved {
+		field := resourceinterfaceprojectioncap.CandidateField{FieldKey: key}
+		for _, candidate := range candidates {
+			field.Items = append(field.Items, resourceinterfaceprojectioncap.Candidate{Value: candidate.Value})
+		}
+		projection.Fields = append(projection.Fields, field)
+	}
+	if err := projection.ValidateRelationships(); err != nil {
+		return nil, nil, err
+	}
+	return resolved, response.Relationships, nil
 }
 
 func validateDynamicCandidateSet(candidates []*capmodel.ConfigurationCandidate, allowedExternalParents []string) error {

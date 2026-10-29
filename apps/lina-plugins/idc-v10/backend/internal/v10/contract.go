@@ -91,13 +91,14 @@ func BuildProvisionParameters(plan resourcecap.ServerProvisionPlan) (json.RawMes
 		configOption[mapping.OptionID] = encoded
 	}
 	return json.Marshal(struct {
+		Workflow           string                     `json:"workflow"`
 		PID                string                     `json:"pid"`
 		BillingCycle       string                     `json:"billingcycle"`
 		ConfigOption       map[string]json.RawMessage `json:"configoption"`
 		DownstreamClientID string                     `json:"downstream_client_id"`
 		CreateSubAccount   int                        `json:"create_sub_account"`
 		Hostname           string                     `json:"hostname,omitempty"`
-	}{product.UpstreamProductID, selected.Provision.BillingCycle, configOption, plan.ExternalPrincipalRef, 1, plan.Hostname})
+	}{"console_cart_v1", product.UpstreamProductID, selected.Provision.BillingCycle, configOption, plan.ExternalPrincipalRef, 1, plan.Hostname})
 }
 
 func componentCode(component resourcecap.ServerProvisionComponent) (string, error) {

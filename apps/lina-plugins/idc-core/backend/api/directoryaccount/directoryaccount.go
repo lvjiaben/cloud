@@ -11,6 +11,8 @@ import (
 )
 
 type IDirectoryaccountV1 interface {
+	CustomerNoteGet(ctx context.Context, req *v1.CustomerNoteGetReq) (res *v1.CustomerNoteGetRes, err error)
+	CustomerNoteUpdate(ctx context.Context, req *v1.CustomerNoteUpdateReq) (res *v1.CustomerNoteUpdateRes, err error)
 	List(ctx context.Context, req *v1.ListReq) (res *v1.ListRes, err error)
 	Services(ctx context.Context, req *v1.ServicesReq) (res *v1.ServicesRes, err error)
 }

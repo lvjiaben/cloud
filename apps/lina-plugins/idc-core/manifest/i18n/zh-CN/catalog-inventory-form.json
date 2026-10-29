@@ -1,0 +1,6 @@
+{
+  "plugin.idc-core.catalog.inventory.save": "保存库存",
+  "plugin.idc-core.catalog.inventory.conflict": "库存已被修改，未保存的输入仍保留。请重新读取后再修改。",
+  "plugin.idc-core.catalog.inventory.reload": "重新读取库存",
+  "plugin.idc-core.catalog.inventory.quantityTooLarge": "库存数量超出当前页面可准确处理的范围，无法在此保存。"
+}

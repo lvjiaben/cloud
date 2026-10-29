@@ -27,7 +27,7 @@ type ChannelColumns struct {
 	ProviderId                string // Provider descriptor identifier declared through resourcecap SPI
 	ProviderPluginId          string // Plugin that owns the frozen Provider implementation
 	DisplayName               string //
-	Endpoint                  string // Administrator-approved HTTPS API origin without credentials
+	Endpoint                  string // Administrator-approved explicit HTTP(S) API origin without credentials
 	NonSecretSettings         string // Adapter settings validated to exclude credentials and secret references
 	StatusCode                string //
 	Version                   string //

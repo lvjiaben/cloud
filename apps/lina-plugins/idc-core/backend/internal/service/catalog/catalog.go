@@ -61,13 +61,6 @@ var (
 		"The catalog management service is temporarily unavailable",
 		gcode.CodeInternalError,
 	)
-	// CodeManagementContractTemplateUnavailable rejects a required product rule
-	// when its all-customer template cannot be used locally.
-	CodeManagementContractTemplateUnavailable = bizerr.MustDefine(
-		"IDC_CATALOG_MANAGEMENT_CONTRACT_TEMPLATE_UNAVAILABLE",
-		"The selected contract template is unavailable for this product",
-		gcode.CodeInvalidOperation,
-	)
 	CodeFulfillmentPolicyBindingRequired = bizerr.MustDefine(
 		"IDC_CATALOG_FULFILLMENT_POLICY_BINDING_REQUIRED",
 		"Bind an available automation interface before selecting plugin fulfillment",
@@ -158,7 +151,7 @@ var (
 	// CodePublicationIncomplete reports a draft that is not safe to sell.
 	CodePublicationIncomplete = bizerr.MustDefine(
 		"IDC_CATALOG_PUBLICATION_INCOMPLETE",
-		"Complete the catalog product before publication",
+		"Complete product details, pricing, tax and delivery settings before putting this product on sale",
 		gcode.CodeInvalidOperation,
 	)
 	// CodePublicationUnavailable hides lower-level publication failures.

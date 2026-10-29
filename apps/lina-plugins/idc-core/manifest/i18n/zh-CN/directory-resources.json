@@ -1,27 +1,27 @@
 {
   "menu": {
     "plugin:idc-core:product-directories": {
-      "title": "会员导航"
+      "title": "用户中心菜单"
     },
     "plugin:idc-core:product-directories:create": {
-      "title": "新增会员导航"
+      "title": "新增用户中心菜单"
     },
     "plugin:idc-core:product-directories:update": {
-      "title": "编辑会员导航"
+      "title": "编辑用户中心菜单"
     }
   },
   "error": {
     "idc": {
       "product": {
         "directory": {
-          "invalid": "会员导航配置无效，请检查菜单类型和目标页面",
+          "invalid": "用户中心菜单配置无效，请检查菜单类型和目标页面",
           "not": {
-            "accessible": "无法访问该会员导航"
+            "accessible": "无法访问该用户中心菜单"
           },
           "conflict": "菜单已变更或商品已归属其他菜单，请刷新并检查关联商品",
-          "unavailable": "会员导航暂时不可用，请稍后重试",
+          "unavailable": "用户中心菜单暂时不可用，请稍后重试",
           "has": {
-            "products": "这个菜单还有商品，请先到商品编辑中更换或取消会员导航，再修改菜单类型。"
+            "products": "这个菜单还有商品，请先到商品编辑中更换或取消用户中心菜单，再修改菜单类型。"
           }
         }
       }

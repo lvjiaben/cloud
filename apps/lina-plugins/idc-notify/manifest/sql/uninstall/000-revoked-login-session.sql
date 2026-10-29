@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS plugin_idc_notify_revoked_login_session;

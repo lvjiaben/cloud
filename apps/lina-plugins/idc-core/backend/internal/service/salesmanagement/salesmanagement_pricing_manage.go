@@ -104,10 +104,23 @@ func (s *serviceImpl) SavePrice(ctx context.Context, input PriceInput) (PriceRul
 		if err := s.database.Model(dao.CatalogProduct.Table()).Ctx(ctx).Where(do.CatalogProduct{TenantId: 0, ProductNo: input.ProductNo}).Scan(&product); err != nil {
 			return err
 		}
-		if product == nil || product.CurrentVersionNo == nil {
+		if product == nil || (product.StatusCode != "draft" && product.StatusCode != statusActive) {
 			return bizerr.NewCode(codeInvalid)
 		}
-		count, err := s.database.Model(dao.CatalogBillingRule.Table()+" b").Ctx(ctx).InnerJoin(dao.CatalogPrice.Table()+" p", "p.billing_rule_no=b.billing_rule_no AND p.version_no=b.version_no").Where("b.tenant_id", 0).Where("b.version_no", *product.CurrentVersionNo).Where("b.charge_type_code", input.ChargeTypeCode).Where("b.period_unit_code", input.PeriodUnitCode).Where("b.period_count", input.PeriodCount).Where("b.status_code", statusActive).Where("p.currency_code", input.CurrencyCode).Where("p.status_code", statusActive).Count()
+		var versionNo string
+		if product.CurrentVersionNo != nil {
+			versionNo = *product.CurrentVersionNo
+		} else {
+			value, loadErr := s.database.Model(do.CatalogProductVersion{}).Ctx(ctx).Where(do.CatalogProductVersion{TenantId: 0, ProductNo: input.ProductNo, StatusCode: "draft"}).OrderDesc("version_number").Value("version_no")
+			if loadErr != nil {
+				return loadErr
+			}
+			versionNo = value.String()
+		}
+		if versionNo == "" {
+			return bizerr.NewCode(codeInvalid)
+		}
+		count, err := s.database.Model(dao.CatalogBillingRule.Table()+" b").Ctx(ctx).InnerJoin(dao.CatalogPrice.Table()+" p", "p.billing_rule_no=b.billing_rule_no AND p.version_no=b.version_no").Where("b.tenant_id", 0).Where("b.version_no", versionNo).Where("b.charge_type_code", input.ChargeTypeCode).Where("b.period_unit_code", input.PeriodUnitCode).Where("b.period_count", input.PeriodCount).Where("b.status_code", statusActive).Where("p.currency_code", input.CurrencyCode).Where("p.status_code", statusActive).WhereNull("p.option_no").WhereNull("p.configuration_price_dimension_no").Count()
 		if err != nil {
 			return err
 		}

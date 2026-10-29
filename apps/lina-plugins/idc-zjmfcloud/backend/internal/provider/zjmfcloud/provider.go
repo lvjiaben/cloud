@@ -25,7 +25,7 @@ const (
 	// ProviderID is the stable declaration identity for the administrator v1 adapter.
 	ProviderID = "zjmfcloud-v1"
 
-	adapterVersion  = "zjmfcloud-v1.7.0"
+	adapterVersion  = "zjmfcloud-v1.7.1"
 	usernameBinding = "username"
 	passwordBinding = "password"
 

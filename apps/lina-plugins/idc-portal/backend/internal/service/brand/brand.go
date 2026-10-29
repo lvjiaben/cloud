@@ -14,6 +14,21 @@ type LocalizedText struct {
 
 // Config is the public projection of the selected template and shared website configuration.
 type Config struct {
+	HeaderLogoURL             string `json:"headerLogoUrl,omitempty"`
+	FooterLogoURL             string `json:"footerLogoUrl,omitempty"`
+	Copyright                 string `json:"copyright,omitempty"`
+	BusinessQQ                string `json:"businessQq,omitempty"`
+	CompanyAddress            string `json:"companyAddress,omitempty"`
+	EnterpriseWechatQRCodeURL string `json:"enterpriseWechatQrCodeUrl,omitempty"`
+	WechatOfficialQRCodeURL   string `json:"wechatOfficialQrCodeUrl,omitempty"`
+	TelecomLicenseNumber      string `json:"telecomLicenseNumber,omitempty"`
+	TelecomLicenseURL         string `json:"telecomLicenseUrl,omitempty"`
+
+	CompanyName      string             `json:"companyName"`
+	ICPNumber        string             `json:"icpNumber,omitempty"`
+	ICPURL           string             `json:"icpUrl,omitempty"`
+	PoliceNumber     string             `json:"policeNumber,omitempty"`
+	PoliceURL        string             `json:"policeUrl,omitempty"`
 	TemplateConfig   map[string]any     `json:"templateConfig,omitempty"`
 	TemplateEntry    *templatecap.Entry `json:"templateEntry,omitempty"`
 	TemplateRenderer string             `json:"templateRenderer"`

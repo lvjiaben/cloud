@@ -11,14 +11,15 @@ import (
 )
 
 type publicationTestAutomationReadiness struct {
-	ready bool
-	err   error
-	calls int
+	ready  bool
+	reason PublicationReadinessReason
+	err    error
+	calls  int
 }
 
-func (r *publicationTestAutomationReadiness) CheckPublicationReadiness(context.Context, string) (bool, error) {
+func (r *publicationTestAutomationReadiness) CheckPublicationReadiness(context.Context, string) (PublicationReadinessCheck, error) {
 	r.calls++
-	return r.ready, r.err
+	return PublicationReadinessCheck{Passed: r.ready, ReasonCode: r.reason}, r.err
 }
 
 func TestNewPublicationPreviewRequiresFailClosedDependencies(t *testing.T) {
@@ -53,14 +54,17 @@ func TestPublicationPreviewAuthorizesBeforeInputAndPersistence(t *testing.T) {
 
 func TestPublicationPreviewAutomationErrorClassification(t *testing.T) {
 	for _, testCase := range []struct {
-		name      string
-		readiness *publicationTestAutomationReadiness
-		want      bool
-		wantErr   *bizerr.Code
+		name       string
+		readiness  *publicationTestAutomationReadiness
+		want       bool
+		wantReason PublicationReadinessReason
+		wantErr    *bizerr.Code
 	}{
 		{name: "accepting or unbound", readiness: &publicationTestAutomationReadiness{ready: true}, want: true},
 		{name: "stopped", readiness: &publicationTestAutomationReadiness{}, want: false},
-		{name: "evidence conflict", readiness: &publicationTestAutomationReadiness{err: bizerr.NewCode(CodeManagementConflict)}, want: false},
+		{name: "evidence conflict", readiness: &publicationTestAutomationReadiness{ready: true, err: bizerr.NewCode(CodeManagementConflict)}, want: false, wantReason: PublicationReasonConfigurationIncomplete},
+		{name: "provider unavailable", readiness: &publicationTestAutomationReadiness{reason: PublicationReasonProviderUnavailable}, wantReason: PublicationReasonProviderUnavailable},
+		{name: "missing prices", readiness: &publicationTestAutomationReadiness{reason: PublicationReasonConfigurationPricesMissing}, wantReason: PublicationReasonConfigurationPricesMissing},
 		{name: "host unavailable", readiness: &publicationTestAutomationReadiness{err: errors.New("host unavailable")}, wantErr: CodePublicationUnavailable},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -75,7 +79,7 @@ func TestPublicationPreviewAutomationErrorClassification(t *testing.T) {
 				}
 				return
 			}
-			if err != nil || ready != testCase.want {
+			if err != nil || ready.Passed != testCase.want || ready.ReasonCode != testCase.wantReason {
 				t.Fatalf("automation readiness=%v err=%v want=%v", ready, err, testCase.want)
 			}
 		})

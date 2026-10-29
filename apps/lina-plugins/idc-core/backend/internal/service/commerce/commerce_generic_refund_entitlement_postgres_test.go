@@ -24,6 +24,7 @@ func TestGenericEntitlementRefundFreezesQuantityAndEntitlementPostgreSQL(t *test
 	management, err := billingservice.NewManagementRefundService(
 		scenario.database, refundManagementAuthorizerStub{actor: reviewerID},
 		&refundRecentAuthStub{actor: reviewerID}, refundBusinessAuditStub{},
+		newFinancialSettlementCreditService(t, scenario),
 	)
 	if err != nil {
 		t.Fatal(err)

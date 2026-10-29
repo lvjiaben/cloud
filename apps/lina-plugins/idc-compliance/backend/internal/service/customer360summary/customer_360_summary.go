@@ -25,7 +25,7 @@ func NewLazy(source func() gdb.DB) (*Contributor, error) {
 }
 
 func (*Contributor) Codes() []customer360cap.Code {
-	return []customer360cap.Code{customer360cap.CodeContracts, customer360cap.CodeTaxInvoices}
+	return []customer360cap.Code{customer360cap.CodeTaxInvoices}
 }
 
 func (c *Contributor) BatchCount(
@@ -53,15 +53,13 @@ func (c *Contributor) BatchCount(
 		values[index], arguments[index] = "(?)", customerNo
 	}
 	query := `WITH requested(customer_no) AS (VALUES ` + strings.Join(values, ",") + `)
-SELECT r.customer_no,'contracts' AS code,COUNT(c.id) AS total FROM requested r
-LEFT JOIN plugin_idc_compliance_contract c ON c.tenant_id=0 AND c.customer_no=r.customer_no GROUP BY r.customer_no
-UNION ALL SELECT r.customer_no,'tax_invoices',COUNT(i.id) FROM requested r
+SELECT r.customer_no,'tax_invoices' AS code,COUNT(i.id) AS total FROM requested r
 LEFT JOIN plugin_idc_compliance_tax_invoice i ON i.tenant_id=0 AND i.customer_no=r.customer_no GROUP BY r.customer_no`
 	rows, err := database.GetAll(ctx, query, arguments...)
 	if err != nil {
 		return nil, gerror.Wrap(err, "count compliance customer 360 summaries")
 	}
-	if len(rows) != len(customerNos)*2 {
+	if len(rows) != len(customerNos) {
 		return nil, gerror.New("compliance customer 360 summary is incomplete")
 	}
 	result := make([]customer360cap.Count, 0, len(rows))

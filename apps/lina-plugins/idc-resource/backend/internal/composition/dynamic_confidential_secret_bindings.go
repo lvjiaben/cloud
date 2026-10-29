@@ -55,7 +55,7 @@ func accessConfidentialProviderSecret(ctx context.Context, accessor secretcap.Ac
 	var safeFailure error
 	err := accessor.Access(ctx, request, func(value []byte) error {
 		consumeErr := consume(value)
-		safeFailure = resourcecap.SafeProviderConnectionError(consumeErr)
+		safeFailure = safeConfidentialProviderError(consumeErr)
 		return consumeErr
 	})
 	if err != nil && safeFailure != nil {

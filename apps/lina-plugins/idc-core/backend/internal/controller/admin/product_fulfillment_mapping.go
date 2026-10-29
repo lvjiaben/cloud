@@ -1,3 +1,4 @@
+// This file maps authorized fulfillment facts to staff-only API projections.
 package admin
 
 import (
@@ -28,6 +29,8 @@ func toAPIProductFulfillmentSummary(input *productfulfillment.IntentDetail) *v1.
 		UpdatedAt: input.UpdatedAt.UnixMilli(), Version: input.Version,
 		CanReviewApprove: input.CanReviewApprove, CanReviewReject: input.CanReviewReject,
 		CanTakeover: input.CanTakeover, CanManualConclude: input.CanManualConclude,
+		CanRecoverPreparation: input.CanRecoverPreparation,
+		CanRequestRefund:      input.CanRequestRefund,
 	}
 }
 
@@ -44,10 +47,34 @@ func toAPIProductFulfillmentDetail(input *productfulfillment.IntentDetail) *v1.P
 			SafeNote: event.SafeNote,
 		})
 	}
+	var preparation *v1.ProductFulfillmentManagementPreparation
+	if input.ManagementPreparation != nil {
+		preparation = &v1.ProductFulfillmentManagementPreparation{StatusCode: input.ManagementPreparation.StatusCode, AttemptCount: input.ManagementPreparation.AttemptCount, FailureCode: input.ManagementPreparation.FailureCode}
+	}
+	var execution *v1.ProductFulfillmentExecutionDiagnostic
+	if input.Execution != nil {
+		execution = &v1.ProductFulfillmentExecutionDiagnostic{
+			ResponseExcerpt: input.Execution.ResponseExcerpt,
+			ResourceTaskNo:  input.Execution.ResourceTaskNo, StatusCode: input.Execution.StatusCode,
+			PhaseCode: input.Execution.PhaseCode, LastResultCode: input.Execution.LastResultCode,
+			AttemptCount: input.Execution.AttemptCount, FailureCode: input.Execution.FailureCode,
+		}
+	}
+	records := make([]v1.ProductFulfillmentRecoveryConfigurationRecord, 0, len(input.RecoveryConfigurations))
+	for _, record := range input.RecoveryConfigurations {
+		records = append(records, v1.ProductFulfillmentRecoveryConfigurationRecord{Configuration: record.Configuration, OccurredAt: record.OccurredAt.UnixMilli()})
+	}
+	verifications := make([]v1.ProductFulfillmentNonAcceptanceRecord, 0, len(input.NonAcceptanceVerifications))
+	for _, record := range input.NonAcceptanceVerifications {
+		verifications = append(verifications, v1.ProductFulfillmentNonAcceptanceRecord{ProviderTaskNo: record.ProviderTaskNo, ActorUserID: record.ActorUserID, Note: record.Note, VerifiedAt: record.VerifiedAt.UnixMilli()})
+	}
 	return &v1.ProductFulfillmentTaskDetail{
+		CanRepairManagement: input.CanRepairManagement, CanVerifyNonAcceptance: input.CanVerifyNonAcceptance, NonAcceptanceVerifications: verifications,
 		ProductFulfillmentTaskSummary: *toAPIProductFulfillmentSummary(input),
-		FinanciallySettled:            !input.FinanciallySettledAt.IsZero(),
-		Events:                        events,
+		Execution:                     execution, ManagementPreparation: preparation,
+		RecoveryConfigurations: records,
+		FinanciallySettled:     !input.FinanciallySettledAt.IsZero(),
+		Events:                 events,
 		ReviewApprovalReasons: mapProductFulfillmentReasonOptions(
 			input.ReasonOptions[fulfillmentReasonReviewApprove],
 		),
@@ -63,6 +90,7 @@ func toAPIProductFulfillmentDetail(input *productfulfillment.IntentDetail) *v1.P
 		ManualUnableReasons: mapProductFulfillmentReasonOptions(
 			input.ReasonOptions[fulfillmentReasonConcludeUnable],
 		),
+		RecoveryReasons: mapProductFulfillmentReasonOptions(input.ReasonOptions["recover_preparation"]),
 	}
 }
 

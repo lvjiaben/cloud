@@ -49,7 +49,7 @@ func TestManagedGuestRejectsDirectProductFulfillmentBeforeOutbound(t *testing.T)
 // naming rules fail before payment and never use supplier outbound access.
 func TestGenerationValidationIsPureBeforePayment(t *testing.T) {
 	t.Parallel()
-	for _, configuration := range []string{`{"hostname_prefix":"Xxun","hostname_length":12,"password_length":12}`, `{"hostname_prefix":"longprefix","hostname_length":4}`} {
+	for _, configuration := range []string{`{"hostname_prefix":"Xxun","hostname_length":12,"password_length":12}`, `{"hostname_prefix":"longprefix","hostname_length":4}`, `{"port":"65536"}`, `{"system_write_mbps":-1}`} {
 		request := productfulfillmentcap.ConfigurationValidationRequest{Version: "v1", ProductConfiguration: json.RawMessage(configuration)}
 		payload, err := json.Marshal(request)
 		if err != nil {

@@ -1,0 +1,15 @@
+{
+  "plugin.idc-core.catalog.priceEditor.quantityTab": "数量与阶梯价格",
+  "plugin.idc-core.catalog.priceEditor.save": "保存配置价格",
+  "plugin.idc-core.catalog.priceEditor.changed": "商品或价格已被修改，当前输入保留。请重新读取后再修改。",
+  "plugin.idc-core.catalog.priceEditor.reloadConfirm": "重新读取会替换尚未保存的输入，是否继续？",
+  "plugin.idc-core.catalog.priceEditor.reload": "重新读取价格",
+  "plugin.idc-core.catalog.priceEditor.refreshPending": "价格已保存，最新结果尚未读取。请重新读取确认，无需重复保存。",
+  "plugin.idc-core.catalog.priceEditor.loadFailed": "当前配置价格暂时无法读取，请重新读取后重试。",
+  "plugin.idc-core.catalog.priceEditor.saveFailed": "本次价格未能确认保存，输入已保留。请重试或重新读取当前价格。",
+  "plugin.idc-core.catalog.priceEditor.noCandidates": "暂无可维护的配置价格，请先保存客户选项并检查商品设置。",
+  "plugin.idc-core.catalog.priceEditor.noQuantityCandidates": "暂无可在此计价的数量配置，请先保存客户选项，或使用固定规格价格表。",
+  "plugin.idc-core.catalog.priceEditor.periodRequired": "请先在计费与售价中启用计费周期并保存基础售价，再设置配置价格。",
+  "plugin.idc-core.catalog.priceEditor.openBilling": "查看计费与售价",
+  "plugin.idc-core.catalog.priceEditor.enabled": "启用此价格"
+}

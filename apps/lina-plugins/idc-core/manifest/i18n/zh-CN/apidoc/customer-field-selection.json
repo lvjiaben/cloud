@@ -5,5 +5,8 @@
   "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.candidateValues.dc": "允许购买的静态选项，必须是插件声明选项的子集。",
   "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.customerConfigurableFields.dc": "可由商家开启的客户配置。技术边界不代表上游实际可售套餐。",
   "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.customerFieldSelections.dc": "商家明确开启的客户配置及可售范围。",
-  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfigurationUpdateReq.fields.customerFieldSelections.dc": "明确开启的可选客户配置；不传则关闭全部需商家开启的字段。"
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfigurationUpdateReq.fields.customerFieldSelections.dc": "明确开启的可选客户配置；不传则关闭全部需商家开启的字段。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.displayNameZhCN.dc": "商家自定义中文显示名称，留空沿用连接器名称。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.displayNameEnUS.dc": "商家自定义英文显示名称，留空沿用连接器名称。",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.sortOrder.dc": "已启用自定义字段的显示顺序，范围为0至1024。"
 }

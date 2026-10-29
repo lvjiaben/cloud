@@ -28,8 +28,8 @@
   "plugins.idc_payment.api.account.v1.PaymentStatusReq.schema.dc": "只返回本地确认状态。浏览器返回不会把支付改成成功；渠道支持时可排队执行经过验证的主动查询。",
   "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.meta.tags": "IDC 支付回调",
   "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.meta.summary": "接收支付渠道回调",
-  "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.meta.dc": "验证准确的商户渠道回调，并追加一条不可变接收记录和异步任务。本接口不会在回调请求内入账或结清订单。",
-  "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.schema.dc": "验证准确的商户渠道回调，并追加一条不可变接收记录和异步任务。本接口不会在回调请求内入账或结清订单。",
+  "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.meta.dc": "验证准确商户渠道的通知并追加不可变接收记录和异步任务；GET仅接收易支付签名服务器通知，其他渠道沿用POST。本接口不在请求内入账或结清订单。",
+  "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.schema.dc": "验证准确商户渠道的通知并追加不可变接收记录和异步任务；GET仅接收易支付签名服务器通知，其他渠道沿用POST。本接口不在请求内入账或结清订单。",
   "plugins.idc_payment.api.callback.v1.PaymentReceiveReq.fields.channelNo.dc": "用于选择准确验签凭据的已配置支付通道编号",
   "plugins.idc_payment.api.callback.v1.RefundReceiveReq.meta.tags": "IDC 支付回调",
   "plugins.idc_payment.api.callback.v1.RefundReceiveReq.meta.summary": "接收退款渠道回调",
@@ -58,5 +58,7 @@
   "plugins.idc_payment.api.admin.v1.ReconciliationSupplementSubmitReq.meta.dc": "把一条精确匹配的渠道成功差异冻结并提交复核。调用方不能修改支付、客户、通道、币种、金额或渠道交易事实。",
   "plugins.idc_payment.api.admin.v1.ReconciliationSupplementReviewReq.meta.tags": "IDC 支付对账",
   "plugins.idc_payment.api.admin.v1.ReconciliationSupplementReviewReq.meta.summary": "复核受控补入账申请",
-  "plugins.idc_payment.api.admin.v1.ReconciliationSupplementReviewReq.meta.dc": "必须由另一名已登录员工复核。批准时重新核对全部冻结事实，并且只排队进入原有幂等支付确认流程；驳回只能选择固定原因。"
+  "plugins.idc_payment.api.admin.v1.ReconciliationSupplementReviewReq.meta.dc": "必须由另一名已登录员工复核。批准时重新核对全部冻结事实，并且只排队进入原有幂等支付确认流程；驳回只能选择固定原因。",
+  "plugins.idc_payment.api.account.v1.PaymentStatusRes.fields.invoiceNo.dc": "当前客户付款对应的账单号；充值或信用还款时不返回",
+  "plugins.idc_payment.api.account.v1.PaymentStatusRes.fields.orderNo.dc": "当前客户付款对应的订单号；充值或信用还款时不返回"
 }

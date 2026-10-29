@@ -1,3 +1,6 @@
+// This file records currency-specific credit policies and authorized single-staff
+// decisions, preserving immutable legacy approvals and atomic account activation.
+
 package billing
 
 import (
@@ -9,6 +12,8 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/internal/dao"
+	"lina-plugin-idc-core/backend/internal/model/do"
 )
 
 type creditPolicyRow struct {
@@ -48,6 +53,7 @@ type creditApplicationRow struct {
 }
 
 type creditReviewRow struct {
+	ContentDigest  string `orm:"content_digest"`
 	DecisionCode   string `orm:"decision_code"`
 	CommentDigest  string `orm:"comment_digest"`
 	EvidenceDigest string `orm:"evidence_digest"`
@@ -185,9 +191,6 @@ FROM (
 			return bizerr.NewCode(CodeCreditConflict)
 		}
 		approvalCount := 1
-		if command.RequestedLimitMinor >= policy.DualReviewThresholdMinor {
-			approvalCount = 2
-		}
 		command.RequiredApprovalCount = approvalCount
 		if _, insertErr := s.database.Exec(ctx, `
 INSERT INTO plugin_idc_core_credit_application (
@@ -236,13 +239,21 @@ func (s *serviceImpl) ReviewCreditApplication(
 		}
 		var existing *creditReviewRow
 		if loadErr = s.database.GetScan(ctx, &existing, `
-SELECT decision_code, comment_digest, evidence_digest
+SELECT decision_code, comment_digest, evidence_digest, content_digest
 FROM plugin_idc_core_credit_application_review
 WHERE tenant_id = 0 AND application_no = ? AND reviewer_id = ?`,
 			normalized.ApplicationNo, normalized.ReviewerID); loadErr != nil {
 			return gerror.Wrap(loadErr, "load existing credit review")
 		}
 		if existing != nil {
+			// A legacy application with one recorded approval no longer needs a
+			// different staff member. Preserve that immutable decision and let
+			// its authorized operator complete activation, including safe replay.
+			if application.RequiredApprovalCount == 2 && application.ReviewCount == 1 &&
+				existing.DecisionCode == string(CreditDecisionApprove) && normalized.Decision == CreditDecisionApprove {
+				result, loadErr = s.completeLegacyCreditApproval(ctx, application, normalized, existing)
+				return loadErr
+			}
 			if existing.DecisionCode != string(normalized.Decision) ||
 				existing.CommentDigest != normalized.CommentDigest ||
 				existing.EvidenceDigest != normalized.EvidenceDigest {
@@ -256,7 +267,6 @@ WHERE tenant_id = 0 AND application_no = ? AND reviewer_id = ?`,
 			return nil
 		}
 		if application.StatusCode != "pending_review" ||
-			(application.RequestActorType == "staff" && application.RequestedBy == normalized.ReviewerID) ||
 			application.ReviewCount >= application.RequiredApprovalCount {
 			return bizerr.NewCode(CodeCreditConflict)
 		}
@@ -295,11 +305,9 @@ INSERT INTO plugin_idc_core_credit_application_review (
 			normalized.EvidenceDigest, reviewDigest); insertErr != nil {
 			return gerror.Wrap(insertErr, "append credit application review")
 		}
-		finalStatus := "pending_review"
+		finalStatus := "approved"
 		if normalized.Decision == CreditDecisionReject {
 			finalStatus = "rejected"
-		} else if sequence == application.RequiredApprovalCount {
-			finalStatus = "approved"
 		}
 		if finalStatus != "pending_review" {
 			if _, updateErr := s.database.Exec(ctx, `
@@ -581,4 +589,40 @@ func creditApplicationResult(result *CreditApplication, err error) (*CreditAppli
 		return nil, err
 	}
 	return nil, bizerr.WrapCode(err, CodeCreditUnavailable)
+}
+
+// completeLegacyCreditApproval completes a stored first approval without changing
+// its author, evidence or historical required-count snapshot. The caller holds
+// the application row lock and owns the transaction and action authorization.
+func (s *serviceImpl) completeLegacyCreditApproval(ctx context.Context, application *creditApplicationRow, review CreditReviewInput, existing *creditReviewRow) (*CreditApplication, error) {
+	if application.StatusCode == "approved" {
+		return projectCreditApplication(application, true), nil
+	}
+	if application.StatusCode != "pending_review" {
+		return nil, bizerr.NewCode(CodeCreditConflict)
+	}
+	valid, validErr := s.database.GetValue(ctx, `SELECT CURRENT_TIMESTAMP < ?`, application.RequestedValidUntil)
+	if validErr != nil {
+		return nil, gerror.Wrap(validErr, "validate legacy credit application period")
+	}
+	if !valid.Bool() {
+		return nil, bizerr.NewCode(CodeCreditConflict)
+	}
+	decidedAt, clockErr := databaseTime(ctx, s.database)
+	if clockErr != nil {
+		return nil, clockErr
+	}
+	if _, updateErr := s.database.Model(dao.CreditApplication.Table()).Ctx(ctx).
+		Where(do.CreditApplication{TenantId: 0, ApplicationNo: application.ApplicationNo, StatusCode: creditApplicationCommandStatusPendingReview}).
+		Data(do.CreditApplication{StatusCode: string(CreditDecisionApprove), DecidedAt: &decidedAt, Version: gdb.Raw("version + 1")}).Update(); updateErr != nil {
+		return nil, gerror.Wrap(updateErr, "complete legacy credit application")
+	}
+	if activateErr := s.activateApprovedCreditAccount(ctx, application, review, existing.ContentDigest); activateErr != nil {
+		return nil, activateErr
+	}
+	application, loadErr := loadCreditApplication(ctx, s.database, review.ApplicationNo, false)
+	if loadErr != nil {
+		return nil, loadErr
+	}
+	return projectCreditApplication(application, false), nil
 }

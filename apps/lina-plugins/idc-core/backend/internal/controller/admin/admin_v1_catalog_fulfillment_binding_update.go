@@ -10,9 +10,11 @@ import (
 )
 
 func (c *ControllerV1) CatalogFulfillmentBindingUpdate(ctx context.Context, req *v1.CatalogFulfillmentBindingUpdateReq) (res *v1.CatalogFulfillmentBindingUpdateRes, err error) {
-	binding, err := c.productAutomation.Bind(ctx, productautomation.BindInput{VersionNo: req.VersionNo, InterfaceInstanceNo: req.InterfaceInstanceNo})
-	if err != nil {
-		return nil, err
-	}
-	return &v1.CatalogFulfillmentBindingUpdateRes{Binding: mapAutomationBinding(binding)}, nil
+	return saveCatalogSettings(ctx, c.catalogPublication, req.VersionNo, func(ctx context.Context) (*v1.CatalogFulfillmentBindingUpdateRes, error) {
+		binding, err := c.productAutomation.Bind(ctx, productautomation.BindInput{VersionNo: req.VersionNo, InterfaceInstanceNo: req.InterfaceInstanceNo})
+		if err != nil {
+			return nil, err
+		}
+		return &v1.CatalogFulfillmentBindingUpdateRes{Binding: mapAutomationBinding(binding)}, nil
+	})
 }

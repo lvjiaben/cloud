@@ -135,23 +135,32 @@ func (s *serviceImpl) Delete(ctx context.Context, ids []int) error {
 	}
 	validIDs := make([]int, 0, len(ids))
 	for _, id := range ids {
-		if id <= 0 {
-			continue
+		if id > 0 {
+			validIDs = append(validIDs, id)
 		}
-		count, err := tenantspi.ApplyPluginTableFilter(ctx, s.pluginTableFilter(), dao.UserPost.Ctx(ctx), "").
-			Where(colUserPostPostID, id).
-			Count()
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			return bizerr.NewCode(CodePostAssignedDeleteDenied, bizerr.P("id", id))
-		}
-		validIDs = append(validIDs, id)
 	}
 	if len(validIDs) == 0 {
 		return bizerr.NewCode(CodePostValidIDRequired)
 	}
+	// Resolve assigned posts once for the whole batch, retaining tenant filtering
+	// and the original first-conflict error order.
+	var assigned []struct {
+		PostID int `orm:"post_id"`
+	}
+	if err := tenantspi.ApplyPluginTableFilter(ctx, s.pluginTableFilter(), dao.UserPost.Ctx(ctx), "").
+		Fields(colUserPostPostID).WhereIn(colUserPostPostID, validIDs).Group(colUserPostPostID).Scan(&assigned); err != nil {
+		return err
+	}
+	occupied := make(map[int]struct{}, len(assigned))
+	for _, row := range assigned {
+		occupied[row.PostID] = struct{}{}
+	}
+	for _, id := range validIDs {
+		if _, exists := occupied[id]; exists {
+			return bizerr.NewCode(CodePostAssignedDeleteDenied, bizerr.P("id", id))
+		}
+	}
+
 	_, err := tenantspi.ApplyPluginTableFilter(ctx, s.pluginTableFilter(), dao.Post.Ctx(ctx), "").WhereIn(colPostID, validIDs).Delete()
 	return err
 }

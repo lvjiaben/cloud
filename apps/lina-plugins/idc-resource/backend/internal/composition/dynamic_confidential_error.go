@@ -55,3 +55,16 @@ func confidentialAuthenticationResponseError(content []byte) error {
 	}
 	return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 }
+
+// safeConfidentialProviderError retains only validated owner classifications,
+// including definitive principal rejection, without supplier messages or causes.
+func safeConfidentialProviderError(err error) error {
+	if safe := resourcecap.SafeProviderConnectionError(err); safe != nil {
+		return safe
+	}
+	var typed *resourcecap.ProviderCallError
+	if errors.As(err, &typed) && typed != nil && typed.Validate() == nil {
+		return resourcecap.NormalizeProviderError(typed)
+	}
+	return nil
+}

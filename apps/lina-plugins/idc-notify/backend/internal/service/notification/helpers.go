@@ -45,16 +45,6 @@ func (s *serviceImpl) requireRecentLogin(ctx context.Context, actor int) error {
 	return nil
 }
 
-func (s *serviceImpl) currentUser(ctx context.Context) (int, error) {
-	current := s.bizctx.Current(ctx)
-	directCustomer := current.ActingUserID == 0 && !current.IsImpersonation && !current.ActingAsTenant
-	delegatedCustomer := current.IsImpersonation && current.ActingUserID > 0 && current.ActingUserID != current.UserID && !current.ActingAsTenant
-	if current.UserID <= 0 || current.TenantID != 0 || (!directCustomer && !delegatedCustomer) {
-		return 0, bizerr.NewCode(CodeNotAccessible)
-	}
-	return current.UserID, nil
-}
-
 func digestText(parts ...string) string {
 	hash := sha256.New()
 	for _, part := range parts {
@@ -116,7 +106,7 @@ func publicError(err error) error {
 		return nil
 	}
 	for _, code := range []*bizerr.Code{
-		CodeInvalid, CodeNotAccessible, CodeRecentAuthenticationRequired, CodeConflict,
+		CodeInvalid, CodeNotAccessible, CodePasswordChanged, CodeRecentAuthenticationRequired, CodeConflict, CodeContactManualVerification,
 		CodeChannelUnavailable, CodeHumanVerificationUnavailable, CodeVerificationInvalid,
 		CodeVerificationExpired, CodeVerificationRateLimited, CodeVerificationResultUnknown,
 	} {

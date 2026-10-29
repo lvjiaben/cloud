@@ -1194,7 +1194,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_content_category (
 CREATE INDEX IF NOT EXISTS idx_idc_content_category_directory
     ON plugin_idc_core_content_category ("tenant_id", "content_type", "status_code", "sort_order", "id");
 
--- Purpose: News, announcement, knowledge, and download content with stable public path and authoritative validity version.
+-- Purpose: News, knowledge, and download content with stable public path and authoritative validity version.
 -- 用途：保存内容明细相关数据。
 CREATE TABLE IF NOT EXISTS plugin_idc_core_content_item (
     "id" BIGSERIAL PRIMARY KEY,
@@ -1223,17 +1223,8 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_content_item (
     CONSTRAINT uk_idc_content_item_no UNIQUE ("content_no"),
     CONSTRAINT uk_idc_content_item_public_path UNIQUE ("public_path"),
     CONSTRAINT ck_idc_content_item_tenant CHECK ("tenant_id" = 0),
-    CONSTRAINT ck_idc_content_item_type CHECK ("content_type" IN ('news', 'announcement', 'knowledge', 'download')),
-    CONSTRAINT ck_idc_content_item_category CHECK (
-        ("content_type" = 'announcement' AND "category_no" IS NULL) OR "content_type" <> 'announcement'
-    ),
-    CONSTRAINT ck_idc_content_item_visibility CHECK (
-        "visibility_code" IN (
-            'public', 'all_logged_in', 'customer_group', 'internal',
-            'specific_customers', 'specific_services'
-        ) AND
-        ("visibility_code" NOT IN ('specific_customers', 'specific_services') OR "content_type" = 'announcement')
-    ),
+    CONSTRAINT ck_idc_content_item_type CHECK ("content_type" IN ('news', 'knowledge', 'download')),
+    CONSTRAINT ck_idc_content_item_visibility CHECK ("visibility_code" IN ('public','all_logged_in','customer_group','internal')),
     CONSTRAINT ck_idc_content_item_title CHECK (length("title") BETWEEN 1 AND 256),
     CONSTRAINT ck_idc_content_item_public_path CHECK ("public_path" ~ '^/[a-z0-9][a-z0-9_/-]{0,158}$'),
     CONSTRAINT ck_idc_content_item_status CHECK ("status_code" IN ('draft', 'published', 'offline', 'deleted')),
@@ -1257,23 +1248,6 @@ ALTER TABLE plugin_idc_core_content_item
 ALTER TABLE plugin_idc_core_content_item
     ADD CONSTRAINT ck_idc_content_item_public_path CHECK ("public_path" ~ '^/[a-z0-9][a-z0-9_/-]{0,158}$');
 
--- Purpose: Stores Content Customer Scope records.
--- 用途：保存内容客户范围相关数据。
-CREATE TABLE IF NOT EXISTS plugin_idc_core_content_customer_scope (
-    "id" BIGSERIAL PRIMARY KEY,
-    "tenant_id" BIGINT NOT NULL DEFAULT 0,
-    "content_no" VARCHAR(40) NOT NULL,
-    "customer_no" VARCHAR(40) NOT NULL,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_idc_content_customer_scope UNIQUE ("content_no", "customer_no"),
-    CONSTRAINT ck_idc_content_customer_scope_tenant CHECK ("tenant_id" = 0),
-    CONSTRAINT fk_idc_content_customer_scope_item FOREIGN KEY ("content_no")
-        REFERENCES plugin_idc_core_content_item ("content_no")
-);
-
-CREATE INDEX IF NOT EXISTS idx_idc_content_customer_scope_customer
-    ON plugin_idc_core_content_customer_scope ("tenant_id", "customer_no", "content_no");
-
 -- Purpose: Stores Content Group Scope records.
 -- 用途：保存内容分组范围相关数据。
 CREATE TABLE IF NOT EXISTS plugin_idc_core_content_group_scope (
@@ -1290,23 +1264,6 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_content_group_scope (
 
 CREATE INDEX IF NOT EXISTS idx_idc_content_group_scope_group
     ON plugin_idc_core_content_group_scope ("tenant_id", "group_no", "content_no");
-
--- Purpose: Stores Content Service Scope records.
--- 用途：保存内容服务范围相关数据。
-CREATE TABLE IF NOT EXISTS plugin_idc_core_content_service_scope (
-    "id" BIGSERIAL PRIMARY KEY,
-    "tenant_id" BIGINT NOT NULL DEFAULT 0,
-    "content_no" VARCHAR(40) NOT NULL,
-    "service_no" VARCHAR(40) NOT NULL,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uk_idc_content_service_scope UNIQUE ("content_no", "service_no"),
-    CONSTRAINT ck_idc_content_service_scope_tenant CHECK ("tenant_id" = 0),
-    CONSTRAINT fk_idc_content_service_scope_item FOREIGN KEY ("content_no")
-        REFERENCES plugin_idc_core_content_item ("content_no")
-);
-
-CREATE INDEX IF NOT EXISTS idx_idc_content_service_scope_service
-    ON plugin_idc_core_content_service_scope ("tenant_id", "service_no", "content_no");
 
 -- Purpose: Stores Content Action History records.
 -- 用途：保存内容动作历史相关数据。
@@ -1699,7 +1656,7 @@ COMMENT ON TABLE plugin_idc_core_support_ticket_message IS
 COMMENT ON TABLE plugin_idc_core_support_ticket_sla_round IS
     'Frozen SLA rule and result for one ticket resolution round';
 COMMENT ON TABLE plugin_idc_core_content_item IS
-    'News, announcement, knowledge, and download content with stable public path and authoritative validity version';
+    'News, knowledge, and download content with stable public path and authoritative validity version';
 COMMENT ON TABLE plugin_idc_core_content_file IS
     'Single-current and single-candidate download file facts; dangerous types require a local passed scan';
 COMMENT ON TABLE plugin_idc_core_content_download_ticket IS

@@ -29,15 +29,16 @@ function loadPluginMessages(locale: "en-US" | "zh-CN") {
   const existing = pluginMessages.get(locale);
   if (existing) return existing;
   const loading = Promise.all(
-    ["plugin.json", "error.json"].map((fileName) =>
+    ["plugin.json", "error.json", "merchant-workspace.json"].map((fileName) =>
       readFile(
         resolve(pluginRoot, "manifest", "i18n", locale, fileName),
         "utf8",
       ),
     ),
-  ).then(([pluginContent, errorContent]) => ({
+  ).then(([pluginContent, errorContent, merchantContent]) => ({
     ...(JSON.parse(pluginContent!) as Record<string, string>),
     ...flattenMessages(JSON.parse(errorContent!)),
+    ...flattenMessages(JSON.parse(merchantContent!)),
   }));
   pluginMessages.set(locale, loading);
   return loading;
@@ -138,15 +139,23 @@ export async function installCatalogAutomationMock(
       payload.data.permissions = [...(options.permissions ?? [])];
       await route.fulfill({ json: payload, response });
     });
-    await page.evaluate((permissions) => {
-      const accessStorageKey = "lina-web-antd-5.6.0-dev-core-access";
-      const rawState = localStorage.getItem(accessStorageKey);
-      const state = rawState ? JSON.parse(rawState) : {};
-      localStorage.setItem(
-        accessStorageKey,
-        JSON.stringify({ ...state, accessCodes: permissions }),
-      );
-    }, options.permissions);
+    const restrictStoredAccess=(permissions:string[])=>{
+      // Production builds use a different storage namespace from dev mode.
+      // Patch only the existing access store in this isolated test context.
+      for(const key of Object.keys(localStorage)) {
+        if(!key.endsWith('-core-access')) continue;
+        const raw=localStorage.getItem(key);
+        if(!raw) continue;
+        // Dev stores are JSON; production stores are encrypted. Never decode
+        // credentials here. A fresh page loads production permissions via /user/info.
+        try {
+          const state=JSON.parse(raw);
+          localStorage.setItem(key,JSON.stringify({...state,accessCodes:permissions}));
+        } catch {continue;}
+      }
+    };
+    await page.addInitScript(restrictStoredAccess,options.permissions);
+    await page.evaluate(restrictStoredAccess,options.permissions);
   }
 
   await page.route(
@@ -162,7 +171,17 @@ export async function installCatalogAutomationMock(
           ? "en-US"
           : "zh-CN";
       payload.data.messages ??= {};
-      Object.assign(payload.data.messages, await loadPluginMessages(locale));
+      // Override the nested runtime dictionary as well as new flat keys.
+      // Existing keys otherwise keep the installed plugin's older translation.
+      for (const [key, value] of Object.entries(await loadPluginMessages(locale))) {
+        const segments = key.split(".");
+        let target = payload.data.messages;
+        for (const segment of segments.slice(0, -1)) {
+          if (!target[segment] || typeof target[segment] !== "object") target[segment] = {};
+          target = target[segment] as Record<string, unknown>;
+        }
+        target[segments.at(-1)!] = value;
+      }
       await route.fulfill({
         headers: {
           ...response.headers(),

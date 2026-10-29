@@ -1,0 +1,102 @@
+{
+  "backup": "D:/project1/temp/20261025/1792898000792-bt-before",
+  "url": "http://127.0.0.1:6680/bt.html",
+  "receipt": [
+    {
+      "file": "/lina/site.js",
+      "existed": true,
+      "status": 200,
+      "sha256": "b462911f01dd0f515c803b7a3de538047d45b962ec7b169fcce8626af9aa2689"
+    },
+    {
+      "file": "/lina/navigation.js",
+      "existed": true,
+      "status": 200,
+      "sha256": "aff2fac6503eadbc226681f6e49c972e3621438eb85496c08925d3657ac3a451"
+    },
+    {
+      "file": "/lina/navigation-content.js",
+      "existed": true,
+      "status": 200,
+      "sha256": "468451f5a4ac491be5be29a9f41c0ec45e26de558b66e4f5e8909331f35b03b9"
+    },
+    {
+      "file": "/bt.html",
+      "existed": false,
+      "status": 200,
+      "sha256": "aa985baaf92d445d66d1717fef68c09dbc58eaf3bffa00b21c47359b9817f6a4"
+    },
+    {
+      "file": "/lina/bt.js",
+      "existed": false,
+      "status": 200,
+      "sha256": "6efb1af4ad7f4e2e6278da0fd5aebf1ac7b0d46dec8dcaf577ca4db3cb48cc0a"
+    },
+    {
+      "file": "/lina/bt-content.js",
+      "existed": false,
+      "status": 200,
+      "sha256": "c7736ad20583b3a085bc458330c870f42987ce58c302475d74b15f177fedf6a9"
+    },
+    {
+      "file": "/lina/bt.css",
+      "existed": false,
+      "status": 200,
+      "sha256": "5d34b869155a68a45f1366edde140f9d36d2058902f91eba231ce6a00d3461df"
+    },
+    {
+      "file": "/lina/bt-assets/remoteL17069717876526.png",
+      "existed": false,
+      "status": 200,
+      "sha256": "04cefe587c8f00b5533811dbe11b40de9109e002f84eec1239d374584ba6da00"
+    },
+    {
+      "file": "/lina/bt-assets/remoteL17069683484677.webp",
+      "existed": false,
+      "status": 200,
+      "sha256": "5b4de1e89001521164a695caf7e5207db91e1d8eea3cf0a2c5b3125174a07ab9"
+    },
+    {
+      "file": "/lina/bt-assets/2.svg",
+      "existed": false,
+      "status": 200,
+      "sha256": "45079571a4f5576cfb1c08df348d0915016cf92f82b8e3fc22c5eb7c32f30f79"
+    },
+    {
+      "file": "/lina/bt-assets/3.svg",
+      "existed": false,
+      "status": 200,
+      "sha256": "62306fef8bb73fead7ce00aa0cc15e193159525109cf18fb6ec62e21b01268d2"
+    },
+    {
+      "file": "/lina/bt-assets/4.svg",
+      "existed": false,
+      "status": 200,
+      "sha256": "110d58faed2947b5bb0752e8d39d08b9c095873ad66528da6aa1820d10212e79"
+    },
+    {
+      "file": "/lina/bt-assets/10.svg",
+      "existed": false,
+      "status": 200,
+      "sha256": "02f995c3e00fb57c15462fc720cf48bff1493929926c586903487300ca3bd0ec"
+    },
+    {
+      "file": "/lina/bt-assets/1.svg",
+      "existed": false,
+      "status": 200,
+      "sha256": "cfe848f7b7d533b3a3ed66cf47284241845f2a6a3c242c3b5d17dcfd1dea9a6a"
+    },
+    {
+      "file": "/lina/bt-assets/remoteL17075794763815.png",
+      "existed": false,
+      "status": 200,
+      "sha256": "3036db6621f9c2d4e75f47cc31adb43a3f3bd2e2ebd2610e5ba0fa496057bf45"
+    },
+    {
+      "file": "/lina/bt-assets/remoteL17075795114472.png",
+      "existed": false,
+      "status": 200,
+      "sha256": "b86c2f2cd0c6420020adfcd4daff2e7c5f6ea4be843f5f1b34549023e64e8bf1"
+    }
+  ]
+}

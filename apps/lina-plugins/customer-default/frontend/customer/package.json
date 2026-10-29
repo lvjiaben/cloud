@@ -27,6 +27,10 @@
     "#/*": "./src/*"
   },
   "dependencies": {
+    "@iconify-json/ep": "1.2.4",
+    "@iconify-json/fluent-mdl2": "1.2.1",
+    "@iconify-json/lucide": "1.2.147",
+    "@iconify/vue": "5.0.0",
     "@tiptap/extension-image": "3.31.4",
     "@tiptap/extension-link": "3.31.4",
     "@tiptap/extension-placeholder": "3.31.4",
@@ -61,14 +65,14 @@
     "vxe-pc-ui": "4.13.0"
   },
   "devDependencies": {
-    "@types/qrcode": "1.5.6",
-    "@vben/vite-config": "workspace:*",
-    "@vben/tsconfig": "workspace:*",
-    "vite": "^7.3.7",
-    "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.5",
     "@types/node": "^22.15.30",
-    "vitest": "4.1.11"
+    "@types/qrcode": "1.5.6",
+    "@vben/tsconfig": "workspace:*",
+    "@vben/vite-config": "workspace:*",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.7",
+    "vitest": "4.1.11",
+    "vue-tsc": "^3.2.5"
   },
   "private": true,
   "description": "Independent customer center dynamic template",

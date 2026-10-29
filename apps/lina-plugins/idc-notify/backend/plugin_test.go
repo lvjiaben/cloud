@@ -26,10 +26,10 @@ func TestSourcePluginRegistrationAndManifest(t *testing.T) {
 	}
 	for _, fragment := range []string{
 		"id: idc-notify",
-		"version: v0.1.4",
+		"version: v0.1.11",
 		"distribution: builtin",
 		"id: idc-core",
-		"version: \">=0.1.55 <1.0.0\"",
+		"version: \">=0.1.163 <1.0.0\"",
 		"path: /idc/notifications/channels",
 		"path: /idc/notifications/templates",
 		"path: /idc/notifications/deliveries",

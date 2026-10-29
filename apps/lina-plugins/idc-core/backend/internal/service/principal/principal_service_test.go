@@ -171,6 +171,26 @@ func TestCurrentIsReadOnly(t *testing.T) {
 	}
 }
 
+// TestAuthorizedReaderAcceptsCustomerWithOmittedPermissionSnapshot covers the
+// reader used by source-plugin audit: authority must be read, never guessed.
+func TestAuthorizedReaderAcceptsCustomerWithOmittedPermissionSnapshot(t *testing.T) {
+	authorization := &testAuthorization{}
+	reader, err := NewAuthorizedReader(testBizCtx{current: bizctxcap.CurrentContext{UserID: 41}}, authorization)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := &recordingPersistence{currentResult: &Audience{UserID: 41, Code: AudienceCustomer, Status: AudienceStatusActive, CustomerNo: "CUS_test"}}
+	reader.(*serviceImpl).persistence = store
+	current, err := reader.Current(context.Background())
+	if err != nil || current == nil || current.CustomerNo != "CUS_test" || len(authorization.batches) == 0 || store.staffCalls != 0 || store.redeemCalls != 0 {
+		t.Fatalf("authorized customer reader: audience=%+v store=%+v err=%v", current, store, err)
+	}
+	authorization.grants = map[authz.PermissionKey]bool{authz.PermissionKey(idccap.HostPermissionWildcard): true}
+	if _, err = reader.Current(context.Background()); !bizerr.Is(err, CodeAudienceConflict) {
+		t.Fatalf("mixed customer/staff reader was accepted: %v", err)
+	}
+}
+
 // TestCurrentRejectsCustomerThatLaterReceivesManagementAuthority verifies a
 // persisted customer binding cannot be combined with newly granted backoffice
 // authority, including grants omitted from the source-plugin context snapshot.

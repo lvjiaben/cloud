@@ -40,6 +40,7 @@ import {
 
 const props = defineProps<{
   configuredSecretKeys?: string[];
+  expandOptional?: boolean;
   declaration: CatalogConfigurationDeclaration;
   evaluationFailed?: boolean;
   fieldStates?: Record<string, CatalogConfigurationAuthoritativeFieldState>;
@@ -55,6 +56,7 @@ const props = defineProps<{
   revokeFile?: (fileToken: string) => Promise<unknown>;
 }>();
 const emit = defineEmits<{
+  retry: [];
   "update:modelValue": [value: CatalogConfigurationValues];
 }>();
 
@@ -66,6 +68,7 @@ const booleanValues = values as Record<string, boolean | undefined>;
 const selectionValues = values as Record<string, string | string[] | undefined>;
 const pathValues = values as Record<string, string[] | undefined>;
 const formRef = ref<FormInstance>();
+const showAdvanced = ref(false);
 const UploadDragger = Upload.Dragger;
 const uploadedNames = reactive<Record<string, Record<string, string>>>({});
 const uploadBusy = reactive<Record<string, boolean>>({});
@@ -139,17 +142,30 @@ watch(
       props.declaration,
       props.surface,
       values,
+      props.resolvedCandidates,
     );
     emit("update:modelValue", sanitized);
   },
   { deep: true },
 );
 
+// Ant Form retains a previous async-validator error even after the owner
+// replaces the authoritative issues. Clear that obsolete result; submit still
+// runs local and current owner validation before any write.
+watch(
+  () => props.issues,
+  () => formRef.value?.clearValidate(),
+);
+
 const visibleFields = computed(() =>
   props.declaration.fields.filter(
     (field) =>
       !(field.type === "secret" && props.surface !== "interface") &&
-      fieldState(field).visible,
+      fieldState(field).visible &&
+      (props.expandOptional ||
+        props.surface !== "product" ||
+        fieldState(field).required ||
+        showAdvanced.value),
   ),
 );
 
@@ -397,7 +413,33 @@ function description(field: CatalogConfigurationField) {
       :message="catalogConfigurationMessage('evaluationFailed')"
       show-icon
       type="error"
-    />
+      ><template #action
+        ><Button
+          data-testid="catalog-configuration-retry"
+          @click="emit('retry')"
+          >{{ catalogConfigurationMessage("retry") }}</Button
+        ></template
+      ></Alert
+    >
+    <div
+      v-if="
+        !expandOptional &&
+        surface === 'product' &&
+        declaration.fields.some((field) => !field.required)
+      "
+      class="md:col-span-2"
+    >
+      <Button
+        :aria-expanded="showAdvanced"
+        data-testid="catalog-product-advanced-toggle"
+        @click="showAdvanced = !showAdvanced"
+        >{{
+          catalogConfigurationMessage(
+            showAdvanced ? "hideAdvanced" : "advancedConfiguration",
+          )
+        }}</Button
+      >
+    </div>
     <FormItem
       v-for="field in visibleFields"
       :key="field.key"

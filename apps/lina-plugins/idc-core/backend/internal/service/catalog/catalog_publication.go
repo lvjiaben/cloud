@@ -18,6 +18,8 @@ import (
 
 // PublicationAuthorizer is the distinct staff publication authority.
 type PublicationAuthorizer interface {
+	// AuthorizeProductSave checks ordinary product editing, separately from sale state.
+	AuthorizeProductSave(ctx context.Context, versionNo string) (int, error)
 	AuthorizeProductPublication(ctx context.Context, versionNo string) (actorUserID int, err error)
 }
 
@@ -25,6 +27,9 @@ type PublicationAuthorizer interface {
 // automation binding and its interface lifecycle state. The action must run
 // with the transaction context supplied by the gate.
 type PublicationAutomationAdmission interface {
+	// WithSaleStateAdmission allows local stopping without upstream availability;
+	// starting requires exact published-version provider admission in the same transaction.
+	WithSaleStateAdmission(context.Context, string, bool, func(context.Context) error) error
 	WithPublicationAdmission(ctx context.Context, versionNo string, action func(context.Context) error) error
 }
 
@@ -38,7 +43,25 @@ type PublicationResult struct {
 }
 
 // PublicationService is the only service allowed to publish catalog versions.
+// ProductSaleStateInput uses the exact current publication and product revision
+// as an optimistic fence for a staff sale-state transition.
+type ProductSaleStateInput struct {
+	ProductNo       string
+	VersionNo       string
+	ExpectedVersion int64
+	Active          bool
+}
+
 type PublicationService interface {
+	// WithSavedSettings commits a local edit and applies it atomically. A failed
+	// edit or application rolls back both; it never calls the supplier.
+	WithSavedSettings(context.Context, string, func(context.Context) error) error
+	// ApplySavedVersion immediately applies saved settings while preserving sale state
+	// and historical transaction snapshots. It performs no supplier operation.
+	ApplySavedVersion(context.Context, string) (*PublicationResult, error)
+	// SetSaleState pauses or resumes charging under publication permissions;
+	// resumption rechecks completeness and provider admission, preserving all paid facts.
+	SetSaleState(context.Context, ProductSaleStateInput) (int64, error)
 	PublishVersion(ctx context.Context, versionNo string) (*PublicationResult, error)
 }
 
@@ -142,6 +165,10 @@ func lockCatalogPublicationTarget(
 	ctx context.Context,
 	versionNo string,
 ) (*entity.CatalogProductVersion, *entity.CatalogProduct, error) {
+	return lockCatalogVersionTarget(ctx, versionNo, true)
+}
+
+func lockCatalogVersionTarget(ctx context.Context, versionNo string, requireActiveCategory bool) (*entity.CatalogProductVersion, *entity.CatalogProduct, error) {
 	var target *entity.CatalogProductVersion
 	if err := dao.CatalogProductVersion.Ctx(ctx).
 		Where(do.CatalogProductVersion{
@@ -166,14 +193,16 @@ func lockCatalogPublicationTarget(
 	if product == nil {
 		return nil, nil, bizerr.NewCode(CodePublicationNotAccessible)
 	}
-	if product.StatusCode != catalogStatusDraft && product.StatusCode != catalogStatusActive {
+	if product.StatusCode != catalogStatusDraft && product.StatusCode != catalogStatusActive && product.StatusCode != productSaleSuspended {
 		return nil, nil, bizerr.NewCode(CodePublicationState)
 	}
-	if _, err := loadActiveCategoryForUpdate(ctx, product.CategoryNo); err != nil {
-		if bizerr.Is(err, CodeManagementNotAccessible) {
-			return nil, nil, bizerr.NewCode(CodePublicationIncomplete)
+	if requireActiveCategory {
+		if _, err := loadActiveCategoryForUpdate(ctx, product.CategoryNo); err != nil {
+			if bizerr.Is(err, CodeManagementNotAccessible) {
+				return nil, nil, bizerr.NewCode(CodePublicationIncomplete)
+			}
+			return nil, nil, err
 		}
-		return nil, nil, err
 	}
 	return target, product, nil
 }

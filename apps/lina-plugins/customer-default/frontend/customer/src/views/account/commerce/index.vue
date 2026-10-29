@@ -5,12 +5,12 @@ import type {
   OrderDetail,
   OrderSummary,
   PaymentPreparation,
-} from '#/api/idc/customer-commerce';
+} from "#/api/idc/customer-commerce";
 
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import { Page } from '@vben/common-ui';
+import { Page } from "@vben/common-ui";
 
 import {
   Alert,
@@ -25,8 +25,8 @@ import {
   Skeleton,
   Space,
   Tag,
-} from 'ant-design-vue';
-import dayjs from 'dayjs';
+} from "ant-design-vue";
+import dayjs from "dayjs";
 
 import {
   cancelOrder,
@@ -40,19 +40,20 @@ import {
   preparePayment,
   removeCartItem,
   resumePaymentPreparation,
-} from '#/api/idc/customer-commerce';
-import { $t } from '#/locales';
+} from "#/api/idc/customer-commerce";
+import { $t } from "#/locales";
 
 import {
   hasPendingQuoteConfiguration,
   quoteConfigurationAction,
-} from './customer-commerce-configuration-state';
+} from "./customer-commerce-configuration-state";
 import {
   customerDeliveryRows,
   customerFulfillmentColor,
   customerFulfillmentLabelKey,
   customerServiceLabelKey,
-} from './customer-fulfillment-state';
+  managementPreparationLabelKey,
+} from "./customer-fulfillment-state";
 
 const route = useRoute();
 const router = useRouter();
@@ -61,31 +62,35 @@ const busy = ref(false);
 const failed = ref(false);
 const cart = ref<Cart>();
 const quote = ref<FinalQuote>();
-const quoteFingerprint = ref('');
+const quoteFingerprint = ref("");
 const preparation = ref<PaymentPreparation>();
-const createdOrderNo = ref('');
+const createdOrderNo = ref("");
 const orders = ref<OrderSummary[]>([]);
 const detail = ref<OrderDetail>();
+const detailRefreshFailed = ref(false);
+let detailSequence = 0;
+let detailRefreshCount = 0;
+let detailRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 const deliveryRows = computed(() => customerDeliveryRows(detail.value));
-const nextCursor = ref('');
-const cursor = ref('');
+const nextCursor = ref("");
+const cursor = ref("");
 const cursorHistory = ref<string[]>([]);
-const statusCode = ref('');
+const statusCode = ref("");
 const isEnglish = computed(
-  () => document.documentElement.lang.toLowerCase() === 'en-us',
+  () => document.documentElement.lang.toLowerCase() === "en-us",
 );
 
-const isCart = computed(() => route.name === 'CustomerCart');
+const isCart = computed(() => route.name === "CustomerCart");
 const orderNo = computed(() =>
-  typeof route.params.orderNo === 'string' ? route.params.orderNo : '',
+  typeof route.params.orderNo === "string" ? route.params.orderNo : "",
 );
 const isDetail = computed(() => Boolean(orderNo.value));
 const pageTitle = computed(() =>
   isCart.value
-    ? $t('commerce.cart.title')
+    ? $t("commerce.cart.title")
     : isDetail.value
-      ? $t('commerce.order.detailTitle', { orderNo: orderNo.value })
-      : $t('commerce.orders.title'),
+      ? $t("commerce.order.detailTitle", { orderNo: orderNo.value })
+      : $t("commerce.orders.title"),
 );
 const paymentState = computed(
   () => preparation.value ?? detail.value?.paymentPreparation,
@@ -93,7 +98,7 @@ const paymentState = computed(
 const paymentReady = computed(
   () =>
     preparation.value?.ready ??
-    detail.value?.paymentPreparation?.statusCode === 'ready',
+    detail.value?.paymentPreparation?.statusCode === "ready",
 );
 const quoteChanged = computed(() => {
   if (!quote.value || !quoteFingerprint.value) return false;
@@ -103,10 +108,10 @@ const configurationPending = computed(() =>
   hasPendingQuoteConfiguration(quote.value?.items ?? []),
 );
 
-async function configureQuoteItem(item: FinalQuote['items'][number]) {
+async function configureQuoteItem(item: FinalQuote["items"][number]) {
   if (!quote.value || !item.publicSlug) return;
   let target = item;
-  if (quoteConfigurationAction(item) === 'reconfigure') {
+  if (quoteConfigurationAction(item) === "reconfigure") {
     await refreshQuote();
     const replacement = quote.value?.items.find(
       (candidate) => candidate.cartItemNo === item.cartItemNo,
@@ -124,56 +129,64 @@ async function configureQuoteItem(item: FinalQuote['items'][number]) {
 }
 
 const statusOptions = computed(() => [
-  { label: $t('commerce.status.all'), value: '' },
+  { label: $t("commerce.status.all"), value: "" },
   ...[
-    'pending_payment',
-    'manual_review',
-    'provisioning',
-    'completed',
-    'cancelled',
+    "pending_payment",
+    "manual_review",
+    "provisioning",
+    "completed",
+    "cancelled",
   ].map((value) => ({ label: statusLabel(value), value })),
 ]);
 
 function statusLabel(value: unknown) {
-  const code = String(value || 'pending');
+  const code = String(value || "pending");
   const key = `commerce.status.${code}`;
   const translated = $t(key);
-  return translated === key ? $t('commerce.status.unknown') : translated;
+  return translated === key ? $t("commerce.status.unknown") : translated;
 }
 
 function statusColor(value: unknown) {
-  const code = String(value || '');
+  const code = String(value || "");
   if (
-    ['active', 'completed', 'consumed', 'fulfilled', 'ready', 'succeeded'].includes(code)
+    [
+      "paid",
+      "active",
+      "completed",
+      "consumed",
+      "fulfilled",
+      "ready",
+      "succeeded",
+    ].includes(code)
   ) {
-    return 'success';
+    return "success";
   }
   if (
-    ['cancelled', 'expired', 'rejected', 'released', 'terminated'].includes(
+    ["cancelled", "expired", "rejected", "released", "terminated"].includes(
       code,
     )
   )
-    return 'default';
-  if (['awaiting_identity', 'manual_review', 'suspended'].includes(code))
-    return 'warning';
-  return 'processing';
+    return "default";
+  if (["awaiting_identity", "manual_review", "suspended"].includes(code))
+    return "warning";
+  return "processing";
 }
 
 function localized(item: {
   productNameEnUS?: unknown;
   productNameZhCN?: unknown;
 }) {
-  const english = String(item.productNameEnUS || '');
-  const chinese = String(item.productNameZhCN || '');
-  return (isEnglish.value ? english : chinese) || chinese || english || '—';
+  const english = String(item.productNameEnUS || "");
+  const chinese = String(item.productNameZhCN || "");
+  return (isEnglish.value ? english : chinese) || chinese || english || "—";
 }
 
 function currencyDigits(currencyCode: string) {
   try {
     return (
-      new Intl.NumberFormat('en', {
+      new Intl.NumberFormat("en", {
         currency: currencyCode,
-        style: 'currency',
+        style: "currency",
       }).resolvedOptions().maximumFractionDigits ?? 2
     );
   } catch {
@@ -182,19 +195,19 @@ function currencyDigits(currencyCode: string) {
 }
 
 function amount(value: unknown, currencyCode: string) {
-  const raw = String(value ?? '');
-  if (!/^-?\d+$/u.test(raw)) return '—';
-  const negative = raw.startsWith('-');
-  const digits = raw.replace(/^-/, '').replace(/^0+(?=\d)/, '') || '0';
+  const raw = String(value ?? "");
+  if (!/^-?\d+$/u.test(raw)) return "—";
+  const negative = raw.startsWith("-");
+  const digits = raw.replace(/^-/, "").replace(/^0+(?=\d)/, "") || "0";
   const scale = currencyDigits(currencyCode);
-  if (scale === 0) return `${currencyCode} ${negative ? '-' : ''}${digits}`;
-  const padded = digits.padStart(scale + 1, '0');
-  return `${currencyCode} ${negative ? '-' : ''}${padded.slice(0, -scale)}.${padded.slice(-scale)}`;
+  if (scale === 0) return `${currencyCode} ${negative ? "-" : ""}${digits}`;
+  const padded = digits.padStart(scale + 1, "0");
+  return `${currencyCode} ${negative ? "-" : ""}${padded.slice(0, -scale)}.${padded.slice(-scale)}`;
 }
 
 function formatTime(value: unknown) {
   const timestamp = Number(value || 0);
-  return timestamp > 0 ? dayjs(timestamp).format('YYYY-MM-DD HH:mm') : '—';
+  return timestamp > 0 ? dayjs(timestamp).format("YYYY-MM-DD HH:mm") : "—";
 }
 
 function fingerprint(value: FinalQuote) {
@@ -213,9 +226,9 @@ function fingerprint(value: FinalQuote) {
   });
 }
 
-function identityLocation(targetOrderNo: string, contextNo = '') {
+function identityLocation(targetOrderNo: string, contextNo = "") {
   return {
-    path: '/account/identity',
+    path: "/account/identity",
     query: {
       payment_context: contextNo || undefined,
       return_to: `/account/orders/${encodeURIComponent(targetOrderNo)}`,
@@ -230,11 +243,11 @@ async function loadCart() {
     try {
       await mergeGuestCart();
     } catch {
-      message.warning($t('commerce.messages.mergeFailed'));
+      message.warning($t("commerce.messages.mergeFailed"));
     }
     cart.value = (await getCart()).cart || undefined;
     quote.value = cart.value?.latestQuote;
-    quoteFingerprint.value = quote.value ? fingerprint(quote.value) : '';
+    quoteFingerprint.value = quote.value ? fingerprint(quote.value) : "";
   } catch {
     failed.value = true;
   } finally {
@@ -242,7 +255,7 @@ async function loadCart() {
   }
 }
 
-async function loadOrders(targetCursor = '') {
+async function loadOrders(targetCursor = "") {
   loading.value = true;
   failed.value = false;
   try {
@@ -251,7 +264,7 @@ async function loadOrders(targetCursor = '') {
       statusCode: statusCode.value || undefined,
     });
     orders.value = result.orders || [];
-    nextCursor.value = result.nextCursor || '';
+    nextCursor.value = result.nextCursor || "";
     cursor.value = targetCursor;
   } catch {
     failed.value = true;
@@ -260,20 +273,46 @@ async function loadOrders(targetCursor = '') {
   }
 }
 
-async function loadDetail() {
+async function loadDetail(quiet = false) {
   if (!orderNo.value) return;
-  loading.value = true;
-  failed.value = false;
+  if (detailRefreshTimer) clearTimeout(detailRefreshTimer);
+  const sequence = ++detailSequence;
+  const targetOrder = orderNo.value;
+  if (!quiet) {
+    loading.value = true;
+    failed.value = false;
+  }
   try {
-    detail.value = (await getOrder(orderNo.value)).order;
+    const response = (await getOrder(targetOrder)).order;
+    if (sequence !== detailSequence || targetOrder !== orderNo.value) return;
+    detail.value = response;
+    detailRefreshFailed.value = false;
+    const processing = response.deliveries.some(
+      (item) =>
+        item.statusCode === "processing" ||
+        (item.statusCode === "awaiting_payment" &&
+          response.invoice?.statusCode === "paid"),
+    );
+    if (processing && detailRefreshCount < 24 && !document.hidden) {
+      detailRefreshTimer = setTimeout(() => {
+        detailRefreshCount += 1;
+        void loadDetail(true);
+      }, 5000);
+    }
   } catch {
-    failed.value = true;
+    if (sequence !== detailSequence) return;
+    if (quiet) detailRefreshFailed.value = true;
+    else failed.value = true;
   } finally {
-    loading.value = false;
+    if (sequence === detailSequence) loading.value = false;
   }
 }
 
 function loadCurrent() {
+  if (detailRefreshTimer) clearTimeout(detailRefreshTimer);
+  detailSequence += 1;
+  detailRefreshCount = 0;
+  detailRefreshFailed.value = false;
   preparation.value = undefined;
   failed.value = false;
   if (isCart.value) return loadCart();
@@ -290,7 +329,7 @@ async function removeItem(itemNo: string, itemVersion: number) {
     ).cart;
     quote.value = undefined;
   } catch {
-    message.error($t('commerce.messages.actionFailed'));
+    message.error($t("commerce.messages.actionFailed"));
     await loadCart();
   } finally {
     busy.value = false;
@@ -305,7 +344,7 @@ async function refreshQuote() {
     quote.value = (await createFinalQuote(cart.value.version)).quote;
     cart.value.version = quote.value.cartVersion;
   } catch {
-    message.error($t('commerce.messages.quoteFailed'));
+    message.error($t("commerce.messages.quoteFailed"));
     await loadCart();
   } finally {
     busy.value = false;
@@ -324,9 +363,9 @@ async function submitCheckout() {
     preparation.value = (
       await preparePayment(result.checkout.orderNo)
     ).preparation;
-    message.success($t('commerce.messages.orderCreated'));
+    message.success($t("commerce.messages.orderCreated"));
   } catch {
-    message.error($t('commerce.messages.checkoutFailed'));
+    message.error($t("commerce.messages.checkoutFailed"));
   } finally {
     busy.value = false;
   }
@@ -341,7 +380,7 @@ async function beginPayment() {
     ).preparation;
     await loadDetail();
   } catch {
-    message.error($t('commerce.messages.actionFailed'));
+    message.error($t("commerce.messages.actionFailed"));
   } finally {
     busy.value = false;
   }
@@ -355,7 +394,7 @@ async function recheckPayment() {
     preparation.value = (await resumePaymentPreparation(contextNo)).preparation;
     if (isDetail.value) await loadDetail();
   } catch {
-    message.error($t('commerce.messages.actionFailed'));
+    message.error($t("commerce.messages.actionFailed"));
   } finally {
     busy.value = false;
   }
@@ -364,11 +403,11 @@ async function recheckPayment() {
 function requestCancellation() {
   if (!detail.value || busy.value) return;
   Modal.confirm({
-    cancelText: $t('commerce.actions.back'),
-    content: $t('commerce.cancel.description'),
-    okText: $t('commerce.cancel.confirm'),
-    okType: 'danger',
-    title: $t('commerce.cancel.title'),
+    cancelText: $t("commerce.actions.back"),
+    content: $t("commerce.cancel.description"),
+    okText: $t("commerce.cancel.confirm"),
+    okType: "danger",
+    title: $t("commerce.cancel.title"),
     async onOk() {
       if (!detail.value) return;
       busy.value = true;
@@ -377,7 +416,7 @@ function requestCancellation() {
           detail.value.summary.orderNo,
           persistentCommerceActionKey(`cancel.${detail.value.summary.orderNo}`),
         );
-        message.success($t('commerce.messages.cancelled'));
+        message.success($t("commerce.messages.cancelled"));
         await loadDetail();
       } finally {
         busy.value = false;
@@ -393,36 +432,52 @@ function nextPage() {
 }
 
 function previousPage() {
-  void loadOrders(cursorHistory.value.pop() || '');
+  void loadOrders(cursorHistory.value.pop() || "");
 }
 
 onMounted(async () => {
   await loadCurrent();
 });
 watch(() => route.fullPath, loadCurrent);
+onBeforeUnmount(() => {
+  detailSequence += 1;
+  if (detailRefreshTimer) clearTimeout(detailRefreshTimer);
+});
 </script>
 
 <template>
-  <Page class="customer-inner-page" header-class="customer-inner-heading" content-class="customer-inner-content" :title="pageTitle">
+  <Page
+    class="customer-inner-page"
+    header-class="customer-inner-heading"
+    content-class="customer-inner-content"
+    :title="pageTitle"
+  >
     <div class="commerce-page" data-testid="customer-commerce-page">
       <Card :bordered="false" class="page-toolbar">
         <div>
           <p>
-            {{ isCart ? $t('commerce.cart.lead') : $t('commerce.orders.lead') }}
+            {{ isCart ? $t("commerce.cart.lead") : $t("commerce.orders.lead") }}
           </p>
         </div>
         <Space wrap>
           <Button
+            v-if="isDetail"
+            :loading="loading"
+            data-testid="commerce-detail-refresh"
+            @click="loadCurrent"
+            >{{ $t("commerce.order.refresh") }}</Button
+          >
+          <Button
             data-testid="commerce-cart-nav"
             :type="isCart ? 'primary' : 'default'"
             @click="router.push('/account/cart')"
-            >{{ $t('commerce.cart.menu') }}</Button
+            >{{ $t("commerce.cart.menu") }}</Button
           >
           <Button
             data-testid="commerce-orders-nav"
             :type="!isCart ? 'primary' : 'default'"
             @click="router.push('/account/orders')"
-            >{{ $t('commerce.orders.menu') }}</Button
+            >{{ $t("commerce.orders.menu") }}</Button
           >
         </Space>
       </Card>
@@ -436,7 +491,7 @@ watch(() => route.fullPath, loadCurrent);
       >
         <template #action>
           <Button size="small" @click="loadCurrent">{{
-            $t('commerce.actions.retry')
+            $t("commerce.actions.retry")
           }}</Button>
         </template>
       </Alert>
@@ -450,7 +505,7 @@ watch(() => route.fullPath, loadCurrent);
           <Button
             type="primary"
             @click="router.push('/account/products/catalog')"
-            >{{ $t('commerce.cart.browse') }}</Button
+            >{{ $t("commerce.cart.browse") }}</Button
           >
         </Empty>
         <div v-else class="cart-layout">
@@ -465,8 +520,8 @@ watch(() => route.fullPath, loadCurrent);
                   <h2>{{ localized(item) }}</h2>
                   <p>
                     {{ item.quantity }}
-                    {{ $t('commerce.units.items') }} · {{ item.purchaseCycles }}
-                    {{ $t('commerce.units.cycles') }}
+                    {{ $t("commerce.units.items") }} · {{ item.purchaseCycles }}
+                    {{ $t("commerce.units.cycles") }}
                   </p>
                 </div>
                 <Tag :color="statusColor(item.statusCode)">{{
@@ -478,13 +533,13 @@ watch(() => route.fullPath, loadCurrent);
                 :disabled="busy"
                 size="small"
                 @click="removeItem(item.cartItemNo, item.version)"
-                >{{ $t('commerce.actions.remove') }}</Button
+                >{{ $t("commerce.actions.remove") }}</Button
               >
             </Card>
           </div>
 
           <Card class="quote-card">
-            <h2>{{ $t('commerce.quote.title') }}</h2>
+            <h2>{{ $t("commerce.quote.title") }}</h2>
             <Alert
               v-if="quoteChanged"
               :message="$t('commerce.quote.changed')"
@@ -493,26 +548,26 @@ watch(() => route.fullPath, loadCurrent);
             />
             <dl v-if="quote" class="amounts" data-testid="commerce-final-quote">
               <div>
-                <dt>{{ $t('commerce.amount.subtotal') }}</dt>
+                <dt>{{ $t("commerce.amount.subtotal") }}</dt>
                 <dd>{{ amount(quote.subtotalMinor, quote.currencyCode) }}</dd>
               </div>
               <div>
-                <dt>{{ $t('commerce.amount.discount') }}</dt>
+                <dt>{{ $t("commerce.amount.discount") }}</dt>
                 <dd>-{{ amount(quote.discountMinor, quote.currencyCode) }}</dd>
               </div>
               <div>
-                <dt>{{ $t('commerce.amount.tax') }}</dt>
+                <dt>{{ $t("commerce.amount.tax") }}</dt>
                 <dd>{{ amount(quote.taxAmountMinor, quote.currencyCode) }}</dd>
               </div>
               <div class="total">
-                <dt>{{ $t('commerce.amount.total') }}</dt>
+                <dt>{{ $t("commerce.amount.total") }}</dt>
                 <dd>
                   {{ amount(quote.totalAmountMinor, quote.currencyCode) }}
                 </dd>
               </div>
             </dl>
             <p v-if="quote" class="muted">
-              {{ $t('commerce.quote.expires') }}
+              {{ $t("commerce.quote.expires") }}
               {{ formatTime(quote.expiresAt) }}
             </p>
             <div
@@ -528,7 +583,7 @@ watch(() => route.fullPath, loadCurrent);
               >
                 <span>{{ localized(item) }}</span>
                 <Tag v-if="item.configurationFrozen" color="success">{{
-                  $t('commerce.configuration.ready')
+                  $t("commerce.configuration.ready")
                 }}</Tag>
                 <Button
                   size="small"
@@ -536,8 +591,8 @@ watch(() => route.fullPath, loadCurrent);
                   @click="configureQuoteItem(item)"
                   >{{
                     item.configurationFrozen
-                      ? $t('commerce.configuration.reconfigure')
-                      : $t('commerce.configuration.configure')
+                      ? $t("commerce.configuration.reconfigure")
+                      : $t("commerce.configuration.configure")
                   }}</Button
                 >
               </div>
@@ -558,8 +613,8 @@ watch(() => route.fullPath, loadCurrent);
                 @click="quote ? submitCheckout() : refreshQuote()"
                 >{{
                   quote
-                    ? $t('commerce.actions.checkout')
-                    : $t('commerce.actions.quote')
+                    ? $t("commerce.actions.checkout")
+                    : $t("commerce.actions.quote")
                 }}</Button
               >
               <Button
@@ -567,7 +622,7 @@ watch(() => route.fullPath, loadCurrent);
                 block
                 :disabled="busy"
                 @click="refreshQuote"
-                >{{ $t('commerce.actions.quoteAgain') }}</Button
+                >{{ $t("commerce.actions.quoteAgain") }}</Button
               >
             </Space>
           </Card>
@@ -578,7 +633,7 @@ watch(() => route.fullPath, loadCurrent);
           class="section-gap"
           data-testid="commerce-created-order"
         >
-          <h2>{{ $t('commerce.messages.orderCreated') }}</h2>
+          <h2>{{ $t("commerce.messages.orderCreated") }}</h2>
           <Button
             type="link"
             @click="router.push(`/account/orders/${createdOrderNo}`)"
@@ -608,13 +663,13 @@ watch(() => route.fullPath, loadCurrent);
                   identityLocation(createdOrderNo, paymentState.contextNo),
                 )
               "
-              >{{ $t('commerce.actions.verify') }}</Button
+              >{{ $t("commerce.actions.verify") }}</Button
             >
             <Button
               v-if="paymentState"
               :loading="busy"
               @click="recheckPayment"
-              >{{ $t('commerce.actions.recheck') }}</Button
+              >{{ $t("commerce.actions.recheck") }}</Button
             >
           </Space>
         </Card>
@@ -642,7 +697,7 @@ watch(() => route.fullPath, loadCurrent);
           >
             <div class="row-heading">
               <div>
-                <small>{{ $t('commerce.order.label') }}</small>
+                <small>{{ $t("commerce.order.label") }}</small>
                 <h2>{{ item.orderNo }}</h2>
               </div>
               <Tag :color="statusColor(item.statusCode)">{{
@@ -651,31 +706,31 @@ watch(() => route.fullPath, loadCurrent);
             </div>
             <dl class="order-facts">
               <div>
-                <dt>{{ $t('commerce.amount.total') }}</dt>
+                <dt>{{ $t("commerce.amount.total") }}</dt>
                 <dd>{{ amount(item.totalAmountMinor, item.currencyCode) }}</dd>
               </div>
               <div>
-                <dt>{{ $t('commerce.order.created') }}</dt>
+                <dt>{{ $t("commerce.order.created") }}</dt>
                 <dd>{{ formatTime(item.createdAt) }}</dd>
               </div>
               <div>
-                <dt>{{ $t('commerce.order.due') }}</dt>
+                <dt>{{ $t("commerce.order.due") }}</dt>
                 <dd>{{ formatTime(item.paymentDueAt) }}</dd>
               </div>
             </dl>
             <Button
               type="primary"
               @click="router.push(`/account/orders/${item.orderNo}`)"
-              >{{ $t('commerce.actions.detail') }}</Button
+              >{{ $t("commerce.actions.detail") }}</Button
             >
           </Card>
         </div>
         <div class="pager">
           <Button :disabled="!cursorHistory.length" @click="previousPage">{{
-            $t('commerce.actions.previous')
+            $t("commerce.actions.previous")
           }}</Button>
           <Button :disabled="!nextCursor" type="primary" @click="nextPage">{{
-            $t('commerce.actions.next')
+            $t("commerce.actions.next")
           }}</Button>
         </div>
       </template>
@@ -685,117 +740,181 @@ watch(() => route.fullPath, loadCurrent);
           class="back-button"
           type="link"
           @click="router.push('/account/orders')"
-          >← {{ $t('commerce.actions.backToOrders') }}</Button
+          >← {{ $t("commerce.actions.backToOrders") }}</Button
         >
-        <div class="detail-grid">
-          <Card>
-            <div class="row-heading">
-              <div>
-                <h2>{{ detail.summary.orderNo }}</h2>
-                <p>{{ formatTime(detail.summary.createdAt) }}</p>
-              </div>
-              <Tag :color="statusColor(detail.summary.statusCode)">{{
-                statusLabel(detail.summary.statusCode)
-              }}</Tag>
-            </div>
-            <Descriptions :column="1" bordered size="small">
-              <DescriptionsItem :label="$t('commerce.amount.total')">{{
-                amount(
-                  detail.summary.totalAmountMinor,
-                  detail.summary.currencyCode,
-                )
-              }}</DescriptionsItem>
-              <DescriptionsItem :label="$t('commerce.order.due')">{{
-                formatTime(detail.summary.paymentDueAt)
-              }}</DescriptionsItem>
-            </Descriptions>
+        <div
+          class="order-overview"
+          :class="{
+            'order-overview-payable': detail.summary.canPreparePayment,
+          }"
+        >
+          <section
+            v-if="deliveryRows.length"
+            class="order-progress"
+            data-testid="commerce-deliveries"
+          >
+            <h2>{{ $t("commerce.order.delivery") }}</h2>
             <Alert
-              v-if="detail.summary.requiresContract"
-              class="section-gap"
-              :message="$t('commerce.order.contractOptional')"
+              v-if="detailRefreshFailed"
+              class="mb-3"
+              type="warning"
               show-icon
-              type="info"
+              :message="$t('commerce.fulfillment.refreshPaused')"
             />
-            <Space class="section-gap" wrap>
-              <Button
-                v-if="detail.summary.canPreparePayment"
-                :loading="busy"
-                type="primary"
-                @click="beginPayment"
-                >{{ $t('commerce.actions.preparePayment') }}</Button
+            <div class="fact-grid">
+              <Card
+                v-for="(delivery, index) in deliveryRows"
+                :key="`${delivery.productNameZhCN}-${index}`"
               >
+                <div class="row-heading">
+                  <strong>{{ localized(delivery) }}</strong>
+                  <Tag :color="customerFulfillmentColor(delivery.statusCode)">{{
+                    $t(customerFulfillmentLabelKey(delivery.statusCode))
+                  }}</Tag>
+                </div>
+                <p>
+                  {{ delivery.quantity }} {{ $t("commerce.units.items") }} ·
+                  {{
+                    $t(
+                      delivery.ongoingService
+                        ? "commerce.fulfillment.ongoing"
+                        : "commerce.fulfillment.once",
+                    )
+                  }}
+                </p>
+                <p v-if="delivery.statusCode === 'processing'">
+                  {{ $t("commerce.fulfillment.processingHint") }}
+                </p>
+                <p v-if="delivery.statusCode === 'manual_processing'">
+                  {{ $t("commerce.fulfillment.manualHint") }}
+                </p>
+                <p v-if="delivery.statusCode === 'not_completed'">
+                  {{ $t("commerce.fulfillment.incompleteHint") }}
+                </p>
+                <small>{{
+                  formatTime(
+                    delivery.completedAt ||
+                      delivery.startedAt ||
+                      delivery.updatedAt,
+                  )
+                }}</small>
+              </Card>
+            </div>
+          </section>
+          <div
+            class="detail-grid"
+            :class="{ 'detail-grid-single': !detail.invoice }"
+          >
+            <Card data-testid="commerce-order-facts">
+              <div class="row-heading">
+                <div>
+                  <h2>{{ detail.summary.orderNo }}</h2>
+                  <p>{{ formatTime(detail.summary.createdAt) }}</p>
+                </div>
+                <Tag :color="statusColor(detail.summary.statusCode)">{{
+                  statusLabel(detail.summary.statusCode)
+                }}</Tag>
+              </div>
+              <Descriptions :column="1" bordered size="small">
+                <DescriptionsItem :label="$t('commerce.amount.total')">{{
+                  amount(
+                    detail.summary.totalAmountMinor,
+                    detail.summary.currencyCode,
+                  )
+                }}</DescriptionsItem>
+                <DescriptionsItem :label="$t('commerce.order.due')">{{
+                  formatTime(detail.summary.paymentDueAt)
+                }}</DescriptionsItem>
+              </Descriptions>
+              <Space class="section-gap" wrap>
+                <Button
+                  v-if="detail.summary.canPreparePayment"
+                  :loading="busy"
+                  type="primary"
+                  @click="beginPayment"
+                  >{{ $t("commerce.actions.preparePayment") }}</Button
+                >
+                <Button
+                  v-if="detail.summary.canPreparePayment && paymentState"
+                  :loading="busy"
+                  @click="recheckPayment"
+                  >{{ $t("commerce.actions.recheck") }}</Button
+                >
+                <Button
+                  v-if="
+                    detail.summary.canPreparePayment &&
+                    paymentState &&
+                    !paymentReady
+                  "
+                  type="primary"
+                  @click="
+                    router.push(
+                      identityLocation(
+                        detail.summary.orderNo,
+                        paymentState.contextNo,
+                      ),
+                    )
+                  "
+                  >{{ $t("commerce.actions.verify") }}</Button
+                >
+                <Button
+                  v-if="detail.summary.canCancel"
+                  danger
+                  :loading="busy"
+                  @click="requestCancellation"
+                  >{{ $t("commerce.actions.cancel") }}</Button
+                >
+              </Space>
+              <Alert
+                v-if="detail.summary.canPreparePayment && paymentState"
+                class="section-gap"
+                :message="
+                  paymentReady
+                    ? $t('commerce.payment.ready')
+                    : statusLabel(paymentState.statusCode)
+                "
+                show-icon
+                :type="paymentReady ? 'success' : 'warning'"
+              />
+            </Card>
+            <Card
+              v-if="detail.invoice"
+              data-testid="commerce-order-invoice"
+              :title="$t('commerce.order.invoice')"
+            >
+              <Descriptions :column="1" bordered size="small">
+                <DescriptionsItem label="#">{{
+                  detail.invoice.invoiceNo
+                }}</DescriptionsItem>
+                <DescriptionsItem :label="$t('commerce.amount.total')">{{
+                  amount(
+                    detail.invoice.totalAmountMinor,
+                    detail.summary.currencyCode,
+                  )
+                }}</DescriptionsItem>
+                <DescriptionsItem :label="$t('commerce.order.due')">{{
+                  formatTime(detail.invoice.paymentDueAt)
+                }}</DescriptionsItem>
+              </Descriptions>
               <Button
-                v-if="paymentState"
-                :loading="busy"
-                @click="recheckPayment"
-                >{{ $t('commerce.actions.recheck') }}</Button
-              >
-              <Button
-                v-if="paymentState && !paymentReady"
+                v-if="Number(detail.invoice.refundableAmountMinor || 0) > 0"
+                class="section-gap"
+                data-testid="commerce-order-refund"
                 type="primary"
                 @click="
-                  router.push(
-                    identityLocation(
-                      detail.summary.orderNo,
-                      paymentState.contextNo,
-                    ),
-                  )
+                  router.push({
+                    path: '/account/refunds',
+                    query: { orderNo: detail.summary.orderNo },
+                  })
                 "
-                >{{ $t('commerce.actions.verify') }}</Button
               >
-              <Button
-                v-if="detail.summary.canCancel"
-                danger
-                :loading="busy"
-                @click="requestCancellation"
-                >{{ $t('commerce.actions.cancel') }}</Button
-              >
-            </Space>
-            <Alert
-              v-if="paymentState"
-              class="section-gap"
-              :message="
-                paymentReady
-                  ? $t('commerce.payment.ready')
-                  : statusLabel(paymentState.statusCode)
-              "
-              show-icon
-              :type="paymentReady ? 'success' : 'warning'"
-            />
-          </Card>
-          <Card v-if="detail.invoice" :title="$t('commerce.order.invoice')">
-            <Descriptions :column="1" bordered size="small">
-              <DescriptionsItem label="#">{{
-                detail.invoice.invoiceNo
-              }}</DescriptionsItem>
-              <DescriptionsItem :label="$t('commerce.amount.total')">{{
-                amount(
-                  detail.invoice.totalAmountMinor,
-                  detail.summary.currencyCode,
-                )
-              }}</DescriptionsItem>
-              <DescriptionsItem :label="$t('commerce.order.due')">{{
-                formatTime(detail.invoice.paymentDueAt)
-              }}</DescriptionsItem>
-            </Descriptions>
-            <Button
-              v-if="Number(detail.invoice.refundableAmountMinor || 0) > 0"
-              class="section-gap"
-              data-testid="commerce-order-refund"
-              type="primary"
-              @click="
-                router.push({
-                  path: '/account/refunds',
-                  query: { orderNo: detail.summary.orderNo },
-                })
-              "
-            >
-              {{ $t('commerce.order.requestRefund') }}
-            </Button>
-          </Card>
+                {{ $t("commerce.order.requestRefund") }}
+              </Button>
+            </Card>
+          </div>
         </div>
         <section class="section-gap">
-          <h2>{{ $t('commerce.order.items') }}</h2>
+          <h2>{{ $t("commerce.order.items") }}</h2>
           <div class="order-grid">
             <Card v-for="item in detail.items" :key="String(item.orderItemNo)">
               <div class="row-heading">
@@ -805,46 +924,9 @@ watch(() => route.fullPath, loadCurrent);
                 }}</strong>
               </div>
               <p>
-                {{ item.quantity }} {{ $t('commerce.units.items') }} ·
-                {{ item.purchaseCycles }} {{ $t('commerce.units.cycles') }}
+                {{ item.quantity }} {{ $t("commerce.units.items") }} ·
+                {{ item.purchaseCycles }} {{ $t("commerce.units.cycles") }}
               </p>
-            </Card>
-          </div>
-        </section>
-        <section
-          v-if="deliveryRows.length"
-          class="section-gap"
-          data-testid="commerce-deliveries"
-        >
-          <h2>{{ $t('commerce.order.delivery') }}</h2>
-          <div class="fact-grid">
-            <Card
-              v-for="(delivery, index) in deliveryRows"
-              :key="`${delivery.productNameZhCN}-${index}`"
-            >
-              <div class="row-heading">
-                <strong>{{ localized(delivery) }}</strong>
-                <Tag :color="customerFulfillmentColor(delivery.statusCode)">{{
-                  $t(customerFulfillmentLabelKey(delivery.statusCode))
-                }}</Tag>
-              </div>
-              <p>
-                {{ delivery.quantity }} {{ $t('commerce.units.items') }} ·
-                {{
-                  $t(
-                    delivery.ongoingService
-                      ? 'commerce.fulfillment.ongoing'
-                      : 'commerce.fulfillment.once',
-                  )
-                }}
-              </p>
-              <small>{{
-                formatTime(
-                  delivery.completedAt ||
-                    delivery.startedAt ||
-                    delivery.updatedAt,
-                )
-              }}</small>
             </Card>
           </div>
         </section>
@@ -853,7 +935,7 @@ watch(() => route.fullPath, loadCurrent);
           class="section-gap"
           data-testid="commerce-service-entitlements"
         >
-          <h2>{{ $t('commerce.order.services') }}</h2>
+          <h2>{{ $t("commerce.order.services") }}</h2>
           <div class="fact-grid">
             <Card
               v-for="(service, index) in detail.serviceEntitlements"
@@ -866,17 +948,55 @@ watch(() => route.fullPath, loadCurrent);
                 }}</Tag>
               </div>
               <p>
-                {{ $t('commerce.fulfillment.serviceStarted') }}：{{
+                {{ $t("commerce.fulfillment.serviceStarted") }}：{{
                   formatTime(service.startedAt)
                 }}
               </p>
               <small
-                >{{ $t('commerce.fulfillment.serviceExpires') }}：{{
+                >{{ $t("commerce.fulfillment.serviceExpires") }}：{{
                   service.expiresAt
                     ? formatTime(service.expiresAt)
-                    : $t('commerce.fulfillment.noExpiry')
+                    : $t("commerce.fulfillment.noExpiry")
                 }}</small
               >
+              <Alert
+                v-if="
+                  managementPreparationLabelKey(service.managementPreparation)
+                "
+                class="mt-3"
+                show-icon
+                :type="
+                  service.managementPreparation === 'preparing'
+                    ? 'info'
+                    : 'warning'
+                "
+                :message="
+                  $t(
+                    managementPreparationLabelKey(
+                      service.managementPreparation,
+                    ),
+                  )
+                "
+                data-testid="service-management-preparation"
+              />
+              <div
+                v-if="
+                  service.entitlementOwnerId === 'idc-resource' &&
+                  !managementPreparationLabelKey(service.managementPreparation)
+                "
+                class="mt-3"
+              >
+                <Button
+                  type="primary"
+                  :aria-label="$t('nativeServers.manage')"
+                  @click="
+                    router.push(
+                      `/account/native-servers/by-entitlement/${encodeURIComponent(service.entitlementNo)}`,
+                    )
+                  "
+                  >{{ $t("nativeServers.manage") }}</Button
+                >
+              </div>
             </Card>
           </div>
         </section>
@@ -896,7 +1016,9 @@ watch(() => route.fullPath, loadCurrent);
   justify-content: space-between;
   gap: 16px;
 }
-.page-toolbar { margin-bottom: 16px; }
+.page-toolbar {
+  margin-bottom: 16px;
+}
 .page-toolbar strong {
   display: block;
   margin-bottom: 6px;
@@ -982,10 +1104,37 @@ watch(() => route.fullPath, loadCurrent);
   gap: 10px;
   margin-top: 18px;
 }
+.order-overview {
+  display: flex;
+  flex-direction: column;
+}
+.order-overview-payable .detail-grid {
+  order: -1;
+  margin-bottom: 18px;
+}
 .detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+}
+.detail-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.order-progress > h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.order-progress .fact-grid {
+  margin: 0 0 18px;
+}
+.detail-grid :deep(.ant-descriptions-item-label) {
+  width: 128px;
+  white-space: nowrap;
+}
+.detail-grid :deep(.ant-descriptions-item-content) {
+  overflow-wrap: anywhere;
 }
 .section-gap {
   margin-top: 18px;

@@ -1,0 +1,170 @@
+{
+  "status": "isolated-candidate-awaiting-current-human-confirmation",
+  "attachmentSha256": "9128db8c3f70586ee67b05775d2129e990b3f6714b93eee79602069e45befc0f",
+  "heading": "服务千行百业的全栈解决方案",
+  "description": "由专业架构师构建,面向各行业ICT上云业务的解决方案",
+  "solutions": [
+    {
+      "tab": "电商",
+      "title": "电商解决方案",
+      "subtitle": "业务运营、数据分析、安全防护",
+      "image": "remoteL17090945938503.jpg",
+      "body": "我们提供一站式的电商解决方案，将业务运营、数据分析、安全防护等多方面服务融为一体，确保您的电商业务顺畅无阻。我们提供一站式的电商解决方案，将业务运营、数据分析、安全防护等多方面服务融为一体，确保您的电商业务顺畅无阻。",
+      "features": [
+        "业务运营优化",
+        "数据分析与挖掘",
+        "安全防护",
+        "BBDGDDFH"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/electricity.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "游戏",
+      "title": "游戏解决方案",
+      "subtitle": "高质量、全方位生态的游戏云",
+      "image": "remoteL17139356757263.png",
+      "body": "致力于打造高质量、全方位生态的游戏云服务平台，提供从开发、发布到运营的全流程解决方案，确保游戏性能和玩家体验。",
+      "features": [
+        "高质量游戏服务",
+        "全流程解决方案",
+        "优化玩家体验"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/game.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "安全",
+      "title": "安全解决方案",
+      "subtitle": "云安全、可靠、高效",
+      "image": "remoteL17090946214147.jpg",
+      "body": "我们的云服务通过多重安全措施，如防火墙、DDoS防御、安全审计等，提供最前沿的安全技术和解决方案，确保您的数据和业务安全。",
+      "features": [
+        "防火墙",
+        "DDoS防御",
+        "安全审计"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/safety.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "网站",
+      "title": "网站解决方案",
+      "subtitle": "云服务商、专业网站、一站式解决方案",
+      "image": "remoteL17139361014962.jpeg",
+      "body": "提供稳定、高效、可扩展的网站托管解决方案，为各种规模的网站提供一流的性能和服务，确保您的在线业务无时无刻不处于最佳状态。",
+      "features": [
+        "稳定的托管服务",
+        "高效的网站性能",
+        "可扩展的解决方案"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/web.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "金融",
+      "title": "金融解决方案",
+      "subtitle": "金融云服务、智能金融、金融科技",
+      "image": "remoteL17090946561037.jpg",
+      "body": "我们提供专业的金融云服务，帮助金融机构实现数字化转型。我们的智能金融解决方案结合了最新的金融科技，为客户提供高效、安全、可靠的服务。",
+      "features": [
+        "专业的金融服务",
+        "稳定、安全的云服务",
+        "数字化转型"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/financial.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "出海",
+      "title": "出海解决方案",
+      "subtitle": "全球化资源网络、网络延迟低",
+      "image": "remoteL17139356213316.png",
+      "body": "我们拥有广泛的全球资源网络，包括合作伙伴、供应链和人才池，能够为客户提供全方位的支持和服务，助力其顺利进入国际市场。",
+      "features": [
+        "数据安全保障",
+        "高性能稳定性",
+        "可扩展的服务能力",
+        "严格的数据隐私保护"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/network.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    },
+    {
+      "tab": "政府",
+      "title": "政府解决方案",
+      "subtitle": "数字化转型、数据安全、智能化管理",
+      "image": "remoteL17176540578767.jpg",
+      "body": "为政府提供全方位数字化解决方案，包括数据存储、处理、分析与管理，确保信息安全、提升效率，帮助政府智能化决策。",
+      "features": [
+        "大规模场景支撑",
+        "强安全、高可用、高性能",
+        "信创建设化、数据要素化、计算边缘化",
+        "云边保障、数据安全"
+      ],
+      "sourceActions": [
+        {
+          "label": "查看",
+          "href": "/plan/government.html"
+        },
+        {
+          "label": "咨询",
+          "href": "#"
+        }
+      ]
+    }
+  ],
+  "publicationConstraints": [
+    "No production change until current human confirms literal commercial text scope",
+    "No source links promoted to implemented local detail or consultation capability",
+    "No watermark removal or backend configuration overwrite"
+  ]
+}

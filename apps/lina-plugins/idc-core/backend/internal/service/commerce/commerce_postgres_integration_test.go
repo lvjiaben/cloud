@@ -834,7 +834,7 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 		"020-marketing-foundation.sql", "022-commerce-foundation.sql",
 		"023-billing-ledger-foundation.sql",
 		"024-commerce-order-lifecycle.sql",
-		"025-commerce-payment-identity-gate.sql",
+		"025-commerce-payment-identity-gate.sql", "135-manual-identity-payment.sql",
 		"026-commerce-assisted-order.sql",
 		"027-billing-invoice-lifecycle.sql",
 		"028-billing-invoice-transform.sql",
@@ -859,7 +859,7 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 		"070-customer-short-code.sql",
 		"073-general-product-catalog.sql",
 		"074-product-automation-binding.sql",
-		"075-structured-product-configuration.sql",
+		"075-structured-product-configuration.sql", "134-local-purchase-controls.sql",
 		"077-management-configuration-files.sql",
 		"078-product-fulfillment-execution.sql",
 		"079-generic-commerce-query-indexes.sql",
@@ -882,7 +882,14 @@ func newCommerceServiceTestDatabase(t *testing.T) (context.Context, gdb.DB) {
 		"110-catalog-product-import.sql",
 		"120-portable-catalog-import.sql",
 		"121-peer-service-mapping.sql",
+		"126-merchant-currencies.sql",
 		"127-product-commerce-workflow.sql",
+		"133-direct-admin-financial-actions.sql",
+		"137-fulfillment-preparation-recovery.sql",
+		"138-recurring-entitlement-activation.sql",
+		"141-fulfillment-non-acceptance-verification.sql",
+		"153-native-import-purchase-pricing.sql",
+		"157-purchase-server-login.sql",
 	} {
 		content, readErr := os.ReadFile(filepath.Join(migrationRoot, name))
 		if readErr != nil {

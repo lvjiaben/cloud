@@ -1,38 +1,41 @@
 export type CustomerFulfillmentStatus =
-  | 'awaiting_payment'
-  | 'awaiting_review'
-  | 'cancelled'
-  | 'completed'
-  | 'not_completed'
-  | 'processing';
+  | "awaiting_payment"
+  | "awaiting_review"
+  | "cancelled"
+  | "completed"
+  | "not_completed"
+  | "manual_processing"
+  | "processing";
 
 const safeStatuses = new Set<CustomerFulfillmentStatus>([
-  'awaiting_payment',
-  'awaiting_review',
-  'processing',
-  'completed',
-  'not_completed',
-  'cancelled',
+  "awaiting_payment",
+  "awaiting_review",
+  "processing",
+  "completed",
+  "not_completed",
+  "manual_processing",
+  "cancelled",
 ]);
 
 export function customerFulfillmentLabelKey(status: string) {
   return safeStatuses.has(status as CustomerFulfillmentStatus)
     ? `commerce.fulfillment.status.${status}`
-    : 'commerce.fulfillment.statusUnavailable';
+    : "commerce.fulfillment.statusUnavailable";
 }
 
 export function customerFulfillmentColor(status: string) {
   switch (status) {
-    case 'completed':
-      return 'success';
-    case 'not_completed':
-      return 'error';
-    case 'awaiting_review':
-      return 'warning';
-    case 'processing':
-      return 'processing';
+    case "completed":
+      return "success";
+    case "not_completed":
+      return "error";
+    case "awaiting_review":
+    case "manual_processing":
+      return "warning";
+    case "processing":
+      return "processing";
     default:
-      return 'default';
+      return "default";
   }
 }
 
@@ -43,14 +46,23 @@ export function customerDeliveryRows<T>(detail?: {
 }
 
 const safeServiceStatuses = new Set([
-  'active',
-  'expired',
-  'suspended',
-  'terminated',
+  "active",
+  "expired",
+  "suspended",
+  "terminated",
 ]);
 
 export function customerServiceLabelKey(status: string) {
   return safeServiceStatuses.has(status)
     ? `commerce.fulfillment.serviceStatus.${status}`
-    : 'commerce.fulfillment.serviceStatusUnavailable';
+    : "commerce.fulfillment.serviceStatusUnavailable";
+}
+
+// A local management handoff does not reinterpret delivery or service status.
+// Unknown readiness is not an invitation to enter an unconfirmed detail page.
+export function managementPreparationLabelKey(status?: string) {
+  if (!status || status === "ready") return "";
+  return status === "preparing"
+    ? "productDirectories.management.preparing"
+    : "productDirectories.management.needs_attention";
 }

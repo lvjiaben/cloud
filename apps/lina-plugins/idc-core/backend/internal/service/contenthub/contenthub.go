@@ -1,4 +1,4 @@
-// Package contenthub owns news, announcements, knowledge articles, and downloads.
+// Package contenthub owns news, knowledge articles, and downloads.
 package contenthub
 
 import (
@@ -44,7 +44,7 @@ type Item struct {
 	ContentNo, Type, CategoryNo, CategoryNameZhCN, CategoryNameEnUS, Visibility, Title, Summary, Body, SEOTitle, SEODescription, PublicPath, Status, CurrentFileNo string
 	ValidityVersion, Version                                                                                                                                       int64
 	PublishedAt, OfflineAt, CreatedAt, UpdatedAt                                                                                                                   *time.Time
-	TargetCustomerNos, TargetServiceNos, TargetCustomerGroupNos                                                                                                    []string
+	TargetCustomerGroupNos                                                                                                                                         []string
 	ActiveUpload                                                                                                                                                   *ActiveUpload
 	CandidateFile                                                                                                                                                  *CandidateFile
 	CurrentFile                                                                                                                                                    *CurrentFile
@@ -71,13 +71,18 @@ type CurrentFile struct {
 type TargetAudience struct {
 	Kind, Number, Label string
 }
+
+// Page contains a bounded projection; Total is supplied for authorized admin readers.
 type Page struct {
+	Total      int
 	Items      []*Item
 	NextCursor string
 }
 type SearchInput struct {
 	Type, CategoryNo, Status, Visibility, Query, Cursor string
 	Limit                                               int
+	// Page is one-based for admin readers; zero preserves keyset pagination.
+	Page int
 }
 type Category struct {
 	ID                             int64
@@ -107,7 +112,7 @@ type CategoryDeleteInput struct {
 type WriteInput struct {
 	ContentNo, Type, CategoryNo, Visibility, Title, Summary, Body, SEOTitle, SEODescription, Status string
 	Version                                                                                         int64
-	TargetCustomerNos, TargetServiceNos, TargetCustomerGroupNos                                     []string
+	TargetCustomerGroupNos                                                                          []string
 }
 type Candidate struct{ Number, Label string }
 type CandidatePage struct {
@@ -160,6 +165,9 @@ type UploadPolicy struct {
 }
 
 type Service interface {
+	// SearchAdmin authorizes direct platform staff with content management access,
+	// applies every filter in SQL, and returns a bounded page and exact filtered total.
+	// Page selects numbered pagination; zero preserves the existing cursor reader.
 	SearchAdmin(context.Context, SearchInput) (*Page, error)
 	// GetUploadPolicy requires the current direct staff actor to hold content
 	// management permission and returns a fail-closed projection without scanner secrets.
@@ -178,8 +186,6 @@ type Service interface {
 	DetailPublic(context.Context, string) (*Item, error)
 	SearchAccount(context.Context, SearchInput) (*Page, error)
 	DetailAccount(context.Context, string) (*Item, error)
-	SearchAudienceCustomers(context.Context, AudienceSearchInput) (*CandidatePage, error)
-	SearchAudienceServices(context.Context, AudienceSearchInput) (*CandidatePage, error)
 	SearchAudienceCustomerGroups(context.Context, AudienceSearchInput) (*CandidatePage, error)
 	CreateUpload(context.Context, UploadCreateInput) (*UploadSession, error)
 	UploadChunk(context.Context, string, int64, io.Reader) (*ChunkResult, error)
@@ -296,13 +302,13 @@ func cursorDecode(value string) (int64, error) {
 	return id, nil
 }
 func contentTypeValid(value string) bool {
-	return value == "news" || value == "announcement" || value == "knowledge" || value == "download"
+	return value == "news" || value == "knowledge" || value == "download"
 }
-func visibilityValid(contentType, value string) bool {
+func visibilityValid(value string) bool {
 	if value == "public" || value == "all_logged_in" || value == "customer_group" || value == "internal" {
 		return true
 	}
-	return contentType == "announcement" && (value == "specific_customers" || value == "specific_services")
+	return false
 }
 func trimBound(value string, maxBytes int, required bool) (string, bool) {
 	value = strings.TrimSpace(value)

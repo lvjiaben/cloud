@@ -6,7 +6,7 @@ const required = new Map([
   ['../app/app.vue', ['useLocaleHead', 'htmlAttrs: head.value.htmlAttrs']],
   ['../app/components/public/PublicHomePage.vue', ['useSeoMeta', "robots: 'index, follow'"]],
   ['../app/components/public/PublicContentPage.vue', ['useSeoMeta', "robots: 'index, follow'"]],
-  ['../app/components/public/PublicSiteShell.vue', ['config.public.customerUrl']],
+  ['../app/components/public/PublicSiteShell.vue', ['websiteCustomerOrigin', 'loginForWebsite']],
 ]);
 const failures = [];
 for (const [relativePath, needles] of required) {

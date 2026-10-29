@@ -113,14 +113,19 @@ func (s *Service) RevokeInputSecret(ctx context.Context, channelNo string, handl
 }
 
 type taskMetadata struct {
-	ContractVersion            string                            `json:"contractVersion"`
-	OperationNo                string                            `json:"operationNo"`
-	Action                     serveroperationresourcecap.Action `json:"action"`
-	ExpectedServiceVersion     int64                             `json:"expectedServiceVersion"`
-	RequestDigest              [sha256.Size]byte                 `json:"requestDigest"`
-	TranslatedParametersDigest [sha256.Size]byte                 `json:"translatedParametersDigest"`
-	CapabilityEvidenceNo       string                            `json:"capabilityEvidenceNo"`
-	CapabilityEvidenceDigest   [sha256.Size]byte                 `json:"capabilityEvidenceDigest"`
+	ExternalResourceRef string `json:"externalResourceRef"`
+	// SourceParameters preserves owner object numbers before provider translation
+	// so queued native tasks can recheck the exact same local directory request.
+	SourceParameters               json.RawMessage                   `json:"sourceParameters,omitempty"`
+	InterfaceConfigurationRevision string                            `json:"interfaceConfigurationRevision"`
+	ContractVersion                string                            `json:"contractVersion"`
+	OperationNo                    string                            `json:"operationNo"`
+	Action                         serveroperationresourcecap.Action `json:"action"`
+	ExpectedServiceVersion         int64                             `json:"expectedServiceVersion"`
+	RequestDigest                  [sha256.Size]byte                 `json:"requestDigest"`
+	TranslatedParametersDigest     [sha256.Size]byte                 `json:"translatedParametersDigest"`
+	CapabilityEvidenceNo           string                            `json:"capabilityEvidenceNo"`
+	CapabilityEvidenceDigest       [sha256.Size]byte                 `json:"capabilityEvidenceDigest"`
 }
 
 type taskRow struct {
@@ -148,17 +153,21 @@ type secretOutputRow struct {
 }
 
 type routeEvidence struct {
-	MappingNo      string    `orm:"mapping_no"`
-	SnapshotNo     string    `orm:"snapshot_no"`
-	AdapterVersion string    `orm:"adapter_version"`
-	SupportCode    string    `orm:"support_code"`
-	Constraints    string    `orm:"constraints"`
-	ChannelVersion int64     `orm:"channel_version"`
-	PoolVersion    int64     `orm:"pool_version"`
-	MappingVersion int64     `orm:"mapping_version"`
-	ItemCount      int       `orm:"item_count"`
-	ActualCount    int       `orm:"actual_count"`
-	ObservedAt     time.Time `orm:"observed_at"`
+	ProviderPluginID               string    `orm:"provider_plugin_id"`
+	ExternalResourceRef            string    `orm:"external_resource_ref"`
+	ProviderRuntimeType            string    `orm:"provider_runtime_type"`
+	InterfaceConfigurationRevision string    `orm:"interface_configuration_revision"`
+	MappingNo                      string    `orm:"mapping_no"`
+	SnapshotNo                     string    `orm:"snapshot_no"`
+	AdapterVersion                 string    `orm:"adapter_version"`
+	SupportCode                    string    `orm:"support_code"`
+	Constraints                    string    `orm:"constraints"`
+	ChannelVersion                 int64     `orm:"channel_version"`
+	PoolVersion                    int64     `orm:"pool_version"`
+	MappingVersion                 int64     `orm:"mapping_version"`
+	ItemCount                      int       `orm:"item_count"`
+	ActualCount                    int       `orm:"actual_count"`
+	ObservedAt                     time.Time `orm:"observed_at"`
 }
 
 func (s *Service) CreateTask(ctx context.Context, request serveroperationresourcecap.TaskRequest) (*serveroperationresourcecap.Task, error) {
@@ -198,7 +207,7 @@ func (s *Service) CreateTask(ctx context.Context, request serveroperationresourc
 	if err != nil {
 		return nil, serveroperationresourcecap.ErrTaskConflict
 	}
-	metadata := taskMetadata{ContractVersion: serveroperationresourcecap.ContractVersion, OperationNo: request.OperationNo, Action: request.Action, ExpectedServiceVersion: request.ExpectedServiceVersion, RequestDigest: requestDigest, CapabilityEvidenceNo: evidence.SnapshotNo}
+	metadata := taskMetadata{ExternalResourceRef: evidence.ExternalResourceRef, SourceParameters: append(json.RawMessage(nil), request.Parameters...), InterfaceConfigurationRevision: evidence.InterfaceConfigurationRevision, ContractVersion: serveroperationresourcecap.ContractVersion, OperationNo: request.OperationNo, Action: request.Action, ExpectedServiceVersion: request.ExpectedServiceVersion, RequestDigest: requestDigest, CapabilityEvidenceNo: evidence.SnapshotNo}
 	translatedDigest, err := digestJSON(translatedParameters)
 	if err != nil {
 		return nil, err
@@ -262,15 +271,17 @@ WITH latest AS (
  WHERE tenant_id = ? AND channel_no = ? AND status_code = 'complete'
  ORDER BY observed_at DESC, id DESC LIMIT 1
 )
-SELECT mapping.mapping_no, latest.snapshot_no, latest.adapter_version,
+SELECT mapping.mapping_no,mapping.external_resource_ref, latest.snapshot_no, latest.adapter_version,channel.provider_runtime_type,channel.provider_plugin_id,
  item.support_code, item.constraints::TEXT AS constraints,
  channel.version AS channel_version, pool.version AS pool_version,
  mapping.version AS mapping_version, latest.item_count, counts.actual_count,
- latest.observed_at
+ latest.observed_at,COALESCE(binding.current_configuration_revision,'') AS interface_configuration_revision
 FROM latest
 JOIN plugin_idc_resource_channel channel
  ON channel.tenant_id = ? AND channel.channel_no = latest.channel_no
  AND channel.status_code = 'enabled' AND channel.deleted_at IS NULL
+LEFT JOIN plugin_idc_resource_interface_channel_binding binding
+ ON binding.tenant_id=channel.tenant_id AND binding.channel_no=channel.channel_no
 JOIN plugin_idc_resource_pool pool
  ON pool.tenant_id = channel.tenant_id AND pool.channel_no = channel.channel_no
  AND pool.pool_no = ? AND pool.status_code = 'enabled' AND pool.deleted_at IS NULL
@@ -289,7 +300,10 @@ JOIN plugin_idc_resource_capability_snapshot_item item
 	if err != nil {
 		return nil, gerror.Wrap(err, "resolve server operation capability")
 	}
-	if row == nil || row.ItemCount != resourcecap.MaximumCapabilityCount || row.ActualCount != resourcecap.MaximumCapabilityCount || row.ObservedAt.IsZero() || validateCapabilityParameters(row.SupportCode, row.Constraints, request.Parameters) != nil {
+	if row != nil && withdrawnProviderAction(row.ProviderPluginID, request.Action) {
+		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
+	}
+	if row == nil || !validRouteConfiguration(row.ProviderRuntimeType, row.InterfaceConfigurationRevision) || row.ItemCount != resourcecap.MaximumCapabilityCount || row.ActualCount != resourcecap.MaximumCapabilityCount || row.ObservedAt.IsZero() || validateCapabilityParameters(row.SupportCode, row.Constraints, request.Parameters) != nil {
 		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
 	}
 	nowValue, err := s.database.GetValue(ctx, "SELECT CURRENT_TIMESTAMP")
@@ -423,6 +437,9 @@ func scalarConstraintValue(raw json.RawMessage) (string, bool, bool) {
 func numericValue(value string) int64 { parsed, _ := strconv.ParseInt(value, 10, 64); return parsed }
 
 func validSecretBindings(request serveroperationresourcecap.TaskRequest) bool {
+	if request.Action == serveroperationresourcecap.ActionEnterRescue {
+		return len(request.SecretBindings) == 1 && request.SecretBindings[0].Name == "temporary_password" && !request.SecretBindings[0].Handle.IsZero()
+	}
 	if request.Action == serveroperationresourcecap.ActionResetPassword {
 		return len(request.SecretBindings) == 1 && request.SecretBindings[0].Name == "password" && !request.SecretBindings[0].Handle.IsZero()
 	}
@@ -537,6 +554,10 @@ func capabilityFor(action serveroperationresourcecap.Action) (resourcecap.Capabi
 		return resourcecap.CapabilityResetPassword, true
 	case serveroperationresourcecap.ActionConsole:
 		return resourcecap.CapabilityConsole, true
+	case serveroperationresourcecap.ActionEnterRescue:
+		return resourcecap.CapabilityEnterRescue, true
+	case serveroperationresourcecap.ActionExitRescue:
+		return resourcecap.CapabilityExitRescue, true
 	case serveroperationresourcecap.ActionReinstall:
 		return resourcecap.CapabilityReinstall, true
 	case serveroperationresourcecap.ActionResize:
@@ -625,4 +646,15 @@ func digest(value any) (string, error) {
 	}
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// validRouteConfiguration requires a usable immutable interface revision before
+// admitting dynamic actions, so they cannot enter the queue with an empty revision.
+var operationConfigurationRevisionPattern = regexp.MustCompile(`^rci_[0-9a-f]{32}$`)
+
+func validRouteConfiguration(runtimeType, revision string) bool {
+	if runtimeType != "dynamic" {
+		return true
+	}
+	return operationConfigurationRevisionPattern.MatchString(revision)
 }

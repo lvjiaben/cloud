@@ -9,5 +9,8 @@
   "error.idc.notify.verification.expired": "验证码已过期，请重新获取",
   "error.idc.notify.verification.invalid": "验证码或人机验证凭证无效",
   "error.idc.notify.verification.rate.limited": "验证码请求过于频繁，请稍后再试",
-  "error.idc.notify.verification.result.unknown": "本次发送结果未知，请等页面显示的时间到了再重新获取"
+  "error.idc.notify.verification.result.unknown": "本次发送结果未知，请等页面显示的时间到了再重新获取",
+  "error.idc.notify.contact.manual.verification": "当前没有可验证的联系方式，请提交工单核验身份",
+  "error.idc.customer.auth.invalid": "账户信息或验证结果不正确，请重新操作",
+  "error.idc.notify.password.changed": "密码已更新，请重新登录"
 }

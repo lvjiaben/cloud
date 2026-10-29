@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
@@ -68,6 +69,9 @@ func BuildAddToCartCall(intent ProvisionIntent, currencyID string) (Call, map[st
 	for optionID, value := range parameters.ConfigOptions {
 		form.Set("configoption["+optionID+"]", value)
 	}
+	for fieldID, value := range parameters.CustomFields {
+		form.Set("customfield["+fieldID+"]", value)
+	}
 	return Call{Method: http.MethodPost, Path: "/cart/add_to_shop", Form: form}, nil, nil
 }
 
@@ -87,6 +91,9 @@ func BuildSettleCall(intent ProvisionIntent) (Call, map[string]string, error) {
 	form.Set("cart_data[qty]", "1")
 	for optionID, value := range parameters.ConfigOptions {
 		form.Set("cart_data[configoptions]["+optionID+"]", value)
+	}
+	for fieldID, value := range parameters.CustomFields {
+		form.Set("cart_data[customfield]["+fieldID+"]", value)
 	}
 	return Call{Method: http.MethodPost, Path: "/cart/settle", Form: form}, downstreamSecretFields(intent), nil
 }
@@ -119,11 +126,13 @@ func SettlementResult(requestID string, raw json.RawMessage) resourcecap.Operati
 }
 
 type purchaseParameters struct {
+	Workflow      string            `json:"workflow,omitempty"`
 	ProductID     string            `json:"pid"`
 	BillingCycle  string            `json:"billingcycle"`
 	Hostname      string            `json:"host"`
 	Quantity      int               `json:"qty"`
 	ConfigOptions map[string]string `json:"configoption"`
+	CustomFields  map[string]string `json:"customfield,omitempty"`
 }
 
 func decodePurchaseParameters(raw json.RawMessage) (purchaseParameters, error) {
@@ -131,11 +140,16 @@ func decodePurchaseParameters(raw json.RawMessage) (purchaseParameters, error) {
 	decoder.DisallowUnknownFields()
 	var value purchaseParameters
 	if decoder.Decode(&value) != nil || decoder.Decode(&struct{}{}) != io.EOF || !positiveDecimal(value.ProductID) ||
-		!safeCode.MatchString(value.BillingCycle) || value.Quantity != 1 || len(value.ConfigOptions) == 0 || len(value.ConfigOptions) > 64 {
+		(value.Workflow != "" && value.Workflow != "serialized_cart_v1") || !safeCode.MatchString(value.BillingCycle) || value.Quantity != 1 || value.ConfigOptions == nil || len(value.ConfigOptions) > 128 || len(value.CustomFields) > 128 {
 		return purchaseParameters{}, errInvalidConfig
 	}
 	for key, option := range value.ConfigOptions {
 		if !positiveDecimal(key) || !safeCode.MatchString(option) {
+			return purchaseParameters{}, errInvalidConfig
+		}
+	}
+	for key, field := range value.CustomFields {
+		if !positiveDecimal(key) || !utf8.ValidString(field) || len(field) > 8192 || strings.ContainsRune(field, '\x00') {
 			return purchaseParameters{}, errInvalidConfig
 		}
 	}

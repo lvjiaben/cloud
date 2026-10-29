@@ -1,5 +1,8 @@
 {
   "menu": {
+    "plugin:idc-core:resource-customer-products": {
+      "title": "服务器管理"
+    },
     "plugin:idc-core:customer-sales": {
       "title": "客户业务"
     },
@@ -17,9 +20,6 @@
     },
     "plugin:idc-core:notification-marketing": {
       "title": "通知与营销"
-    },
-    "plugin:idc-core:compliance-governance": {
-      "title": "合规与治理"
     },
     "plugin:idc-core:operations-workbench": {
       "title": "运营数据"
@@ -50,18 +50,6 @@
     },
     "plugin:idc-core:server-batches:dangerous": {
       "title": "执行危险服务器批量操作"
-    },
-    "plugin:idc-core:operations:contract-template-list": {
-      "title": "查看合同模板"
-    },
-    "plugin:idc-core:customers:contract-policy-write": {
-      "title": "设置客户合同规则"
-    },
-    "plugin:idc-core:catalog:contract-policy-write": {
-      "title": "设置商品合同规则"
-    },
-    "plugin:idc-core:commerce:contract-policy-write": {
-      "title": "设置订单合同规则"
     },
     "plugin:idc-core:operations": {
       "title": "IDC 运营"
@@ -293,6 +281,21 @@
     },
     "plugin:idc-core:customers:product-edit": {
       "title": "编辑客户产品"
+    },
+    "plugin:idc-core:financial-management:balance-adjustment-create": {
+      "title": "客户余额调账"
+    },
+    "plugin:idc-core:product-fulfillment-tasks:recover": {
+      "title": "恢复开通准备"
+    },
+    "plugin:idc-core:catalog:product-delete": {
+      "title": "删除商品"
+    },
+    "plugin:idc-core:identity-verification": {
+      "title": "身份认证"
+    },
+    "plugin:idc-core:accessory-renewal:handle": {
+      "title": "附属资源续费待办"
     }
   },
   "plugin:idc-core:customers:audit": "客户操作记录"

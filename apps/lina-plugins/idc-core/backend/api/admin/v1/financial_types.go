@@ -103,7 +103,7 @@ type FinancialManagementTransactionDetail struct {
 
 type FinancialManagementAdjustment struct {
 	AdjustmentNo         string `json:"adjustmentNo" dc:"Stable adjustment request number" eg:"BAR_01J2ABCDEF"`
-	AdjustmentTypeCode   string `json:"adjustmentTypeCode" dc:"Adjustment type: manual_receipt or invoice_waiver" eg:"manual_receipt"`
+	AdjustmentTypeCode   string `json:"adjustmentTypeCode" dc:"Adjustment type: manual_receipt, invoice_waiver, balance_credit (gift), balance_debit, marketing_grant_post, or marketing_grant_reverse" eg:"manual_receipt"`
 	StatusCode           string `json:"statusCode" dc:"Adjustment lifecycle status" eg:"pending_review"`
 	CustomerNo           string `json:"customerNo" dc:"Target customer number" eg:"CUS_01J2ABCDEF"`
 	CustomerCode         string `json:"customerCode" dc:"Customer-facing short code" eg:"10008"`

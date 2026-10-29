@@ -42,7 +42,7 @@ const labels: Record<string, Record<Locale, string>> = {
 
 export function normalizeLocale(value: unknown): Locale { return value === 'en-US' ? 'en-US' : 'zh-CN'; }
 export function displayName(item: ServerItem, locale: Locale): string { return locale === 'en-US' ? item.productNameEnUs : item.productNameZhCn; }
-export function businessLabel(value: string, locale: Locale): string { return labels[value]?.[locale] ?? labels.unknown[locale]; }
+export function businessLabel(value: string, locale: Locale): string { return labels[value]?.[locale] ?? labels.unknown?.[locale] ?? '—'; }
 export function formatTime(value: number, locale: Locale): string {
   if (!Number.isFinite(value) || value <= 0) return '—';
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));

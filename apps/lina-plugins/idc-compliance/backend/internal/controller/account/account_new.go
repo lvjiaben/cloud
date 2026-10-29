@@ -14,8 +14,6 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-plugin-idc-compliance/backend/api/account"
-	"lina-plugin-idc-compliance/backend/internal/service/contractsigner"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontractpreparation"
 	"lina-plugin-idc-compliance/backend/internal/service/enterpriseverification"
 	"lina-plugin-idc-compliance/backend/internal/service/personalverification"
 	"lina-plugin-idc-compliance/backend/internal/service/privacygovernance"
@@ -30,10 +28,7 @@ type ControllerV1 struct {
 	verification         personalverification.Service
 	enterprise           enterpriseverification.Service
 	enterpriseAccount    identitycap.EnterpriseAccountService
-	contractSigners      contractsigner.Service
-	contracts            electroniccontractpreparation.Service
 	returnURL            string
-	signerReturnURL      string
 	taxInvoiceRedLetters taxinvoiceredletter.Service
 	taxInvoiceRequests   taxinvoicerequest.Service
 	privacy              privacygovernance.Service
@@ -46,16 +41,13 @@ func NewV1WithPrivacy(
 	verification personalverification.Service,
 	enterprise enterpriseverification.Service,
 	enterpriseAccount identitycap.EnterpriseAccountService,
-	contractSigners contractsigner.Service,
-	contracts electroniccontractpreparation.Service,
 	returnURL string,
 	taxInvoiceRequests taxinvoicerequest.Service,
 	taxInvoiceRedLetters taxinvoiceredletter.Service,
 	privacy privacygovernance.Service,
 ) (account.IAccountV1, error) {
 	controller, err := NewV1WithTaxInvoices(
-		identities, verification, enterprise, enterpriseAccount, contractSigners,
-		contracts, returnURL, taxInvoiceRequests, taxInvoiceRedLetters,
+		identities, verification, enterprise, enterpriseAccount, returnURL, taxInvoiceRequests, taxInvoiceRedLetters,
 	)
 	if err != nil {
 		return nil, err
@@ -75,15 +67,13 @@ func NewV1WithTaxInvoices(
 	verification personalverification.Service,
 	enterprise enterpriseverification.Service,
 	enterpriseAccount identitycap.EnterpriseAccountService,
-	contractSigners contractsigner.Service,
-	contracts electroniccontractpreparation.Service,
 	returnURL string,
 	taxInvoiceRequests taxinvoicerequest.Service,
 	taxInvoiceRedLetters taxinvoiceredletter.Service,
 ) (account.IAccountV1, error) {
 	controller, err := NewV1WithTaxInvoiceRedLetters(
 		identities, verification, enterprise, enterpriseAccount,
-		contractSigners, contracts, returnURL, taxInvoiceRedLetters,
+		returnURL, taxInvoiceRedLetters,
 	)
 	if err != nil {
 		return nil, err
@@ -103,14 +93,12 @@ func NewV1WithTaxInvoiceRedLetters(
 	verification personalverification.Service,
 	enterprise enterpriseverification.Service,
 	enterpriseAccount identitycap.EnterpriseAccountService,
-	contractSigners contractsigner.Service,
-	contracts electroniccontractpreparation.Service,
 	returnURL string,
 	taxInvoiceRedLetters taxinvoiceredletter.Service,
 ) (account.IAccountV1, error) {
 	controller, err := NewV1(
 		identities, verification, enterprise, enterpriseAccount,
-		contractSigners, contracts, returnURL,
+		returnURL,
 	)
 	if err != nil {
 		return nil, err
@@ -129,32 +117,18 @@ func NewV1(
 	verification personalverification.Service,
 	enterprise enterpriseverification.Service,
 	enterpriseAccount identitycap.EnterpriseAccountService,
-	contractSigners contractsigner.Service,
-	contracts electroniccontractpreparation.Service,
 	returnURL string,
 ) (account.IAccountV1, error) {
 	if nilControllerDependency(identities) || nilControllerDependency(verification) ||
-		nilControllerDependency(enterprise) || nilControllerDependency(enterpriseAccount) || nilControllerDependency(contractSigners) ||
-		nilControllerDependency(contracts) ||
+		nilControllerDependency(enterprise) || nilControllerDependency(enterpriseAccount) ||
 		!validTrustedReturnURL(returnURL) {
 		return nil, gerror.New("compliance account controller dependency is invalid")
 	}
 	return &ControllerV1{
 		identities: identities, verification: verification,
-		enterprise: enterprise, enterpriseAccount: enterpriseAccount, contractSigners: contractSigners,
-		contracts: contracts,
-		returnURL: returnURL, signerReturnURL: contractSignerReturnURL(returnURL),
+		enterprise: enterprise, enterpriseAccount: enterpriseAccount,
+		returnURL: returnURL,
 	}, nil
-}
-
-func contractSignerReturnURL(personalReturnURL string) string {
-	parsed, err := url.Parse(personalReturnURL)
-	if err != nil {
-		return ""
-	}
-	parsed.Path = "/account/contracts/signers"
-	parsed.RawQuery = "verification_return=1"
-	return parsed.String()
 }
 
 func nilControllerDependency(value any) bool {

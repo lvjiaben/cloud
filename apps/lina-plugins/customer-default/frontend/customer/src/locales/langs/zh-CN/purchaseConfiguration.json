@@ -38,7 +38,10 @@
     "navigationFailed": "配置已保存，请返回购物车继续操作",
     "previewOnly": "当前未关联购物车商品，可以校验配置并查看价格；从商品购买入口进入后可以保存到购物车。",
     "quoteFailed": "价格计算失败，请稍后重试",
-    "quoted": "配置校验通过，价格已更新"
+    "quoted": "配置校验通过，价格已更新",
+    "loginCompleted": "已登录，正在返回官网结算。",
+    "websiteRedirect": "正在进入官网购买页面。",
+    "websiteUnavailable": "官网暂时不可用，请稍后重试。"
   },
   "title": "商品购买配置"
 }

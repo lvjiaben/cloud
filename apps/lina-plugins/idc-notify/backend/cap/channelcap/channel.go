@@ -19,14 +19,8 @@ const MaximumConfigurationFields = 32
 type Kind string
 
 const (
-	KindInApp          Kind = "in_app"
-	KindEmail          Kind = "email"
-	KindSMS            Kind = "sms"
-	KindWeChatOfficial Kind = "wechat_official"
-	KindWeChatWork     Kind = "wechat_work"
-	KindSignedWebhook  Kind = "signed_webhook"
-	KindDingTalk       Kind = "dingtalk"
-	KindFeishu         Kind = "feishu"
+	KindEmail Kind = "email"
+	KindSMS   Kind = "sms"
 )
 
 // Field describes one adapter-owned setup field without carrying a value.
@@ -105,29 +99,6 @@ type Adapter interface {
 	Query(context.Context, Query) (Result, error)
 }
 
-// EncryptedCallbackAdapter verifies and decrypts the provider's official
-// callback protocol without exposing callback secrets to the service layer.
-type EncryptedCallbackAdapter interface {
-	VerifyChallenge(context.Context, CallbackInput) (string, error)
-	DecodeCallback(context.Context, CallbackInput) (CallbackEvent, error)
-}
-
-type CallbackInput struct {
-	Credential    secretcap.Handle
-	Configuration map[string]string
-	Signature     string
-	Timestamp     string
-	Nonce         string
-	Encrypted     []byte
-}
-
-type CallbackEvent struct {
-	ProviderMessageRef string
-	OccurredAt         time.Time
-	ResultClass        ResultClass
-	EvidenceDigest     string
-}
-
 var registry = struct {
 	sync.Mutex
 	frozen bool
@@ -194,8 +165,7 @@ func ValidateAdapter(adapter Adapter) error {
 
 func validKind(kind Kind) bool {
 	switch kind {
-	case KindInApp, KindEmail, KindSMS, KindWeChatOfficial, KindWeChatWork,
-		KindSignedWebhook, KindDingTalk, KindFeishu:
+	case KindEmail, KindSMS:
 		return true
 	default:
 		return false

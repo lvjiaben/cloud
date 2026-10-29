@@ -14,17 +14,6 @@ BEGIN
     FOR trigger_contract IN
         SELECT *
         FROM (VALUES
-            ('plugin_idc_compliance_contract_file', 'trg_plugin_linapro_idc_compliance_contract_file_immutable', 'trg_plugin_idc_compliance_contract_file_immutable', 'plugin_idc_compliance_reject_archived_file_mutation', 27),
-            ('plugin_idc_compliance_contract', 'trg_plugin_linapro_idc_compliance_contract_snapshot_guard', 'trg_plugin_idc_compliance_contract_snapshot_guard', 'plugin_idc_compliance_guard_contract_snapshot', 19),
-            ('plugin_idc_compliance_contract_template_content', 'trg_plugin_linapro_idc_compliance_ctplc_append_only', 'trg_plugin_idc_compliance_ctplc_append_only', 'plugin_idc_compliance_reject_template_history_mutation', 27),
-            ('plugin_idc_compliance_contract_template_field', 'trg_plugin_linapro_idc_compliance_ctplf_append_only', 'trg_plugin_idc_compliance_ctplf_append_only', 'plugin_idc_compliance_reject_template_history_mutation', 27),
-            ('plugin_idc_compliance_contract_template_field_set', 'trg_plugin_linapro_idc_compliance_ctplfs_append_only', 'trg_plugin_idc_compliance_ctplfs_append_only', 'plugin_idc_compliance_reject_template_history_mutation', 27),
-            ('plugin_idc_compliance_ctpl_provider_component', 'trg_plugin_linapro_idc_compliance_ctplpc_append_only', 'trg_plugin_idc_compliance_ctplpc_append_only', 'plugin_idc_compliance_reject_provider_mapping_mutation', 27),
-            ('plugin_idc_compliance_ctpl_provider_field_mapping', 'trg_plugin_linapro_idc_compliance_ctplpfm_append_only', 'trg_plugin_idc_compliance_ctplpfm_append_only', 'plugin_idc_compliance_reject_provider_mapping_mutation', 27),
-            ('plugin_idc_compliance_ctpl_provider_mapping_set', 'trg_plugin_linapro_idc_compliance_ctplpms_append_only', 'trg_plugin_idc_compliance_ctplpms_append_only', 'plugin_idc_compliance_reject_provider_mapping_mutation', 27),
-            ('plugin_idc_compliance_ctpl_provider_recipient', 'trg_plugin_linapro_idc_compliance_ctplpr_append_only', 'trg_plugin_idc_compliance_ctplpr_append_only', 'plugin_idc_compliance_reject_provider_mapping_mutation', 27),
-            ('plugin_idc_compliance_ctpl_provider_recipient_mapping', 'trg_plugin_linapro_idc_compliance_ctplprm_append_only', 'trg_plugin_idc_compliance_ctplprm_append_only', 'plugin_idc_compliance_reject_provider_mapping_mutation', 27),
-            ('plugin_idc_compliance_contract_template_version', 'trg_plugin_linapro_idc_compliance_ctplv_guard', 'trg_plugin_idc_compliance_ctplv_guard', 'plugin_idc_compliance_guard_template_version', 19),
             ('plugin_idc_compliance_external_evidence', 'trg_plugin_linapro_idc_compliance_external_evidence_append_only', 'trg_plugin_idc_compliance_external_evidence_append_only', 'plugin_idc_compliance_reject_append_only_mutation', 27),
             ('plugin_idc_compliance_red_letter_allocation', 'trg_plugin_linapro_idc_compliance_red_alloc_append_only', 'trg_plugin_idc_compliance_red_alloc_append_only', 'plugin_idc_compliance_reject_append_only_mutation', 27),
             ('plugin_idc_compliance_red_letter_action', 'trg_plugin_linapro_idc_compliance_red_letter_action_append', 'trg_plugin_idc_compliance_red_letter_action_append', 'plugin_idc_compliance_reject_append_only_mutation', 27),

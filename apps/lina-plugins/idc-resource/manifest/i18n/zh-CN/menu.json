@@ -1,7 +1,13 @@
 {
   "menu": {
-    "plugin:idc-resource:provider-configuration": {
+    "plugin:idc-resource:provider-tools-shortcut": {
+      "title": "供应商运维"
+    },
+    "plugin:idc-resource:provider-workspace": {
       "title": "服务器供应商接口"
+    },
+    "plugin:idc-resource:provider-configuration": {
+      "title": "查看供应商配置"
     },
     "plugin:idc-resource:provider-configuration:write": {
       "title": "管理上游渠道与资源池"
@@ -22,7 +28,7 @@
       "title": "调整健康策略"
     },
     "plugin:idc-resource:tasks": {
-      "title": "操作记录"
+      "title": "自动化任务队列"
     },
     "plugin:idc-resource:tasks:query": {
       "title": "查看 Provider 任务证据"
@@ -83,6 +89,9 @@
     },
     "plugin:idc-resource:server-management": {
       "title": "服务器管理"
+    },
+    "plugin:idc-resource:api-logs": {
+      "title": "对接日志"
     }
   }
 }

@@ -51,7 +51,7 @@ func decodeResourceCandidateRequest(payload json.RawMessage) (resourceCandidateR
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return request, err
 	}
-	if request.SchemaVersion != "v1" || len(request.Requests) == 0 || len(request.Requests) > 3 || len(request.CurrentSelections) > 3 {
+	if request.SchemaVersion != "v1" || len(request.Requests) == 0 || len(request.Requests) > 3 || len(request.CurrentSelections) > 128 {
 		return request, io.ErrUnexpectedEOF
 	}
 	seen := make(map[string]struct{}, len(request.Requests))
@@ -68,7 +68,7 @@ func decodeResourceCandidateRequest(payload json.RawMessage) (resourceCandidateR
 		seen[query.FieldKey] = struct{}{}
 	}
 	for _, selection := range request.CurrentSelections {
-		if !validCandidateField(selection.FieldKey) || !validCandidateValues(selection.Values, maximumCandidateItems) {
+		if !validCandidateSelectionField(selection.FieldKey) || !validCandidateValues(selection.Values, maximumCandidateItems) {
 			return request, io.ErrUnexpectedEOF
 		}
 	}
@@ -117,7 +117,33 @@ func validateResourceCandidateResult(payload, requestPayload json.RawMessage) er
 	if len(wanted) != 0 {
 		return io.ErrUnexpectedEOF
 	}
-	return nil
+	for _, relation := range result.Relationships {
+		if !validCandidateField(relation.ParentFieldKey) || !validCandidateField(relation.ChildFieldKey) {
+			return io.ErrUnexpectedEOF
+		}
+	}
+	return result.ValidateRelationships()
+}
+
+// Static merchant choices accompany dynamic queries but never become supplier
+// paths or parameters. Only the three dynamic query fields control outbound reads.
+func validCandidateSelectionField(value string) bool {
+	if validCandidateField(value) {
+		return true
+	}
+	switch value {
+	case "network_type", "hostname_characters", "password_characters", "snapshot_unlimited", "backup_unlimited", "nat_forward_unlimited", "nat_website_unlimited":
+		return true
+	}
+	if !strings.HasPrefix(value, "local_") || len(value) > 64 {
+		return false
+	}
+	for _, r := range value {
+		if r != '_' && (r < 'a' || r > 'z') && (r < '0' || r > '9') {
+			return false
+		}
+	}
+	return len(value) > len("local_")
 }
 
 func validCandidateField(value string) bool {

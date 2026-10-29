@@ -1,0 +1,8 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.productFieldKey.dc": "将本地购买项明确绑定到接口已声明的非秘密商品参数；留空时仅记录客户信息。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.priceFieldTokens.dc": "以可编辑配置项为索引的只读价格字段标识，区分名称相同的配置项。",
+  "Optional bilingual labels for the ordered merchant choice values": "可售选项的双语名称，按商家配置顺序展示",
+  "Product parameters supplied by declared customer fields; provider retains unit conversion": "由客户配置提供的商品参数对应关系；单位换算由接口负责",
+  "Ordered sellable subset of declared or synchronized candidate values": "从接口声明或已同步目录中选择的可售项，按商家顺序展示",
+  "Declared product text parameters supporting validated merchant string choices; absent disables this binding": "声明支持批量校验自定义文本档位的商品参数；未声明则不允许该对应方式"
+}

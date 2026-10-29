@@ -20,6 +20,8 @@ import (
 
 const maximumImportPrices = 120
 
+var versionNumberPatternForImport = regexp.MustCompile(`^ver_[0-9a-f]{32}$`)
+
 var importRequestKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$`)
 
 type importPrice struct {
@@ -31,6 +33,9 @@ type importPrice struct {
 }
 
 func validateImportInput(input ImportInput) (string, error) {
+	if input.TargetVersionNo != "" && !versionNumberPatternForImport.MatchString(input.TargetVersionNo) {
+		return "", bizerr.NewCode(CodeManagementInvalid)
+	}
 	if !importRequestKeyPattern.MatchString(input.RequestKey) || !categoryNumberPattern.MatchString(input.CategoryNo) ||
 		len(input.InterfaceInstanceNo) != 36 || !strings.HasPrefix(input.InterfaceInstanceNo, "pfi_") ||
 		len(input.Reference) == 0 || len(input.Reference) > 256 || strings.TrimSpace(input.Reference) != input.Reference || strings.ContainsRune(input.Reference, '\x00') ||
@@ -159,7 +164,8 @@ func prepareImportSource(input ImportInput, source *resourceinterfaceprojectionc
 	}
 	if input.PricingMode == ImportPricingManual {
 		if source.ImportSnapshot != nil {
-			return nil, nil, false, bizerr.NewCode(CodeManagementInvalid)
+			prices, priceErr := calculatePortableManualPrices(source.ImportSnapshot, input.Prices)
+			return encoded, prices, false, priceErr
 		}
 		prices, priceErr := calculateImportPrices(input.Prices, input.PricingMode, "")
 		return encoded, prices, false, priceErr

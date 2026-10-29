@@ -539,7 +539,6 @@ func (p *daoPersistence) requestOwnClosure(
 			UnsettledFundsCount:      counts[ClosureFindingUnsettledFunds],
 			ActiveServiceCount:       counts[ClosureFindingActiveServices],
 			UnsettledInvoiceCount:    counts[ClosureFindingUnsettledInvoices],
-			ActiveContractCount:      counts[ClosureFindingActiveContracts],
 			InProgressOperationCount: counts[ClosureFindingInProgressOperations],
 			LegalRetentionCount:      counts[ClosureFindingLegalRetention],
 			PrecheckContractVersion:  precheck.ContractVersion, PrecheckedAt: &precheck.CheckedAt,
@@ -669,7 +668,6 @@ func closureFindingsFromRow(row *entity.CustomerClosureRequest) ([]ClosureFindin
 		{Code: ClosureFindingUnsettledFunds, Count: row.UnsettledFundsCount},
 		{Code: ClosureFindingActiveServices, Count: row.ActiveServiceCount},
 		{Code: ClosureFindingUnsettledInvoices, Count: row.UnsettledInvoiceCount},
-		{Code: ClosureFindingActiveContracts, Count: row.ActiveContractCount},
 		{Code: ClosureFindingInProgressOperations, Count: row.InProgressOperationCount},
 		{Code: ClosureFindingLegalRetention, Count: row.LegalRetentionCount},
 	}

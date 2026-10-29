@@ -50,14 +50,6 @@ func TestSnapshotAndBackupWriteMappings(t *testing.T) {
 			ownershipPath: "/administrator/v1/clouds/41/snapshots",
 			ownershipBody: `{"data":{"data":[{"id":77,"type":"snap","password":"must-not-leak"}]}}`,
 		},
-		{
-			name: "backup-restore", capability: resourcecap.CapabilityBackup,
-			parameters: `{"action":"restore","snapshot_ref":"78"}`,
-			method:     http.MethodPost, path: "/administrator/v1/snapshots/78/restore",
-			query:         url.Values{"hostid": {"41"}},
-			ownershipPath: "/administrator/v1/clouds/41/snapshots",
-			ownershipBody: `{"data":{"data":[{"id":78,"type":"backup","password":"must-not-leak"}]}}`,
-		},
 	}
 	for _, test := range tests {
 		test := test

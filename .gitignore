@@ -34,6 +34,7 @@ assets/
 !apps/lina-plugins/website-minimal/frontend/site/app/assets/**
 apps/lina-plugins/website-*/frontend/site/.nuxt/
 apps/lina-plugins/website-*/frontend/site/.output/
+apps/lina-plugins/website-*/frontend/site/.static-output/
 
 # =============================================================================
 # Agent / AI tooling local config
@@ -84,6 +85,11 @@ test-results/
 *.test
 *.out
 apps/lina-plugins/*/temp/
+# Default `go build` output when no -o is supplied for a dynamic plugin.
+apps/lina-plugins/idc-payment-alipay/lina-plugin-idc-payment-alipay
+apps/lina-plugins/idc-payment-epay/lina-plugin-idc-payment-epay
+apps/lina-plugins/idc-payment-unionpay/lina-plugin-idc-payment-unionpay
+apps/lina-plugins/idc-payment-wechatpay/lina-plugin-idc-payment-wechatpay
 apps/lina-plugins/.plugins.lock.yaml
 
 # =============================================================================

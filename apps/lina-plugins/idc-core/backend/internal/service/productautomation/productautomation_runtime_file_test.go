@@ -206,3 +206,19 @@ func TestRuntimeFilesEnforceUniqueFieldAndFileBounds(t *testing.T) {
 		t.Fatal("file limit was bypassed")
 	}
 }
+
+// Compatible execution must not rewrite the authority of purchased files.
+func TestRuntimeFileScopePreservesPurchasedEvidenceAfterCompatibleUpgrade(t *testing.T) {
+	store := newSupplierRuntimeContextStore(rand.Reader)
+	frozen := ExistingBusinessRuntimeContextInput{IntentNo: "PFI_TEST", OrderNo: "ORD_TEST", OrderItemNo: "ORI_TEST", ConfigurationSnapshotNo: "SCS_TEST", ReleaseVersion: "v1.0.0", ReleaseDigest: strings.Repeat("a", 64), DeclarationDigest: strings.Repeat("d", 64)}
+	current := &capmodel.BusinessExtensionProviderEvidence{PluginID: "ssl-provider", Point: capmodel.BusinessExtensionProductFulfillment, ContractVersion: "v1", ReleaseVersion: "v1.1.0", ReleaseDigest: strings.Repeat("b", 64), DeclarationDigest: frozen.DeclarationDigest, AuthorizedMethods: []string{"provision"}}
+	item, err := store.issue(current, dynamicCandidateScope{interfaceInstanceNo: "PAI_TEST", configurationRevision: 1}, capmodel.BusinessExtensionInvocationPurposeExistingBusiness, "provision", nil, frozen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.remove(item.id)
+	scope := runtimeFileScope(item)
+	if scope.ReleaseVersion != frozen.ReleaseVersion || scope.ReleaseDigest != frozen.ReleaseDigest || scope.DeclarationDigest != frozen.DeclarationDigest || scope.OrderItemNo != frozen.OrderItemNo || scope.PluginID != current.PluginID {
+		t.Fatalf("file authority was replaced with executable metadata: %+v", scope)
+	}
+}

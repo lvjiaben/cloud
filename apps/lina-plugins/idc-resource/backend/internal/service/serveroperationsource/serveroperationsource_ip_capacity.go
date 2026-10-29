@@ -27,6 +27,7 @@ type ipReservationRow struct {
 	Status                string    `orm:"status_code"`
 	RequestDigest         string    `orm:"request_digest"`
 	ProviderTaskNo        string    `orm:"provider_task_no"`
+	CommercialOperationNo string    `orm:"commercial_operation_no"`
 	ReleaseReason         string    `orm:"release_reason_code"`
 	ExpiresAt             time.Time `orm:"expires_at"`
 }
@@ -113,7 +114,7 @@ WHERE tenant_id=? AND observation_no=? AND capacity_kind='stock'`,
 		}
 		reservedValue, readErr := s.database.GetValue(ctx, `SELECT COALESCE(sum(quantity),0)
 FROM plugin_idc_resource_ip_reservation
-WHERE tenant_id=? AND channel_no=? AND pool_no=? AND status_code='reserved' AND expires_at>?`,
+WHERE tenant_id=? AND channel_no=? AND pool_no=? AND (status_code IN ('commercial_hold','in_flight') OR (status_code='reserved' AND expires_at>?))`,
 			idccap.DefaultTenantID, request.Route.ChannelNo, request.Route.PoolNo, now)
 		if readErr != nil {
 			return readErr
@@ -193,8 +194,16 @@ FROM plugin_idc_resource_ip_reservation WHERE tenant_id=? AND reservation_no=? F
 			result = projectIPReservation(row, true)
 			return nil
 		}
-		if row.Status != string(serveroperationresourcecap.IPReservationReserved) {
+		if row.Status != string(serveroperationresourcecap.IPReservationReserved) && row.Status != string(serveroperationresourcecap.IPReservationInFlight) {
 			return serveroperationresourcecap.ErrIPReservationConflict
+		}
+		if row.Status == string(serveroperationresourcecap.IPReservationInFlight) {
+			if consume && row.ProviderTaskNo != taskNo {
+				return serveroperationresourcecap.ErrIPReservationConflict
+			}
+			if err := s.validateIPTaskOutcome(ctx, row.ProviderTaskNo, consume); err != nil {
+				return err
+			}
 		}
 		nowValue, readErr := s.database.GetValue(ctx, `SELECT CURRENT_TIMESTAMP`)
 		if readErr != nil {
@@ -209,13 +218,13 @@ FROM plugin_idc_resource_ip_reservation WHERE tenant_id=? AND reservation_no=? F
 			status = string(serveroperationresourcecap.IPReservationConsumed)
 			if _, err := s.database.Exec(ctx, `UPDATE plugin_idc_resource_ip_reservation
 SET status_code=?,provider_task_no=?,consumed_at=?,updated_at=?,version=version+1
-WHERE tenant_id=? AND reservation_no=? AND status_code='reserved'`, status, taskNo, now, now,
+WHERE tenant_id=? AND reservation_no=? AND status_code IN ('reserved','in_flight')`, status, taskNo, now, now,
 				idccap.DefaultTenantID, reservationNo); err != nil {
 				return err
 			}
 		} else if _, err := s.database.Exec(ctx, `UPDATE plugin_idc_resource_ip_reservation
 SET status_code=?,release_reason_code=?,released_at=?,updated_at=?,version=version+1
-WHERE tenant_id=? AND reservation_no=? AND status_code='reserved'`, status, reason, now, now,
+WHERE tenant_id=? AND reservation_no=? AND status_code IN ('reserved','in_flight')`, status, reason, now, now,
 			idccap.DefaultTenantID, reservationNo); err != nil {
 			return err
 		}

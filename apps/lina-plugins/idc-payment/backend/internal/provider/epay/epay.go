@@ -6,6 +6,7 @@ import (
 	"crypto/md5" // #nosec G501 -- the upstream EPay protocol explicitly requires MD5.
 	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/tls"
 	"encoding/hex"
 	"io"
 	"net/http"
@@ -43,7 +44,7 @@ func NewWithClient(endpoint string, client *http.Client) (*Adapter, error) {
 		return nil, gerror.New("EPay endpoint must be an HTTPS submit.php URL")
 	}
 	if client == nil {
-		client = &http.Client{Timeout: 15 * time.Second}
+		client = &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 15 * time.Second}
 	}
 	return &Adapter{endpoint: parsed.String(), client: client}, nil
 }
@@ -88,7 +89,7 @@ func (*Adapter) ValidateCredentials(credentials paymentcap.Credentials) error {
 
 func (*Adapter) Capabilities() paymentcap.Capabilities {
 	return paymentcap.Capabilities{
-		Modes:      map[paymentcap.Mode]bool{paymentcap.ModeEPayCashier: true},
+		Modes:      map[paymentcap.Mode]bool{paymentcap.ModeEPayCashier: true, paymentcap.ModeEPayAlipay: true, paymentcap.ModeEPayWechat: true},
 		Currencies: map[string]bool{"CNY": true},
 		Operations: map[paymentcap.Operation]bool{
 			paymentcap.OperationCreate:   true,
@@ -104,7 +105,7 @@ func (a *Adapter) Create(_ context.Context, credentials paymentcap.Credentials, 
 	if err := paymentcap.ValidateCreateRequest(input); err != nil {
 		return nil, err
 	}
-	if input.Currency != "CNY" || input.Mode != paymentcap.ModeEPayCashier {
+	if input.Currency != "CNY" || !a.Capabilities().Modes[input.Mode] {
 		return nil, paymentcap.ErrUnsupported
 	}
 	fields := map[string]string{
@@ -116,6 +117,12 @@ func (a *Adapter) Create(_ context.Context, credentials paymentcap.Credentials, 
 		"money":        formatCNY(input.AmountMinor),
 		"param":        input.InvoiceNo,
 		"sign_type":    "MD5",
+	}
+	switch input.Mode {
+	case paymentcap.ModeEPayAlipay:
+		fields["type"] = "alipay"
+	case paymentcap.ModeEPayWechat:
+		fields["type"] = "wxpay"
 	}
 	fields["sign"] = sign(fields, credentials.Secret)
 	return &paymentcap.Redirect{Method: "POST", URL: a.endpoint, Fields: fields}, nil

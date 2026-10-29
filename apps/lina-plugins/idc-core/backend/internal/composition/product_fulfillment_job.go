@@ -1,7 +1,10 @@
+// This file registers bounded product-fulfillment jobs with primary-node lifecycle governance.
+
 package composition
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
@@ -39,7 +42,13 @@ func RegisterProductFulfillmentJob(ctx context.Context, registrar pluginhost.Job
 	if !registrar.IsPrimaryNode() {
 		return nil
 	}
-	return registrar.AddWithMetadata(ctx, "@every 5s", "idc-core-product-fulfillment", "IDC Product Fulfillment", "Converges frozen generic product fulfillment tasks.", func(jobCtx context.Context) error {
+	// A faster clock must not stack concurrent batches during a slow provider call.
+	var running atomic.Bool
+	return registrar.AddWithMetadata(ctx, "@every 1s", "idc-core-product-fulfillment", "IDC Product Fulfillment", "Converges frozen generic product fulfillment tasks.", func(jobCtx context.Context) error {
+		if !running.CompareAndSwap(false, true) {
+			return nil
+		}
+		defer running.Store(false)
 		_, err := worker.Run(jobCtx, productFulfillmentBatchLimit)
 		return err
 	})
@@ -54,7 +63,13 @@ func RegisterProductFulfillmentResourceOutcomeJob(ctx context.Context, registrar
 	if !registrar.IsPrimaryNode() {
 		return nil
 	}
-	return registrar.AddWithMetadata(ctx, "@every 5s", "idc-core-product-fulfillment-resource-outcome", "IDC Product Fulfillment Resource Outcome", "Retries post-commit resource-owner outcome reports.", func(jobCtx context.Context) error {
+	// A faster clock must not stack concurrent batches during a slow provider call.
+	var running atomic.Bool
+	return registrar.AddWithMetadata(ctx, "@every 1s", "idc-core-product-fulfillment-resource-outcome", "IDC Product Fulfillment Resource Outcome", "Retries post-commit resource-owner outcome reports.", func(jobCtx context.Context) error {
+		if !running.CompareAndSwap(false, true) {
+			return nil
+		}
+		defer running.Store(false)
 		_, err := worker.Run(jobCtx, productFulfillmentResourceOutcomeBatchLimit)
 		return err
 	})

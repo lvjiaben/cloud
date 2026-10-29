@@ -58,7 +58,6 @@ func TestOperationsSignalsPersistAndUpdatePostgreSQL(t *testing.T) {
 		`CREATE TABLE plugin_idc_core_server_ip_change_intent(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,reservation_status_code VARCHAR(32),updated_at TIMESTAMPTZ NOT NULL)`,
 		`CREATE TABLE plugin_idc_core_customer_individual_profile(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,identity_status_code VARCHAR(32),updated_at TIMESTAMPTZ NOT NULL)`,
 		`CREATE TABLE plugin_idc_core_customer_enterprise_profile(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,verification_status_code VARCHAR(32),updated_at TIMESTAMPTZ NOT NULL)`,
-		`CREATE TABLE plugin_idc_core_contract_failure_compensation(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,status_code VARCHAR(32),updated_at TIMESTAMPTZ NOT NULL)`,
 		`CREATE TABLE plugin_idc_core_sales_commission_settlement(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,status_code VARCHAR(32),requested_at TIMESTAMPTZ,completed_at TIMESTAMPTZ)`,
 		`CREATE TABLE plugin_idc_core_business_operation(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,status_code VARCHAR(32),updated_at TIMESTAMPTZ NOT NULL)`,
 	} {
@@ -107,8 +106,30 @@ func TestOperationsSignalsPersistAndUpdatePostgreSQL(t *testing.T) {
 	if taskAlerts, err := service.ListTaskAlerts(context.Background()); err != nil || len(taskAlerts) != 1 || taskAlerts[0].Code != "adapter_health:provider-a" {
 		t.Fatalf("unexpected combined alerts=%+v err=%v", taskAlerts, err)
 	}
-	if _, err = service.Refresh(context.Background(), RefreshRequest{}); err != nil {
+	if _, err = database.Exec(context.Background(), `INSERT INTO plugin_idc_core_commerce_order
+		(tenant_id, status_code, updated_at) VALUES (0, 'pending_payment', CURRENT_TIMESTAMP)`); err != nil {
+		t.Fatal(err)
+	}
+	refreshed, err := service.Refresh(context.Background(), RefreshRequest{})
+	if err != nil {
 		t.Fatalf("refresh read model: %v", err)
+	}
+	// Retired contract tables are deliberately absent from this fixture: the
+	// workbench must refresh without loading them or publishing dead queues.
+	pendingOrdersFound := false
+	for _, queue := range refreshed.Snapshot.Queues {
+		if strings.Contains(queue.Code, "contract") {
+			t.Fatalf("retired contract queue remains visible: %+v", queue)
+		}
+		if queue.Code == "pending_orders" {
+			pendingOrdersFound = true
+			if queue.Count != 1 {
+				t.Fatalf("pending order count changed after contract retirement: %+v", queue)
+			}
+		}
+	}
+	if !pendingOrdersFound {
+		t.Fatal("pending orders must remain visible after contract retirement")
 	}
 	if count, err := database.GetValue(context.Background(), `SELECT count(*) FROM plugin_idc_core_operations_read_model WHERE tenant_id=0`); err != nil || count.Int64() != 1 {
 		t.Fatalf("read model rows=%d err=%v", count.Int64(), err)

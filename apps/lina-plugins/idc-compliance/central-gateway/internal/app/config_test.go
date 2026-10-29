@@ -19,7 +19,6 @@ func TestLoadConfigRequiresLocalRuntimeFiles(t *testing.T) {
 		processAuthKeyringFileEnv:      filepath.Join(root, "process-auth.json"),
 		supplierIdentityKeyringFileEnv: filepath.Join(root, "supplier-identity.json"),
 		callbackEvidenceKeyringFileEnv: filepath.Join(root, "callback-evidence.json"),
-		tencentESSBasicConfigFileEnv:   filepath.Join(root, "tencent-essbasic.json"),
 		processAuthWindowEnv:           "60s",
 	}
 	config, err := LoadConfig(func(key string) string { return values[key] })
@@ -32,7 +31,6 @@ func TestLoadConfigRequiresLocalRuntimeFiles(t *testing.T) {
 		config.Runtime.InstallationIDFile != values[installationIDFileEnv] ||
 		config.Runtime.SupplierIdentityKeyringFile != values[supplierIdentityKeyringFileEnv] ||
 		config.Runtime.CallbackEvidenceKeyringFile != values[callbackEvidenceKeyringFileEnv] ||
-		config.Runtime.TencentESSBasicConfigFile != values[tencentESSBasicConfigFileEnv] ||
 		config.Runtime.ProcessAuthWindow != time.Minute {
 		t.Fatalf("unexpected config: %+v", config)
 	}
@@ -68,7 +66,6 @@ func TestLoadConfigAcceptsBoundedOverrides(t *testing.T) {
 		processAuthKeyringFileEnv:      filepath.Join(root, "process-auth.json"),
 		supplierIdentityKeyringFileEnv: filepath.Join(root, "supplier-identity.json"),
 		callbackEvidenceKeyringFileEnv: filepath.Join(root, "callback-evidence.json"),
-		tencentESSBasicConfigFileEnv:   filepath.Join(root, "tencent-essbasic.json"),
 		processAuthWindowEnv:           "45s",
 	}
 	config, err := LoadConfig(func(key string) string { return values[key] })
@@ -100,8 +97,6 @@ func TestLoadConfigRejectsInvalidValues(t *testing.T) {
 		{supplierIdentityKeyringFileEnv: base[databaseDSNFileEnv]},
 		{installationIDFileEnv: base[databaseDSNFileEnv]},
 		{callbackEvidenceKeyringFileEnv: base[databaseDSNFileEnv]},
-		{tencentESSBasicConfigFileEnv: base[databaseDSNFileEnv]},
-		{tencentESSBasicConfigFileEnv: "relative/tencent.json"},
 		{processAuthWindowEnv: ""},
 		{processAuthWindowEnv: "61s"},
 	}

@@ -211,7 +211,7 @@ VALUES (0,?,?,?,'addon','customer',?,1,?,0,?,?,?,?,?,?,?,?,?,?,0)`, quote.QuoteN
 		BillingRuleNo: value.BillingRuleNo, ConfigurationSnapshotNo: value.ConfigurationSnapshotNo,
 		ProductNameZhCn: nameZh, ProductNameEnUs: nameEn, PurchaseCycles: 1,
 		ChargeTypeCode: chargeType, PeriodUnitCode: quote.PeriodUnitCode, PeriodCount: quote.PeriodCount,
-		RequiresContract: false, FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
+		FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: value.CapabilityEvidenceDigest,
 		TaxPolicyNo: value.TaxPolicyNo, PriceIncludesTax: true, TaxTreatmentCode: value.TaxTreatmentCode,
 		TaxRateBasisPoints: value.TaxRateBasisPoints, TaxCategoryCode: value.TaxCategoryCode,
@@ -258,15 +258,15 @@ VALUES (0,?,?,?,1,'base',?,1,?,0,?,?)`, quoteChargeNo, quoteItemNo, quote.Curren
 		componentCount++
 	}
 	if _, err = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_service_price_snapshot
-(tenant_id,price_snapshot_no,service_no,customer_no,phase_code,source_quote_no,source_quote_item_no,
+(tenant_id,price_snapshot_no,service_no,subject_type_code,subject_no,customer_no,phase_code,source_quote_no,source_quote_item_no,
 product_no,version_no,billing_rule_no,configuration_snapshot_no,currency_code,purchase_cycles,
 period_unit_code,period_count,renewal_mode_code,capability_evidence_no,capability_evidence_digest,
 capability_evidence_observed_at,capability_evidence_expires_at,original_expires_at,projected_expires_at,
 tax_policy_no,price_includes_tax,tax_treatment_code,tax_rate_basis_points,tax_category_code,
 rounding_scope_code,rounding_mode_code,rounding_quantum_minor,component_count,subtotal_minor,
 discount_minor,net_amount_minor,tax_amount_minor,total_amount_minor,pricing_rule_digest,content_digest)
-VALUES (0,?,?,?,'addon',?,?,?,?,?,?,?,?,?,?,'provider_confirmed',?,?,?, ?,NULL,NULL,?,TRUE,?,?,?,?,?,?,
-?, ?,0,?,?,?,?,?)`, priceNo, quote.ServiceNo, quote.CustomerNo, quote.QuoteNo, quoteItemNo,
+VALUES (0,?,?,?,?,?,'addon',?,?,?,?,?,?,?,?,?,?,'provider_confirmed',?,?,?, ?,NULL,NULL,?,TRUE,?,?,?,?,?,?,
+?, ?,0,?,?,?,?,?)`, priceNo, accessoryLegacyService(quote), accessorySubjectType(quote), accessorySubjectNo(quote), quote.CustomerNo, quote.QuoteNo, quoteItemNo,
 		value.ProductNo, value.VersionNo, value.BillingRuleNo, value.ConfigurationSnapshotNo, quote.CurrencyCode,
 		1, quote.PeriodUnitCode, quote.PeriodCount, value.CapabilityEvidenceNo,
 		value.CapabilityEvidenceDigest, quote.IssuedAt, quote.ExpiresAt, value.TaxPolicyNo,
@@ -276,9 +276,9 @@ VALUES (0,?,?,?,'addon',?,?,?,?,?,?,?,?,?,?,'provider_confirmed',?,?,?, ?,NULL,N
 		return gerror.Wrap(err, "insert accessory service price snapshot")
 	}
 	if _, err = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_service_price_component_snapshot
-(tenant_id,component_snapshot_no,price_snapshot_no,service_no,line_number,component_type_code,
+(tenant_id,component_snapshot_no,price_snapshot_no,service_no,subject_type_code,subject_no,line_number,component_type_code,
 charge_phase_code,source_reference,quantity,unit_amount_minor,amount_minor,source_digest,content_digest)
-VALUES (0,?,?,?,1,'base',?,?,1,?,?,?,?)`, componentNo, priceNo, quote.ServiceNo, chargePhase,
+VALUES (0,?,?,?,?,?,1,'base',?,?,1,?,?,?,?)`, componentNo, priceNo, accessoryLegacyService(quote), accessorySubjectType(quote), accessorySubjectNo(quote), chargePhase,
 		quote.PolicyNo, quote.NetAmountMinor, quote.NetAmountMinor, pricingDigest, itemContent); err != nil {
 		return gerror.Wrap(err, "insert accessory base price component")
 	}
@@ -288,9 +288,9 @@ VALUES (0,?,?,?,1,'base',?,?,1,?,?,?,?)`, componentNo, priceNo, quote.ServiceNo,
 			return refErr
 		}
 		if _, err = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_service_price_component_snapshot
-(tenant_id,component_snapshot_no,price_snapshot_no,service_no,line_number,component_type_code,
+(tenant_id,component_snapshot_no,price_snapshot_no,service_no,subject_type_code,subject_no,line_number,component_type_code,
 charge_phase_code,source_reference,quantity,unit_amount_minor,amount_minor,source_digest,content_digest)
-VALUES (0,?,?,?,2,'tax','total',?,1,?,?,?,?)`, taxComponentNo, priceNo, quote.ServiceNo,
+VALUES (0,?,?,?,?,?,2,'tax','total',?,1,?,?,?,?)`, taxComponentNo, priceNo, accessoryLegacyService(quote), accessorySubjectType(quote), accessorySubjectNo(quote),
 			value.TaxPolicyNo, quote.TaxAmountMinor, quote.TaxAmountMinor, pricingDigest, accessoryDigest); err != nil {
 			return gerror.Wrap(err, "insert accessory tax price component")
 		}

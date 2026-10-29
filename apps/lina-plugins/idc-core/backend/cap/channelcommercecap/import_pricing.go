@@ -35,7 +35,7 @@ type ImportPriceBand struct {
 
 // ImportOptionPrice addresses only a schema-safe field and option key.
 type ImportOptionPrice struct {
-	// PricingMode is empty/fixed for an option, per_unit or band_total for an
+	// PricingMode is empty/fixed for an option, per_unit, band_total or graduated for an
 	// integer field. Quantity fields use empty Value and retain schema limits.
 	PricingMode ImportConfigurationPriceMode `json:"pricingMode,omitempty"`
 	FieldKey    string                       `json:"fieldKey"`
@@ -47,6 +47,8 @@ type ImportOptionPrice struct {
 type ImportConfigurationPriceMode string
 
 const (
+	// ImportConfigurationPriceGraduated sums marginal quantities at each band rate.
+	ImportConfigurationPriceGraduated ImportConfigurationPriceMode = "graduated"
 	// ImportConfigurationPriceFixed charges the selected option once.
 	ImportConfigurationPriceFixed ImportConfigurationPriceMode = "fixed"
 	// ImportConfigurationPricePerUnit multiplies the matching band by quantity.

@@ -10,7 +10,9 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/capregistry"
+	"lina-core/pkg/plugin/capability/notifycap"
 	"lina-plugin-shared-services/backend/cap/inboxcap"
 	modeldo "lina-plugin-shared-services/backend/internal/model/do"
 	"lina-plugin-shared-services/backend/internal/service/sharedcode"
@@ -34,7 +36,11 @@ type evidenceRow struct {
 	EvidenceNo string `orm:"evidence_no"`
 }
 
-type serviceImpl struct{ database gdb.DB }
+type serviceImpl struct {
+	database      gdb.DB
+	notifications notifycap.Service
+	bizctx        bizctxcap.Service
+}
 
 // ServiceRuntime is the owner-composed runtime used only by plugin startup.
 type ServiceRuntime = serviceImpl
@@ -149,7 +155,7 @@ func nullableString(value string) any {
 }
 
 func inboxPublicError(err error) error {
-	for _, code := range []*bizerr.Code{sharedcode.CodeInboxInvalid, sharedcode.CodeInboxConflict} {
+	for _, code := range []*bizerr.Code{sharedcode.CodeInboxInvalid, sharedcode.CodeInboxConflict, sharedcode.CodeSourceNotAuthorized} {
 		if bizerr.Is(err, code) {
 			return err
 		}

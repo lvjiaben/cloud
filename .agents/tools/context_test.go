@@ -2,12 +2,144 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 	"unicode/utf8"
 )
+
+func TestStatusParsingAndScope(t *testing.T) {
+	data := []byte(" M apps/a/中文 file.go\x00R  apps/b/new\nname.go\x00apps/a/old.go\x00?? apps/a-extra/file.go\x00")
+	entries, err := parseStatus(data)
+	if err != nil || len(entries) != 3 {
+		t.Fatalf("entries=%v err=%v", entries, err)
+	}
+	if entries[0].path != "apps/a/中文 file.go" || entries[1].path != "apps/b/new\nname.go" || entries[1].original != "apps/a/old.go" {
+		t.Fatalf("filenames corrupted: %#v", entries)
+	}
+	if !inScope(entries[1].original, "apps/a") || inScope(entries[2].path, "apps/a") {
+		t.Fatal("scope must match path boundaries and rename sources")
+	}
+	for _, broken := range []string{"?? file", "R  new\x00", "bad\x00"} {
+		if _, err := parseStatus([]byte(broken)); err == nil {
+			t.Fatalf("accepted incomplete status %q", broken)
+		}
+	}
+	if entries, err := parseStatus(nil); err != nil || len(entries) != 0 {
+		t.Fatalf("clean status: %v %v", entries, err)
+	}
+}
+
+func TestHandoffBoundedTask(t *testing.T) {
+	root := t.TempDir()
+	fixture(t, root, "openspec/changes/example/tasks.md", "## Work\n- [ ] 1.1 selected\n  acceptance\n- [x] 1.2 unrelated\n")
+	var out bytes.Buffer
+	if err := run(root, []string{"handoff", "example", "1.1"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "acceptance") || strings.Contains(out.String(), "unrelated") || !strings.Contains(out.String(), "没有创建会话或发送消息") {
+		t.Fatalf("invalid handoff: %s", out.String())
+	}
+	for _, args := range [][]string{{"handoff", "../example", "1.1"}, {"handoff", "example", "1.3"}, {"handoff", "example"}} {
+		if err := run(root, args, &bytes.Buffer{}); err == nil {
+			t.Fatalf("accepted %v", args)
+		}
+	}
+	fixture(t, root, "openspec/changes/example/tasks.md", "- [ ] 1.1 "+strings.Repeat("字", 2000)+"\n")
+	if err := run(root, []string{"handoff", "example", "1.1"}, &bytes.Buffer{}); err == nil {
+		t.Fatal("oversized handoff accepted")
+	}
+}
+
+func TestWorkspaceStatusRename(t *testing.T) {
+	root := t.TempDir()
+	fixture(t, root, "apps/source/中文 file.go", "content\n")
+	// The baseline commit exists only in this disposable test repository.
+	for _, args := range [][]string{
+		{"init", "--quiet"},
+		{"add", "."},
+		{"-c", "user.name=Context Test", "-c", "user.email=context@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.hooksPath=" + t.TempDir(), "commit", "--quiet", "-m", "fixture"},
+		{"mv", "apps/source/中文 file.go", "renamed file.go"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git fixture: %v %s", err, output)
+		}
+	}
+	var out bytes.Buffer
+	if err := workspaceStatus(root, "apps/source", &out); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"：1 条", "R ", `"renamed file.go" <- "apps/source/中文 file.go"`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("missing renamed source %q: %s", want, out.String())
+		}
+	}
+}
+
+func TestWorkspaceStatusBounded(t *testing.T) {
+	root := t.TempDir()
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, output)
+		}
+	}
+	git("init", "--quiet")
+	for i := 0; i < 20; i++ {
+		fixture(t, root, fmt.Sprintf("apps/lina-plugins/target/.static-output/file-%02d.js", i), "generated")
+		fixture(t, root, fmt.Sprintf("other-%02d/file", i), "untracked")
+		if i < 15 {
+			fixture(t, root, fmt.Sprintf("openspec/changes/live-%02d/proposal.md", i), "proposal")
+		}
+	}
+	fixture(t, root, "openspec/changes/archive/old/proposal.md", "archive")
+	fixture(t, root, "apps/lina-plugins/target/中文 file.go", "staged")
+	git("add", "apps/lina-plugins/target/中文 file.go")
+	var out bytes.Buffer
+	if err := run(root, []string{"status"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	text := out.String()
+	for _, want := range []string{"57 条状态记录", "活跃变更：15 个", "另有 3 个活跃变更未展开", "个目录分组未展开", "具体文件未展开"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q: %s", want, text)
+		}
+	}
+	if strings.Contains(text, "file-00.js") || strings.Contains(text, "archive/old") || strings.Contains(text, "live-14") {
+		t.Fatalf("unbounded summary: %s", text)
+	}
+	out.Reset()
+	if err := run(root, []string{"status", "apps\\lina-plugins\\target"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	text = out.String()
+	if !strings.Contains(text, "21 条；最多显示12条") || !strings.Contains(text, "另有 9 条未展开") || strings.Count(text, "  ?? ")+strings.Count(text, "  A  ") != 12 {
+		t.Fatalf("incorrect scoped bound: %s", text)
+	}
+	if strings.Contains(text, "活跃变更") || strings.Contains(text, "other-00") {
+		t.Fatalf("scoped status repeated unrelated summary: %s", text)
+	}
+	out.Reset()
+	if err := run(root, []string{"status", "apps/lina-plugins/target/中文 file.go"}, &out); err != nil || !strings.Contains(out.String(), "  A  ") || !strings.Contains(out.String(), "：1 条") {
+		t.Fatalf("staged Unicode path: %s %v", out.String(), err)
+	}
+	for _, path := range []string{"../other", "/tmp", "C:\\other", "apps/../other", ":(glob)**", "--help"} {
+		if err := run(root, []string{"status", path}, &bytes.Buffer{}); err == nil {
+			t.Fatalf("accepted scope %q", path)
+		}
+	}
+	if err := run(root, []string{"status", "a", "b"}, &bytes.Buffer{}); err == nil {
+		t.Fatal("accepted multiple scopes")
+	}
+	if err := workspaceStatus(t.TempDir(), "", &bytes.Buffer{}); err == nil {
+		t.Fatal("non-repository reported as clean")
+	}
+}
 
 func fixture(t *testing.T, root, name, data string) string {
 	t.Helper()

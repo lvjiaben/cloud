@@ -37,6 +37,7 @@ var managementPermissions = map[string]struct{}{
 	permissionCatalogCategoryRestore: {},
 	permissionCatalogProductCreate:   {},
 	permissionCatalogProductUpdate:   {},
+	permissionCatalogProductDelete:   {},
 	permissionCatalogBillingWrite:    {},
 	permissionCatalogPriceWrite:      {},
 	permissionCatalogTaxWrite:        {},
@@ -71,6 +72,14 @@ func NewProductPublicationAuthorizer(
 	return &productPublicationAuthorizerImpl{management: &managementAuthorizerImpl{
 		bizCtxSvc: bizCtxSvc, principal: principalReader, authorization: authorization,
 	}}, nil
+}
+
+// AuthorizeProductSave uses the normal editing permission, without sale-state authority.
+func (a *productPublicationAuthorizerImpl) AuthorizeProductSave(ctx context.Context, versionNo string) (int, error) {
+	if a == nil || a.management == nil || !existingCatalogReferencePattern.MatchString(versionNo) {
+		return 0, bizerr.NewCode(CodeManagementNotAccessible)
+	}
+	return a.management.authorize(ctx, permissionCatalogProductUpdate)
 }
 
 func (a *productPublicationAuthorizerImpl) AuthorizeProductPublication(
@@ -128,6 +137,14 @@ func (a *managementAuthorizerImpl) AuthorizeProductQuery(
 
 func (a *managementAuthorizerImpl) AuthorizeProductCreate(ctx context.Context) (int, error) {
 	return a.authorize(ctx, permissionCatalogProductCreate)
+}
+
+// AuthorizeProductDelete requires the dedicated permission before persistence.
+func (a *managementAuthorizerImpl) AuthorizeProductDelete(ctx context.Context, productNo string) (int, error) {
+	if !existingCatalogReferencePattern.MatchString(productNo) {
+		return 0, bizerr.NewCode(CodeManagementNotAccessible)
+	}
+	return a.authorize(ctx, permissionCatalogProductDelete)
 }
 
 func (a *managementAuthorizerImpl) AuthorizeProductUpdate(ctx context.Context, productNo string) (int, error) {

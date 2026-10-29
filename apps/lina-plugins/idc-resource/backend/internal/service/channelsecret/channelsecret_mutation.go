@@ -1,3 +1,6 @@
+// This file mutates immutable channel secret bindings with scoped authorization,
+// millisecond HTTP lifecycle fences and transactional binding-version checks.
+
 package channelsecret
 
 import (
@@ -98,7 +101,8 @@ func (s *serviceImpl) Replace(ctx context.Context, input MutationInput) (*Status
 	if err != nil || !metadata.Configured {
 		return nil, bizerr.NewCode(CodeConflict)
 	}
-	if pending == nil && !metadata.UpdatedAt.Equal(request.ExpectedUpdatedAt) {
+	// HTTP lifecycle fences use milliseconds; metadata retains database microseconds.
+	if pending == nil && metadata.UpdatedAt.UnixMilli() != request.ExpectedUpdatedAt.UnixMilli() {
 		return nil, bizerr.NewCode(CodeConflict)
 	}
 	row, replayed, err := s.prepareReplace(ctx, request, active, bindingNo, actor)
@@ -142,11 +146,11 @@ func (s *serviceImpl) Revoke(ctx context.Context, input MutationInput) (*Status,
 	}
 	metadata, metadataErr := manager.Metadata(ctx, handle)
 	if metadataErr != nil || metadata.UpdatedAt.IsZero() ||
-		(metadata.Configured && !metadata.UpdatedAt.Equal(request.ExpectedUpdatedAt)) {
+		(metadata.Configured && metadata.UpdatedAt.UnixMilli() != request.ExpectedUpdatedAt.UnixMilli()) {
 		return nil, bizerr.NewCode(CodeConflict)
 	}
 	if metadata.Configured {
-		metadata, err = manager.Revoke(ctx, handle, request.ExpectedUpdatedAt)
+		metadata, err = manager.Revoke(ctx, handle, metadata.UpdatedAt)
 		if err != nil {
 			return nil, bizerr.NewCode(CodeUnavailable)
 		}

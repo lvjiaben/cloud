@@ -25,6 +25,7 @@
     "customerconfigurationcolorinvalid": "Use a color such as #1677ff.",
     "customerconfigurationfieldschanged": "Customer center settings changed. Refresh and try again.",
     "customerconfigurationfailure": "Customer center settings are unavailable. Try again.",
-    "customerconfigurationnavigationinvalid": "Check the navigation labels, pages, links and parent items."
+    "customerconfigurationnavigationinvalid": "Check the navigation labels, pages, links and parent items.",
+    "websiteconfigurationfilinginvalid": "Check the registration numbers and use an HTTP or HTTPS lookup URL."
   }
 }

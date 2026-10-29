@@ -1,0 +1,31 @@
+import {test,expect} from '@playwright/test';
+import {CommerceNavigationPage} from '../pages/CommerceNavigationPage';
+test.use({baseURL:'http://127.0.0.1:6680',viewport:{width:1440,height:900}});
+test.describe('TC-87 实际官网连续选购',()=>{
+ test('TC-87a: 真实商品、型号、历史和刷新，无整页跳转或页面错误',async({page})=>{
+  const site=new CommerceNavigationPage(page),documents:string[]=[],errors:string[]=[];
+  page.on('request',r=>{if(r.isNavigationRequest()&&r.frame()===page.mainFrame())documents.push(r.url());});
+  page.on('pageerror',e=>errors.push(e.message));
+  const response=await page.request.get('/x/idc-core/api/v1/public/catalog/products/ecs-shanghai-configurable-simulation');
+  expect(response.ok()).toBe(true);const {product}=(await response.json()).data;
+  await site.open('/products.html?categoryNo='+encodeURIComponent(product.categoryNo));
+  await expect(page.locator('[data-products] .product-card')).not.toHaveCount(0);
+  const link=page.locator('[data-products] .buy-now-button[href]').first(),slug=new URL((await link.getAttribute('href'))!,'http://127.0.0.1:6680').searchParams.get('product')!;
+  const detail=await page.request.get('/x/idc-core/api/v1/public/catalog/products/'+encodeURIComponent(slug));const first=(await detail.json()).data.product;
+  await site.buy();await expect(page.locator('.allocation-header-title h1')).toHaveText(first.nameZhCN||first.nameEnUS);
+  await expect(page.locator('[data-quote] button')).not.toHaveCount(0);
+  await expect(page.locator('.lina-configure-model-list a[href]')).toHaveCount(1);
+  const alternative=page.locator('[data-catalog-product]:not([aria-current=page])').first(),nextSlug=(await alternative.getAttribute('data-catalog-product'))!,nextName=await alternative.innerText();
+  await site.chooseServer(nextSlug);await expect(page.locator('[data-products] .product-card')).toHaveCount(1);await site.buy();
+  await expect(page.locator('.allocation-header-title h1')).toHaveText(nextName);await expect(page.locator('[data-quote] button')).not.toHaveCount(0);
+  await site.browserBack();await expect(page.locator('[data-products] .product-card')).toHaveCount(1);
+  await site.browserBack();await expect(page.locator('.allocation-header-title h1')).toHaveText(first.nameZhCN||first.nameEnUS);
+  await site.browserBack();await expect(page.locator('[data-products] .product-card')).not.toHaveCount(0);
+  await site.browserForward();await expect(page.locator('[data-quote] button')).not.toHaveCount(0);
+  expect(documents).toHaveLength(1);expect(new URL(page.url()).pathname).toBe('/products.html');
+  console.log('TC087 screenshot: '+await site.capture('tc087-live-commerce-desktop',false));
+  await site.reload();await expect(page.locator('[data-quote] button')).not.toHaveCount(0);
+  await site.setViewport(390,844);expect((await site.layout()).scrollWidth).toBeLessThanOrEqual(390);
+  console.log('TC087 screenshot: '+await site.capture('tc087-live-commerce-mobile',false));expect(errors).toEqual([]);
+ });
+});

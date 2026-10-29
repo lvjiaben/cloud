@@ -9,6 +9,7 @@ import (
 	"lina-core/pkg/plugin/pluginhost"
 	contentnotice "lina-plugin-content-notice"
 	noticecontroller "lina-plugin-content-notice/backend/internal/controller/notice"
+	publicnoticecontroller "lina-plugin-content-notice/backend/internal/controller/publicnotice"
 	noticeservice "lina-plugin-content-notice/backend/internal/service/notice"
 )
 
@@ -37,20 +38,27 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	}
 	services := registrar.Services()
 	tenantService := services.Tenant()
-	if services.BizCtx() == nil || services.Notifications() == nil || services.Users() == nil ||
+	if services.BizCtx() == nil || services.Users() == nil ||
 		tenantService == nil || tenantService.Filter() == nil {
-		return gerror.New("content-notice routes require business-context, notification, tenant-filter, and user services")
+		return gerror.New("content-notice routes require business-context, tenant-filter, and user services")
 	}
 
 	service := noticeservice.New(
 		services.BizCtx(),
-		services.Notifications(),
 		tenantService,
 		services.Users(),
 	)
+	publicController, err := publicnoticecontroller.NewV1WithService(service)
+	if err != nil {
+		return err
+	}
 	routes := registrar.Routes()
 	middlewares := routes.Middlewares()
 	routes.Group(routes.APIPrefix(), func(group pluginhost.RouteGroup) {
+		group.Group("/api/v1", func(group pluginhost.RouteGroup) {
+			group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(), middlewares.RequestBodyLimit(), middlewares.Ctx())
+			group.Bind(publicController)
+		})
 		group.Group("/api/v1", func(group pluginhost.RouteGroup) {
 			group.Middleware(
 				middlewares.NeverDoneCtx(),

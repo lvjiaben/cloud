@@ -5,6 +5,8 @@ package catalog
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"testing"
@@ -32,7 +34,7 @@ func TestImportSnapshotAndCandidatesPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_product_version_configuration VALUES(0,'v1',1,?::jsonb,'digest-one')`, string(raw)); err != nil {
+	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_product_version_configuration(tenant_id,version_no,version,customer_declaration_snapshot,declaration_digest) VALUES(0,'v1',1,?::jsonb,'digest-one')`, string(raw)); err != nil {
 		t.Fatal(err)
 	}
 	resolver := &publicDynamicCandidateResolverStub{}
@@ -46,6 +48,38 @@ func TestImportSnapshotAndCandidatesPostgreSQL(t *testing.T) {
 	}
 	if len(exported.Prices) != 1 || exported.Prices[0].Base[0].AmountMinor != 100 || exported.Prices[0].TermReference == "" || exported.ConfigurationRevision == "" {
 		t.Fatalf("incomplete export: %+v", exported)
+	}
+	// A source ceiling is preserved when the local product is re-exported to
+	// another peer; both local and downstream checkout reject excess cycles.
+	exported.Fulfillment.MaximumPurchaseCycles = 1
+	exported.ProtocolVersion = channelcommercecap.ImportPurchaseCycleLimitProtocolVersion
+	sourceJSON, err := json.Marshal(exported)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceDigest := sha256.Sum256(sourceJSON)
+	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_import_contract(tenant_id,version_no,snapshot,snapshot_digest) VALUES(0,'v1',CAST(? AS JSONB),?)`, string(sourceJSON), hex.EncodeToString(sourceDigest[:])); err != nil {
+		t.Fatal(err)
+	}
+	reexported, err := reader.ReadImportSnapshot(ctx, "alpha-one")
+	if err != nil || reexported.Fulfillment.MaximumPurchaseCycles != 1 {
+		t.Fatalf("source ceiling lost across export: %+v %v", reexported, err)
+	}
+	downstreamJSON, err := json.Marshal(reexported)
+	if err != nil {
+		t.Fatal(err)
+	}
+	downstreamDigest := sha256.Sum256(downstreamJSON)
+	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_catalog_import_contract(tenant_id,version_no,snapshot,snapshot_digest) VALUES(0,'downstream',CAST(? AS JSONB),?)`, string(downstreamJSON), hex.EncodeToString(downstreamDigest[:])); err != nil {
+		t.Fatal(err)
+	}
+	for _, version := range []string{"v1", "downstream"} {
+		if err = reader.(*publicCatalogReaderImpl).validateImportedPurchaseCycles(ctx, []PurchaseQuoteLine{{VersionNo: version, PurchaseCycles: 2}}); err == nil {
+			t.Fatal("nested resale sold an unsupported cycle before procurement")
+		}
+	}
+	if err = reader.(*publicCatalogReaderImpl).validateImportedPurchaseCycles(ctx, []PurchaseQuoteLine{{VersionNo: "downstream", PurchaseCycles: 1}}); err != nil {
+		t.Fatal(err)
 	}
 	if exported.Schema.Fields[0].Key == "region" || exported.Schema.Fields[0].DynamicCandidates.Method != importedCandidateMethod {
 		t.Fatal("private schema leaked")
@@ -84,16 +118,17 @@ func TestImportSnapshotAndCandidatesPostgreSQL(t *testing.T) {
 }
 
 const importExportFixtureSQL = `
-CREATE TABLE plugin_idc_core_catalog_product_version_configuration(tenant_id INT,version_no TEXT,version BIGINT,customer_declaration_snapshot JSONB,declaration_digest TEXT);
+
+CREATE TABLE plugin_idc_core_catalog_product_version_configuration(tenant_id INT,version_no TEXT,version BIGINT,customer_declaration_snapshot JSONB,customer_presentation_snapshot JSONB DEFAULT '{}'::jsonb,declaration_digest TEXT);
 CREATE TABLE plugin_idc_core_catalog_product_version_fulfillment_binding(tenant_id INT,version_no TEXT);
 CREATE TABLE plugin_idc_core_catalog_product_version_fulfillment_policy(tenant_id INT,version_no TEXT,granularity_code TEXT,ongoing_management BOOL,renewal_mode_code TEXT);
 INSERT INTO plugin_idc_core_catalog_product_version_fulfillment_policy VALUES(0,'v1','per_order_item',false,'unavailable');
 ALTER TABLE plugin_idc_core_catalog_billing_rule ADD COLUMN id BIGSERIAL,ADD COLUMN charge_type_code TEXT DEFAULT 'recurring',ADD COLUMN period_unit_code TEXT DEFAULT 'month',ADD COLUMN period_count INT DEFAULT 1,ADD COLUMN price_phase_code TEXT DEFAULT 'new_purchase',ADD COLUMN quantity_mode_code TEXT DEFAULT 'fixed',ADD COLUMN trial_quantity INT,ADD COLUMN minimum_purchase_cycles INT DEFAULT 1,ADD COLUMN maximum_renewal_cycles INT,ADD COLUMN meter_unit_code TEXT,ADD COLUMN tier_mode_code TEXT,ADD COLUMN usage_collection_unit_code TEXT,ADD COLUMN usage_collection_count INT,ADD COLUMN usage_rounding_mode_code TEXT,ADD COLUMN usage_rounding_quantity BIGINT,ADD COLUMN usage_minimum_quantity BIGINT,ADD COLUMN usage_maximum_quantity BIGINT,ADD COLUMN usage_missing_policy_code TEXT;
-ALTER TABLE plugin_idc_core_catalog_price ADD COLUMN id BIGSERIAL,ADD COLUMN configuration_price_dimension_no TEXT,ADD COLUMN amount_minor BIGINT DEFAULT 100,ADD COLUMN setup_fee_minor BIGINT DEFAULT 0,ADD COLUMN renewal_amount_minor BIGINT,ADD COLUMN minimum_quantity BIGINT DEFAULT 0,ADD COLUMN maximum_quantity BIGINT;
+ALTER TABLE plugin_idc_core_catalog_price ADD COLUMN id BIGSERIAL,ADD COLUMN IF NOT EXISTS configuration_price_dimension_no TEXT,ADD COLUMN amount_minor BIGINT DEFAULT 100,ADD COLUMN setup_fee_minor BIGINT DEFAULT 0,ADD COLUMN renewal_amount_minor BIGINT,ADD COLUMN minimum_quantity BIGINT DEFAULT 0,ADD COLUMN maximum_quantity BIGINT;
 CREATE TABLE plugin_idc_core_catalog_tax_policy(id BIGSERIAL,tenant_id INT,version_no TEXT,currency_code TEXT,price_includes_tax BOOL,tax_treatment_code TEXT,tax_rate_basis_points INT,tax_category_code TEXT,rounding_scope_code TEXT,rounding_mode_code TEXT,rounding_quantum_minor BIGINT);
 INSERT INTO plugin_idc_core_catalog_tax_policy VALUES(DEFAULT,0,'v1','CNY',false,'exempt',NULL,'service','line','half_up',1);
 CREATE TABLE plugin_idc_core_catalog_configuration_price_dimension(id BIGSERIAL,tenant_id INT,version_no TEXT,dimension_no TEXT,field_key TEXT,candidate_value TEXT,pricing_mode_code TEXT DEFAULT 'fixed',status_code TEXT);
 CREATE TABLE plugin_idc_core_catalog_configuration_group(id BIGSERIAL,tenant_id INT,version_no TEXT,group_no TEXT,group_code TEXT,sort_order INT);
 CREATE TABLE plugin_idc_core_catalog_configuration_option(id BIGSERIAL,tenant_id INT,version_no TEXT,group_no TEXT,option_no TEXT,normalized_value JSONB,status_code TEXT,sort_order INT);
-CREATE TABLE plugin_idc_core_catalog_import_term(tenant_id INT,version_no TEXT,billing_rule_no TEXT,currency_code TEXT,whole_item_rule JSONB);
+
 `

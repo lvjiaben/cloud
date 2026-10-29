@@ -293,3 +293,76 @@ func collectJSONFields(typ reflect.Type, fields map[string]bool) {
 		fields[name] = true
 	}
 }
+
+// TestAnnouncementContractsDropLegacyFields ensures removed notice features cannot leak back into public DTOs.
+func TestAnnouncementContractsDropLegacyFields(t *testing.T) {
+	for name, typ := range map[string]reflect.Type{
+		"create": reflect.TypeOf(noticev1.CreateReq{}),
+		"update": reflect.TypeOf(noticev1.UpdateReq{}),
+		"list":   reflect.TypeOf(noticev1.ListReq{}),
+		"item":   reflect.TypeOf(noticev1.NoticeItem{}),
+	} {
+		assertJSONFieldsAbsent(t, name, typ, []string{"type", "fileIds", "remark", "visibility", "targetCustomerNos", "targetServiceNos"})
+	}
+}
+
+// TestAnnouncementAPIDocTranslationsCoverSourceMetadata rejects untranslated new or changed public API fields.
+func TestAnnouncementAPIDocTranslationsCoverSourceMetadata(t *testing.T) {
+	root := contentNoticePluginRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "manifest", "i18n", "zh-CN", "apidoc", "plugin-api-main.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var translated map[string]any
+	if err = json.Unmarshal(data, &translated); err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range collectAPIFiles(t, root) {
+		parsed, parseErr := parser.ParseFile(token.NewFileSet(), file, nil, 0)
+		if parseErr != nil {
+			t.Fatal(parseErr)
+		}
+		ast.Inspect(parsed, func(node ast.Node) bool {
+			spec, ok := node.(*ast.TypeSpec)
+			if !ok {
+				return true
+			}
+			shape, ok := spec.Type.(*ast.StructType)
+			if !ok {
+				return true
+			}
+			keys := strings.Split(apiDTOKey(root, file, spec.Name.Name), "/")
+			for _, field := range shape.Fields.List {
+				if field.Tag == nil {
+					continue
+				}
+				tags := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+				segment := []string{"fields", strings.Split(tags.Get("json"), ",")[0]}
+				if tags.Get("path") != "" {
+					segment = []string{"meta"}
+				}
+				for _, tag := range []string{"summary", "dc", "tags"} {
+					if tags.Get(tag) == "" {
+						continue
+					}
+					path := append([]string{"plugins", "content_notice", "api"}, keys...)
+					path = append(path, segment...)
+					path = append(path, tag)
+					var value any = translated
+					for _, key := range path {
+						object, isObject := value.(map[string]any)
+						if !isObject {
+							value = nil
+							break
+						}
+						value = object[key]
+					}
+					if text, ok := value.(string); !ok || strings.TrimSpace(text) == "" {
+						t.Errorf("missing Chinese API translation: %s", strings.Join(path, "."))
+					}
+				}
+			}
+			return true
+		})
+	}
+}

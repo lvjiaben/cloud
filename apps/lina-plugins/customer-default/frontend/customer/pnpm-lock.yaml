@@ -8,6 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@iconify-json/ep':
+        specifier: 1.2.4
+        version: 1.2.4
+      '@iconify-json/fluent-mdl2':
+        specifier: 1.2.1
+        version: 1.2.1
+      '@iconify-json/lucide':
+        specifier: 1.2.147
+        version: 1.2.147
+      '@iconify/vue':
+        specifier: 5.0.0
+        version: 5.0.0(vue@3.5.29(typescript@5.9.3))
       '@tiptap/extension-image':
         specifier: 3.31.4
         version: 3.31.4(@tiptap/core@3.31.4(@tiptap/pm@3.31.4))
@@ -1909,6 +1921,15 @@ packages:
 
   '@iconify-json/ant-design@1.2.5':
     resolution: {integrity: sha512-SYxhrx1AFq2MBcXk77AERYz2mPhLQes1F0vtvG64+dJZWyge9studXo7MiR8PPeLjRjZdWRrReRbxiwdRMf70Q==}
+
+  '@iconify-json/ep@1.2.4':
+    resolution: {integrity: sha512-dtKOueYp1CRxAUW+GayIiuHqOlELfO0W3QiHOH4NjvKtBn2uxZbByIKQ+7B1Hj+AgZrhWTie3QKYkZn+VQVZrw==}
+
+  '@iconify-json/fluent-mdl2@1.2.1':
+    resolution: {integrity: sha512-zFgd1V9r0a+mqA46Z4mOoSf6PbQbhYnY9Uhtpjl3xvw03doNolh4apMtsZoLlC/Y7wO2uj306MgziaqwWdNMwg==}
+
+  '@iconify-json/lucide@1.2.147':
+    resolution: {integrity: sha512-7Qqa/joSBeUxihWsQJx5nKcqMWtV3YrH90Jldxcx4J9ciTLavRUlpexQwRTcx9dcb7CJpISfjZTj42zD/30sqA==}
 
   '@iconify-json/vaadin@1.2.1':
     resolution: {integrity: sha512-dT2PWQp5tPxqJsWCc7qXDRVMcGeOf3e+Hys1dcMQrfVVnaRgXxYXgA0Wj98N5QjZMIf9+/iqAKvY1Yuk484hEg==}
@@ -7970,6 +7991,18 @@ snapshots:
   '@humanwhocodes/retry@0.4.3': {}
 
   '@iconify-json/ant-design@1.2.5':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/ep@1.2.4':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/fluent-mdl2@1.2.1':
+    dependencies:
+      '@iconify/types': 2.0.0
+
+  '@iconify-json/lucide@1.2.147':
     dependencies:
       '@iconify/types': 2.0.0
 

@@ -1,0 +1,28 @@
+import {test,expect} from '../support/source-site';
+import {controlledBusiness,prefix} from '../support/controlled-business';
+import {CatalogPage} from '../pages/CatalogPage';
+test.use({baseURL:'http://localhost:6680',viewport:{width:1280,height:800}});
+test.describe('TC-71 本方父子分类与商品配置入口',()=>{
+ test('TC-71a: 父子顺序、折叠键盘、精确商品、直达与手机',async({page})=>{
+  const site=new CatalogPage(page);await controlledBusiness(page);
+  const categories=[{categoryNo:'cloud',parentCategoryNo:'',nameZhCN:'本方弹性云'},{categoryNo:'east',parentCategoryNo:'cloud',nameZhCN:'华东节点',purchaseNotice:'华东独立说明'},{categoryNo:'west',parentCategoryNo:'cloud',nameZhCN:'西部节点'},{categoryNo:'physical',parentCategoryNo:'',nameZhCN:'本方物理机'},{categoryNo:'rack',parentCategoryNo:'physical',nameZhCN:'物理机房'}];
+  const products=[{publicSlug:'east-one',categoryNo:'east',nameZhCN:'华东标准型',availability:'available',currencies:['CNY']},{publicSlug:'east-two',categoryNo:'east',nameZhCN:'华东大内存型',availability:'available',currencies:['CNY']}];
+  await page.route('**'+prefix+'/catalog/products**',r=>{const u=new URL(r.request().url());if(u.pathname.endsWith('/purchase-configuration'))return r.fulfill({json:{code:0,data:{configurationRevision:'c'.repeat(43),fields:[{fieldToken:'cpu',type:'single_select',labelZhCN:'处理器',visible:true,required:true,options:[{optionToken:'two',labelZhCN:'2核'},{optionToken:'four',labelZhCN:'4核'}]}],values:[{fieldToken:'cpu',type:'single_select',optionTokens:['two']}]}}});if(u.pathname.endsWith('/evaluate'))return r.fulfill({status:503,json:{code:50}});if(u.pathname.endsWith('/products'))return r.fulfill({json:{code:0,data:{categories,products:u.searchParams.get('categoryNo')==='west'?[]:products,nextCursor:''}}});return r.fulfill({json:{code:0,data:{product:products.find(p=>u.pathname.endsWith('/'+p.publicSlug))}}});});
+  await site.open('/products.html?categoryNo=east');await expect(site.menu()).toHaveText(['全部商品','本方弹性云','本方物理机']);await expect(site.category('east')).toBeVisible();await expect(site.category('rack')).toBeHidden();await expect(site.category('east')).toHaveAttribute('aria-current','page');await expect(site.product('east-one')).toBeVisible();await expect(site.product('east-two')).toBeVisible();await expect(site.purchaseNotice()).toHaveText('华东独立说明');console.log(await site.capture('hierarchy-desktop',false));
+  await site.toggleGroup('本方弹性云');await expect(site.category('east')).toBeHidden();await site.toggleGroup('本方弹性云','Enter');await expect(site.category('east')).toBeVisible();await site.selectCategory('west');await expect(page.locator('[data-products]')).toBeEmpty();await expect(site.purchaseNotice()).toBeHidden();
+  await site.open('/products.html?product=east-one');await expect(site.category('east')).toHaveAttribute('aria-current','page');await expect(site.product('east-one')).toBeVisible();await expect(site.product('east-two')).toHaveCount(0);
+  await site.open('/products.html?categoryNo=east');await site.buy('east-one');await expect(page).toHaveURL(/products.html\?product=east-one&action=configureproduct/);await expect(page.locator('.allocation-header-title h1')).toHaveText('华东标准型');await expect(page.locator('.lina-configure-model-list')).toContainText('华东大内存型');await expect(page.locator('[data-fields]')).toContainText('处理器');await expect(page.locator('[data-fields]')).toContainText('4核');await expect(site.category('east')).toHaveAttribute('aria-current','page');
+  await site.setViewport(390,844);expect((await site.layout()).scrollWidth).toBeLessThanOrEqual(390);console.log(await site.capture('hierarchy-config-mobile',false));
+ });
+ test('TC-71c: 分页保留折叠，搜索保持分类前缀',async({page})=>{
+  const site=new CatalogPage(page);await controlledBusiness(page);
+  const categories=[{categoryNo:'root',nameZhCN:'云服务器'},{categoryNo:'child',parentCategoryNo:'root',nameZhCN:'节点'}];
+  const queries:string[]=[];
+  await page.route('**'+prefix+'/catalog/products*',route=>{const url=new URL(route.request().url());queries.push(url.search);return route.fulfill({json:{code:0,data:{categories,products:[{publicSlug:url.searchParams.has('cursor')?'next':'first',categoryNo:'child',nameZhCN:'服务器',availability:'available'}],nextCursor:url.searchParams.has('cursor')?'':'page-two'}}});});
+  await site.open('/products.html?categoryNo=child&namePrefix=云');await expect(site.product('first')).toBeVisible();await site.toggleGroup('云服务器');await page.locator('[data-more]').click();await expect(site.product('next')).toBeVisible();await expect(site.category('child')).toBeHidden();expect(queries.at(-1)).toContain('cursor=page-two');expect(queries.at(-1)).toContain('categoryNo=child');expect(new URLSearchParams(queries.at(-1)).get('namePrefix')).toBe('云');await site.toggleGroup('云服务器');await expect(site.category('child')).toHaveAttribute('href','/products.html?categoryNo=child&namePrefix=%E4%BA%91');
+ });
+ test('TC-71b: 缺席父节点、异常环路和危险名称均不丢失公开分类',async({page})=>{
+  const site=new CatalogPage(page);await controlledBusiness(page);await page.route('**'+prefix+'/catalog/products*',r=>r.fulfill({json:{code:0,data:{categories:[{categoryNo:'orphan',parentCategoryNo:'hidden',nameZhCN:'独立公开子类'},{categoryNo:'a',parentCategoryNo:'b',nameZhCN:'<img src=x onerror=alert(1)>'},{categoryNo:'b',parentCategoryNo:'a',nameZhCN:'异常父节点'}],products:[],nextCursor:''}}}));await site.open('/products.html?categoryNo=orphan');await expect(site.category('orphan')).toBeVisible();await expect(site.category('a')).toHaveCount(1);await expect(site.category('b')).toHaveCount(1);await expect(page.locator('[data-categories] img')).toHaveCount(0);console.log(await site.capture('hierarchy-orphan',false));
+ });
+});
+

@@ -1,0 +1,15 @@
+{
+  "plugin.idc-core.catalog.customerOptions.visibility": "客户表单",
+  "plugin.idc-core.catalog.customerOptions.shown": "显示",
+  "plugin.idc-core.catalog.customerOptions.hidden": "隐藏",
+  "plugin.idc-core.catalog.customerOptions.defaultValue": "默认值",
+  "plugin.idc-core.catalog.customerOptions.defaultPlaceholder": "留空使用首个可售值",
+  "plugin.idc-core.catalog.customerOptions.defaultInvalid": "隐藏配置需要有效默认值，请检查可售范围与接口要求",
+  "plugin.idc-core.catalog.customerOptions.copyDefinition": "复制定义",
+  "plugin.idc-core.catalog.customerOptions.copySuffix": "（副本）",
+  "plugin.idc-core.catalog.optionBatchPrice.title": "批量设置价格",
+  "plugin.idc-core.catalog.optionBatchPrice.targets": "目标子项",
+  "plugin.idc-core.catalog.optionBatchPrice.keep": "保持不变",
+  "plugin.idc-core.catalog.optionBatchPrice.apply": "填入草稿",
+  "plugin.idc-core.catalog.optionBatchPrice.invalid": "请选择至多 256 个子项，并填写至少一项有效金额"
+}

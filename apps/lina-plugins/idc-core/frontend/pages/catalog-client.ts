@@ -11,19 +11,33 @@ import type {
 import type { CatalogFulfillmentStrategy } from "./catalog-fulfillment-policy-state";
 
 const pluginID = "idc-core";
+// Configuration reads and validation may resolve real supplier choices. Keep
+// their bounded wait above the shared client's ten-second default; writes are
+// never retried merely because a response is slow.
+const configurationRequestTimeout = 30_000;
 
 export type CatalogProductStatus = "active" | "draft" | "retired" | "suspended";
-export type CatalogVersionSource =
-  | "copy"
-  | "manual"
-  | "migration";
+export type CatalogVersionSource = "copy" | "manual" | "migration";
 export type CatalogVersionStatus =
   | "draft"
   | "published"
   | "retired"
   | "superseded";
 
+export interface CatalogProductBasePricePreview {
+  currencyCode: string;
+  amountMinor: string;
+  setupFeeMinor: string;
+  periodUnit: "once" | "hour" | "day" | "month" | "year";
+  periodCount: number;
+  chargeType: "one_time" | "recurring" | "trial";
+}
 export interface CatalogProductSummary {
+  availableQuantity: number | null;
+  provisionedQuantity: number;
+  totalQuantity: number;
+  sortOrder: number;
+  basePrice?: CatalogProductBasePricePreview | null;
   billingRuleCount: number;
   categoryNameEnUs: string;
   categoryNameZhCn: string;
@@ -46,7 +60,7 @@ export interface CatalogProductSummary {
 }
 
 export interface CatalogProductListParams {
-	page?: number;
+  page?: number;
   categoryNo?: string;
   cursor?: string;
   limit?: number;
@@ -56,14 +70,15 @@ export interface CatalogProductListParams {
 }
 
 export interface CatalogProductListResult {
-	total: number;
+  total: number;
   nextCursor: string;
   products: CatalogProductSummary[];
 }
 
 export interface CatalogProductDetailProduct {
-	 descriptionVersion?: number;
- directoryNo?: string;
+  currentVersionNo?: string;
+  descriptionVersion?: number;
+  directoryNo?: string;
   categoryNameEnUs: string;
   categoryNameZhCn: string;
   categoryNo: string;
@@ -81,12 +96,8 @@ export interface CatalogProductDetailProduct {
 
 export interface CatalogProductDetailVersion {
   changeSummary: string;
-  contractPolicyCode: "inherit" | "none" | "required";
-  contractPolicyVersion: number;
-  contractTemplateNo: string;
   createdAt: number;
   publishedAt: null | number;
-  requiresContract: boolean;
   retiredAt: null | number;
   source: CatalogVersionSource;
   sourceVersion: string;
@@ -118,23 +129,6 @@ export interface CatalogBillingRule {
   usageRoundingQuantity: null | number;
 }
 
-export function catalogBillingRuleCreate(versionNo: string, input: {
-  ruleCode: string;
-  chargeType: "one_time" | "recurring" | "trial";
-  periodUnit: "once" | "hour" | "day" | "month" | "year";
-  periodCount: number;
-  pricePhase: "new_purchase" | "both";
-  quantityMode: "fixed";
-  trialQuantity: number;
-  minimumPurchaseCycles: number;
-  maximumRenewalCycles?: number;
-  status: "active";
-}) {
-  return requestClient.post<{ billingRuleNo: string }>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/billing-rules`), input,
-  );
-}
-
 export interface CatalogPrice {
   amountMinor: string;
   billingRuleNo: string;
@@ -146,6 +140,12 @@ export interface CatalogPrice {
   setupFeeMinor: string;
   status: string;
   configurationPriceDimensionNo: string;
+  configurationPricingMode?:
+    | "fixed"
+    | "per_unit"
+    | "band_total"
+    | "graduated"
+    | "";
   configurationFieldLabelZhCn: string;
   configurationFieldLabelEnUs: string;
   configurationCandidateLabelZhCn: string;
@@ -153,8 +153,9 @@ export interface CatalogPrice {
 }
 
 export interface CatalogConfigurationPriceCandidate {
- quantity: boolean;
- pricingMode: "fixed" | "per_unit" | "band_total" | "";
+  fieldToken?: string;
+  quantity: boolean;
+  pricingMode: "fixed" | "per_unit" | "band_total" | "graduated" | "";
   candidateToken: string;
   fieldLabelZhCN: string;
   fieldLabelEnUS: string;
@@ -163,20 +164,43 @@ export interface CatalogConfigurationPriceCandidate {
   dimensionNo: string;
 }
 
-export function catalogConfigurationPriceCandidates(versionNo: string) {
-  return requestClient.get<{ candidates: CatalogConfigurationPriceCandidate[] }>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration-price-candidates`),
+export function catalogConfigurationPriceCandidates(
+  versionNo: string,
+  options?: { silentErrorMessage?: boolean },
+) {
+  return requestClient.get<{
+    candidates: CatalogConfigurationPriceCandidate[];
+  }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration-price-candidates`,
+    ),
+    { timeout: configurationRequestTimeout, ...options },
   );
 }
 
-export function catalogConfigurationPriceDimensionCreate(versionNo: string, candidateToken: string, pricingMode: string = "fixed") {
+export function catalogConfigurationPriceDimensionCreate(
+  versionNo: string,
+  candidateToken: string,
+  pricingMode: string = "fixed",
+) {
   return requestClient.post<{
     dimensionNo: string;
     fieldLabelZhCN: string;
     fieldLabelEnUS: string;
     candidateLabelZhCN: string;
     candidateLabelEnUS: string;
-  }>(pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration-price-dimensions`), { candidateToken, pricingMode });
+  }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration-price-dimensions`,
+    ),
+    { candidateToken, pricingMode },
+  );
+}
+
+export interface CatalogPriceScheduleResult {
+  tiers: Array<{ priceNo: string }>;
 }
 
 export function catalogConfigurationPriceScheduleCreate(
@@ -185,7 +209,7 @@ export function catalogConfigurationPriceScheduleCreate(
   input: {
     configurationPriceDimensionNo?: string;
     currencyCode: string;
-    status: "active";
+    status: "active" | "inactive";
     tiers: Array<{
       amountMinor: string;
       maximumQuantity: number | null;
@@ -195,8 +219,11 @@ export function catalogConfigurationPriceScheduleCreate(
     }>;
   },
 ) {
-  return requestClient.post(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/billing-rules/${encodeURIComponent(billingRuleNo)}/price-schedules`),
+  return requestClient.post<CatalogPriceScheduleResult>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/billing-rules/${encodeURIComponent(billingRuleNo)}/price-schedules`,
+    ),
     input,
   );
 }
@@ -213,9 +240,39 @@ export interface CatalogTaxPolicy {
   taxTreatment: "exempt" | "taxable" | "zero_rated";
 }
 
-export function catalogTaxPolicyCreate(versionNo: string, input: Omit<CatalogTaxPolicy, "taxPolicyNo">) {
+export function catalogPriceScheduleUpdate(
+  versionNo: string,
+  billingRuleNo: string,
+  priceNo: string,
+  input: Parameters<typeof catalogConfigurationPriceScheduleCreate>[2],
+) {
+  return requestClient.put<CatalogPriceScheduleResult>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/billing-rules/${encodeURIComponent(billingRuleNo)}/price-schedules/${encodeURIComponent(priceNo)}`,
+    ),
+    input,
+  );
+}
+
+export function catalogPriceScheduleDelete(versionNo: string, priceNo: string) {
+  return requestClient.delete(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/price-schedules/${encodeURIComponent(priceNo)}`,
+    ),
+  );
+}
+
+export function catalogTaxPolicyCreate(
+  versionNo: string,
+  input: Omit<CatalogTaxPolicy, "taxPolicyNo">,
+) {
   return requestClient.post<CatalogTaxPolicy>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/tax-policies`),
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/tax-policies`,
+    ),
     input,
   );
 }
@@ -228,13 +285,13 @@ export interface CatalogProductDetail {
   product: CatalogProductDetailProduct;
   taxPolicies: CatalogTaxPolicy[];
   version: CatalogProductDetailVersion;
-	inventory: CatalogProductVersionInventory;
+  inventory: CatalogProductVersionInventory;
 }
 
 export interface CatalogProductVersionInventory {
-	trackingEnabled: boolean;
-	sellableQuantity: number;
-	version: number;
+  trackingEnabled: boolean;
+  sellableQuantity: number;
+  version: number;
 }
 
 export interface CatalogProductVersionCost {
@@ -259,24 +316,42 @@ export interface CatalogProductVersionCostInput {
 
 export function catalogProductVersionCostList(versionNo: string) {
   return requestClient.get<{ costs: CatalogProductVersionCost[] }>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs`),
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs`,
+    ),
   );
 }
 
-export function catalogProductVersionCostCreate(versionNo: string, input: CatalogProductVersionCostInput) {
+export function catalogProductVersionCostCreate(
+  versionNo: string,
+  input: CatalogProductVersionCostInput,
+) {
   return requestClient.post<{ cost: CatalogProductVersionCost }>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs`), input,
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs`,
+    ),
+    input,
   );
 }
 
-export function catalogProductVersionCostUpdate(versionNo: string, costNo: string, input: CatalogProductVersionCostInput & { expectedVersion: number }) {
+export function catalogProductVersionCostUpdate(
+  versionNo: string,
+  costNo: string,
+  input: CatalogProductVersionCostInput & { expectedVersion: number },
+) {
   return requestClient.put<{ cost: CatalogProductVersionCost }>(
-    pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs/${encodeURIComponent(costNo)}`), input,
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/costs/${encodeURIComponent(costNo)}`,
+    ),
+    input,
   );
 }
 
 export interface CatalogFulfillmentPolicySummary {
-	trialSupported?: boolean;
+  trialSupported?: boolean;
   capabilityEnUs: string;
   capabilityZhCn: string;
   quantityHandling: "separately" | "together";
@@ -286,27 +361,80 @@ export interface CatalogFulfillmentPolicySummary {
 export function catalogFulfillmentPolicyUpdate(
   versionNo: string,
   strategyCode: CatalogFulfillmentStrategy,
+  interfaceInstanceNo?: string,
+  upstreamProduct?: CatalogUpstreamProductSelection,
 ) {
   return requestClient.put<{ policy: CatalogFulfillmentPolicySummary }>(
     pluginApiPath(
       pluginID,
       `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/fulfillment-policy`,
     ),
-    { strategyCode },
+    {
+      strategyCode,
+      ...(upstreamProduct ? {upstreamProduct} : {}),
+      ...(interfaceInstanceNo === undefined ? {} : { interfaceInstanceNo }),
+    },
   );
 }
 
+export interface CatalogUpstreamProductSelection {
+  requestKey:string; reference:string; categoryNo:string; pricingMode:"markup" | "manual"; markupPercent:string;
+  prices:Array<{currencyCode:string;period:string;periodCount:number;amount:string;setupFee:string}>;
+}
+
 export interface CatalogCustomerFieldSelection {
- fieldKey: string;
- minimum?: string;
- maximum?: string;
- candidateValues?: string[];
+  customerVisible?: boolean;
+  defaultValue?: unknown;
+  upgradeEnabled?: boolean;
+  upgradeMinimum?: string;
+  upgradeMaximum?: string;
+  upgradeCandidateValues?: string[];
+  productChoiceBindings?: Record<string, string>;
+  informationOnly?: boolean;
+  productFieldKey?: string;
+  numericPricing?: "quantity" | "per_choice";
+  groupZhCN?: string;
+  groupEnUS?: string;
+  unit?: string;
+  descriptionZhCN?: string;
+  descriptionEnUS?: string;
+  advanced?: boolean;
+  numericLabels?: Record<string, { zhCN: string; enUS: string }>;
+  localField?: CatalogConfigurationDeclaration["fields"][number];
+  displayControl?: "auto" | "input" | "slider" | "select" | "radio";
+  quantityStep?: string;
+  numericChoices?: string[];
+  displayNameZhCN?: string;
+  displayNameEnUS?: string;
+  sortOrder?: number;
+  fieldKey: string;
+  minimum?: string;
+  maximum?: string;
+  candidateValues?: string[];
+  candidateLabels?: Record<string, { zhCN: string; enUS: string }>;
 }
 
 export interface CatalogProductVersionConfiguration {
- customerConfigurableFields?: CatalogConfigurationDeclaration["fields"];
- customerFieldSelections?: CatalogCustomerFieldSelection[];
-	importedConfiguration?: boolean;
+  pendingAutomationFields?: string[];
+  // Read-only facts; the writer independently validates current mappings.
+  directoryRelationships?: CatalogDirectoryRelationship[];
+  customerChoiceRules?: Record<
+    string,
+    import("./catalog-configuration-state").CatalogConfigurationRule[]
+  >;
+  merchantPriceTargets?: CatalogMerchantPriceTarget[];
+  productChoiceFields?: string[];
+  customerProductFields?: Record<string, string>;
+  priceFieldTokens?: Record<string, string>;
+  upstreamOptionsStatus?: "ready" | "pending" | "failed" | "retained";
+  customerConfigurableFields?: CatalogConfigurationDeclaration["fields"];
+  customerFieldSelections?: CatalogCustomerFieldSelection[];
+  importedConfiguration?: boolean;
+  importedProductReference?:string;
+  importedProductName?:string;
+  importedPricingMode?:"markup"|"manual"|"mixed";
+  importedMarkupPercent?:string;
+  importedManualPrices?:CatalogUpstreamProductSelection["prices"];
   customerDeclaration?: CatalogConfigurationDeclaration;
   customerResolvedCandidates: Record<string, CatalogConfigurationCandidate[]>;
   merchantValues: CatalogStructuredConfigurationValue[];
@@ -315,45 +443,129 @@ export interface CatalogProductVersionConfiguration {
   version: number;
 }
 
-export function catalogProductVersionConfigurationEvaluate(
+export interface CatalogDirectoryRelationship {
+  parentFieldKey: string;
+  childFieldKey: string;
+  links: Array<{ parentValue: string; childValue: string }>;
+}
+
+export interface CatalogMerchantPriceTarget {
+  fieldKey: string;
+  candidateValue: string;
+  quantity: boolean;
+  dimensionNo: string;
+  pricingMode: "fixed" | "per_unit" | "band_total" | "graduated" | "";
+}
+
+export interface CatalogMerchantPriceRow {
+  fieldKey: string;
+  candidateValue: string;
+  quantity: boolean;
+  pricingMode: "fixed" | "per_unit" | "band_total" | "graduated";
+  active: boolean;
+  previousPriceNo: string;
+  billingRuleNo: string;
+  currencyCode: string;
+  tiers: Array<{
+    minimumQuantity: number;
+    maximumQuantity: number | null;
+    amountMinor: string;
+    setupFeeMinor: string;
+    renewalAmountMinor?: string;
+  }>;
+}
+
+export async function catalogProductVersionConfigurationEvaluate(
   versionNo: string,
   input: {
     expectedVersion: number;
     merchantValues: CatalogStructuredConfigurationValue[];
   },
 ) {
-  return requestClient.post<{
-    evaluation: CatalogConfigurationEvaluation;
-    version: number;
-  }>(
-    pluginApiPath(
-      pluginID,
-      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration/evaluation`,
-    ),
-    input,
-  );
+  const evaluate = () =>
+    requestClient.post<{
+      evaluation: CatalogConfigurationEvaluation;
+      version: number;
+    }>(
+      pluginApiPath(
+        pluginID,
+        `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration/evaluation`,
+      ),
+      input,
+      { silentErrorMessage: true, timeout: configurationRequestTimeout },
+    );
+  try {
+    return await evaluate();
+  } catch (error) {
+    const response = error as {
+      code?: number;
+      response?: { data?: { code?: number } };
+    };
+    // Validation is read-only. Retry one transient service failure without
+    // emitting a stale global toast; conflicts and authorization never retry.
+    if ((response?.code ?? response?.response?.data?.code) === 50) {
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 250));
+      return await evaluate();
+    }
+    throw error;
+  }
 }
 
-export function catalogProductVersionConfigurationGet(versionNo: string) {
-  return requestClient.get<{
+// Empty declarations omit collections on the wire. An unbound commercial
+// offer is still a real editable schema and must not crash form consumers.
+function normalizeProductConfiguration(
+  configuration: CatalogProductVersionConfiguration,
+) {
+  return {
+    ...configuration,
+    productDeclaration: configuration.productDeclaration
+      ? {
+          ...configuration.productDeclaration,
+          fields: configuration.productDeclaration.fields ?? [],
+        }
+      : undefined,
+    customerDeclaration: configuration.customerDeclaration
+      ? {
+          ...configuration.customerDeclaration,
+          fields: configuration.customerDeclaration.fields ?? [],
+        }
+      : undefined,
+    merchantValues: configuration.merchantValues ?? [],
+    customerConfigurableFields: configuration.customerConfigurableFields ?? [],
+    customerFieldSelections: configuration.customerFieldSelections ?? [],
+    productResolvedCandidates: configuration.productResolvedCandidates ?? {},
+    customerResolvedCandidates: configuration.customerResolvedCandidates ?? {},
+  };
+}
+
+export async function catalogProductVersionConfigurationGet(versionNo: string) {
+  const result = await requestClient.get<{
     configuration: CatalogProductVersionConfiguration | null;
   }>(
     pluginApiPath(
       pluginID,
       `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration`,
     ),
+    { timeout: configurationRequestTimeout },
   );
+  return {
+    ...result,
+    configuration: result.configuration
+      ? normalizeProductConfiguration(result.configuration)
+      : null,
+  };
 }
 
-export function catalogProductVersionConfigurationUpdate(
+export async function catalogProductVersionConfigurationUpdate(
   versionNo: string,
   input: {
+    priceRows?: CatalogMerchantPriceRow[];
     customerFieldSelections?: CatalogCustomerFieldSelection[];
     expectedVersion: number;
     merchantValues: CatalogStructuredConfigurationValue[];
   },
 ) {
-  return requestClient.put<{
+  const result = await requestClient.put<{
     configuration: CatalogProductVersionConfiguration;
   }>(
     pluginApiPath(
@@ -361,7 +573,12 @@ export function catalogProductVersionConfigurationUpdate(
       `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration`,
     ),
     input,
+    { timeout: configurationRequestTimeout },
   );
+  return {
+    ...result,
+    configuration: normalizeProductConfiguration(result.configuration),
+  };
 }
 
 export interface CatalogManagementConfigurationFileItem {
@@ -429,7 +646,11 @@ export type CatalogPublicationCheckCode =
   | "tax";
 
 export interface CatalogProductPublicationPreview {
-  checks: Array<{ code: CatalogPublicationCheckCode; passed: boolean }>;
+  checks: Array<{
+    code: CatalogPublicationCheckCode;
+    passed: boolean;
+    reasonCode?: string;
+  }>;
   productNo: string;
   ready: boolean;
   versionNo: string;
@@ -458,18 +679,16 @@ export interface CatalogCategoryUpdateInput extends CatalogCategoryCreateInput {
 }
 
 export interface CatalogProductCreateInput {
- directoryNo?: string;
+  directoryNo?: string;
   categoryNo: string;
-  contractPolicyCode: "inherit" | "none" | "required";
-  contractTemplateNo: string;
   nameEnUs: string;
   nameZhCn: string;
   publicSlug: string;
   sortOrder: number;
   summaryEnUs: string;
   summaryZhCn: string;
-	inventoryTrackingEnabled: boolean;
-	sellableQuantity: number;
+  inventoryTrackingEnabled: boolean;
+  sellableQuantity: number;
 }
 
 export interface CatalogProductCreateResult {
@@ -483,23 +702,50 @@ export interface CatalogProductCreateResult {
 }
 
 export function catalogProductList(params?: CatalogProductListParams) {
-  return requestPreservingHttpStatus<CatalogProductListResult>(requestClient,
+  return requestPreservingHttpStatus<CatalogProductListResult>(
+    requestClient,
     pluginApiPath(pluginID, "admin/catalog/products"),
     { method: "GET", params },
   );
 }
 
-export function catalogProductDetail(productNo: string) {
+export function catalogProductDetail(
+  productNo: string,
+  options?: { silentErrorMessage?: boolean },
+) {
   return requestClient.get<CatalogProductDetail>(
     pluginApiPath(
       pluginID,
       `admin/catalog/products/${encodeURIComponent(productNo)}`,
     ),
+    options,
   );
 }
 
-export function catalogProductDescriptionUpdate(productNo: string, input: { directoryNo?: string; version: number; nameZhCn: string; nameEnUs: string; summaryZhCn: string; summaryEnUs: string }) {
-  return requestClient.put<{ version: number }>(pluginApiPath(pluginID, `admin/catalog/products/${encodeURIComponent(productNo)}/description`), input);
+export function catalogProductDescriptionUpdate(
+  productNo: string,
+  input: {
+    sortOrder?: number;
+    categoryNo?: string;
+    directoryNo?: string;
+    version: number;
+    nameZhCn: string;
+    nameEnUs: string;
+    summaryZhCn: string;
+    summaryEnUs: string;
+    versionNo?: string;
+    inventory?: {trackingEnabled:boolean; sellableQuantity:number; expectedVersion:number};
+    addonProductNos?: string[];
+    loginRules?: {expectedVersion:number; values:CatalogStructuredConfigurationValue[]};
+  },
+) {
+  return requestClient.put<{ version: number }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/products/${encodeURIComponent(productNo)}/description`,
+    ),
+    input,
+  );
 }
 
 export function catalogProductPublish(versionNo: string) {
@@ -559,16 +805,6 @@ export function catalogCategoryDelete(categoryNo: string, version: number) {
   );
 }
 
-export function catalogCategoryRestore(categoryNo: string, version: number) {
-  return requestClient.put<{ category: CatalogCategory }>(
-    pluginApiPath(
-      pluginID,
-      `admin/catalog/categories/${encodeURIComponent(categoryNo)}/restore`,
-    ),
-    { version },
-  );
-}
-
 export function catalogProductCreate(input: CatalogProductCreateInput) {
   return requestClient.post<CatalogProductCreateResult>(
     pluginApiPath(pluginID, "admin/catalog/products"),
@@ -577,16 +813,117 @@ export function catalogProductCreate(input: CatalogProductCreateInput) {
 }
 
 export function catalogProductVersionInventoryUpdate(
-	versionNo: string,
-	input: { expectedVersion: number; sellableQuantity: number; trackingEnabled: boolean },
+  versionNo: string,
+  input: {
+    expectedVersion: number;
+    sellableQuantity: number;
+    trackingEnabled: boolean;
+  },
 ) {
-	return requestClient.put<{ inventory: CatalogProductVersionInventory }>(
-		pluginApiPath(pluginID, `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/inventory`),
-		input,
-	);
+  return requestClient.put<{ inventory: CatalogProductVersionInventory }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/inventory`,
+    ),
+    input,
+  );
 }
 
 // Copies settings into a new draft; historical purchases and source stock stay owned by the source.
-export function catalogProductCopy(productNo: string, input: { sourceVersionNo: string; nameZhCn: string; nameEnUs: string; publicSlug: string }) {
-  return requestClient.post<CatalogProductCreateResult>(pluginApiPath(pluginID, `admin/catalog/products/${encodeURIComponent(productNo)}/copies`), input);
+export function catalogProductCopy(
+  productNo: string,
+  input: {
+    sourceVersionNo: string;
+    nameZhCn: string;
+    nameEnUs: string;
+    publicSlug: string;
+  },
+) {
+  return requestClient.post<CatalogProductCreateResult>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/products/${encodeURIComponent(productNo)}/copies`,
+    ),
+    input,
+  );
+}
+
+export function catalogProductRevisionCreate(
+  productNo: string,
+  sourceVersionNo: string,
+) {
+  return requestClient.post<CatalogProductCreateResult>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/products/${encodeURIComponent(productNo)}/draft-versions`,
+    ),
+    { sourceVersionNo },
+  );
+}
+
+export function catalogProductSaleStateUpdate(
+  productNo: string,
+  input: { versionNo: string; expectedVersion: number; active: boolean },
+) {
+  return requestClient.put<{ version: number }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/products/${encodeURIComponent(productNo)}/sale-state`,
+    ),
+    input,
+  );
+}
+
+export function catalogConfigurationPriceBatchSave(
+  versionNo: string,
+  rows: Array<{
+    active?: boolean;
+    targetKind?: "base" | "configuration";
+    candidateToken?: string;
+    previousPriceNo: string;
+    billingRuleNo: string;
+    currencyCode: string;
+    tiers: Array<{
+      minimumQuantity: number;
+      maximumQuantity: null;
+      amountMinor: string;
+      setupFeeMinor: string;
+      renewalAmountMinor?: string;
+    }>;
+  }>,
+) {
+  return requestClient.post<{ saved: number }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/configuration-price-batches`,
+    ),
+    { rows },
+  );
+}
+
+export function catalogPricedBillingRuleCreate(
+  versionNo: string,
+  input: {
+    ruleCode: string;
+    periodUnit: "once" | "hour" | "day" | "month" | "year";
+    periodCount: number;
+    minimumPurchaseCycles: number;
+    maximumRenewalCycles?: number;
+    currencyCode: string;
+    amountMinor: string;
+    setupFeeMinor: string;
+    renewalAmountMinor?: string;
+  },
+) {
+  return requestClient.post<{ billingRuleNo: string }>(
+    pluginApiPath(
+      pluginID,
+      `admin/catalog/product-versions/${encodeURIComponent(versionNo)}/priced-billing-rules`,
+    ),
+    input,
+  );
+}
+
+export function catalogProductDelete(productNo: string, version: number) {
+  return requestClient.delete<void>(pluginApiPath(pluginID, `admin/catalog/products/${encodeURIComponent(productNo)}`), { params: {version} });
 }

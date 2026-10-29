@@ -731,15 +731,6 @@ func NewReader(database gdb.DB, bizCtx bizctxcap.Service, principalReader princi
 	return service, nil
 }
 
-// NewWithEvents creates the operational support service with a transaction-local
-// business notification sink. Read-only consumers use New and cannot emit events.
-func NewWithEvents(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, storage storagecap.Service, notifications notificationcap.EventSink) (Service, error) {
-	if notifications == nil {
-		return nil, gerror.New("support desk requires a notification event sink")
-	}
-	return newService(database, bizCtx, principalReader, authorization, storage, notifications)
-}
-
 // NewWithEventsAndAudit creates the route service with transaction-local
 // notification and business-audit writers. Status mutations fail closed unless
 // this production constructor supplies both dependencies.

@@ -1,6 +1,6 @@
 id: idc-resource
 name: LinaPro IDC Resource
-version: v0.1.33
+version: v0.1.77
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -24,7 +24,7 @@ dependencies:
     - id: vben-adapter
       version: "=0.1.0"
     - id: idc-core
-      version: ">=0.1.60 <1.0.0"
+      version: ">=0.1.171 <1.0.0"
 business_extensions:
   - point: resource-provider
     version: v1
@@ -43,38 +43,65 @@ business_extensions:
       - operation.execute
       - task.query
       - resource.query
+      - principal.lookup
+      - principal.create
+customer_surfaces:
+  - key: purchased-services
+    version: v1
+    title: plugins.idc_resource.purchasedServices.title
+    icon: lucide:server
+    slot: customer.products
+    route: purchased-services
+    entry: customer/index.html
+    bridge_capabilities: [purchased-services.customer.v1, native-server-facts.customer.v1]
+    status: active
 public_assets:
   - source: frontend/dist
     mount: /
 menus:
+  - key: plugin:idc-resource:provider-tools-shortcut
+    parent_key: plugin:idc-core:resource-operations
+    name: Supplier Operations
+    path: /idc/resource/provider-tools
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:overview:list
+    icon: lucide:waypoints
+    type: M
+    is_cache: 0
+    sort: 24
+    remark: Shortcut to the operations tab of the existing supplier configuration page
   - key: plugin:idc-resource:server-management
     parent_key: plugin:idc-core:resource-operations
     name: Server Management
-    path: /idc/resource/servers
-    component: system/plugin/dynamic-page
     icon: lucide:server-cog
-    type: M
+    type: B
+    visible: 0
     sort: 20
     remark: Permission-filtered server list and renewals; access inherited from existing child grants
   - key: plugin:idc-resource:provider-operations
-    parent_key: plugin:idc-core:resource-operations
+    parent_key: plugin:idc-resource:provider-workspace
     name: Supplier Operations
-    path: /idc/resource/providers
-    component: system/plugin/dynamic-page
     icon: lucide:cloud-cog
-    type: M
+    type: B
+    visible: 0
     sort: 29
     remark: Permission-filtered supplier overview, connections, operations, and available resources
-  - key: plugin:idc-resource:provider-configuration
+  - key: plugin:idc-resource:provider-workspace
     parent_key: plugin:idc-core:resource-operations
     name: Server Provider Configuration
     path: /idc/resource/provider-configuration
     component: system/plugin/dynamic-page
-    perms: idc:admin:resource:configuration:list
     icon: lucide:cloud-cog
     type: M
     sort: 28
     remark: Server provider connector, credentials, channel lifecycle, and resource pools
+  - key: plugin:idc-resource:provider-configuration
+    parent_key: plugin:idc-resource:provider-workspace
+    name: View Provider Configuration
+    perms: idc:admin:resource:configuration:list
+    type: B
+    visible: 0
+    sort: 0
   - key: plugin:idc-resource:provider-configuration:write
     parent_key: plugin:idc-resource:provider-configuration
     name: Manage Provider Configuration
@@ -85,24 +112,18 @@ menus:
   - key: plugin:idc-resource:overview
     parent_key: plugin:idc-resource:provider-operations
     name: Resource Overview
-    path: /idc/resource/overview
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"overview"}'
     perms: idc:admin:resource:overview:list
     icon: lucide:layout-dashboard
-    type: M
+    type: B
     visible: 0
     sort: 29
     remark: Local resource pools, Provider capacity observations, finance, expiry, and task overview
   - key: plugin:idc-resource:provider-capacity
     parent_key: plugin:idc-resource:provider-operations
     name: Provider Capacity Observations
-    path: /idc/resource/provider-capacity
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"capacity"}'
     perms: idc:admin:resource:provider-capacity:list
     icon: lucide:database-zap
-    type: M
+    type: B
     visible: 0
     sort: 30
     remark: Provider capacity collection status; never creates or synchronizes generic product inventory
@@ -116,12 +137,9 @@ menus:
   - key: plugin:idc-resource:health
     parent_key: plugin:idc-resource:provider-operations
     name: Provider Health
-    path: /idc/resource/health
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"health"}'
     perms: idc:admin:resource:health:list
     icon: lucide:activity
-    type: M
+    type: B
     visible: 0
     sort: 31
     remark: Provider health signals, automatic write protection, and safe threshold policy
@@ -133,17 +151,23 @@ menus:
     visible: 0
     sort: 1
   - key: plugin:idc-resource:tasks
-    parent_key: plugin:idc-resource:provider-operations
+    parent_key: plugin:idc-resource:provider-workspace
     name: Provider Tasks
-    path: /idc/resource/tasks
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/providers","resourceTab":"tasks"}'
     perms: idc:admin:resource:task:list
     icon: lucide:list-checks
-    type: M
+    type: B
     visible: 0
     sort: 32
     remark: Bounded Provider task queue, redacted evidence, and safe manual takeover
+  - key: plugin:idc-resource:api-logs
+    parent_key: plugin:idc-resource:provider-workspace
+    name: Provider API Logs
+    perms: idc:admin:resource:api-log:list
+    icon: lucide:file-clock
+    type: B
+    visible: 0
+    sort: 33
+    remark: Body-free local Provider invocation history
   - key: plugin:idc-resource:tasks:query
     parent_key: plugin:idc-resource:tasks
     name: View Provider Task Evidence
@@ -169,24 +193,18 @@ menus:
   - key: plugin:idc-resource:server-accessories
     parent_key: plugin:idc-resource:server-management
     name: Server Management
-    path: /idc/resource/server-accessories
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/servers","resourceTab":"servers"}'
     perms: idc:admin:resource:server-accessory:view
     icon: lucide:server-cog
-    type: M
+    type: B
     visible: 0
     sort: 33
     remark: Server list, safe batch operations, and capability-driven accessory management
   - key: plugin:idc-resource:server-renewals
     parent_key: plugin:idc-resource:server-management
     name: Server Renewals
-    path: /idc/resource/server-renewals
-    component: system/plugin/dynamic-page
-    query_param: '{"pluginSurfacePlugin":"idc-resource","pluginSurfaceEntry":"idc/resource/servers","resourceTab":"renewals"}'
     perms: idc:admin:resource:server-batch:view
     icon: lucide:calendar-sync
-    type: M
+    type: B
     visible: 0
     sort: 34
     remark: Preview and confirm renewals selected from resource-owned server entitlements

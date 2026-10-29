@@ -51,8 +51,12 @@ func TestNotificationFoundationMigrationPostgreSQL(t *testing.T) {
 		}
 	}
 	count, err := database.GetValue(ctx, "SELECT count(*) FROM plugin_idc_notify_channel")
-	if err != nil || count.Int() != 8 {
-		t.Fatalf("expected five required and three extension channels, count=%d err=%v", count.Int(), err)
+	if err != nil || count.Int() != 7 {
+		t.Fatalf("expected four required and three extension channels, count=%d err=%v", count.Int(), err)
+	}
+	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_notify_channel
+        (tenant_id,channel_code,channel_kind,display_name) VALUES (0,'wechat_work','wechat_work','Retired employee channel')`); err == nil {
+		t.Fatal("fresh notification schema accepted the retired employee channel kind")
 	}
 	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_notify_channel
         (tenant_id,channel_code,channel_kind,display_name) VALUES (1,'cross_tenant','email','Cross tenant')`); err == nil {

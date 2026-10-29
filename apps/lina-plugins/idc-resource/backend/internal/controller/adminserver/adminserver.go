@@ -10,7 +10,7 @@ import (
 )
 
 type Reader interface {
-	List(context.Context, int, int) (*serverdirectory.Page, error)
+	List(context.Context, int, int, ...string) (*serverdirectory.Page, error)
 	Detail(context.Context, string) (*serverdirectory.Item, error)
 }
 type Controller struct{ directory Reader }
@@ -22,7 +22,7 @@ func New(directory Reader) (*Controller, error) {
 	return &Controller{directory: directory}, nil
 }
 func (c *Controller) CloudServerList(ctx context.Context, req *v1.CloudServerListReq) (*v1.CloudServerListRes, error) {
-	result, err := c.directory.List(ctx, req.Page, req.Limit)
+	result, err := c.directory.List(ctx, req.Page, req.Limit, req.EntitlementNo)
 	if err != nil {
 		return nil, err
 	}

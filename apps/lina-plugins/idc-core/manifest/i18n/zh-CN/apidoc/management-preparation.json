@@ -1,0 +1,16 @@
+{
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.managementPreparation.dc": "可选的本地服务管理入口进度：preparing（准备中）、ready（已准备好）、needs_attention（需人工处理）；没有通知记录的历史服务不返回，不改变交付、生命周期或计费。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentTaskDetail.fields.managementPreparation.dc": "本地服务管理入口准备进度；没有匹配的通知时省略；不触发上游调用，也不授权重新开通。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementPreparation.fields.statusCode.dc": "本地管理入口进度：preparing（准备中）、ready（已准备好）、needs_attention（需人工处理），独立于业务交付、生命周期和计费。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementPreparation.fields.attemptCount.dc": "已记录的本地管理通知尝试次数，不是上游开通次数。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementPreparation.fields.failureCode.dc": "已审查的本地分类：entitlement_owner_unavailable、owner_delivery_unavailable、owner_delivery_result_unknown；无安全分类时省略，不包含原始错误或供应商消息。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentTaskDetail.fields.canRepairManagement.dc": "当前本地事实是否允许具有独立恢复权限的管理员重新关联资源管理入口；不允许重新开通或退款",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.fields.intentNo.dc": "当前客户范围内已有的订单履约编号",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.fields.expectedVersion.dc": "预期的当前履约版本；本地关联修复不改变业务版本",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.fields.idempotencyKey.dc": "响应不确定时复用同一操作编号；同编号不同请求会被拒绝",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairRes.fields.task.dc": "原子修复后的履约及本地管理进度；保留原业务和资金结果",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.meta.summary": "重新关联本地服务管理入口",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.meta.dc": "为已结清且已交付的服务重新安排原资源管理通知，核对客户范围、当前版本、归属、停止状态、租约和退款；不重发上游任务、不改变费用或开通结果。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.schema.dc": "为已结清且已交付的服务重新安排原资源管理通知，核对客户范围、当前版本、归属、停止状态、租约和退款；不重发上游任务、不改变费用或开通结果。",
+  "plugins.idc_core.api.admin.v1.ProductFulfillmentManagementRepairReq.meta.tags": "IDC商品履约管理"
+}

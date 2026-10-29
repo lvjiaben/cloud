@@ -1,0 +1,322 @@
+﻿.serviceSupport {
+  padding: var(--pcspacing);
+}
+.serviceSupport .serviceSupport-content {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+}
+.serviceSupport .serviceSupport-content.black .serviceSupport-left-item .serviceSupport-title,
+.serviceSupport .serviceSupport-content.black .serviceSupport-left-item .serviceSuppor-desc,
+.serviceSupport .serviceSupport-content.black .serviceSupport-left-item .serviceSuppor-desc {
+  color: var(--txtclc);
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item {
+  min-width: 348px;
+  max-width: 348px;
+  background: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: var(--global-shadow);
+  padding: 40px;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-title {
+  color: #fff;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSuppor-desc {
+  color: #fff;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-consultingService {
+  margin-top: 32px;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-consultingService a {
+  color: #fff;
+  background: var(--Original);
+  padding: 12px 24px 12px 16px;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-consultingService:hover a {
+  background: var(--darker2);
+}
+.serviceSupport .serviceSupport-content .serviceSupport-right-row {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+}
+.serviceSupport .serviceSupport-content .serviceSupport-right-row .serviceSupport-information {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+.serviceSupport .serviceSupport-right-item {
+  padding: 40px;
+  background: #fff;
+  box-shadow: var(--global-shadow);
+  width: 100%;
+}
+.serviceSupport .serviceSupport-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+}
+.serviceSupport .serviceSuppor-desc {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--txtdesc);
+  line-height: 28px;
+  margin-bottom: 20px;
+}
+.serviceSupport .serviceSupport-button {
+  display: flex;
+  gap: 8px;
+}
+.serviceSupport .serviceSupport-button a {
+  color: var(--Original);
+}
+
+.serviceSupport-document {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 288px;
+  max-width: 288px;
+  padding: 28px;
+  box-shadow: var(--global-shadow);
+}
+.serviceSupport-document img {
+  width: 48px;
+  height: auto;
+  margin-bottom: 22px;
+}
+.serviceSupport-document .document-title {
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+.serviceSupport-document .document-title h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+.serviceSupport-document .document-desc {
+  font-size: 14px;
+  font-weight: 400;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.refundService {
+  padding: var(--pcspacing);
+}
+.refundService .refundService-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+.refundService .refundService-content .refundService-left {
+  flex: 1;
+  min-height: 300px;
+  width: 100%;
+  background: #f3f8ff;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0);
+  box-shadow: 0px 2px 7px 0px #F2F5F7;
+  padding: 20px 40px 40px 20px;
+}
+.refundService .refundService-content .refundService-left:hover {
+  border: 1px solid #E6E9EC;
+}
+.refundService .refundService-content .refundNotice {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #fff;
+}
+.refundService .refundService-content .refundNotice img {
+  width: 24px;
+  height: auto;
+  margin-right: 12px;
+}
+.refundService .refundService-content .refundNotice p {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  line-height: 28px;
+  padding-bottom: 10px;
+}
+.refundService .refundService-content .refundNotice-content {
+  line-height: 28px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--txtdesc);
+}
+
+.reportingPlatform {
+  padding: var(--pcspacing);
+}
+.reportingPlatform .reportingPlatform-container {
+  background-image: none;
+  background-size: contain;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  box-shadow: var(--global-shadow);
+  background-color: #f2f3f7;
+}
+.reportingPlatform .reportingPlatform-container .reporting-body {
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  padding: 40px;
+  margin-left: 205px;
+}
+.reportingPlatform .reportingPlatform-container .reporting-left {
+  width: 50%;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+}
+.reportingPlatform .reportingPlatform-container .reporting-left .reporting-text {
+  display: flex;
+  flex-direction: column;
+}
+.reportingPlatform .reportingPlatform-container .reporting-left .reporting-btn {
+  margin-top: 10px;
+  color: #333;
+  background: #f7f9fd;
+  padding: 12px 24px 12px 16px;
+  box-shadow: var(--global-shadow);
+}
+.reportingPlatform .reportingPlatform-container .reporting-right {
+  width: 50%;
+}
+.reportingPlatform .reportingPlatform-container .reporting-text-title {
+  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+.reportingPlatform .reportingPlatform-container .reporting-text-description {
+  margin-top: 10px;
+  color: var(--txtdesc);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+@media (max-width: 768px) {
+  .serviceSupport {
+    padding: var(--wapspacing);
+  }
+  .serviceSupport .serviceSupport-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .serviceSupport .serviceSupport-content .serviceSupport-left-item {
+    min-width: 100%;
+    max-width: 100%;
+    padding: 20px;
+  }
+  .serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-title {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSuppor-desc {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .serviceSupport .serviceSupport-content .serviceSupport-left-item .serviceSupport-consultingService {
+    margin-top: 20px;
+    margin-bottom: 12px;
+  }
+  .serviceSupport .serviceSupport-content .serviceSupport-right-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .serviceSupport .serviceSupport-right-item {
+    padding: 20px;
+  }
+  .serviceSupport .serviceSupport-right-item .serviceSupport-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+  .serviceSupport-document {
+    padding: var(--wapspacing);
+  }
+  .refundService {
+    padding: var(--wapspacing);
+  }
+  .refundService .refundService-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .refundService .refundService-content .refundService-left {
+    padding: 20px;
+    background-color: #ffffff;
+  }
+  .refundService .refundService-content .refundService-left .refundNotice {
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .reportingPlatform {
+    padding: var(--wapspacing);
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-body {
+    padding: 20px;
+    margin-left: 0;
+    gap: 20px;
+    box-shadow: var(--global-shadow);
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-left {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-left .reporting-text {
+    display: flex;
+    flex-direction: column;
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-left .reporting-text .reporting-text-title {
+    font-size: 16px;
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-left .reporting-btn {
+    margin-top: 10px;
+    color: #333;
+    background: #f7f9fd;
+    padding: 12px 24px 12px 16px;
+    box-shadow: var(--global-shadow);
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-right {
+    width: 100%;
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-text-title {
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 28px;
+  }
+  .reportingPlatform .reportingPlatform-container .reporting-text-description {
+    margin-top: 4px;
+    color: var(--txtdesc);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+  .serviceSupport-document {
+    display: none;
+  }
+}
+
+/*# sourceMappingURL=Assure.css.map */

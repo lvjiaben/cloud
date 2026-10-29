@@ -239,9 +239,24 @@ func TestSalesManagementPricingPostgreSQL(t *testing.T) {
 		if err != nil || len(defaults) != 1 || defaults[0].TargetAmountMinor != 8000 {
 			t.Fatalf("other tier leaked: %+v %v", defaults, err)
 		}
+		// Draft preparation uses real base prices without exposing products for sale.
+		if _, err := db.Exec(ctx, `UPDATE plugin_idc_core_catalog_product SET status_code='draft',current_version_no=NULL WHERE product_no=?`, product); err != nil {
+			t.Fatal(err)
+		}
+		draftChoices, err := s.PriceProductCandidates(ctx, PageInput{ProductNo: product})
+		if err != nil || len(draftChoices.Items) != 1 || len(draftChoices.Items[0].Terms) != 1 || draftChoices.Items[0].Terms[0].CurrencyCode != "CNY" {
+			t.Fatalf("draft base price choices: %+v %v", draftChoices, err)
+		}
+		overview, err := s.ProductCandidates(ctx, PageInput{ProductNo: product})
+		if err != nil || overview.Total != 0 {
+			t.Fatalf("draft leaked to sales: %+v %v", overview, err)
+		}
 		rate := 3000
 		rule, err := s.SavePrice(ctx, PriceInput{LevelNo: level.LevelNo, ProductNo: product, CurrencyCode: "CNY", ChargeTypeCode: "recurring", PeriodUnitCode: "month", PeriodCount: 1, AdjustmentType: adjustmentDiscount, DiscountBasisPoints: &rate, Status: statusActive})
 		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := db.Exec(ctx, `UPDATE plugin_idc_core_catalog_product SET status_code='active',current_version_no=? WHERE product_no=?`, version, product); err != nil {
 			t.Fatal(err)
 		}
 		input := PriceEvaluationInput{CustomerNo: customer, CurrencyCode: "CNY", Now: time.Now().UTC(), Lines: []PriceLine{{ReferenceNo: "line", ProductNo: product, ChargeTypeCode: "recurring", PeriodUnitCode: "month", PeriodCount: 1, Quantity: 2, PurchaseCycles: 3, PeriodSubtotalMinor: 60000}}}

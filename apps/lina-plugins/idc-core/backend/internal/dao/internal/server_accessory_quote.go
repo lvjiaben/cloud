@@ -61,6 +61,10 @@ type ServerAccessoryQuoteColumns struct {
 	BaselineObjectNos      string //
 	BaselineSnapshotNo     string //
 	BaselineObservedAt     string //
+	SubjectTypeCode        string //
+	SubjectNo              string //
+	ExpectedSubjectVersion string //
+	NativeTargetSnapshot   string // Source-validated frozen native resource route, directory and local server evidence; never accepted from HTTP
 }
 
 // serverAccessoryQuoteColumns holds the columns for the table plugin_idc_core_server_accessory_quote.
@@ -105,6 +109,10 @@ var serverAccessoryQuoteColumns = ServerAccessoryQuoteColumns{
 	BaselineObjectNos:      "baseline_object_nos",
 	BaselineSnapshotNo:     "baseline_snapshot_no",
 	BaselineObservedAt:     "baseline_observed_at",
+	SubjectTypeCode:        "subject_type_code",
+	SubjectNo:              "subject_no",
+	ExpectedSubjectVersion: "expected_subject_version",
+	NativeTargetSnapshot:   "native_target_snapshot",
 }
 
 // NewServerAccessoryQuoteDao creates and returns a new DAO object for table data access.

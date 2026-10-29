@@ -14,6 +14,7 @@ import (
 type ConfigurationPriceMode string
 
 const (
+	ConfigurationPriceGraduated ConfigurationPriceMode = "graduated"
 	ConfigurationPriceFixed     ConfigurationPriceMode = "fixed"
 	ConfigurationPricePerUnit   ConfigurationPriceMode = "per_unit"
 	ConfigurationPriceBandTotal ConfigurationPriceMode = "band_total"
@@ -25,7 +26,7 @@ func validateConfigurationPriceSchedule(rule BillingRuleDefinition, mode Configu
 	if mode == "" || mode == ConfigurationPriceFixed {
 		return ValidatePriceSchedule(rule, tiers)
 	}
-	if mode != ConfigurationPricePerUnit && mode != ConfigurationPriceBandTotal {
+	if mode != ConfigurationPricePerUnit && mode != ConfigurationPriceBandTotal && mode != ConfigurationPriceGraduated {
 		return billingInvalid()
 	}
 	if len(tiers) == 0 || len(tiers) > maximumBillingTiers {
@@ -45,6 +46,9 @@ func validateConfigurationPriceSchedule(rule BillingRuleDefinition, mode Configu
 				return billingInvalid()
 			}
 		} else if tier.MaximumQuantity != nil {
+			return billingInvalid()
+		}
+		if mode == ConfigurationPriceGraduated && index > 0 && tier.SetupFeeMinor != 0 {
 			return billingInvalid()
 		}
 		// Validate cycle, money, trial and renewal semantics with the existing owner
@@ -73,6 +77,9 @@ func quoteConfigurationPrice(rule BillingRuleDefinition, mode ConfigurationPrice
 		return nil, billingInvalid()
 	}
 	quantity := *request.Quantity
+	if mode == ConfigurationPriceGraduated {
+		return quoteGraduatedConfigurationPrice(rule, tiers, request, quantity)
+	}
 	selected := tiers[0]
 	for _, tier := range tiers {
 		if quantity > tier.MinimumQuantity && (tier.MaximumQuantity == nil || quantity <= *tier.MaximumQuantity) {
@@ -112,5 +119,41 @@ func quoteConfigurationPrice(rule BillingRuleDefinition, mode ConfigurationPrice
 		result.Segments[0].BilledQuantity = quantity
 		result.Segments[0].AmountMinor = *result.ChargeAmountMinor
 	}
+	return result, nil
+}
+
+// quoteGraduatedConfigurationPrice keeps the base rule's original cycle and
+// phase validation, then reuses the owner's bounded marginal segment math.
+// Zero quantity waives both recurring charge and the first-band setup fee.
+func quoteGraduatedConfigurationPrice(rule BillingRuleDefinition, tiers []PriceTierDefinition, request BillingQuoteRequest, quantity int64) (*BillingQuote, error) {
+	ordered := append([]PriceTierDefinition(nil), tiers...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].MinimumQuantity < ordered[j].MinimumQuantity })
+	first := ordered[0]
+	first.MinimumQuantity, first.MaximumQuantity = 0, nil
+	definition := rule
+	definition.QuantityMode, definition.TierMode = QuantityModeFixed, ""
+	one := int64(1)
+	fixedRequest := request
+	fixedRequest.Quantity = &one
+	result, err := QuoteBillingRule(definition, []PriceTierDefinition{first}, fixedRequest)
+	if err != nil {
+		return nil, err
+	}
+	result.InputQuantity, result.BilledQuantity = int64Pointer(quantity), int64Pointer(quantity)
+	if quantity == 0 {
+		result.ChargeAmountMinor, result.SetupFeeMinor, result.TotalAmountMinor = int64Pointer(0), int64Pointer(0), int64Pointer(0)
+		result.Segments = []BillingQuoteSegment{}
+		return result, nil
+	}
+	definition.QuantityMode = QuantityModeTiered
+	segments, amount, err := calculateBillingSegments(definition, ordered, request.Phase, request.Cycles, quantity)
+	if err != nil {
+		return nil, err
+	}
+	total, err := addBillingAmount(amount, *result.SetupFeeMinor)
+	if err != nil {
+		return nil, err
+	}
+	result.Segments, result.ChargeAmountMinor, result.TotalAmountMinor = segments, int64Pointer(amount), int64Pointer(total)
 	return result, nil
 }

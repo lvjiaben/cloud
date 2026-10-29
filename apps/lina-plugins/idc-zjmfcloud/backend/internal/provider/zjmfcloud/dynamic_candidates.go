@@ -37,6 +37,7 @@ func dynamicConfigurationCandidates(executor confidentialoutboundcap.Service, co
 		return nil, errInvalidConfig
 	}
 	fields := make([]resourceinterfaceprojectioncap.CandidateField, 0, len(request.Requests))
+	relationships := make([]resourceinterfaceprojectioncap.ChoiceRelationship, 0, 1)
 	total := 0
 	seenFields := make(map[string]struct{}, len(request.Requests))
 	for index, query := range request.Requests {
@@ -64,8 +65,41 @@ func dynamicConfigurationCandidates(executor confidentialoutboundcap.Service, co
 			return nil, errInvalidResponse
 		}
 		fields = append(fields, resourceinterfaceprojectioncap.CandidateField{FieldKey: query.FieldKey, Items: items})
+		if query.FieldKey == "line" {
+			if relation := projectNodeAreaRelationship(response.Data, items); relation != nil {
+				relationships = append(relationships, *relation)
+			}
+		}
 	}
-	return json.Marshal(resourceinterfaceprojectioncap.CandidateResult{Fields: fields})
+	result := resourceinterfaceprojectioncap.CandidateResult{Fields: fields, Relationships: relationships}
+	if err := result.ValidateRelationships(); err != nil {
+		return nil, errInvalidResponse
+	}
+	return json.Marshal(result)
+}
+
+// Only a complete set of explicit area identifiers proves a node relation.
+// Missing or compound identifiers never fall back to label matching. This
+// projection reuses the existing nodes response, without one read per region.
+func projectNodeAreaRelationship(payload json.RawMessage, items []resourceinterfaceprojectioncap.Candidate) *resourceinterfaceprojectioncap.ChoiceRelationship {
+	var envelope struct {
+		Data []struct {
+			ID     json.RawMessage `json:"id"`
+			AreaID json.RawMessage `json:"area_id"`
+		} `json:"data"`
+	}
+	if json.Unmarshal(payload, &envelope) != nil || len(envelope.Data) != len(items) || len(items) == 0 {
+		return nil
+	}
+	relation := &resourceinterfaceprojectioncap.ChoiceRelationship{ParentFieldKey: "region", ChildFieldKey: "line", Links: make([]resourceinterfaceprojectioncap.ChoiceLink, 0, len(items))}
+	for index, item := range envelope.Data {
+		parent, child := dynamicCandidateScalar(item.AreaID), dynamicCandidateScalar(item.ID)
+		if parent == "" || parent == "0" || child != items[index].Value {
+			return nil
+		}
+		relation.Links = append(relation.Links, resourceinterfaceprojectioncap.ChoiceLink{ParentValue: parent, ChildValue: child})
+	}
+	return relation
 }
 
 func dynamicCandidatePath(query dynamicCandidateQuery) (string, url.Values, error) {

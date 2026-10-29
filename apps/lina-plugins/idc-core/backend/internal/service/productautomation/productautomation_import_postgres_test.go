@@ -111,7 +111,7 @@ func TestImportedPartialBindingPostgreSQL(t *testing.T) {
 		t.Fatalf("commit admitted a different read revision: %v", err)
 	}
 	action := func(txCtx context.Context) (string, error) {
-		_, insertErr := database.Exec(txCtx, `INSERT INTO plugin_idc_core_catalog_product_version VALUES (0,?,'draft')`, versionNo)
+		_, insertErr := database.Exec(txCtx, `INSERT INTO plugin_idc_core_catalog_product_version(tenant_id,version_no,status_code) VALUES (0,?,'draft')`, versionNo)
 		return versionNo, insertErr
 	}
 	audit.err = errors.New("force binding audit rollback")

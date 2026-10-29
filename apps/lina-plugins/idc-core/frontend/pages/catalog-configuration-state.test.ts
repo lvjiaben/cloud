@@ -241,6 +241,19 @@ describe("catalog configuration governance", () => {
     ).toEqual([{ fieldKey: "plan", optionTokens: ["opaque-existing-choice"] }]);
   });
 
+  it("submits authoritative resource choices even without provider-owned dynamic metadata", () => {
+    const schema: CatalogConfigurationDeclaration = {
+      fields: [{ key: "region", label, type: "single_select", required: true }],
+      version: "v1",
+    };
+    const candidates = { region: [{ value: "5", label }] };
+    const draft = sanitizeCatalogConfigurationValues(schema, "product", { region: "5" }, candidates);
+    expect(draft).toEqual({ region: "5" });
+    expect(catalogConfigurationValuesToRows(schema, "product", draft, candidates))
+      .toEqual([{ fieldKey: "region", optionTokens: ["5"] }]);
+    expect(sanitizeCatalogConfigurationValues(schema, "product", { region: "unlisted" }, candidates)).toEqual({});
+  });
+
   it("keeps 64-bit integer input as exact text", () => {
     const field = { key: "count", label, type: "integer" as const };
     const schema = { fields: [field], version: "v1" };

@@ -49,6 +49,13 @@ func (s *serviceImpl) Confirm(ctx context.Context, no string) (*View, error) {
 		if state.Version != row.SourceVersion || state.ConfigurationSnapshotNo != row.SourceConfigurationNo || !state.ExpiresAt.Equal(*row.PeriodExpiresAt) || !row.QuoteExpiresAt.After(time.Now()) {
 			return bizerr.NewCode(CodeConflict)
 		}
+		target, e := decodeTarget(row)
+		if e != nil {
+			return e
+		}
+		if e = validateUpgradePolicy(state, target); e != nil {
+			return e
+		}
 		invoice := "UIN_" + row.IdempotencyDigest[:32]
 		item := "UIT_" + row.IdempotencyDigest[:32]
 		status := statusPending

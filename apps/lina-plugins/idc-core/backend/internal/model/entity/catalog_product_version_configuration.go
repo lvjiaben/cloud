@@ -26,4 +26,5 @@ type CatalogProductVersionConfiguration struct {
 	ChangedBy                      int        `json:"changedBy"                      orm:"changed_by"                       description:""`
 	CreatedAt                      *time.Time `json:"createdAt"                      orm:"created_at"                       description:""`
 	ChangedAt                      *time.Time `json:"changedAt"                      orm:"changed_at"                       description:""`
+	CustomerPresentationSnapshot   string     `json:"customerPresentationSnapshot"   orm:"customer_presentation_snapshot"   description:""`
 }

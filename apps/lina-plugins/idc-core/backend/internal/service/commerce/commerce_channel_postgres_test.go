@@ -34,7 +34,7 @@ func TestChannelFrozenQuoteCheckoutPostgreSQL(t *testing.T) {
 	}
 	resolver, purchase := newAssistedQuoteTestPurchase(t, ctx, db)
 	current := commercePrincipalStub{audience: &principal.Audience{UserID: 101, CustomerNo: "customer-commerce-service-1", Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive}}
-	owner, err := NewWithContractTemplates(db, resolver, current, commerceSettlementStub{}, nil)
+	owner, err := New(db, resolver, current, commerceSettlementStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestChannelCheckoutConsumesExactUploaderFilesPostgreSQL(t *testing.T) {
 	}
 	resolver, purchase := newAssistedQuoteTestPurchase(t, ctx, db)
 	current := commercePrincipalStub{audience: &principal.Audience{UserID: 101, CustomerNo: "customer-commerce-service-1", Code: principal.AudienceCustomer, Status: principal.AudienceStatusActive}}
-	owner, err := NewWithContractTemplates(db, resolver, current, commerceSettlementStub{}, nil)
+	owner, err := New(db, resolver, current, commerceSettlementStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +175,7 @@ ALTER TABLE plugin_idc_core_catalog_product_version_fulfillment_policy ENABLE TR
 	if err != nil {
 		t.Fatal(err)
 	}
-	fulfillment, err := productfulfillmentservice.NewFullConfigured(db, structuredFulfillmentEvidenceValidator{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"))
+	fulfillment, err := productfulfillmentservice.NewFullConfigured(db, structuredFulfillmentEvidenceValidator{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

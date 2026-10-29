@@ -86,7 +86,7 @@ func TestCatalogListEmptyAndOutOfRangePagesHaveAccurateTotals(t *testing.T) {
 	}
 }
 
-func TestCatalogDetailPreservesBaseAndChoicePricesWithOneRead(t *testing.T) {
+func TestCatalogDetailPreservesReadonlySchemaWithoutRawPricesWithOneRead(t *testing.T) {
 	data := catalogDetailFixture(t)
 	executor := &recordingExecutor{results: []resourcecap.ConfidentialHTTPResponse{
 		{StatusCode: 200, Authenticated: true},
@@ -97,13 +97,12 @@ func TestCatalogDetailPreservesBaseAndChoicePricesWithOneRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	var detail resourceinterfaceprojectioncap.CatalogDetail
-	if json.Unmarshal(result, &detail) != nil || !detail.PriceScheduleComplete || detail.Product.Name != "Native server" || len(detail.BasePrices) != 1 ||
-		detail.BasePrices[0].Amount != "12.3456" || detail.BasePrices[0].SetupFee != "0.15" ||
-		detail.BasePrices[0].Period != resourceinterfaceprojectioncap.CatalogPeriodMonth || detail.BasePrices[0].PeriodCount != 1 ||
-		len(detail.Options) != 1 || detail.Options[0].Reference != "10" || len(detail.Options[0].Choices) != 1 || detail.Options[0].Choices[0].Prices[0].Amount != "2.50" {
-		t.Fatalf("source component prices were changed: %s", result)
+	if json.Unmarshal(result, &detail) != nil || detail.Product.Name != "Native server" {
+		t.Fatalf("invalid source detail: %s", result)
 	}
-	if len(detail.ProductConfiguration) != 1 || detail.ProductConfiguration[0].FieldKey != "upstream_product_id" || detail.ProductConfiguration[0].OptionValue == nil || *detail.ProductConfiguration[0].OptionValue != "41" {
+	assertNativeRemoteSchedule(t, &detail)
+
+	if len(detail.ProductConfiguration) != 2 || detail.ProductConfiguration[0].FieldKey != "upstream_product_id" || detail.ProductConfiguration[0].OptionValue == nil || *detail.ProductConfiguration[0].OptionValue != "41" {
 		t.Fatalf("declared upstream product selection was not preserved: %s", result)
 	}
 	if strings.Contains(string(result), "secret") || strings.Contains(string(result), "cpu") || strings.Contains(string(result), "<script") {
@@ -117,7 +116,7 @@ func TestCatalogDetailPreservesBaseAndChoicePricesWithOneRead(t *testing.T) {
 			t.Fatalf("price field %s was not requested", field)
 		}
 	}
-	for _, field := range []string{"password", "username", "jwt", "customfields", "server_group", "msg"} {
+	for _, field := range []string{"password", "username", "jwt", "server_group", "msg"} {
 		if slices.Contains(executor.requests[1].ResponseFields, field) {
 			t.Fatalf("unneeded supplier field %s was requested", field)
 		}
@@ -224,7 +223,7 @@ func TestCatalogOnceDoesNotExposeInactiveRecurringPrices(t *testing.T) {
 	row := data["product_pricings"].([]any)[0].(map[string]any)
 	row["onetime"], row["osetupfee"] = "0.00", "5.00"
 	detail, err := projectCatalogDetail(mustCatalogJSON(t, map[string]any{"status": 200, "data": data}), resourceinterfaceprojectioncap.CatalogProductQuery{Reference: "41"})
-	if err != nil || !detail.PriceScheduleComplete || len(detail.BasePrices) != 1 || detail.BasePrices[0].Period != resourceinterfaceprojectioncap.CatalogPeriodOnce || detail.BasePrices[0].Amount != "0.00" {
+	if err != nil || detail.ImportSnapshot == nil || len(detail.ImportSnapshot.Prices) != 1 || detail.ImportSnapshot.Prices[0].ChargeType != "one_time" || len(detail.BasePrices) > 0 {
 		t.Fatalf("inactive recurring fields leaked into the schedule: %+v %v", detail, err)
 	}
 }
@@ -249,6 +248,9 @@ func catalogDetailFixture(t *testing.T) map[string]any {
 	base["monthly"], base["msetupfee"] = "12.3456", "0.15"
 	choice["monthly"] = "2.50"
 	return map[string]any{
+		"flag":             false,
+		"customfields":     []any{},
+		"advanced":         []any{},
 		"products":         map[string]any{"id": 41, "name": "<b>Native server</b>", "description": "<p>Clean <script>secret</script>description</p>", "pay_type": `{"pay_type":"recurring"}`, "password": "secret"},
 		"product_pricings": []any{base},
 		"config_groups":    []any{map[string]any{"id": 1, "options": []any{map[string]any{"id": 10, "option_name": "Custom choice", "option_type": 1, "sub": []any{map[string]any{"id": 20, "option_name": "Default", "pricings": []any{choice}}}}}}},

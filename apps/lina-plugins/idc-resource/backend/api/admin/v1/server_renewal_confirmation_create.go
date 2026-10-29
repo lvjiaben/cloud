@@ -3,6 +3,7 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ServerRenewalConfirmationCreateReq struct {
+	EntitlementNo      string `json:"entitlementNo" v:"max-length:40" dc:"Optional exact product context; every selected server must belong to this entitlement" eg:"ENT_0123456789abcdef"`
 	g.Meta             `path:"/admin/resource/server-renewals/confirmations" method:"post" tags:"IDC Server Renewals" summary:"Confirm selected server renewals" dc:"Revalidate the exact preview digest, then confirm every eligible renewal independently. One item failure never rolls back or blocks the remaining items." permission:"idc:admin:resource:server-batch:safe"`
 	RequestKey         string   `json:"requestKey" v:"required|length:8,128"`
 	RenewalCycles      int      `json:"renewalCycles" v:"required|between:1,120"`

@@ -14,26 +14,27 @@ import (
 )
 
 const (
-	permissionBillingOverview              = "idc:admin:billing:overview"
-	permissionBillingInvoiceList           = "idc:admin:billing:invoice:list"
-	permissionBillingInvoiceQuery          = "idc:admin:billing:invoice:query"
-	permissionBillingTransactionList       = "idc:admin:billing:transaction:list"
-	permissionBillingTransactionQuery      = "idc:admin:billing:transaction:query"
-	permissionBillingAdjustmentList        = "idc:admin:billing:adjustment:list"
-	permissionBillingAdjustmentQuery       = "idc:admin:billing:adjustment:query"
-	permissionBillingManualReceiptCreate   = "idc:admin:billing:manual-receipt:create"
-	permissionBillingInvoiceWaiverCreate   = "idc:admin:billing:invoice-waiver:create"
-	permissionBillingAdjustmentReview      = "idc:admin:billing:adjustment:review"
-	permissionBillingAdjustmentPolicyWrite = "idc:admin:billing:adjustment-policy:write"
-	permissionBillingInvoiceResend         = "idc:admin:billing:invoice:resend"
-	permissionBillingNoteList              = "idc:admin:billing:note:list"
-	permissionBillingNoteCreate            = "idc:admin:billing:note:create"
-	permissionBillingPersonalFilter        = "idc:admin:billing:filter:personal"
-	permissionBillingExport                = "idc:admin:billing:export"
-	permissionBillingRefundList            = "idc:admin:billing:refund:list"
-	permissionBillingRefundQuery           = "idc:admin:billing:refund:query"
-	permissionBillingRefundReview          = "idc:admin:billing:refund:review"
-	permissionBillingRefundPolicyWrite     = "idc:admin:billing:refund-policy:write"
+	permissionBillingOverview                = "idc:admin:billing:overview"
+	permissionBillingInvoiceList             = "idc:admin:billing:invoice:list"
+	permissionBillingInvoiceQuery            = "idc:admin:billing:invoice:query"
+	permissionBillingTransactionList         = "idc:admin:billing:transaction:list"
+	permissionBillingTransactionQuery        = "idc:admin:billing:transaction:query"
+	permissionBillingAdjustmentList          = "idc:admin:billing:adjustment:list"
+	permissionBillingAdjustmentQuery         = "idc:admin:billing:adjustment:query"
+	permissionBillingBalanceAdjustmentCreate = "idc:admin:billing:balance-adjustment:create"
+	permissionBillingManualReceiptCreate     = "idc:admin:billing:manual-receipt:create"
+	permissionBillingInvoiceWaiverCreate     = "idc:admin:billing:invoice-waiver:create"
+	permissionBillingAdjustmentReview        = "idc:admin:billing:adjustment:review"
+	permissionBillingAdjustmentPolicyWrite   = "idc:admin:billing:adjustment-policy:write"
+	permissionBillingInvoiceResend           = "idc:admin:billing:invoice:resend"
+	permissionBillingNoteList                = "idc:admin:billing:note:list"
+	permissionBillingNoteCreate              = "idc:admin:billing:note:create"
+	permissionBillingPersonalFilter          = "idc:admin:billing:filter:personal"
+	permissionBillingExport                  = "idc:admin:billing:export"
+	permissionBillingRefundList              = "idc:admin:billing:refund:list"
+	permissionBillingRefundQuery             = "idc:admin:billing:refund:query"
+	permissionBillingRefundReview            = "idc:admin:billing:refund:review"
+	permissionBillingRefundPolicyWrite       = "idc:admin:billing:refund-policy:write"
 )
 
 // ManagementFinanceAuthorization is the smallest current staff scope needed
@@ -53,6 +54,9 @@ type ManagementFinanceAuthorizer interface {
 	AuthorizeTransactionDetail(context.Context, string) (int, error)
 	AuthorizeAdjustmentList(context.Context) (int, error)
 	AuthorizeAdjustmentDetail(context.Context, string) (int, error)
+	// AuthorizeBalanceAdjustmentCreate requires direct staff, default merchant,
+	// representable data scope and the exact customer-balance adjustment permission.
+	AuthorizeBalanceAdjustmentCreate(context.Context) (int, error)
 	AuthorizeManualReceiptCreate(context.Context) (int, error)
 	AuthorizeInvoiceWaiverCreate(context.Context) (int, error)
 	AuthorizeAdjustmentReview(context.Context, string) (int, error)
@@ -226,4 +230,9 @@ func (a *managementFinanceAuthorizerImpl) authorize(ctx context.Context, permiss
 		return 0, bizerr.NewCode(CodeDirectoryNotAccessible)
 	}
 	return current.UserID, nil
+}
+
+// AuthorizeBalanceAdjustmentCreate keeps gift and debit actions independent of receipt permissions.
+func (a *managementFinanceAuthorizerImpl) AuthorizeBalanceAdjustmentCreate(ctx context.Context) (int, error) {
+	return a.authorize(ctx, permissionBillingBalanceAdjustmentCreate)
 }

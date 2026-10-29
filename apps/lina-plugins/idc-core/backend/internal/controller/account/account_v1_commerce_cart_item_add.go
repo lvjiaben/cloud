@@ -16,7 +16,7 @@ func (c *ControllerV1) CommerceCartItemAdd(ctx context.Context, req *v1.Commerce
 	}
 	cart, err := c.commerce.AddAccountItem(ctx, commerce.AddItemInput{
 		ExpectedCartVersion: req.ExpectedCartVersion, Quantity: req.Quantity,
-		Purchase: catalog.PurchaseConfigurationInput{PublicSlug: req.PublicSlug,
+		Purchase: catalog.PurchaseConfigurationInput{ServerLoginToken: req.ServerLoginToken, PublicSlug: req.PublicSlug,
 			ConfigurationRevision: req.ConfigurationRevision, BillingTermToken: req.BillingTermToken,
 			CurrencyCode: req.CurrencyCode, PurchaseCycles: req.PurchaseCycles, Values: values},
 	})

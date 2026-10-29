@@ -163,6 +163,9 @@ func TestPublicCatalogCurrencyAdmissionPostgreSQL(t *testing.T) {
 }
 
 const publicNumberedFixtureSQL = `
+CREATE TABLE plugin_idc_core_catalog_import_contract(tenant_id INT DEFAULT 0,version_no TEXT,snapshot JSONB,snapshot_digest TEXT,read_evidence JSONB);
+CREATE TABLE plugin_idc_core_catalog_import_term(tenant_id INT DEFAULT 0,version_no TEXT,billing_rule_no TEXT,currency_code TEXT,whole_item_rule JSONB,upstream_term_reference TEXT,markup_percent TEXT DEFAULT '0');
+
 CREATE TABLE plugin_idc_core_merchant_currency (tenant_id int,currency_code char(3),enabled bool,deleted bool,PRIMARY KEY(tenant_id,currency_code));
 INSERT INTO plugin_idc_core_merchant_currency VALUES(0,'CNY',TRUE,FALSE),(0,'USD',TRUE,FALSE);
 CREATE TABLE plugin_idc_core_catalog_category (id bigint,tenant_id int,category_no text,name_zh_cn text,name_en_us text,status_code text,sort_order int,deleted_at timestamp);

@@ -177,11 +177,46 @@ func normalizeKey(value string) string {
 // Interleaved percent and HTML representations are normalized under a fixed
 // pass ceiling; malformed, oversized, or non-stable input fails closed.
 func containsCredentialMaterial(value string) bool {
+	// These exact machine formats carry random identifiers, not encoded text.
+	// Speculative decoding of their random suffix rejects ordinary resources.
+	if opaqueBusinessReference(value) {
+		return false
+	}
 	decoded, stable := normalizeCredentialMaterial(value)
 	if !stable {
 		return true
 	}
 	return containsCredentialCandidates(decoded)
+}
+
+// opaqueBusinessReference recognizes only complete owner-generated formats;
+// arbitrary text, appended credentials and unprefixed encodings stay scanned.
+func opaqueBusinessReference(value string) bool {
+	if strings.HasPrefix(value, "SVR-") {
+		suffix := strings.TrimPrefix(value, "SVR-")
+		return suffix == strings.ToUpper(suffix) && lowerHexIdentifier(strings.ToLower(suffix), 32)
+	}
+	for _, prefix := range []string{"CUS_", "ACO_", "ACD_", "pft_", "prt_", "nso_", "rci_", "SCF_", "SRV_", "ent_", "pfi_", "CAP_", "core.provision.pft_", "core.server-operation.nso_", "LCT_", "TLT_", "task_", "core.lifecycle.LCT_", "core.lifecycle.TLT_"} {
+		if strings.HasPrefix(value, prefix) && lowerHexIdentifier(value[len(prefix):], 32) {
+			return true
+		}
+	}
+	if strings.HasPrefix(value, "srv-") && strings.HasSuffix(value, ".internal") {
+		return lowerHexIdentifier(strings.TrimSuffix(strings.TrimPrefix(value, "srv-"), ".internal"), 16)
+	}
+	return false
+}
+
+func lowerHexIdentifier(value string, length int) bool {
+	if len(value) != length {
+		return false
+	}
+	for _, character := range value {
+		if !(character >= '0' && character <= '9' || character >= 'a' && character <= 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 // credentialCandidate is one normalized value plus its wrapper depth.

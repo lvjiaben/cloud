@@ -113,6 +113,29 @@ func TestConfirmContinuesAfterOneFailure(t *testing.T) {
 	}
 }
 
+func TestProductContextRejectsForeignPreviewAndConfirmation(t *testing.T) {
+	service, renewals := newTestService(t)
+	ctx := context.Background()
+	product := "ent_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	if _, err := service.Preview(ctx, "request-context-001", 1, []string{serverB}, product); err == nil {
+		t.Fatal("foreign product preview accepted")
+	}
+	preview, err := service.Preview(ctx, "request-context-001", 1, []string{serverA}, product)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.Confirm(ctx, "request-context-001", 1, []string{serverA}, preview.ConfirmationDigest, "ent_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"); err == nil {
+		t.Fatal("foreign product confirmation accepted")
+	}
+	if len(renewals.confirms) != 0 {
+		t.Fatal("cross-product context reached writes")
+	}
+	confirmed, err := service.Confirm(ctx, "request-context-001", 1, []string{serverA}, preview.ConfirmationDigest, product)
+	if err != nil || len(confirmed.Items) != 1 || !confirmed.Items[0].Succeeded || len(renewals.confirms) != 1 {
+		t.Fatalf("own product confirmation failed: %+v / %v", confirmed, err)
+	}
+}
+
 func TestConfirmRejectsChangedProjectionBeforeAnyWrite(t *testing.T) {
 	service, renewals := newTestService(t)
 	preview, err := service.Preview(context.Background(), "request-key-003", 1, []string{serverA})

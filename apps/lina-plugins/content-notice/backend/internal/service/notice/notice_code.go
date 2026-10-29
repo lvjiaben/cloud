@@ -10,6 +10,8 @@ import (
 )
 
 var (
+	// CodeLoginRequired rejects unauthenticated read-state access.
+	CodeLoginRequired = bizerr.MustDefine("CONTENT_NOTICE_LOGIN_REQUIRED", "Sign in to view announcements", gcode.CodeNotAuthorized)
 	// CodeNoticeNotFound reports that the requested notice record does not exist.
 	CodeNoticeNotFound = bizerr.MustDefine(
 		"CONTENT_NOTICE_NOT_FOUND",

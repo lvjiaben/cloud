@@ -187,10 +187,12 @@ func hasPeerFiles(values []configurationcontract.ConfigurationValue) bool {
 
 func mapPeerPurchaseValues(snapshot *channelcommercecap.ImportSnapshot, values []configurationcontract.ConfigurationValue, candidates []peerCandidateMapping) ([]channelcommercecap.PurchaseValue, error) {
 	fields := make(map[string]string)
+	hidden := make(map[string]bool)
 	types := make(map[string]string)
 	options := make(map[string]string)
 	for _, mapping := range snapshot.Mappings {
 		fields[mapping.FieldKey] = mapping.FieldToken
+		hidden[mapping.FieldKey] = mapping.CustomerVisible != nil && !*mapping.CustomerVisible
 		for _, option := range mapping.Options {
 			options[mapping.FieldKey+"\x00"+option.Value] = option.OptionToken
 		}
@@ -209,6 +211,9 @@ func mapPeerPurchaseValues(snapshot *channelcommercecap.ImportSnapshot, values [
 	}
 	result := make([]channelcommercecap.PurchaseValue, 0, len(values))
 	for _, value := range values {
+		if hidden[value.FieldKey] {
+			continue
+		} // The source owns and reapplies this immutable default.
 		mapped, err := mapPeerPurchaseValue(value, fields[value.FieldKey], types[value.FieldKey], options)
 		if err != nil {
 			return nil, err

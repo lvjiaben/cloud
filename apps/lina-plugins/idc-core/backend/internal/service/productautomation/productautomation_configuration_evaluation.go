@@ -88,7 +88,7 @@ func (s *serviceImpl) EvaluateVersionConfiguration(
 		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
 		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
+	if err != nil || !sameProviderContract(bindingEvidence(binding), exact) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	var row *entity.CatalogProductVersionConfiguration
@@ -114,11 +114,13 @@ func (s *serviceImpl) EvaluateVersionConfiguration(
 		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	product, err := decodeConfigurationDeclaration(row.ProductDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(product, exact.ProductConfiguration) {
+	if err != nil || !sameCompatibleProductConfiguration(product, exact.ProductConfiguration) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	return s.evaluateConfiguration(
-		ctx, exact, product, input.MerchantValues,
+		// Display and save already use the compatible active declaration.
+		// Evaluate the same optional fields while keeping the stored revision fence.
+		ctx, exact, exact.ProductConfiguration, input.MerchantValues,
 		configurationSurfaceProduct, row.Version, dynamicCandidateScope{interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: row.InterfaceConfigurationRevision},
 	)
 }

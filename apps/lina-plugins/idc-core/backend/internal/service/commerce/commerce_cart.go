@@ -159,6 +159,7 @@ func (s *serviceImpl) addItem(ctx context.Context, owner cartOwner, input AddIte
 	if resolved.RequiresCustomerContext && owner.customerNo == "" {
 		return bizerr.NewCode(CodeNotAccessible)
 	}
+	resolved.ServerLoginToken = input.Purchase.ServerLoginToken
 	numbers, err := s.newSnapshotNumbers()
 	if err != nil {
 		return bizerr.WrapCode(err, CodeUnavailable)
@@ -170,6 +171,13 @@ func (s *serviceImpl) addItem(ctx context.Context, owner cartOwner, input AddIte
 		}
 		if cart == nil {
 			return bizerr.NewCode(CodeNotAccessible)
+		}
+		reused, lockErr := s.reusedServerLoginItem(ctx, resolved.ServerLoginToken, owner.customerNo, resolved.VersionNo, cart.CartNo, input.Quantity)
+		if lockErr != nil {
+			return lockErr
+		}
+		if reused {
+			return nil
 		}
 		if cart.Version != input.ExpectedCartVersion {
 			return bizerr.NewCode(CodeConflict)
@@ -183,6 +191,9 @@ func (s *serviceImpl) addItem(ctx context.Context, owner cartOwner, input AddIte
 		}
 		if capacity.ItemCount >= maximumCartItems {
 			return bizerr.NewCode(CodeCapacityExceeded)
+		}
+		if bindErr := s.bindServerLogin(ctx, resolved.ServerLoginToken, owner.customerNo, resolved.VersionNo, numbers.cartItemNo); bindErr != nil {
+			return bindErr
 		}
 		if insertErr := insertGenericPurchaseSnapshot(ctx, s.database, resolved, numbers.snapshotNo); insertErr != nil {
 			return insertErr
@@ -275,12 +286,16 @@ func insertGenericPurchaseSnapshot(
 		SelectedOptionCount     int    `orm:"selected_option_count"`
 		TotalSelectedQuantity   int    `orm:"total_selected_quantity"`
 		ContentDigest           string `orm:"content_digest"`
+		TypedValueSnapshot      any    `orm:"typed_value_snapshot"`
+		ServerLoginToken        string `orm:"server_login_token"`
 	}{
 		TenantId: idccap.DefaultTenantID, ConfigurationSnapshotNo: snapshotNo,
 		ProductNo: resolved.ProductNo, VersionNo: resolved.VersionNo,
 		SourceRevisionDigest: resolved.SourceRevisionDigest,
 		SelectionDigest:      resolved.PriceSelectionDigest, CustomerValueDigest: resolved.CustomerValueDigest,
 		SelectedOptionCount: len(resolved.PriceSelections), TotalSelectedQuantity: totalSelected, ContentDigest: contentDigest,
+		ServerLoginToken:   resolved.ServerLoginToken,
+		TypedValueSnapshot: optionalCompiledSnapshot(resolved.TypedValueSnapshotJSON),
 	}).Insert(); err != nil {
 		return gerror.Wrap(err, "insert generic purchase snapshot")
 	}
@@ -387,3 +402,10 @@ FROM plugin_idc_core_commerce_cart
 WHERE tenant_id = 0 AND guest_owner_digest = ? AND status_code = 'active'
   AND expires_at > CURRENT_TIMESTAMP
 LIMIT 1 FOR UPDATE`
+
+func optionalCompiledSnapshot(document []byte) any {
+	if len(document) == 0 {
+		return nil
+	}
+	return string(document)
+}

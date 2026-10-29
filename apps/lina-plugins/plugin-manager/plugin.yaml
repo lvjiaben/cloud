@@ -1,0 +1,27 @@
+id: plugin-manager
+name: 插件管理
+version: v0.1.0
+type: source
+distribution: builtin
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 按可扩展业务分类管理动态插件，复用宿主公开安装、更新及卸载接口。
+author: linapro
+license: Proprietary
+i18n:
+  enabled: false
+dependencies:
+  plugins:
+    - id: vben-adapter
+      version: ">=0.1.0 <1.0.0"
+menus:
+  - key: plugin:plugin-manager:management
+    parent_key: setting
+    name: 插件管理
+    path: /extension/plugin-manager
+    component: system/plugin/dynamic-page
+    perms: plugin:list
+    icon: lucide:package-search
+    type: M
+    sort: 1

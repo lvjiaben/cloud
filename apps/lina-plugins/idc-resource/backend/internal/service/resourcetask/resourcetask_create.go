@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"io"
 	"regexp"
 	"time"
@@ -22,6 +23,9 @@ import (
 	"lina-plugin-idc-resource/backend/internal/model/do"
 	"lina-plugin-idc-resource/backend/internal/model/entity"
 )
+
+// ErrInvalidInput identifies validation before any task transaction is opened.
+var ErrInvalidInput = gerror.New("resource task input is invalid")
 
 var providerCorrelationRevisionPattern = regexp.MustCompile(`^rci_[0-9a-f]{32}$`)
 
@@ -70,7 +74,7 @@ func (s *Store) Create(ctx context.Context, input CreateInput) (CreatedTask, err
 	}
 	canonicalParameters, canonicalOwnerMetadata, err := validateCreateInput(input)
 	if err != nil {
-		return CreatedTask{}, err
+		return CreatedTask{}, gerror.Wrap(errors.Join(ErrInvalidInput, err), "validate resource task input")
 	}
 	digest := sha256.Sum256([]byte(input.RequestID))
 	requestDigest := hex.EncodeToString(digest[:])
@@ -253,7 +257,7 @@ func validateCreateInput(input CreateInput) (json.RawMessage, json.RawMessage, e
 		SecretBindings: input.SecretBindings,
 	}
 	if err := request.Validate(); err != nil {
-		return nil, nil, gerror.New("resource task operation is invalid")
+		return nil, nil, gerror.Wrap(err, "resource task operation is invalid")
 	}
 	if resourcecap.ValidateChannelRef(input.ChannelNo) != nil || !workerIDPattern.MatchString(input.ChannelNo) ||
 		(input.PoolNo != "" && !workerIDPattern.MatchString(input.PoolNo)) {

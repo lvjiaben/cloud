@@ -270,6 +270,12 @@ func (fixture accessoryCheckoutFixture) settlementService(t *testing.T) billing.
 // including the inventory foreign keys and append-only triggers from migration 082.
 func newAccessoryCheckoutFixture(t *testing.T) accessoryCheckoutFixture {
 	t.Helper()
+	return newAccessoryCheckoutFixtureWithSeed(t, accessoryCheckoutSeedSQL)
+}
+
+// newAccessoryCheckoutFixtureWithSeed keeps each fixture on real immutable DDL.
+func newAccessoryCheckoutFixtureWithSeed(t *testing.T, seed string) accessoryCheckoutFixture {
+	t.Helper()
 	dsn := strings.TrimSpace(os.Getenv(transferPostgresDSNEnv))
 	if dsn == "" {
 		t.Skipf("set %s to run accessory checkout PostgreSQL tests", transferPostgresDSNEnv)
@@ -330,7 +336,7 @@ func newAccessoryCheckoutFixture(t *testing.T) accessoryCheckoutFixture {
 		"077-management-configuration-files.sql", "078-product-fulfillment-execution.sql", "079-generic-commerce-query-indexes.sql",
 		"080-generic-delivery-entitlement.sql", "081-simple-product-version-inventory.sql", "082-generic-commerce-inventory-snapshots.sql",
 		"083-fixed-product-empty-configuration.sql", "084-general-product-version-cost.sql", "085-generic-trial-unit-identity.sql",
-		"086-generic-commerce-shadow-removal.sql",
+		"086-generic-commerce-shadow-removal.sql", "125-customer-manual-verification.sql",
 	} {
 		content, readErr := os.ReadFile(filepath.Join(migrationRoot, name))
 		if readErr != nil {
@@ -342,7 +348,7 @@ func newAccessoryCheckoutFixture(t *testing.T) accessoryCheckoutFixture {
 			}
 		}
 	}
-	for index, statement := range dialect.SplitSQLStatements(accessoryCheckoutSeedSQL) {
+	for index, statement := range dialect.SplitSQLStatements(seed) {
 		if _, err = database.Exec(ctx, statement); err != nil {
 			t.Fatalf("seed accessory checkout statement %d: %+v", index+1, err)
 		}

@@ -34,6 +34,7 @@ type PurchaseConfigurationQuoteRes struct {
 }
 
 type PurchaseConfigurationFreezeReq struct {
+	ServerLoginToken      string `json:"serverLoginToken,omitempty" v:"max-length:128" dc:"Owned product-version server login token for one independent server; omitted for automatic generation" eg:"SLI_0123456789ABCDEF0123456789ABCDEF"`
 	g.Meta                `path:"/account/commerce/quote-items/{quoteItemNo}/purchase-configuration" method:"post" tags:"IDC Customer Catalog" summary:"Freeze my governed purchase configuration" dc:"Freeze the compiler-validated typed values for this exact quote item. File tokens remain ready and are consumed only by checkout."`
 	QuoteItemNo           string                                 `json:"quoteItemNo" in:"path" v:"required|max-length:40" dc:"Exact immutable quote item number" eg:"QIT_0123456789ABCDEF0123456789ABCDEF"`
 	PublicSlug            string                                 `json:"publicSlug" v:"required|length:1,128" dc:"Public product slug" eg:"ssl-certificate"`

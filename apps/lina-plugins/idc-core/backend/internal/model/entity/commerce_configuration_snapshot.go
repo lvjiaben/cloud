@@ -22,4 +22,6 @@ type CommerceConfigurationSnapshot struct {
 	ContentDigest           string     `json:"contentDigest"           orm:"content_digest"            description:""`
 	CreatedAt               *time.Time `json:"createdAt"               orm:"created_at"                description:""`
 	CustomerValueDigest     string     `json:"customerValueDigest"     orm:"customer_value_digest"     description:""`
+	TypedValueSnapshot      string     `json:"typedValueSnapshot"      orm:"typed_value_snapshot"      description:"Compiler-produced customer values for native imported pricing; NULL for historical snapshots"`
+	ServerLoginToken        string     `json:"serverLoginToken"        orm:"server_login_token"        description:""`
 }

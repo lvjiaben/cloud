@@ -1,6 +1,6 @@
 id: idc-dcim
 name: DCIM Server Connector
-version: v0.1.2
+version: v0.1.4
 type: dynamic
 distribution: managed
 scope_nature: platform_only

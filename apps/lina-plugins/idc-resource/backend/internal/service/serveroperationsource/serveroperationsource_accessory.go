@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/gogf/gf/v2/database/gdb"
 	"io"
 
 	"lina-plugin-idc-core/backend/cap/serveroperationresourcecap"
@@ -28,7 +29,7 @@ func (s *Service) translateAccessoryParameters(ctx context.Context, serviceNo st
 	case serveroperationresourcecap.ActionSnapshotCreate, serveroperationresourcecap.ActionBackupCreate,
 		serveroperationresourcecap.ActionSnapshotDelete, serveroperationresourcecap.ActionSnapshotRestore,
 		serveroperationresourcecap.ActionBackupDelete, serveroperationresourcecap.ActionBackupRestore:
-		return translateSnapshotOrBackup(ctx, directories, directory, serviceNo, action, parameters)
+		return translateSnapshotOrBackup(ctx, s.database, directories, directory, serviceNo, action, parameters)
 	case serveroperationresourcecap.ActionSecurityGroupAttach, serveroperationresourcecap.ActionSecurityGroupDetach:
 		return translateSecurityGroup(ctx, directories, directory, serviceNo, action, parameters)
 	case serveroperationresourcecap.ActionNATCreate, serveroperationresourcecap.ActionNATDelete:
@@ -42,7 +43,7 @@ func (s *Service) translateAccessoryParameters(ctx context.Context, serviceNo st
 	}
 }
 
-func translateSnapshotOrBackup(ctx context.Context, directories accessorydirectory.Service,
+func translateSnapshotOrBackup(ctx context.Context, database gdb.DB, directories accessorydirectory.Service,
 	directory *accessorydirectory.Directory, serviceNo string, action serveroperationresourcecap.Action,
 	parameters json.RawMessage) (json.RawMessage, error) {
 	if action == serveroperationresourcecap.ActionSnapshotCreate || action == serveroperationresourcecap.ActionBackupCreate {
@@ -69,15 +70,21 @@ func translateSnapshotOrBackup(ctx context.Context, directories accessorydirecto
 	}
 	isRestore := action == serveroperationresourcecap.ActionSnapshotRestore ||
 		action == serveroperationresourcecap.ActionBackupRestore
-	if (isRestore && input.ConfirmedServiceNo != serviceNo) || (!isRestore && input.ConfirmedServiceNo != "") {
+	if (isRestore && !confirmedRestoreTarget(ctx, database, serviceNo, input.ConfirmedServiceNo)) || (!isRestore && input.ConfirmedServiceNo != "") {
 		return nil, serveroperationresourcecap.ErrTaskConflict
 	}
 	kind := resourcecap.AccessoryKindSnapshot
 	if action == serveroperationresourcecap.ActionBackupDelete || action == serveroperationresourcecap.ActionBackupRestore {
 		kind = resourcecap.AccessoryKindBackup
 	}
+	// Deletion needs an exact fresh identity and explicit confirmation, not a
+	// claim that the object can be restored. Restore still requires readiness.
+	requiredState := resourcecap.AccessoryState("")
+	if isRestore {
+		requiredState = resourcecap.AccessoryStateAvailable
+	}
 	resolved, err := resolveDirectoryObject(ctx, directories, directory, serviceNo,
-		input.ObjectNo, kind, resourcecap.AccessoryStateAvailable)
+		input.ObjectNo, kind, requiredState)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +93,16 @@ func translateSnapshotOrBackup(ctx context.Context, directories accessorydirecto
 		operation = "restore"
 	}
 	return marshalProviderParameters(map[string]any{"action": operation, "snapshot_ref": resolved.ExternalRef})
+}
+
+// Native customers type their public server number; legacy source callers keep
+// the local number. Either must resolve to the exact resource-owned server.
+func confirmedRestoreTarget(ctx context.Context, database gdb.DB, serviceNo, confirmed string) bool {
+	if confirmed == serviceNo {
+		return true
+	}
+	value, err := database.GetValue(ctx, `SELECT EXISTS(SELECT 1 FROM plugin_idc_resource_server_entitlement_projection WHERE tenant_id=0 AND local_resource_no=? AND server_no=?)`, serviceNo, confirmed)
+	return err == nil && value.Bool()
 }
 
 func translateSecurityGroup(ctx context.Context, directories accessorydirectory.Service,
@@ -182,7 +199,7 @@ func resolveDirectoryObject(ctx context.Context, directories accessorydirectory.
 	}
 	matches := 0
 	for _, item := range directory.Items {
-		if item.ObjectNo == objectNo && item.Kind == kind && item.State == state {
+		if item.ObjectNo == objectNo && item.Kind == kind && (state == "" || item.State == state) {
 			matches++
 		}
 	}

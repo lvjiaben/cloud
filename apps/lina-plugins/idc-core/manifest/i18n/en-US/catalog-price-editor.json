@@ -1,0 +1,15 @@
+{
+  "plugin.idc-core.catalog.priceEditor.quantityTab": "Quantity and tiered prices",
+  "plugin.idc-core.catalog.priceEditor.save": "Save configuration prices",
+  "plugin.idc-core.catalog.priceEditor.changed": "The product or prices have changed. Your input is retained. Reload current prices before editing again.",
+  "plugin.idc-core.catalog.priceEditor.reloadConfirm": "Reloading replaces unsaved input. Continue?",
+  "plugin.idc-core.catalog.priceEditor.reload": "Reload prices",
+  "plugin.idc-core.catalog.priceEditor.refreshPending": "Prices were saved, but the latest result has not loaded. Reload to confirm without saving again.",
+  "plugin.idc-core.catalog.priceEditor.loadFailed": "Current configuration prices could not load. Reload and try again.",
+  "plugin.idc-core.catalog.priceEditor.saveFailed": "The price save could not be confirmed. Your input is retained. Retry or reload the current prices.",
+  "plugin.idc-core.catalog.priceEditor.noCandidates": "No configuration prices can be edited here. Save purchase options and check the product settings first.",
+  "plugin.idc-core.catalog.priceEditor.noQuantityCandidates": "No quantity configuration can be priced here. Save purchase options first or use the fixed specification price table.",
+  "plugin.idc-core.catalog.priceEditor.periodRequired": "Enable a billing period and save its base price under Billing and prices before setting configuration prices.",
+  "plugin.idc-core.catalog.priceEditor.openBilling": "View billing and prices",
+  "plugin.idc-core.catalog.priceEditor.enabled": "Enable this price"
+}

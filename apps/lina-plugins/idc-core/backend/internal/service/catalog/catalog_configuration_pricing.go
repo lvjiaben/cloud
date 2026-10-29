@@ -60,7 +60,7 @@ func ConfigurationPriceSelectionReaderFromPublicReader(reader PublicCatalogReade
 	return result, nil
 }
 
-func loadSelectedConfigurationPriceDimensions(ctx context.Context, database gdb.DB, versionNo string, values []configurationcontract.ConfigurationValue) ([]ConfigurationPriceSelection, string, error) {
+func loadSelectedConfigurationPriceDimensions(ctx context.Context, database gdb.DB, versionNo string, values []configurationcontract.ConfigurationValue, presentationJSON ...string) ([]ConfigurationPriceSelection, string, error) {
 	var rows []configurationPriceDimensionIdentity
 	if err := database.GetScan(ctx, &rows, `SELECT dimension_no,field_key,candidate_value,pricing_mode_code
 FROM plugin_idc_core_catalog_configuration_price_dimension
@@ -70,6 +70,24 @@ ORDER BY field_key,candidate_value,id LIMIT ?`, versionNo, maximumConfigurationP
 	}
 	if len(rows) > maximumConfigurationPriceDimensions {
 		return nil, "", gerror.New("configuration price dimension bound exceeded")
+	}
+	if len(presentationJSON) > 0 {
+		presentations, err := configurationcontract.DecodePresentations(presentationJSON[0])
+		if err != nil {
+			return nil, "", err
+		}
+		filtered := make([]configurationPriceDimensionIdentity, 0, len(rows))
+		for _, row := range rows {
+			policy := presentations[row.FieldKey].NumericPricing
+			if policy == configurationcontract.NumericPricingChoice && row.CandidateValue == "quantity" {
+				continue
+			}
+			if policy == configurationcontract.NumericPricingQuantity && row.CandidateValue != "quantity" {
+				continue
+			}
+			filtered = append(filtered, row)
+		}
+		rows = filtered
 	}
 	result, selectionErr := selectConfigurationPriceDimensions(rows, values)
 	if selectionErr != nil {
@@ -197,6 +215,9 @@ func selectConfigurationPriceDimensions(rows []configurationPriceDimensionIdenti
 	selected := make(map[string]int)
 	quantities := make(map[string]int64)
 	for _, value := range values {
+		if value.BooleanValue != nil {
+			selected[value.FieldKey+"\x00"+strconv.FormatBool(*value.BooleanValue)] = 1
+		}
 		for _, candidate := range append(append(append([]string{}, value.OptionTokens...), value.TreeOptionTokens...), value.AddressOptionTokens...) {
 			selected[value.FieldKey+"\x00"+candidate] = 1
 		}
@@ -214,10 +235,15 @@ func selectConfigurationPriceDimensions(rows []configurationPriceDimensionIdenti
 			quantities[value.FieldKey] = parsed
 		}
 	}
+	for key, number := range quantities {
+		if number > 0 {
+			selected[key+"\x00"+strconv.FormatInt(number, 10)] = 1
+		}
+	}
 	result := make([]ConfigurationPriceSelection, 0, len(rows))
 	for _, row := range rows {
 		quantity, exists := selected[row.FieldKey+"\x00"+row.CandidateValue]
-		if row.PricingMode == ConfigurationPricePerUnit || row.PricingMode == ConfigurationPriceBandTotal {
+		if row.PricingMode == ConfigurationPricePerUnit || row.PricingMode == ConfigurationPriceBandTotal || row.PricingMode == ConfigurationPriceGraduated {
 			number, supplied := quantities[row.FieldKey]
 			if !supplied {
 				continue
@@ -238,7 +264,7 @@ func selectConfigurationPriceDimensions(rows []configurationPriceDimensionIdenti
 }
 
 func validConfigurationPriceMode(mode ConfigurationPriceMode) bool {
-	return mode == "" || mode == ConfigurationPriceFixed || mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal
+	return mode == "" || mode == ConfigurationPriceFixed || mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal || mode == ConfigurationPriceGraduated
 }
 
 // verifyConfigurationPriceModes loads all requested dimensions in one bounded

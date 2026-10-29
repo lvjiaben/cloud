@@ -75,24 +75,20 @@ export type ContentDetail = ContentSummary & {
   currentFile?: ContentFile;
   seoDescription?: string;
   seoTitle?: string;
-  targetCustomerNos?: string[];
   targetCustomerGroupNos?: string[];
   targetAudiences?: ContentAudienceTarget[];
-  targetServiceNos?: string[];
   version: number;
 };
 
 export type ContentAudienceCandidate = {
-  customerNo?: string;
   groupNo?: string;
   label: string;
-  serviceNo?: string;
 };
 
 export type ContentAudienceTarget = {
   label: string;
   number: string;
-  type: 'customer' | 'customer_group' | 'service';
+  type: 'customer_group';
 };
 
 type ContentAudienceTargetWire = Omit<ContentAudienceTarget, 'type'> & {
@@ -115,6 +111,7 @@ export type ContentCategory = {
 export type ContentListResult = {
   items: ContentSummary[];
   nextCursor: string;
+  total: number;
 };
 
 export type ContentWriteInput = {
@@ -125,8 +122,6 @@ export type ContentWriteInput = {
   status: 'draft' | 'published';
   summary?: string;
   targetCustomerGroupNos?: string[];
-  targetCustomerNos?: string[];
-  targetServiceNos?: string[];
   title: string;
   type: string;
   version?: number;
@@ -170,16 +165,6 @@ export function createContentAPI(
         `${contentBase}/audience-customer-groups${queryString({ keyword, limit: 50 })}`,
       );
     },
-    audienceCustomers(keyword: string) {
-      return request<{ items: ContentAudienceCandidate[]; nextCursor: string }>(
-        `${contentBase}/audience-customers${queryString({ keyword, limit: 50 })}`,
-      );
-    },
-    audienceServices(keyword: string) {
-      return request<{ items: ContentAudienceCandidate[]; nextCursor: string }>(
-        `${contentBase}/audience-services${queryString({ keyword, limit: 50 })}`,
-      );
-    },
     cancelCandidate(contentNo: string, fileNo: string, body: unknown) {
       return request<{ item: ContentDetailWire }>(
         `${contentBase}/items/${encodeURIComponent(contentNo)}/file-candidates/${encodeURIComponent(fileNo)}/cancellation`,
@@ -192,9 +177,9 @@ export function createContentAPI(
         { body, method: 'POST' },
       );
     },
-    categories(type = '') {
+    categories(type = '', cursor = '') {
       return request<{ items: ContentCategory[]; nextCursor: string }>(
-        `${contentBase}/categories${queryString({ type })}`,
+        `${contentBase}/categories${queryString({ type, cursor, limit: 100 })}`,
       );
     },
     create(input: ContentWriteInput) {
@@ -248,6 +233,7 @@ export function createContentAPI(
     list(query: {
       categoryNo?: string;
       cursor?: string;
+      page?: number;
       query?: string;
       limit?: number;
       status?: string;

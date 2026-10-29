@@ -18,7 +18,14 @@ func (c *ControllerV1) BrandGet(ctx context.Context, _ *v1.BrandGetReq) (*v1.Bra
 		return &v1.BrandGetRes{}, nil
 	}
 	text := func(value string) brand.LocalizedText { return brand.LocalizedText{ENUS: value, ZHCN: value} }
-	config := brand.Config{SiteName: text(settings.Common.SiteName), LogoURL: settings.Common.LogoURL, ContactEmail: settings.Common.ContactEmail, ContactPhone: settings.Common.ContactPhone, Footer: text(settings.Common.CompanyName), SEOTitle: text(settings.Common.SiteTitle), SEODescription: text(settings.Common.Description), PrimaryColor: "#1677ff", Navigation: []brand.NavItem{}, HomepageBlocks: []brand.HomepageBlock{}}
+	config := brand.Config{HeaderLogoURL: settings.Common.HeaderLogoURL, FooterLogoURL: settings.Common.FooterLogoURL, Copyright: settings.Common.Copyright, BusinessQQ: settings.Common.BusinessQQ, CompanyAddress: settings.Common.CompanyAddress, EnterpriseWechatQRCodeURL: settings.Common.EnterpriseWechatQRCodeURL, WechatOfficialQRCodeURL: settings.Common.WechatOfficialQRCodeURL, TelecomLicenseNumber: settings.Common.TelecomLicenseNumber, TelecomLicenseURL: settings.Common.TelecomLicenseURL, CompanyName: settings.Common.CompanyName, ICPNumber: settings.Common.ICPNumber, ICPURL: settings.Common.ICPURL, PoliceNumber: settings.Common.PoliceNumber, PoliceURL: settings.Common.PoliceURL, SiteName: text(settings.Common.SiteName), LogoURL: settings.Common.LogoURL, ContactEmail: settings.Common.ContactEmail, ContactPhone: settings.Common.ContactPhone, Footer: text(settings.Common.CompanyName), SEOTitle: text(settings.Common.SiteTitle), SEODescription: text(settings.Common.Description), PrimaryColor: "#1677ff", Navigation: []brand.NavItem{}, HomepageBlocks: []brand.HomepageBlock{}}
+	// Independent logos fall back to the existing shared logo without changing it.
+	if config.HeaderLogoURL == "" {
+		config.HeaderLogoURL = settings.Common.LogoURL
+	}
+	if config.FooterLogoURL == "" {
+		config.FooterLogoURL = settings.Common.LogoURL
+	}
 	get := func(key string) string { value, _ := settings.Config[key].(string); return value }
 	if color := get("primarycolor"); color != "" {
 		config.PrimaryColor = color

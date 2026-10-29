@@ -1,11 +1,9 @@
 import { expect, test } from "../../../../../../hack/tests/fixtures/auth";
 import { ensureSourcePluginEnabled } from "../../../../../../hack/tests/fixtures/plugin";
 import { EnterpriseVerificationPage } from "../pages/EnterpriseVerificationPage";
-import { ElectronicContractPage } from "../pages/ElectronicContractPage";
 import { TaxInvoicePage } from "../pages/TaxInvoicePage";
 import { NumberedTable } from "../pages/NumberedTable";
 import { installEnterpriseVerificationMock } from "../support/enterprise-verification-mock";
-import { installElectronicContractMock } from "../support/electronic-contract-mock";
 import { installTaxInvoiceMock } from "../support/tax-invoice-mock";
 
 async function assertThreePages(table: NumberedTable) {
@@ -36,21 +34,6 @@ test.describe("TC-8 合规六类列表数字分页", () => {
     await expect(view.root).toContainText("企业认证");
     await assertThreePages(new NumberedTable(adminPage, view.root));
     await view.screenshot("enterprise-numbered-pagination");
-  });
-
-  test("TC-8b: 合同、模板、自动签授权三个独立分页", async ({ adminPage }) => {
-    await installElectronicContractMock(adminPage, "ready", { manageAutoSign: true, manageContracts: true, manageTemplates: true, directoryRows: 25 });
-    const view = new ElectronicContractPage(adminPage);
-    await view.goto();
-    await view.openContractManager();
-    await assertThreePages(new NumberedTable(adminPage, view.contractManager));
-    await view.screenshot("contracts-numbered-pagination");
-    await view.openTemplateManager();
-    await assertThreePages(new NumberedTable(adminPage, view.contractTemplateManager));
-    await view.screenshot("contract-templates-numbered-pagination");
-    await view.openAutoSignManager();
-    await assertThreePages(new NumberedTable(adminPage, view.autoSignManager));
-    await view.screenshot("contract-auto-sign-numbered-pagination");
   });
 
   test("TC-8c: 税票和红冲各自保留页状态及准确总数", async ({ adminPage }) => {

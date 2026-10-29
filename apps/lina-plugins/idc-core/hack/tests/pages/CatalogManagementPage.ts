@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Locator, Page } from "@host-tests/support/playwright";
 
@@ -64,6 +65,9 @@ export class CatalogManagementPage {
   }
 
   async goto() {
+    // Finish an earlier root navigation before hash routing, so its initial
+    // permission redirect cannot overwrite the requested catalog page.
+    await waitForRouteReady(this.page,15_000);
     await this.page.goto(workspacePath("/idc/catalog"), {
       waitUntil: "domcontentloaded",
     });
@@ -76,29 +80,44 @@ export class CatalogManagementPage {
     await this.waitForDataSettled();
   }
 
-  async openMerchantConfiguration() {
-    await this.selectEditSection("购买配置");
-    await this.detailDrawer.locator(".ant-card").filter({ hasText: "后台商品配置" }).first()
-      .getByRole("button", { name: "编辑配置", exact: true }).click();
+  async openMerchantConfiguration(showAdvanced = true) {
+    await this.selectEditSection("交付设置");
+    await this.merchantConfigurationForm().waitFor({state:"visible"});
+    const advanced=this.page.getByTestId('catalog-product-advanced-toggle');
+    if(showAdvanced && await advanced.isVisible() && await advanced.getAttribute('aria-expanded') !== 'true') await advanced.click();
   }
 
-  merchantConfigurationDialog() {
-    return this.page.getByRole("dialog", { name: "后台商品配置", exact: true });
+  merchantConfigurationForm() {
+    return this.page.getByTestId("catalog-product-parameters-form");
+  }
+
+  async expandCustomerChoices(fieldKey: string) {
+    await this.page.getByTestId(`catalog-customer-choices-${fieldKey}`).getByRole("button").click();
+  }
+
+  async toggleAdvancedConfiguration() {
+    await this.page.getByTestId("catalog-product-advanced-toggle").click();
+  }
+
+  async selectMerchantField(label: string, choice: string) {
+    const dialog=this.merchantConfigurationForm();
+    await dialog.getByLabel(label,{exact:true}).click();
+    await this.page.locator('.ant-select-dropdown:visible').getByText(choice,{exact:true}).click();
   }
 
   async fillMerchantField(label: string, value: string) {
-    await this.merchantConfigurationDialog().getByLabel(label, { exact: true }).fill(value);
+    await this.merchantConfigurationForm().getByLabel(label, { exact: true }).fill(value);
   }
 
   async selectMerchantCharacter(label: string) {
-    const dialog = this.merchantConfigurationDialog();
+    const dialog = this.merchantConfigurationForm();
     await dialog.getByLabel("密码字符规则", { exact: true }).locator("xpath=../..").click();
-    await dialog.locator(".ant-select-dropdown:visible").getByText(label, { exact: true }).click();
+    await this.page.locator(".ant-select-dropdown:visible").getByText(label, { exact: true }).click();
     await dialog.getByText("主机名前缀", { exact: true }).click();
   }
 
   async saveMerchantConfiguration() {
-    await this.merchantConfigurationDialog().getByRole("button", { name: /保\s*存/u }).click();
+    await this.page.getByTestId("catalog-product-parameters-save").click();
   }
 
   productRow(productNo: string) {
@@ -124,38 +143,38 @@ export class CatalogManagementPage {
       });
   }
 
-  async openProductCreate() {
+  async openProductCreate(advanced = true) {
     await this.page.getByTestId("catalog-product-create-open").click();
     await this.productCreateModal.waitFor({ state: "visible" });
+    if(advanced) await this.productCreateModal.getByTestId('catalog-create-advanced').click();
+  }
+
+  fulfillmentBindingModal() {
+    return this.page.getByTestId("catalog-fulfillment-binding-modal");
+  }
+
+  async openFulfillmentBinding() {
+    await this.selectEditSection("交付设置");
+    await this.page.getByTestId("catalog-fulfillment-binding-open").click();
+    await this.fulfillmentBindingModal().waitFor({ state: "visible" });
+  }
+
+  async selectFulfillmentBindingOption(kind: "provider" | "interface", label: string | RegExp) {
+    await this.page.getByTestId(`catalog-fulfillment-${kind}`).click();
+    await this.page.locator(".ant-select-dropdown:visible").getByText(label, { exact: true }).click();
+  }
+
+  async confirmFulfillmentBinding() {
+    await this.page.getByRole("dialog").filter({ has: this.fulfillmentBindingModal() }).getByRole("button", { name: "确认绑定", exact: true }).click();
   }
 
   async openFulfillmentPolicy() {
     await this.selectEditSection(/交付设置|Delivery settings/u);
-    await this.detailDrawer
-      .getByRole("button", {
-        name: /设置履约方式|Modify fulfillment mode/iu,
-      })
-      .click();
     await this.fulfillmentPolicyModal.waitFor({ state: "visible" });
-    const dialog = this.page
-      .getByRole("dialog")
-      .filter({ has: this.fulfillmentPolicyModal });
-    await dialog.evaluate(async (element) => {
-      await Promise.all(
-        element
-          .getAnimations({ subtree: true })
-          .map((animation) => animation.finished.catch(() => undefined)),
-      );
-    });
   }
 
   fulfillmentPolicyConfirm() {
-    return this.page
-      .getByRole("dialog")
-      .filter({ has: this.fulfillmentPolicyModal })
-      .getByRole("button", {
-        name: /保存履约方式|Save fulfillment mode/iu,
-      });
+    return this.page.getByTestId('catalog-fulfillment-policy-save');
   }
 
   async openFulfillmentPolicyStrategyOptions() {
@@ -187,7 +206,7 @@ export class CatalogManagementPage {
   }
 
   async closeProductDetail() {
-    await this.page.keyboard.press("Escape");
+    await this.page.getByTestId('catalog-editor-back').click();
     await this.detailDrawer.waitFor({ state: "hidden" });
   }
 
@@ -213,7 +232,10 @@ export class CatalogManagementPage {
   }
 
   async selectEditSection(label: string | RegExp) {
-    await this.page.getByTestId('catalog-edit-sections').getByRole('tab', { name: label, exact: true }).click();
+    const aliases: Array<[string,string,string]> = [['基本资料','Product details','basic'],['交付设置','Delivery settings','fulfillment'],['购买配置','Purchase configuration','configuration'],['价格与税务','Pricing and tax','pricing'],['套餐售价','Package price','pricing'],['商品配置','Product configuration','configuration'],['代理价格','Agent prices','agents'],['自动开通','Automation','fulfillment'],['附加商品','Add-on products','basic'],['上架检查','Publication review','publication']];
+    const section = aliases.find(([zh,en]) => typeof label === 'string' ? label === zh || label === en : label.test(zh) || label.test(en))?.[2];
+    if(!section) throw new Error(`Unknown product edit section: ${String(label)}`);
+    await this.page.getByTestId(`catalog-editor-tab-${section}`).click();
   }
 
   async openPublicationPreview(productNo: string) {
@@ -226,7 +248,7 @@ export class CatalogManagementPage {
     const now = new Date();
     const day = now.toISOString().slice(0, 10).replaceAll("-", "");
     const stamp = now.toISOString().slice(11, 19).replaceAll(":", "");
-    const directory = resolve(process.cwd(), "../../temp", day);
+    const directory = resolve(fileURLToPath(new URL("../../../../../../temp/", import.meta.url)), day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
     await this.page.screenshot({ animations: "disabled", fullPage: false, path });

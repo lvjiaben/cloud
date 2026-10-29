@@ -80,7 +80,7 @@ func (s *serviceImpl) GetOverview(ctx context.Context, customerNo string) (*Over
 		}
 		overview.Business = BusinessSummary{
 			Orders: summary.Orders, Bills: summary.Bills, Transactions: summary.Transactions,
-			Servers: summary.Servers, Contracts: summary.Contracts, TaxInvoices: summary.TaxInvoices,
+			Servers: summary.Servers, TaxInvoices: summary.TaxInvoices,
 			Tickets: summary.Tickets, Notifications: summary.Notifications, Audits: summary.Audits,
 		}
 		overview.Balances = make([]BalanceSummary, 0, len(summary.Balances))

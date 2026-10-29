@@ -135,3 +135,25 @@ func TestOverallHealthCodeIsConservative(t *testing.T) {
 		t.Fatalf("unobserved health=%q want unknown", got)
 	}
 }
+
+// A successful stop used to become the fifth sample after three old failures,
+// opening protection and silently withholding the following start operation.
+func TestSuccessfulWriteDoesNotOpenOrExtendHistoricalProtection(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC()
+	state := &healthState{SampleCount: 4, FailureCount: 3, UnknownCount: 2, ConsecutiveFailures: 0, WindowStartedAt: &now}
+	applyDefaultPolicy(state)
+	applyObservation(state, Observation{Operation: OperationWrite, Outcome: OutcomeSucceeded}, now)
+	if state.CircuitOpen || state.WriteProtectedUntil != nil || state.SampleCount != 5 || state.FailureCount != 3 || state.UnknownCount != 2 {
+		t.Fatalf("successful write opened historical protection: %+v", state)
+	}
+	applyObservation(state, Observation{Operation: OperationWrite, Outcome: OutcomeFailed}, now)
+	if !state.CircuitOpen || state.WriteProtectedUntil == nil {
+		t.Fatal("new failure did not retain configured protection")
+	}
+	until := *state.WriteProtectedUntil
+	applyObservation(state, Observation{Operation: OperationWrite, Outcome: OutcomeSucceeded}, now.Add(time.Second))
+	if !state.CircuitOpen || !state.WriteProtectedUntil.Equal(until) {
+		t.Fatal("successful in-flight completion changed active protection")
+	}
+}

@@ -5,10 +5,11 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ServerRenewalListReq struct {
-	Page   int `json:"page" in:"query" v:"between:1,1000000" dc:"One-based page number; cannot be combined with a cursor" eg:"1"`
-	g.Meta `path:"/admin/resource/server-renewals" method:"get" tags:"IDC Server Renewals" summary:"List renewable server candidates" dc:"Return one bounded page from the resource plugin's own server entitlement projection. The endpoint does not call the renewal core and never returns customer or entitlement identifiers." permission:"idc:admin:resource:server-batch:view"`
-	Cursor string `json:"cursor" in:"query" v:"max-length:36" dc:"Server number continuation cursor returned by the previous page" eg:"SVR-0123456789ABCDEF0123456789ABCDEF"`
-	Limit  int    `json:"limit" in:"query" v:"between:1,100" d:"25" dc:"Maximum returned server projections; defaults to 25" eg:"25"`
+	EntitlementNo string `json:"entitlementNo" in:"query" v:"max-length:40" dc:"Optional exact delivered entitlement number for product management" eg:"ENT_0123456789abcdef"`
+	Page          int    `json:"page" in:"query" v:"between:1,1000000" dc:"One-based page number; cannot be combined with a cursor" eg:"1"`
+	g.Meta        `path:"/admin/resource/server-renewals" method:"get" tags:"IDC Server Renewals" summary:"List renewable server candidates" dc:"Return one bounded page from the resource plugin's own server entitlement projection. The endpoint does not call the renewal core and never returns customer or entitlement identifiers." permission:"idc:admin:resource:server-batch:view"`
+	Cursor        string `json:"cursor" in:"query" v:"max-length:36" dc:"Server number continuation cursor returned by the previous page" eg:"SVR-0123456789ABCDEF0123456789ABCDEF"`
+	Limit         int    `json:"limit" in:"query" v:"between:1,100" d:"25" dc:"Maximum returned server projections; defaults to 25" eg:"25"`
 }
 
 type ServerRenewalListRes struct {

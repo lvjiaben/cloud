@@ -39,6 +39,10 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 	case resourcecap.DynamicProviderMethodDiscoverCapabilities:
 		return json.Marshal(capabilities(time.Now().UTC()))
 	case resourcecap.DynamicProviderMethodBuildProvisionParameters:
+		var native resourcecap.NativePurchasePlan
+		if strictDecode(payload, &native) == nil && native.Validate() == nil {
+			return BuildNativePurchaseParameters(native)
+		}
 		var plan resourcecap.ServerProvisionPlan
 		if strictDecode(payload, &plan) != nil || plan.Validate() != nil {
 			return nil, errInvalidPlan
@@ -53,6 +57,10 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 		return executeCatalogList(executor, contextID, payload)
 	case resourcecap.DynamicProviderMethodReadCatalogProduct:
 		return executeCatalogDetail(executor, contextID, payload)
+	case resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration:
+		return executeCommonEvaluation(executor, contextID, payload, false)
+	case resourcecap.DynamicProviderMethodCatalogBillingTerms:
+		return executeCommonEvaluation(executor, contextID, payload, true)
 	case resourcecap.DynamicProviderMethodConfigurationCandidates:
 		return executeCandidates(executor, contextID, payload)
 	case resourcecap.DynamicProviderMethodListProviderCapacity:
@@ -160,7 +168,17 @@ func executeProvision(executor confidentialoutboundcap.Service, contextID string
 	if len(request.ConfidentialInputNames) != 1 || request.ConfidentialInputNames[0] != "downstream_token" || request.ProviderCorrelation == nil {
 		return nil, errInvalidRequest
 	}
+	var kind struct {
+		Module string `json:"native_module"`
+	}
+	if json.Unmarshal(request.Parameters, &kind) != nil {
+		return nil, errInvalidRequest
+	}
+	if kind.Module != "" {
+		return executeCommonProvision(executor, contextID, request)
+	}
 	var parameters struct {
+		Workflow           string                     `json:"workflow,omitempty"`
 		PID                string                     `json:"pid"`
 		BillingCycle       string                     `json:"billingcycle"`
 		ConfigOption       map[string]json.RawMessage `json:"configoption"`
@@ -168,7 +186,7 @@ func executeProvision(executor confidentialoutboundcap.Service, contextID string
 		CreateSubAccount   int                        `json:"create_sub_account"`
 		Hostname           string                     `json:"hostname"`
 	}
-	if strictDecode(request.Parameters, &parameters) != nil || !positiveDecimal(parameters.PID) ||
+	if strictDecode(request.Parameters, &parameters) != nil || (parameters.Workflow != "" && parameters.Workflow != "console_cart_v1") || !positiveDecimal(parameters.PID) ||
 		!positiveDecimal(parameters.DownstreamClientID) || parameters.BillingCycle == "" || len(parameters.ConfigOption) == 0 {
 		return nil, errInvalidRequest
 	}
@@ -184,7 +202,7 @@ func executeProvision(executor confidentialoutboundcap.Service, contextID string
 	if orderID := nestedString(response.Data, "data", "order_id"); positiveDecimal(orderID) {
 		return payOrder(executor, contextID, 3, request.RequestID, orderID, "")
 	}
-	cart := map[string]string{"product_id": parameters.PID, "qty": "1"}
+	cart := map[string]string{"product_id": parameters.PID, "qty": "1", "config_options[cycle]": parameters.BillingCycle, "is_downstream": "1"}
 	for optionID, raw := range parameters.ConfigOption {
 		value := scalar(raw)
 		if !positiveDecimal(optionID) || value == "" || len(value) > 256 {

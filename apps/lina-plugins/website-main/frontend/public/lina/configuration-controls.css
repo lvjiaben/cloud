@@ -1,0 +1,14 @@
+/* The layout, icons, colours and dimensions come from the migrated config.css. */
+.sky-config-form .lina-os-controls{width:100%;min-width:0}
+.lina-os-controls summary{list-style:none;cursor:pointer;outline-offset:3px}
+.lina-os-controls summary::-webkit-details-marker{display:none}
+.sky-config-form .lina-os-controls .version-dropdown{margin-top:0}
+.sky-config-form .lina-os-controls details{position:relative}
+.sky-config-form .lina-os-controls .dropdown-btn{box-sizing:border-box;min-height:36px}
+.sky-config-form .lina-os-controls details[open] .version-list{display:block}
+.sky-config-form .lina-os-controls .version-list{box-sizing:border-box;left:0;margin:0;top:calc(100% + 3px);max-height:240px}
+.sky-config-form .lina-os-controls .version-list li{padding:0}
+.lina-os-version{width:100%;padding:12px 10px;border:0;border-radius:0;background:transparent;text-align:left;font:inherit;color:inherit;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+.lina-os-controls summary:focus-visible,.lina-os-version:focus-visible{outline:2px solid var(--cart_mainColor,#165dff);outline-offset:-2px}
+.lina-os-controls [aria-disabled=true],.lina-os-version:disabled{opacity:.5;cursor:not-allowed}
+.sky-config-form .lina-os-controls details[open]{z-index:2}

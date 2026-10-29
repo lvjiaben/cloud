@@ -124,7 +124,7 @@ func portableImportTestSource() *resourceinterfaceprojectioncap.CatalogDetail {
 
 const portableImportFixtureSQL = `
 ALTER TABLE plugin_idc_core_catalog_billing_rule ADD COLUMN maximum_renewal_cycles INT,ADD COLUMN meter_unit_code TEXT,ADD COLUMN tier_mode_code TEXT,ADD COLUMN usage_collection_unit_code TEXT,ADD COLUMN usage_collection_count INT,ADD COLUMN usage_rounding_mode_code TEXT,ADD COLUMN usage_rounding_quantity BIGINT,ADD COLUMN usage_minimum_quantity BIGINT,ADD COLUMN usage_maximum_quantity BIGINT,ADD COLUMN usage_missing_policy_code TEXT;
-ALTER TABLE plugin_idc_core_catalog_price ADD COLUMN configuration_price_dimension_no TEXT,ADD COLUMN maximum_quantity BIGINT;
+ALTER TABLE plugin_idc_core_catalog_price ADD COLUMN configuration_price_dimension_no TEXT,ADD COLUMN maximum_quantity BIGINT,ADD COLUMN option_no TEXT;
 CREATE TABLE plugin_idc_core_catalog_tax_policy(tenant_id INT,tax_policy_no TEXT,version_no TEXT,currency_code TEXT,price_includes_tax BOOL,tax_treatment_code TEXT,tax_rate_basis_points INT,tax_category_code TEXT,rounding_scope_code TEXT,rounding_mode_code TEXT,rounding_quantum_minor BIGINT,created_at TIMESTAMPTZ);
 CREATE TABLE plugin_idc_core_catalog_configuration_price_dimension(tenant_id INT,dimension_no TEXT,version_no TEXT,configuration_version BIGINT,field_key TEXT,candidate_value TEXT,field_label_zh_cn TEXT,field_label_en_us TEXT,candidate_label_zh_cn TEXT,candidate_label_en_us TEXT,pricing_mode_code TEXT DEFAULT 'fixed',status_code TEXT);
 `

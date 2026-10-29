@@ -1,0 +1,26 @@
+[
+  {
+    "source": "D:/xft/Website/Zz_www.xiaobaiyun.cn/109.html",
+    "target": "frontend/public/content.html",
+    "sha256": "8ef24637d61b2bc2669d3e1aa51d1552516fe8f74e548c50542aa79057ad7337",
+    "purpose": "原正文结构和样式类；清除原正文、作者、阅读量、链接、目录和事件"
+  },
+  {
+    "source": "D:/xft/Website/Zz_www.xiaobaiyun.cn/static/picture/remoteL17092453231715.svg",
+    "target": "frontend/public/static/picture/remoteL17092453231715.svg",
+    "sha256": "bd827d40928a85404959d3888013f6ca289b746ceb72699959318539cabfe74c",
+    "purpose": "原分享、返回、置顶矢量路径；无脚本、文字、位图或外链"
+  },
+  {
+    "source": "D:/xft/Website/Zz_www.xiaobaiyun.cn/static/picture/remoteL17092453245142.svg",
+    "target": "frontend/public/static/picture/remoteL17092453245142.svg",
+    "sha256": "51c52acdc2ed508ca6f4f859272b309c6d6f7ebdbdaa8d52f0354412314fbade",
+    "purpose": "原分享、返回、置顶矢量路径；无脚本、文字、位图或外链"
+  },
+  {
+    "source": "D:/xft/Website/Zz_www.xiaobaiyun.cn/static/picture/remoteL17092453245429.svg",
+    "target": "frontend/public/static/picture/remoteL17092453245429.svg",
+    "sha256": "6b6b83af06b293c58616c1c1821223b93075cb12b02f935ee3c002cbb504b468",
+    "purpose": "原分享、返回、置顶矢量路径；无脚本、文字、位图或外链"
+  }
+]

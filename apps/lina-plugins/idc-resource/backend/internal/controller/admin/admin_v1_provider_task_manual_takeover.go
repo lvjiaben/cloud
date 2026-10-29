@@ -14,7 +14,7 @@ func (c *ControllerV1) ProviderTaskManualTakeover(ctx context.Context, req *v1.P
 	request := g.RequestFromCtx(ctx)
 	transportViolation := request == nil || providerTaskTakeoverBodyViolation(request.GetBody(), req)
 	item, err := c.tasks.TakeOver(ctx, resourcetask.ManualTakeoverInput{
-		TaskNo: req.TaskNo, ExpectedVersion: req.ExpectedVersion,
+		Scope: resourcetask.TaskScope{ServiceNo: req.ServiceNo, ChannelNo: req.ChannelNo}, TaskNo: req.TaskNo, ExpectedVersion: req.ExpectedVersion,
 		ReasonCode: req.ReasonCode, EvidenceNos: req.EvidenceNos,
 		TransportViolation: transportViolation,
 	})

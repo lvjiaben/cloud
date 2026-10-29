@@ -27,16 +27,6 @@ func channelItem(item notification.Channel) *v1.ChannelItem {
 		value := item.Configuration.TencentSMS
 		projection.Configuration.TencentSMS = &v1.TencentSMSPublicConfigurationItem{Region: value.Region, SmsSdkAppID: value.SmsSdkAppID, SignName: value.SignName}
 	}
-	if item.Configuration.WeChatOfficial != nil {
-		projection.Configuration.WeChatOfficial = &v1.WeChatOfficialPublicConfigurationItem{AppID: item.Configuration.WeChatOfficial.AppID,
-			CallbackVerified: item.Configuration.WeChatOfficial.CallbackVerified, CallbackVerifiedAt: unixMilli(item.Configuration.WeChatOfficial.CallbackVerifiedAt)}
-	}
-	if item.Configuration.WeCom != nil {
-		projection.Configuration.WeCom = &v1.WeComPublicConfigurationItem{CorpID: item.Configuration.WeCom.CorpID, AgentID: item.Configuration.WeCom.AgentID}
-	}
-	if item.Configuration.SignedWebhook != nil {
-		projection.Configuration.SignedWebhook = &v1.SignedWebhookPublicConfigurationItem{EndpointURL: item.Configuration.SignedWebhook.EndpointURL}
-	}
 	return projection
 }
 
@@ -57,13 +47,6 @@ func templateItem(item notification.Template) *v1.TemplateItem {
 		}
 		projection.SMS = &v1.SMSTemplateMappingItem{ProviderCode: item.SMS.ProviderCode, TemplateID: item.SMS.TemplateID,
 			VariableOrder: append([]string(nil), item.SMS.VariableOrder...), DataMapping: mapping}
-	}
-	if item.WeChatOfficial != nil {
-		mapping := make(map[string]string, len(item.WeChatOfficial.DataMapping))
-		for key, value := range item.WeChatOfficial.DataMapping {
-			mapping[key] = value
-		}
-		projection.WeChatOfficial = &v1.WeChatOfficialTemplateMappingItem{TemplateID: item.WeChatOfficial.TemplateID, DataMapping: mapping}
 	}
 	return projection
 }

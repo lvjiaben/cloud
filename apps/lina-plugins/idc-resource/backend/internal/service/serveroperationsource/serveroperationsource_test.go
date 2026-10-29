@@ -114,3 +114,17 @@ func TestInputPasswordIsCreatedAndRevokedInsideResourceScope(t *testing.T) {
 		t.Fatalf("revoke err=%v revoked=%v", err, manager.revoked)
 	}
 }
+
+func TestDynamicServerActionRequiresFrozenConfigurationRevision(t *testing.T) {
+	for _, revision := range []string{"", "rci_short", "rci_11111111111111111111111111111111/other"} {
+		if validRouteConfiguration("dynamic", revision) {
+			t.Fatal("dynamic operation accepted missing or invalid revision")
+		}
+	}
+	if !validRouteConfiguration("dynamic", "rci_11111111111111111111111111111111") {
+		t.Fatal("valid frozen operation revision rejected")
+	}
+	if !validRouteConfiguration("source", "") {
+		t.Fatal("source fixture required dynamic interface configuration")
+	}
+}

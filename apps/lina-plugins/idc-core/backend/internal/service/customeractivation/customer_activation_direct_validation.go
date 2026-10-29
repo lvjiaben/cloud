@@ -6,14 +6,20 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/internal/service/customer"
 	"net/mail"
+	"regexp"
 	"strings"
 )
 
+// directLoginPhonePattern matches the existing login directory phone contract.
+var directLoginPhonePattern = regexp.MustCompile(`^\+[1-9][0-9]{6,14}$`)
+
 func normalizeDirectCreate(input CreateInput) (normalizedCreate, error) {
-	email := strings.ToLower(strings.TrimSpace(input.Email))
-	phone := strings.ReplaceAll(strings.TrimSpace(input.Phone), " ", "")
-	callingCode := strings.TrimSpace(input.PhoneCountryCode)
-	primary := input
+	var (
+		email       = strings.ToLower(strings.TrimSpace(input.Email))
+		phone       = strings.ReplaceAll(strings.TrimSpace(input.Phone), " ", "")
+		callingCode = strings.TrimSpace(input.PhoneCountryCode)
+		primary     = input
+	)
 	primary.Email = email
 	primary.Phone = phone
 	primary.PhoneCountryCode = callingCode
@@ -25,7 +31,7 @@ func normalizeDirectCreate(input CreateInput) (normalizedCreate, error) {
 		primary.Phone = ""
 		primary.PhoneCountryCode = ""
 	}
-	if phone != "" && (!activationCallingPattern.MatchString(callingCode) || !activationPhonePattern.MatchString(phone)) {
+	if phone != "" && (!activationCallingPattern.MatchString(callingCode) || !activationPhonePattern.MatchString(phone) || !directLoginPhonePattern.MatchString(callingCode+phone)) {
 		return normalizedCreate{}, bizerr.NewCode(customer.CodeProfileInvalid)
 	}
 	value, err := normalizeCreate(primary)

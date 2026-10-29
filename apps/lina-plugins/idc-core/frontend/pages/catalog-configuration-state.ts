@@ -405,6 +405,7 @@ export function sanitizeCatalogConfigurationValues(
   declaration: CatalogConfigurationDeclaration,
   surface: CatalogConfigurationSurface,
   values: CatalogConfigurationValues,
+  resolvedCandidates?: Record<string, CatalogConfigurationCandidate[]>,
 ) {
   const result: CatalogConfigurationValues = {};
   for (const field of declaration.fields) {
@@ -414,7 +415,10 @@ export function sanitizeCatalogConfigurationValues(
     const value = values[field.key];
     if (value === undefined || (field.type === "secret" && isEmpty(value)))
       continue;
-    const allowed = candidateValues(field);
+    const allowed = new Set([
+      ...candidateValues(field),
+      ...(resolvedCandidates?.[field.key] ?? []).map((candidate) => candidate.value),
+    ]);
     if (["single_select", "tree_select"].includes(field.type)) {
       if (field.dynamicCandidates || allowed.has(String(value)))
         result[field.key] = value;
@@ -473,11 +477,13 @@ export function catalogConfigurationValuesToRows(
   declaration: CatalogConfigurationDeclaration,
   surface: CatalogConfigurationSurface,
   values: CatalogConfigurationValues,
+  resolvedCandidates?: Record<string, CatalogConfigurationCandidate[]>,
 ) {
   const sanitized = sanitizeCatalogConfigurationValues(
     declaration,
     surface,
     values,
+    resolvedCandidates,
   );
   const rows: CatalogStructuredConfigurationValue[] = [];
   for (const field of declaration.fields) {

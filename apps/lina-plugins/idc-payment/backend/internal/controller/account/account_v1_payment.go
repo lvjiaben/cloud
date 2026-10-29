@@ -52,7 +52,7 @@ func (c *ControllerV1) PaymentStatus(ctx context.Context, req *v1.PaymentStatusR
 		value := status.ConfirmedAt.UnixMilli()
 		confirmedAt = &value
 	}
-	return &v1.PaymentStatusRes{AttemptNo: status.AttemptNo, StatusCode: status.StatusCode, ChannelNo: status.ChannelNo, ModeCode: status.ModeCode, CurrencyCode: status.CurrencyCode, PurposeCode: status.PurposeCode, PurposeReference: status.PurposeReference, TotalAmountMinor: strconv.FormatInt(status.TotalAmountMinor, 10), ChannelAmountMinor: strconv.FormatInt(status.ChannelAmountMinor, 10), BalanceAmountMinor: strconv.FormatInt(status.BalanceAmountMinor, 10), ExpiresAt: status.ExpiresAt.UnixMilli(), ConfirmedAt: confirmedAt, QueryQueued: status.QueryQueued}, nil
+	return &v1.PaymentStatusRes{InvoiceNo: status.InvoiceNo, OrderNo: status.OrderNo, AttemptNo: status.AttemptNo, StatusCode: status.StatusCode, ChannelNo: status.ChannelNo, ModeCode: status.ModeCode, CurrencyCode: status.CurrencyCode, PurposeCode: status.PurposeCode, PurposeReference: status.PurposeReference, TotalAmountMinor: strconv.FormatInt(status.TotalAmountMinor, 10), ChannelAmountMinor: strconv.FormatInt(status.ChannelAmountMinor, 10), BalanceAmountMinor: strconv.FormatInt(status.BalanceAmountMinor, 10), ExpiresAt: status.ExpiresAt.UnixMilli(), ConfirmedAt: confirmedAt, QueryQueued: status.QueryQueued}, nil
 }
 
 func (c *ControllerV1) CreditRepaymentCreate(ctx context.Context, req *v1.CreditRepaymentCreateReq) (*v1.CreditRepaymentCreateRes, error) {

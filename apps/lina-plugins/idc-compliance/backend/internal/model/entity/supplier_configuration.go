@@ -17,8 +17,8 @@ type SupplierConfiguration struct {
 	CredentialStatusCode    string     `json:"credentialStatusCode"    orm:"credential_status_code"     description:"Credential lifecycle only; independent from supplier subject binding state"`
 	CredentialSecretRef     *string    `json:"credentialSecretRef"     orm:"credential_secret_ref"      description:"Sensitive secretcap routing reference for one provider-neutral credential envelope; plaintext and ciphertext are forbidden"`
 	CredentialGeneration    int64      `json:"credentialGeneration"    orm:"credential_generation"      description:""`
-	CapabilityEvidenceCode  string     `json:"capabilityEvidenceCode"  orm:"capability_evidence_code"   description:"Reviewed provider-contract gate; official_public_contract is valid only for Tencent ESS Basic"`
-	AdapterEnabled          bool       `json:"adapterEnabled"          orm:"adapter_enabled"            description:"True only for an active Tencent local subject backed by the reviewed public API contract"`
+	CapabilityEvidenceCode  string     `json:"capabilityEvidenceCode"  orm:"capability_evidence_code"   description:"Fail-closed external evidence gate; this migration deliberately permits only external_confirmation_required"`
+	AdapterEnabled          bool       `json:"adapterEnabled"          orm:"adapter_enabled"            description:""`
 	LastMutationDigest      *string    `json:"lastMutationDigest"      orm:"last_mutation_digest"       description:""`
 	MutationOperationKey    *string    `json:"mutationOperationKey"    orm:"mutation_operation_key"     description:""`
 	MutationSecretUpdatedAt *time.Time `json:"mutationSecretUpdatedAt" orm:"mutation_secret_updated_at" description:""`

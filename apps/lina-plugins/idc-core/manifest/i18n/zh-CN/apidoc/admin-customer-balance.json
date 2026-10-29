@@ -1,0 +1,20 @@
+{
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.requestNo.dc": "签发凭证及重试期间保持不变的随机动作编号",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.customerNo.dc": "本次赠送或现金扣减的目标客户",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.currencyCode.dc": "明确的已配置币种，不进行换汇",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.amountMinor.dc": "十进制最小货币单位表示的正数金额",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.deduct.dc": "为真时仅扣减可用现金余额；为假时增加独立且不可提现的赠送余额",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.reasonCode.dc": "稳定的调账原因",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentIntent.fields.evidenceDigest.dc": "不可变调账证据的小写SHA-256摘要",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentProofReq.meta.summary": "签发客户余额操作凭证",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentProofReq.meta.tags": "IDC财务管理",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentProofReq.meta.dc": "校验精确客户、金额、操作类型和证据，绑定当前直接员工会话签发一次性凭证。",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentProofReq.schema.dc": "校验精确客户、金额、操作类型和证据，绑定当前直接员工会话签发一次性凭证。",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentProofRes.fields.proof.dc": "短期一次性操作凭证",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateReq.fields.proofToken.dc": "为当前精确预览签发的不透明凭证",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateReq.meta.summary": "创建经复核的客户余额调账",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateReq.meta.tags": "IDC财务管理",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateReq.meta.dc": "赠送余额与实收分开记账；现金扣减保护冻结资金和可用余额，复用复核策略及同事务审计。",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateReq.schema.dc": "赠送余额与实收分开记账；现金扣减保护冻结资金和可用余额，复用复核策略及同事务审计。",
+  "plugins.idc_core.api.admin.v1.FinancialManagementBalanceAdjustmentCreateRes.fields.adjustment.dc": "已入账或待复核的余额调账申请"
+}

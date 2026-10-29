@@ -1,6 +1,6 @@
-import { pluginApiPath, requestClient } from '#/api/request';
+import { pluginApiPath, requestClient } from "#/api/request";
 
-const pluginID = 'content-notice';
+const pluginID = "content-notice";
 
 function noticeApi(pathName: string) {
   return pluginApiPath(pluginID, pathName);
@@ -9,11 +9,9 @@ function noticeApi(pathName: string) {
 export interface Notice {
   id: number;
   title: string;
-  type: number;
   content: string;
-  fileIds: string;
   status: number;
-  remark: string;
+  sortOrder: number;
   createdBy: number;
   createdByName: string;
   updatedBy: number;
@@ -25,36 +23,28 @@ export interface NoticeListParams {
   pageNum?: number;
   pageSize?: number;
   title?: string;
-  type?: number;
   createdBy?: string;
 }
 
 export async function noticeList(params?: NoticeListParams) {
   const res = await requestClient.get<{ list: Notice[]; total: number }>(
-    noticeApi('notice'),
+    noticeApi("notice"),
     { params },
   );
   return { items: res.list, total: res.total };
 }
 
 export function noticeAdd(data: Partial<Notice>) {
-  return requestClient.post(noticeApi('notice'), data);
+  return requestClient.post(noticeApi("notice"), data);
 }
 
 export function noticeUpdate(id: number, data: Partial<Notice>) {
   return requestClient.put(noticeApi(`notice/${id}`), data);
 }
 
-export function noticeDelete(ids: number[] | string) {
-  const list =
-    typeof ids === 'string'
-      ? ids
-          .split(',')
-          .map((part) => Number(part.trim()))
-          .filter((id) => Number.isFinite(id) && id > 0)
-      : ids;
-  return requestClient.delete(noticeApi('notice'), {
-    params: { ids: list },
+export function noticeDelete(ids: number | number[]) {
+  return requestClient.delete(noticeApi("notice"), {
+    params: { ids: Array.isArray(ids) ? ids : [ids] },
   });
 }
 

@@ -231,7 +231,7 @@
     "accepted": "The transfer request was accepted. If the email belongs to an eligible customer, they will see a confirmation in their customer center.",
     "confirm": "Accept server",
     "confirmDescription": "After confirmation, server {serviceNo} moves to your account. The former customer's historical invoices, payments, refunds, contracts, tax invoices, and tickets stay with them. Paid and still-valid snapshots or backups that belong only to this server move with it. Auto-renew is turned off, and you may enable it again if needed.",
-    "confirmFailed": "The transfer cannot be completed now. It may have expired, or the server may have an unpaid renewal or add-on invoice, refund, operation, or contract in progress.",
+    "confirmFailed": "The transfer cannot be completed now. It may have expired, or the server may have an unpaid renewal or add-on invoice, refund or operation in progress.",
     "confirmTitle": "Accept this server",
     "confirmed": "The server was transferred to your account.",
     "description": "Enter the recipient's registered and verified email. The same accepted response is shown whether or not the email exists. The recipient must confirm within 24 hours. Resolve unpaid renewal and add-on invoices first; auto-renew is turned off after transfer.",

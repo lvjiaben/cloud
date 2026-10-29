@@ -105,3 +105,12 @@ func TestPeerRecoveryPreparationFailureKeepsWriteFence(t *testing.T) {
 		t.Fatalf("exhausted recovery lost fence or remained automatic: %+v", exhausted)
 	}
 }
+
+func TestPeerPurchaseOmitsSourceHiddenDynamicDefault(t *testing.T) {
+	hidden := false
+	snapshot := &channelcommercecap.ImportSnapshot{Mappings: []channelcommercecap.ImportFieldMapping{{FieldKey: "hidden", FieldToken: "upstream-field", CustomerVisible: &hidden, DefaultValue: json.RawMessage(`"opaque-default"`)}}, Schema: &capmodel.ConfigurationSchemaDeclaration{Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "hidden", Type: capmodel.ConfigurationFieldSingleSelect}}}}
+	mapped, err := mapPeerPurchaseValues(snapshot, []configurationcontract.ConfigurationValue{{FieldKey: "hidden", OptionTokens: []string{"opaque-default"}}}, nil)
+	if err != nil || len(mapped) != 0 {
+		t.Fatalf("source default should need no cached token: %+v %v", mapped, err)
+	}
+}

@@ -1,0 +1,15 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.meta.summary": "修改草稿价格表",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.meta.dc": "按原价格行身份与价格写权限操作完整草稿价格表，保留版本锁、并发围栏、事务审计及发布后不可变保护。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.versionNo.dc": "可编辑草稿的版本业务编号。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.billingRuleNo.dc": "属于当前版本的计费规则业务编号。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.priceNo.dc": "现有价格行标识，同时作为并发修改围栏。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.configurationPriceDimensionNo.dc": "原有配置价格维度，基础售价时为空。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.currencyCode.dc": "原有明确大写三字母币种。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.tiers.dc": "完整且连续的替换价格阶梯。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleUpdateReq.fields.status.dc": "草稿价格状态：启用或停用。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleDeleteReq.meta.summary": "删除草稿价格表",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleDeleteReq.meta.dc": "按原价格行身份与价格写权限操作完整草稿价格表，保留版本锁、并发围栏、事务审计及发布后不可变保护。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleDeleteReq.fields.versionNo.dc": "可编辑草稿的版本业务编号。",
+  "plugins.idc_core.api.admin.v1.CatalogPriceScheduleDeleteReq.fields.priceNo.dc": "现有价格行标识，同时作为并发修改围栏。"
+}

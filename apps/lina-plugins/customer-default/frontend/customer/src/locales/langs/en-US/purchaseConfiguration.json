@@ -38,7 +38,10 @@
     "navigationFailed": "The configuration was saved. Return to the cart to continue.",
     "previewOnly": "No cart item is linked. You can validate the configuration and view pricing; enter from a product purchase action to save it to the cart.",
     "quoteFailed": "Pricing could not be calculated. Please try again.",
-    "quoted": "Configuration validated and pricing refreshed"
+    "quoted": "Configuration validated and pricing refreshed",
+    "loginCompleted": "Signed in. Returning to website checkout.",
+    "websiteRedirect": "Opening the website purchase page.",
+    "websiteUnavailable": "The website is temporarily unavailable. Please retry."
   },
   "title": "Product purchase configuration"
 }

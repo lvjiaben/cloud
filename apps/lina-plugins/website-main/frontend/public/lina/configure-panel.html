@@ -1,0 +1,18 @@
+<div class="shopping-cart-product cart_button_bg">
+ <div class="configure-reference-notices" data-configure-reference-notices>
+  <div class="bgw" data-configure-login-notice><div class="layui-elem-quote blue-theme alert-icon icon-info"><p>已有账号？<a data-catalog-login data-customer="/auth/login">登录</a>登录后根据您的账号情况展示适用价格。</p></div></div>
+  <div class="bgw" data-catalog-purchase-notice hidden><div class="layui-elem-quote grey-theme"><p></p></div></div>
+ </div>
+ <div class="allocation-card">
+  <div class="allocation-header"><div class="allocation-header-title"><p class="lina-configure-context" data-configure-category hidden></p><h1>商品配置</h1></div><a data-customer="/account/cart" class="allocation-header-shoppingCart">购物车</a></div>
+  <div class="allocation-mian"><form id="addCartForm" class="needs-validation configoption_form sky-config-form">
+   <div class="bgw lina-configure-notice" data-catalog-usage-notice hidden><div class="layui-elem-quote red-theme alert-icon icon-error"><p></p></div></div>
+   <p data-product-summary></p><section class="lina-configure-models" data-models aria-label="同分类商品型号"></section><p class="form-group-text lina-configure-feedback" data-status role="status">正在读取商品配置…</p><button class="btn btn-light lina-configure-refresh" type="button" data-refresh>重新读取配置</button>
+   <div data-fields></div><div data-purchase-controls></div><div class="sky-form-group sky-config-row configureproduct"><label class="sky-md sky-form-label"><div class="label-title"><span>付款周期</span></div></label><div class="sky-md-100-p"><div class="sky-btn-group" data-quote></div></div></div>
+  </form></div>
+  <div class="allocation-footer"><div class="configoption_total">
+   <div class="lina-cost-summary" data-total-summary><div class="lina-cost-main"><span class="lina-cost-label">费用合计</span><strong data-total-amount>待报价</strong><span class="lina-cost-discount" data-total-discount>请先完成配置并选择付款周期</span></div><button class="lina-cost-toggle" type="button" data-breakdown-toggle aria-expanded="false" disabled>费用明细⌄</button><div class="lina-cost-breakdown" data-breakdown hidden></div><p class="lina-cost-note">注：以上是参考价格，具体扣费请以实际下单结果为准，具体资源及是否可订购以实际库存情况为准。</p></div>
+   <button class="buy-now-button btn btn-primary" type="submit" form="addCartForm" data-add disabled>加入购物车</button>
+  </div></div>
+ </div>
+</div>

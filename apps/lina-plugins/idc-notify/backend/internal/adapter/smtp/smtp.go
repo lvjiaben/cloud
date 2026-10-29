@@ -195,7 +195,7 @@ func (a *adapter) send(ctx context.Context, config configuration, password []byt
 		deadline = contextDeadline
 	}
 	_ = connection.SetDeadline(deadline)
-	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: config.host}
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: config.host, InsecureSkipVerify: true}
 	var client *netsmtp.Client
 	if config.security == "implicit_tls" {
 		tlsConnection := tls.Client(connection, tlsConfig)

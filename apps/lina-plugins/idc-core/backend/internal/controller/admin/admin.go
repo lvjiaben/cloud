@@ -45,8 +45,8 @@ func toAPIOverview(overview *customermanagement.Overview) *v1.CustomerOverviewGe
 		Business: &v1.CustomerBusinessSummary{
 			Orders: overview.Business.Orders, Bills: overview.Business.Bills,
 			Transactions: overview.Business.Transactions, Servers: overview.Business.Servers,
-			Contracts: overview.Business.Contracts, TaxInvoices: overview.Business.TaxInvoices,
-			Tickets: overview.Business.Tickets, Notifications: overview.Business.Notifications,
+			TaxInvoices: overview.Business.TaxInvoices,
+			Tickets:     overview.Business.Tickets, Notifications: overview.Business.Notifications,
 			Audits: overview.Business.Audits,
 		},
 		Balances: balances,
@@ -60,9 +60,8 @@ func toAPICustomerSummary(summary customermanagement.Summary) *v1.CustomerSummar
 		CustomerCode: summary.CustomerCode, PrimaryPhone: summary.PrimaryPhone, PrimaryEmail: summary.PrimaryEmail,
 		Verification: string(summary.Verification), DisplayName: summary.DisplayName,
 		CountryCode: summary.CountryCode, PreferredLocale: summary.PreferredLocale,
-		EnterpriseContractPolicyCode: summary.EnterpriseContractPolicyCode,
-		EnterpriseContractTemplateNo: summary.EnterpriseContractTemplateNo,
-		TagCount:                     summary.TagCount, Version: summary.Version,
+
+		TagCount: summary.TagCount, Version: summary.Version,
 		CreatedAt: summary.CreatedAt.UnixMilli(), UpdatedAt: summary.UpdatedAt.UnixMilli(),
 	}
 	if summary.Level != nil {

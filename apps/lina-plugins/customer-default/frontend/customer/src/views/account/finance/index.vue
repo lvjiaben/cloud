@@ -56,6 +56,8 @@ import {
 } from '#/api/idc/customer-payments';
 import { $t } from '#/locales';
 
+import InvoiceOnlinePayment from './invoice-online-payment.vue';
+
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
@@ -499,6 +501,10 @@ function confirmMerge() {
   });
 }
 
+function paymentInvoiceUpdated(invoice: FinancialInvoice) {
+  if (detail.value?.invoice.invoiceNo === invoice.invoiceNo)
+    detail.value = { ...detail.value, invoice };
+}
 function confirmBalancePayment() {
   if (!detail.value?.invoice.canPayFromBalance || busy.value) return;
   AntModal.confirm({
@@ -513,11 +519,22 @@ function confirmBalancePayment() {
           persistentCommerceActionKey(
             `billing.balance.${detail.value!.invoice.invoiceNo}`,
           ),
+          true,
         );
         detail.value = (
           await getFinancialInvoice(detail.value!.invoice.invoiceNo)
         ).detail;
         message.success($t('finance.messages.paid'));
+      } catch {
+        try {
+          detail.value = (await getFinancialInvoice(detail.value!.invoice.invoiceNo)).detail;
+          if (detail.value.invoice.statusCode === 'paid' &&
+              BigInt(detail.value.invoice.outstandingAmountMinor) === 0n) {
+            message.warning($t('finance.onlinePayment.alreadyPaid'));
+            return;
+          }
+        } catch { /* The original request outcome remains unconfirmed. */ }
+        message.error($t('finance.onlinePayment.failed'));
       } finally {
         busy.value = false;
       }
@@ -830,6 +847,7 @@ watch(
               formatTime(detail.invoice.paymentDueAt)
             }}</DescriptionsItem></Descriptions
           >
+          <InvoiceOnlinePayment :key="detail.invoice.invoiceNo" :invoice="detail.invoice" @invoice-updated="paymentInvoiceUpdated" />
           <Button
             v-if="detail.invoice.canPayFromBalance"
             class="section-gap"

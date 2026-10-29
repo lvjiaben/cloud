@@ -10,13 +10,13 @@ import (
 
 	"lina-core/pkg/plugin/pluginhost"
 	customer360spi "lina-plugin-idc-core/backend/cap/customer360cap/spi"
+	"lina-plugin-idc-core/backend/cap/customerlogincap"
+	profilechangespi "lina-plugin-idc-core/backend/cap/profilechangecap/spi"
 	idcnotify "lina-plugin-idc-notify"
 	"lina-plugin-idc-notify/backend/internal/composition"
 	accountcontroller "lina-plugin-idc-notify/backend/internal/controller/account"
 	admincontroller "lina-plugin-idc-notify/backend/internal/controller/admin"
-	callbackcontroller "lina-plugin-idc-notify/backend/internal/controller/callback"
 	publiccontroller "lina-plugin-idc-notify/backend/internal/controller/public"
-	staffcontroller "lina-plugin-idc-notify/backend/internal/controller/staff"
 	customer360summarysvc "lina-plugin-idc-notify/backend/internal/service/customer360summary"
 )
 
@@ -33,6 +33,9 @@ func init() {
 		panic(err)
 	}
 	plugin := pluginhost.NewDeclarations(pluginID)
+	if err := plugin.Providers().ProvideExternalIdentity(customerlogincap.IdentityProviderID); err != nil {
+		panic(err)
+	}
 	plugin.Assets().UseEmbeddedFiles(idcnotify.EmbeddedFiles)
 	if err := plugin.HTTP().RegisterRoutes(pluginhost.ExtensionPointHTTPRouteRegister,
 		pluginhost.CallbackExecutionModeBlocking, registerRoutes); err != nil {
@@ -55,6 +58,12 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	if err != nil {
 		return err
 	}
+	if err = profilechangespi.Bind(service); err != nil {
+		return err
+	}
+	if err = registerRecoverySessionGuard(registrar, service); err != nil {
+		return err
+	}
 	routes := registrar.Routes()
 	middlewares := routes.Middlewares()
 	routes.Group(routes.APIPrefix(), func(group pluginhost.RouteGroup) {
@@ -65,18 +74,9 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 				group.Bind(publiccontroller.NewV1(service))
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
-				group.Middleware(middlewares.NeverDoneCtx(), middlewares.CORS(), middlewares.RequestBodyLimit())
-				group.Bind(callbackcontroller.NewV1(service))
-			})
-			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(),
 					middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy())
 				group.Bind(accountcontroller.NewV1(service))
-			})
-			group.Group("", func(group pluginhost.RouteGroup) {
-				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(),
-					middlewares.RequestBodyLimit(), middlewares.Ctx(), middlewares.Auth(), middlewares.Tenancy())
-				group.Bind(staffcontroller.NewV1(service))
 			})
 			group.Group("", func(group pluginhost.RouteGroup) {
 				group.Middleware(middlewares.NeverDoneCtx(), middlewares.HandlerResponse(), middlewares.CORS(),

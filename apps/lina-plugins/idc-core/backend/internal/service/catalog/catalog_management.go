@@ -10,9 +10,7 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
 	"lina-plugin-idc-core/backend/cap/idccap"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 const (
@@ -22,6 +20,7 @@ const (
 	permissionCatalogCategoryDelete  = "idc:admin:catalog:category:delete"
 	permissionCatalogCategoryRestore = "idc:admin:catalog:category:restore"
 	permissionCatalogProductCreate   = "idc:admin:catalog:product:create"
+	permissionCatalogProductDelete   = "idc:admin:catalog:product:delete"
 	permissionCatalogProductUpdate   = "idc:admin:catalog:product:update"
 	permissionCatalogProductQuery    = "idc:admin:catalog:product:query"
 	permissionCatalogBillingWrite    = "idc:admin:catalog:billing:write"
@@ -68,16 +67,15 @@ type Category struct {
 
 // ProductCreateInput creates a product and its empty manual draft version.
 type ProductCreateInput struct {
-	DirectoryNo              string
-	CategoryNo               string
-	PublicSlug               string
-	NameZhCN                 string
-	NameEnUS                 string
-	SummaryZhCN              string
-	SummaryEnUS              string
-	SortOrder                int
-	ContractPolicyCode       contractpolicy.Policy
-	ContractTemplateNo       string
+	DirectoryNo string
+	CategoryNo  string
+	PublicSlug  string
+	NameZhCN    string
+	NameEnUS    string
+	SummaryZhCN string
+	SummaryEnUS string
+	SortOrder   int
+
 	InventoryTrackingEnabled bool
 	SellableQuantity         int64
 }
@@ -103,6 +101,8 @@ type ManagementAuthorizer interface {
 	AuthorizeCategoryDelete(ctx context.Context, categoryNo string) (actorUserID int, err error)
 	AuthorizeCategoryRestore(ctx context.Context, categoryNo string) (actorUserID int, err error)
 	AuthorizeProductCreate(ctx context.Context) (actorUserID int, err error)
+	// AuthorizeProductDelete checks deletion permission and the global merchant data scope.
+	AuthorizeProductDelete(ctx context.Context, productNo string) (actorUserID int, err error)
 	// AuthorizeProductUpdate checks the exact metadata permission and global merchant scope.
 	AuthorizeProductUpdate(ctx context.Context, productNo string) (actorUserID int, err error)
 	AuthorizeBillingWrite(ctx context.Context, versionNo string) (actorUserID int, err error)
@@ -111,8 +111,36 @@ type ManagementAuthorizer interface {
 	AuthorizeCostWrite(ctx context.Context, versionNo string) (actorUserID int, err error)
 }
 
+// ConfigurationPriceTargetSource resolves merchant-selected local price tokens
+// in the caller's transaction. It checks configuration permission and revision,
+// and creates missing dimensions in a batch. Each source validates its accepted
+// pricing modes; quantities require the merchant schema-aware source. Static
+// options use saved data; dynamic candidates use the bounded local projection.
+type ConfigurationPriceTargetSource interface {
+	ResolvePriceTargets(context.Context, string, []string) (map[string]string, error)
+}
+
+// PriceBatchTargetKind prevents a missing option token from silently targeting
+// the base price. An omitted kind retains the configuration-only contract.
+type PriceBatchTargetKind string
+
+const (
+	PriceBatchTargetConfiguration PriceBatchTargetKind = "configuration"
+	PriceBatchTargetBase          PriceBatchTargetKind = "base"
+)
+
+type ConfigurationPriceBatchRow struct {
+	PricingMode     ConfigurationPriceMode
+	TargetKind      PriceBatchTargetKind
+	CandidateToken  string
+	PreviousPriceNo string
+	Schedule        PriceScheduleCreateInput
+}
+
 // ManagementService owns only general category, product, pricing, and tax writes.
 type ManagementService interface {
+	// SaveConfigurationPriceBatch saves at most 256 base or fixed-option schedules atomically. Base targets must be explicit; configuration targets retain configuration authorization. Both enforce price permission, draft locking and stale-price fences.
+	SaveConfigurationPriceBatch(context.Context, string, []ConfigurationPriceBatchRow, ConfigurationPriceTargetSource) error
 	// GetProductAddons returns at most 100 associated products after exact staff visibility checks.
 	GetProductAddons(context.Context, string) ([]ProductAddon, error)
 	// SetProductAddons replaces the bounded allowed offers with optimistic product concurrency and audit.
@@ -123,10 +151,16 @@ type ManagementService interface {
 	DeleteCategory(ctx context.Context, input CategoryStateInput) error
 	RestoreCategory(ctx context.Context, input CategoryStateInput) (*Category, error)
 	CreateProductDraft(ctx context.Context, input ProductCreateInput) (*ProductDraft, error)
-	// UpdateProductDescription updates only bilingual sales copy with optimistic concurrency and transactional audit.
+	// DeleteProduct removes a product from new sales without deleting order or service facts; stale revisions fail atomically.
+	DeleteProduct(ctx context.Context, input ProductDeleteInput) error
+	// UpdateProductDescription updates bilingual sales copy and an optional sales category with optimistic concurrency and transactional audit.
 	UpdateProductDescription(ctx context.Context, input ProductDescriptionUpdateInput) (int64, error)
 	CreateBillingRule(ctx context.Context, input BillingRuleCreateInput) (*BillingRule, error)
 	CreatePriceSchedule(ctx context.Context, input PriceScheduleCreateInput) (*PriceSchedule, error)
+	// UpdatePriceSchedule replaces a draft schedule using its current row identity as a concurrency fence; permission and transactional audit are required.
+	UpdatePriceSchedule(ctx context.Context, priceNo string, input PriceScheduleCreateInput) (*PriceSchedule, error)
+	// DeletePriceSchedule removes all draft schedule tiers; published versions and stale row identities are rejected.
+	DeletePriceSchedule(ctx context.Context, versionNo, priceNo string) error
 	CreateTaxPolicy(ctx context.Context, input TaxPolicyCreateInput) (*TaxPolicy, error)
 	ListProductVersionCosts(ctx context.Context, versionNo string) ([]ProductVersionCost, error)
 	CreateProductVersionCost(ctx context.Context, input ProductVersionCostCreateInput) (*ProductVersionCost, error)
@@ -137,8 +171,8 @@ type ManagementService interface {
 type managementServiceImpl struct {
 	audit      idccap.BusinessAuditWriter
 	authorizer ManagementAuthorizer
-	templates  contracttemplatecap.Source
-	random     io.Reader
+
+	random io.Reader
 }
 
 var _ ManagementService = (*managementServiceImpl)(nil)
@@ -148,23 +182,13 @@ func NewManagement(
 	auditWriter idccap.BusinessAuditWriter,
 	authorizer ManagementAuthorizer,
 ) (ManagementService, error) {
-	return newManagementServiceWithSources(auditWriter, authorizer, nil, rand.Reader)
-}
-
-// NewManagementWithTemplates creates catalog management with the optional
-// installation-local contract-template source.
-func NewManagementWithTemplates(
-	auditWriter idccap.BusinessAuditWriter,
-	authorizer ManagementAuthorizer,
-	templates contracttemplatecap.Source,
-) (ManagementService, error) {
-	return newManagementServiceWithSources(auditWriter, authorizer, templates, rand.Reader)
+	return newManagementServiceWithSources(auditWriter, authorizer, rand.Reader)
 }
 
 func newManagementServiceWithSources(
 	auditWriter idccap.BusinessAuditWriter,
 	authorizer ManagementAuthorizer,
-	templates contracttemplatecap.Source,
+
 	random io.Reader,
 ) (*managementServiceImpl, error) {
 	if nilManagementDependency(auditWriter) || nilManagementDependency(authorizer) || random == nil {
@@ -172,7 +196,7 @@ func newManagementServiceWithSources(
 	}
 	return &managementServiceImpl{
 		audit: auditWriter, authorizer: authorizer,
-		templates: templates, random: random,
+		random: random,
 	}, nil
 }
 

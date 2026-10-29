@@ -102,6 +102,10 @@ INSERT INTO plugin_idc_resource_channel
      display_name,endpoint,status_code)
 VALUES ('channel-renewal-1','provider-test','connector-test','dynamic','v1','1.0.0',
         repeat('a',64),repeat('b',64),'Renewal Test','https://provider.invalid','enabled');
+INSERT INTO plugin_idc_resource_interface_channel_binding(interface_instance_no,channel_no,current_configuration_revision)
+VALUES ('pfi_11111111111111111111111111111111','channel-renewal-1','rci_11111111111111111111111111111111');
+INSERT INTO plugin_idc_resource_interface_configuration_revision(revision_no,interface_instance_no,channel_no,endpoint,non_secret_settings,created_by)
+VALUES ('rci_11111111111111111111111111111111','pfi_11111111111111111111111111111111','channel-renewal-1','https://provider.invalid','{}',1);
 INSERT INTO plugin_idc_resource_pool
     (pool_no,channel_no,display_name,resource_kind,status_code)
 VALUES ('pool-renewal-1','channel-renewal-1','Renewal Pool','virtual_server','enabled');
@@ -137,6 +141,10 @@ INSERT INTO plugin_idc_resource_channel
      display_name,endpoint,status_code)
 VALUES ('channel-renewal-1','provider-test','connector-test','dynamic','v1','1.0.0',
         repeat('a',64),repeat('b',64),'Renewal Test','https://provider.invalid','enabled');
+INSERT INTO plugin_idc_resource_interface_channel_binding(interface_instance_no,channel_no,current_configuration_revision)
+VALUES ('pfi_11111111111111111111111111111111','channel-renewal-1','rci_11111111111111111111111111111111');
+INSERT INTO plugin_idc_resource_interface_configuration_revision(revision_no,interface_instance_no,channel_no,endpoint,non_secret_settings,created_by)
+VALUES ('rci_11111111111111111111111111111111','pfi_11111111111111111111111111111111','channel-renewal-1','https://provider.invalid','{}',1);
 INSERT INTO plugin_idc_resource_pool
     (pool_no,channel_no,display_name,resource_kind,status_code)
 VALUES ('pool-renewal-1','channel-renewal-1','Renewal Pool','virtual_server','enabled');

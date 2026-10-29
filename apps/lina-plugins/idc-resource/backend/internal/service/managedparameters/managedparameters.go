@@ -46,6 +46,37 @@ func (builder *LazyBuilder) Build(ctx context.Context, channelNo, revisionNo str
 	if err := plan.Validate(); err != nil {
 		return nil, err
 	}
+	payload, err := json.Marshal(plan)
+	if err != nil {
+		return nil, gerror.New("managed parameter plan is invalid")
+	}
+	response, err := builder.invoke(ctx, channelNo, revisionNo, payload)
+	if err != nil {
+		return nil, err
+	}
+	return resourcecap.BuildProvisionParameters(ctx, func(context.Context, resourcecap.ServerProvisionPlan) (json.RawMessage, error) { return response, nil }, plan)
+}
+
+// BuildNative maps a generic frozen procurement plan without inventing server
+// sizing, principal or hostname fields. Outbound and credentials stay denied.
+func (builder *LazyBuilder) BuildNative(ctx context.Context, channelNo, revisionNo string, plan resourcecap.NativePurchasePlan) (json.RawMessage, error) {
+	if err := plan.Validate(); err != nil {
+		return nil, err
+	}
+	payload, err := json.Marshal(plan)
+	if err != nil {
+		return nil, gerror.New("managed native purchase plan is invalid")
+	}
+	response, err := builder.invoke(ctx, channelNo, revisionNo, payload)
+	if err != nil {
+		return nil, err
+	}
+	return resourcecap.BuildNativePurchaseParameters(ctx, func(context.Context, resourcecap.NativePurchasePlan) (json.RawMessage, error) { return response, nil }, plan)
+}
+
+// invoke shares the exact frozen resource runtime and denied-outbound context
+// between the independent server and native pure mapping arms.
+func (builder *LazyBuilder) invoke(ctx context.Context, channelNo, revisionNo string, payload json.RawMessage) (json.RawMessage, error) {
 	builder.mu.RLock()
 	deps := builder.deps
 	builder.mu.RUnlock()
@@ -59,10 +90,6 @@ func (builder *LazyBuilder) Build(ctx context.Context, channelNo, revisionNo str
 	configuration, err := reader.ReadRevision(ctx, channelNo, revisionNo)
 	if err != nil || configuration.RuntimeType != "dynamic" {
 		return nil, gerror.New("managed parameter channel is unavailable")
-	}
-	payload, err := json.Marshal(plan)
-	if err != nil {
-		return nil, gerror.New("managed parameter plan is invalid")
 	}
 	settings, err := resourcecap.ProjectPublicInterfaceSettings(configuration.Config.Settings, true)
 	if err != nil {
@@ -84,7 +111,7 @@ func (builder *LazyBuilder) Build(ctx context.Context, channelNo, revisionNo str
 		ReleaseVersion:  configuration.ReleaseVersion, ReleaseDigest: configuration.ReleaseDigest,
 		DeclarationDigest: configuration.DeclarationDigest, InterfaceInstanceID: channelNo,
 		Purpose:      capmodel.BusinessExtensionInvocationPurposeExistingBusiness,
-		ExpiresAfter: 5 * time.Second, AllowedResultFields: []string{"Denied"}, Handler: deniedOutbound,
+		ExpiresAfter: 30 * time.Second, AllowedResultFields: []string{"Denied"}, Handler: deniedOutbound,
 	}, func(callCtx context.Context, runtimeContext *capmodel.BusinessExtensionRuntimeContext) error {
 		result, invokeErr := deps.extensions.InvokeProviderMethod(callCtx, pluginhost.BusinessExtensionMethodInvokeInput{
 			PluginID: configuration.PluginID, Point: resourcecap.DynamicProviderPoint,
@@ -104,7 +131,5 @@ func (builder *LazyBuilder) Build(ctx context.Context, channelNo, revisionNo str
 	if err != nil {
 		return nil, gerror.New("managed parameter mapper failed")
 	}
-	return resourcecap.BuildProvisionParameters(ctx, func(context.Context, resourcecap.ServerProvisionPlan) (json.RawMessage, error) {
-		return response, nil
-	}, plan)
+	return response, nil
 }

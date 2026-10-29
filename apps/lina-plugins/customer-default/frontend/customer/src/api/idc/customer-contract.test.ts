@@ -279,116 +279,6 @@ describe('customer IDC API boundaries', () => {
     );
   });
 
-  it('uses the real delivery and preference read routes', async () => {
-    const {
-      getCustomerNotificationPreferences,
-      listCustomerNotificationDeliveries,
-    } = await import('./notifications');
-    requestClient.get.mockResolvedValue({ items: [], nextCursor: '' });
-
-    await listCustomerNotificationDeliveries({ limit: 10 });
-    await getCustomerNotificationPreferences();
-
-    expect(requestClient.get).toHaveBeenNthCalledWith(
-      1,
-      '/x/idc-notify/api/v1/account/notifications/deliveries',
-      { params: { limit: 10 } },
-    );
-    expect(requestClient.get).toHaveBeenNthCalledWith(
-      2,
-      '/x/idc-notify/api/v1/account/notifications/preferences',
-    );
-  });
-
-  it('saves one ordinary preference without inventing marketing evidence', async () => {
-    const { updateCustomerNotificationPreference } =
-      await import('./notifications');
-    const input = {
-      channelCode: 'in_app' as const,
-      contactNo: 'contact-1',
-      enabled: false,
-      expectedVersion: 2,
-      idempotencyKey: 'customer-choice-1',
-      topic: 'support' as const,
-    };
-    requestClient.put.mockResolvedValue({ version: 3 });
-
-    await updateCustomerNotificationPreference(input);
-
-    expect(requestClient.put).toHaveBeenCalledWith(
-      '/x/idc-notify/api/v1/account/notifications/preferences',
-      input,
-    );
-  });
-
-  it('uses authoritative consent evidence when opting in and omits it when opting out', async () => {
-    const { updateCustomerNotificationPreference } =
-      await import('./notifications');
-    requestClient.put.mockResolvedValue({ version: 4 });
-
-    const granted = {
-      channelCode: 'email' as const,
-      contactNo: 'contact-1',
-      enabled: true,
-      expectedVersion: 2,
-      idempotencyKey: 'marketing-granted-1',
-      locale: 'zh-CN' as const,
-      marketingConsentAction: 'granted' as const,
-      policyReference: 'privacy-notice',
-      policyVersion: '2026-08-15',
-      topic: 'marketing' as const,
-    };
-    const withdrawn = {
-      channelCode: 'email' as const,
-      contactNo: 'contact-1',
-      enabled: false,
-      expectedVersion: 3,
-      idempotencyKey: 'marketing-withdrawn-1',
-      marketingConsentAction: 'withdrawn' as const,
-      topic: 'marketing' as const,
-    };
-
-    await updateCustomerNotificationPreference(granted);
-    await updateCustomerNotificationPreference(withdrawn);
-
-    expect(requestClient.put).toHaveBeenNthCalledWith(
-      1,
-      '/x/idc-notify/api/v1/account/notifications/preferences',
-      granted,
-    );
-    expect(requestClient.put).toHaveBeenNthCalledWith(
-      2,
-      '/x/idc-notify/api/v1/account/notifications/preferences',
-      withdrawn,
-    );
-    expect(withdrawn).not.toHaveProperty('policyReference');
-    expect(withdrawn).not.toHaveProperty('policyVersion');
-    expect(withdrawn).not.toHaveProperty('locale');
-  });
-
-  it('saves customer quiet hours without rewriting a contact or consent', async () => {
-    const { updateCustomerNotificationPreference } =
-      await import('./notifications');
-    const input = {
-      expectedVersion: 4,
-      idempotencyKey: 'quiet-hours-1',
-      quietHours: {
-        enabled: true,
-        endMinute: 480,
-        startMinute: 1380,
-        timezoneName: 'Asia/Shanghai',
-      },
-    };
-    requestClient.put.mockResolvedValue({ version: 5 });
-
-    await updateCustomerNotificationPreference(input);
-
-    expect(requestClient.put).toHaveBeenCalledWith(
-      '/x/idc-notify/api/v1/account/notifications/preferences',
-      input,
-    );
-  });
-
   it('verifies and replies through the real anonymous short-link contract', async () => {
     const { replyPresales, verifyPresalesAccess } = await import('./presales');
     requestClient.post.mockResolvedValue({
@@ -650,5 +540,16 @@ describe('customer IDC API boundaries', () => {
       }),
       { silentErrorMessage: true },
     );
+  });
+  it('keeps announcement calls in the source plugin namespace', async () => {
+    const api = await import('./announcements');
+    requestClient.get.mockResolvedValue({ list: [], total: 0 });
+    requestClient.put.mockResolvedValue({});
+    await api.listCustomerAnnouncements(2, 10);
+    await api.getCustomerAnnouncement(321);
+    await api.readCustomerAnnouncement(321);
+    expect(requestClient.get).toHaveBeenNthCalledWith(1, '/x/content-notice/api/v1/notice/announcements', { params: { pageNum: 2, pageSize: 10 }, silentErrorMessage: true });
+    expect(requestClient.get).toHaveBeenNthCalledWith(2, '/x/content-notice/api/v1/notice/announcements/321', { silentErrorMessage: true });
+    expect(requestClient.put).toHaveBeenCalledWith('/x/content-notice/api/v1/notice/announcements/321/read', undefined, { silentErrorMessage: true });
   });
 });

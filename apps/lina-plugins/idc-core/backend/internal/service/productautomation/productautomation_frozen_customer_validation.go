@@ -60,12 +60,6 @@ type frozenProviderEvidenceReader interface {
 	GetProvidersExact(context.Context, []plugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error)
 }
 
-type frozenRegistryEvidenceReader struct{ registry plugincap.RegistryService }
-
-func (r frozenRegistryEvidenceReader) GetProvidersExact(ctx context.Context, inputs []plugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
-	return r.registry.GetBusinessExtensionProvidersExact(ctx, inputs)
-}
-
 func NewFrozenCustomerConfigurationValidator(
 	database gdb.DB,
 	extensions frozenProviderEvidenceReader,
@@ -75,13 +69,6 @@ func NewFrozenCustomerConfigurationValidator(
 		return nil, gerror.New("frozen customer configuration validation requires database, extension registry, and file verifier")
 	}
 	return &frozenCustomerConfigurationValidator{database: database, extensions: extensions, files: files}, nil
-}
-
-func NewFrozenCustomerConfigurationValidatorFromRegistry(database gdb.DB, registry plugincap.RegistryService, files purchaseconfigurationfile.OrderEvidenceVerifier) (FrozenCustomerConfigurationValidator, error) {
-	if nilDependency(registry) {
-		return nil, gerror.New("frozen customer configuration validation requires plugin registry")
-	}
-	return NewFrozenCustomerConfigurationValidator(database, frozenRegistryEvidenceReader{registry: registry}, files)
 }
 
 func (s *frozenCustomerConfigurationValidator) Validate(

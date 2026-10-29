@@ -19,13 +19,18 @@ import type {
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from "vue";
 import { Page, useVbenDrawer, useVbenModal } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
-import { Alert, Button, Card, Descriptions, Tabs, message } from "ant-design-vue";
+import { useRoute } from "vue-router";
+import { Alert, Button, Card, Descriptions, Empty, Tabs, message } from "ant-design-vue";
 import { useVbenForm, z } from "#/adapter/form";
 import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { fixedRightActionColumn } from "../../../vben-adapter/frontend/src";
 import { $t } from "#/locales";
 import ProviderCatalog from "./components/provider-catalog.vue";
 import PeerLifecycle from "./components/peer-lifecycle.vue";
+import ProviderOperations from "./provider-operations.vue";
+import ProviderAPILogs from "./provider-api-logs.vue";
+import ProviderTasks from "./provider-tasks.vue";
+import { useAccess } from "./plugin-access";
 import {
   createProviderChannel,
   createProviderPool,
@@ -51,6 +56,8 @@ import type {
   InterfaceConfigurationSchema,
 } from "./provider-interface-configuration";
 
+const { hasAccessByCodes } = useAccess();
+const canOperate = (code: string) => hasAccessByCodes([`idc:admin:resource:${code}`]);
 const tr = (key: string) =>
   $t(`plugin.idc-resource.providerConfiguration.${key}`);
 const channels = shallowRef<ProviderChannel[]>([]);
@@ -89,7 +96,13 @@ function denied(error: unknown) {
   const status = (error as { response?: { status?: number } })?.response?.status;
   return status === 401 || status === 403;
 }
-const activeTab = ref("channels");
+const canViewConfiguration = computed(() => canOperate("configuration:list"));
+const canViewOperations = computed(() => ["overview:list", "health:list", "provider-capacity:list", "task:list"].some(canOperate));
+const activeTab = ref(canViewConfiguration.value ? "channels" : canViewOperations.value ? "operations" : "logs");
+const route = useRoute();
+watch(() => route.query.resourceTab, (tab) => {
+  if (tab === "operations" && canViewOperations.value) activeTab.value = "operations";
+}, { immediate: true });
 const editingChannel = ref<ProviderChannel>();
 const editingPool = ref<ProviderPool>();
 const selectedInterfaceSchema = ref<InterfaceConfigurationSchema>({
@@ -97,7 +110,6 @@ const selectedInterfaceSchema = ref<InterfaceConfigurationSchema>({
   version: "",
 });
 const testingChannels = ref<string[]>([]);
-const refreshingChannels = ref<string[]>([]);
 const activeChannels = computed(() => channelOptions.value);
 
 const [ChannelForm, channelFormApi] = useVbenForm({
@@ -322,6 +334,7 @@ async function queryDirectory(
   target: "channels" | "pools",
   requested: { currentPage: number; pageSize: number },
 ) {
+  if (!canViewConfiguration.value) return { items: [], total: 0 };
   const generation = ++loadGeneration;
   const confirmedChannel = { ...channelPage.value };
   const confirmedPool = { ...poolPage.value };
@@ -388,6 +401,7 @@ async function queryDirectory(
   }
 }
 async function load() {
+  if (!canViewConfiguration.value || !["channels", "pools"].includes(activeTab.value)) return;
   if (activeTab.value === "pools") await poolGridApi.query();
   else await channelGridApi.query();
 }
@@ -455,7 +469,6 @@ async function initializeChannelForm(open: boolean) {
       providerPluginId: item?.providerPluginId || candidate?.pluginId || "",
       displayName: item?.displayName || "",
       endpoint: item?.endpoint || "",
-      tlsCertificateSha256: item?.tlsCertificateSha256 || "",
       ...(item?.nonSecretSettings || {}),
       status:
         item?.status === "deleted" ? "disabled" : item?.status || "disabled",
@@ -489,7 +502,6 @@ async function saveChannel() {
     const body = {
       displayName: String(values.displayName || ""),
       endpoint: String(values.endpoint || ""),
-      tlsCertificateSha256: String(values.tlsCertificateSha256 || "").trim().toLowerCase(),
       nonSecretSettings,
       providerPluginId: String(values.providerPluginId || ""),
       status: String(values.status || "disabled"),
@@ -686,14 +698,8 @@ function channelBaseSchema(item?: ProviderChannel): NonNullable<VbenFormProps["s
       component: "Input",
       fieldName: "endpoint",
       label: tr("apiEndpoint"),
+      componentProps: { placeholder: tr("endpointRootHint") },
       rules: z.string().trim().url(),
-    },
-    {
-      component: "Input",
-      fieldName: "tlsCertificateSha256",
-      label: tr("tlsCertificateSha256"),
-      componentProps: { placeholder: tr("tlsCertificateHint"), maxlength: 64 },
-      rules: z.string().trim().regex(/^(?:[a-fA-F0-9]{64})?$/).optional(),
     },
     ...(item
       ? [
@@ -797,25 +803,11 @@ async function savePool() {
     poolModalApi.unlock();
   }
 }
-function providerUpdateNeeded(item: ProviderChannel) {
-  const candidate = providerCandidates.value.find((value) => value.pluginId === item.providerPluginId);
-  return !!item.providerReleaseVersion && !!candidate && candidate.releaseVersion !== item.providerReleaseVersion;
-}
-async function refreshChannelProvider(item: ProviderChannel) {
-  if (refreshingChannels.value.includes(item.channelNo)) return;
-  refreshingChannels.value = [...refreshingChannels.value, item.channelNo];
-  try {
-    await updateProviderChannel(item, { displayName: item.displayName, endpoint: item.endpoint, status: item.status, refreshProvider: true });
-    message.success(tr("providerUpdated"));
-    await load();
-  } catch { message.error(tr("providerUpdateFailed")); } finally { refreshingChannels.value = refreshingChannels.value.filter((value) => value !== item.channelNo); }
-}
 async function setChannelStatus(item: ProviderChannel, status: string) {
   try {
     await updateProviderChannel(item, {
       displayName: item.displayName,
       endpoint: item.endpoint,
-      tlsCertificateSha256: item.tlsCertificateSha256 || "",
       status,
     });
     await load();
@@ -846,7 +838,6 @@ function verificationMessage(status: string) {
  return tr("verification." + (supported.includes(status) ? status : "connection_failed"));
 }
 function connectionStatusLabel(item: ProviderChannel) {
-  if (providerUpdateNeeded(item)) return tr("providerUpdateNeeded");
   if (item.connectionStatus === "healthy") return tr("connectionHealthy");
   if (item.connectionStatus === "degraded") return tr("connectionDegraded");
   return tr("connectionUnknown");
@@ -903,7 +894,7 @@ async function saveSecret(
     operation: replacing ? "replace" : "create",
     bindingName,
     secretDigest: await digest(value),
-    expectedUpdatedAt: replacing ? Date.parse(status.updatedAt || "") : 0,
+    expectedUpdatedAt: replacing ? (status.updatedAt || 0) : 0,
     rotateLimit: 0,
     idempotencyKey,
   });
@@ -912,7 +903,7 @@ async function saveSecret(
     secret: base64(value),
     idempotencyKey,
     accessContext: access.item.token,
-    expectedUpdatedAt: status?.updatedAt ? Date.parse(status.updatedAt) : 0,
+    expectedUpdatedAt: status?.updatedAt || 0,
   };
   if (replacing) await replaceProviderSecret(channelNo, bindingName, body);
   else await createProviderSecret(channelNo, body);
@@ -974,7 +965,7 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
     >
       <template #title>{{ tr("title") }}</template>
       <template #extra>
-        <div class="flex flex-wrap gap-2"><PeerLifecycle /><Button :loading="loading" @click="load()">{{
+        <div v-if="canViewConfiguration" class="flex flex-wrap gap-2"><PeerLifecycle /><Button v-if="activeTab === 'channels' || activeTab === 'pools'" :loading="loading" @click="load()">{{
           tr("refresh")
         }}</Button></div></template>
       <Alert class="mb-4" :message="tr('subtitle')" show-icon type="info" />
@@ -985,11 +976,13 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
         show-icon
         type="warning"
       />
+      <Empty v-if="!canViewConfiguration && !canViewOperations && !canOperate('api-log:list')" :description="$t('plugin.idc-resource.workspaces.noAccess')" />
       <Tabs
+        v-else
         v-model:active-key="activeTab"
         class="provider-configuration-tabs min-h-0 flex-1"
       >
-        <Tabs.TabPane key="channels" :tab="tr('channels')">
+        <Tabs.TabPane v-if="canViewConfiguration" key="channels" :tab="tr('channels')">
           <div class="flex h-full min-h-0 flex-col">
             <div class="mb-3 flex justify-end gap-2">
               <Button data-testid="provider-show-deleted" @click="showDeletedChannels = !showDeletedChannels; channelGridApi.query()">{{ tr(showDeletedChannels ? 'hideDeleted' : 'showDeleted') }}</Button>
@@ -1015,7 +1008,7 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
                 >
                 <template #account="{ row }">{{
                   tr(
-                    providerUpdateNeeded(row) ? "providerUpdateNeeded" : !row.interfaceConfiguration
+                    !row.interfaceConfiguration
                       ? "configurationMissing"
                       : channelSecretsComplete(row)
                         ? "configured"
@@ -1033,7 +1026,6 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
                 </template>
                 <template #action="{ row }"
                   ><div class="flex gap-2 whitespace-nowrap">
-                    <Button v-if="providerUpdateNeeded(row) && row.status !== 'deleted'" :loading="refreshingChannels.includes(row.channelNo)" size="small" type="link" @click="refreshChannelProvider(row)">{{ tr("updateProvider") }}</Button>
                     <Button size="small" type="link" @click="openDetail(row)">{{ tr("details") }}</Button>
                     <Button
                       :disabled="!row.interfaceConfiguration"
@@ -1043,7 +1035,7 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
                       >{{ tr("edit") }}</Button
                     ><Button
                       :disabled="
-                        row.status === 'deleted' || providerUpdateNeeded(row) || !channelSecretsComplete(row)
+                        row.status === 'deleted' || !channelSecretsComplete(row)
                       "
                       :loading="testingChannels.includes(row.channelNo)"
                       size="small"
@@ -1086,7 +1078,7 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
             </div>
           </div>
         </Tabs.TabPane>
-        <Tabs.TabPane key="pools" :tab="tr('pools')">
+        <Tabs.TabPane v-if="canViewConfiguration" key="pools" :tab="tr('pools')">
           <div class="flex h-full min-h-0 flex-col">
             <div class="mb-3 flex justify-end">
               <Button
@@ -1149,6 +1141,8 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
             </div>
           </div>
         </Tabs.TabPane>
+        <Tabs.TabPane v-if="canViewOperations" key="operations" :tab="$t('plugin.idc-resource.workspaces.providers')"><ProviderOperations /></Tabs.TabPane>
+        <Tabs.TabPane v-if="canOperate('api-log:list')" key="logs" :tab="$t('plugin.idc-resource.workspaces.apiLogs')"><ProviderAPILogs /></Tabs.TabPane>
       </Tabs>
     </Card>
     <ChannelModal :title="tr(editingChannel ? 'editChannel' : 'newChannel')"
@@ -1175,6 +1169,8 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
           <Tabs.TabPane v-if="detail.catalogAvailable && detail.status === 'enabled' && detail.interfaceInstanceNo" key="catalog" :tab="$t('plugin.idc-resource.providerCatalog.title')">
             <ProviderCatalog :key="detail.interfaceInstanceNo" :interface-no="detail.interfaceInstanceNo" />
           </Tabs.TabPane>
+          <Tabs.TabPane v-if="canOperate('task:list')" key="tasks" :tab="$t('plugin.idc-resource.workspaces.tasks')"><ProviderTasks :key="detail.channelNo" :channel-no="detail.channelNo" /></Tabs.TabPane>
+          <Tabs.TabPane v-if="canOperate('api-log:list')" key="logs" :tab="$t('plugin.idc-resource.workspaces.apiLogs')"><ProviderAPILogs :key="detail.channelNo" :channel-no="detail.channelNo" /></Tabs.TabPane>
         </Tabs>
       </template>
     </DetailDrawer>
@@ -1182,7 +1178,8 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
 </template>
 
 <style scoped>
-:deep(.provider-configuration-tabs > .ant-tabs-content-holder),
+.provider-configuration-tabs { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+:deep(.provider-configuration-tabs > .ant-tabs-content-holder) { flex: 1; min-height: 0; overflow: hidden; }
 :deep(
   .provider-configuration-tabs > .ant-tabs-content-holder > .ant-tabs-content
 ),
@@ -1190,4 +1187,6 @@ const layoutRoot = useAdminGridLayout(channelGridApi, poolGridApi);
   height: 100%;
   min-height: 0;
 }
+:deep(.provider-configuration-tabs .plugin-admin-page) { height: 100%; min-height: 0; }
+:deep(.provider-configuration-tabs .plugin-admin-page > .h-full) { height: 100% !important; padding: 0; overflow: hidden !important; }
 </style>

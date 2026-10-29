@@ -1,5 +1,6 @@
 // This file exercises directory migrations, optimistic writes and customer
 // isolation in a disposable schema using local data only.
+
 package productdirectory
 
 import (
@@ -97,7 +98,7 @@ func directoryDatabase(t *testing.T) gdb.DB {
 	})
 	// Minimal owner tables retain the production key and projection shapes. The
 	// actual new migration is applied twice, including foreign keys and indexes.
-	_, err = db.Exec(ctx, `CREATE TABLE plugin_idc_core_customer_subject(customer_no VARCHAR(40) PRIMARY KEY);CREATE TABLE plugin_idc_core_catalog_product(tenant_id INT DEFAULT 0,product_no VARCHAR(40) PRIMARY KEY,name_zh_cn VARCHAR(256),name_en_us VARCHAR(256),deleted_at TIMESTAMPTZ);CREATE TABLE plugin_idc_core_product_fulfillment_intent(tenant_id INT DEFAULT 0,intent_no VARCHAR(40) PRIMARY KEY,product_name_zh_cn VARCHAR(256),product_name_en_us VARCHAR(256));CREATE TABLE plugin_idc_core_service_entitlement(id BIGSERIAL PRIMARY KEY,tenant_id INT DEFAULT 0,entitlement_no VARCHAR(40),customer_no VARCHAR(40),product_no VARCHAR(40),source_intent_no VARCHAR(40),plugin_id VARCHAR(64),status_code VARCHAR(24),order_no VARCHAR(40),started_at TIMESTAMPTZ,expires_at TIMESTAMPTZ);INSERT INTO plugin_idc_core_customer_subject VALUES('customer-a'),('customer-b');INSERT INTO plugin_idc_core_catalog_product(product_no,name_zh_cn,name_en_us) VALUES('product-a','云服务器','Cloud server'),('product-b','SSL证书','SSL certificate'),('product-c','域名','Domain');INSERT INTO plugin_idc_core_service_entitlement(entitlement_no,customer_no,product_no,source_intent_no,plugin_id,status_code,order_no,started_at) VALUES('ent-a','customer-a','product-a','intent-a','idc-server','active','order-a',CURRENT_TIMESTAMP),('ent-b','customer-b','product-a','intent-b','idc-server','active','order-b',CURRENT_TIMESTAMP),('ent-c','customer-a','product-c','intent-c','domain','active','order-c',CURRENT_TIMESTAMP);INSERT INTO plugin_idc_core_product_fulfillment_intent(intent_no,product_name_zh_cn,product_name_en_us) VALUES('intent-a','冻结云服务器','Frozen cloud server')`)
+	_, err = db.Exec(ctx, `CREATE TABLE plugin_idc_core_customer_subject(customer_no VARCHAR(40) PRIMARY KEY);CREATE TABLE plugin_idc_core_catalog_product(tenant_id INT DEFAULT 0,product_no VARCHAR(40) PRIMARY KEY,name_zh_cn VARCHAR(256),name_en_us VARCHAR(256),deleted_at TIMESTAMPTZ);CREATE TABLE plugin_idc_core_product_fulfillment_intent(tenant_id INT DEFAULT 0,intent_no VARCHAR(40) PRIMARY KEY,customer_no VARCHAR(40) DEFAULT 'customer-a',status_code VARCHAR(24) DEFAULT 'queued',product_name_zh_cn VARCHAR(256),product_name_en_us VARCHAR(256));CREATE TABLE plugin_idc_core_entitlement_created_outbox(tenant_id INT DEFAULT 0,entitlement_no VARCHAR(40) UNIQUE,intent_no VARCHAR(40),customer_no VARCHAR(40),owner_id VARCHAR(64),status_code VARCHAR(24));CREATE TABLE plugin_idc_core_service_entitlement(id BIGSERIAL PRIMARY KEY,tenant_id INT DEFAULT 0,entitlement_no VARCHAR(40),customer_no VARCHAR(40),product_no VARCHAR(40),source_intent_no VARCHAR(40),entitlement_owner_id VARCHAR(64) DEFAULT 'owner-fixture',plugin_id VARCHAR(64),status_code VARCHAR(24),order_no VARCHAR(40),started_at TIMESTAMPTZ,expires_at TIMESTAMPTZ);INSERT INTO plugin_idc_core_customer_subject VALUES('customer-a'),('customer-b');INSERT INTO plugin_idc_core_catalog_product(product_no,name_zh_cn,name_en_us) VALUES('product-a','云服务器','Cloud server'),('product-b','SSL证书','SSL certificate'),('product-c','域名','Domain');INSERT INTO plugin_idc_core_service_entitlement(entitlement_no,customer_no,product_no,source_intent_no,plugin_id,status_code,order_no,started_at) VALUES('ent-a','customer-a','product-a','intent-a','idc-server','active','order-a',CURRENT_TIMESTAMP),('ent-b','customer-b','product-a','intent-b','idc-server','active','order-b',CURRENT_TIMESTAMP),('ent-c','customer-a','product-c','intent-c','domain','active','order-c',CURRENT_TIMESTAMP);INSERT INTO plugin_idc_core_product_fulfillment_intent(intent_no,product_name_zh_cn,product_name_en_us) VALUES('intent-a','冻结云服务器','Frozen cloud server')`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,6 +119,41 @@ func directoryDatabase(t *testing.T) gdb.DB {
 		if _, err = db.Exec(ctx, string(source)); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if _, err = db.Exec(ctx, `ALTER TABLE plugin_idc_core_service_entitlement ADD COLUMN current_price_snapshot_no VARCHAR(40), ADD COLUMN version BIGINT DEFAULT 7, ADD COLUMN support_association_reference VARCHAR(40) DEFAULT 'sar_owned'; CREATE TABLE plugin_idc_core_service_price_snapshot(tenant_id INT DEFAULT 0,price_snapshot_no VARCHAR(40),customer_no VARCHAR(40),total_amount_minor BIGINT,currency_code VARCHAR(3),period_unit_code VARCHAR(20),period_count INT,purchase_cycles INT);`); err != nil {
+		t.Fatal(err)
+	}
+	noteMigration, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "manifest", "sql", "150-customer-service-workspace.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if _, err = db.Exec(ctx, string(noteMigration)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	pageMigration, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "manifest", "sql", "155-directory-content-pages.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if _, err = db.Exec(ctx, string(pageMigration)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	hierarchyMigration, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "manifest", "sql", "154-two-level-member-navigation.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if _, err = db.Exec(ctx, string(hierarchyMigration)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if _, err = db.Exec(ctx, `CREATE TABLE plugin_idc_core_commerce_order(tenant_id INT DEFAULT 0,order_no VARCHAR(40),customer_no VARCHAR(40),paid_at TIMESTAMPTZ,PRIMARY KEY(tenant_id,order_no));INSERT INTO plugin_idc_core_commerce_order(tenant_id,order_no,customer_no,paid_at) SELECT tenant_id,order_no,customer_no,CURRENT_TIMESTAMP FROM plugin_idc_core_service_entitlement`); err != nil {
+		t.Fatal(err)
 	}
 	return db
 }
@@ -148,7 +184,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	if _, err := db.Exec(ctx, "INSERT INTO plugin_idc_core_product_directory_membership(product_no,directory_no) VALUES('product-a',?)", created.DirectoryNo); err != nil {
 		t.Fatal(err)
 	}
-	dirs, err := service.ListAccount(ctx, 1, 100)
+	dirs, err := service.ListAccount(ctx, 1, 100, "")
 	if err != nil || len(dirs.Items) != 1 || dirs.Items[0].ServiceCount != 1 {
 		t.Fatalf("default/customer-isolated directory: %#v %v", dirs, err)
 	}
@@ -156,7 +192,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	if _, err = db.Exec(ctx, `INSERT INTO plugin_idc_core_product_directory_visibility(customer_no,directory_no,hidden) VALUES('customer-a',?,TRUE)`, created.DirectoryNo); err != nil {
 		t.Fatal(err)
 	}
-	dirs, err = service.ListAccount(ctx, 1, 100)
+	dirs, err = service.ListAccount(ctx, 1, 100, "")
 	if err != nil || dirs.Total != 1 || len(dirs.Items) != 1 || dirs.Items[0].DirectoryNo != created.DirectoryNo {
 		t.Fatalf("obsolete preference hid merchant menu: %#v %v", dirs, err)
 	}
@@ -165,7 +201,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 		t.Fatalf("merchant menu lost associated services or leaked customer: %#v %v", services, err)
 	}
 	access.customer = "customer-b"
-	dirs, err = service.ListAccount(ctx, 1, 100)
+	dirs, err = service.ListAccount(ctx, 1, 100, "")
 	if err != nil || dirs.Items[0].ServiceCount != 1 {
 		t.Fatal("merchant menu customer count leaked", err)
 	}
@@ -178,7 +214,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dirs, err = service.ListAccount(ctx, 1, 100)
+	dirs, err = service.ListAccount(ctx, 1, 100, "")
 	if err != nil || dirs.Total != 0 {
 		t.Fatal("disabled navigation remained visible", err)
 	}
@@ -196,7 +232,7 @@ func TestDirectoryMerchantMenusAndAllFallbackPostgreSQL(t *testing.T) {
 	if _, err = service.Save(ctx, SaveInput{DirectoryNo: created.DirectoryNo, NameZhCn: created.NameZhCn, NameEnUs: created.NameEnUs, StatusCode: StatusEnabled, ExpectedVersion: disabled.Version}); err != nil {
 		t.Fatal(err)
 	}
-	dirs, err = service.ListAccount(ctx, 1, 100)
+	dirs, err = service.ListAccount(ctx, 1, 100, "")
 	if err != nil || dirs.Total != 1 || len(dirs.Items) != 1 {
 		t.Fatal("re-enable did not restore merchant menu", err)
 	}
@@ -251,7 +287,7 @@ func TestDirectoryMetadataPreservesAssignmentsPostgreSQL(t *testing.T) {
 	if _, err = service.ListAdmin(ctx, 1, 100); !bizerr.Is(err, CodeNotAccessible) {
 		t.Fatal("unauthorized admin accepted", err)
 	}
-	if _, err = service.ListAccount(ctx, 1, 100); !bizerr.Is(err, CodeNotAccessible) {
+	if _, err = service.ListAccount(ctx, 1, 100, ""); !bizerr.Is(err, CodeNotAccessible) {
 		t.Fatal("unauthorized customer accepted", err)
 	}
 }
@@ -261,11 +297,11 @@ func TestDirectoryPagingIncludesAllMerchantMenusPostgreSQL(t *testing.T) {
 	if _, err := db.Exec(ctx, `INSERT INTO plugin_idc_core_product_directory(directory_no,name_zh_cn,name_en_us,sort_order) SELECT 'directory_'||i,'目录'||i,'Directory '||i,i FROM generate_series(1,123) i`); err != nil {
 		t.Fatal(err)
 	}
-	first, err := service.ListAccount(ctx, 1, 100)
+	first, err := service.ListAccount(ctx, 1, 100, "")
 	if err != nil || first.Total != 123 || len(first.Items) != 100 {
 		t.Fatal("first menu page is incomplete", err)
 	}
-	second, err := service.ListAccount(ctx, 2, 100)
+	second, err := service.ListAccount(ctx, 2, 100, "")
 	if err != nil || second.Total != 123 || len(second.Items) != 23 {
 		t.Fatal("second menu page is incomplete", err)
 	}
@@ -273,7 +309,7 @@ func TestDirectoryPagingIncludesAllMerchantMenusPostgreSQL(t *testing.T) {
 		t.Fatal("menu pagination repeated a directory")
 	}
 	for _, bounds := range [][2]int{{0, 20}, {1, 0}, {1, 101}, {1000001, 20}} {
-		if _, err = service.ListAccount(ctx, bounds[0], bounds[1]); !bizerr.Is(err, CodeInvalid) {
+		if _, err = service.ListAccount(ctx, bounds[0], bounds[1], ""); !bizerr.Is(err, CodeInvalid) {
 			t.Fatal("unbounded pagination accepted", err)
 		}
 	}

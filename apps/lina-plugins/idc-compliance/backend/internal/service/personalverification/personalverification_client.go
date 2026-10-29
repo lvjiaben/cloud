@@ -4,6 +4,7 @@ package personalverification
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"net/http"
 	"time"
@@ -31,7 +32,7 @@ func NewAliyunClientFactory(accessor secretcap.Accessor) (ClientFactory, error) 
 		return nil, gerror.New("personal verification credential accessor is invalid")
 	}
 	return &aliyunClientFactory{
-		accessor: accessor, client: &http.Client{Timeout: providerCallTimeout}, clock: time.Now,
+		accessor: accessor, client: &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: providerCallTimeout}, clock: time.Now,
 	}, nil
 }
 

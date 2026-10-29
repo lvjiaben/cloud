@@ -16,7 +16,7 @@ test.describe("TC-20 客户运营与完整模拟登录", () => {
 
     await expect(customers.overviewDrawer).toContainText("账户余额");
     await expect(customers.overviewDrawer).toContainText("全部订单");
-    for (const tabKey of ["services", "tickets", "contracts"]) {
+    for (const tabKey of ["services", "tickets", "tax-invoices"]) {
       await customers.overviewDrawer
         .getByTestId(`customer-360-tab-${tabKey}`)
         .click();

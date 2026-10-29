@@ -16,7 +16,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/customerprojection"
 )
 
@@ -297,8 +297,8 @@ func projectAssistedQuoteRequest(
 		ManualDiscountMinor: request.ManualDiscountMinor,
 		PaymentTermCode:     AssistedPaymentTerm(request.PaymentTermCode),
 		PaymentDueSeconds:   request.PaymentDueSeconds,
-		ContractPolicyCode:  contractpolicy.Policy(request.ContractOverridePolicyCode),
-		ContractTemplateNo:  request.ContractOverrideTemplateNo, Reason: request.Reason,
+
+		Reason:       request.Reason,
 		InternalNote: request.InternalNote, RequestedBy: request.RequestedBy,
 		ExpiresAt: *request.ExpiresAt, CreatedAt: *request.CreatedAt,
 		Items: items, Reused: reused,

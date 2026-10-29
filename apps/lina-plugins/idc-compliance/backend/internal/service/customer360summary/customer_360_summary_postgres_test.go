@@ -46,12 +46,12 @@ func TestComplianceContributorUsesOneCompleteSetQueryPostgreSQL(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = database.Close(ctx) })
 	// Only the columns consumed by this owner projection are needed here.
-	if _, err = database.Exec(ctx, `CREATE TABLE plugin_idc_compliance_contract(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,customer_no VARCHAR(40) NOT NULL);CREATE TABLE plugin_idc_compliance_tax_invoice(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,customer_no VARCHAR(40) NOT NULL)`); err != nil {
+	if _, err = database.Exec(ctx, `CREATE TABLE plugin_idc_compliance_tax_invoice(id BIGSERIAL PRIMARY KEY,tenant_id INT NOT NULL,customer_no VARCHAR(40) NOT NULL)`); err != nil {
 		t.Fatal(err)
 	}
 	contributor := &Contributor{database: database}
 	items, err := contributor.BatchCount(context.Background(), []string{"CUS_missing_one", "CUS_missing_two"})
-	if err != nil || len(items) != 4 {
+	if err != nil || len(items) != 2 {
 		t.Fatalf("items=%d err=%v", len(items), err)
 	}
 	for _, item := range items {

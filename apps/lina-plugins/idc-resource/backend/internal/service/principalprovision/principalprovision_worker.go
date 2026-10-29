@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/logger"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -209,6 +210,7 @@ func (w *Worker) lookup(ctx context.Context, claim *claimedTask) error {
 	}
 	principalProvider, ok := provider.(resourcecap.PrincipalProvider)
 	if err != nil || !ok || principalProvider == nil || cleanup == nil {
+		logger.Warningf(ctx, "resource principal provider unavailable: construction_failed=%t principal_supported=%t cleanup_ready=%t", err != nil, ok, cleanup != nil)
 		return w.rescheduleLookup(ctx, claim, "PRINCIPAL_PROVIDER_UNAVAILABLE")
 	}
 	username, err := secretcap.NewHandle(claim.UsernameSecretRef)
@@ -254,6 +256,7 @@ func (w *Worker) create(ctx context.Context, claim *claimedTask) error {
 	}
 	principalProvider, ok := provider.(resourcecap.PrincipalProvider)
 	if err != nil || !ok || principalProvider == nil || cleanup == nil {
+		logger.Warningf(ctx, "resource principal provider unavailable: construction_failed=%t principal_supported=%t cleanup_ready=%t", err != nil, ok, cleanup != nil)
 		return w.retrySafeCreate(ctx, claim, "PRINCIPAL_PROVIDER_UNAVAILABLE")
 	}
 	username, usernameErr := secretcap.NewHandle(claim.UsernameSecretRef)
@@ -279,7 +282,9 @@ func (w *Worker) create(ctx context.Context, claim *claimedTask) error {
 		return w.transition(ctx, claim, "verify_wait", "", "PRINCIPAL_RESPONSE_INVALID", true, claim.LeaseExpiresAt)
 	}
 	return w.transition(
-		ctx, claim, "verify_wait", result.ExternalPrincipalRef, "", false, claim.LeaseExpiresAt,
+		// Acknowledged creation releases the write lease. Its independent
+		// read-only verification can run on the next worker tick immediately.
+		ctx, claim, "verify_wait", result.ExternalPrincipalRef, "", false, time.Time{},
 	)
 }
 

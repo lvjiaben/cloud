@@ -97,3 +97,12 @@ func configureCatalogDraftIntegrationDB(t *testing.T, ctx context.Context) {
 		_ = admin.Close(ctx)
 	})
 }
+
+func (s catalogDraftTestAutomationAdmission) WithSaleStateAdmission(ctx context.Context, versionNo string, _ bool, action func(context.Context) error) error {
+	return s.WithPublicationAdmission(ctx, versionNo, action)
+}
+
+// AuthorizeProductSave provides ordinary editing authority in this fixture.
+func (a *catalogProductPublicationTestAuthorizer) AuthorizeProductSave(ctx context.Context, versionNo string) (int, error) {
+	return a.AuthorizeProductPublication(ctx, versionNo)
+}

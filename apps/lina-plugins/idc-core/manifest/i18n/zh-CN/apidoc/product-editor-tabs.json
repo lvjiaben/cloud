@@ -1,0 +1,13 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogAutomationInterfaceItem.fields.catalogAvailable.dc": "是否同时声明有界上游商品目录与详情读取能力。",
+  "plugins.idc_core.api.admin.v1.CatalogFulfillmentBindingSummary.fields.catalogAvailable.dc": "当前绑定接口是否支持选择上游商品。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedProductReference.dc": "只读的已选上游商品标识，内部编辑版本变化时保留。",
+  "plugins.idc_core.api.admin.v1.CatalogFulfillmentPolicyUpdateReq.fields.upstreamProduct.dc": "可选的上游商品与本地售价替换；上游规格保持不可变，省略时保留当前商品。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.requestKey.dc": "本次选择与售价提交的幂等键；仅内容完全相同的失败重试复用。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.reference.dc": "明确选择的上游商品标识。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.categoryNo.dc": "当前本地商品的销售分类编号。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.pricingMode.dc": "本地售价方式：markup按上游百分比加价，manual自定义最终售价。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.markupPercent.dc": "非负加价百分比，10表示成本增加百分之十；自定义售价时留空。",
+  "plugins.idc_core.api.admin.v1.CatalogUpstreamProductSelection.fields.prices.dc": "最多120个精确最终售价周期，仅自定义售价时必填。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedProductName.dc": "从不可变来源记录读取的上游商品名称。"
+}

@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	managedGrantDefaultReason     = "manual_correction"
 	managedGrantAdjustmentPost    = "marketing_grant_post"
 	managedGrantAdjustmentReverse = "marketing_grant_reverse"
 )
@@ -32,7 +33,7 @@ type ValueGrantFinancialRequestInput struct {
 	ReasonCode  string
 }
 
-// ValueGrantFinancialReviewInput records a second staff member's decision.
+// ValueGrantFinancialReviewInput records an authorized staff decision.
 type ValueGrantFinancialReviewInput struct {
 	AdjustmentNo string
 	Decision     string
@@ -166,7 +167,7 @@ LIMIT ? OFFSET ?`, normalized.Status, normalized.Cursor, cursorCreatedAt, normal
 	return page, nil
 }
 
-// RequestValueGrantPosting creates a mandatory second-person review request.
+// RequestValueGrantPosting creates a permission-authorized financial action.
 func (s *managementActionServiceImpl) RequestValueGrantPosting(
 	ctx context.Context,
 	input ValueGrantFinancialRequestInput,
@@ -180,7 +181,7 @@ func (s *managementActionServiceImpl) RequestValueGrantPosting(
 	)
 }
 
-// RequestValueGrantReversal creates a mandatory second-person review request.
+// RequestValueGrantReversal creates a permission-authorized financial action.
 func (s *managementActionServiceImpl) RequestValueGrantReversal(
 	ctx context.Context,
 	input ValueGrantFinancialRequestInput,
@@ -215,13 +216,12 @@ func (s *managementActionServiceImpl) requestValueGrantFinancialAction(
 		}
 		amountMinor := normalized.AmountMinor
 		if adjustmentType == managedGrantAdjustmentPost {
-			if grant.Status != "pending" || grant.PendingAmountMinor <= 0 ||
-				grant.FinancialPostingReference != nil {
+			if grant.Status == "cancelled" || grant.OriginalAmountMinor <= 0 {
 				return bizerr.NewCode(CodeManagementActionConflict)
 			}
-			amountMinor = grant.PendingAmountMinor
+			amountMinor = grant.OriginalAmountMinor
 		} else if grant.Status == "pending" || grant.Status == "cancelled" ||
-			grant.FinancialPostingReference == nil || amountMinor > grant.AvailableAmountMinor {
+			grant.FinancialPostingReference == nil {
 			return bizerr.NewCode(CodeManagementActionConflict)
 		}
 		evidenceDigest := managedGrantEvidenceDigest(
@@ -243,6 +243,29 @@ func (s *managementActionServiceImpl) requestValueGrantFinancialAction(
 		if loadErr != nil {
 			return loadErr
 		}
+		// Replays return the already committed action without generating a new
+		// audit transition against the now-changed entitlement projection.
+		if adjustment.Reused {
+			result = projectManagedGrantFinancialMutation(adjustment, grant.GrantNo)
+			return nil
+		}
+		if adjustment.Status == billing.AdjustmentStatusPosted {
+			if adjustmentType == managedGrantAdjustmentPost {
+				_, loadErr = s.valueGrants.Post(ctx, ValueGrantPostInput{
+					GrantNo: grant.GrantNo, CustomerNo: grant.CustomerNo,
+					FinancialPostingReference: adjustment.LedgerTransactionNo,
+				})
+			} else {
+				_, loadErr = s.valueGrants.Reverse(ctx, ValueGrantMutationInput{
+					GrantNo: grant.GrantNo, CustomerNo: grant.CustomerNo,
+					SourceType: "financial", SourceReference: adjustment.LedgerTransactionNo,
+					AmountMinor: amountMinor,
+				})
+			}
+			if loadErr != nil {
+				return loadErr
+			}
+		}
 		result = projectManagedGrantFinancialMutation(adjustment, grant.GrantNo)
 		return s.appendValueGrantFinancialAudit(
 			ctx, "request", normalized.RequestNo, normalized.ReasonCode,
@@ -252,7 +275,7 @@ func (s *managementActionServiceImpl) requestValueGrantFinancialAction(
 	return managementActionResult(result, err)
 }
 
-// ReviewValueGrantAdjustment applies one second-person decision. An approval
+// ReviewValueGrantAdjustment applies one authorized decision. An approval
 // posts the ledger first and updates the marketing entitlement in the same
 // outer transaction; either both facts commit or neither does.
 func (s *managementActionServiceImpl) ReviewValueGrantAdjustment(
@@ -273,7 +296,7 @@ func (s *managementActionServiceImpl) ReviewValueGrantAdjustment(
 		if loadErr != nil {
 			return loadErr
 		}
-		if request == nil || request.RequestedBy == actorUserID {
+		if request == nil {
 			return bizerr.NewCode(CodeManagementActionConflict)
 		}
 		decision := billing.AdjustmentDecisionApprove
@@ -411,6 +434,9 @@ func normalizeValueGrantFinancialRequest(
 	input.RequestNo = strings.TrimSpace(input.RequestNo)
 	input.GrantNo = strings.TrimSpace(input.GrantNo)
 	input.ReasonCode = strings.TrimSpace(input.ReasonCode)
+	if input.ReasonCode == "" {
+		input.ReasonCode = managedGrantDefaultReason
+	}
 	if !validBusinessReference(input.RequestNo) || !identifierPattern.MatchString(input.GrantNo) ||
 		!validManagementReason(input.ReasonCode) ||
 		(adjustmentType == managedGrantAdjustmentPost && input.AmountMinor != 0) ||
@@ -427,6 +453,9 @@ func normalizeValueGrantFinancialReview(
 	input.AdjustmentNo = strings.TrimSpace(input.AdjustmentNo)
 	input.Decision = strings.TrimSpace(input.Decision)
 	input.ReasonCode = strings.TrimSpace(input.ReasonCode)
+	if input.ReasonCode == "" {
+		input.ReasonCode = managedGrantDefaultReason
+	}
 	if !identifierPattern.MatchString(input.AdjustmentNo) ||
 		(input.Decision != "approve" && input.Decision != "reject") ||
 		!validManagementReason(input.ReasonCode) {

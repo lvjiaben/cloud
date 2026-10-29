@@ -51,12 +51,16 @@ const (
 
 // TaskListInput is one bounded task keyset query.
 type TaskListInput struct {
+	ServiceNo string
 	Page      int
 	ChannelNo string
 	Status    Status
 	Cursor    string
 	Limit     int
 }
+
+// TaskScope fixes optional product and interface context without granting access.
+type TaskScope struct{ ServiceNo, ChannelNo string }
 
 // TaskSummary is the non-secret management projection of one Provider task.
 type TaskSummary struct {
@@ -124,6 +128,7 @@ type TaskDetail struct {
 
 // ManualTakeoverInput transfers automation responsibility without deciding an upstream result.
 type ManualTakeoverInput struct {
+	Scope              TaskScope
 	TaskNo             string
 	ExpectedVersion    int64
 	ReasonCode         string
@@ -133,8 +138,10 @@ type ManualTakeoverInput struct {
 
 // ManagementService owns Provider task management reads and safe takeover.
 type ManagementService interface {
+	// ListAPILogs returns a bounded body-free invocation page within staff scope.
+	ListAPILogs(ctx context.Context, input APILogListInput) (*APILogPage, error)
 	List(ctx context.Context, input TaskListInput) (*TaskPage, error)
-	Detail(ctx context.Context, taskNo string) (*TaskDetail, error)
+	Detail(ctx context.Context, taskNo string, scopes ...TaskScope) (*TaskDetail, error)
 	TakeOver(ctx context.Context, input ManualTakeoverInput) (*TaskDetail, error)
 }
 
@@ -162,6 +169,7 @@ func (s *managementService) List(ctx context.Context, input TaskListInput) (*Tas
 	if _, err := s.authorize(ctx, permissionTaskList, "provider-task-list"); err != nil {
 		return nil, err
 	}
+	input.ServiceNo = strings.TrimSpace(input.ServiceNo)
 	input.ChannelNo = strings.TrimSpace(input.ChannelNo)
 	input.Cursor = strings.TrimSpace(input.Cursor)
 	if input.Limit == 0 {
@@ -169,6 +177,7 @@ func (s *managementService) List(ctx context.Context, input TaskListInput) (*Tas
 	}
 	if input.Limit < 1 || input.Limit > maximumTaskPageSize ||
 		input.Page < 0 || input.Page > 1_000_000 || (input.Page > 0 && input.Cursor != "") ||
+		(input.ServiceNo != "" && (len(input.ServiceNo) > 40 || !workerIDPattern.MatchString(input.ServiceNo))) ||
 		(input.ChannelNo != "" && resourcecap.ValidateChannelRef(input.ChannelNo) != nil) ||
 		(input.Cursor != "" && !workerIDPattern.MatchString(input.Cursor)) ||
 		(input.Status != "" && !validStatus(input.Status)) {
@@ -183,6 +192,15 @@ func (s *managementService) List(ctx context.Context, input TaskListInput) (*Tas
 	if input.ChannelNo != "" {
 		model = model.Where("task."+taskColumns.ChannelNo, input.ChannelNo)
 	}
+	if input.ServiceNo != "" {
+		// The ownership projection binds provisioning and later operations to
+		// one entitlement. Restrict the count and page with the same predicate.
+		model = model.Where(`(task.local_resource_no = ? OR EXISTS (SELECT 1 FROM plugin_idc_resource_server_entitlement_projection ownership
+WHERE ownership.tenant_id = task.tenant_id AND ownership.entitlement_no = ?
+AND (task.local_resource_no = ownership.local_resource_no
+OR task.local_resource_no = ownership.entitlement_no OR task.task_no = ownership.provider_task_no)))`, input.ServiceNo, input.ServiceNo)
+	}
+
 	if input.Status != "" {
 		model = model.Where("task."+taskColumns.StatusCode, input.Status)
 	}
@@ -223,13 +241,21 @@ func (s *managementService) List(ctx context.Context, input TaskListInput) (*Tas
 }
 
 // Detail returns fixed, bounded local projections for one exact task.
-func (s *managementService) Detail(ctx context.Context, taskNo string) (*TaskDetail, error) {
+func (s *managementService) Detail(ctx context.Context, taskNo string, scopes ...TaskScope) (*TaskDetail, error) {
 	taskNo = strings.TrimSpace(taskNo)
 	if _, err := s.authorize(ctx, permissionTaskQuery, taskNo); err != nil {
 		return nil, err
 	}
 	if !workerIDPattern.MatchString(taskNo) {
 		return nil, bizerr.NewCode(CodeTaskManagementInvalid)
+	}
+	if len(scopes) > 1 {
+		return nil, bizerr.NewCode(CodeTaskManagementInvalid)
+	}
+	if len(scopes) == 1 {
+		if err := s.ensureTaskScope(ctx, taskNo, scopes[0]); err != nil {
+			return nil, err
+		}
 	}
 	result, err := s.loadDetail(ctx, s.store.database, taskNo)
 	if err != nil {
@@ -251,6 +277,9 @@ func (s *managementService) TakeOver(ctx context.Context, input ManualTakeoverIn
 	evidenceNos, err := validateTakeoverInput(input)
 	if err != nil {
 		return nil, bizerr.NewCode(CodeTaskManagementInvalid)
+	}
+	if err := s.ensureTaskScope(ctx, input.TaskNo, input.Scope); err != nil {
+		return nil, err
 	}
 	requestDigest, err := canonicalDigest(struct {
 		Actor           int      `json:"actor"`
@@ -599,4 +628,32 @@ func cloneTaskTime(value *time.Time) *time.Time {
 	}
 	result := value.UTC()
 	return &result
+}
+
+// ensureTaskScope fails closed when a task is outside its current product or interface.
+func (s *managementService) ensureTaskScope(ctx context.Context, taskNo string, scope TaskScope) error {
+	if scope.ServiceNo == "" && scope.ChannelNo == "" {
+		return nil
+	}
+	if (scope.ServiceNo != "" && (len(scope.ServiceNo) > 40 || !workerIDPattern.MatchString(scope.ServiceNo))) ||
+		(scope.ChannelNo != "" && resourcecap.ValidateChannelRef(scope.ChannelNo) != nil) {
+		return bizerr.NewCode(CodeTaskManagementInvalid)
+	}
+	model := s.store.database.Model(dao.Task.Table()).Safe().Ctx(ctx).As("task").Where("task.tenant_id", idccap.DefaultTenantID).Where("task.task_no", taskNo)
+	if scope.ChannelNo != "" {
+		model = model.Where("task.channel_no", scope.ChannelNo)
+	}
+	if scope.ServiceNo != "" {
+		model = model.Where(`(task.local_resource_no = ? OR EXISTS (SELECT 1 FROM plugin_idc_resource_server_entitlement_projection ownership
+WHERE ownership.tenant_id = task.tenant_id AND ownership.entitlement_no = ?
+AND (task.local_resource_no = ownership.local_resource_no OR task.local_resource_no = ownership.entitlement_no OR task.task_no = ownership.provider_task_no)))`, scope.ServiceNo, scope.ServiceNo)
+	}
+	count, err := model.Count()
+	if err != nil {
+		return bizerr.WrapCode(err, CodeTaskManagementUnavailable)
+	}
+	if count != 1 {
+		return bizerr.NewCode(CodeTaskManagementNotAccessible)
+	}
+	return nil
 }

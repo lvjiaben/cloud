@@ -33,6 +33,8 @@ type CommerceConfigurationSnapshotColumns struct {
 	ContentDigest           string //
 	CreatedAt               string //
 	CustomerValueDigest     string //
+	TypedValueSnapshot      string // Compiler-produced customer values for native imported pricing; NULL for historical snapshots
+	ServerLoginToken        string //
 }
 
 // commerceConfigurationSnapshotColumns holds the columns for the table plugin_idc_core_commerce_configuration_snapshot.
@@ -49,6 +51,8 @@ var commerceConfigurationSnapshotColumns = CommerceConfigurationSnapshotColumns{
 	ContentDigest:           "content_digest",
 	CreatedAt:               "created_at",
 	CustomerValueDigest:     "customer_value_digest",
+	TypedValueSnapshot:      "typed_value_snapshot",
+	ServerLoginToken:        "server_login_token",
 }
 
 // NewCommerceConfigurationSnapshotDao creates and returns a new DAO object for table data access.

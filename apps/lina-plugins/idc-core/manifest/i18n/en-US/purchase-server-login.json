@@ -1,0 +1,17 @@
+{
+  "error": {
+    "idc": {
+      "purchase": {
+        "server": {
+          "login": {
+            "invalid": "Check the hostname and password and try again",
+            "not": {
+              "accessible": "The server login choices are not accessible; enter them again"
+            },
+            "unavailable": "Saving server login choices is temporarily unavailable"
+          }
+        }
+      }
+    }
+  }
+}

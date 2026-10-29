@@ -85,7 +85,7 @@ INSERT INTO plugin_idc_core_commerce_quote_item_snapshot
      product_no, version_no, billing_rule_no, configuration_snapshot_no,
      product_name_zh_cn, product_name_en_us,
      purchase_cycles, charge_type_code, period_unit_code,
-     period_count, requires_contract, fulfillment_mode_code,
+     period_count, fulfillment_mode_code,
      risk_decision_code,
      inventory_decision_code, route_decision_digest, tax_policy_no,
      price_includes_tax, tax_treatment_code, tax_rate_basis_points,
@@ -93,7 +93,7 @@ INSERT INTO plugin_idc_core_commerce_quote_item_snapshot
      rounding_quantum_minor, setup_subtotal_minor, period_subtotal_minor,
      subtotal_minor, discount_minor, net_amount_minor, tax_amount_minor,
      total_amount_minor, content_digest)
-VALUES (0, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+VALUES (0, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
         'automatic', 'approved', 'not_required', ?, ?, ?, ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?, ?, ?, ?)`
 
@@ -623,7 +623,7 @@ VALUES (0, ?, ?, ?, 'renewal', ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
 		line.ProductNo, line.VersionNo, line.BillingRuleNo, service.PriceConfigurationSnapshotNo,
 		line.ProductNameZhCN, line.ProductNameEnUS,
 		line.PurchaseCycles, line.ChargeTypeCode, line.PeriodUnitCode, line.PeriodCount,
-		line.RequiresContract, line.RouteDecisionDigest,
+		line.RouteDecisionDigest,
 		line.TaxPolicyNo, line.PriceIncludesTax, line.TaxTreatmentCode,
 		line.TaxRateBasisPoints, line.TaxCategoryCode, line.RoundingScopeCode,
 		line.RoundingModeCode, line.RoundingQuantumMinor, amounts.SetupSubtotalMinor,

@@ -92,12 +92,8 @@ export function createFinanceAPI(currentContext: () => PluginHostMountContext) {
       },
     ) {
       const path = `${base}/applications/${encodeURIComponent(applicationNo)}`;
-      const proof = await request<{ proof: { proofToken: string } }>(
-        `${path}/review-proofs`,
-        { body: input, method: "POST" },
-      );
       return request<{ application: CreditApplication }>(`${path}/reviews`, {
-        body: { ...input, proofToken: proof.proof.proofToken },
+        body: input,
         method: "POST",
       });
     },

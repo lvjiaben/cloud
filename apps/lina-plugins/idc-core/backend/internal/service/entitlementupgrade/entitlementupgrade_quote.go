@@ -14,6 +14,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/commerce"
+	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"strings"
 	"time"
 )
@@ -62,7 +63,7 @@ func (s *serviceImpl) target(ctx context.Context, quote, customer string, state 
  FROM plugin_idc_core_commerce_quote_snapshot q
  JOIN plugin_idc_core_commerce_quote_item_snapshot i ON i.tenant_id=q.tenant_id AND i.quote_no=q.quote_no
  JOIN plugin_idc_core_commerce_structured_configuration_snapshot sc ON sc.tenant_id=q.tenant_id AND sc.quote_item_no=i.quote_item_no AND sc.customer_no=q.customer_no
- WHERE q.tenant_id=0 AND q.quote_no=? AND q.customer_no=? AND q.item_count=1
+ WHERE q.tenant_id=0 AND q.quote_no=? AND q.customer_no=? AND q.item_count=1 AND q.purpose_code='new_purchase'
  AND i.product_no=? AND i.version_no=? AND i.currency_code=? AND i.charge_type_code='recurring'
  AND sc.order_no IS NULL AND NOT EXISTS(SELECT 1 FROM plugin_idc_core_commerce_structured_configuration_file_snapshot f WHERE f.snapshot_no=sc.snapshot_no)
  AND NOT EXISTS(SELECT 1 FROM plugin_idc_core_commerce_order o WHERE o.quote_no=q.quote_no)
@@ -122,6 +123,9 @@ func (s *serviceImpl) Quote(ctx context.Context, no, quote, key string) (*View, 
 		}
 		target, e := s.target(ctx, quote, customer, state)
 		if e != nil {
+			return e
+		}
+		if e = validateUpgradePolicy(state, target); e != nil {
 			return e
 		}
 		compiled, e := s.compiler.CompileUpgrade(ctx, serveroperationresourcecap.UpgradeConfigurationRequest{ServiceNo: no, CustomerNo: customer, ProductConfiguration: json.RawMessage(state.ProductConfiguration), CurrentConfiguration: json.RawMessage(state.CurrentConfiguration), TargetConfiguration: json.RawMessage(target.TypedValues)})
@@ -186,4 +190,17 @@ func decodeTarget(row *entity.EntitlementUpgrade) (*targetEvidence, error) {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	return &t, nil
+}
+
+// validateUpgradePolicy uses the product's saved controls and already-owned
+// current/target snapshots. It performs no remote calls or per-field queries.
+func validateUpgradePolicy(state *paidState, target *targetEvidence) error {
+	presentations, err := configurationcontract.DecodePresentations(state.CustomerPresentation)
+	if err != nil {
+		return bizerr.WrapCode(err, CodeInvalid)
+	}
+	if err = configurationcontract.ValidateUpgradeChanges(json.RawMessage(state.CurrentConfiguration), json.RawMessage(target.TypedValues), presentations); err != nil {
+		return bizerr.WrapCode(err, CodeInvalid)
+	}
+	return nil
 }

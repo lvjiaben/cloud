@@ -8,10 +8,6 @@ func TestLoadPersonalVerificationReturnURLUsesOnlyCustomerHTTPSOrigin(t *testing
 	if err != nil || value != "https://customer.example.test/account/identity?verification_return=1" {
 		t.Fatalf("value=%q err=%v", value, err)
 	}
-	contractValue, err := LoadContractSigningReturnURL()
-	if err != nil || contractValue != "https://customer.example.test/account/contracts?signing_return=1" {
-		t.Fatalf("contract value=%q err=%v", contractValue, err)
-	}
 	for _, invalid := range []string{
 		"", "http://customer.example.test", "https://user@customer.example.test",
 		"https://:443",
@@ -30,9 +26,5 @@ func TestLoadReturnURLsAllowExplicitLoopbackHTTPForLocalDevelopment(t *testing.T
 	identityValue, err := LoadPersonalVerificationReturnURL()
 	if err != nil || identityValue != "http://127.0.0.1:6032/account/identity?verification_return=1" {
 		t.Fatalf("identity value=%q err=%v", identityValue, err)
-	}
-	contractValue, err := LoadContractSigningReturnURL()
-	if err != nil || contractValue != "http://127.0.0.1:6032/account/contracts?signing_return=1" {
-		t.Fatalf("contract value=%q err=%v", contractValue, err)
 	}
 }

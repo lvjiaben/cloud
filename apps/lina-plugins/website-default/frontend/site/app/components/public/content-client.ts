@@ -58,6 +58,7 @@ export interface PublicDownloadTicket {
 
 interface ResponseEnvelope<T> {
   code?: number | string;
+  errorCode?: string;
   data?: T;
   message?: string;
   reason?: string;
@@ -73,6 +74,12 @@ export class PublicContentRequestError extends Error {
 }
 
 const base = '/x/idc-core/api/v1/public/content';
+
+interface AnnouncementDTO { id: number; title: string; content: string; createdAt: number; updatedAt: number; sortOrder: number; }
+const announcementBase = '/x/content-notice/api/v1/public/announcements';
+function mapAnnouncement(item: AnnouncementDTO): PublicContentSummary {
+  return { contentNo: String(item.id), publicPath: `/pages/announcements/${item.id}`, publishedAt: item.createdAt, title: item.title, type: 'announcement', updatedAt: item.updatedAt };
+}
 
 const kindToType: Record<PublicContentKind, PublicContentAPIType> = {
   announcements: 'announcement',
@@ -98,6 +105,11 @@ export async function listPublicContent(
   kind: PublicContentKind,
   filters: { cursor?: string; query?: string } = {},
 ) {
+  if (kind === 'announcements') {
+    const pageNum = Number(filters.cursor || '1');
+    const result = await requestContent<{ list: AnnouncementDTO[]; total: number }>(`${announcementBase}?pageNum=${pageNum}&pageSize=20`);
+    return { items: (result.list || []).map(mapAnnouncement), nextCursor: pageNum * 20 < result.total ? String(pageNum + 1) : '' } satisfies PublicContentPage;
+  }
   const query = new URLSearchParams({
     limit: '20',
     type: kindToType[kind],
@@ -118,6 +130,10 @@ export async function getPublicContent(
   kind: PublicContentKind,
   contentNo: string,
 ) {
+  if (kind === 'announcements') {
+    const item = await requestContent<AnnouncementDTO>(`${announcementBase}/${encodeURIComponent(contentNo)}`);
+    return { ...mapAnnouncement(item), bodyText: item.content, hasDownload: false } satisfies PublicContentDetail;
+  }
   const result = await requestContent<{ item: PublicContentItemDTO }>(
     `${base}/items/${encodeURIComponent(contentNo)}`,
   );
@@ -158,6 +174,7 @@ async function requestContent<T>(url: string, init: RequestInit = {}): Promise<T
       signal: controller.signal,
     });
     const payload = (await response.json()) as ResponseEnvelope<T> | T;
+    if ((payload as ResponseEnvelope<T>)?.errorCode === 'CONTENT_NOTICE_NOT_FOUND') throw new PublicContentRequestError('content_not_found', 404);
     if (!response.ok) {
       const envelope = payload as ResponseEnvelope<T>;
       throw new PublicContentRequestError(

@@ -1,0 +1,15 @@
+[data-page=contact]{--banner_background:url('../static/image/remoteL17069814521149.jpg')}
+[data-page=contact] .globalBanner{background-image:url('../static/image/remoteL17069814521149.jpg')}
+[data-page=contact] .et-container{position:sticky;top:0;z-index:30;background:#fff}
+[data-page=contact] .et-hero-tabs-container{position:relative}
+[data-page=contact] .et-slide{scroll-margin-top:62px}
+[data-page=contact] .et-hero-tab a{display:block}
+[data-page=contact] .currency-content-item:focus-within .consultationButton,[data-page=contact] .currency-content-item[data-open] .consultationButton{height:100%}
+[data-page=contact] .currency-content-item-label{text-align:center;min-width:0;overflow-wrap:anywhere}
+[data-page=contact] .consultation-ewm img{object-fit:contain;background:white}
+[data-contact-map]{height:368px}
+[data-contact-address]{margin-bottom:12px}
+[data-page=contact] .companyAddress .currency-title{align-items:flex-end;text-align:right}
+[data-page=contact] .et-hero-tab-slider{transition:left .3s ease,width .3s ease}
+@media(max-width:768px){[data-page=contact] .currency-content{grid-template-columns:repeat(2,minmax(0,1fr))}[data-page=contact] .et-hero-tabs-container{overflow-x:auto}[data-page=contact] .et-hero-tab{flex-shrink:0}[data-page=contact] .currency-content-item{min-width:0}}
+@media(prefers-reduced-motion:reduce){[data-page=contact] *,[data-page=contact] *:before,[data-page=contact] *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-10-19",
+  "version": "v0.1.18",
+  "packageSHA256": "f04adb0c9a0f4daf5ca2798fee2d3e00ceb41270275c44dc0a8df0226b72405f",
+  "packageBytes": 27254942,
+  "matched": 145,
+  "templateEntry": {"url": "/x-assets/website-main/v0.1.18/index.html", "assetBase": "/x-assets/website-main/v0.1.18/", "spa": false},
+  "promisesContract": "removed from editable manifest fields; legacy stored values ignored by static footer",
+  "shortcutsContract": "title | description | href; no image field"
+}

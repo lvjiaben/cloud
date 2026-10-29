@@ -19,17 +19,22 @@ func TestWorkerStateIsQueryFirstAndNeverRepeatsUnknownSubmit(t *testing.T) {
 	}{
 		{"query missing persists submit for another lease", "pending_query", "pending_submit", "processing", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusNotFound, false, false, false, false, true, 1, 0, 1},
 		{"submit not accepted retries within bound", "pending_submit", "retry_wait", "processing", productfulfillmentcap.ActionSubmit, productfulfillmentcap.StatusNotAccepted, false, false, false, false, true, 1, 1, 3},
-		{"submit not accepted stops safely at bound", "pending_submit", "failed", "manual_pending", productfulfillmentcap.ActionSubmit, productfulfillmentcap.StatusNotAccepted, false, false, false, false, false, 3, 3, 3},
+		{"submit not accepted stops safely at bound", "pending_submit", "failed", "manual_pending", productfulfillmentcap.ActionSubmit, productfulfillmentcap.StatusNotAccepted, false, false, false, false, false, maximumQueryAttempts, maximumSubmitAttempts, 3},
 		{"query transport failure retries", "pending_query", "retry_wait", "processing", productfulfillmentcap.ActionQuery, "", true, true, false, false, true, 1, 0, 3},
 		{"query transport failure stops at fixed ten", "pending_query", "failed", "manual_pending", productfulfillmentcap.ActionQuery, "", true, true, false, false, false, 10, 0, 99},
 		{"query failure after acceptance keeps accepted", "accepted", "accepted", "processing", productfulfillmentcap.ActionQuery, "", true, true, false, false, true, 1, 1, 3},
-		{"submit transport failure is unknown", "pending_submit", "result_unknown", "processing", productfulfillmentcap.ActionSubmit, "", true, true, false, false, false, 1, 1, 3},
+		{"submit transport failure is unknown", "pending_submit", "result_unknown", "manual_pending", productfulfillmentcap.ActionSubmit, "", true, true, false, false, false, 1, 1, 3},
 		{"submit preparation failure returns to query", "pending_submit", "retry_wait", "processing", productfulfillmentcap.ActionSubmit, "", true, false, false, false, true, 1, 1, 3},
 		{"submit unknown after takeover converges to manual", "pending_submit", "manual_takeover", "manual_pending", productfulfillmentcap.ActionSubmit, "", true, true, true, false, false, 1, 1, 3},
 		{"accepted is queried later", "pending_submit", "accepted", "processing", productfulfillmentcap.ActionSubmit, productfulfillmentcap.StatusAccepted, false, false, false, false, true, 1, 1, 3},
-		{"unknown is never retried", "pending_query", "result_unknown", "processing", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusResultUnknown, false, false, false, false, false, 1, 0, 3},
+		{"unknown is never retried", "pending_query", "result_unknown", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusResultUnknown, false, false, false, false, false, 1, 0, 3},
 		{"unknown after takeover converges to manual", "pending_query", "manual_takeover", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusResultUnknown, false, false, true, false, false, 1, 0, 3},
-		{"accepted then not found never resubmits", "accepted", "result_unknown", "processing", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusNotFound, false, false, false, false, false, 2, 1, 3},
+		{"accepted then not found never resubmits", "accepted", "result_unknown", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusNotFound, false, false, false, false, false, 2, 1, 3},
+		{"accepted reaches query bound", "accepted", "accepted", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusAccepted, false, true, false, false, false, maximumQueryAttempts, 1, 3},
+		{"running reaches query bound", "running", "running", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusRunning, false, true, false, false, false, maximumQueryAttempts, 1, 3},
+		{"accepted query failure reaches bound", "accepted", "accepted", "manual_pending", productfulfillmentcap.ActionQuery, "", true, true, false, false, false, maximumQueryAttempts, 1, 3},
+		{"running query failure reaches bound", "running", "running", "manual_pending", productfulfillmentcap.ActionQuery, "", true, true, false, false, false, maximumQueryAttempts, 1, 3},
+		{"definitive rejection ends processing", "pending_submit", "failed", "incomplete", productfulfillmentcap.ActionSubmit, productfulfillmentcap.StatusFailed, false, true, false, false, false, 1, 1, 3},
 		{"success remains authoritative during takeover", "running", "succeeded", "completed", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusSucceeded, false, false, true, false, false, 2, 1, 3},
 		{"nonterminal result converges to takeover", "running", "manual_takeover", "manual_pending", productfulfillmentcap.ActionQuery, productfulfillmentcap.StatusRunning, false, false, true, false, false, 2, 1, 3},
 		{"cancel before submit boundary is safe", "pending_submit", "canceled", "canceled", productfulfillmentcap.ActionSubmit, "", true, false, false, true, false, 1, 1, 3},
@@ -57,6 +62,9 @@ func TestWorkerStateIsQueryFirstAndNeverRepeatsUnknownSubmit(t *testing.T) {
 			}
 			if !test.takeover && decision.TaskStatus == "manual_takeover" {
 				t.Fatal("worker must never manufacture an employee takeover")
+			}
+			if !decision.ScheduleNext && decision.IntentStatus == "processing" {
+				t.Fatal("stopped automation must not remain processing")
 			}
 		})
 	}

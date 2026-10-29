@@ -3,7 +3,7 @@
   "plugins.idc_core.api.account.v1.CommerceGuestCartMergeReq.meta.summary": "合并匿名购物车",
   "plugins.idc_core.api.account.v1.CommerceGuestCartMergeReq.meta.tags": "客户购买",
   "plugins.idc_core.api.account.v1.CommerceGuestCartMergeReq.schema.dc": "消费受保护的匿名购物车浏览器凭据，并在事务中把其中的购买意向合并到当前客户的有效购物车。",
-  "plugins.idc_core.api.account.v1.CommerceGuestCartMergeRes.fields.cart.dc": "消费凭据后合并得到的当前客户购物车",
+  "plugins.idc_core.api.account.v1.CommerceGuestCartMergeRes.fields.cart.dc": "处理匿名凭据后当前客户的购物车；没有有效购物车时为null",
   "plugins.idc_core.api.account.v1.CommerceGuestCartMergeRes.fields.merged.dc": "是否消费了匿名购物车凭据",
   "plugins.idc_core.api.public.v1.GuestCartItemAddReq.fields.billingTermToken.dc": "所选计费周期的不透明令牌",
   "plugins.idc_core.api.public.v1.GuestCartItemAddReq.fields.configurationRevision.dc": "已发布配置的不透明版本",

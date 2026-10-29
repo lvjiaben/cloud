@@ -107,17 +107,23 @@ func queryPublicCatalogProducts(
 	if slug != "" {
 		limit = 1
 	}
-	rows := make([]publicCatalogProductRow, 0, limit)
-	err := database.GetScan(ctx, &rows, publicCatalogProductsSQL,
-		idccap.DefaultTenantID,
-		slug, slug,
-		input.namePrefix, input.likePrefix, input.likePrefix,
-		input.categoryNo, input.categoryNo,
-		input.currency, input.currency,
-		hasCursor, boundarySort, boundarySort, boundaryID,
-		limit,
-		0,
+	var (
+		rows = make([]publicCatalogProductRow, 0, limit)
+		args = []any{
+			idccap.DefaultTenantID, slug, slug,
+			input.namePrefix, input.likePrefix, input.likePrefix,
+			input.categoryNo, input.categoryNo, input.currency, input.currency,
+		}
+		query = publicCatalogProductsSQL
 	)
+	if len(input.publicSlugs) > 0 {
+		// Apply one bounded set predicate before ordering and paging; no per-slug reads.
+		query = publicCatalogProductsPrefixSQL + publicCatalogProductsFilteredSQL +
+			" AND p.public_slug IN (?)" + publicCatalogProductsPageSQL
+		args = append(args, input.publicSlugs)
+	}
+	args = append(args, hasCursor, boundarySort, boundarySort, boundaryID, limit, 0)
+	err := database.GetScan(ctx, &rows, query, args...)
 	if err != nil {
 		return nil, gerror.Wrap(err, "load public catalog products")
 	}
@@ -167,6 +173,15 @@ FROM (
           AND all_rules.version_no = version.version_no
           AND all_rules.status_code = 'active'
     )
+    UNION
+    SELECT term.tenant_id,term.version_no,term.currency_code
+    FROM plugin_idc_core_catalog_import_term term
+    JOIN plugin_idc_core_catalog_import_contract contract ON contract.tenant_id=term.tenant_id AND contract.version_no=term.version_no
+    JOIN plugin_idc_core_catalog_product product ON product.tenant_id=term.tenant_id AND product.current_version_no=term.version_no AND product.deleted_at IS NULL AND product.status_code='active'
+    JOIN plugin_idc_core_catalog_product_version version ON version.tenant_id=product.tenant_id AND version.version_no=term.version_no AND version.status_code='published'
+    JOIN plugin_idc_core_merchant_currency currency ON currency.tenant_id=term.tenant_id AND currency.currency_code=term.currency_code AND currency.enabled=TRUE AND currency.deleted=FALSE
+    WHERE term.tenant_id=0 AND contract.snapshot->>'protocolVersion'='3' AND contract.snapshot->>'pricingMode'='remote_evaluation'
+    GROUP BY term.tenant_id,term.version_no,term.currency_code
 ) complete
 ORDER BY complete.currency_code ASC
 LIMIT ?`
@@ -193,18 +208,20 @@ const publicCatalogProductsFilteredSQL = `
     INNER JOIN plugin_idc_core_catalog_product_version_inventory inventory
         ON inventory.version_no = v.version_no
     LEFT JOIN (
-        SELECT version_no, SUM(reserved_quantity)::BIGINT AS reserved_quantity
-        FROM plugin_idc_core_commerce_inventory_reservation
-        WHERE status_code IN ('held','committed')
-        GROUP BY version_no
-    ) reservation ON reservation.version_no = v.version_no
+        SELECT sibling.product_no, SUM(reserved_quantity)::BIGINT AS reserved_quantity
+        FROM plugin_idc_core_commerce_inventory_reservation held
+        JOIN plugin_idc_core_catalog_product_version sibling ON sibling.version_no=held.version_no
+        WHERE held.status_code IN ('held','committed')
+        GROUP BY sibling.product_no
+    ) reservation ON reservation.product_no = p.product_no
     WHERE p.tenant_id = ? AND p.deleted_at IS NULL AND p.status_code = 'active'
       AND (? = '' OR p.public_slug = ?)
       AND (? = '' OR LOWER(p.name_zh_cn) LIKE ? ESCAPE '\'
            OR LOWER(p.name_en_us) LIKE ? ESCAPE '\')
       AND (? = '' OR p.category_no = ?)
       AND EXISTS (
-          SELECT 1
+          SELECT 1 FROM (
+          SELECT fp.currency_code
           FROM plugin_idc_core_catalog_price fp
           INNER JOIN plugin_idc_core_merchant_currency currency
               ON currency.tenant_id = fp.tenant_id AND currency.currency_code = fp.currency_code
@@ -214,7 +231,6 @@ const publicCatalogProductsFilteredSQL = `
              AND fr.billing_rule_no = fp.billing_rule_no AND fr.status_code = 'active'
           WHERE fp.tenant_id = p.tenant_id AND fp.version_no = v.version_no
             AND fp.option_no IS NULL AND fp.configuration_price_dimension_no IS NULL AND fp.status_code = 'active'
-            AND (? = '' OR fp.currency_code = ?)
           GROUP BY fp.currency_code
           HAVING COUNT(DISTINCT fp.billing_rule_no) = (
               SELECT COUNT(*)
@@ -223,10 +239,23 @@ const publicCatalogProductsFilteredSQL = `
                 AND all_rules.version_no = v.version_no
                 AND all_rules.status_code = 'active'
           )
+          UNION
+          SELECT term.currency_code
+          FROM plugin_idc_core_catalog_import_term term
+          JOIN plugin_idc_core_catalog_import_contract contract ON contract.tenant_id=term.tenant_id AND contract.version_no=term.version_no
+          JOIN plugin_idc_core_merchant_currency currency ON currency.tenant_id=term.tenant_id AND currency.currency_code=term.currency_code AND currency.enabled=TRUE AND currency.deleted=FALSE
+          WHERE term.tenant_id=p.tenant_id AND term.version_no=v.version_no
+            AND contract.snapshot->>'protocolVersion'='3' AND contract.snapshot->>'pricingMode'='remote_evaluation'
+          GROUP BY term.currency_code
+          ) complete_currency WHERE (? = '' OR complete_currency.currency_code = ?)
       )`
 
-const publicCatalogProductsSQL = `
-WITH page_products AS MATERIALIZED (` + publicCatalogProductsFilteredSQL + `
+const publicCatalogProductsSQL = publicCatalogProductsPrefixSQL + publicCatalogProductsFilteredSQL + publicCatalogProductsPageSQL
+
+const publicCatalogProductsPrefixSQL = `
+WITH page_products AS MATERIALIZED (`
+
+const publicCatalogProductsPageSQL = `
       AND (? = 0 OR p.sort_order > ? OR (p.sort_order = ? AND p.id > ?))
     ORDER BY p.sort_order ASC, p.id ASC
     LIMIT ?
@@ -266,7 +295,19 @@ INNER JOIN LATERAL (
             WHERE all_rules.tenant_id = 0 AND all_rules.version_no = page.version_no
               AND all_rules.status_code = 'active'
         )
-        ORDER BY price.currency_code
+        UNION
+        SELECT term.currency_code
+        FROM plugin_idc_core_catalog_import_term term
+        JOIN plugin_idc_core_catalog_import_contract contract
+          ON contract.tenant_id=term.tenant_id AND contract.version_no=term.version_no
+        JOIN plugin_idc_core_merchant_currency currency
+          ON currency.tenant_id=term.tenant_id AND currency.currency_code=term.currency_code
+         AND currency.enabled=TRUE AND currency.deleted=FALSE
+        WHERE term.tenant_id=0 AND term.version_no=page.version_no
+          AND contract.snapshot->>'protocolVersion'='3'
+          AND contract.snapshot->>'pricingMode'='remote_evaluation'
+        GROUP BY term.currency_code
+        ORDER BY currency_code
         LIMIT 64
     ) complete
 ) currencies ON currencies.currencies_json <> '[]'

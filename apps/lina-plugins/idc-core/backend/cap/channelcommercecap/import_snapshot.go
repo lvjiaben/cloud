@@ -5,6 +5,7 @@
 package channelcommercecap
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 
@@ -15,6 +16,14 @@ import (
 
 const ImportProtocolVersion = "1"
 
+// ImportRemoteEvaluationProtocolVersion fences dynamically priced source terms.
+const ImportRemoteEvaluationProtocolVersion = "3"
+const ImportPricingRemoteEvaluation = "remote_evaluation"
+
+// ImportPurchaseCycleLimitProtocolVersion fences mandatory source policy:
+// purchase ceilings and customer visibility/defaults cannot be stripped by v1.
+const ImportPurchaseCycleLimitProtocolVersion = "2"
+
 // ImportSnapshot freezes a complete configuration and pricing description for
 // a draft import. Local publication still requires explicit merchant pricing;
 // upstream procurement must obtain a fresh authoritative term and quote.
@@ -22,6 +31,7 @@ type ImportSnapshot struct {
 	// ProductNo is owner-local adapter evidence and never crosses the wire.
 	ProductNo             string                                   `json:"-"`
 	ProtocolVersion       string                                   `json:"protocolVersion"`
+	PricingMode           string                                   `json:"pricingMode,omitempty"`
 	Product               CatalogProduct                           `json:"product"`
 	ConfigurationRevision string                                   `json:"configurationRevision"`
 	Schema                *capmodel.ConfigurationSchemaDeclaration `json:"schema"`
@@ -35,9 +45,11 @@ type ImportSnapshot struct {
 // ImportFieldMapping connects a stable, schema-safe opaque key to the upstream
 // public purchase token. Dynamic options are resolved through governed methods.
 type ImportFieldMapping struct {
-	FieldKey   string                `json:"fieldKey"`
-	FieldToken string                `json:"fieldToken"`
-	Options    []ImportOptionMapping `json:"options"`
+	CustomerVisible *bool                 `json:"customerVisible,omitempty"`
+	DefaultValue    json.RawMessage       `json:"defaultValue,omitempty"`
+	FieldKey        string                `json:"fieldKey"`
+	FieldToken      string                `json:"fieldToken"`
+	Options         []ImportOptionMapping `json:"options"`
 }
 
 // ImportOptionMapping never exposes the original provider candidate value.
@@ -49,9 +61,12 @@ type ImportOptionMapping struct {
 // ImportFulfillment preserves declared delivery and lifecycle semantics without
 // exposing the upstream provider's implementation or private method names.
 type ImportFulfillment struct {
-	Granularity    string `json:"granularity"`
-	OngoingService bool   `json:"ongoingService"`
-	RenewalMode    string `json:"renewalMode"`
+	// MaximumPurchaseCycles is a source limit carried through every resale.
+	// Zero preserves legacy snapshots without an additional cycle ceiling.
+	MaximumPurchaseCycles int    `json:"maximumPurchaseCycles,omitempty"`
+	Granularity           string `json:"granularity"`
+	OngoingService        bool   `json:"ongoingService"`
+	RenewalMode           string `json:"renewalMode"`
 }
 
 // CatalogImportRuntime exports only products visible to the authenticated API
@@ -64,9 +79,9 @@ type CatalogImportRuntime interface {
 // portable contract shape and rejects incomplete price declarations; provider
 // keys remain valid only through the opaque mapping list.
 func (snapshot ImportSnapshot) Validate() error {
-	if snapshot.ProtocolVersion != ImportProtocolVersion || !publicProductSlug.MatchString(snapshot.Product.PublicSlug) ||
+	if !snapshot.validPricingProtocol() || !publicProductSlug.MatchString(snapshot.Product.PublicSlug) ||
 		len(snapshot.ConfigurationRevision) == 0 || len(snapshot.ConfigurationRevision) > 4096 ||
-		len(snapshot.Mappings) > 128 || len(snapshot.Prices) == 0 || len(snapshot.Prices) > 4096 || len(snapshot.Currencies) == 0 || len(snapshot.Currencies) > 64 || !snapshot.PricingComplete {
+		len(snapshot.Mappings) > 128 || len(snapshot.Prices) == 0 || len(snapshot.Prices) > 4096 || len(snapshot.Currencies) == 0 || len(snapshot.Currencies) > 64 {
 		return gerror.New("import snapshot is incomplete")
 	}
 	if snapshot.Schema != nil && len(snapshot.Schema.Fields) > 128 {
@@ -85,12 +100,15 @@ func (snapshot ImportSnapshot) Validate() error {
 	seen := make(map[string]bool, len(snapshot.Prices))
 	for _, price := range snapshot.Prices {
 		key := price.CurrencyCode + "\x00" + price.TermReference
+		if snapshot.Fulfillment.MaximumPurchaseCycles > 0 && price.MinimumPurchaseCycles > snapshot.Fulfillment.MaximumPurchaseCycles {
+			return gerror.New("import minimum purchase cycles exceed source maximum")
+		}
 		if !currencies[price.CurrencyCode] || seen[key] {
 			return gerror.New("import price currency or term is invalid")
 		}
 		seen[key] = true
 		for _, option := range price.Options {
-			if option.PricingMode == ImportConfigurationPricePerUnit || option.PricingMode == ImportConfigurationPriceBandTotal {
+			if option.PricingMode == ImportConfigurationPricePerUnit || option.PricingMode == ImportConfigurationPriceBandTotal || option.PricingMode == ImportConfigurationPriceGraduated {
 				var field *capmodel.ConfigurationFieldDeclaration
 				if snapshot.Schema != nil {
 					for _, candidate := range snapshot.Schema.Fields {
@@ -105,7 +123,7 @@ func (snapshot ImportSnapshot) Validate() error {
 				}
 			}
 		}
-		if err := price.validateImportSchedule(); err != nil {
+		if err := snapshot.validatePriceSchedule(price); err != nil {
 			return err
 		}
 	}
@@ -136,6 +154,9 @@ func (snapshot ImportSnapshot) validateImportMappings() error {
 			return gerror.New("import field mapping is invalid")
 		}
 		seen[mapping.FieldKey] = true
+		if err := validateImportDefault(field, mapping); err != nil {
+			return err
+		}
 		if err := validateImportOptionMapping(field, mapping.Options); err != nil {
 			return err
 		}
@@ -158,6 +179,91 @@ func validateImportOptionMapping(field *capmodel.ConfigurationFieldDeclaration, 
 		if candidate == nil || !options[candidate.Value] {
 			return gerror.New("import candidate mapping is invalid")
 		}
+	}
+	return nil
+}
+
+// validImportSnapshotProtocol rejects stripped v2 policy and rejects new
+// metadata on v1. Unrestricted legacy snapshots keep their original bytes.
+func validImportSnapshotProtocol(version string, maximum int, mappings []ImportFieldMapping) bool {
+	metadata := false
+	for _, mapping := range mappings {
+		metadata = metadata || mapping.CustomerVisible != nil || len(mapping.DefaultValue) > 0
+	}
+	switch version {
+	case ImportProtocolVersion:
+		return maximum == 0 && !metadata
+	case ImportPurchaseCycleLimitProtocolVersion:
+		return maximum > 0 || metadata
+	default:
+		return false
+	}
+}
+
+// validPricingProtocol rejects a stripped mode or a static-price fallback for
+// v3. v1/v2 keep byte-compatible complete component schedules.
+func (snapshot ImportSnapshot) validPricingProtocol() bool {
+	if snapshot.ProtocolVersion == ImportRemoteEvaluationProtocolVersion {
+		return snapshot.PricingMode == ImportPricingRemoteEvaluation && !snapshot.PricingComplete
+	}
+	return snapshot.PricingMode == "" && snapshot.PricingComplete && validImportSnapshotProtocol(snapshot.ProtocolVersion, snapshot.Fulfillment.MaximumPurchaseCycles, snapshot.Mappings)
+}
+func (snapshot ImportSnapshot) validatePriceSchedule(price ImportPriceSchedule) error {
+	if snapshot.PricingMode != ImportPricingRemoteEvaluation {
+		return price.validateImportSchedule()
+	}
+	if len(price.Base) != 0 || len(price.Options) != 0 || price.Usage != nil || price.TrialQuantity != 0 || price.QuantityMode != "fixed" {
+		return gerror.New("remote import cannot declare static component prices")
+	}
+	// Reuse the common schedule validator with a local validation sentinel only;
+	// no amount is persisted in or exported from the remote snapshot.
+	copyPrice := price
+	copyPrice.Base = []ImportPriceBand{{}}
+	return copyPrice.validateImportSchedule()
+}
+
+// validateImportDefault bounds portable defaults without accepting secrets or
+// arbitrary JSON objects. Owner admission validates exact schema bounds as well.
+func validateImportDefault(field *capmodel.ConfigurationFieldDeclaration, mapping ImportFieldMapping) error {
+	hidden := mapping.CustomerVisible != nil && !*mapping.CustomerVisible
+	if len(mapping.DefaultValue) == 0 {
+		if hidden {
+			return gerror.New("hidden import field requires a default")
+		}
+		return nil
+	}
+	if field.Type == capmodel.ConfigurationFieldSecret || field.Type == capmodel.ConfigurationFieldFile || len(mapping.DefaultValue) > 8192 || !json.Valid(mapping.DefaultValue) {
+		return gerror.New("import default is invalid")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(mapping.DefaultValue))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return gerror.New("import default is invalid")
+	}
+	valid := false
+	switch field.Type {
+	case capmodel.ConfigurationFieldBoolean:
+		_, valid = value.(bool)
+	case capmodel.ConfigurationFieldInteger:
+		_, valid = value.(json.Number)
+	case capmodel.ConfigurationFieldMultiSelect, capmodel.ConfigurationFieldAddress:
+		switch values := value.(type) {
+		case string:
+			valid = false
+		case []any:
+			valid = len(values) <= 512
+			for _, item := range values {
+				if _, ok := item.(string); !ok {
+					valid = false
+				}
+			}
+		}
+	default:
+		_, valid = value.(string)
+	}
+	if !valid {
+		return gerror.New("import default type is invalid")
 	}
 	return nil
 }

@@ -56,7 +56,6 @@ test.describe("TC-10 后台在线退款审核", () => {
     expect(state.reviewBodies[0]).toMatchObject({
       decisionCode: "reject",
       expectedVersion: 1,
-      proofToken: "",
     });
     expect(String(state.reviewBodies[0]?.evidenceDigest)).toMatch(
       /^[0-9a-f]{64}$/u,
@@ -68,7 +67,7 @@ test.describe("TC-10 后台在线退款审核", () => {
     await refunds.screenshot("admin-refund-rejected-zh");
   });
 
-  test("TC-10c: 高额批准先取得精确重新登录凭证再提交同一审核", async ({
+  test("TC-10c: 高额退款有权限即可批准且材料选填", async ({
     adminPage,
   }) => {
     const state = await installRefundManagementMock(adminPage, {
@@ -78,19 +77,14 @@ test.describe("TC-10 后台在线退款审核", () => {
     await refunds.goto();
     await refunds.openReview(managementRefundNo);
     const modal = adminPage.getByTestId("refund-review-modal-content");
-    await expect(modal).toContainText("必须最近重新完成一次完整登录");
-    await refunds.fillEvidence("高额退款的账单、服务影响和客户身份均已复核");
+    await expect(modal).toContainText("有退款处理权限即可批准，系统自动记录操作。");
     await refunds.screenshot("admin-refund-high-amount-confirm-zh");
     await refunds.submitReview();
     await expect.poll(() => state.reviewBodies.length).toBe(1);
-    expect(state.proofBodies).toHaveLength(1);
-    expect(state.reviewBodies[0]?.requestNo).toBe(
-      state.proofBodies[0]?.requestNo,
-    );
-    expect(state.reviewBodies[0]?.evidenceDigest).toBe(
-      state.proofBodies[0]?.evidenceDigest,
-    );
-    expect(state.reviewBodies[0]?.proofToken).toBe("opaque-refund-proof");
+    expect(state.proofBodies).toHaveLength(0);
+    expect(state.reviewBodies[0]).not.toHaveProperty("proofToken");
+    expect(state.reviewBodies[0]?.evidenceDigest).toBe("");
     await expect(refunds.row(managementRefundNo)).toContainText("已批准");
+    await refunds.screenshot("admin-refund-high-amount-approved-zh");
   });
 });

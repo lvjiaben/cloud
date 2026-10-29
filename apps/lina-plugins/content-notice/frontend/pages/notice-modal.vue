@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, ref } from "vue";
 
 import { useVbenDrawer } from "@vben/common-ui";
 
-import { Form, FormItem, Input, message, RadioGroup } from "ant-design-vue";
+import {
+  Form,
+  FormItem,
+  Input,
+  InputNumber,
+  message,
+  RadioGroup,
+} from "ant-design-vue";
 
 import { noticeAdd, noticeInfo, noticeUpdate } from "./notice-client";
-import { FileUpload } from "#/components/upload";
 import { $t } from "#/locales";
 import { TiptapEditor } from "#/components/tiptap";
-import { useDictStore } from "#/store/dict";
 
 const emit = defineEmits<{ reload: [] }>();
 
@@ -17,104 +22,88 @@ interface FormData {
   id?: number;
   title: string;
   status: number;
-  type: number;
+  sortOrder: number;
   content: string;
-  fileIds: string | string[];
 }
 
 const defaultValues: FormData = {
   id: undefined,
   title: "",
   status: 0,
-  type: 1,
+  sortOrder: 0,
   content: "",
-  fileIds: [],
 };
 
 const isEdit = computed(() => !!formData.value.id);
 const formData = ref<FormData>({ ...defaultValues });
+const ready = ref(false);
 const title = computed(() =>
   isEdit.value
     ? $t("plugin.content-notice.drawer.editTitle")
     : $t("plugin.content-notice.drawer.createTitle"),
 );
 
-const formRules = reactive({
+const formRules = computed(() => ({
   title: [
     { message: $t("plugin.content-notice.validation.title"), required: true },
   ],
   status: [
     { message: $t("plugin.content-notice.validation.status"), required: true },
   ],
-  type: [
-    { message: $t("plugin.content-notice.validation.type"), required: true },
-  ],
   content: [
     { message: $t("plugin.content-notice.validation.content"), required: true },
   ],
-});
+}));
 
 const { validate, validateInfos, resetFields } = Form.useForm(
   formData,
   formRules,
 );
 
-const dictStore = useDictStore();
-const noticeTypeOptions = ref<{ label: string; value: number }[]>([]);
-
-onMounted(async () => {
-  const dicts = await dictStore.getDictOptionsAsync("sys_notice_type");
-  noticeTypeOptions.value = dicts.map((item: any) => ({
-    label: item.label,
-    value: Number(item.value),
-  }));
-});
-
 const [Drawer, drawerApi] = useVbenDrawer({
-  class: "w-[min(96vw,1100px)]",
+  class: "notice-editor-drawer w-[min(96vw,1100px)]",
+  modal: true,
   closeOnClickModal: false,
   contentClass: "overflow-y-auto p-4",
   destroyOnClose: true,
-  modal: false,
   onConfirm: handleConfirm,
   onOpenChange: async (isOpen: boolean) => {
     if (!isOpen) return;
+    ready.value = false;
     const data = drawerApi.getData();
     if (data?.id) {
       drawerApi.setState({ confirmLoading: true });
       try {
         const record = await noticeInfo(data.id);
-        const fileIds = record.fileIds
-          ? record.fileIds.split(",").filter(Boolean)
-          : [];
         formData.value = {
           id: record.id,
           title: record.title,
-          type: record.type,
           status: record.status,
+          sortOrder: record.sortOrder,
           content: record.content || "",
-          fileIds,
         };
+        ready.value = true;
+      } catch {
+        message.error($t("plugin.content-notice.messages.loadFailed"));
+        drawerApi.close();
       } finally {
         drawerApi.setState({ confirmLoading: false });
       }
     } else {
-      formData.value = { ...defaultValues, fileIds: [] };
+      formData.value = { ...defaultValues };
       resetFields();
+      ready.value = true;
     }
   },
 });
 
 async function handleConfirm() {
+  if (!ready.value) return;
   try {
     drawerApi.lock(true);
     await validate();
 
-    const { id, fileIds, ...values } = formData.value;
-    const submitData = {
-      ...values,
-      fileIds: Array.isArray(fileIds) ? fileIds.join(",") : fileIds,
-    };
+    const { id, ...submitData } = formData.value;
     if (isEdit.value && id) {
       await noticeUpdate(id, submitData);
       message.success($t("pages.common.updateSuccess"));
@@ -159,18 +148,14 @@ async function handleConfirm() {
             ]"
           />
         </FormItem>
-        <FormItem
-          :label="$t('plugin.content-notice.fields.type')"
-          v-bind="validateInfos.type"
-        >
-          <RadioGroup
-            v-model:value="formData.type"
-            button-style="solid"
-            option-type="button"
-            :options="noticeTypeOptions"
-          />
-        </FormItem>
       </div>
+      <FormItem :label="$t('plugin.content-notice.fields.sortOrder')">
+        <InputNumber
+          v-model:value="formData.sortOrder"
+          :min="0"
+          :precision="0"
+        />
+      </FormItem>
       <FormItem
         :label="$t('plugin.content-notice.fields.content')"
         v-bind="validateInfos.content"
@@ -178,18 +163,30 @@ async function handleConfirm() {
         <TiptapEditor
           v-model="formData.content"
           :height="300"
+          :placeholder="$t('plugin.content-notice.validation.content')"
           scene="notice_image"
-        />
-      </FormItem>
-      <FormItem :label="$t('plugin.content-notice.fields.attachments')">
-        <FileUpload
-          v-model:value="formData.fileIds"
-          :max-count="5"
-          :max-size="10"
-          :enable-drag-upload="true"
-          scene="notice_attachment"
         />
       </FormItem>
     </Form>
   </Drawer>
 </template>
+
+<style>
+.notice-editor-drawer {
+  box-shadow: -12px 0 40px rgb(0 0 0 / 18%);
+}
+.notice-editor-drawer[data-state="open"] {
+  animation: notice-drawer-in 260ms ease-out;
+}
+.notice-editor-drawer[data-state="closed"] {
+  animation: notice-drawer-out 180ms ease-in;
+}
+@keyframes notice-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes notice-drawer-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+</style>

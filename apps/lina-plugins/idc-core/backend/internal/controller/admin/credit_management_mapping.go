@@ -197,6 +197,9 @@ func managementCreditPolicyIntent(
 	if err != nil {
 		return billing.ManagementCreditPolicyIntent{}, err
 	}
+	if value.DualReviewThresholdMinor == "" {
+		value.DualReviewThresholdMinor = value.MaximumLimitMinor
+	}
 	dualReviewThreshold, err := parseCreditAmount(value.DualReviewThresholdMinor, true)
 	if err != nil {
 		return billing.ManagementCreditPolicyIntent{}, err

@@ -44,11 +44,11 @@ func TestNormalizeCheckoutRequestHashesIdempotencyAndBindsQuote(t *testing.T) {
 }
 
 func TestCheckoutRequirementsUseOnlyGenericProductInventory(t *testing.T) {
-	units, manual, contract, err := checkoutRequirements([]entity.CommerceQuoteItemSnapshot{
+	units, manual, err := checkoutRequirements([]entity.CommerceQuoteItemSnapshot{
 		{
 			QuoteItemNo: "q1", VersionNo: "PV_phone",
 			InventoryDecisionCode: "available", RiskDecisionCode: "approved",
-			FulfillmentModeCode: "automatic", RequiresContract: true,
+			FulfillmentModeCode: "automatic",
 		},
 		{
 			QuoteItemNo: "q2", VersionNo: "PV_service", InventoryDecisionCode: "available",
@@ -58,28 +58,28 @@ func TestCheckoutRequirementsUseOnlyGenericProductInventory(t *testing.T) {
 		"q1": {VersionNo: "PV_phone", TrackingEnabled: true, InventoryVersion: 2, SellableQuantity: 2},
 		"q2": {VersionNo: "PV_service", InventoryVersion: 1, SellableQuantity: 0},
 	})
-	if err != nil || units != 5 || !manual || !contract {
-		t.Fatalf("checkout requirements units=%d manual=%v contract=%v err=%v", units, manual, contract, err)
+	if err != nil || units != 5 || !manual {
+		t.Fatalf("checkout requirements units=%d manual=%v err=%v", units, manual, err)
 	}
-	if _, _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
+	if _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
 		QuoteItemNo: "q1", VersionNo: "PV_phone", InventoryDecisionCode: "manual_confirmation",
 	}}, map[string]int{"q1": 1}, map[string]checkoutGenericInventoryFact{
 		"q1": {VersionNo: "PV_phone", InventoryVersion: 1, SellableQuantity: 1},
 	}); !bizerr.Is(err, CodeQuoteNotAvailable) {
 		t.Fatalf("legacy manual inventory decision error=%v", err)
 	}
-	if _, _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
+	if _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
 		QuoteItemNo: "q1", VersionNo: "PV_phone",
 		InventoryDecisionCode: "available",
 	}}, map[string]int{"q1": maximumCheckoutFulfillmentUnits + 1}); !bizerr.Is(err, CodeCapacityExceeded) {
 		t.Fatalf("oversized checkout requirements error=%v", err)
 	}
-	if _, _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
+	if _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{{
 		QuoteItemNo: "q1", VersionNo: "PV_phone", InventoryDecisionCode: "available",
 	}}, map[string]int{"q1": 1}); !bizerr.Is(err, CodeQuoteNotAvailable) {
 		t.Fatalf("missing generic inventory snapshot error=%v", err)
 	}
-	if _, _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{
+	if _, _, err = checkoutRequirements([]entity.CommerceQuoteItemSnapshot{
 		{
 			QuoteItemNo: "q1", VersionNo: "PV_trial", ChargeTypeCode: "trial", TrialLimitQuantity: 1,
 			InventoryDecisionCode: "available", PurchaseCycles: 1,

@@ -8,7 +8,7 @@ import (
 )
 
 func (c *ControllerV1) ServerRenewalPreviewCreate(ctx context.Context, req *v1.ServerRenewalPreviewCreateReq) (res *v1.ServerRenewalPreviewCreateRes, err error) {
-	preview, err := c.renewals.Preview(ctx, req.RequestKey, req.RenewalCycles, req.ServerNos)
+	preview, err := c.renewals.Preview(ctx, req.RequestKey, req.RenewalCycles, req.ServerNos, req.EntitlementNo)
 	if err != nil {
 		return nil, err
 	}

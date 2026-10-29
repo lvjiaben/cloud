@@ -35,7 +35,7 @@ func NewCopy(writer catalog.ProductCopyWriter, automation productautomation.Prod
 
 func (s *copyService) Copy(ctx context.Context, input catalog.ProductCopyInput) (*catalog.ProductDraft, error) {
 	var result *catalog.ProductDraft
-	err := s.automation.WithProductCopy(ctx, input.SourceVersionNo, func(txCtx context.Context) (string, error) {
+	err := s.automation.WithProductCopy(ctx, input.SourceVersionNo, input.Revision, func(txCtx context.Context) (string, error) {
 		var writeErr error
 		result, writeErr = s.catalog.CommitProductCopy(txCtx, input)
 		if writeErr != nil {
@@ -44,8 +44,10 @@ func (s *copyService) Copy(ctx context.Context, input catalog.ProductCopyInput) 
 		if result == nil {
 			return "", gerror.New("catalog copy owner returned no draft")
 		}
-		if writeErr = s.prices.CopyLevelProductPrices(txCtx, input.SourceProductNo, result.ProductNo); writeErr != nil {
-			return "", writeErr
+		if !input.Revision {
+			if writeErr = s.prices.CopyLevelProductPrices(txCtx, input.SourceProductNo, result.ProductNo); writeErr != nil {
+				return "", writeErr
+			}
 		}
 		return result.VersionNo, nil
 	})

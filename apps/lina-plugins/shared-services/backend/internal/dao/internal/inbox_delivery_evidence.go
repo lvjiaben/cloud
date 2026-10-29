@@ -29,6 +29,7 @@ type InboxDeliveryEvidenceColumns struct {
 	EvidenceType   string //
 	ContentDigest  string //
 	CreatedAt      string //
+	HostMessageId  string //
 }
 
 // inboxDeliveryEvidenceColumns holds the columns for the table plugin_shared_services_inbox_delivery_evidence.
@@ -41,6 +42,7 @@ var inboxDeliveryEvidenceColumns = InboxDeliveryEvidenceColumns{
 	EvidenceType:   "evidence_type",
 	ContentDigest:  "content_digest",
 	CreatedAt:      "created_at",
+	HostMessageId:  "host_message_id",
 }
 
 // NewInboxDeliveryEvidenceDao creates and returns a new DAO object for table data access.

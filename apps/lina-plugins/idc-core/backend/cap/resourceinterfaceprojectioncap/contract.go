@@ -98,12 +98,30 @@ type CandidateField struct {
 	Items    []Candidate
 }
 
-type CandidateResult struct{ Fields []CandidateField }
+// CandidateSyncState describes the outcome of the latest directory synchronization.
+type CandidateSyncState string
+
+const (
+	CandidateSyncReady    CandidateSyncState = "ready"
+	CandidateSyncPending  CandidateSyncState = "pending"
+	CandidateSyncFailed   CandidateSyncState = "failed"
+	CandidateSyncRetained CandidateSyncState = "retained"
+)
+
+type CandidateResult struct {
+	Fields        []CandidateField
+	SyncState     CandidateSyncState
+	Relationships []ChoiceRelationship `json:"Relationships,omitempty"`
+}
 
 // CandidateSource is implemented by idc-resource; core must never resolve a
 // resource-owned candidate using core-held endpoint or account secrets.
 type CandidateSource interface {
 	ResolveCandidates(context.Context, CandidateRequest) (*CandidateResult, error)
+	// CatalogAvailability reads only the resource-owned frozen method set for at
+	// most 100 interfaces already authorized by the caller. Missing or disabled
+	// interfaces are false. It never reads credentials or contacts a supplier.
+	CatalogAvailability(context.Context, []string) (map[string]bool, error)
 }
 
 func ValidateProjection(value Projection) error {
@@ -155,4 +173,13 @@ func ValidateCandidateRequest(value CandidateRequest) error {
 		return gerror.New("resource interface candidate values are invalid")
 	}
 	return nil
+}
+
+// ConfigurationRevisionComparer is the resource owner's secret-free equality
+// check for two revisions of the same interface. Callers must first authorize
+// the product action. True means endpoint, settings and secret references are
+// identical; missing, foreign or no longer current target revisions return false.
+// It neither changes snapshots nor grants supplier execution permission.
+type ConfigurationRevisionComparer interface {
+	EquivalentConfigurationRevisions(ctx context.Context, interfaceNo, savedRevision, currentRevision string) (bool, error)
 }

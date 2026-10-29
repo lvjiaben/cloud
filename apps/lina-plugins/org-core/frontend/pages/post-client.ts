@@ -26,11 +26,6 @@ export interface PostListParams {
   status?: number;
 }
 
-export interface PostOption {
-  postId: number;
-  postName: string;
-}
-
 export interface DeptTreeNode {
   id: number;
   label: string;
@@ -70,24 +65,9 @@ export function postInfo(id: number) {
   return requestClient.get<Post>(orgApi(`post/${id}`));
 }
 
-export function postExport(params?: PostListParams) {
-  return requestClient.download<Blob>(orgApi('post/export'), { params });
-}
-
 export async function postDeptTree() {
   const res = await requestClient.get<{ list: DeptTreeNode[] }>(
     orgApi('post/dept-tree'),
   );
   return res.list;
 }
-
-export async function postOptionSelect(deptId?: number) {
-  const res = await requestClient.get<{ list: PostOption[] }>(
-    orgApi('post/option-select'),
-    {
-      params: deptId ? { deptId } : {},
-    },
-  );
-  return res.list;
-}
-

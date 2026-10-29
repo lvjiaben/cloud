@@ -5,6 +5,7 @@
 package catalog
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -20,11 +21,12 @@ const importedCandidateMethod = "peer.configuration.candidates"
 
 // importSchemaProjection retains source keys only while constructing an export.
 type importSchemaProjection struct {
-	schema   *capmodel.ConfigurationSchemaDeclaration
-	mappings []channelcommercecap.ImportFieldMapping
-	fields   map[string]string
-	codec    *publicConfigurationRevisionCodec
-	revision string
+	schema        *capmodel.ConfigurationSchemaDeclaration
+	mappings      []channelcommercecap.ImportFieldMapping
+	fields        map[string]string
+	codec         *publicConfigurationRevisionCodec
+	revision      string
+	presentations map[string]configurationcontract.Presentation
 }
 
 func projectImportSchema(codec *publicConfigurationRevisionCodec, snapshot *publicStructuredConfigurationSnapshot) (*importSchemaProjection, error) {
@@ -34,7 +36,14 @@ func projectImportSchema(codec *publicConfigurationRevisionCodec, snapshot *publ
 	if _, err := configurationcontract.ValidateSchema(snapshot.Schema, configurationcontract.SurfaceCustomer, authorizedDynamicMethods(snapshot.Schema)); err != nil {
 		return nil, err
 	}
-	result := &importSchemaProjection{fields: make(map[string]string), codec: codec, revision: snapshot.Revision, mappings: []channelcommercecap.ImportFieldMapping{}}
+	presentations, err := configurationcontract.DecodePresentations(snapshot.Target.CustomerPresentation)
+	if err != nil {
+		return nil, err
+	}
+	if err = configurationcontract.ValidatePresentations(snapshot.Schema, presentations); err != nil {
+		return nil, err
+	}
+	result := &importSchemaProjection{presentations: presentations, fields: make(map[string]string), codec: codec, revision: snapshot.Revision, mappings: []channelcommercecap.ImportFieldMapping{}}
 	if snapshot.Schema == nil {
 		return result, nil
 	}
@@ -107,6 +116,14 @@ func (p *importSchemaProjection) projectField(field *capmodel.ConfigurationField
 	if field.DynamicCandidates != nil {
 		field.DynamicCandidates = &capmodel.DynamicCandidateDeclaration{Version: "v1", Method: importedCandidateMethod}
 	}
+	presentation := p.presentations[sourceKey]
+	mapping.CustomerVisible = presentation.CustomerVisible
+	if len(presentation.DefaultValue) > 0 {
+		mapping.DefaultValue, err = p.projectDefault(sourceKey, field.Type, presentation.DefaultValue)
+		if err != nil {
+			return err
+		}
+	}
 	p.mappings = append(p.mappings, mapping)
 	return nil
 }
@@ -158,4 +175,41 @@ func (p *importSchemaProjection) key(kind string, parts ...string) (string, erro
 		return "", gerror.New("import key encoding is invalid")
 	}
 	return "k_" + hex.EncodeToString(decoded[:24]), nil
+}
+
+// projectDefault uses the exact option projection used by conditions and prices.
+func (p *importSchemaProjection) projectDefault(sourceKey, kind string, raw json.RawMessage) (json.RawMessage, error) {
+	if !importCandidateField(kind) {
+		return append(json.RawMessage(nil), raw...), nil
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	switch v := value.(type) {
+	case string:
+		mapped, err := p.optionKey(sourceKey, v)
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(mapped)
+	case []any:
+		mapped := make([]string, len(v))
+		for i, item := range v {
+			text, ok := item.(string)
+			if !ok {
+				return nil, gerror.New("import default option is invalid")
+			}
+			var err error
+			mapped[i], err = p.optionKey(sourceKey, text)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return json.Marshal(mapped)
+	default:
+		return nil, gerror.New("import default option is invalid")
+	}
 }

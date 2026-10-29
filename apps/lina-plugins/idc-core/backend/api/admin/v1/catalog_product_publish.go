@@ -6,7 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // CatalogProductPublishReq publishes one complete draft version.
 type CatalogProductPublishReq struct {
-	g.Meta    `path:"/admin/catalog/product-versions/{versionNo}/publish" method:"post" tags:"IDC Catalog Management" summary:"Publish catalog product version" dc:"Publish one complete draft version through the sole transactional publication boundary." permission:"idc:admin:catalog:product:publish"`
+	g.Meta    `path:"/admin/catalog/product-versions/{versionNo}/publish" method:"post" tags:"IDC Catalog Management" summary:"Apply saved catalog settings" dc:"Apply saved local settings immediately while preserving the sale switch and old order facts." permission:"idc:admin:catalog:product:update"`
 	VersionNo string `json:"versionNo" v:"required|max-length:128" dc:"Stable catalog product version business number" eg:"ver_0123456789abcdef0123456789abcdef"`
 }
 

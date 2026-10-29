@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // This page renders the anonymous catalog without presenting summaries as quotes.
-import { computed, onMounted, onServerPrefetch, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   Alert as AAlert,
   Button as AButton,
@@ -24,6 +24,7 @@ import {
 } from "./catalog-client";
 import type { Locale } from "./public-i18n";
 
+const nuxtApp = useNuxtApp();
 const route = useRoute();
 const localePath = useLocalePath();
 const { locale } = useI18n();
@@ -174,10 +175,13 @@ async function loadCampaigns(recordExposures = import.meta.client) {
   campaignsLoading.value = true;
   campaignsFailed.value = false;
   try {
-    campaigns.value = await listPublicCatalogCampaigns(
+    // SSR reaches this read after awaiting product details. Restore this
+    // request's Nuxt context before the client resolves its configured origin
+    // and headers; never retain request data in a module-level singleton.
+    campaigns.value = await nuxtApp.runWithContext(() => listPublicCatalogCampaigns(
       detailSlug.value,
       campaignCurrency.value,
-    );
+    ));
     if (recordExposures && campaigns.value.length > 0) {
       const deviceId = campaignDeviceID();
       await Promise.allSettled(
@@ -248,14 +252,34 @@ function previousPage() {
   void load(previous);
 }
 
+// Serialize the initial catalog into the Nuxt payload. Hydration must start
+// from the same detail/list state that produced the server HTML.
+const { data: initialCatalog } = await useAsyncData(
+  `public-catalog:${route.path}`,
+  async () => {
+    if (detailSlug.value) await loadDetail();
+    else await load();
+    return {
+      page: page.value,
+      detail: detail.value ?? null,
+      failed: failed.value,
+      campaignCurrency: campaignCurrency.value,
+      campaigns: campaigns.value,
+      campaignsFailed: campaignsFailed.value,
+    };
+  },
+);
+if (initialCatalog.value) {
+  page.value = initialCatalog.value.page;
+  detail.value = initialCatalog.value.detail ?? undefined;
+  failed.value = initialCatalog.value.failed;
+  campaignCurrency.value = initialCatalog.value.campaignCurrency;
+  campaigns.value = initialCatalog.value.campaigns;
+  campaignsFailed.value = initialCatalog.value.campaignsFailed;
+}
+loading.value = false;
 onMounted(() => {
-  if (detailSlug.value) void loadDetail();
-  else void load();
-});
-
-onServerPrefetch(async () => {
-  if (detailSlug.value) await loadDetail();
-  else await load();
+  if (detailSlug.value && detail.value) void loadCampaigns();
 });
 </script>
 

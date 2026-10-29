@@ -11,7 +11,7 @@ import (
 
 // GetReq defines the request for retrieving notice details.
 type GetReq struct {
-	g.Meta `path:"/notice/{id}" method:"get" tags:"Notices" summary:"Get notification or announcement details" dc:"Get notification or announcement details by ID, including content and creator information." permission:"content-notice:notice:query" pageBridgeCapability:"content-notice.admin.v1" pageBridgeHost:"admin"`
+	g.Meta `path:"/notice/{id}" method:"get" tags:"Announcements" summary:"Get announcement details" dc:"Get announcement details by ID, including content and creator information." permission:"content-notice:notice:query" pageBridgeCapability:"content-notice.admin.v1" pageBridgeHost:"admin"`
 	Id     int64 `json:"id" v:"required" dc:"Announcement ID" eg:"1"`
 }
 

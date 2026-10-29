@@ -1,0 +1,676 @@
+{
+  "copy": [
+    {
+      "section": "hero",
+      "order": 0,
+      "parent": "body/section[4]/div[1]/div[1]/div[1]/div[1]/h1[1]",
+      "tag": "h1",
+      "headingLevel": 1,
+      "text": "宝塔面板",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 1,
+      "parent": "body/section[4]/div[1]/div[1]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "宝塔联合定制面板，为您提供强大的云服务管理工具，支持一键部署、监控、备份等功能，助您轻松管理云服务，提升工作效率。",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 2,
+      "parent": "body/section[4]/div[1]/div[1]/div[1]/div[1]/div[3]/a[1]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "功能演示 →",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 3,
+      "parent": "body/section[4]/div[1]/div[1]/div[1]/div[1]/div[3]/a[2]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "安装命令",
+      "interaction": "visible"
+    },
+    {
+      "section": "anchors",
+      "order": 4,
+      "parent": "body/section[5]/div[1]/div[1]/ul[1]/li[1]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "功能优势",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 5,
+      "parent": "body/section[5]/div[1]/div[1]/ul[1]/li[2]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "系统支持",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 6,
+      "parent": "body/section[5]/div[1]/div[1]/ul[1]/li[3]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "安装命令",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 7,
+      "parent": "body/section[5]/div[1]/div[1]/ul[1]/li[4]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "挂载命令",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 8,
+      "parent": "body/section[5]/div[1]/div[1]/ul[1]/li[5]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "注意事项",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "advantages",
+      "order": 9,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "功能优势",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 10,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        宝塔Linux面板，提升运维效率的服务器管理软件，让您维护服务器省时省心",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 11,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[1]/span[2]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "\n                            宝塔Linux面板是提升运维效率的服务器管理软件，支持一键LAMP/LNMP/集群/监控/网站/FTP/数据库/JAVA等100多项服务器管理功能。经过200多个版本的迭代，功能全，少出错且足够安全，已获得全球百万用户认可安装。\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 12,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[1]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "一键安装",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 13,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                    一键安装LNMP、LAMP、LNMP一键包、宝塔面板等环境",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 14,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[2]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "一键管理",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 15,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[2]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                    一键管理网站、数据库、FTP、文件、SSL、计划任务等",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 16,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[3]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "一键部署",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 17,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[3]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                    一键部署Discuz、WordPress、Dede等PHP开源程序",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 18,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[4]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "一键升级",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 19,
+      "parent": "body/main[6]/section[1]/div[1]/div[1]/div[2]/div[2]/div[4]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                    一键升级Linux内核、LNMP、MySQL、PHP、Redis、Memcached等",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 20,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "系统支持",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 21,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        兼容CentOS、Ubuntu、Debian、Raspbian、Fedora、OpenSUSE、ArchLinux、Mint、Deepin等多种Linux系统",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 22,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "Linux系列支持详情",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 23,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/div[1]/h3[2]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "Centos",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 24,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/div[2]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                        Centos 7.0-7.9/8.x/9",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 25,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/h3[2]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "Ubuntu",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 26,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[2]/div[2]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                        Ubuntu 14/16/18/20",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 27,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[3]/div[1]/h3[2]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "Deepin",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 28,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[1]/div[2]/div[3]/div[2]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                        Deepin 9/10/11/12",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 29,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[2]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "windows系列支持详情",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 30,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[2]/div[2]/div[1]/div[1]/h3[2]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "widows server",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 31,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[2]/div[2]/div[1]/div[2]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": " Windows Server 2008/2012/2016/2019",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 32,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[2]/div[2]/div[2]/div[1]/h3[2]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "widows 10",
+      "interaction": "visible"
+    },
+    {
+      "section": "systems",
+      "order": 33,
+      "parent": "body/main[6]/section[2]/div[1]/div[1]/div[2]/div[2]/div[2]/div[2]/div[2]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": " Windows 10/11",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 34,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "安装命令",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 35,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "2分钟装好面板，一键管理服务器 集成LAMP/LNMP环境安装，网站、FTP、数据库、文件管理、软件安装等功能",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 36,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "Centos安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 37,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "yum install -y wget && wget -O install.sh https://download.bt.cn/install/install_6.0.sh && sh install.sh 59d9cde77",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 38,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[1]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 39,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[2]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "Ubuntu安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 40,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[2]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && sudo bash install.sh 59d9cde77",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 41,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[2]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 42,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[3]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "Debian安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 43,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[3]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && bash install.sh 59d9cde77",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 44,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[3]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 45,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[4]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "万能安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 46,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[4]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_panel.sh;else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh;fi;bash install_panel.sh 59d9cde77",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 47,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[4]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 48,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[5]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "国产龙芯架构安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 49,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[5]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "wget -O install_panel.sh https://download.bt.cn/install/0/loongarch64/loongarch64_install_panel.sh && bash install_panel.sh 59d9cde77",
+      "interaction": "visible"
+    },
+    {
+      "section": "install",
+      "order": 50,
+      "parent": "body/main[6]/section[3]/div[1]/div[1]/div[2]/div[5]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 51,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "挂载命令",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 52,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "宝塔官方挂载命令默认挂载到www目录",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 53,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "宝塔官方挂载命令",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 54,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[1]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "yum install wget -y && wget -O auto_disk.sh http://download.bt.cn/tools/auto_disk.sh && bash auto_disk.sh",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 55,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[1]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 56,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[2]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "自定义目录挂载命令",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 57,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[2]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "wget -O AutoMount.sh https://raw.githubusercontent.com/myluoluo/automount/master/AutoMount.sh\nchmod 755 AutoMount.sh\n./AutoMount.sh",
+      "interaction": "visible"
+    },
+    {
+      "section": "mount",
+      "order": 58,
+      "parent": "body/main[6]/section[4]/div[1]/div[1]/div[2]/div[2]/button[3]",
+      "tag": "button",
+      "headingLevel": null,
+      "text": "\n                             复制\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 59,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[1]/h2[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "注意事项",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 60,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[1]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "为什么使用安装命令，却安装失败了",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 61,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[1]/div[2]/p[2]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "注意：必须为没装过其它环境如Apache/Nginx/php/MySQL的新系统,推荐使用centos 7.X的系统安装宝塔面板",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 62,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[1]/div[2]/p[3]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "推荐使用Chrome、火狐、edge浏览器，国产浏览器请使用极速模式访问面板登录地址",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 63,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[1]/div[2]/p[4]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "如果不确定使用哪个Linux系统版本的，可以使用万能安装脚本",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 64,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[1]/div[2]/p[5]/span[1]",
+      "tag": "span",
+      "headingLevel": null,
+      "text": "国产龙芯架构CPU安装命令，支持龙芯架构的loongnix 8.x、统信UOS 20、kylin v10系统",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 65,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[2]/div[1]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "安装提示不支持的系统，都支持那些系统?",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 66,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[2]/div[2]/p[2]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "宝塔系统环境兼容列表:、",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 67,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[2]/div[2]/p[2]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "主流系统环境兼容列表",
+      "interaction": "visible"
+    },
+    {
+      "section": "notice",
+      "order": 68,
+      "parent": "body/main[6]/section[5]/div[1]/div[1]/div[2]/div[2]/div[2]/p[2]/a[2]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "国产系统环境兼容列表",
+      "interaction": "visible"
+    }
+  ],
+  "commands": [
+    {
+      "order": 0,
+      "title": "Centos安装脚本",
+      "displayText": "yum install -y wget && wget -O install.sh https://download.bt.cn/install/install_6.0.sh && sh install.sh 59d9cde77",
+      "copyText": "yum install -y wget && wget -O install.sh https://download.bt.cn/install/install_6.0.sh && sh install.sh 59d9cde77"
+    },
+    {
+      "order": 1,
+      "title": "Ubuntu安装脚本",
+      "displayText": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && sudo bash install.sh 59d9cde77",
+      "copyText": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && sudo bash install.sh 59d9cde77"
+    },
+    {
+      "order": 2,
+      "title": "Debian安装脚本",
+      "displayText": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && bash install.sh 59d9cde77",
+      "copyText": "wget -O install.sh https://download.bt.cn/install/install-ubuntu_6.0.sh && bash install.sh 59d9cde77"
+    },
+    {
+      "order": 3,
+      "title": "万能安装脚本",
+      "displayText": "if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_panel.sh;else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh;fi;bash install_panel.sh 59d9cde77",
+      "copyText": "if [ -f /usr/bin/curl ];then curl -sSO https://download.bt.cn/install/install_panel.sh;else wget -O install_panel.sh https://download.bt.cn/install/install_panel.sh;fi;bash install_panel.sh 59d9cde77"
+    },
+    {
+      "order": 4,
+      "title": "国产龙芯架构安装脚本",
+      "displayText": "wget -O install_panel.sh https://download.bt.cn/install/0/loongarch64/loongarch64_install_panel.sh && bash install_panel.sh 59d9cde77",
+      "copyText": "wget -O install_panel.sh https://download.bt.cn/install/0/loongarch64/loongarch64_install_panel.sh && bash install_panel.sh 59d9cde77"
+    },
+    {
+      "order": 5,
+      "title": "宝塔官方挂载命令",
+      "displayText": "yum install wget -y && wget -O auto_disk.sh http://download.bt.cn/tools/auto_disk.sh && bash auto_disk.sh",
+      "copyText": "yum install wget -y && wget -O auto_disk.sh http://download.bt.cn/tools/auto_disk.sh && bash auto_disk.sh"
+    },
+    {
+      "order": 6,
+      "title": "自定义目录挂载命令",
+      "displayText": "wget -O AutoMount.sh https://raw.githubusercontent.com/myluoluo/automount/master/AutoMount.sh\nchmod 755 AutoMount.sh\n./AutoMount.sh",
+      "copyText": "wget -O AutoMount.sh https://raw.githubusercontent.com/myluoluo/automount/master/AutoMount.sh\nchmod 755 AutoMount.sh\n./AutoMount.sh"
+    }
+  ],
+  "source": {
+    "sha256": "aca4b2965d8e84818a38d1d71b5add60050198b4222b2013995016746dc13cd6",
+    "attachment": "22c749aa-cc9e-42b1-853e-b46619a95b3a",
+    "textNodes": 69,
+    "differences": [],
+    "onlineTextNodes": 69
+  }
+}

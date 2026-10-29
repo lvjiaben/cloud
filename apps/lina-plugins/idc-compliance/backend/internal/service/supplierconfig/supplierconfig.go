@@ -15,8 +15,6 @@ import (
 )
 
 const (
-	// ProviderTencentESSBasic identifies the reviewed Tencent supplier target.
-	ProviderTencentESSBasic = "tencent_essbasic"
 	// ProviderNuonuoInvoice identifies the reviewed NuoNuo supplier target.
 	ProviderNuonuoInvoice = "nuonuo_invoice"
 
@@ -190,11 +188,9 @@ type Service interface {
 	CompleteSubjectAuthorization(context.Context, SubjectAuthorizationResult) (*Configuration, error)
 	// RevokeSubject requires recent full login and revokes one local opaque binding.
 	RevokeSubject(context.Context, SubjectRevokeInput) (*Configuration, error)
-	// RecordManagedBinding commits a trusted server-to-server onboarding result
-	// without accepting supplier subject plaintext or browser-owned state.
-	RecordManagedBinding(context.Context, string, GatewayResult) (*Configuration, error)
 }
 
+// serviceImpl owns the invoice supplier runtime dependencies.
 type serviceImpl struct {
 	manager  secretcap.Manager
 	runtime  managementcap.Runtime
@@ -222,7 +218,7 @@ func New(
 }
 
 func validProvider(provider string) bool {
-	return provider == ProviderTencentESSBasic || provider == ProviderNuonuoInvoice
+	return provider == ProviderNuonuoInvoice
 }
 
 func configurationNo(provider string) string { return "local-supplier-" + provider }

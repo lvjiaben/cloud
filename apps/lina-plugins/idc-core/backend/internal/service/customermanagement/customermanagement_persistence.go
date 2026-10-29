@@ -46,8 +46,6 @@ func (*daoPersistence) searchSnapshot(ctx context.Context, input normalizedSearc
 		columns.DisplayName,
 		columns.CountryCode,
 		columns.PreferredLocale,
-		columns.EnterpriseContractPolicyCode,
-		columns.EnterpriseContractTemplateNo,
 		columns.Version,
 		columns.CreatedAt,
 		columns.UpdatedAt,
@@ -166,9 +164,8 @@ func projectPage(rows []*entity.CustomerSubject, input normalizedSearch, project
 			CustomerCode: projection.codeByCustomer[row.CustomerNo], PrimaryPhone: projection.phoneByCustomer[row.CustomerNo], PrimaryEmail: projection.emailByCustomer[row.CustomerNo],
 			Status: customer.Status(row.StatusCode), DisplayName: row.DisplayName,
 			CountryCode: row.CountryCode, PreferredLocale: row.PreferredLocale,
-			EnterpriseContractPolicyCode: row.EnterpriseContractPolicyCode,
-			EnterpriseContractTemplateNo: row.EnterpriseContractTemplateNo,
-			Verification:                 verification, Level: projection.levelByCustomer[row.CustomerNo],
+
+			Verification: verification, Level: projection.levelByCustomer[row.CustomerNo],
 			TagCount: projection.tagCountByCustomer[row.CustomerNo],
 			Version:  row.Version, CreatedAt: *row.CreatedAt, UpdatedAt: *row.UpdatedAt,
 		})

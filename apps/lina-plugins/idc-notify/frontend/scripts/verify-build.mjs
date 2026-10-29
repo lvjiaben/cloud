@@ -46,26 +46,6 @@ if (
     "The resend button must remain visible and disabled while resend eligibility is blocked.",
   );
 }
-if (
-  !apiSource.includes(
-    "const notificationStaffBase = '/x/idc-notify/api/v1/staff/notifications'",
-  )
-) {
-  throw new Error(
-    "Staff notification requests must use the notify plugin route prefix.",
-  );
-}
-if (/v-model(?:\.[a-z]+)*="[^"]*user\s*_?id/i.test(appSource)) {
-  throw new Error(
-    "The WeCom self-service page must never provide a manual UserID input.",
-  );
-}
-if (
-  !/props\.context\.routePath\.includes\((['"])\/wechat-work-binding\1\)/u.test(
-    appSource,
-  )
-) {
-  throw new Error(
-    "The current-staff WeCom binding page must remain independently routable.",
-  );
+if (/wechat-work-binding|startWeComBinding|removeWeComBinding/u.test(appSource + apiSource)) {
+  throw new Error("The removed WeCom self-binding page must not remain in the browser bundle.");
 }

@@ -31,6 +31,12 @@ func (s *managementServiceImpl) LookupImport(ctx context.Context, input ImportIn
 	if err != nil {
 		return nil, err
 	}
+	if input.TargetVersionNo != "" {
+		existing, readErr := loadImportedPriceCommand(ctx, actor, input, digest)
+		if readErr != nil || existing != nil {
+			return existing, readErr
+		}
+	}
 	return loadImportResult(ctx, actor, input, digest, false)
 }
 
@@ -89,6 +95,12 @@ func (s *managementServiceImpl) CommitImport(ctx context.Context, input ImportIn
 	if err != nil {
 		return nil, false, bizerr.WrapCode(err, CodeManagementInvalid)
 	}
+	if input.TargetVersionNo != "" {
+		pricingResult, handled, priceErr := s.updateNativeImportPricing(ctx, input, source, prices, actor, digest)
+		if handled || priceErr != nil {
+			return pricingResult, handled, priceErr
+		}
+	}
 	claim, err := dao.CatalogProductImport.Ctx(ctx).Data(do.CatalogProductImport{
 		TenantId: idccap.DefaultTenantID, ActorUserId: actor, RequestKey: input.RequestKey, RequestDigest: digest,
 		InterfaceInstanceNo: input.InterfaceInstanceNo, UpstreamReference: input.Reference, SourceSnapshot: string(encoded),
@@ -108,32 +120,42 @@ func (s *managementServiceImpl) CommitImport(ctx context.Context, input ImportIn
 	if affected != 1 {
 		return nil, false, bizerr.NewCode(CodeManagementConflict)
 	}
-	productNo, err := newCatalogNumber(s.random, "prd")
-	if err != nil {
-		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
-	}
-	versionNo, err := newCatalogNumber(s.random, "ver")
-	if err != nil {
-		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
-	}
-	nameZhCN, nameEnUS := input.NameZhCN, input.NameEnUS
-	if nameZhCN == "" {
-		nameZhCN = source.Product.Name
-	}
-	if nameEnUS == "" {
-		nameEnUS = source.Product.Name
-	}
-	// The same empty draft contract/inventory semantics as manual creation apply:
-	// inherit the existing contract policy and create the required inventory row.
-	// Neither this nor the presence of prices grants publication or sale approval.
-	normalized, err := normalizeProductCreate(ProductCreateInput{CategoryNo: input.CategoryNo, PublicSlug: "import-" + productNo[4:], NameZhCN: nameZhCN, NameEnUS: nameEnUS,
-		SummaryZhCN: source.Product.Description, SummaryEnUS: source.Product.Description})
-	if err != nil {
-		return nil, false, err
-	}
-	draft, err := s.createProductDraftInTransaction(ctx, productNo, versionNo, actor, normalized)
-	if err != nil {
-		return nil, false, err
+	var productNo, versionNo string
+	var draft *ProductDraft
+	if input.TargetVersionNo != "" {
+		draft, err = s.replaceImportedDraft(ctx, input, actor)
+		if err != nil {
+			return nil, false, err
+		}
+		versionNo = draft.VersionNo
+	} else {
+		productNo, err = newCatalogNumber(s.random, "prd")
+		if err != nil {
+			return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
+		}
+		versionNo, err = newCatalogNumber(s.random, "ver")
+		if err != nil {
+			return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
+		}
+		nameZhCN, nameEnUS := input.NameZhCN, input.NameEnUS
+		if nameZhCN == "" {
+			nameZhCN = source.Product.Name
+		}
+		if nameEnUS == "" {
+			nameEnUS = source.Product.Name
+		}
+		// Apply the same empty draft and inventory semantics as manual creation:
+		// create the required inventory row.
+		// Neither this nor the presence of prices grants publication or sale approval.
+		normalized, err := normalizeProductCreate(ProductCreateInput{CategoryNo: input.CategoryNo, PublicSlug: "import-" + productNo[4:], NameZhCN: nameZhCN, NameEnUS: nameEnUS,
+			SummaryZhCN: source.Product.Description, SummaryEnUS: source.Product.Description})
+		if err != nil {
+			return nil, false, err
+		}
+		draft, err = s.createProductDraftInTransaction(ctx, productNo, versionNo, actor, normalized)
+		if err != nil {
+			return nil, false, err
+		}
 	}
 	if err = s.insertImportPrices(ctx, versionNo, prices); err != nil {
 		return nil, false, err
@@ -143,21 +165,7 @@ func (s *managementServiceImpl) CommitImport(ctx context.Context, input ImportIn
 			return nil, false, err
 		}
 	}
-	updated, err := dao.CatalogProductImport.Ctx(ctx).Where(do.CatalogProductImport{TenantId: idccap.DefaultTenantID, ActorUserId: actor, RequestKey: input.RequestKey, RequestDigest: digest}).
-		Data(do.CatalogProductImport{ProductNo: &productNo, VersionNo: &versionNo}).UpdateAndGetAffected()
-	if err != nil {
-		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
-	}
-	if updated != 1 {
-		return nil, false, bizerr.NewCode(CodeManagementConflict)
-	}
-	if err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "catalog.product.import", IdempotencyKey: productNo,
-		OperationCode: "catalog.product.import", TargetType: "catalog_product", TargetNo: productNo, ResultCode: "succeeded", ReasonCode: "staff_import", RiskCode: "medium",
-		RequiredPermission: permissionCatalogProductCreate, BeforeSnapshot: map[string]any{}, AfterSnapshot: map[string]any{"version_no": versionNo, "interface_instance_no": input.InterfaceInstanceNo, "pricing_incomplete": incomplete, "missing_configuration_count": len(missing)},
-	}); err != nil {
-		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
-	}
-	return &ImportResult{Item: *draft, MissingConfiguration: missing, PricingIncomplete: incomplete}, true, nil
+	return s.finishImportedWrite(ctx, input, actor, digest, draft, missing, incomplete)
 }
 
 // insertImportPrices batches all currencies, sharing one new-purchase billing
@@ -204,4 +212,23 @@ func (s *managementServiceImpl) insertImportPrices(ctx context.Context, versionN
 		return gerror.Wrap(err, "persist imported prices")
 	}
 	return nil
+}
+
+func (s *managementServiceImpl) finishImportedWrite(ctx context.Context, input ImportInput, actor int, digest string, draft *ProductDraft, missing []ImportMissingConfiguration, incomplete bool) (*ImportResult, bool, error) {
+	productNo, versionNo := draft.ProductNo, draft.VersionNo
+	updated, err := dao.CatalogProductImport.Ctx(ctx).Where(do.CatalogProductImport{TenantId: idccap.DefaultTenantID, ActorUserId: actor, RequestKey: input.RequestKey, RequestDigest: digest}).
+		Data(do.CatalogProductImport{ProductNo: &productNo, VersionNo: &versionNo}).UpdateAndGetAffected()
+	if err != nil {
+		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
+	}
+	if updated != 1 {
+		return nil, false, bizerr.NewCode(CodeManagementConflict)
+	}
+	if err = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "catalog.product.import", IdempotencyKey: productNo,
+		OperationCode: "catalog.product.import", TargetType: "catalog_product", TargetNo: productNo, ResultCode: "succeeded", ReasonCode: "staff_import", RiskCode: "medium",
+		RequiredPermission: permissionCatalogProductCreate, BeforeSnapshot: map[string]any{}, AfterSnapshot: map[string]any{"version_no": versionNo, "interface_instance_no": input.InterfaceInstanceNo, "pricing_incomplete": incomplete, "missing_configuration_count": len(missing)},
+	}); err != nil {
+		return nil, false, bizerr.WrapCode(err, CodeManagementUnavailable)
+	}
+	return &ImportResult{Item: *draft, MissingConfiguration: missing, PricingIncomplete: incomplete}, true, nil
 }

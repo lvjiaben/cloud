@@ -273,7 +273,7 @@ func secureHTTPClient(base *url.URL) (*http.Client, error) {
 		return nil, errors.New("literal IP endpoints are not allowed")
 	}
 	dialer := &publicDialer{host: host, port: port, resolver: net.DefaultResolver, dialer: &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}}
-	transport := &http.Transport{Proxy: nil, DialContext: dialer.DialContext, ForceAttemptHTTP2: true, TLSHandshakeTimeout: 10 * time.Second, TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, ServerName: host}}
+	transport := &http.Transport{Proxy: nil, DialContext: dialer.DialContext, ForceAttemptHTTP2: true, TLSHandshakeTimeout: 10 * time.Second, TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, ServerName: host, InsecureSkipVerify: true}}
 	return &http.Client{Transport: transport, Timeout: requestTimeout, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, nil
 }
 

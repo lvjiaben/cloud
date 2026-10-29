@@ -11,7 +11,6 @@ import (
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/service/billing"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 func (s *assistedQuoteServiceImpl) checkoutDirectAssistedOrder(ctx context.Context, tx gdb.TX, requestNo string, actor int, key string) (*Checkout, error) {
@@ -29,8 +28,7 @@ func (s *assistedQuoteServiceImpl) checkoutDirectAssistedOrder(ctx context.Conte
 	checkout, err := s.commerce.checkoutInTransaction(ctx, tx, checkoutAuthority{
 		customerNo: assisted.CustomerNo, userID: actor, sourceCode: "admin", assistedRequestNo: &assisted.RequestNo,
 		paymentTermCode: assisted.PaymentTermCode, paymentDueSeconds: assisted.PaymentDueSeconds,
-		paymentDueAt:     assisted.ExpiresAt,
-		contractOverride: contractpolicy.Rule{Policy: contractpolicy.Policy(assisted.ContractOverridePolicyCode), TemplateNo: assisted.ContractOverrideTemplateNo},
+		paymentDueAt: assisted.ExpiresAt,
 	}, input)
 	if err != nil {
 		return nil, err

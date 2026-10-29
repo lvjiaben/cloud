@@ -1,4 +1,5 @@
 import type { Page } from "@host-tests/support/playwright";
+import { expect } from "@host-tests/support/playwright";
 
 import {
   waitForConfirmOverlay,
@@ -13,7 +14,6 @@ export class NoticePage {
   private resolveLocalizedLabel(label: string) {
     const labelMap: Record<string, RegExp> = {
       公告标题: /公告标题|Title|plugin\.content-notice\.fields\.title/i,
-      公告类型: /公告类型|Type|plugin\.content-notice\.fields\.type/i,
       创建者:
         /创建者|Created By|plugin\.content-notice\.fields\.createdBy/i,
     };
@@ -25,19 +25,19 @@ export class NoticePage {
   }
 
   /** The Vben modal container */
-  private get modal() {
+  get modal() {
     return this.page.locator('[role="dialog"]');
   }
 
   async goto() {
     await this.page.goto("/system/notice");
+    await this.page.getByTestId('notice-management-page').waitFor({ state: 'visible', timeout: 15000 });
     await waitForTableReady(this.page);
   }
 
   /** Create a new notice */
   async createNotice(
     title: string,
-    type: "通知" | "公告",
     status: "草稿" | "已发布",
     content?: string,
   ) {
@@ -57,11 +57,6 @@ export class NoticePage {
       .locator(".ant-radio-button-wrapper", { hasText: status })
       .click();
 
-    // Select type (RadioButton)
-    await this.modal
-      .locator(".ant-radio-button-wrapper", { hasText: type })
-      .click();
-
     // Type content in Tiptap editor if provided
     if (content) {
       const editor = this.modal.locator('.tiptap[contenteditable="true"]');
@@ -79,8 +74,39 @@ export class NoticePage {
       .catch(() => {});
   }
 
+  async add() {
+    await this.page.getByTestId('notice-add').click();
+    await waitForDialogReady(this.modal);
+  }
+
+  sortInput(title: string) {
+    return this.page.locator('.vxe-body--row:visible', { hasText: title }).getByRole('spinbutton');
+  }
+
+  async setSort(title: string, value: string) {
+    const input = this.sortInput(title);
+    await input.fill(value);
+    await input.press('Enter');
+  }
+
   /** Edit a notice: search by title, click edit, update title */
   async editNotice(searchTitle: string, newTitle: string) {
+    await this.openEdit(searchTitle);
+
+    const titleInput = this.modal.getByPlaceholder("请输入公告标题").first();
+    await expect(titleInput).toHaveValue(searchTitle);
+    await titleInput.clear();
+    await titleInput.fill(newTitle);
+
+    await this.modal.getByRole("button", { name: /确\s*认/ }).click();
+
+    await waitForRouteReady(this.page);
+    await this.modal
+      .waitFor({ state: "hidden", timeout: 10000 })
+      .catch(() => {});
+  }
+
+  async openEdit(searchTitle: string) {
     await this.fillSearchField("公告标题", searchTitle);
     await this.clickSearch();
 
@@ -94,18 +120,6 @@ export class NoticePage {
       .first()
       .click();
 
-    await waitForDialogReady(this.modal);
-
-    const titleInput = this.modal.getByPlaceholder("请输入公告标题").first();
-    await titleInput.clear();
-    await titleInput.fill(newTitle);
-
-    await this.modal.getByRole("button", { name: /确\s*认/ }).click();
-
-    await waitForRouteReady(this.page);
-    await this.modal
-      .waitFor({ state: "hidden", timeout: 10000 })
-      .catch(() => {});
   }
 
   /** Delete a notice: search by title, click delete, confirm */

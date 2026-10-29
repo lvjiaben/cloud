@@ -104,3 +104,52 @@ func TestBMSResourceQueryUsesProvenStatusRoute(t *testing.T) {
 		t.Fatalf("unexpected resource snapshot: %s", result)
 	}
 }
+
+func TestBMSCustomNativeParametersReachOutboundForm(t *testing.T) {
+	plan := validPlan()
+	plan.ProductConfiguration = json.RawMessage(`{"server_group":"8","ip_address_count":2,"custom_parameters":{"扩展备注":"客户 & + = 备注","vendor_size":80}}`)
+	parameters, err := buildProvisionParameters(ProtocolBMS, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := resourcecap.DynamicOperationRequest{RequestID: "custom-request", Capability: resourcecap.CapabilityProvision, Parameters: parameters, ConfidentialInputNames: []string{"password"}}
+	_, _, form, _, err := bmsOperationCall(request)
+	if err != nil || form.Get("扩展备注") != "客户 & + = 备注" || form.Get("vendor_size") != "80" {
+		t.Fatalf("native form lost custom content: %v %v", form, err)
+	}
+
+	executor := &recordedExecutor{results: []json.RawMessage{response(200, `{"code":200,"data":77}`)}}
+	payload, err := json.Marshal(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = ExecuteDynamic(executor, "custom-context", json.RawMessage(`{"protocol":"bms"}`), resourcecap.DynamicProviderMethodExecute, payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(executor.requests) != 1 || executor.requests[0].Form["扩展备注"] != "客户 & + = 备注" || executor.requests[0].Form["vendor_size"] != "80" || executor.requests[0].Form["name3"] != plan.ExternalPrincipalRef {
+		t.Fatalf("actual outbound request lost custom values or principal ownership: %+v", executor.requests)
+	}
+}
+
+// Bracket notation and case aliases must not replace the owner's customer or paid unit.
+func TestBMSCustomParametersCannotOverrideOwnerFields(t *testing.T) {
+	parameters, err := buildProvisionParameters(ProtocolBMS, validPlan())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var values map[string]json.RawMessage
+	if err = json.Unmarshal(parameters, &values); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"name3", "name3[0]", "Name3", "type[units]", "name[host]"} {
+		values["custom_parameters"] = json.RawMessage(`{"` + key + `":"1"}`)
+		payload, err := json.Marshal(values)
+		if err != nil {
+			t.Fatal(err)
+		}
+		request := resourcecap.DynamicOperationRequest{Capability: resourcecap.CapabilityProvision, Parameters: payload, ConfidentialInputNames: []string{"password"}}
+		if _, _, _, _, err = bmsOperationCall(request); err == nil {
+			t.Fatalf("owner field override accepted: %s", key)
+		}
+	}
+}

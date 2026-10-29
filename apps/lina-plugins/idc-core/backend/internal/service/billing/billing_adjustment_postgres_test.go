@@ -66,19 +66,13 @@ func TestFinancialAdjustmentPostgreSQLSeparatesReceiptAndWaiver(t *testing.T) {
 		EvidenceDigest: strings.Repeat("b", 64), IdempotencyKey: "invoice-waiver-review-0001",
 		RequestedBy: 102,
 	}
-	waiver, err := service.CreateInvoiceWaiver(ctx, waiverInput)
+	waiver, err := seedLegacyWaiver(t, ctx, service, waiverInput)
 	if err != nil || waiver == nil || waiver.Status != AdjustmentStatusPendingReview ||
 		!waiver.ApprovalRequired || waiver.LedgerTransactionNo != "" {
 		t.Fatalf("create reviewed invoice waiver: result=%+v err=%v", waiver, err)
 	}
-	if _, err = service.ReviewAdjustment(ctx, AdjustmentReviewInput{
-		AdjustmentNo: waiver.AdjustmentNo, Decision: AdjustmentDecisionApprove, ReviewerID: 102,
-		CommentDigest: strings.Repeat("c", 64), EvidenceDigest: strings.Repeat("d", 64),
-	}); !bizerr.Is(err, CodeInvoiceConflict) {
-		t.Fatalf("requester approved own waiver: %v", err)
-	}
 	reviewInput := AdjustmentReviewInput{
-		AdjustmentNo: waiver.AdjustmentNo, Decision: AdjustmentDecisionApprove, ReviewerID: 202,
+		AdjustmentNo: waiver.AdjustmentNo, Decision: AdjustmentDecisionApprove, ReviewerID: 102,
 		CommentDigest: strings.Repeat("c", 64), EvidenceDigest: strings.Repeat("d", 64),
 	}
 	approved, err := service.ReviewAdjustment(ctx, reviewInput)
@@ -112,7 +106,7 @@ func TestFinancialAdjustmentPostgreSQLReviewsBalanceReceiptBeforePosting(t *test
 		BusinessPurposeCode:       "balance_recharge", EvidenceDigest: strings.Repeat("e", 64),
 		IdempotencyKey: "manual-receipt-balance-0001", RequestedBy: 301,
 	}
-	pending, err := service.CreateManualReceipt(ctx, input)
+	pending, err := seedLegacyReceipt(t, ctx, service, input)
 	if err != nil || pending == nil || pending.Status != AdjustmentStatusPendingReview ||
 		!pending.ApprovalRequired || pending.Balance != nil || pending.LedgerTransactionNo != "" {
 		t.Fatalf("unconfigured policy did not fail closed: result=%+v err=%v", pending, err)
@@ -143,7 +137,7 @@ WHERE account.customer_no = 'customer-ledger' AND account.currency_code = 'CNY'
 	rejectedInput.EvidenceDigest = strings.Repeat("2", 64)
 	rejectedInput.IdempotencyKey = "manual-receipt-balance-reject-0001"
 	rejectedInput.RequestedBy = 303
-	rejected, err := service.CreateManualReceipt(ctx, rejectedInput)
+	rejected, err := seedLegacyReceipt(t, ctx, service, rejectedInput)
 	if err != nil || rejected.Status != AdjustmentStatusPendingReview ||
 		rejected.LedgerTransactionNo != "" || rejected.Balance != nil {
 		t.Fatalf("create balance receipt for rejection: result=%+v err=%v", rejected, err)
@@ -200,7 +194,7 @@ func TestFinancialAdjustmentPostgreSQLReviewsCreditStatementReceiptBeforePosting
 		BusinessPurposeCode:       "credit_repayment", EvidenceDigest: strings.Repeat("5", 64),
 		IdempotencyKey: "manual-receipt-credit-0001", RequestedBy: 701,
 	}
-	pending, err := service.CreateManualReceipt(ctx, input)
+	pending, err := seedLegacyReceipt(t, ctx, service, input)
 	if err != nil || pending == nil || pending.Status != AdjustmentStatusPendingReview ||
 		!pending.ApprovalRequired || pending.CreditStatementNo != fixture.statementNo ||
 		pending.CreditRepayment != nil || pending.LedgerTransactionNo != "" {
@@ -401,5 +395,23 @@ WHERE invoice.invoice_no = 'invoice-lifecycle'`,
 		state.WaiverRows != 1 || state.Approvals != 1 || state.ReceiptCash != 400 ||
 		state.WaiverExpense != 600 {
 		t.Fatalf("reviewed adjustment evidence=%+v", state)
+	}
+}
+
+// Permission-authorized waivers post immediately without a threshold policy,
+// documents or a human reason, while remaining separate from real cash paid.
+func TestFinancialAdjustmentPostgreSQLWaiverPostsDirectlyWithoutDocuments(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := configureBillingServiceIntegrationDB(t, ctx)
+	seedBillingService(t, ctx, database)
+	seedInvoiceLifecycle(t, ctx, database)
+	service, err := NewFinancialAdjustmentService(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := service.CreateInvoiceWaiver(ctx, InvoiceWaiverInput{InvoiceNo: "invoice-lifecycle", AmountMinor: 1000, IdempotencyKey: "direct-waiver-without-documents-001", RequestedBy: 101})
+	if err != nil || result == nil || result.Status != AdjustmentStatusPosted || result.ApprovalRequired || result.LedgerTransactionNo == "" || result.Invoice == nil || result.Invoice.PaidAmountMinor != 0 || result.Invoice.WaivedAmountMinor != 1000 {
+		t.Fatalf("direct waiver: %+v %v", result, err)
 	}
 }

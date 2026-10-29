@@ -26,7 +26,7 @@ type GuestCartItemAddReq struct {
 	BillingTermToken      string                        `json:"billingTermToken" v:"required|length:1,128" dc:"Opaque selected billing term token"`
 	CurrencyCode          string                        `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Exact configured currency" eg:"CNY"`
 	PurchaseCycles        int                           `json:"purchaseCycles" v:"required|min:1|max:120" dc:"Requested billing cycles"`
-	Values                []*PurchaseConfigurationValue `json:"values" v:"required" dc:"Complete governed values bound to the selected quoted term"`
+	Values                []*PurchaseConfigurationValue `json:"values" dc:"Complete governed values bound to the selected quoted term" eg:"[]"`
 }
 
 type GuestCartItemAddRes struct {

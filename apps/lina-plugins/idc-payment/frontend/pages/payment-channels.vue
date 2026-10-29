@@ -6,6 +6,8 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import PaymentChannelModes from './components/payment-channel-modes.vue';
+import PaymentPublicAddresses from './components/payment-public-addresses.vue';
 import "../../../vben-adapter/frontend/admin.css";
 import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type {
@@ -66,8 +68,18 @@ const selectedProvider = computed(() =>
     (item) => item.providerCode === form.providerCode,
   ),
 );
-const configurationFields = computed(
-  () => selectedProvider.value?.interfaceConfiguration?.fields || [],
+// Provider declaration keys are normalized by the bridge; the channel API uses
+// fixed camel-case DTO properties. Keep the form and submit payload aligned.
+const configurationInputKeys: Record<string, string> = {
+  endpointorigin: "endpointOrigin", merchantid: "merchantId", appid: "appId",
+  certificateserialno: "certificateSerialNo", privatekey: "privateKey",
+  wechatpaypublickeyid: "wechatPayPublicKeyId", publickey: "publicKey",
+  apiv3key: "apiV3Key", jsapiauthorized: "jsapiAuthorized", secret: "secret",
+};
+const configurationFields = computed(() =>
+  (selectedProvider.value?.interfaceConfiguration?.fields || []).map(field => ({
+    ...field, key: configurationInputKeys[field.key.toLowerCase()] || field.key,
+  })),
 );
 const providerOptions = computed(() =>
   providerCandidates.value.map((item) => ({
@@ -122,15 +134,15 @@ function columns(): VxeGridProps<PaymentChannel>["columns"] {
       field: "actions",
       slots: { default: "actions" },
       title: $t("plugin.idc-payment.channels.table.actions"),
-      width: 200,
+      width: 280,
     }),
   ];
 }
 
-const [Grid, gridApi] = useVbenVxeGrid<PaymentChannel>({
+const [Grid, gridApi] = useVbenVxeGrid({
   gridEvents: {
-    pageChange: ({ currentPage, pageSize }) => void directory.load(currentPage, pageSize),
-    toolbarButtonClick: ({ code }) => { if (code === "refresh") void loadChannels(); },
+    pageChange: ({ currentPage, pageSize }: {currentPage: number; pageSize: number}) => void directory.load(currentPage, pageSize),
+    toolbarButtonClick: ({ code }: {code: string}) => { if (code === "refresh") void loadChannels(); },
   },
   gridOptions: {
     columns: columns(),
@@ -208,7 +220,7 @@ function paymentFormSchema(): VbenFormProps["schema"] {
     },
     {
       component: "Input",
-      componentProps: { maxlength: 64 },
+      componentProps: { maxlength: 64, "data-testid": "payment-channel-number" },
       fieldName: "channelNo",
       label: $t("plugin.idc-payment.channels.form.channelNo"),
       rules: z.string().trim().min(1).max(64),
@@ -236,8 +248,9 @@ function paymentFormSchema(): VbenFormProps["schema"] {
               : field.type === "secret"
                 ? "InputPassword"
                 : "Input",
-      componentProps:
-        field.type === "single_select"
+      componentProps: {
+        "data-testid": `payment-channel-${field.key}`,
+        ...(field.type === "single_select"
           ? {
               options: (field.staticCandidates || []).map((item) => ({
                 label: candidateLabel(item),
@@ -254,7 +267,8 @@ function paymentFormSchema(): VbenFormProps["schema"] {
             : {
                 autocomplete: field.type === "secret" ? "new-password" : "off",
                 maxlength: field.maximumLength,
-              },
+              }),
+      },
       fieldName: field.key,
       formItemClass: isLargeSecret ? "md:col-span-2" : undefined,
       label: localizedLabel(field),
@@ -295,7 +309,7 @@ function resetForm(providerCode?: ProviderCode) {
   form.enabledModes = (candidate?.modes || []).filter(
     (mode) => mode !== "wechat_jsapi",
   );
-  for (const field of candidate?.interfaceConfiguration?.fields || []) {
+  for (const field of configurationFields.value) {
     configuration[field.key] = field.type === "boolean" ? false : "";
   }
   if (candidate && "endpointOrigin" in configuration) {
@@ -416,6 +430,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
       <div class="table-surface" data-testid="payment-channels-table">
         <Grid>
           <template #toolbar-tools>
+            <PaymentPublicAddresses />
             <Button :loading="loading" @click="loadChannels">{{ $t("plugin.idc-payment.refresh") }}</Button>
             <Button
               type="primary"
@@ -450,6 +465,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
           </template>
           <template #actions="{ row }">
             <Space>
+              <PaymentChannelModes :channel="row" :available-modes="providerCandidates.find(item => item.providerCode === row.providerCode)?.modes || []" @updated="loadChannels" />
               <Button
                 size="small"
                 :loading="testing === row.channelNo"

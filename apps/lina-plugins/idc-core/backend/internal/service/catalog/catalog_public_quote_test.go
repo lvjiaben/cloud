@@ -139,3 +139,59 @@ func TestBuildPublicConfigurationQuoteRejectsCompositionAboveLineBound(t *testin
 		t.Fatalf("expected bounded public quote rejection, got %v", err)
 	}
 }
+
+// A missing daily price cannot make a fully priced monthly selection unusable.
+// Only schedules with actual saved prices may become purchasable term tokens.
+func TestPublicQuoteIsolatesUnavailableBillingPeriods(t *testing.T) {
+	for _, scenario := range []string{"missing-daily", "invalid-daily", "all-missing", "explicit-zero", "overflow"} {
+		t.Run(scenario, func(t *testing.T) {
+			option := "memory"
+			rate := 0
+			source := &publicQuoteSource{ConfigurationModes: map[string]ConfigurationPriceMode{option: ConfigurationPricePerUnit}, TaxPolicies: []entity.CatalogTaxPolicy{{CurrencyCode: "CNY", PriceIncludesTax: true, TaxTreatmentCode: string(TaxTreatmentTaxable), TaxRateBasisPoints: &rate, TaxCategoryCode: "service", RoundingScopeCode: string(TaxRoundingScopeLine), RoundingModeCode: string(TaxRoundingHalfUp), RoundingQuantumMinor: 1}}}
+			for _, period := range []struct {
+				name string
+				unit PeriodUnit
+			}{{"daily", PeriodUnitDay}, {"monthly", PeriodUnitMonth}} {
+				source.BillingRules = append(source.BillingRules, entity.CatalogBillingRule{BillingRuleNo: period.name, ChargeTypeCode: string(ChargeTypeRecurring), PeriodUnitCode: string(period.unit), PeriodCount: 1, PricePhaseCode: string(PricePhaseNewPurchase), QuantityModeCode: string(QuantityModeFixed), MinimumPurchaseCycles: 1})
+				source.Prices = append(source.Prices, entity.CatalogPrice{BillingRuleNo: period.name, CurrencyCode: "CNY", AmountMinor: 100})
+			}
+			if scenario != "all-missing" {
+				source.Prices = append(source.Prices, entity.CatalogPrice{BillingRuleNo: "monthly", OptionNo: &option, CurrencyCode: "CNY", AmountMinor: 200})
+			}
+			if scenario == "invalid-daily" {
+				source.Prices = append(source.Prices, entity.CatalogPrice{BillingRuleNo: "daily", OptionNo: &option, CurrencyCode: "CNY", AmountMinor: -1})
+			}
+			if scenario == "explicit-zero" {
+				source.Prices[2].AmountMinor = 0
+				source.Prices = append(source.Prices, entity.CatalogPrice{BillingRuleNo: "daily", OptionNo: &option, CurrencyCode: "CNY", AmountMinor: 0})
+			}
+			if scenario == "overflow" {
+				source.Prices[2].AmountMinor = int64(1<<63 - 1)
+			}
+			quote, err := buildPublicConfigurationQuote("revision", "CNY", source, map[string]int{option: 2})
+			if scenario == "all-missing" || scenario == "overflow" {
+				if err == nil || quote != nil {
+					t.Fatal("unavailable/overflowed quote became a fabricated price")
+				}
+				return
+			}
+			if err != nil || quote == nil {
+				t.Fatalf("complete period was blocked: %v", err)
+			}
+			if scenario == "explicit-zero" {
+				if len(quote.Terms) != 2 || *quote.Terms[0].TotalAmountMinor != 100 || *quote.Terms[1].TotalAmountMinor != 100 {
+					t.Fatal("explicit zero price was treated as missing")
+				}
+				return
+			}
+			if len(quote.Terms) != 1 || quote.Terms[0].TermNo != "monthly" || *quote.Terms[0].TotalAmountMinor != 500 {
+				t.Fatalf("unexpected purchasable terms: %+v", quote.Terms)
+			}
+			// Global tax errors must still fail, rather than becoming period gaps.
+			source.TaxPolicies = nil
+			if result, taxErr := buildPublicConfigurationQuote("revision", "CNY", source, map[string]int{option: 2}); taxErr == nil || result != nil {
+				t.Fatal("missing tax policy was ignored")
+			}
+		})
+	}
+}

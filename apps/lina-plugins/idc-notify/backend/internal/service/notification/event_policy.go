@@ -71,7 +71,7 @@ func (s *serviceImpl) ListEventPolicies(ctx context.Context, limit int) ([]Event
 	err := s.database.Model(eventPolicyTable+" p").Ctx(ctx).
 		InnerJoin("plugin_idc_notify_event_catalog e", "e.tenant_id=p.tenant_id AND e.event_code=p.event_code").
 		Fields("p.event_code,e.topic_code,p.recipient_kind,p.channel_code,p.enabled,p.version,p.updated_at").
-		Where("p.tenant_id", notificationTenantID).
+		Where("p.tenant_id", notificationTenantID).WhereIn("p.channel_code", supportedChannelCodes).
 		OrderAsc("p.event_code").OrderAsc("p.recipient_kind").OrderAsc("p.channel_code").
 		Limit(limit).Scan(&rows)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *serviceImpl) UpdateEventPolicy(ctx context.Context, input EventPolicyWr
 				Where(tenantIDColumn, notificationTenantID).Where("event_code", input.EventCode).
 				Where("recipient_kind", string(input.RecipientKind)).Where("enabled", true).
 				WhereNot("channel_code", input.ChannelCode).
-				WhereIn("channel_code", []string{"in_app", "email", "sms", "wechat_official"}).Count()
+				WhereIn("channel_code", supportedChannelCodes).Count()
 			if countErr != nil {
 				return countErr
 			}
@@ -190,18 +190,8 @@ func validEventPolicyRecipient(value notificationcap.RecipientKind) bool {
 	}
 }
 
-func validEventPolicyChannel(recipient notificationcap.RecipientKind, channel string) bool {
-	switch notificationcap.Channel(channel) {
-	case notificationcap.ChannelInApp, notificationcap.ChannelEmail, notificationcap.ChannelSMS,
-		notificationcap.ChannelWeChatOfficial:
-		return true
-	case notificationcap.ChannelWeChatWork:
-		return recipient == notificationcap.RecipientStaffUser
-	case notificationcap.Channel("signed_webhook"):
-		return true
-	default:
-		return false
-	}
+func validEventPolicyChannel(_ notificationcap.RecipientKind, channel string) bool {
+	return validChannelCode(channel)
 }
 
 var _ EventPolicyService = (*serviceImpl)(nil)

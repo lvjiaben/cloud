@@ -167,8 +167,15 @@ func validate(input Settings, schema *capmodel.ConfigurationSchemaDeclaration) e
 	if len(data) > 65536 {
 		return bizerr.NewCode(codeTooLong)
 	}
-	if !safeImage(input.Common.LogoURL) {
-		return bizerr.NewCode(codeImageInvalid)
+	for _, image := range []string{input.Common.LogoURL, input.Common.HeaderLogoURL, input.Common.FooterLogoURL, input.Common.EnterpriseWechatQRCodeURL, input.Common.WechatOfficialQRCodeURL} {
+		if !safeImage(image) {
+			return bizerr.NewCode(codeImageInvalid)
+		}
+	}
+	for _, link := range []string{input.Common.ICPURL, input.Common.PoliceURL, input.Common.TelecomLicenseURL} {
+		if !safeRegistrationLink(link) {
+			return bizerr.NewCode(codeFilingInvalid)
+		}
 	}
 	if schema == nil {
 		return bizerr.NewCode(codeSchemaInvalid)
@@ -222,21 +229,49 @@ func maxLength(value int) int {
 	return value
 }
 
-// Public returns content only when the selected provider is still installed and enabled.
-func (s *serviceImpl) Public(ctx context.Context) (Settings, bool, error) {
-	view, err := s.Get(ctx)
+// Public reads only saved public content and the selected active provider. The
+// administrative candidate list is deliberately not assembled on this hot path.
+func (s *serviceImpl) Public(ctx context.Context) (settings Settings, active bool, err error) {
+	defer func() { err = publicError(err) }()
+	s.mu.Lock()
+	settings, err = s.read()
+	s.mu.Unlock()
 	if err != nil {
 		return Settings{}, false, err
 	}
-	for _, plugin := range view.Plugins {
-		if plugin.PluginID == view.SelectedPlugin {
-			view.Settings.Entry = plugin.Entry
-			view.Settings.Renderer = plugin.Renderer
-			view.Settings.Pages = plugin.Pages
-			return view.Settings, true, nil
+	if settings.SelectedPlugin == "" {
+		return Settings{}, false, nil
+	}
+	// Discovery preserves the existing install/enable/new-business authority.
+	// Stop on the selected provider instead of resolving every template/page.
+	for page := 1; page <= 5; page++ {
+		providers, readErr := s.extensions.ListProviders(ctx, plugincap.BusinessExtensionProviderListInput{Point: websitecap.Point, ContractVersion: websitecap.Version, Page: capmodel.PageRequest{PageNum: page, PageSize: 100, Limit: 100}})
+		if readErr != nil {
+			return Settings{}, false, readErr
+		}
+		if providers == nil {
+			return Settings{}, false, gerror.New("template plugin registry is unavailable")
+		}
+		for _, provider := range providers.Items {
+			if provider == nil || provider.PluginID != settings.SelectedPlugin {
+				continue
+			}
+			entry, entryErr := templatecap.Resolve(provider)
+			if entryErr != nil {
+				return Settings{}, false, entryErr
+			}
+			pages, pageErr := websitecap.Pages(provider.ProviderMetadata)
+			if pageErr != nil {
+				return Settings{}, false, pageErr
+			}
+			settings.Entry, settings.Renderer, settings.Pages = entry, renderer(provider), pages
+			return settings, true, nil
+		}
+		if len(providers.Items) < 100 || page*100 >= providers.Total {
+			return Settings{}, false, nil
 		}
 	}
-	return Settings{}, false, nil
+	return Settings{}, false, gerror.New("too many templates")
 }
 
 // safeImage permits only local absolute paths and public HTTP images.
@@ -272,4 +307,13 @@ func publicError(err error) error {
 		return err
 	}
 	return bizerr.WrapCode(err, codeFailure)
+}
+
+// safeRegistrationLink accepts only explicit HTTP(S) public record destinations.
+func safeRegistrationLink(value string) bool {
+	if value == "" {
+		return true
+	}
+	parsed, err := url.Parse(value)
+	return err == nil && (parsed.Scheme == "https" || parsed.Scheme == "http") && parsed.Host != "" && parsed.User == nil && !strings.ContainsAny(value, "\\\r\n")
 }

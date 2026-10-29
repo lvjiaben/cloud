@@ -1,5 +1,6 @@
 // This file copies frozen automation facts under exact staff authorization and
-// new-business admission. No supplier action runs while copying a draft.
+// new-business admission for new products. Same-product revisions preserve local
+// frozen facts without provider admission; publication still revalidates them.
 
 package productautomation
 
@@ -18,9 +19,11 @@ import (
 // ProductCopyService owns copy admission and version-specific file references.
 type ProductCopyService interface {
 	// WithProductCopy creates automation facts only after the catalog callback
-	// returns a new draft version. Source changes or unavailable releases reject
-	// the transaction; manual unbound products can be copied without a provider.
-	WithProductCopy(context.Context, string, func(context.Context) (string, error)) error
+	// returns a new draft version. revision is only for a same-product editing
+	// draft, whose identity is enforced by the catalog writer. It preserves frozen
+	// facts without admitting new business; publication retains its own gates.
+	// Missing permissions, source changes and audit errors roll back all writes.
+	WithProductCopy(context.Context, string, bool, func(context.Context) (string, error)) error
 }
 
 // ProductCopyServiceFromService reuses the existing startup service instance.
@@ -32,22 +35,11 @@ func ProductCopyServiceFromService(service Service) (ProductCopyService, error) 
 	return result, nil
 }
 
-func (s *serviceImpl) WithProductCopy(ctx context.Context, source string, action func(context.Context) (string, error)) error {
+func (s *serviceImpl) WithProductCopy(ctx context.Context, source string, revision bool, action func(context.Context) (string, error)) error {
 	if action == nil || validateBusinessNo(source, "ver") != nil {
 		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, source)
-	if err != nil {
-		return err
-	}
-	if err = requireAuthorization(authorization); err != nil {
-		return err
-	}
-	configurationAuth, err := s.authorizer.AuthorizeVersionConfiguration(ctx, source)
-	if err != nil || requireAuthorization(configurationAuth) != nil || configurationAuth.ActorUserID != authorization.ActorUserID {
-		return bizerr.NewCode(catalog.CodeManagementNotAccessible)
-	}
-	binding, err := s.loadBinding(ctx, source, false)
+	authorization, binding, err := s.authorizeProductCopy(ctx, source)
 	if err != nil {
 		return err
 	}
@@ -62,7 +54,7 @@ func (s *serviceImpl) WithProductCopy(ctx context.Context, source string, action
 				return bizerr.NewCode(catalog.CodeManagementInvalid)
 			}
 
-			if checkErr := s.checkCopyAdmission(txCtx, source, binding, authorization.ActorUserID); checkErr != nil {
+			if checkErr := s.checkCopyAdmission(txCtx, source, binding, authorization.ActorUserID, revision); checkErr != nil {
 				return checkErr
 			}
 
@@ -78,7 +70,9 @@ func (s *serviceImpl) WithProductCopy(ctx context.Context, source string, action
 				return loadErr
 			}
 			if configuration != nil && current == nil {
-				return bizerr.NewCode(catalog.CodeManagementConflict)
+				if _, readErr := s.readManualConfiguration(txCtx, source); readErr != nil {
+					return readErr
+				}
 			}
 			if writeErr = s.lockDraftVersion(txCtx, target); writeErr != nil {
 				return writeErr
@@ -106,26 +100,47 @@ func (s *serviceImpl) WithProductCopy(ctx context.Context, source string, action
 				OperationCode: "product-automation.product.copy", TargetType: "catalog_product_version", TargetNo: target,
 				ResultCode: "succeeded", ReasonCode: "manual_copy", RiskCode: "medium", RequiredPermission: authorization.RequiredPermission,
 				BeforeSnapshot: map[string]any{"source_version_no": source},
-				AfterSnapshot:  map[string]any{"interface_instance_no": current.InterfaceInstanceNo, "configuration_copied": configuration != nil},
+				AfterSnapshot:  map[string]any{"interface_instance_no": current.InterfaceInstanceNo, "configuration_copied": configuration != nil, "editing_revision": revision},
 			})
 		})
 	}
-	if binding == nil {
+	if binding == nil || revision {
 		return normalizeManagementWriteError(copyAction(ctx))
 	}
 	return normalizeManagementWriteError(s.extensions.WithNewBusinessAdmission(ctx, admissionInput(bindingEvidence(binding)), func(guardCtx context.Context, exact *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(bindingEvidence(binding), exact) {
+		if !sameProviderContract(bindingEvidence(binding), exact) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		instance, loadErr := s.loadInterface(guardCtx, binding.InterfaceInstanceNo, false)
 		if loadErr != nil {
 			return loadErr
 		}
-		if instance == nil || instance.NewBusinessState != InterfaceStateAccepting || !sameExactEvidence(interfaceEvidence(instance), exact) {
+		if instance == nil || instance.NewBusinessState != InterfaceStateAccepting || !sameProviderContract(interfaceEvidence(instance), exact) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		return copyAction(guardCtx)
 	}))
+}
+
+// authorizeProductCopy keeps commercial-definition authority independent of
+// supplier administration; a bound source retains both original checks.
+func (s *serviceImpl) authorizeProductCopy(ctx context.Context, source string) (Authorization, *entity.CatalogProductVersionFulfillmentBinding, error) {
+	configurationAuth, err := s.authorizer.AuthorizeVersionConfiguration(ctx, source)
+	if err != nil || requireAuthorization(configurationAuth) != nil {
+		return Authorization{}, nil, bizerr.NewCode(catalog.CodeManagementNotAccessible)
+	}
+	binding, err := s.loadBinding(ctx, source, false)
+	if err != nil {
+		return Authorization{}, nil, err
+	}
+	if binding == nil {
+		return configurationAuth, nil, nil
+	}
+	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, source)
+	if err != nil || requireAuthorization(authorization) != nil || configurationAuth.ActorUserID != authorization.ActorUserID {
+		return Authorization{}, nil, bizerr.NewCode(catalog.CodeManagementNotAccessible)
+	}
+	return authorization, binding, nil
 }
 
 func (s *serviceImpl) copyVersionConfiguration(ctx context.Context, source *entity.CatalogProductVersionConfiguration, target string, actor int) error {
@@ -133,7 +148,14 @@ func (s *serviceImpl) copyVersionConfiguration(ctx context.Context, source *enti
 	if err != nil {
 		return err
 	}
-	result, err := s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(ctx).Data(do.CatalogProductVersionConfiguration{TenantId: 0, VersionNo: target, InterfaceInstanceNo: source.InterfaceInstanceNo, InterfaceConfigurationRevision: source.InterfaceConfigurationRevision, ProductSchemaVersion: source.ProductSchemaVersion, ProductDeclarationSnapshot: source.ProductDeclarationSnapshot, MerchantValueSnapshot: values, CustomerSchemaVersion: source.CustomerSchemaVersion, CustomerDeclarationSnapshot: source.CustomerDeclarationSnapshot, DeclarationDigest: source.DeclarationDigest, MerchantValueDigest: digest, Version: source.Version, ChangedBy: actor}).Insert()
+	data := do.CatalogProductVersionConfiguration{TenantId: 0, VersionNo: target, InterfaceInstanceNo: source.InterfaceInstanceNo, InterfaceConfigurationRevision: source.InterfaceConfigurationRevision, ProductSchemaVersion: source.ProductSchemaVersion, ProductDeclarationSnapshot: source.ProductDeclarationSnapshot, MerchantValueSnapshot: values, CustomerSchemaVersion: source.CustomerSchemaVersion, CustomerDeclarationSnapshot: source.CustomerDeclarationSnapshot, CustomerPresentationSnapshot: source.CustomerPresentationSnapshot, DeclarationDigest: source.DeclarationDigest, MerchantValueDigest: digest, Version: source.Version, ChangedBy: actor}
+	if source.InterfaceInstanceNo == "" {
+		if source.InterfaceConfigurationRevision != 0 {
+			return bizerr.NewCode(catalog.CodeManagementConflict)
+		}
+		data.InterfaceInstanceNo, data.InterfaceConfigurationRevision = gdb.Raw("NULL"), gdb.Raw("NULL")
+	}
+	result, err := s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(ctx).Data(data).Insert()
 	if err != nil {
 		return err
 	}
@@ -146,11 +168,7 @@ func (s *serviceImpl) copyVersionConfiguration(ctx context.Context, source *enti
 
 // checkCopyAdmission repeats staff checks and locks the interface before its
 // binding, following the same lock order used by normal binding changes.
-func (s *serviceImpl) checkCopyAdmission(ctx context.Context, source string, binding *entity.CatalogProductVersionFulfillmentBinding, actor int) error {
-	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, source)
-	if err != nil || requireAuthorization(authorization) != nil || authorization.ActorUserID != actor {
-		return bizerr.NewCode(catalog.CodeManagementNotAccessible)
-	}
+func (s *serviceImpl) checkCopyAdmission(ctx context.Context, source string, binding *entity.CatalogProductVersionFulfillmentBinding, actor int, revision bool) error {
 	configuration, err := s.authorizer.AuthorizeVersionConfiguration(ctx, source)
 	if err != nil || requireAuthorization(configuration) != nil || configuration.ActorUserID != actor {
 		return bizerr.NewCode(catalog.CodeManagementNotAccessible)
@@ -158,11 +176,20 @@ func (s *serviceImpl) checkCopyAdmission(ctx context.Context, source string, bin
 	if binding == nil {
 		return nil
 	}
+	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, source)
+	if err != nil || requireAuthorization(authorization) != nil || authorization.ActorUserID != actor {
+		return bizerr.NewCode(catalog.CodeManagementNotAccessible)
+	}
 	instance, err := s.loadInterface(ctx, binding.InterfaceInstanceNo, true)
 	if err != nil {
 		return err
 	}
-	if instance == nil || instance.NewBusinessState != InterfaceStateAccepting || !sameEvidence(interfaceEvidence(instance), bindingEvidence(binding)) {
+	if instance == nil || instance.PluginId != binding.PluginId || instance.ExtensionPointCode != binding.ExtensionPointCode {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	// A stopped or upgraded interface may be repaired in a local editing draft.
+	// Keep the historical binding unchanged; do not attest it as newly admitted.
+	if !revision && (instance.NewBusinessState != InterfaceStateAccepting || !sameEvidence(interfaceEvidence(instance), bindingEvidence(binding))) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	return nil

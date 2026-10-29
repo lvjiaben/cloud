@@ -254,3 +254,14 @@ func toAPIFinancialManagementAdjustmentDetail(value *billing.ManagementAdjustmen
 		DecidedAt: financialUnixMilliseconds(value.DecidedAt), PostedAt: financialUnixMilliseconds(value.PostedAt),
 	}
 }
+
+// managementBalanceAdjustmentIntent parses exact decimal minor units without floats.
+func managementBalanceAdjustmentIntent(value v1.FinancialManagementBalanceAdjustmentIntent) (billing.ManagementBalanceAdjustmentIntent, error) {
+	amount, err := parsePositiveFinancialAmount(value.AmountMinor)
+	if err != nil {
+		return billing.ManagementBalanceAdjustmentIntent{}, err
+	}
+	return billing.ManagementBalanceAdjustmentIntent{RequestNo: value.RequestNo, CustomerNo: value.CustomerNo,
+		CurrencyCode: value.CurrencyCode, AmountMinor: amount, Deduct: value.Deduct,
+		ReasonCode: value.ReasonCode, EvidenceDigest: value.EvidenceDigest}, nil
+}

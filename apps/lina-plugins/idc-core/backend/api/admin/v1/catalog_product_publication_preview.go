@@ -12,8 +12,9 @@ type CatalogProductPublicationPreviewReq struct {
 
 // CatalogProductPublicationCheck is one stable readiness dimension.
 type CatalogProductPublicationCheck struct {
-	Code   string `json:"code" dc:"Stable readiness check code localized by the client" eg:"pricing"`
-	Passed bool   `json:"passed" dc:"Whether this readiness dimension currently passes" eg:"true"`
+	ReasonCode string `json:"reasonCode,omitempty" dc:"Optional failure reason: provider_unavailable (connector unavailable), configuration_prices_missing (purchase options missing prices), supplier_capabilities_unconfirmed (supplier capability unconfirmed), configuration_incomplete (configuration incomplete); empty when passed" eg:"provider_unavailable"`
+	Code       string `json:"code" dc:"Stable readiness check code localized by the client" eg:"pricing"`
+	Passed     bool   `json:"passed" dc:"Whether this readiness dimension currently passes" eg:"true"`
 }
 
 // CatalogProductPublicationPreviewRes is a bounded advisory readiness graph.

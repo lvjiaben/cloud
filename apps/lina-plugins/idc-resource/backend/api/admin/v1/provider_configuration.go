@@ -5,7 +5,6 @@ package v1
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/gogf/gf/v2/frame/g"
 )
@@ -44,7 +43,7 @@ type ProviderCandidateItem struct {
 }
 
 type ProviderChannelItem struct {
-	TLSCertificateSHA256      string                       `json:"tlsCertificateSha256" dc:"Optional exact trusted supplier leaf certificate SHA-256; empty uses system trust" eg:""`
+	TLSCertificateSHA256      string                       `json:"tlsCertificateSha256" dc:"Historical certificate fingerprint retained for configuration history; not used by the current outbound certificate policy" eg:""`
 	ChannelNo                 string                       `json:"channelNo"`
 	InterfaceInstanceNo       string                       `json:"interfaceInstanceNo" dc:"Stable product-automation interface number bound to this supplier channel" eg:"pfi_0123456789abcdef0123456789abcdef"`
 	ProviderID                string                       `json:"providerId"`
@@ -68,10 +67,10 @@ type ProviderChannelItem struct {
 }
 
 type ProviderSecretFieldStatus struct {
-	Key       string     `json:"key"`
-	Required  bool       `json:"required"`
-	Ready     bool       `json:"ready"`
-	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	Key       string `json:"key"`
+	Required  bool   `json:"required"`
+	Ready     bool   `json:"ready"`
+	UpdatedAt *int64 `json:"updatedAt,omitempty" dc:"Current secret lifecycle fence as a Unix timestamp in milliseconds" eg:"1700000000000"`
 }
 
 type ResourcePoolItem struct {
@@ -87,7 +86,7 @@ type ResourcePoolItem struct {
 }
 
 type ProviderChannelCreateReq struct {
-	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Optional exact trusted leaf certificate fingerprint; empty uses system trust" eg:""`
+	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Historical certificate fingerprint retained for configuration history; not used by the current outbound certificate policy" eg:""`
 	g.Meta               `path:"/admin/resource/provider-configurations/channels" method:"post" tags:"IDC Resource Channels" summary:"Create a Provider channel" permission:"idc:admin:resource:configuration:write"`
 	DisplayName          string         `json:"displayName" v:"required|max-length:128"`
 	Endpoint             string         `json:"endpoint" v:"required|max-length:2048"`
@@ -101,7 +100,7 @@ type ProviderChannelCreateRes struct {
 
 type ProviderChannelUpdateReq struct {
 	RefreshProvider      bool    `json:"refreshProvider" dc:"Explicitly refresh this unused interface to its enabled connector release; retains endpoint, certificate pin, secrets and status; defaults to false" eg:"false"`
-	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Trusted leaf SHA-256; omit to retain for the same endpoint, empty clears trust" eg:""`
+	TLSCertificateSHA256 *string `json:"tlsCertificateSha256" v:"max-length:64" dc:"Historical certificate fingerprint; omit to retain the stored value; certificate verification is disabled by the current interface policy" eg:""`
 	g.Meta               `path:"/admin/resource/provider-configurations/channels/{channelNo}" method:"put" tags:"IDC Resource Channels" summary:"Update a Provider channel" permission:"idc:admin:resource:configuration:write"`
 	ChannelNo            string         `json:"channelNo" in:"path" v:"required|max-length:64"`
 	DisplayName          string         `json:"displayName" v:"required|max-length:128"`

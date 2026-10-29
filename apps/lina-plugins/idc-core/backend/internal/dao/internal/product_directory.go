@@ -21,40 +21,42 @@ type ProductDirectoryDao struct {
 
 // ProductDirectoryColumns defines and stores column names for the table plugin_idc_core_product_directory.
 type ProductDirectoryColumns struct {
-	Id             string //
-	TenantId       string //
-	DirectoryNo    string //
-	NameZhCn       string //
-	NameEnUs       string //
-	SortOrder      string //
-	StatusCode     string //
-	Version        string //
-	CreatedBy      string //
-	UpdatedBy      string //
-	CreatedAt      string //
-	UpdatedAt      string //
-	NavigationType string //
-	TargetUrl      string //
-	Icon           string //
+	Id                string //
+	TenantId          string //
+	DirectoryNo       string //
+	NameZhCn          string //
+	NameEnUs          string //
+	SortOrder         string //
+	StatusCode        string //
+	Version           string //
+	CreatedBy         string //
+	UpdatedBy         string //
+	CreatedAt         string //
+	UpdatedAt         string //
+	NavigationType    string //
+	TargetUrl         string //
+	Icon              string //
+	ParentDirectoryNo string // Parent menu reference; empty means top level; owner validates a maximum of two levels
 }
 
 // productDirectoryColumns holds the columns for the table plugin_idc_core_product_directory.
 var productDirectoryColumns = ProductDirectoryColumns{
-	Id:             "id",
-	TenantId:       "tenant_id",
-	DirectoryNo:    "directory_no",
-	NameZhCn:       "name_zh_cn",
-	NameEnUs:       "name_en_us",
-	SortOrder:      "sort_order",
-	StatusCode:     "status_code",
-	Version:        "version",
-	CreatedBy:      "created_by",
-	UpdatedBy:      "updated_by",
-	CreatedAt:      "created_at",
-	UpdatedAt:      "updated_at",
-	NavigationType: "navigation_type",
-	TargetUrl:      "target_url",
-	Icon:           "icon",
+	Id:                "id",
+	TenantId:          "tenant_id",
+	DirectoryNo:       "directory_no",
+	NameZhCn:          "name_zh_cn",
+	NameEnUs:          "name_en_us",
+	SortOrder:         "sort_order",
+	StatusCode:        "status_code",
+	Version:           "version",
+	CreatedBy:         "created_by",
+	UpdatedBy:         "updated_by",
+	CreatedAt:         "created_at",
+	UpdatedAt:         "updated_at",
+	NavigationType:    "navigation_type",
+	TargetUrl:         "target_url",
+	Icon:              "icon",
+	ParentDirectoryNo: "parent_directory_no",
 }
 
 // NewProductDirectoryDao creates and returns a new DAO object for table data access.

@@ -1,7 +1,7 @@
 <script lang="ts">
 export const pluginPageMeta = {
   routePath: "idc/compliance/suppliers",
-  title: "Contract and Invoice Providers",
+  title: "Invoice Provider",
 };
 </script>
 
@@ -40,10 +40,9 @@ import {
 } from "./supplier-configuration-client";
 
 const providers: SupplierProviderCode[] = [
-  "tencent_essbasic",
   "nuonuo_invoice",
 ];
-const activeProvider = ref<SupplierProviderCode>("tencent_essbasic");
+const activeProvider = ref<SupplierProviderCode>("nuonuo_invoice");
 const loading = ref(false);
 const saving = ref(false);
 const editorOpen = ref(false);

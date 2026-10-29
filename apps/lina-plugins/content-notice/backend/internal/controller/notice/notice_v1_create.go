@@ -17,12 +17,10 @@ func (c *ControllerV1) Create(ctx context.Context, req *v1.CreateReq) (res *v1.C
 		status = *req.Status
 	}
 	id, err := c.noticeSvc.Create(ctx, noticesvc.CreateInput{
-		Title:   req.Title,
-		Type:    req.Type,
-		Content: req.Content,
-		FileIds: req.FileIds,
-		Status:  status,
-		Remark:  req.Remark,
+		Title:     req.Title,
+		SortOrder: req.SortOrder,
+		Content:   req.Content,
+		Status:    status,
 	})
 	if err != nil {
 		return nil, err

@@ -16,8 +16,8 @@ import (
 
 type unifiedPublicationAutomationReadiness struct{}
 
-func (*unifiedPublicationAutomationReadiness) CheckPublicationReadiness(context.Context, string) (bool, error) {
-	return true, nil
+func (*unifiedPublicationAutomationReadiness) CheckPublicationReadiness(context.Context, string) (catalog.PublicationReadinessCheck, error) {
+	return catalog.PublicationReadinessCheck{Passed: true}, nil
 }
 
 func TestCatalogUnifiedPublicationPostgreSQLIntegration(t *testing.T) {

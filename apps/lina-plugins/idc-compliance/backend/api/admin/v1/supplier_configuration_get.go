@@ -7,7 +7,7 @@ import "github.com/gogf/gf/v2/frame/g"
 // SupplierConfigurationGetReq reads one fixed installation-local supplier target.
 type SupplierConfigurationGetReq struct {
 	g.Meta       `path:"/admin/compliance/suppliers/{providerCode}" method:"get" tags:"IDC Compliance Local Supplier" summary:"Get local merchant supplier configuration" dc:"Return one installation-local Tencent ESS Basic or Nuonuo configuration without secret references, credentials, ciphertext, external identifiers, or provider payloads." permission:"idc:admin:compliance:supplier:query"`
-	ProviderCode string `json:"providerCode" in:"path" v:"required|in:tencent_essbasic,nuonuo_invoice" dc:"Local supplier code: tencent_essbasic or nuonuo_invoice" eg:"tencent_essbasic"`
+	ProviderCode string `json:"providerCode" in:"path" v:"required|in:tencent_essbasic,nuonuo_invoice" dc:"Local supplier code: nuonuo_invoice" eg:"nuonuo_invoice"`
 }
 
 // SupplierConfigurationGetRes returns one safe local configuration projection.
@@ -17,7 +17,7 @@ type SupplierConfigurationGetRes struct {
 
 // SupplierConfigurationItem never exposes a secretcap handle or credential bytes.
 type SupplierConfigurationItem struct {
-	ProviderCode           string `json:"providerCode" dc:"Local supplier code" eg:"tencent_essbasic"`
+	ProviderCode           string `json:"providerCode" dc:"Local supplier code" eg:"nuonuo_invoice"`
 	CredentialStatus       string `json:"credentialStatus" dc:"Credential state: unconfigured, updating, configured, or retryable_failed" eg:"configured"`
 	CredentialConfigured   bool   `json:"credentialConfigured" dc:"Whether the credential envelope resolves to active secret metadata" eg:"true"`
 	CredentialMaskedTail   string `json:"credentialMaskedTail" dc:"Display-only credential suffix; empty when unavailable" eg:"A001"`

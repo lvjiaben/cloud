@@ -19,7 +19,7 @@ func TestProviderConfigurationRecoveryCreateConsumesCredentials(t *testing.T) {
 		},
 		ReusedExistingMutation: true,
 	}}
-	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{}, &electronicContractOnboardingStub{}, &electronicContractPreparationStub{}, &electronicContractTemplateStub{})
+	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestProviderConfigurationRecoveryCreateConsumesCredentials(t *testing.T) {
 // TestProviderConfigurationRecoveryCreateRejectsMissingRequest verifies nil
 // input returns the stable validation business error.
 func TestProviderConfigurationRecoveryCreateRejectsMissingRequest(t *testing.T) {
-	controller, err := NewV1(&providerConfigurationServiceStub{}, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{}, &electronicContractOnboardingStub{}, &electronicContractPreparationStub{}, &electronicContractTemplateStub{})
+	controller, err := NewV1(&providerConfigurationServiceStub{}, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{})
 	if err != nil {
 		t.Fatal(err)
 	}

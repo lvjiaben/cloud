@@ -1,41 +1,5 @@
 {
   "menu": {
-    "plugin:idc-compliance:center": {
-      "title": "Compliance Center"
-    },
-    "plugin:idc-compliance:electronic-contract": {
-      "title": "Electronic Contract"
-    },
-    "plugin:idc-compliance:electronic-contract:onboard": {
-      "title": "Onboard Electronic Contract"
-    },
-    "plugin:idc-compliance:electronic-contract:template:query": {
-      "title": "View Electronic Contract Templates"
-    },
-    "plugin:idc-compliance:electronic-contract:template:manage": {
-      "title": "Manage Electronic Contract Templates"
-    },
-    "plugin:idc-compliance:electronic-contract:create": {
-      "title": "Create Electronic Contract"
-    },
-    "plugin:idc-compliance:electronic-contract:query": {
-      "title": "View Electronic Contracts"
-    },
-    "plugin:idc-compliance:electronic-contract:reissue": {
-      "title": "Reissue Electronic Contract"
-    },
-    "plugin:idc-compliance:electronic-contract:terminate": {
-      "title": "Terminate Electronic Contract"
-    },
-    "plugin:idc-compliance:electronic-contract:cancel-order": {
-      "title": "Cancel Failed Contract Order"
-    },
-    "plugin:idc-compliance:electronic-contract:failure-policy": {
-      "title": "Configure Contract Failure Period"
-    },
-    "plugin:idc-compliance:electronic-contract:auto-sign:manage": {
-      "title": "Manage Enterprise Auto-sign Authorization"
-    },
     "plugin:idc-compliance:provider": {
       "title": "Identity Provider"
     },
@@ -46,7 +10,7 @@
       "title": "Configure Identity Provider"
     },
     "plugin:idc-compliance:suppliers": {
-      "title": "Contract and Invoice Providers"
+      "title": "Invoice Provider"
     },
     "plugin:idc-compliance:supplier:query": {
       "title": "View Local Supplier Configuration"
@@ -64,6 +28,9 @@
       "title": "Reopen Local Supplier Subject"
     },
     "plugin:idc-compliance:enterprise-verification": {
+      "title": "List Enterprise Verifications"
+    },
+    "plugin:idc-compliance:enterprise-verification-management": {
       "title": "Enterprise Verification"
     },
     "plugin:idc-compliance:enterprise-verification:query": {
@@ -99,8 +66,11 @@
     "plugin:idc-compliance:red-letter:handle": {
       "title": "Handle Red-letter Tasks"
     },
-    "plugin:idc-compliance:privacy:query": { "title": "Privacy Governance" },
-    "plugin:idc-compliance:privacy:configure": { "title": "Configure Privacy Rules" },
-    "plugin:idc-compliance:privacy:incident": { "title": "Handle Privacy Incidents" }
+    "plugin:idc-compliance:material-retention:query": {
+      "title": "View Material Retention"
+    },
+    "plugin:idc-compliance:material-retention:configure": {
+      "title": "Manage Material Retention"
+    }
   }
 }

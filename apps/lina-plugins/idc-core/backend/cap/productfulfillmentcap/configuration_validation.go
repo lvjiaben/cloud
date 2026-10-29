@@ -19,6 +19,8 @@ const ConfigurationValidationSupplierCapabilitiesUnconfirmed ConfigurationValida
 type ConfigurationValidationRequest struct {
 	Version              string          `json:"version"`
 	ProductConfiguration json.RawMessage `json:"productConfiguration"`
+	// ProductChoiceValues validates each alternative independently against the same base in one pure invocation; at most 512 scalar values, no secrets.
+	ProductChoiceValues map[string][]json.RawMessage `json:"productChoiceValues,omitempty"`
 }
 
 // ConfigurationValidationResult rejects invalid cross-field combinations;

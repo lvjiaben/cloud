@@ -16,7 +16,7 @@ import { useRouter } from "vue-router";
 import { createNumberedPage } from "../numbered-page";
 
 import { useAccess } from "../plugin-access";
-import { useVbenDrawer } from "@vben/common-ui";
+import { useVbenModal, useVbenDrawer } from "@vben/common-ui";
 import { useVbenVxeGrid } from "#/adapter/vxe-table";
 
 import {
@@ -52,18 +52,35 @@ import {
 import { commerceOrders } from "../commerce-client";
 import { financialInvoices, financialTransactions } from "../financial-client";
 import type { CustomerAuditRecord, CustomerAssistanceSession } from "../customer-client";
-import type { ContractPolicyRule } from "../contract-policy-client";
 import CustomerStatisticsPanel from "./customer-statistics-panel.vue";
 import CustomerProductsPanel from "./customer-products-panel.vue";
 import CustomerApiPanel from "./customer-api-panel.vue";
 import { requestClient } from "#/api/request";
 import { getPluginStateMap } from "#/plugins/slot-registry";
 import { AssistanceLaunchError, assistanceLaunchURL } from "../../assistance-launch";
-import ContractPolicyEditor from "./contract-policy-editor.vue";
 import CustomerActivityPanel from "./customer-activity-panel.vue";
 import VbenModalCompat from "./vben-modal-compat.vue";
 import { preferences } from "@vben/preferences";
 
+import CustomerBalanceModal from './customer-balance-modal.vue';
+import { minorToMajorAmount } from '../catalog-money';
+
+const [BalanceModal, balanceModalApi] = useVbenModal({ connectedComponent: CustomerBalanceModal });
+const canRecharge = computed(() => hasAccessByCodes(['idc:admin:billing:manual-receipt:create']));
+const canAdjustBalance = computed(() => hasAccessByCodes(['idc:admin:billing:balance-adjustment:create']));
+function openBalanceAction(operation: 'recharge' | 'gift' | 'deduct') {
+ if (!overview.value) return;
+ balanceModalApi.setData({operation, customerNo: overview.value.customer.customerNo,
+ displayName: overview.value.customer.displayName, balances: overview.value.balances || []}).open();
+}
+async function refreshBalanceOverview() {
+ if (!overview.value) return;
+ const customerNo = overview.value.customer.customerNo;
+ const sequence = ++overviewSequence;
+ const result = await customerOverview(customerNo);
+ if (sequence === overviewSequence && overview.value?.customer.customerNo === customerNo) overview.value = result;
+ emit('updated');
+}
 const overview = ref<CustomerOverview>();
 const apiAvailable=ref(false);
 const emit = defineEmits<{ updated: [] }>();
@@ -159,9 +176,6 @@ async function openBusinessDetail(kind: "invoice" | "order", reference: string) 
   await router.push({ path: kind === "order" ? "/idc/orders" : "/idc/finance", query: { [kind === "order" ? "orderNo" : "invoiceNo"]: reference } });
   drawerApi.close();
 }
-const canEditContractPolicy = computed(() =>
-  hasAccessByCodes(["idc:admin:customer:contract-policy:write"]),
-);
 const canAssist = computed(() =>
   hasAccessByCodes(["idc:admin:customer:assist"]),
 );
@@ -390,20 +404,8 @@ function orderPlainLabel(row: CommerceOrderSummary, field: string) {
 
 function formatMinor(value: string | undefined, currency = "CNY") {
   if (!value) return "—";
-  try {
-    const digits =
-      new Intl.NumberFormat(undefined, {
-        currency,
-        style: "currency",
-      }).resolvedOptions().maximumFractionDigits ?? 2;
-    const raw = BigInt(value);
-    const divisor = 10n ** BigInt(digits);
-    const absolute = raw < 0n ? -raw : raw;
-    const fraction = (absolute % divisor).toString().padStart(digits, "0");
-    return `${raw < 0n ? "−" : ""}${currency} ${absolute / divisor}${digits ? `.${fraction}` : ""}`;
-  } catch {
-    return `${currency} —`;
-  }
+  const negative = value.startsWith('-');
+  return `${currency} ${negative ? '−' : ''}${minorToMajorAmount(negative ? value.slice(1) : value, currency)}`;
 }
 
 async function loadOrders(
@@ -555,15 +557,6 @@ async function endAssistance() {
   }
 }
 
-function applyContractPolicy(rule: ContractPolicyRule) {
-  if (!overview.value) return;
-  overview.value.customer.enterpriseContractPolicyCode = rule.policyCode as
-    | "none"
-    | "required";
-  overview.value.customer.enterpriseContractTemplateNo = rule.templateNo;
-  overview.value.customer.version = rule.version;
-}
-
 const title = computed(() =>
   overview.value?.customer.displayName
     ? `${$t("plugin.idc-core.customer.overview.title")} · ${overview.value.customer.displayName}`
@@ -575,22 +568,10 @@ const customerBusinessSurfaces = computed(() => {
   if (!business) return [];
   return [
     {
-      count: business.servers,
-      key: "servers",
-      label: tr("businessServers"),
-      path: "/admin/idc/resource/overview",
-    },
-    {
       count: business.tickets,
       key: "tickets",
       label: tr("businessTickets"),
       path: "/admin/idc/support",
-    },
-    {
-      count: business.contracts,
-      key: "contracts",
-      label: tr("businessContracts"),
-      path: "/admin/idc/compliance/electronic-contract",
     },
     {
       count: business.taxInvoices,
@@ -782,6 +763,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
   async onOpenChange(open) {
     const sequence = ++overviewSequence;
     if (!open) {
+      balanceModalApi.close();
       overview.value = undefined;
       referrer.value = undefined;
       assistanceSession.value = undefined;
@@ -804,13 +786,14 @@ const [Drawer, drawerApi] = useVbenDrawer({
       transactionLoading.value = false;
       return;
     }
-    const data = drawerApi.getData<{ customerNo?: string }>();
+    const data = drawerApi.getData<{ customerNo?: string; initialTab?: "services" }>();
     if (!data?.customerNo) return;
     drawerApi.setState({ loading: true });
     try {
       const result = await customerOverview(data.customerNo);
       if (sequence !== overviewSequence) return;
       overview.value = result;
+      activeTab.value = data.initialTab === "services" ? "services" : "summary";
       apiAvailable.value=false;
       void requestClient.get<{list:{id:string;installed:number;enabled:number}[]}>("/plugins/dynamic").then(plugins=>{if(sequence===overviewSequence)apiAvailable.value=plugins.list.some(item=>item.id==="idc-channel"&&item.installed===1&&item.enabled===1);}).catch(()=>{if(sequence===overviewSequence)apiAvailable.value=false;});
       tagInput.value = [];
@@ -909,22 +892,17 @@ const [Drawer, drawerApi] = useVbenDrawer({
         <TabPane key="summary" :tab="tr('tabs.summary')">
           <div class="tab-panel">
             <CustomerStatisticsPanel v-if="overview.statistics" :statistics="overview.statistics" @view-products="activeTab = 'services'; changeTab('services')" />
-            <ContractPolicyEditor
-              v-if="
-                overview.customer.type === 'enterprise' && canEditContractPolicy
-              "
-              :level="'enterprise'"
-              :policy-code="
-                overview.customer.enterpriseContractPolicyCode || 'none'
-              "
-              :target-no="overview.customer.customerNo"
-              :template-no="overview.customer.enterpriseContractTemplateNo"
-              :version="overview.customer.version"
-              @updated="applyContractPolicy"
-            />
+
 
             <section class="overview-section">
-              <div class="section-title">{{ tr("balances") }}</div>
+              <div class="section-title flex items-center justify-between gap-3">
+               <span>{{ tr("balances") }}</span>
+               <div class="flex flex-wrap gap-2">
+                <Button v-if="canRecharge" data-testid="customer-balance-recharge" @click="openBalanceAction('recharge')">{{ $t('plugin.idc-core.customer.balanceAction.recharge') }}</Button>
+                <Button v-if="canAdjustBalance" data-testid="customer-balance-gift" @click="openBalanceAction('gift')">{{ $t('plugin.idc-core.customer.balanceAction.gift') }}</Button>
+                <Button v-if="canAdjustBalance" data-testid="customer-balance-deduct" @click="openBalanceAction('deduct')">{{ $t('plugin.idc-core.customer.balanceAction.deduct') }}</Button>
+               </div>
+              </div>
               <div v-if="overview.balances?.length" class="balance-grid">
                 <article
                   v-for="balance in overview.balances"
@@ -1142,20 +1120,18 @@ const [Drawer, drawerApi] = useVbenDrawer({
           </div>
         </TabPane>
 
-        <TabPane key="contracts">
+        <TabPane key="taxInvoices">
           <template #tab
-            ><span data-testid="customer-360-tab-contracts"
-              >{{ tr("businessContracts") }} /
-              {{ tr("businessTaxInvoices") }} ({{
-                overview.business.contracts + overview.business.taxInvoices
+            ><span data-testid="customer-360-tab-tax-invoices"
+              >{{ tr("businessTaxInvoices") }} ({{
+                overview.business.taxInvoices
               }})</span
             ></template
           >
-          <div class="business-surface" data-testid="customer-360-contracts">
+          <div class="business-surface" data-testid="customer-360-tax-invoices">
             <div class="business-surface-grid">
               <article
                 v-for="item in customerBusinessSurface([
-                  'contracts',
                   'taxInvoices',
                 ])"
                 :key="item.key"
@@ -1192,6 +1168,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
 
     <VbenModalCompat :open="!!segmentKind" :confirm-loading="segmentSaving" :title="tr(segmentKind === 'group' ? 'addGroup' : 'addTag')" @update:open="value => { if (!value) { segmentKind = null; ++segmentSearchSequence; } }" @ok="saveSegment"><SegmentForm /></VbenModalCompat>
 
+    <BalanceModal @success="refreshBalanceOverview" />
   </Drawer>
 </template>
 

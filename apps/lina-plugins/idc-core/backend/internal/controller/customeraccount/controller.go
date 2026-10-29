@@ -13,12 +13,14 @@ import (
 	v1 "lina-plugin-idc-core/backend/api/customeraccount/v1"
 	"lina-plugin-idc-core/backend/internal/service/customer"
 	"lina-plugin-idc-core/backend/internal/service/customeraddress"
+	"lina-plugin-idc-core/backend/internal/service/customeravatar"
 	"lina-plugin-idc-core/backend/internal/service/customercontact"
 	"lina-plugin-idc-core/backend/internal/service/customerexport"
 	"lina-plugin-idc-core/backend/internal/service/saleschannel"
 )
 
 type ControllerV1 struct {
+	avatars      customeravatar.Service
 	customers    customer.Service
 	contacts     customercontact.Service
 	addresses    customeraddress.Service
@@ -36,11 +38,11 @@ func BindSalesChannel(controller *ControllerV1, service saleschannel.CustomerSer
 
 var _ accountapi.ICustomerAccountV1 = (*ControllerV1)(nil)
 
-func NewV1(customers customer.Service, contacts customercontact.Service, addresses customeraddress.Service, exports customerexport.Delivery) (*ControllerV1, error) {
-	if customers == nil || contacts == nil || addresses == nil || exports == nil {
+func NewV1(customers customer.Service, contacts customercontact.Service, addresses customeraddress.Service, exports customerexport.Delivery, avatars customeravatar.Service) (*ControllerV1, error) {
+	if customers == nil || contacts == nil || addresses == nil || exports == nil || avatars == nil {
 		return nil, gerror.New("customer account controller requires customer service")
 	}
-	return &ControllerV1{customers: customers, contacts: contacts, addresses: addresses, exports: exports}, nil
+	return &ControllerV1{customers: customers, contacts: contacts, addresses: addresses, exports: exports, avatars: avatars}, nil
 }
 
 func (c *ControllerV1) ProfileGet(ctx context.Context, _ *v1.ProfileGetReq) (*v1.ProfileGetRes, error) {

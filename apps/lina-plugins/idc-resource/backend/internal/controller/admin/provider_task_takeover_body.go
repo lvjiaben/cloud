@@ -13,6 +13,8 @@ import (
 )
 
 type providerTaskTakeoverBody struct {
+	ServiceNo       string   `json:"serviceNo"`
+	ChannelNo       string   `json:"channelNo"`
 	ExpectedVersion int64    `json:"expectedVersion"`
 	ReasonCode      string   `json:"reasonCode"`
 	EvidenceNos     []string `json:"evidenceNos"`
@@ -35,7 +37,7 @@ func providerTaskTakeoverBodyViolation(raw []byte, req *v1.ProviderTaskManualTak
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return true
 	}
-	return body.ExpectedVersion != req.ExpectedVersion ||
+	return body.ServiceNo != req.ServiceNo || body.ChannelNo != req.ChannelNo || body.ExpectedVersion != req.ExpectedVersion ||
 		body.ReasonCode != req.ReasonCode ||
 		!slices.Equal(body.EvidenceNos, req.EvidenceNos)
 }

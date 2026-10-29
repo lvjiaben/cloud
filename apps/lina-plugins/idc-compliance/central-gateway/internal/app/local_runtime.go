@@ -24,8 +24,6 @@ import (
 	"lina-platform/idc-compliance-gateway/internal/suppliercallback"
 	"lina-platform/idc-compliance-gateway/internal/supplierguard"
 	"lina-platform/idc-compliance-gateway/internal/supplieridentity"
-	"lina-platform/idc-compliance-gateway/internal/tencentartifact"
-	"lina-platform/idc-compliance-gateway/internal/tencentess"
 	"lina-platform/idc-compliance-gateway/pkg/processauth"
 )
 
@@ -49,9 +47,6 @@ type localRuntime struct {
 	supplierReconciliation  *suppliercallback.QueryService
 	supplierUsage           *localusage.Service
 	supplierUsageCollection *localusage.CollectionService
-	tencentESS              *tencentess.Client
-	tencentArtifact         *tencentartifact.Service
-	tencentCallback         *tencentess.CallbackVerifier
 	installationID          string
 	processAuthWindow       time.Duration
 }
@@ -66,9 +61,6 @@ type localSupplierRuntime struct {
 	reconciliation  *suppliercallback.QueryService
 	usage           *localusage.Service
 	usageCollection *localusage.CollectionService
-	tencentESS      *tencentess.Client
-	tencentArtifact *tencentartifact.Service
-	tencentCallback *tencentess.CallbackVerifier
 }
 
 // buildLocalRuntime validates private files and constructs the startup-owned runtime.
@@ -197,7 +189,6 @@ func buildLocalRuntime(
 		installationID,
 		supplierKeyring,
 		callbackKeyring,
-		config.TencentESSBasicConfigFile,
 	)
 	if err != nil {
 		return nil, err
@@ -213,9 +204,7 @@ func buildLocalRuntime(
 		callbackEvidenceKeyring: callbackKeyring, supplierWriteGuard: supplierRuntime.writeGuard,
 		supplierCallback: supplierRuntime.callback, supplierReconciliation: supplierRuntime.reconciliation,
 		supplierUsage: supplierRuntime.usage, supplierUsageCollection: supplierRuntime.usageCollection,
-		tencentESS: supplierRuntime.tencentESS, tencentArtifact: supplierRuntime.tencentArtifact,
-		tencentCallback: supplierRuntime.tencentCallback,
-		installationID:  installationID, processAuthWindow: config.ProcessAuthWindow,
+		installationID: installationID, processAuthWindow: config.ProcessAuthWindow,
 	}, nil
 }
 
@@ -250,121 +239,37 @@ func buildLocalIdentityLifecycle(
 
 // buildLocalSupplierRuntime assembles supplier-neutral boundaries and the
 // optional buyer-owned Tencent adapter, including its explicitly gated callback.
+// buildLocalSupplierRuntime keeps the invoice supplier boundary closed until its evidence gate passes.
 func buildLocalSupplierRuntime(
-	ctx context.Context,
-	database *sql.DB,
-	installationID string,
-	supplierKeyring *supplieridentity.Ring,
-	callbackKeyring *callbacksecurity.Ring,
-	tencentConfigFile string,
-) (result *localSupplierRuntime, returnError error) {
-	var (
-		tencentConfig     tencentess.Config
-		tencentConfigured bool
-		tencentCallback   *tencentess.CallbackVerifier
-	)
-	canonicalizers := map[string]supplieridentity.Canonicalizer{}
-	if tencentConfigFile != "" {
-		var err error
-		tencentConfig, err = tencentess.LoadConfigFile(tencentConfigFile)
-		if err != nil {
-			return nil, fmt.Errorf("load installation Tencent eSign client: %w", err)
-		}
-		defer tencentConfig.Clear()
-		tencentConfigured = true
-		canonicalizers[supplieridentity.ProviderTencentESSBasic] = tencentess.SubjectCanonicalizer{}
-	}
-	identity, lifecycle, err := buildLocalIdentityLifecycle(
-		ctx, database, installationID, supplierKeyring, callbackKeyring, canonicalizers,
-	)
+	ctx context.Context, database *sql.DB, installationID string,
+	supplierKeyring *supplieridentity.Ring, callbackKeyring *callbacksecurity.Ring,
+) (*localSupplierRuntime, error) {
+	identity, lifecycle, err := buildLocalIdentityLifecycle(ctx, database, installationID, supplierKeyring, callbackKeyring, map[string]supplieridentity.Canonicalizer{})
 	if err != nil {
 		return nil, err
 	}
-	writeGuard, err := supplierguard.NewService(
-		database, installationID, supplierguard.DefaultPolicy(),
-	)
+	writeGuard, err := supplierguard.NewService(database, installationID, supplierguard.DefaultPolicy())
 	if err != nil {
 		return nil, fmt.Errorf("construct local supplier write guard: %w", err)
 	}
-	var tencentClient *tencentess.Client
-	defer func() {
-		if returnError != nil && tencentCallback != nil {
-			tencentCallback.Close()
-		}
-		if returnError != nil && tencentClient != nil {
-			tencentClient.Close()
-		}
-	}()
-	if tencentConfigured {
-		tencentClient, err = tencentess.New(tencentConfig, identity, writeGuard)
-		if err != nil {
-			return nil, fmt.Errorf("construct installation Tencent eSign client: %w", err)
-		}
-	}
-	queriers := map[string]suppliercallback.ReadOnlyQuerier{}
-	if tencentClient != nil && tencentClient.HasCapability(tencentess.CapabilityFlowQuery) {
-		queriers[supplierguard.ProviderTencentESSBasic] = tencentClient
-	}
-	// Nuonuo remains closed until its separate external-evidence gate passes.
-	reconciliation, err := suppliercallback.NewQueryService(
-		database, installationID, callbackKeyring, queriers,
-	)
+	reconciliation, err := suppliercallback.NewQueryService(database, installationID, callbackKeyring, map[string]suppliercallback.ReadOnlyQuerier{})
 	if err != nil {
 		return nil, fmt.Errorf("construct closed local supplier query boundary: %w", err)
-	}
-	if tencentClient != nil {
-		if err = tencentClient.SetReferenceBinder(reconciliation); err != nil {
-			return nil, fmt.Errorf("bind Tencent eSign reconciliation service: %w", err)
-		}
-	}
-	var tencentArtifact *tencentartifact.Service
-	if tencentClient != nil {
-		tencentArtifact, err = tencentartifact.New(
-			database, installationID, callbackKeyring, reconciliation, tencentClient,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("construct Tencent contract artifact service: %w", err)
-		}
 	}
 	callbackService, err := suppliercallback.NewService(database, installationID, callbackKeyring)
 	if err != nil {
 		return nil, fmt.Errorf("construct local supplier callback service: %w", err)
 	}
-	verifiers := map[string]suppliercallback.Verifier{}
-	if tencentClient != nil && tencentConfig.HasCapability(tencentess.CapabilityCallback) {
-		tencentCallback, err = tencentess.NewCallbackVerifier(
-			tencentConfig, tencentClient, reconciliation,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("construct Tencent eSign callback verifier: %w", err)
-		}
-		verifiers[suppliercallback.ProviderTencentESSBasic] = tencentCallback
-	}
-	// Nuonuo remains closed until its separate external-evidence gate passes.
-	callback, err := suppliercallback.NewBoundary(verifiers, callbackService)
+	callback, err := suppliercallback.NewBoundary(map[string]suppliercallback.Verifier{}, callbackService)
 	if err != nil {
-		if tencentCallback != nil {
-			tencentCallback.Close()
-		}
 		return nil, fmt.Errorf("construct local supplier callback boundary: %w", err)
 	}
-	usage, usageCollection, err := buildLocalSupplierUsage(
-		ctx, database, installationID, callbackKeyring,
-	)
+	usage, usageCollection, err := buildLocalSupplierUsage(ctx, database, installationID, callbackKeyring)
 	if err != nil {
 		return nil, err
 	}
-	if tencentClient != nil {
-		if err = tencentClient.SetChargeAdmission(usage); err != nil {
-			return nil, fmt.Errorf("attach local supplier charge admission: %w", err)
-		}
-	}
-	return &localSupplierRuntime{
-		identity: identity, dataLifecycle: lifecycle, writeGuard: writeGuard,
-		callback: callback, reconciliation: reconciliation, tencentArtifact: tencentArtifact,
-		tencentCallback: tencentCallback,
-		usage:           usage, usageCollection: usageCollection, tencentESS: tencentClient,
-	}, nil
+	return &localSupplierRuntime{identity: identity, dataLifecycle: lifecycle, writeGuard: writeGuard,
+		callback: callback, reconciliation: reconciliation, usage: usage, usageCollection: usageCollection}, nil
 }
 
 // buildLocalSupplierUsage assembles the read model and closed production collector boundary.
@@ -405,8 +310,6 @@ func (r *localRuntime) Ready(ctx context.Context) bool {
 		r.callbackEvidenceKeyring == nil || r.supplierWriteGuard == nil ||
 		r.supplierCallback == nil || r.supplierReconciliation == nil ||
 		r.supplierUsage == nil || r.supplierUsageCollection == nil ||
-		(r.tencentESS != nil && !r.tencentESS.Configured()) ||
-		(r.tencentESS != nil && r.tencentArtifact == nil) ||
 		r.supplierIdentityKeyring.ActiveVersion(supplieridentity.PurposeSubjectEncryption) == 0 ||
 		r.supplierIdentityKeyring.ActiveVersion(supplieridentity.PurposeSubjectLookup) == 0 ||
 		r.supplierIdentityKeyring.ActiveVersion(supplieridentity.PurposeIdentityOperation) == 0 ||
@@ -436,12 +339,6 @@ func (r *localRuntime) Close() error {
 	}
 	if r.callbackEvidenceKeyring != nil {
 		r.callbackEvidenceKeyring.Clear()
-	}
-	if r.tencentESS != nil {
-		r.tencentESS.Close()
-	}
-	if r.tencentCallback != nil {
-		r.tencentCallback.Close()
 	}
 	if r.database == nil {
 		return nil

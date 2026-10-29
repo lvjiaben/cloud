@@ -11,27 +11,27 @@ import (
 var (
 	CodeInvalid = bizerr.MustDefine(
 		"IDC_COMPLIANCE_PRIVACY_INVALID",
-		"The privacy governance request is invalid",
+		"The material retention request is invalid",
 		gcode.CodeInvalidParameter,
 	)
 	CodeNotAccessible = bizerr.MustDefine(
 		"IDC_COMPLIANCE_PRIVACY_NOT_ACCESSIBLE",
-		"The privacy governance record is not accessible",
+		"The material retention record is not accessible",
 		gcode.CodeNotAuthorized,
 	)
 	CodeConflict = bizerr.MustDefine(
 		"IDC_COMPLIANCE_PRIVACY_CONFLICT",
-		"The privacy governance record changed; reload and try again",
+		"The material retention record changed; reload and try again",
 		gcode.CodeInvalidOperation,
 	)
 	CodePolicyRequired = bizerr.MustDefine(
 		"IDC_COMPLIANCE_PRIVACY_POLICY_REQUIRED",
-		"A published privacy assessment and retention policy are required before collection",
+		"A current retention policy is required before collecting sensitive material",
 		gcode.CodeInvalidOperation,
 	)
 	CodeUnavailable = bizerr.MustDefine(
 		"IDC_COMPLIANCE_PRIVACY_UNAVAILABLE",
-		"The privacy governance service is temporarily unavailable",
+		"The material retention service is temporarily unavailable",
 		gcode.CodeInternalError,
 	)
 )

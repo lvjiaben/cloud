@@ -33,6 +33,8 @@ const (
 // PurchaseConfigurationInput contains only the opaque structured-configuration
 // and billing tokens issued by the generic public purchase surface.
 type PurchaseConfigurationInput struct {
+	ServerLoginToken string
+
 	PublicSlug            string
 	ConfigurationRevision string
 	BillingTermToken      string
@@ -60,6 +62,8 @@ type PurchaseConfigurationItem struct {
 // PurchaseConfiguration is safe for transaction-domain persistence. Internal
 // identifiers are derived by catalog code and are never accepted from a caller.
 type PurchaseConfiguration struct {
+	ServerLoginToken string
+
 	ProductNo               string
 	VersionNo               string
 	BillingRuleNo           string
@@ -70,6 +74,7 @@ type PurchaseConfiguration struct {
 	PriceSelections         []ConfigurationPriceSelection
 	PriceSelectionDigest    string
 	CustomerValueDigest     string
+	TypedValueSnapshotJSON  []byte
 }
 
 // ServerResizeConfigurationInput is deliberately separate from the generic
@@ -171,8 +176,11 @@ func (s *publicCatalogReaderImpl) ResolvePurchaseConfiguration(
 		!strings.HasPrefix(termToken, "term_") {
 		return nil, bizerr.NewCode(CodePublicQuoteStale)
 	}
-	snapshot, err := s.loadStructuredConfiguration(ctx, slug, revision)
+	snapshot, err := s.loadStructuredConfigurationForEvaluation(ctx, slug, revision)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.validateImportedPurchaseCycles(ctx, []PurchaseQuoteLine{{VersionNo: snapshot.Target.VersionNo, PurchaseCycles: input.PurchaseCycles}}); err != nil {
 		return nil, err
 	}
 	values, err := s.decodePublicStructuredValues(snapshot, input.Values)
@@ -193,7 +201,7 @@ func (s *publicCatalogReaderImpl) ResolvePurchaseConfiguration(
 	if err != nil {
 		return nil, bizerr.NewCode(CodePublicQuoteInvalid)
 	}
-	priceSelections, selectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values)
+	priceSelections, selectionDigest, err := loadSelectedConfigurationPriceDimensions(ctx, s.database, snapshot.Target.VersionNo, values, snapshot.Target.CustomerPresentation)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
 	}
@@ -201,7 +209,7 @@ func (s *publicCatalogReaderImpl) ResolvePurchaseConfiguration(
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
 	}
-	quote, err := buildPublicConfigurationQuote(revision, currency, source, configurationPriceSelectionMap(priceSelections))
+	quote, err := s.quoteStructuredPurchasePrices(ctx, snapshot.Target.VersionNo, revision, currency, source, configurationPriceSelectionMap(priceSelections), values)
 	if err != nil {
 		return nil, err
 	}
@@ -240,6 +248,7 @@ func (s *publicCatalogReaderImpl) ResolvePurchaseConfiguration(
 		PriceSelections:         append([]ConfigurationPriceSelection(nil), priceSelections...),
 		PriceSelectionDigest:    selectionDigest,
 		CustomerValueDigest:     frozenConfigurationDigest(compiled.ValuesJSON),
+		TypedValueSnapshotJSON:  append([]byte(nil), compiled.ValuesJSON...),
 	}, nil
 }
 
@@ -477,7 +486,7 @@ func loadPurchaseRevalidationFacts(
 ) (map[string]entity.CatalogProduct, map[string]bool, map[string]string, map[string]bool, error) {
 	var productRows []entity.CatalogProduct
 	if err := database.Model(dao.CatalogProduct.Table()).Ctx(ctx).Fields(
-		dao.CatalogProduct.Columns().ProductNo, dao.CatalogProduct.Columns().CategoryNo,
+		dao.CatalogProduct.Columns().ProductNo, dao.CatalogProduct.Columns().CategoryNo, dao.CatalogProduct.Columns().PublicSlug,
 		dao.CatalogProduct.Columns().NameZhCn, dao.CatalogProduct.Columns().NameEnUs,
 		dao.CatalogProduct.Columns().StatusCode, dao.CatalogProduct.Columns().CurrentVersionNo,
 		dao.CatalogProduct.Columns().DeletedAt,

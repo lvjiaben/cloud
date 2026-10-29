@@ -6,7 +6,7 @@ English | [简体中文](README.zh-CN.md)
 
 ## Scope
 
-The plugin owns identity-verification cases, enterprise review, electronic-contract flows, tax invoicing, and compliance evidence.
+The plugin owns identity-verification cases, enterprise review, tax invoicing, and required material retention.
 
 ## Dependencies
 
@@ -26,9 +26,9 @@ The directory still contains implementation produced under a superseded platform
 
 ## Data Boundary
 
-The compliance data foundation owns verification cases, encrypted enterprise-material metadata, contract snapshots and files, supplier-neutral tax invoices, red-letter tasks with immutable allocation traces, and append-only external evidence. `idc-core` keeps only business-gate projections and opaque references.
+The compliance data foundation owns verification cases, encrypted enterprise-material metadata, supplier-neutral tax invoices, red-letter tasks with immutable allocation traces, and append-only external evidence. `idc-core` keeps only business-gate projections and opaque references.
 
-Raw face images or video, identity documents, contract content, invoice originals, third-party credentials, and provider payloads are never stored in the database. Permitted file artifacts use private encrypted object references and `SHA-256` integrity digests; exact identity and invoice-number lookup uses keyed digests, never unsalted public hashes. Legal records do not use soft deletion. Database triggers protect archived contract and tax-invoice content and ownership metadata from mutation, reject physical deletion, and still allow explicit retention and legal-hold governance. External evidence is strictly append-only.
+Raw face images or video, identity documents, invoice originals, third-party credentials, and provider payloads are never stored in the database. Permitted file artifacts use private encrypted object references and `SHA-256` integrity digests; exact identity and invoice-number lookup uses keyed digests, never unsalted public hashes. Legal records do not use soft deletion. Database triggers protect archived tax-invoice content and ownership metadata from mutation, reject physical deletion, and still allow explicit retention and legal-hold governance. External evidence is strictly append-only.
 
 ## Aliyun FACE Boundary
 
@@ -37,3 +37,7 @@ The Aliyun financial-grade identity verification adapter uses the fixed official
 The adapter never requests or persists face images or video. A browser redirect is not proof of success; only a signed server-side query may advance a verification result. Provider configuration is restricted to an authorized installation administrator, and the installing IDC merchant supplies and pays for its own provider account.
 
 The HTTP controller, administrator wizard, customer verification workflow, recovery scheduler, status dictionaries, and plugin-owned end-to-end assets are composed inside the merchant plugin. They use the installing merchant's supplier accounts and share credentials or runtime state only with that installation's local gateway.
+
+## Material Retention and Consent
+
+Electronic contracts and the standalone privacy-governance workspace are retired. Identity and enterprise verification management retain explicit retention periods, expiry scans and manually confirmed deletion. Collection requires its current retention policy and separate customer consent, without the retired assessment publication gate. Legal holds, tax retention and access audits remain enforced; scanning does not delete originals. Upgrades preserve historical contract and governance evidence without exposing or processing retired business records.

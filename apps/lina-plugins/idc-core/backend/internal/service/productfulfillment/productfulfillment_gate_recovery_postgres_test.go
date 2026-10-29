@@ -60,7 +60,7 @@ CREATE UNIQUE INDEX ON plugin_idc_core_product_fulfillment_system_transition(int
 		if _, err := tx.Exec(recoveryFixture); err != nil {
 			return err
 		}
-		gates, err := NewOwnerGateValidator(db, nil)
+		gates, err := NewOwnerGateValidator(db)
 		if err != nil {
 			return err
 		}

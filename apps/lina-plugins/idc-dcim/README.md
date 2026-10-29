@@ -41,3 +41,7 @@ go vet ./...
 go build ./...
 make build
 ```
+
+## Merchant provisioning parameters
+
+Direct provisioning accepts explicitly named, non-secret merchant parameters frozen with the order. Their native names and scalar contents reach the connector form; unbound customer fields stay private to the order. Credentials, the upstream customer identity and paid unit quantity remain owner controlled. Supplier acceptance is determined by its actual response. Upstream resale configurations remain read only.

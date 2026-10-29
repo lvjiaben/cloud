@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -28,11 +29,12 @@ var publicCurrencyPattern = regexp.MustCompile(`^[A-Z]{3}$`)
 
 // PublicCatalogSearchInput contains only stable, anonymous catalog filters.
 type PublicCatalogSearchInput struct {
-	NamePrefix string
-	CategoryNo string
-	Currency   string
-	Cursor     string
-	Limit      int
+	PublicSlugs []string
+	NamePrefix  string
+	CategoryNo  string
+	Currency    string
+	Cursor      string
+	Limit       int
 }
 
 // PublicCatalogProduct is safe for anonymous visitors.
@@ -244,6 +246,7 @@ func (s *publicCatalogReaderImpl) GetBySlug(
 }
 
 type normalizedPublicCatalogSearch struct {
+	publicSlugs []string
 	namePrefix  string
 	likePrefix  string
 	categoryNo  string
@@ -257,6 +260,24 @@ func normalizePublicCatalogSearch(
 	input PublicCatalogSearchInput,
 	cursorCodec *publicCatalogCursorCodec,
 ) (normalizedPublicCatalogSearch, error) {
+	if len(input.PublicSlugs) > maximumPublicCatalogPageSize {
+		return normalizedPublicCatalogSearch{}, bizerr.NewCode(CodePublicCatalogInvalid)
+	}
+	slugs := make([]string, 0, len(input.PublicSlugs))
+	for _, slug := range input.PublicSlugs {
+		if !publicSlugPattern.MatchString(slug) || utf8.RuneCountInString(slug) > 128 {
+			return normalizedPublicCatalogSearch{}, bizerr.NewCode(CodePublicCatalogInvalid)
+		}
+		slugs = append(slugs, slug)
+	}
+	// Canonicalize a set so input order and duplicates do not change cursor identity.
+	sort.Strings(slugs)
+	unique := slugs[:0]
+	for _, slug := range slugs {
+		if len(unique) == 0 || unique[len(unique)-1] != slug {
+			unique = append(unique, slug)
+		}
+	}
 	namePrefix := strings.ToLower(strings.Join(strings.Fields(input.NamePrefix), " "))
 	categoryNo := strings.TrimSpace(input.CategoryNo)
 	currency := strings.TrimSpace(input.Currency)
@@ -273,7 +294,8 @@ func normalizePublicCatalogSearch(
 		return normalizedPublicCatalogSearch{}, bizerr.NewCode(CodePublicCatalogInvalid)
 	}
 	normalized := normalizedPublicCatalogSearch{
-		namePrefix: namePrefix, likePrefix: escapeCatalogLikePrefix(namePrefix),
+		publicSlugs: unique,
+		namePrefix:  namePrefix, likePrefix: escapeCatalogLikePrefix(namePrefix),
 		categoryNo: categoryNo, currency: currency,
 		limit: input.Limit, cursorCodec: cursorCodec,
 	}

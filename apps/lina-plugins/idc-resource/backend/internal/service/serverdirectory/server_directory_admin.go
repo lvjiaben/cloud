@@ -5,6 +5,7 @@ import (
 	"context"
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/managementcap"
+	"strings"
 )
 
 const cloudAdminMaximumPageSize = 100
@@ -36,21 +37,38 @@ func (s *AdminService) authorize(ctx context.Context, target string) error {
 }
 
 // List never accepts a provider identity from the isolated page.
-func (s *AdminService) List(ctx context.Context, page int, limit int) (*Page, error) {
+func (s *AdminService) List(ctx context.Context, page int, limit int, entitlements ...string) (*Page, error) {
 	if err := s.authorize(ctx, cloudConnectorPluginID); err != nil {
 		return nil, err
 	}
-	if page < 1 || page > 1000000 || limit < 1 || limit > cloudAdminMaximumPageSize {
+	if page < 1 || page > 1000000 || limit < 1 || limit > cloudAdminMaximumPageSize || len(entitlements) > 1 {
 		return nil, bizerr.NewCode(CodeDirectoryAdminInvalid)
 	}
+	var (
+		countQuery = cloudAdminDirectoryCountQuery
+		listQuery  = cloudAdminDirectoryQuery
+		countArgs  = []any{cloudConnectorPluginID}
+		listArgs   = []any{cloudConnectorPluginID}
+	)
+	if len(entitlements) == 1 && entitlements[0] != "" {
+		entitlement := entitlements[0]
+		if len(entitlement) > 40 || !identityPattern.MatchString(entitlement) {
+			return nil, bizerr.NewCode(CodeDirectoryAdminInvalid)
+		}
+		countQuery += " AND ownership.entitlement_no=?"
+		listQuery = strings.Replace(listQuery, "AND ownership.server_no>?", "AND ownership.entitlement_no=? AND ownership.server_no>?", 1)
+		countArgs = append(countArgs, entitlement)
+		listArgs = append(listArgs, entitlement)
+	}
+	listArgs = append(listArgs, "", limit+1, (page-1)*limit)
 	var total struct {
 		Total int `orm:"total"`
 	}
-	if err := s.directory.database.GetScan(ctx, &total, cloudAdminDirectoryCountQuery, cloudConnectorPluginID); err != nil {
+	if err := s.directory.database.GetScan(ctx, &total, countQuery, countArgs...); err != nil {
 		return nil, bizerr.WrapCode(err, CodeDirectoryAdminUnavailable)
 	}
 	var rows []directoryRow
-	if err := s.directory.database.GetScan(ctx, &rows, cloudAdminDirectoryQuery, cloudConnectorPluginID, "", limit+1, (page-1)*limit); err != nil {
+	if err := s.directory.database.GetScan(ctx, &rows, listQuery, listArgs...); err != nil {
 		return nil, bizerr.WrapCode(err, CodeDirectoryAdminUnavailable)
 	}
 	result := &Page{Total: total.Total, Items: make([]Item, 0, min(len(rows), limit))}

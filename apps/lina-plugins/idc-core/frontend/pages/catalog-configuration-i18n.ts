@@ -39,6 +39,7 @@ const messages = {
     enUs: "Options cannot be loaded because the governed candidate service is unavailable.",
     zhCn: "受治理的候选项服务暂不可用，当前无法加载选项。",
   },
+  retry: {enUs:"Retry check",zhCn:"重新校验"},
   evaluationFailed: {
     enUs: "The latest configuration could not be checked. Saving is disabled until the check succeeds.",
     zhCn: "暂时无法核对最新配置，核对成功前不能保存。",
@@ -72,6 +73,16 @@ const messages = {
     enUs: "Leave blank to keep an existing credential. The server still checks whether a credential is required.",
     zhCn: "留空表示不修改已有凭据；服务器仍会检查此凭据是否必须配置。",
   },
+  advancedConfiguration: {enUs:"Advanced configuration (optional)",zhCn:"高级配置（可选）"},
+  hideAdvanced: {enUs:"Hide advanced configuration",zhCn:"收起高级配置"},
+  saveProductFirst: {
+    enUs: "Save the default product configuration before setting purchase options. Complete the required location, CPU, memory and disk fields first.",
+    zhCn: "请先保存后台商品配置，再设置客户可选配置。先填写必填的地区、CPU、内存和磁盘等默认规格。",
+  },
+  setPrice: {enUs:"Set price",zhCn:"设置价格"},
+  customerRange: { enUs: "Selected at purchase · {minimum}–{maximum}", zhCn: "购买时选择 · {minimum}—{maximum}" },
+  customerChoices: { enUs: "{count} available choices", zhCn: "{count} 个可选项" },
+  customerChoiceHint: { enUs: "Customers select these options when purchasing. Dynamic choices come from the connected supplier.", zhCn: "客户购买时选择这些选项；动态选项来自当前连接的上游接口。" },
 } as const;
 
 export type CatalogConfigurationMessageKey = keyof typeof messages;

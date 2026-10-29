@@ -14,6 +14,7 @@ var (
 	codeUnavailable       = bizerr.MustDefine("WebsiteConfigurationUnavailable", "Install and enable a website plugin first.", gcode.CodeInvalidParameter)
 	codeNameRequired      = bizerr.MustDefine("WebsiteConfigurationNameRequired", "Enter the website name.", gcode.CodeInvalidParameter)
 	codeTooLong           = bizerr.MustDefine("WebsiteConfigurationTooLong", "Website content is too long.", gcode.CodeInvalidParameter)
+	codeFilingInvalid     = bizerr.MustDefine("WebsiteConfigurationFilingInvalid", "Check the registration numbers and use an HTTP or HTTPS lookup URL.", gcode.CodeInvalidParameter)
 	codeImageInvalid      = bizerr.MustDefine("WebsiteConfigurationImageInvalid", "Enter a valid image URL.", gcode.CodeInvalidParameter)
 	codeSchemaInvalid     = bizerr.MustDefine("WebsiteConfigurationSchemaInvalid", "Website plugin settings are incomplete.", gcode.CodeInvalidParameter)
 	codeRequired          = bizerr.MustDefine("WebsiteConfigurationRequired", "Fill in the required settings.", gcode.CodeInvalidParameter)

@@ -1,1 +1,0 @@
-import{bi as e,da as t,eo as n,ga as r,ka as i}from"./DugdOVQ_.js";import{t as a}from"./D6roH0Qf.js";var o=r({__name:`[slug]`,setup(r){let o=e();return(e,r)=>{let s=a;return i(),t(s,{kind:`news`,slug:String(n(o).params.slug||``)},null,8,[`slug`])}}});export{o as default};

@@ -17,6 +17,7 @@ import (
 	"lina-core/pkg/plugin/pluginbridge/protocol"
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
+	"lina-plugin-idc-zjmfcloud/backend/internal/provider/zjmfcloud"
 )
 
 const (
@@ -116,7 +117,7 @@ func executeInvocation(resourceExecutor confidentialoutboundcap.Service, invocat
 			return nil, io.ErrUnexpectedEOF
 		}
 		_, validationErr := resourcecap.ParseServerGenerationPolicy(request.ProductConfiguration)
-		return json.Marshal(productfulfillmentcap.ConfigurationValidationResult{Version: productfulfillmentcap.ContractVersion, Valid: validationErr == nil})
+		return json.Marshal(productfulfillmentcap.ConfigurationValidationResult{Version: productfulfillmentcap.ContractVersion, Valid: validationErr == nil && zjmfcloud.ValidateOptionalProvisionChoices(request.ProductConfiguration, request.ProductChoiceValues) == nil})
 	}
 	return nil, errResourceOwnerRequired
 }

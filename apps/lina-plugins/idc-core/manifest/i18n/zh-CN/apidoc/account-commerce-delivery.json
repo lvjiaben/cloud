@@ -13,5 +13,6 @@
   "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.startedAt.dc": "服务开始时间，Unix 毫秒时间戳",
   "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.expiresAt.dc": "服务到期时间，Unix 毫秒时间戳；没有时为零",
   "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.deliveries.dc": "每个订单项对应一条客户安全交付记录",
-  "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.serviceEntitlements.dc": "交付完成后创建的持续服务权益"
+  "plugins.idc_core.api.account.v1.CommerceOrderDetail.fields.serviceEntitlements.dc": "交付完成后创建的持续服务权益",
+  "plugins.idc_core.api.account.v1.CommerceServiceEntitlement.fields.entitlementOwnerId.dc": "冻结的服务管理拥有方插件，用于跳转对应管理入口"
 }

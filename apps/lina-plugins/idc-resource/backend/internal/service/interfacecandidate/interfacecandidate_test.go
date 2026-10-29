@@ -31,7 +31,25 @@ func TestProjectCandidateResultRequiresBoundedBilingualServerFields(t *testing.T
 	}
 }
 
-func TestMatchesEvidenceRejectsWrongPluginContractAndDeclaration(t *testing.T) {
+// The shared snapshot is a safe reconstructible graph, not just labels. A
+// relation may refer only to fields supported by the resource-owned adapter.
+func TestCandidateProjectionRetainsValidatedRelationships(t *testing.T) {
+	const payload = `{"Fields":[{"FieldKey":"line","Items":[{"Value":"7","LabelZhCN":"线路七","LabelEnUS":"Line Seven"}]}],"Relationships":[{"ParentFieldKey":"region","ChildFieldKey":"line","Links":[{"ParentValue":"2","ChildValue":"7"}]}]}`
+	result, err := projectCandidateResult([]byte(payload))
+	if err != nil || len(result.Relationships) != 1 || result.Relationships[0].Links[0].ParentValue != "2" {
+		t.Fatal("directory relation was dropped", err)
+	}
+	for _, invalid := range []string{
+		strings.Replace(payload, `"ChildValue":"7"`, `"ChildValue":"missing"`, 1),
+		strings.Replace(payload, `"ParentFieldKey":"region"`, `"ParentFieldKey":"password"`, 1),
+	} {
+		if _, err = projectCandidateResult([]byte(invalid)); err == nil {
+			t.Fatal("unprovable or sensitive relationship was accepted")
+		}
+	}
+}
+
+func TestCurrentEvidenceRejectsWrongIdentityAndMissingMethods(t *testing.T) {
 	value := binding{
 		PluginID: "server-connector", PluginReleaseVersion: "v1.0.0",
 		ContractVersion: "v1", AuthorizedMethods: []string{resourcecap.DynamicProviderMethodConfigurationCandidates},
@@ -43,20 +61,20 @@ func TestMatchesEvidenceRejectsWrongPluginContractAndDeclaration(t *testing.T) {
 		AuthorizedMethods: append([]string(nil), value.AuthorizedMethods...),
 		ReleaseDigest:     value.ReleaseDigest, DeclarationDigest: value.DeclarationDigest,
 	}
-	if !matchesEvidence(value, evidence, resourcecap.DynamicProviderMethodConfigurationCandidates) {
+	if !matchesResolvedEvidence(t.Context(), nil, value, evidence, resourcecap.DynamicProviderMethodConfigurationCandidates) {
 		t.Fatal("exact resource Provider evidence was rejected")
 	}
 	mutations := []func(*capmodel.BusinessExtensionProviderEvidence){
 		func(item *capmodel.BusinessExtensionProviderEvidence) { item.PluginID = "other-connector" },
 		func(item *capmodel.BusinessExtensionProviderEvidence) { item.ContractVersion = "v2" },
 		func(item *capmodel.BusinessExtensionProviderEvidence) {
-			item.DeclarationDigest = strings.Repeat("c", 64)
+			item.AuthorizedMethods = nil
 		},
 	}
 	for _, mutate := range mutations {
 		copy := *evidence
 		mutate(&copy)
-		if matchesEvidence(value, &copy, resourcecap.DynamicProviderMethodConfigurationCandidates) {
+		if matchesResolvedEvidence(t.Context(), nil, value, &copy, resourcecap.DynamicProviderMethodConfigurationCandidates) {
 			t.Fatalf("mismatched Provider evidence was accepted: %+v", copy)
 		}
 	}

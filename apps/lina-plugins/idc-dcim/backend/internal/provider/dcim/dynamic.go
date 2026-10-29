@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
@@ -197,6 +198,9 @@ func bmsOperationCall(request resourcecap.DynamicOperationRequest) (string, stri
 				encoded.Set(key, value)
 			}
 		}
+		if err := appendCustomBMSParameters(encoded, request.Parameters); err != nil {
+			return "", "", nil, nil, err
+		}
 		return http.MethodPost, "/bms/source", encoded, map[string]string{"password": "password"}, nil
 	}
 	if len(request.ConfidentialInputNames) != 0 || !positiveDecimal(request.ResourceRef) || len(bytes.TrimSpace(request.Parameters)) > 0 && !bytes.Equal(bytes.TrimSpace(request.Parameters), []byte("{}")) {
@@ -329,4 +333,53 @@ func unknownResult(request resourcecap.DynamicOperationRequest) resourcecap.Oper
 
 func failedResult(request resourcecap.DynamicOperationRequest) resourcecap.OperationResult {
 	return resourcecap.OperationResult{Status: resourcecap.TaskStatusFailed, ExternalResourceRef: request.ResourceRef, Failure: &resourcecap.ProviderFailure{Code: "UPSTREAM_REJECTED", Message: "DCIM rejected the operation"}, Evidence: []resourcecap.Evidence{{Kind: "dcim_rejection", Reference: request.RequestID, Summary: "BMS operation was explicitly rejected", ObservedAt: time.Now().UTC()}}}
+}
+
+// appendCustomBMSParameters preserves native names and contents in the actual
+// outbound form without allowing customer identity or credential overrides.
+func appendCustomBMSParameters(encoded url.Values, parameters json.RawMessage) error {
+	custom, err := productfulfillmentcap.CustomParameters(parameters)
+	if err != nil {
+		return errInvalidConfiguration
+	}
+	for key, raw := range custom {
+		root := strings.ToLower(strings.SplitN(key, "[", 2)[0])
+		if root == "name3" || root == "type" || root == "name" {
+			return errInvalidConfiguration
+		}
+		var value any
+		decoder := json.NewDecoder(bytes.NewReader(raw))
+		decoder.UseNumber()
+		if decoder.Decode(&value) != nil {
+			return errInvalidConfiguration
+		}
+		switch item := value.(type) {
+		case string:
+			encoded.Set(key, item)
+		case json.Number:
+			encoded.Set(key, item.String())
+		case bool:
+			encoded.Set(key, strconv.FormatBool(item))
+		default:
+			return errInvalidConfiguration
+		}
+	}
+
+	for _, bound := range []struct {
+		key              string
+		minimum, maximum int64
+	}{
+		{"size", 1, 1048576}, {"data_size", 0, 1048576}, {"ip_num", 1, 256}, {"backup_num", 0, 1024}, {"snap_num", 0, 1024},
+	} {
+		value, err := strconv.ParseInt(encoded.Get(bound.key), 10, 64)
+		if err != nil || value < bound.minimum || value > bound.maximum {
+			return errInvalidConfiguration
+		}
+	}
+	for _, key := range []string{"group_id", "os_id", "ip_group_id", "ceph_id"} {
+		if value := encoded.Get(key); value != "" && !positiveDecimal(value) {
+			return errInvalidConfiguration
+		}
+	}
+	return nil
 }

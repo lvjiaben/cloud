@@ -518,6 +518,17 @@ func assertProviderAuthenticationSessions(t *testing.T, ctx context.Context, dat
 	if loginCount.Load() != 1 {
 		t.Fatalf("concurrent Provider sessions performed %d logins, want 1", loginCount.Load())
 	}
+	// A supplier validation/transport failure belongs to the business call.
+	// Re-authenticating here would replay a potentially non-idempotent write.
+	rejected := errors.New("supplier rejected the operation")
+	consumeCount := 0
+	if err = first.Access(ctx, request, producer, func([]byte, int64) error {
+		consumeCount++
+		return rejected
+	}); !errors.Is(err, rejected) || consumeCount != 1 || loginCount.Load() != 1 {
+		t.Fatalf("business failure replayed or invalidated authentication: err=%v calls=%d logins=%d",
+			err, consumeCount, loginCount.Load())
+	}
 	if err = first.Invalidate(ctx, resourcecap.AuthenticationSessionInvalidation{
 		ChannelRef: "channel-test", Generation: generation,
 	}); err != nil {
@@ -1057,8 +1068,8 @@ func assertResourceSchemaShape(t *testing.T, ctx context.Context, database gdb.D
 SELECT count(*)
 FROM information_schema.tables
 WHERE table_schema = ? AND table_name LIKE 'plugin_idc_resource_%'`, schema)
-	if err != nil || count.Int() != 31 {
-		t.Fatalf("resource table count=%d want=31 err=%v", count.Int(), err)
+	if err != nil || count.Int() != 37 {
+		t.Fatalf("resource table count=%d want=37 err=%v", count.Int(), err)
 	}
 	newTables, err := database.GetValue(ctx, `
 SELECT count(*) FROM information_schema.tables
@@ -1068,10 +1079,11 @@ WHERE table_schema=? AND table_name IN (
   'plugin_idc_resource_server_entitlement_projection',
   'plugin_idc_resource_interface_channel_binding',
   'plugin_idc_resource_interface_projection_outbox',
-  'plugin_idc_resource_interface_configuration_revision'
+  'plugin_idc_resource_interface_configuration_revision',
+  'plugin_idc_resource_provision_non_acceptance_verification'
 )`, schema)
-	if err != nil || newTables.Int() != 6 {
-		t.Fatalf("resource reservation/session/ownership/interface table count=%d want=6 err=%v", newTables.Int(), err)
+	if err != nil || newTables.Int() != 7 {
+		t.Fatalf("resource reservation/session/ownership/interface/verification table count=%d want=7 err=%v", newTables.Int(), err)
 	}
 	softDeleteRows, err := database.GetAll(ctx, `
 SELECT table_name
@@ -1182,6 +1194,15 @@ INSERT INTO plugin_idc_resource_channel
     (channel_no, provider_id, provider_plugin_id, display_name, endpoint, status_code)
 VALUES ('channel-test', 'provider-test', 'plugin-test', 'Test', 'https://provider.invalid', 'enabled')`); err != nil {
 		t.Fatalf("insert resource channel failed: %v", err)
+	}
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET endpoint='http://provider.invalid' WHERE channel_no='channel-test'`); err != nil {
+		t.Fatalf("explicit HTTP channel rejected after migration: %v", err)
+	}
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET endpoint='ftp://provider.invalid' WHERE channel_no='channel-test'`); err == nil {
+		t.Fatal("unsupported channel protocol accepted after migration")
+	}
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET endpoint='https://provider.invalid' WHERE channel_no='channel-test'`); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := database.Exec(ctx, `
 INSERT INTO plugin_idc_resource_channel
@@ -1756,20 +1777,15 @@ VALUES ('task-resource-ip-unknown', repeat('a', 64), 'server.ip.change', 'resour
 			ExternalResourceRef: "1001", State: resourcecap.ResourceStateActive,
 			Data: []byte(`{"ip_count":2}`), ObservedAt: observedAt,
 		},
-	}); err != nil {
-		t.Fatalf("matching observed IP count did not close unknown IP task: %v", err)
+	}); err == nil {
+		t.Fatal("unchanged IP quantity falsely completed a replacement")
 	}
-	ipOutcome, err := database.GetAll(ctx, `
-SELECT task.status_code, evidence.evidence_kind, evidence.reference, evidence.summary
-FROM plugin_idc_resource_task AS task
-JOIN plugin_idc_resource_task_evidence AS evidence ON evidence.task_no = task.task_no
-WHERE task.task_no = 'task-resource-ip-unknown'
-ORDER BY evidence.id`)
-	if err != nil || len(ipOutcome) != 2 || ipOutcome[0]["status_code"].String() != "succeeded" ||
-		ipOutcome[0]["evidence_kind"].String() != "resourceState" ||
-		ipOutcome[1]["evidence_kind"].String() != "ipCount" ||
-		ipOutcome[1]["reference"].String() != "1001" || ipOutcome[1]["summary"].String() != "2" {
-		t.Fatalf("IP count reconciliation did not persist exact owner evidence: rows=%v err=%v", ipOutcome, err)
+	ipOutcome, err := database.GetOne(ctx, `
+SELECT status_code,result_unknown,finished_at,locked_by,
+ (SELECT count(*) FROM plugin_idc_resource_task_evidence evidence WHERE evidence.task_no=task.task_no) AS evidence_count
+FROM plugin_idc_resource_task task WHERE task_no='task-resource-ip-unknown'`)
+	if err != nil || ipOutcome["status_code"].String() != "result_unknown" || !ipOutcome["result_unknown"].Bool() || !ipOutcome["finished_at"].IsNil() || ipOutcome["locked_by"].String() != lease.Token || ipOutcome["evidence_count"].Int() != 0 {
+		t.Fatalf("ambiguous IP replacement lost its unknown fence: row=%v err=%v", ipOutcome, err)
 	}
 }
 

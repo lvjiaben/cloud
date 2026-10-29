@@ -51,10 +51,26 @@ type ManagementAdjustmentPolicyIntent struct {
 	ReviewThresholdMinor int64
 }
 
+// ManagementBalanceAdjustmentIntent binds the exact customer, currency,
+// operation, amount and evidence to one proof and one immutable request.
+type ManagementBalanceAdjustmentIntent struct {
+	RequestNo      string
+	CustomerNo     string
+	CurrencyCode   string
+	AmountMinor    int64
+	Deduct         bool
+	ReasonCode     string
+	EvidenceDigest string
+}
+
 // ManagementFinanceCommandService owns staff-only, operation-bound financial
-// mutations. Every execution re-authorizes, consumes one single-use proof, and
+// mutations. Every execution re-authorizes, validates a proof only if supplied, and
 // appends its business audit event inside the authoritative transaction.
 type ManagementFinanceCommandService interface {
+	// IssueBalanceAdjustmentProof authorizes the complete preview for the current staff session.
+	IssueBalanceAdjustmentProof(context.Context, ManagementBalanceAdjustmentIntent) (*reauth.ProofContext, error)
+	// CreateBalanceAdjustment re-authorizes and posts directly; a supplied proof is validated and audit failure rolls back the adjustment.
+	CreateBalanceAdjustment(context.Context, ManagementBalanceAdjustmentIntent, string) (*FinancialAdjustment, error)
 	IssueManualReceiptProof(context.Context, ManagementManualReceiptIntent) (*reauth.ProofContext, error)
 	CreateManualReceipt(context.Context, ManagementManualReceiptIntent, string) (*FinancialAdjustment, error)
 	IssueInvoiceWaiverProof(context.Context, ManagementInvoiceWaiverIntent) (*reauth.ProofContext, error)
@@ -127,7 +143,7 @@ func (s *managementFinanceCommandImpl) CreateManualReceipt(
 		if err != nil {
 			return err
 		}
-		return s.appendAdjustmentAudit(ctx, "manual_receipt", intent.RequestNo, intent.ReasonCode, result)
+		return s.appendAdjustmentAudit(ctx, "manual_receipt", intent.RequestNo, input.ReasonCode, result)
 	})
 	result, err = managementFinanceCommandResult(result, err)
 	if err != nil {
@@ -165,7 +181,7 @@ func (s *managementFinanceCommandImpl) CreateInvoiceWaiver(
 		if err != nil {
 			return err
 		}
-		return s.appendAdjustmentAudit(ctx, "invoice_waiver", intent.RequestNo, intent.ReasonCode, result)
+		return s.appendAdjustmentAudit(ctx, "invoice_waiver", intent.RequestNo, input.ReasonCode, result)
 	})
 	return managementFinanceCommandResult(result, err)
 }
@@ -300,6 +316,7 @@ func (s *managementFinanceCommandImpl) prepareManualReceipt(
 	if err != nil {
 		return ManualReceiptInput{}, reauth.Binding{}, err
 	}
+	input.ReasonCode, input.EvidenceDigest = command.ReasonCode, command.EvidenceDigest
 	digest, err := adjustmentRequestDigest(command)
 	return input, reauth.Binding{Purpose: reauth.PurposeHighValueFunds, TargetDigest: digest}, err
 }
@@ -321,6 +338,7 @@ func (s *managementFinanceCommandImpl) prepareInvoiceWaiver(
 	if err != nil {
 		return InvoiceWaiverInput{}, reauth.Binding{}, err
 	}
+	input.ReasonCode, input.EvidenceDigest = command.ReasonCode, command.EvidenceDigest
 	digest, err := adjustmentRequestDigest(command)
 	return input, reauth.Binding{Purpose: reauth.PurposeHighValueFunds, TargetDigest: digest}, err
 }
@@ -340,7 +358,7 @@ func (s *managementFinanceCommandImpl) prepareAdjustmentReview(
 	if !exactlyTrimmed(intent.RequestNo) || !validInvoiceTransformKey(intent.RequestNo) {
 		return AdjustmentReviewInput{}, reauth.Binding{}, invoiceInvalidError()
 	}
-	if _, err = normalizeAdjustmentReview(input); err != nil {
+	if input, err = normalizeAdjustmentReview(input); err != nil {
 		return AdjustmentReviewInput{}, reauth.Binding{}, err
 	}
 	digest, err := contentDigest(struct {
@@ -384,7 +402,7 @@ func (s *managementFinanceCommandImpl) consumeProof(
 ) error {
 	proofToken = strings.TrimSpace(proofToken)
 	if proofToken == "" {
-		return invoiceInvalidError()
+		return nil
 	}
 	proof, err := s.recentAuth.Consume(ctx, proofToken, binding)
 	if err != nil {
@@ -405,6 +423,9 @@ func (s *managementFinanceCommandImpl) appendAdjustmentAudit(
 	result *FinancialAdjustment,
 ) error {
 	permission := permissionBillingManualReceiptCreate
+	if operation == "customer_balance" {
+		permission = permissionBillingBalanceAdjustmentCreate
+	}
 	if operation == "invoice_waiver" {
 		permission = permissionBillingInvoiceWaiverCreate
 	}

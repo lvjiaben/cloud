@@ -60,7 +60,7 @@ const (
 	AdjustmentStatusPosted        FinancialAdjustmentStatus = "posted"
 )
 
-// AdjustmentDecision is the append-only second-person decision.
+// AdjustmentDecision is the append-only authorized decision.
 type AdjustmentDecision string
 
 const (
@@ -393,8 +393,7 @@ type MarketingGrantAdjustmentInput struct {
 	RequestedBy    int
 }
 
-// AdjustmentReviewInput appends one second-person decision. Reviewer and
-// requester must be different staff principals.
+// AdjustmentReviewInput appends one authorized decision. The requester may also process their historic pending request.
 type AdjustmentReviewInput struct {
 	AdjustmentNo   string
 	Decision       AdjustmentDecision
@@ -523,17 +522,33 @@ type InvoiceTransformService interface {
 	SplitInvoice(context.Context, InvoiceSplitInput) (*InvoiceTransform, error)
 }
 
+// CustomerBalanceAdjustmentInput records a gift credit or an available-cash
+// debit through the existing reviewed, immutable adjustment lifecycle.
+type CustomerBalanceAdjustmentInput struct {
+	CustomerNo     string
+	CurrencyCode   string
+	AmountMinor    int64
+	Deduct         bool
+	ReasonCode     string
+	EvidenceDigest string
+	IdempotencyKey string
+	RequestedBy    int
+}
+
 // FinancialAdjustmentService owns reviewed manual receipts and invoice
 // waivers. Callers must enforce direct-staff identity, exact create/review/
 // policy permissions, merchant scope, and recent re-authentication.
 type FinancialAdjustmentService interface {
+	// CreateCustomerBalanceAdjustment directly posts an authorized adjustment;
+	// debits recheck locked available cash and never spend frozen funds.
+	CreateCustomerBalanceAdjustment(context.Context, CustomerBalanceAdjustmentInput) (*FinancialAdjustment, error)
 	ConfigureApprovalPolicy(context.Context, AdjustmentPolicyInput) (*AdjustmentPolicy, error)
 	CreateManualReceipt(context.Context, ManualReceiptInput) (*FinancialAdjustment, error)
 	CreateInvoiceWaiver(context.Context, InvoiceWaiverInput) (*FinancialAdjustment, error)
-	// CreateMarketingGrantPosting always creates a second-person-reviewed
+	// CreateMarketingGrantPosting directly posts a permission-authorized
 	// customer-gift credit and never changes the marketing entitlement itself.
 	CreateMarketingGrantPosting(context.Context, MarketingGrantAdjustmentInput) (*FinancialAdjustment, error)
-	// CreateMarketingGrantReversal always creates a second-person-reviewed
+	// CreateMarketingGrantReversal directly posts a permission-authorized
 	// reversal of an exact unused marketing grant amount.
 	CreateMarketingGrantReversal(context.Context, MarketingGrantAdjustmentInput) (*FinancialAdjustment, error)
 	ReviewAdjustment(context.Context, AdjustmentReviewInput) (*FinancialAdjustment, error)

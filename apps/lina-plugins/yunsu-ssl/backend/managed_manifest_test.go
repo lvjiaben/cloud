@@ -31,7 +31,7 @@ type managedManifest struct {
 
 func TestManagedManifestDeclaresValidatedOngoingCertificateFulfillment(t *testing.T) {
 	manifest := readManagedManifest(t)
-	if manifest.ID != pluginID || manifest.Version != "v0.3.7" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
+	if manifest.ID != pluginID || manifest.Version != "v0.3.8" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
 		t.Fatalf("connector release identity is invalid: %#v", manifest)
 	}
 	if len(manifest.BusinessExtensions) != 1 {
@@ -59,10 +59,9 @@ func TestManagedManifestDeclaresValidatedOngoingCertificateFulfillment(t *testin
 	if len(parsed.ServiceDownloads) != 1 || parsed.ServiceDownloads[0].Method != serviceDownloadMethod || parsed.ServiceDownloads[0].Path != "/order/download-cert" {
 		t.Fatalf("SSL managed service download is invalid: %#v", parsed.ServiceDownloads)
 	}
-	if len(manifest.AdminSurfaces) != 1 || len(manifest.CustomerSurfaces) != 1 ||
-		!slices.Equal(manifest.AdminSurfaces[0].BridgeCapabilities, []string{"service-entitlements.admin.v1"}) ||
-		!slices.Equal(manifest.CustomerSurfaces[0].BridgeCapabilities, []string{"service-entitlements.customer.v1"}) {
-		t.Fatal("certificate surfaces must use only the governed owner capabilities")
+	if len(manifest.AdminSurfaces) != 0 || len(manifest.CustomerSurfaces) != 1 ||
+		!slices.Equal(manifest.CustomerSurfaces[0].BridgeCapabilities, []string{"service-entitlements.customer.v1", "purchased-services.customer.v1"}) {
+		t.Fatal("certificate administration belongs to customer products; the customer surface must retain its governed owner capability")
 	}
 	if len(manifest.HostServices) != 1 || manifest.HostServices[0].Service != "supplier-interface-runtime" ||
 		!slices.Equal(manifest.HostServices[0].Methods, []string{"outbound.http.execute"}) {

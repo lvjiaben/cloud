@@ -646,9 +646,6 @@
       }
     },
     "idc_customer_closure_finding": {
-      "active_contracts": {
-        "label": "存在进行中合同"
-      },
       "active_services": {
         "label": "存在有效服务"
       },
@@ -826,9 +823,6 @@
       },
       "wechat_official": {
         "label": "微信公众号"
-      },
-      "wechat_work": {
-        "label": "企业微信"
       }
     },
     "idc_notification_topic": {
@@ -1539,7 +1533,7 @@
     },
     "idc_billing_adjustment_type": {
       "balance_credit": {
-        "label": "余额补款"
+        "label": "人工赠送余额"
       },
       "balance_debit": {
         "label": "余额扣款"

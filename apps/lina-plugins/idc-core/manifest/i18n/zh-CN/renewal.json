@@ -1,0 +1,23 @@
+{
+  "plugin": {
+    "idc-core": {
+      "renewal": {
+        "title": "附属资源续费待办",
+        "subject": "所属服务编号",
+        "customer": "客户编号",
+        "invoice": "账单编号",
+        "status": "待办原因",
+        "createdAt": "创建时间",
+        "action": "操作",
+        "awaitingPayment": "待付款",
+        "cancellationPending": "账单关闭待处理",
+        "needsReview": "待核实",
+        "viewInvoice": "查看账单",
+        "refresh": "刷新待办",
+        "guidance": "待付款的快照或备份会保留，恢复等使用操作暂停。付款后仍需确认资源状态和恢复操作是否可用。账单关闭待处理需核实关闭结果；可按现有账单权限处理。",
+        "syncFailed": "暂时无法更新续费提醒，待办数量可能不是最新。请刷新重试。",
+        "listFailed": "暂时无法加载续费待办。请刷新重试；如仍失败，请联系管理员。"
+      }
+    }
+  }
+}

@@ -227,6 +227,13 @@ type ProviderFailure struct {
 	ResultUnknown bool
 }
 
+// EvidenceKindHTTPResponse identifies an owner-sanitized bounded response body.
+const EvidenceKindHTTPResponse = "upstream_http_response"
+
+// EvidenceKindCallDiagnostic identifies owner-recorded execution coordinates
+// when no supplier response body is available. It never implies non-acceptance.
+const EvidenceKindCallDiagnostic = "upstream_call_diagnostic"
+
 // Evidence is a redacted reference to an upstream observation or response.
 type Evidence struct {
 	// Kind classifies the evidence without exposing raw payloads.

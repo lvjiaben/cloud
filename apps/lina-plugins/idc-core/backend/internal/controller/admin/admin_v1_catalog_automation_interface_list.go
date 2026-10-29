@@ -11,7 +11,7 @@ import (
 
 func (c *ControllerV1) CatalogAutomationInterfaceList(ctx context.Context, req *v1.CatalogAutomationInterfaceListReq) (res *v1.CatalogAutomationInterfaceListRes, err error) {
 	page, err := c.productAutomation.ListInterfaces(ctx, productautomation.PageInput{
-		Page: req.Page, PageSize: req.PageSize, NamePrefix: req.NamePrefix,
+		Page: req.Page, PageSize: req.PageSize, NamePrefix: req.NamePrefix, ForProductBinding: req.ForProductBinding,
 		NewBusinessState: req.NewBusinessState, ProviderSelectionToken: req.ProviderSelectionToken,
 	})
 	if err != nil {

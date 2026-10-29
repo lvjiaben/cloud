@@ -36,10 +36,6 @@ export class NotificationCenterPage {
     await this.goto("/idc/notifications/channels");
   }
 
-  async gotoWeComBinding() {
-    await this.goto("/idc/notifications/wechat-work-binding");
-  }
-
   async gotoTemplates() {
     await this.goto("/idc/notifications/templates");
   }
@@ -70,11 +66,6 @@ export class NotificationCenterPage {
     return this.pageRoot.locator(".channel-wizard");
   }
 
-  async fillWeComSelfTest(ticketNo: string, title: string) {
-    const wizard = this.channelWizard();
-    await wizard.getByLabel(/工单号|工单编号|Ticket number/iu).fill(ticketNo);
-    await wizard.getByLabel(/标题|Title/iu).fill(title);
-  }
 
   async submitRealChannelTest() {
     return this.confirmNextDialog(() =>
@@ -111,6 +102,7 @@ export class NotificationCenterPage {
   }
 
   async screenshot(name: string) {
+    await waitForRouteReady(this.page, 15_000);
     const directory = artifactDirectory();
     await mkdir(directory, { recursive: true });
     const now = new Date();
@@ -127,6 +119,14 @@ export class NotificationCenterPage {
 
   private async goto(path: string) {
     await this.page.goto(workspacePath(path), { waitUntil: "domcontentloaded" });
+    // Channel and template configuration now opens inside the system drawer.
+    const configuration = this.page.getByTestId("system-configuration-center");
+    await Promise.race([this.pageRoot.waitFor({state:"visible",timeout:15000}), configuration.waitFor({state:"visible",timeout:15000})]);
+    if (!(await this.pageRoot.isVisible()) && (path.endsWith("/channels") || path.endsWith("/templates"))) {
+      await configuration.getByRole("tab", {name: /短信与通知|Messaging/iu}).click();
+      const title = path.endsWith("/channels") ? /短信与通知渠道|Messaging channels/iu : /通知模板|Notification templates/iu;
+      await configuration.locator("article.configuration-item").filter({hasText:title}).getByRole("button",{name:/进入配置|Configure/iu}).click();
+    }
     await this.pageRoot.waitFor({ state: "visible", timeout: 15_000 });
     await waitForRouteReady(this.page, 15_000);
     await this.pageRoot

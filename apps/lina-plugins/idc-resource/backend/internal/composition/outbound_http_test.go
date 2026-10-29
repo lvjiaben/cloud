@@ -58,7 +58,7 @@ func (d *captureRequestDoer) Do(*http.Request) (*http.Response, error) {
 
 func TestOutboundHTTPClientEnforcesExactHTTPSOrigin(t *testing.T) {
 	delegate := &captureRequestDoer{}
-	client := &outboundHTTPClient{host: "provider.example", port: "8443", client: delegate}
+	client := &outboundHTTPClient{scheme: "https", host: "provider.example", port: "8443", client: delegate}
 	allowed, err := http.NewRequestWithContext(
 		context.Background(),
 		http.MethodGet,
@@ -99,6 +99,39 @@ func TestOutboundHTTPClientEnforcesExactHTTPSOrigin(t *testing.T) {
 	}
 	if delegate.calls != 1 {
 		t.Fatalf("rejected requests reached transport: calls=%d", delegate.calls)
+	}
+}
+
+// Explicit HTTP configuration must not allow a scheme, host or port change.
+func TestOutboundHTTPClientEnforcesConfiguredHTTPOrigin(t *testing.T) {
+	configured, cleanup, err := NewOutboundHTTPClient("http://provider.example/administrator/v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	client := configured.(*outboundHTTPClient)
+	delegate := &captureRequestDoer{}
+	client.client = delegate
+	for _, target := range []string{"http://provider.example/administrator/v1/login", "http://provider.example:80/administrator/v1/clouds"} {
+		request, requestErr := http.NewRequestWithContext(context.Background(), http.MethodPost, target, nil)
+		if requestErr != nil {
+			t.Fatal(requestErr)
+		}
+		if _, err = client.Do(request); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, target := range []string{"https://provider.example/administrator/v1/login", "http://provider.example:443/administrator/v1/login", "http://other.example/login", "http://user@provider.example/login", "http://provider.example/login#fragment"} {
+		request, requestErr := http.NewRequestWithContext(context.Background(), http.MethodPost, target, nil)
+		if requestErr != nil {
+			t.Fatal(requestErr)
+		}
+		if _, err = client.Do(request); err == nil {
+			t.Fatalf("changed configured HTTP origin was accepted: %s", target)
+		}
+	}
+	if delegate.calls != 2 || client.port != "80" {
+		t.Fatalf("unexpected HTTP dispatch count=%d port=%s", delegate.calls, client.port)
 	}
 }
 
@@ -170,7 +203,7 @@ func TestNewOutboundHTTPClientUsesVerifiedTLSAndNoRedirects(t *testing.T) {
 	}
 	transport, ok := httpClient.Transport.(*http.Transport)
 	if !ok || transport.Proxy != nil || transport.DialContext == nil ||
-		transport.TLSClientConfig == nil || transport.TLSClientConfig.InsecureSkipVerify ||
+		transport.TLSClientConfig == nil || !transport.TLSClientConfig.InsecureSkipVerify ||
 		transport.TLSClientConfig.MinVersion < tls.VersionTLS12 ||
 		transport.TLSClientConfig.ServerName != "provider.example" {
 		t.Fatal("outbound client TLS or network policy is incomplete")
@@ -184,8 +217,8 @@ func TestNewOutboundHTTPClientUsesVerifiedTLSAndNoRedirects(t *testing.T) {
 	if redirectErr := httpClient.CheckRedirect(redirectRequest, nil); !errors.Is(redirectErr, http.ErrUseLastResponse) {
 		t.Fatalf("redirect policy error=%v", redirectErr)
 	}
-	if _, _, err = NewOutboundHTTPClient("http://provider.example"); err == nil ||
+	if _, _, err = NewOutboundHTTPClient("ftp://provider.example"); err == nil ||
 		!strings.Contains(err.Error(), "endpoint") {
-		t.Fatal("plaintext outbound endpoint was accepted")
+		t.Fatal("unsupported outbound endpoint was accepted")
 	}
 }

@@ -11,17 +11,16 @@ import (
 
 // ListReq defines the request for listing notices.
 type ListReq struct {
-	g.Meta    `path:"/notice" method:"get" tags:"Notices" summary:"Get notification and announcement list" dc:"Query notifications and announcements by page, with filtering by title, type, and creator." permission:"content-notice:notice:query" pageBridgeCapability:"content-notice.admin.v1" pageBridgeHost:"admin"`
+	g.Meta    `path:"/notice" method:"get" tags:"Announcements" summary:"Get announcement list" dc:"Query announcements by page, with filtering by title and creator." permission:"content-notice:notice:query" pageBridgeCapability:"content-notice.admin.v1" pageBridgeHost:"admin"`
 	PageNum   int    `json:"pageNum" d:"1" v:"min:1" dc:"Page number" eg:"1"`
 	PageSize  int    `json:"pageSize" d:"10" v:"min:1|max:100" dc:"Number of items per page" eg:"10"`
 	Title     string `json:"title" dc:"Filter by title (fuzzy match)" eg:"System maintenance"`
-	Type      int    `json:"type" dc:"Filter by type: 1=Notice 2=Announcement" eg:"1"`
 	CreatedBy string `json:"createdBy" dc:"Filter by creator username" eg:"admin"`
 }
 
 // ListRes Notice list response
 type ListRes struct {
-	List  []*ListItem `json:"list" dc:"Notification and announcement list" eg:"[]"`
+	List  []*ListItem `json:"list" dc:"Announcement list" eg:"[]"`
 	Total int         `json:"total" dc:"Total number of items" eg:"20"`
 }
 

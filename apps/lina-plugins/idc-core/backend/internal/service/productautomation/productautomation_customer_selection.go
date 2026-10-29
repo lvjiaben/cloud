@@ -7,11 +7,18 @@ package productautomation
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"sort"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
+	"lina-plugin-idc-core/backend/internal/service/catalog"
+	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 )
 
 func merchantCustomerFields(exact *capmodel.BusinessExtensionProviderEvidence) (map[string]bool, error) {
@@ -30,8 +37,8 @@ func merchantCustomerFields(exact *capmodel.BusinessExtensionProviderEvidence) (
 		found := 0
 		for _, field := range exact.CustomerConfiguration.Fields {
 			if field != nil && result[field.Key] {
-				if field.Required || (field.Type != capmodel.ConfigurationFieldInteger && (field.Type != capmodel.ConfigurationFieldSingleSelect || field.DynamicCandidates != nil)) {
-					return nil, gerror.New("merchant customer field must be an optional integer or static single choice")
+				if field.Required || (field.Type != capmodel.ConfigurationFieldInteger && field.Type != capmodel.ConfigurationFieldSingleLine && (field.Type != capmodel.ConfigurationFieldSingleSelect || field.DynamicCandidates != nil)) {
+					return nil, gerror.New("merchant customer field must be an optional integer, bounded text or static single choice")
 				}
 				found++
 			}
@@ -43,7 +50,7 @@ func merchantCustomerFields(exact *capmodel.BusinessExtensionProviderEvidence) (
 	return result, nil
 }
 
-func selectCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, selections []CustomerFieldSelection) (*capmodel.ConfigurationSchemaDeclaration, error) {
+func selectProviderCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, selections []CustomerFieldSelection) (*capmodel.ConfigurationSchemaDeclaration, error) {
 	controlled, err := merchantCustomerFields(exact)
 	if err != nil {
 		return nil, err
@@ -66,6 +73,7 @@ func selectCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, sel
 		return nil, err
 	}
 	selected := make(map[string]CustomerFieldSelection, len(selections))
+	orders := make(map[string]int, len(selections))
 	for _, selection := range selections {
 		if !controlled[selection.FieldKey] {
 			return nil, gerror.New("unknown customer field selection")
@@ -73,6 +81,13 @@ func selectCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, sel
 		if _, exists := selected[selection.FieldKey]; exists {
 			return nil, gerror.New("duplicate customer field selection")
 		}
+		if selection.SortOrder < 0 || selection.SortOrder > 1024 || utf8.RuneCountInString(selection.DisplayNameZhCN) > 128 || utf8.RuneCountInString(selection.DisplayNameEnUS) > 128 {
+			return nil, gerror.New("invalid merchant field presentation")
+		}
+		if (strings.TrimSpace(selection.DisplayNameZhCN) == "") != (strings.TrimSpace(selection.DisplayNameEnUS) == "") {
+			return nil, gerror.New("both merchant field display languages are required")
+		}
+		orders[selection.FieldKey] = selection.SortOrder
 		selected[selection.FieldKey] = selection
 	}
 	fields := make([]*capmodel.ConfigurationFieldDeclaration, 0, len(result.Fields))
@@ -89,6 +104,9 @@ func selectCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, sel
 			if err = narrowCustomerField(field, selection); err != nil {
 				return nil, err
 			}
+			if selection.DisplayNameZhCN != "" {
+				field.Label = &capmodel.LocalizedText{ZhCN: strings.TrimSpace(selection.DisplayNameZhCN), EnUS: strings.TrimSpace(selection.DisplayNameEnUS)}
+			}
 			delete(selected, field.Key)
 		}
 		fields = append(fields, field)
@@ -97,6 +115,14 @@ func selectCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, sel
 	if len(selected) > 0 {
 		return nil, gerror.New("declared customer field is missing")
 	}
+	sort.SliceStable(fields, func(i, j int) bool {
+		left, leftCustom := orders[fields[i].Key]
+		right, rightCustom := orders[fields[j].Key]
+		if leftCustom != rightCustom {
+			return !leftCustom
+		}
+		return left < right
+	})
 	result.Fields = fields
 	rules := make([]*capmodel.ConfigurationRuleDeclaration, 0, len(result.Conditions))
 	for _, rule := range result.Conditions {
@@ -141,28 +167,15 @@ func narrowCustomerField(field *capmodel.ConfigurationFieldDeclaration, selectio
 			return gerror.New("quantity fields do not accept candidates")
 		}
 		field.Minimum, field.Maximum = selection.Minimum, selection.Maximum
+	case capmodel.ConfigurationFieldSingleLine:
+		if selection.Minimum != "" || selection.Maximum != "" || len(selection.CandidateValues) > 0 || field.MaximumLength < 1 {
+			return gerror.New("text choices retain their declared length and do not accept quantity bounds")
+		}
 	case capmodel.ConfigurationFieldSingleSelect:
-		if field.DynamicCandidates != nil || len(selection.CandidateValues) == 0 || selection.Minimum != "" || selection.Maximum != "" {
+		if field.DynamicCandidates != nil || len(selection.CandidateValues) == 0 {
 			return gerror.New("explicit declared candidates are required")
 		}
-		candidates := make([]*capmodel.ConfigurationCandidate, 0, len(selection.CandidateValues))
-		values := make(map[string]bool, len(selection.CandidateValues))
-		for _, value := range selection.CandidateValues {
-			if values[value] {
-				return gerror.New("duplicate candidate")
-			}
-			values[value] = true
-		}
-		for _, candidate := range field.StaticCandidates {
-			if values[candidate.Value] {
-				candidates = append(candidates, candidate)
-				delete(values, candidate.Value)
-			}
-		}
-		if len(values) > 0 {
-			return gerror.New("unknown customer candidate")
-		}
-		field.StaticCandidates = candidates
+		return merchantChoiceSubset(field, selection)
 	default:
 		return gerror.New("unsupported merchant customer field type")
 	}
@@ -190,19 +203,41 @@ func frozenCustomerSelections(exact *capmodel.BusinessExtensionProviderEvidence,
 		return nil, err
 	}
 	selections := make([]CustomerFieldSelection, 0)
+	var providerFields []*capmodel.ConfigurationFieldDeclaration
+	if exact.CustomerConfiguration != nil {
+		providerFields = exact.CustomerConfiguration.Fields
+	}
 	if frozen != nil {
-		for _, field := range frozen.Fields {
-			if controlled[field.Key] {
-				selection := CustomerFieldSelection{FieldKey: field.Key, Minimum: field.Minimum, Maximum: field.Maximum}
-				for _, candidate := range field.StaticCandidates {
-					selection.CandidateValues = append(selection.CandidateValues, candidate.Value)
+		for index, field := range frozen.Fields {
+			renamed, customizedChoices := false, false
+			for _, original := range providerFields {
+				if field != nil && original != nil && field.Key == original.Key && field.Label != nil && original.Label != nil {
+					renamed = *field.Label != *original.Label
+					customizedChoices = original.Type == capmodel.ConfigurationFieldSingleSelect && !reflect.DeepEqual(field.StaticCandidates, original.StaticCandidates)
+				}
+			}
+			if field != nil && (controlled[field.Key] || strings.HasPrefix(field.Key, localCustomerFieldPrefix) || renamed || customizedChoices) {
+				selection := CustomerFieldSelection{FieldKey: field.Key, Minimum: field.Minimum, Maximum: field.Maximum, SortOrder: index}
+				if strings.HasPrefix(field.Key, localCustomerFieldPrefix) {
+					selection.LocalField = field
+				}
+				if field.Label != nil {
+					selection.DisplayNameZhCN = field.Label.ZhCN
+					selection.DisplayNameEnUS = field.Label.EnUS
+				}
+				if controlled[field.Key] || customizedChoices {
+					selection.CandidateLabels = map[string]*capmodel.LocalizedText{}
+					for _, candidate := range field.StaticCandidates {
+						selection.CandidateValues = append(selection.CandidateValues, candidate.Value)
+						selection.CandidateLabels[candidate.Value] = candidate.Label
+					}
 				}
 				selections = append(selections, selection)
 			}
 		}
 	}
 	expected, err := selectCustomerSchema(exact, selections)
-	if err != nil || !sameExactConfiguration(expected, frozen) {
+	if err != nil || !sameCompatibleProductConfiguration(frozen, expected) {
 		return nil, gerror.New("frozen merchant customer schema does not match provider bounds")
 	}
 	return selections, nil
@@ -219,15 +254,15 @@ func verifiedCustomerSchema(exact *capmodel.BusinessExtensionProviderEvidence, s
 	return frozen, nil
 }
 
-// configurableCustomerFields returns only opt-in fields for merchant editing.
+// configurableCustomerFields returns optional fields and retained core fields for local presentation.
 func configurableCustomerFields(exact *capmodel.BusinessExtensionProviderEvidence) []*capmodel.ConfigurationFieldDeclaration {
 	controlled, err := merchantCustomerFields(exact)
 	if err != nil || exact.CustomerConfiguration == nil {
 		return nil
 	}
-	result := make([]*capmodel.ConfigurationFieldDeclaration, 0, len(controlled))
+	result := make([]*capmodel.ConfigurationFieldDeclaration, 0, len(exact.CustomerConfiguration.Fields))
 	for _, field := range exact.CustomerConfiguration.Fields {
-		if controlled[field.Key] {
+		if field != nil && (controlled[field.Key] || field.Required) {
 			result = append(result, field)
 		}
 	}
@@ -236,15 +271,44 @@ func configurableCustomerFields(exact *capmodel.BusinessExtensionProviderEvidenc
 
 // validateCustomerSelectionPrices prevents an enabled option from silently
 // falling back to the base product amount. Zero prices must be explicit rows.
-func (s *serviceImpl) validateCustomerSelectionPrices(ctx context.Context, versionNo string, exact *capmodel.BusinessExtensionProviderEvidence, schema *capmodel.ConfigurationSchemaDeclaration) error {
-	controlled, err := merchantCustomerFields(exact)
-	if err != nil {
-		return err
+func (s *serviceImpl) validateCustomerSelectionPrices(ctx context.Context, versionNo string, exact *capmodel.BusinessExtensionProviderEvidence, schema *capmodel.ConfigurationSchemaDeclaration, presentationJSON ...string) error {
+	controlled := map[string]bool{}
+	var err error
+	if exact != nil {
+		controlled, err = merchantCustomerFields(exact)
+		if err != nil {
+			return err
+		}
 	}
-	if len(controlled) == 0 || schema == nil {
+	if schema == nil {
 		return nil
 	}
-	candidates, err := configurationPriceCandidates(versionNo, &VersionConfiguration{Version: 1, CustomerDeclaration: schema})
+	for _, field := range schema.Fields {
+		if strings.HasPrefix(field.Key, localCustomerFieldPrefix) {
+			controlled[field.Key] = true
+		}
+	}
+	var selections []CustomerFieldSelection
+	if len(presentationJSON) > 0 {
+		selections, err = withCustomerPresentations(nil, presentationJSON[0])
+		if err != nil {
+			return err
+		}
+	}
+	for _, selection := range selections {
+		if selection.BasePriceIncluded {
+			delete(controlled, selection.FieldKey)
+		}
+		if selection.ProductFieldKey == "" && !selection.FixedPriceIncluded {
+			continue
+		}
+		for _, field := range schema.Fields {
+			if field.Key == selection.FieldKey && ((field.Type == capmodel.ConfigurationFieldInteger && field.Minimum == field.Maximum) || (field.Type == capmodel.ConfigurationFieldSingleSelect && len(field.StaticCandidates) == 1)) {
+				delete(controlled, field.Key)
+			}
+		}
+	}
+	candidates, err := configurationPriceCandidates(versionNo, &VersionConfiguration{Version: 1, CustomerDeclaration: schema, CustomerFieldSelections: selections}, s.booleanPriceLabels)
 	if err != nil {
 		return err
 	}
@@ -287,14 +351,84 @@ func (s *serviceImpl) validateCustomerSelectionPrices(ctx context.Context, versi
 		}
 	}
 	if len(bases) == 0 {
-		return gerror.New("enabled customer fields require explicit prices")
+		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	for base := range bases {
 		for _, candidate := range required {
 			if !coverage[base+"\x00"+candidate.fieldKey+"\x00"+candidate.candidateValue] {
-				return gerror.New("enabled customer fields require explicit prices for every sale currency and billing period")
+				return bizerr.NewCode(catalog.CodeManagementConflict)
 			}
 		}
 	}
 	return nil
+}
+
+// withCustomerPresentations restores local widgets alongside frozen provider values.
+func withCustomerPresentations(selections []CustomerFieldSelection, raw string) ([]CustomerFieldSelection, error) {
+	presentations, err := configurationcontract.DecodePresentations(raw)
+	if err != nil {
+		return nil, err
+	}
+	seen := map[string]bool{}
+	for _, selection := range selections {
+		seen[selection.FieldKey] = true
+	}
+	keys := make([]string, 0, len(presentations))
+	for key := range presentations {
+		if !seen[key] {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		selections = append(selections, CustomerFieldSelection{FieldKey: key})
+	}
+	for i := range selections {
+		p := presentations[selections[i].FieldKey]
+		if _, exists := presentations[selections[i].FieldKey]; exists {
+			selections[i].SortOrder = p.SortOrder
+		}
+		selections[i].CustomerVisible = p.CustomerVisible
+		selections[i].DefaultValue = p.DefaultValue
+		selections[i].UpgradeEnabled = p.UpgradeEnabled
+		selections[i].UpgradeMinimum = p.UpgradeMinimum
+		selections[i].UpgradeMaximum = p.UpgradeMaximum
+		selections[i].UpgradeCandidateValues = p.UpgradeCandidateValues
+		selections[i].ProductFieldKey = p.ProductFieldKey
+		selections[i].ProductChoiceBindings = p.ProductChoiceBindings
+		selections[i].AutomationMappingPending = p.AutomationMappingPending
+		selections[i].BasePriceIncluded = p.BasePriceIncluded
+		selections[i].FixedPriceIncluded = p.FixedPriceIncluded
+		selections[i].ChoiceRules = p.ChoiceRules
+		selections[i].NumericPricing = p.NumericPricing
+		selections[i].DisplayControl = p.Control
+		selections[i].QuantityStep = p.Step
+		selections[i].NumericChoices = p.NumericChoices
+		selections[i].GroupZhCN = p.GroupZhCN
+		selections[i].GroupEnUS = p.GroupEnUS
+		selections[i].Unit = p.Unit
+		selections[i].DescriptionZhCN = p.DescriptionZhCN
+		selections[i].DescriptionEnUS = p.DescriptionEnUS
+		selections[i].Advanced = p.Advanced
+		selections[i].NumericLabels = p.NumericLabels
+	}
+	return selections, nil
+}
+
+func compileCustomerPresentations(schema *capmodel.ConfigurationSchemaDeclaration, selections []CustomerFieldSelection) (string, error) {
+	presentations := make(map[string]configurationcontract.Presentation)
+	for _, selection := range selections {
+		presentations[selection.FieldKey] = configurationcontract.Presentation{CustomerVisible: selection.CustomerVisible, DefaultValue: selection.DefaultValue, UpgradeEnabled: selection.UpgradeEnabled, UpgradeMinimum: selection.UpgradeMinimum, UpgradeMaximum: selection.UpgradeMaximum, UpgradeCandidateValues: selection.UpgradeCandidateValues, FixedPriceIncluded: selection.FixedPriceIncluded, BasePriceIncluded: selection.BasePriceIncluded, AutomationMappingPending: selection.AutomationMappingPending, ChoiceRules: selection.ChoiceRules, ProductFieldKey: selection.ProductFieldKey, ProductChoiceBindings: selection.ProductChoiceBindings, SortOrder: selection.SortOrder, NumericPricing: selection.NumericPricing, Control: selection.DisplayControl, Step: selection.QuantityStep, NumericChoices: selection.NumericChoices, GroupZhCN: selection.GroupZhCN, GroupEnUS: selection.GroupEnUS, Unit: selection.Unit, DescriptionZhCN: selection.DescriptionZhCN, DescriptionEnUS: selection.DescriptionEnUS, Advanced: selection.Advanced, NumericLabels: selection.NumericLabels}
+	}
+	if err := configurationcontract.ValidatePresentations(schema, presentations); err != nil {
+		return "", err
+	}
+	encoded, err := json.Marshal(presentations)
+	if err != nil {
+		return "", err
+	}
+	if len(encoded) > 131072 {
+		return "", gerror.New("purchase presentation exceeds its bound")
+	}
+	return string(encoded), nil
 }

@@ -4,23 +4,12 @@ import type { Page, Route } from "@host-tests/support/playwright";
 
 const notificationPrefix = "/x/idc-notify/api/v1/";
 const adminPrefix = `${notificationPrefix}admin/notifications`;
-const staffPrefix = `${notificationPrefix}staff/notifications`;
 const fixedNow = 1_786_406_400_000;
 
-const localeCatalogs = {
-  "en-US": JSON.parse(
-    readFileSync(
-      new URL("../../../manifest/i18n/en-US/plugin.json", import.meta.url),
-      "utf8",
-    ),
-  ) as Record<string, string>,
-  "zh-CN": JSON.parse(
-    readFileSync(
-      new URL("../../../manifest/i18n/zh-CN/plugin.json", import.meta.url),
-      "utf8",
-    ),
-  ) as Record<string, string>,
-};
+const localeCatalogs = Object.fromEntries(["en-US", "zh-CN"].map((locale) => [locale, {
+  ...JSON.parse(readFileSync(new URL(`../../../../idc-core/manifest/i18n/${locale}/plugin.json`, import.meta.url), "utf8")),
+  ...JSON.parse(readFileSync(new URL(`../../../manifest/i18n/${locale}/plugin.json`, import.meta.url), "utf8")),
+}])) as Record<"en-US" | "zh-CN", Record<string, string>>;
 
 type JsonRecord = Record<string, unknown>;
 
@@ -76,7 +65,6 @@ export interface NotificationCenterMockState {
   testRequests: Array<{ body: JsonRecord; path: string }>;
   closureHistory: Array<{ actor: number; operationNo: string; reason: string; taskNo: string }>;
   getDeliveryCount: () => number;
-  weComBindingRequests: Array<{ body: JsonRecord; path: string }>;
   unexpectedRequests: string[];
 }
 
@@ -90,7 +78,6 @@ export interface NotificationCenterMockOptions {
   pendingEmailQueries?: number;
   recentLogin?: boolean;
   resendMode?: "allowed" | "cooldown" | "limit";
-  weComBound?: boolean;
 }
 
 function apiEnvelope(data: unknown) {
@@ -149,9 +136,9 @@ function baseChannels(): MockChannel[] {
       configured: true,
       credentialMaskedTail: "7a9c",
       displayName: "SMTP",
-      kind: "smtp",
+      kind: "email",
       pendingQueryCount: 0,
-      providerCode: "smtp",
+      providerCode: "smtp_tls_v1",
       status: "enabled",
       updatedAt: fixedNow,
       version: 3,
@@ -197,23 +184,6 @@ function baseChannels(): MockChannel[] {
       status: "enabled",
       updatedAt: fixedNow,
       version: 4,
-    },
-    {
-      balanceState: "sufficient",
-      code: "wechat_work",
-      configuration: {
-        weCom: { agentId: 1_000_001, corpId: "ww-corporation-public-id" },
-      },
-      configurationGeneration: 2,
-      configured: true,
-      credentialMaskedTail: "82ba",
-      displayName: "WeCom",
-      kind: "wechat_work",
-      pendingQueryCount: 0,
-      providerCode: "wechat_work",
-      status: "enabled",
-      updatedAt: fixedNow,
-      version: 2,
     },
     {
       balanceState: "sufficient",
@@ -333,18 +303,6 @@ const initialEventPolicies = [
 ];
 
 const initialTemplates = [
-  {
-    body: "工单 {{ticket_no}} 已更新：{{title}}。",
-    channelCode: "wechat_work",
-    createdAt: fixedNow,
-    createdBy: 1,
-    eventCode: "support.ticket.updated",
-    locale: "zh-CN",
-    status: "active",
-    subject: "工单更新",
-    templateNo: "NTF_WECOM_TICKET_ZH",
-    version: 1,
-  },
   {
     body: "工单 {{ticket_no}} 已更新为 {{status}}。",
     channelCode: "email",
@@ -552,24 +510,13 @@ function notificationMenus(canManage: boolean) {
   const embeddedMeta = (title: string, routePath: string, icon: string) => ({
     icon,
     query: {
-      embeddedSrc: "/x-assets/idc-notify/v0.1.4/mount.js",
+      embeddedSrc: "/x-assets/idc-notify/v0.1.11/mount.js",
       pluginAccessMode: "embedded-mount",
       routePath,
     },
     title,
   });
-  const children = [
-    {
-      component: "system/plugin/dynamic-page",
-      meta: embeddedMeta(
-        "My WeCom Binding",
-        "/idc/notifications/wechat-work-binding",
-        "lucide:scan-qr-code",
-      ),
-      name: "IDCNotificationWeComSelfBinding",
-      path: "/idc/notifications/wechat-work-binding",
-    },
-  ];
+  const children = [];
   if (canManage) children.push(
     {
       component: "system/plugin/dynamic-page",
@@ -626,15 +573,14 @@ export async function installNotificationCenterMock(
 ): Promise<NotificationCenterMockState> {
   const canManage = options.canManage !== false;
   const recentLogin = options.recentLogin !== false;
-  const weComBound = options.weComBound === true;
-  const channels = baseChannels();
+  const channels = baseChannels().filter((item) => ["email", "sms"].includes(item.code));
   const email = channels.find((item) => item.code === "email");
   if (email && (options.pendingEmailQueries ?? 0) > 0) {
     email.pendingQueryCount = options.pendingEmailQueries ?? 0;
     email.status = "disabled";
   }
-  const eventPolicies = structuredClone(initialEventPolicies);
-  const templates = structuredClone(initialTemplates);
+  const eventPolicies = structuredClone(initialEventPolicies).filter((item) => ["email", "sms"].includes(item.channelCode));
+  const templates = structuredClone(initialTemplates).filter((item) => ["email", "sms"].includes(item.channelCode));
   const deliveries = initialDeliveries(options.includeQueuedEmail === true);
   const resendReplays = new Map<string, MockDelivery>();
   const state: NotificationCenterMockState = {
@@ -648,7 +594,6 @@ export async function installNotificationCenterMock(
     getDeliveryCount: () => deliveries.length,
     templateRequests: [],
     testRequests: [],
-    weComBindingRequests: [],
     unexpectedRequests: [],
   };
 
@@ -714,9 +659,7 @@ export async function installNotificationCenterMock(
   });
 
   await page.route("**/api/v1/i18n/runtime/locales**", async (route: Route) => {
-    const locale = route.request().headers()["accept-language"]?.includes("en")
-      ? "en-US"
-      : "zh-CN";
+    const locale = new URL(route.request().url()).searchParams.get("lang") === "en-US" ? "en-US" : "zh-CN";
     await route.fulfill({
       headers: { ETag: `"notification-e2e-${locale}"` },
       json: apiEnvelope({
@@ -762,53 +705,6 @@ export async function installNotificationCenterMock(
       return;
     }
     await route.fulfill({ json: apiEnvelope({ items: channels }) });
-  });
-
-  let weComBinding = {
-    bound: weComBound,
-    boundAt: weComBound ? fixedNow : 0,
-    reused: false,
-    status: weComBound ? "active" : "unbound",
-    version: weComBound ? 1 : 0,
-  };
-
-  await page.route(`**${staffPrefix}/wechat-work/binding`, async (route: Route) => {
-    const { request } = track(route);
-    if (request.method() !== "GET") {
-      await reject(route, 405, "method not allowed");
-      return;
-    }
-    await route.fulfill({ json: apiEnvelope({ item: weComBinding }) });
-  });
-
-  await page.route(`**${staffPrefix}/wechat-work/oauth-authorizations`, async (route: Route) => {
-    const { request, url } = track(route);
-    if (!recentLogin) {
-      await reject(route, 403, "recent full login required");
-      return;
-    }
-    const body = request.postDataJSON() as JsonRecord;
-    state.weComBindingRequests.push({ body, path: url.pathname });
-    await route.fulfill({
-      json: apiEnvelope({
-        authorizationUrl: "https://open.weixin.qq.com/connect/oauth2/authorize?appid=ww-e2e&state=opaque-state",
-        expiresAt: fixedNow + 300_000,
-        qrLoginUrl: "https://login.work.weixin.qq.com/wwlogin/sso/login?appid=ww-e2e&state=opaque-state",
-        reused: false,
-      }),
-    });
-  });
-
-  await page.route(`**${staffPrefix}/wechat-work/binding-removals`, async (route: Route) => {
-    const { request, url } = track(route);
-    if (!recentLogin) {
-      await reject(route, 403, "recent full login required");
-      return;
-    }
-    const body = request.postDataJSON() as JsonRecord;
-    state.weComBindingRequests.push({ body, path: url.pathname });
-    weComBinding = { bound: false, boundAt: 0, reused: false, status: "unbound", version: Number(body.expectedVersion ?? 0) + 1 };
-    await route.fulfill({ json: apiEnvelope({ item: weComBinding }) });
   });
 
   await page.route(`**${adminPrefix}/events`, async (route: Route) => {
@@ -904,7 +800,6 @@ export async function installNotificationCenterMock(
       "wechat_official",
       { weChatOfficial: { callbackVerified: false } },
     ],
-    ["wechat-work/custom-app-configuration", "wechat_work", { weCom: {} }],
     ["signed-webhook/configuration", "signed_webhook", { signedWebhook: {} }],
   ];
   for (const [suffix, code, configuration, providerCode] of configurationRoutes) {
@@ -981,29 +876,19 @@ export async function installNotificationCenterMock(
     const { request, url } = track(route);
     if (!(await authorize(route, true))) return;
     const routeCode = url.pathname.split("/").at(-2) ?? "";
-    const code = routeCode === "wechat-work" ? "wechat_work" : routeCode;
-    if (!["email", "sms", "wechat_official", "wechat_work"].includes(code)) {
+    const code = routeCode;
+    if (!["email", "sms", "wechat_official"].includes(code)) {
       await reject(route, 400, "channel test is unavailable");
       return;
     }
     const body = request.postDataJSON() as JsonRecord;
-    if (code === "wechat_work" && ("target" in body || "userId" in body)) {
-      await reject(route, 400, "WeCom self test must not accept a destination");
-      return;
-    }
-    if (code === "wechat_work" && !weComBinding.bound) {
-      await reject(route, 409, "current staff WeCom binding is unavailable");
-      return;
-    }
     state.testRequests.push({ body, path: url.pathname });
     const target = String(body.target ?? "");
     const targetMask = code === "sms"
       ? "+86 138****8000"
       : code === "wechat_official"
         ? "oP***8z"
-        : code === "wechat_work"
-          ? "current_staff_binding"
-          : "t***@example.com";
+        : "t***@example.com";
     await route.fulfill({
       json: apiEnvelope({
         item: {
@@ -1012,7 +897,7 @@ export async function installNotificationCenterMock(
           operationNo: `TEST-${code.toUpperCase()}-001`,
           resultClass: "accepted",
           reused: false,
-          targetMask: code === "wechat_work" ? targetMask : target ? targetMask : "",
+          targetMask: target ? targetMask : "",
         },
       }),
     });

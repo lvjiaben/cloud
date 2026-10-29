@@ -42,6 +42,9 @@
           },
           "conflict": "The service state changed. Reload it and try again.",
           "unavailable": "Service operations are temporarily unavailable. Try again later."
+        },
+        "note": {
+          "conflict": "The service note changed elsewhere; reopen it and review the current note before saving"
         }
       },
       "purchase": {
@@ -226,6 +229,10 @@
         "unavailable": "The customer profile service is temporarily unavailable",
         "verification": {
           "required": "This customer has not completed identity verification. Verify the customer in Customer Management and try again."
+        },
+        "avatar": {
+          "invalid": "Choose a valid PNG, JPEG or WebP image under 5 MB",
+          "unavailable": "The avatar could not be saved. Please retry"
         }
       },
       "reauth": {
@@ -254,7 +261,7 @@
           },
           "owner": {
             "gate": {
-              "blocked": "The contract, inventory, or other required checks are not complete yet"
+              "blocked": "Inventory or another required condition has not been met"
             }
           },
           "new": {
@@ -285,6 +292,31 @@
               "prices": {
                 "required": "Set an explicit price for each enabled purchase option in every sale currency and billing period, including zero for free options"
               }
+            }
+          },
+          "offer": {
+            "detach": {
+              "unsupported": "This offer contains protected file, secret, imported or unsupported configuration; retain the interface until these fields have an independent delivery definition"
+            },
+            "mapping": {
+              "required": "The automation interface changed; choose the new parameter for each retained configuration or explicitly keep it as customer information only"
+            },
+            "options": {
+              "required": "The existing interface options cannot be preserved yet; refresh or import its sellable options before changing the automation interface"
+            }
+          },
+          "choice": {
+            "relations": {
+              "required": "The option mapping changed but related interface choices could not be confirmed; reload the interface options and retry"
+            }
+          },
+          "provider": {
+            "busy": "The automation connector is busy; retry after its current operation finishes"
+          },
+          "validation": {
+            "unavailable": "The connector cannot validate the product configuration right now; retry or check its availability",
+            "response": {
+              "invalid": "The connector returned an incompatible configuration validation result; check the connector version"
             }
           }
         }
@@ -326,16 +358,11 @@
             "accessible": "The catalog management target is not accessible"
           },
           "conflict": "The catalog management request conflicts with the current state",
-          "contract": {
-            "template": {
-              "unavailable": "The selected all-customer contract template is unavailable for this product"
-            }
-          },
           "unavailable": "The catalog management service is temporarily unavailable"
         },
         "publication": {
           "invalid": "The catalog product publication request is invalid",
-          "incomplete": "Complete bilingual copy, configuration, prices, and fulfillment pools before publication",
+          "incomplete": "Complete product details, pricing, tax and delivery settings before putting this product on sale",
           "not": {
             "accessible": "The catalog product version is not accessible"
           },
@@ -365,6 +392,25 @@
           "fulfillment": {
             "unavailable": "Trial products require automatic delivery with pause, resume and formal renewal support. Remove the trial plan or choose a supported interface."
           }
+        },
+        "sale": {
+          "copy": {
+            "required": "Complete both product names and descriptions under Product details before putting this product on sale"
+          },
+          "pricing": {
+            "required": "Complete active billing periods and prices under Billing & prices before putting this product on sale"
+          },
+          "tax": {
+            "required": "Set a tax rule for every priced currency under Billing & prices before putting this product on sale"
+          }
+        },
+        "upstream": {
+          "definition": {
+            "incomplete": "This connector has not supplied a complete resellable configuration and price schedule. Check connector support before saving."
+          },
+          "configuration": {
+            "locked": "This upstream product configuration is fixed; edit its local sale prices under Package price"
+          }
         }
       },
       "public": {
@@ -388,35 +434,7 @@
           "unavailable": "The server price is temporarily unavailable"
         }
       },
-      "contract": {
-        "policy": {
-          "invalid": "The contract rule request is invalid",
-          "not": {
-            "accessible": "The contract rule target is not accessible"
-          },
-          "conflict": "The contract rule changed; reload it and try again",
-          "optional": {
-            "contract": {
-              "locked": "This order already has an optional contract and must remain a no-contract order"
-            }
-          },
-          "template": {
-            "unavailable": "The selected contract template is disabled or does not match this setting",
-            "conflict": "Different product contract templates require one order-level template before payment"
-          },
-          "unavailable": "Contract rule management is temporarily unavailable"
-        }
-      },
       "commerce": {
-        "contract": {
-          "policy": {
-            "invalid": "The order contract rule is invalid; check the customer, product, and order settings"
-          },
-          "template": {
-            "unavailable": "Select an enabled contract template that matches this customer",
-            "conflict": "Different product contract templates require one order-level template before payment"
-          }
-        },
         "assisted": {
           "quote": {
             "configuration": {
@@ -845,7 +863,25 @@
             "referenced": "This interface has historical use; create a new interface for the updated connector"
           }
         }
+      },
+      "profile": {
+        "contact": {
+          "verification": {
+            "required": "Login phone and email cannot be changed through personal profile. Contact support for identity verification."
+          }
+        }
+      },
+      "renewal": {
+        "notice": {
+          "invalid": "The renewal notification request is invalid",
+          "denied": "Renewal work items are not accessible",
+          "unavailable": "Renewal notifications are temporarily unavailable"
+        }
       }
     }
-  }
+  },
+  "error.idc.customer.login.invalid": "The account information or password is incorrect",
+  "error.idc.customer.login.unavailable": "Account login is temporarily unavailable",
+  "error.idc.customer.login.changed": "Account information changed; retry the operation",
+  "error.idc.profile.username.invalid": "Usernames cannot be numbers, phone numbers or email addresses."
 }

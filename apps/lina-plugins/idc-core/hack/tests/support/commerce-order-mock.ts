@@ -21,7 +21,6 @@ function summary() {
     orderNo,
     paymentTermCode: "extended_prepay",
     paymentDueAt: 1_786_410_000_000,
-    requiresContract: false,
     riskDecisionCode: "manual_review",
     statusCode: "manual_review",
     totalAmountMinor: "900719925474099301",
@@ -29,10 +28,7 @@ function summary() {
 }
 
 export interface CommerceOrderMockState {
-  contractCreateRequests: Array<Record<string, unknown>>;
-  contractSignerCandidateRequests: URL[];
-  contractSubmissionRequests: Array<Record<string, unknown>>;
-  contractTemplateCandidateRequests: URL[];
+  retiredContractRequests: URL[];
   detailRequests: URL[];
   listRequests: URL[];
   customerListRequests: URL[];
@@ -44,15 +40,13 @@ export async function installCommerceOrderMock(
   page: Page,
   options: {
     emptyItems?: boolean;
+    currencyCode?: string;
+    deliveryStatus?: "processing" | "manual_processing";
     listSize?: number;
-    submissionStatus?: "result_unknown" | "signing";
   } = {},
 ): Promise<CommerceOrderMockState> {
   const state: CommerceOrderMockState = {
-    contractCreateRequests: [],
-    contractSignerCandidateRequests: [],
-    contractSubmissionRequests: [],
-    contractTemplateCandidateRequests: [],
+    retiredContractRequests: [],
     detailRequests: [],
     listRequests: [],
     customerListRequests: [],
@@ -64,133 +58,10 @@ export async function installCommerceOrderMock(
     state.customerListRequests.push(url);
     await route.fulfill({ json: apiEnvelope({ customers: [{ customerNo: "CUS_admin_customer_0001", customerCode: "10008", displayName: "订单测试客户", primaryPhone: "138****8008" }], nextCursor: "" }) });
   });
-  await page.route("**/api/v1/user/info", async (route: Route) => {
-    const response = await route.fetch();
-    const payload = (await response.json()) as {
-      data?: { permissions?: string[] };
-    };
-    if (!payload.data) throw new Error("user-info payload is unavailable");
-    payload.data.permissions = Array.from(
-      new Set([
-        ...(payload.data.permissions ?? []),
-        "idc:admin:compliance:contract:create",
-      ]),
-    );
-    await route.fulfill({ json: payload, response });
+  await page.route("**/x/idc-compliance/api/v1/admin/compliance/electronic-contracts**", async route => {
+    state.retiredContractRequests.push(new URL(route.request().url()));
+    await route.fulfill({ status: 404, json: { code: 404, message: "Electronic contracts have been removed" } });
   });
-  await page.route(
-    "**/x/idc-compliance/api/v1/admin/compliance/**",
-    async (route: Route) => {
-      const request = route.request();
-      const url = new URL(request.url());
-      if (url.pathname.endsWith("/electronic-contracts/template-candidates")) {
-        state.contractTemplateCandidateRequests.push(url);
-        await route.fulfill({
-          json: apiEnvelope({
-            items: [
-              {
-                languageCode: "zh-CN",
-                scopeCode: "enterprise",
-                signingOrderCode: "customer_first",
-                templateName: "企业服务器服务合同",
-                templateNo: "ctpl_admin_enterprise_0001",
-                templateVersion: 5,
-              },
-            ],
-          }),
-        });
-        return;
-      }
-      if (url.pathname.endsWith("/contract-signer-candidates")) {
-        state.contractSignerCandidateRequests.push(url);
-        await route.fulfill({
-          json: apiEnvelope({
-            items: [
-              {
-                authorizationVersion: 1,
-                identityVerificationVersion: 2,
-                identityVerifiedAt: 1_786_665_660_000,
-                maskedName: "张*",
-                maskedPhone: "138****8000",
-                phoneVerificationVersion: 3,
-                phoneVerifiedAt: 1_786_665_720_000,
-                signerNo: "csgn_admin_enterprise_0001",
-                version: 4,
-              },
-            ],
-          }),
-        });
-        return;
-      }
-      if (url.pathname.endsWith("/signing-submissions")) {
-        state.contractSubmissionRequests.push(
-          request.postDataJSON() as Record<string, unknown>,
-        );
-        await route.fulfill({
-          json: apiEnvelope({
-            item: {
-              contractNo: "CTR_ADMIN_0001",
-              flowNo: "CFW_ADMIN_LOCAL_0001",
-              reused: false,
-              statusCode: options.submissionStatus ?? "signing",
-              version: 2,
-            },
-          }),
-        });
-        return;
-      }
-      if (
-        url.pathname.endsWith("/electronic-contracts") &&
-        request.method() === "POST"
-      ) {
-        state.contractCreateRequests.push(
-          request.postDataJSON() as Record<string, unknown>,
-        );
-        await route.fulfill({
-          json: apiEnvelope({
-            item: {
-              contractNo: "CTR_ADMIN_0001",
-              createdAt: 1_786_665_600_000,
-              currencyCode: "CNY",
-              customerName: "示例企业客户",
-              customerType: "enterprise",
-              languageCode: "zh-CN",
-              lines: [
-                {
-                  amountMinor: "900719925474099301",
-                  orderItemNo: "OI_ADMIN_0001",
-                  periodCount: 1,
-                  periodUnitCode: "month",
-                  purchaseCycles: 12,
-                  quantity: 2,
-                  serviceName: "商务手机",
-                },
-              ],
-              merchantName: "示例 IDC 商家",
-              orderNo,
-              requiredForFulfillment: false,
-              reused: false,
-              signerName: "张三",
-              signerNo: "csgn_admin_enterprise_0001",
-              signerPhoneMasked: "138****8000",
-              signingDate: "",
-              signingDateNoticeCode: "filled_after_authoritative_signature",
-              signingExpiresAt: 1_787_270_400_000,
-              signingOrderCode: "customer_first",
-              statusCode: "pending_launch",
-              templateName: "企业服务器服务合同",
-              templateNo: "ctpl_admin_enterprise_0001",
-              templateVersion: 5,
-              totalAmountMinor: "900719925474099301",
-              version: 1,
-            },
-          }),
-        });
-        return;
-      }
-      await route.fallback();
-    },
-  );
   await page.route(
     "**/x/idc-core/api/v1/admin/commerce/orders**",
     async (route: Route) => {
@@ -200,12 +71,6 @@ export async function installCommerceOrderMock(
         state.detailRequests.push(url);
         await route.fulfill({
           json: apiEnvelope({
-            contractRule: {
-              policyCode: "none",
-              requiresContract: false,
-              sourceLevel: "default",
-              version: 1,
-            },
             order: {
               canApproveRisk: true,
               canRejectRisk: true,
@@ -215,7 +80,7 @@ export async function installCommerceOrderMock(
                   productNameEnUS: "Wildcard SSL certificate",
                   productNameZhCN: "通配符 SSL 证书",
                   quantity: 1,
-                  statusCode: "processing",
+                  statusCode: options.deliveryStatus ?? "processing",
                   updatedAt: 1_786_406_400_000,
                 },
                 {
@@ -271,7 +136,7 @@ export async function installCommerceOrderMock(
                   statusCode: "active",
                 },
               ],
-              summary: summary(),
+              summary: {...summary(),currencyCode:options.currencyCode ?? "CNY"},
             },
           }),
         });
@@ -297,6 +162,7 @@ export async function installCommerceOrderMock(
           nextCursor: offset + limit < listSize ? "sealed-next-page" : "",
           orders: Array.from({ length: listSize }, (_, index) => ({
             ...summary(),
+            currencyCode: options.currencyCode ?? "CNY",
             orderNo: index === 0 ? orderNo : `${orderNo}_${index + 1}`,
           })).slice(offset, offset + limit),
         }),

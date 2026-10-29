@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestCreditApprovalServicePersistsSequentialDualReviewAndActivatesAccount(t *testing.T) {
+func TestCreditApprovalServiceAllowsAuthorizedApplicantAndActivatesAccount(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	database := configureBillingServiceIntegrationDB(t, ctx)
@@ -55,7 +55,7 @@ func TestCreditApprovalServicePersistsSequentialDualReviewAndActivatesAccount(t 
 	if err != nil {
 		t.Fatalf("submit credit application: %v", err)
 	}
-	if application.StatusCode != "pending_review" || application.RequiredApprovalCount != 2 ||
+	if application.StatusCode != "pending_review" || application.RequiredApprovalCount != 1 ||
 		application.ReviewCount != 0 || application.CreditAccountNo != "" {
 		t.Fatalf("unexpected submitted application: %+v", application)
 	}
@@ -74,41 +74,11 @@ func TestCreditApprovalServicePersistsSequentialDualReviewAndActivatesAccount(t 
 		ReviewerID: 150, CommentDigest: strings.Repeat("2", 64),
 		EvidenceDigest: strings.Repeat("3", 64),
 	}
-	if _, err = service.ReviewCreditApplication(ctx, selfReview); err == nil {
-		t.Fatal("staff applicant reviewed their own credit application")
+	approved, err := service.ReviewCreditApplication(ctx, selfReview)
+	if err != nil || approved.StatusCode != "approved" || approved.ReviewCount != 1 || approved.CreditAccountNo == "" {
+		t.Fatalf("single authorized applicant decision: %+v %v", approved, err)
 	}
-	firstReview := CreditReviewInput{
-		ApplicationNo: application.ApplicationNo, Decision: CreditDecisionApprove,
-		ReviewerID: 201, CommentDigest: strings.Repeat("4", 64),
-		EvidenceDigest: strings.Repeat("5", 64),
-	}
-	afterFirst, err := service.ReviewCreditApplication(ctx, firstReview)
-	if err != nil {
-		t.Fatalf("persist first independent review: %v", err)
-	}
-	if afterFirst.StatusCode != "pending_review" || afterFirst.ReviewCount != 1 ||
-		afterFirst.CreditAccountNo != "" {
-		t.Fatalf("first review completed application too early: %+v", afterFirst)
-	}
-	accountCount, err := database.GetValue(ctx, `
-SELECT COUNT(*) FROM plugin_idc_core_credit_account
-WHERE tenant_id = 0 AND origin_application_no = ?`, application.ApplicationNo)
-	if err != nil || accountCount.Int64() != 0 {
-		t.Fatalf("first review created account count=%d err=%v", accountCount.Int64(), err)
-	}
-
-	secondReview := CreditReviewInput{
-		ApplicationNo: application.ApplicationNo, Decision: CreditDecisionApprove,
-		ReviewerID: 202, CommentDigest: strings.Repeat("6", 64),
-		EvidenceDigest: strings.Repeat("7", 64),
-	}
-	approved, err := service.ReviewCreditApplication(ctx, secondReview)
-	if err != nil {
-		t.Fatalf("complete second independent review: %v", err)
-	}
-	if approved.StatusCode != "approved" || approved.ReviewCount != 2 || approved.CreditAccountNo == "" {
-		t.Fatalf("unexpected approved application: %+v", approved)
-	}
+	secondReview := selfReview
 	replayedReview, err := service.ReviewCreditApplication(ctx, secondReview)
 	if err != nil || !replayedReview.Reused || replayedReview.CreditAccountNo != approved.CreditAccountNo {
 		t.Fatalf("review replay=%+v err=%v", replayedReview, err)
@@ -141,7 +111,7 @@ WHERE account.tenant_id = 0 AND account.credit_account_no = ?`, approved.CreditA
 	}
 }
 
-func TestCreditApprovalServiceAllowsSecondReviewerToReject(t *testing.T) {
+func TestCreditApprovalServiceAllowsSingleReviewerToReject(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	database := configureBillingServiceIntegrationDB(t, ctx)
@@ -172,14 +142,6 @@ func TestCreditApprovalServiceAllowsSecondReviewerToReject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("submit rejection application: %v", err)
 	}
-	_, err = service.ReviewCreditApplication(ctx, CreditReviewInput{
-		ApplicationNo: application.ApplicationNo, Decision: CreditDecisionApprove,
-		ReviewerID: 401, CommentDigest: strings.Repeat("a", 64),
-		EvidenceDigest: strings.Repeat("b", 64),
-	})
-	if err != nil {
-		t.Fatalf("persist first approval before rejection: %v", err)
-	}
 	rejected, err := service.ReviewCreditApplication(ctx, CreditReviewInput{
 		ApplicationNo: application.ApplicationNo, Decision: CreditDecisionReject,
 		ReviewerID: 402, CommentDigest: strings.Repeat("c", 64),
@@ -188,7 +150,41 @@ func TestCreditApprovalServiceAllowsSecondReviewerToReject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("persist second-person rejection: %v", err)
 	}
-	if rejected.StatusCode != "rejected" || rejected.ReviewCount != 2 || rejected.CreditAccountNo != "" {
+	if rejected.StatusCode != "rejected" || rejected.ReviewCount != 1 || rejected.CreditAccountNo != "" {
 		t.Fatalf("unexpected rejected application: %+v", rejected)
+	}
+}
+
+// Legacy first approvals remain immutable and their author can complete the
+// account without finding a second staff member or resubmitting old materials.
+func TestCreditApprovalServiceCompletesLegacyFirstApprovalBySameOperator(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := configureBillingServiceIntegrationDB(t, ctx)
+	seedBillingService(t, ctx, database)
+	service, err := NewCreditApprovalService(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = service.ConfigureCreditPolicy(ctx, CreditPolicyInput{CurrencyCode: "CNY", MaximumLimitMinor: 20000, DualReviewThresholdMinor: 5000, BillingDay: 10, RepaymentPeriodDays: 7, ConfiguredBy: 101, IdempotencyKey: "legacy-credit-policy-0001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_core_credit_application
+(application_no,customer_no,currency_code,policy_no,policy_version,requested_limit_minor,requested_valid_from,requested_valid_until,required_approval_count,risk_evidence_reference,risk_evidence_digest,request_digest,status_code,request_actor_type_code,requested_by)
+VALUES ('legacy-first-approval','customer-ledger','CNY',(SELECT policy_no FROM plugin_idc_core_credit_policy_revision WHERE currency_code='CNY' LIMIT 1),1,6000,CURRENT_TIMESTAMP-INTERVAL '1 minute',CURRENT_TIMESTAMP+INTERVAL '1 year',2,'private:legacy',repeat('a',64),repeat('b',64),'pending_review','staff',201);
+INSERT INTO plugin_idc_core_credit_application_review
+(review_no,application_no,customer_no,currency_code,review_sequence,decision_code,reviewer_id,comment_digest,evidence_digest,content_digest)
+VALUES ('legacy-first-review','legacy-first-approval','customer-ledger','CNY',1,'approved',201,repeat('c',64),repeat('d',64),repeat('e',64))`); err != nil {
+		t.Fatal(err)
+	}
+	input := CreditReviewInput{ApplicationNo: "legacy-first-approval", Decision: CreditDecisionApprove, ReviewerID: 201, CommentDigest: strings.Repeat("f", 64), EvidenceDigest: strings.Repeat("f", 64)}
+	result, err := service.ReviewCreditApplication(ctx, input)
+	if err != nil || result.StatusCode != "approved" || result.ReviewCount != 1 || result.CreditAccountNo == "" {
+		t.Fatalf("legacy completion: %+v %v", result, err)
+	}
+	replay, err := service.ReviewCreditApplication(ctx, input)
+	if err != nil || !replay.Reused || replay.CreditAccountNo != result.CreditAccountNo {
+		t.Fatalf("legacy replay: %+v %v", replay, err)
 	}
 }

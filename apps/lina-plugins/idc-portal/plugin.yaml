@@ -1,7 +1,7 @@
 # Stable plugin identity used by delivery, dependency, and asset governance.
 id: idc-portal
 name: IDC Website & Customer Center
-version: v0.1.13
+version: v0.1.14
 type: source
 distribution: builtin
 scope_nature: platform_only

@@ -5,7 +5,7 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type PrivacyDeletionConfirmCreateReq struct {
-	g.Meta          `path:"/admin/compliance/privacy/deletion-tasks/{taskNo}/confirmations" method:"post" tags:"IDC Compliance Privacy" summary:"Confirm one expired-material deletion" dc:"Recheck legal hold, remove the private original locally, and preserve only the safe disposition audit." permission:"idc:admin:compliance:privacy:configure"`
+	g.Meta          `path:"/admin/compliance/privacy/deletion-tasks/{taskNo}/confirmations" method:"post" tags:"IDC Compliance Materials" summary:"Confirm or resume one expired-material deletion" dc:"Durably record human approval after current retention and hold checks before removing the original. An unfinished confirmed task resumes the existing approval and preserves its original approver and time." permission:"idc:admin:compliance:privacy:configure"`
 	TaskNo          string `json:"taskNo" in:"path" v:"required|max-length:40" dc:"Opaque deletion task number" eg:"PDT_0123456789abcdef0123456789abcdef"`
 	ExpectedVersion int64  `json:"expectedVersion" v:"required|min:1" dc:"Task version last read by the administrator" eg:"1"`
 	Confirmed       bool   `json:"confirmed" v:"required" dc:"Explicit confirmation to recheck holds and delete the original" eg:"true"`

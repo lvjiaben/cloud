@@ -4,21 +4,28 @@ import (
 	"context"
 	"github.com/gogf/gf/v2/errors/gerror"
 	v1 "lina-plugin-idc-core/backend/api/activationaccount/v1"
+	"lina-plugin-idc-core/backend/cap/customerlogincap"
 	"lina-plugin-idc-core/backend/internal/service/customeractivation"
 )
 
-type ControllerV1 struct{ service customeractivation.Service }
+type ControllerV1 struct {
+	service   customeractivation.Service
+	directory customerlogincap.Directory
+}
 
-func NewV1(service customeractivation.Service) (*ControllerV1, error) {
-	if service == nil {
+func NewV1(service customeractivation.Service, directory customerlogincap.Directory) (*ControllerV1, error) {
+	if service == nil || directory == nil {
 		return nil, gerror.New("customer activation account controller requires service")
 	}
-	return &ControllerV1{service: service}, nil
+	return &ControllerV1{service: service, directory: directory}, nil
 }
 
 func (c *ControllerV1) CustomerActivationRedeem(ctx context.Context, req *v1.CustomerActivationRedeemReq) (*v1.CustomerActivationRedeemRes, error) {
 	item, err := c.service.Redeem(ctx, req.Token)
 	if err != nil {
+		return nil, err
+	}
+	if err = c.directory.RefreshCurrent(ctx); err != nil {
 		return nil, err
 	}
 	return &v1.CustomerActivationRedeemRes{CustomerNo: item.CustomerNo, CustomerType: item.CustomerType, Status: item.Status, Reused: item.Reused}, nil

@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-10-18",
+  "scope": "Offline structure and configuration mapping only; no source scripts, backend requests, state writes, image visual approval or runtime acceptance.",
+  "source": {
+    "path": "D:/xft/Website/Zz_www.xiaobaiyun.cn/index.html",
+    "sha256": "ff042960da5c692ac0529342f17f2b31653a597b36782a43c9e9e04b1e34681e"
+  },
+  "current": {
+    "page": "frontend/public/index.html",
+    "sha256": "aa92f5bba434cb174cc8f0ff5042c10cbb7af6596feab496cbfb9a205205354e",
+    "renderer": "frontend/public/lina/home-template.js",
+    "rendererSha256": "62e36bd78ee4581a1168788d6d3925011473df3802e3f9f29108176f334065ab",
+    "manifest": "plugin.yaml",
+    "manifestSha256": "8b38d2af365009217672a962638a07e5e52f06f5bdbb689805ba93bde0919446"
+  },
+  "sections": [
+    {
+      "id": "shortcuts",
+      "selector": ".bannerbelow-layoutcontainer",
+      "detail": ".bannerbelow-icon-container",
+      "config": "shortcuts",
+      "columns": [
+        "title",
+        "description",
+        "href"
+      ],
+      "classification": [
+        "removed-structure",
+        "missing-display-field",
+        "unreviewed-source-assets"
+      ],
+      "renderer": "home-block-card omits the original icon container; configured cards contain title, description and optional link only.",
+      "originalDetailCount": 4,
+      "currentStaticDetailCount": 0,
+      "assets": [
+        {
+          "path": "static/image/remoteL17137759208918.png",
+          "sha256": "0c65729b4099922e90ad3825596b986e1ce25ac7a00e9a1cffaef6b3c9d40218",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/image/remoteL17137759367861.png",
+          "sha256": "0cf75f3ed4d7a746122fc201bcd9b7a2fb9962b440e76a1277b0a6c0e8cbe4dd",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/image/remoteL17137759611360.png",
+          "sha256": "de31c9558fd8a4e10a8d5d415e7c5468a8fc9b324b1a12821637b7d58a1250c8",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/image/remoteL17137759901567.png",
+          "sha256": "a590a7f1bc5a692ffa1b50cde8b9f0b50f112a39f314d1a7306f0df4900eba4b",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        }
+      ]
+    },
+    {
+      "id": "solution-features",
+      "selector": ".container_bg15",
+      "detail": ".skills-experience",
+      "config": "solutions",
+      "columns": [
+        "title",
+        "description",
+        "image",
+        "href"
+      ],
+      "classification": [
+        "removed-at-render",
+        "missing-display-field",
+        "merchant-content-required"
+      ],
+      "renderer": "renderTemplateHome removes .skills-experience from each rendered detail; the hidden source prototypes still contain seven cleared groups.",
+      "originalDetailCount": 7,
+      "currentStaticDetailCount": 7,
+      "assets": [
+        {
+          "path": "static/picture/remoteL17090945938503.jpg",
+          "sha256": "b51ace60e28b5dce43f47c6c15ab5f023b5013c2c53ae7b4adcf6ef43cc871e1",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17139356757263.png",
+          "sha256": "a5fbf8c28e7e7fbacc161e7ca8c292031f8e61acd749160a2ae0b2fc26631c6f",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17090946214147.jpg",
+          "sha256": "a2ca802ca7f526fbaa03013d9d93d60697a5b1baf1d30f2807bdd44c0976fccf",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17139361014962.jpeg",
+          "sha256": "da993a60c0a2fc68862047b91fd85033a1c8ecba0947d5d5ad9a5334f4266523",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17090946561037.jpg",
+          "sha256": "5299c97e3ee4289c2dc909b02695c0bda990728febaea446a8687ccb73414fe6",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17139356213316.png",
+          "sha256": "182ff4448ce665d86d3f9dd39037f1b96b3b3447b79e93ba90121ec10ee8145b",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17176540578767.jpg",
+          "sha256": "a0b29e90b67a306534e9db1fbd632be1e06bc3b8fe0a4374ef717829d6e52181",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        }
+      ]
+    },
+    {
+      "id": "benefit-labels",
+      "selector": ".chooseUs-container",
+      "detail": ".chooseUs-itme-label",
+      "config": "benefits",
+      "columns": [
+        "title",
+        "description",
+        "image"
+      ],
+      "classification": [
+        "cleared-at-render",
+        "missing-display-field",
+        "merchant-content-required"
+      ],
+      "renderer": "Four label containers remain but replaceChildren clears their content; title, description and optional safe image are supported.",
+      "originalDetailCount": 4,
+      "currentStaticDetailCount": 4,
+      "assets": [
+        {
+          "path": "static/picture/remoteL17140335196703.png",
+          "sha256": "d629c3ae666c004234cac04bdb9cb95b7e424ecaf9e3b15afcc8bd5658edf30f",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17140335436547.png",
+          "sha256": "178b157fa361999a35dc4f4cb6d74b7382c6681bb412035dc8526ff978b0532a",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17140335582829.png",
+          "sha256": "2561c7f37dbad589749bc66c24d9ccbc212bdc1a8772cde3bf4e1a74457562e2",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL17140335823614.png",
+          "sha256": "4a76250448ff589298a110d040daa7efc999770c7096108bd0a017a240fa55de",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        }
+      ]
+    },
+    {
+      "id": "region-bottom-cards",
+      "selector": ".container_bg27",
+      "detail": ".network_footer .certificate_item",
+      "config": "regions",
+      "columns": [
+        "title",
+        "description"
+      ],
+      "classification": [
+        "hidden-at-render",
+        "missing-display-field",
+        "merchant-content-required",
+        "unreviewed-source-assets"
+      ],
+      "renderer": "Three cleared bottom cards remain; renderTemplateHome always hides .network_footer, .network_canvas and .network_right. Region text rows do not establish node locations or coverage.",
+      "originalDetailCount": 3,
+      "currentStaticDetailCount": 3,
+      "assets": [
+        {
+          "path": "static/picture/local670fd72bd88ad.svg",
+          "sha256": "098bd9d8967bf7c39d7a74bd998ffb2948f2fe6341d3ff3919cb328055cbb11e",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/local670fcdccc5355.svg",
+          "sha256": "b1cf9e7832ed8fd392cc44239661ad775da983ca78238fce4eeb215998488ffe",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/local670fd04222a92.svg",
+          "sha256": "70da1c06e094a2780198a84fc3e0756bd710d9130aeb5d44a47d161b14ab1914",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        }
+      ]
+    },
+    {
+      "id": "footer-icons",
+      "selector": ".sky-footer-top",
+      "detail": ".sky-footer-icon",
+      "config": "promises",
+      "columns": [
+        "title",
+        "href"
+      ],
+      "classification": [
+        "hidden-at-render",
+        "missing-display-field",
+        "partly-retained-assets"
+      ],
+      "renderer": "Four icon slots remain across ten pages; renderTemplateFooter always hides img. A retained neutral SVG does not supply a configured merchant icon or service promise.",
+      "originalDetailCount": 4,
+      "currentStaticDetailCount": 4,
+      "assets": [
+        {
+          "path": "static/picture/remoteL16905328288110.svg",
+          "sha256": "1ffc65606baaf79a8f299fde984f662620b7cea80e050d7a5c5489151018ccf4",
+          "retainedInPublic": true,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL16905328285515.svg",
+          "sha256": "bd78a6056ba838fff081ce238fed3f89f39467d5499044ebd0c00968ccc9ec95",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL16905328293623.svg",
+          "sha256": "5a3f7ccacff8af4423450bc3434315ee0bec0c1daa14829bf309b7e8c35e1322",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        },
+        {
+          "path": "static/picture/remoteL16905328292905.svg",
+          "sha256": "75ab610a089bdd1aa22b6808e3e8473b96e23c695ac46d481b3b4f47098da963",
+          "retainedInPublic": false,
+          "licenseStatus": "Not established by this structural audit; do not publish or infer authorization."
+        }
+      ]
+    }
+  ]
+}

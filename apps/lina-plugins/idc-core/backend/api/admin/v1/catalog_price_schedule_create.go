@@ -5,8 +5,8 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type CatalogPriceTierInput struct {
-	MinimumQuantity    int64   `json:"minimumQuantity" v:"min:0" dc:"Inclusive tier lower boundary" eg:"0"`
-	MaximumQuantity    *int64  `json:"maximumQuantity" dc:"Exclusive upper boundary; null only on the last tier" eg:"10"`
+	MinimumQuantity    int64   `json:"minimumQuantity" v:"min:0" dc:"Exclusive tier lower boundary; band quantities use (minimum, maximum]" eg:"0"`
+	MaximumQuantity    *int64  `json:"maximumQuantity" dc:"Inclusive upper boundary; null only on the last tier" eg:"10"`
 	AmountMinor        string  `json:"amountMinor" v:"required|regex:^\\d{1,19}$" dc:"Exact new-purchase amount in decimal minor units" eg:"9900"`
 	SetupFeeMinor      string  `json:"setupFeeMinor" v:"required|regex:^\\d{1,19}$" dc:"Exact one-time setup fee in decimal minor units; first tier only" eg:"0"`
 	RenewalAmountMinor *string `json:"renewalAmountMinor" v:"regex:^\\d{1,19}$" dc:"Exact renewal amount in decimal minor units when required" eg:"10900"`
@@ -24,8 +24,8 @@ type CatalogPriceScheduleCreateReq struct {
 
 type CatalogPriceScheduleTierRes struct {
 	PriceNo            string  `json:"priceNo" dc:"Stable price-row business number" eg:"prc_0123456789abcdef0123456789abcdef"`
-	MinimumQuantity    int64   `json:"minimumQuantity" dc:"Inclusive tier lower boundary" eg:"0"`
-	MaximumQuantity    *int64  `json:"maximumQuantity" dc:"Exclusive upper boundary; null on last tier" eg:"10"`
+	MinimumQuantity    int64   `json:"minimumQuantity" dc:"Exclusive tier lower boundary; band quantities use (minimum, maximum]" eg:"0"`
+	MaximumQuantity    *int64  `json:"maximumQuantity" dc:"Inclusive upper boundary; null on last tier" eg:"10"`
 	AmountMinor        string  `json:"amountMinor" dc:"Exact new-purchase amount in decimal minor units" eg:"9900"`
 	SetupFeeMinor      string  `json:"setupFeeMinor" dc:"Exact one-time setup fee in decimal minor units" eg:"0"`
 	RenewalAmountMinor *string `json:"renewalAmountMinor" dc:"Exact renewal amount in decimal minor units" eg:"10900"`

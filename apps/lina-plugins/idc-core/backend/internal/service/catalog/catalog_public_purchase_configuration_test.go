@@ -6,6 +6,7 @@ package catalog
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -19,6 +20,65 @@ type publicPurchaseAvailabilityStub struct {
 	available bool
 	err       error
 	calls     int
+}
+
+// Storefront options and crafted quotes must obey the same frozen commercial
+// restriction while exposing only opaque public tokens and bilingual labels.
+func TestPublicCommercialChoiceRulesFilterAndRejectInvalidPairs(t *testing.T) {
+	codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{0x74}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	field := func(key string, choices ...string) *capmodel.ConfigurationFieldDeclaration {
+		result := &capmodel.ConfigurationFieldDeclaration{Key: key, Type: capmodel.ConfigurationFieldSingleSelect, Required: true, Label: &capmodel.LocalizedText{ZhCN: key, EnUS: key}}
+		for _, choice := range choices {
+			result.StaticCandidates = append(result.StaticCandidates, &capmodel.ConfigurationCandidate{Value: choice, Label: &capmodel.LocalizedText{ZhCN: choice, EnUS: choice}})
+		}
+		return result
+	}
+	presentations := map[string]configurationcontract.Presentation{"local_validation": {ChoiceRules: []*capmodel.ConfigurationRuleDeclaration{{When: &capmodel.ConfigurationConditionDeclaration{Field: "local_certificate", Operator: capmodel.ConfigurationConditionEqual, Value: "wildcard"}, Actions: []*capmodel.ConfigurationActionDeclaration{{Action: capmodel.ConfigurationActionFilterCandidates, Field: "local_validation", Values: []string{"dns"}}}}}}}
+	raw, err := json.Marshal(presentations)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := &publicStructuredConfigurationSnapshot{Revision: "commercial-rules", Target: publicStructuredConfigurationTarget{CustomerPresentation: string(raw)}, Schema: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{field("local_certificate", "single", "wildcard"), field("local_validation", "file", "dns")}}}
+	service := &publicCatalogReaderImpl{revision: codec}
+	for _, child := range []string{"dns", "file"} {
+		values := []configurationcontract.ConfigurationValue{{FieldKey: "local_certificate", OptionTokens: []string{"wildcard"}}, {FieldKey: "local_validation", OptionTokens: []string{child}}}
+		evaluation, candidates, evaluateErr := service.evaluateStructuredConfiguration(t.Context(), snapshot, values)
+		if evaluateErr != nil || evaluation.Valid != (child == "dns") {
+			t.Fatal("crafted customer combination bypassed frozen rules", evaluateErr)
+		}
+		view, projectErr := service.projectStructuredConfiguration(snapshot, evaluation, candidates)
+		if projectErr != nil || len(view.Fields) != 2 || len(view.Fields[1].Options) != 1 || view.Fields[1].Options[0].Label.EnUS != "dns" {
+			t.Fatal("storefront exposed an incompatible child option", projectErr)
+		}
+		if view.Fields[1].FieldToken == "local_validation" || view.Fields[1].Options[0].OptionToken == "dns" {
+			t.Fatal("storefront exposed internal choice identities")
+		}
+	}
+	for _, test := range []struct{ parent, child, expected string }{{"single", "dns", "dns"}, {"wildcard", "file", "dns"}, {"wildcard", "dns", "dns"}} {
+		values := []configurationcontract.ConfigurationValue{{FieldKey: "local_certificate", OptionTokens: []string{test.parent}}, {FieldKey: "local_validation", OptionTokens: []string{test.child}}}
+		evaluation, _, interactiveErr := service.evaluateInteractiveStructuredConfiguration(t.Context(), snapshot, values)
+		if interactiveErr != nil || !evaluation.Valid {
+			t.Fatal("interactive relationship did not stabilize", interactiveErr)
+		}
+		for _, value := range evaluation.Values {
+			if value.FieldKey == "local_validation" && (len(value.OptionTokens) != 1 || value.OptionTokens[0] != test.expected) {
+				t.Fatal("interactive change discarded a legal child or kept an invalid child")
+			}
+		}
+		if values[1].OptionTokens[0] != test.child {
+			t.Fatal("interactive defaults changed the caller's submitted values")
+		}
+	}
+	initial, _, err := service.evaluateInteractiveStructuredConfiguration(t.Context(), snapshot, nil)
+	if err != nil || !initial.Valid || len(initial.Values) != 2 || initial.Values[0].OptionTokens[0] != "single" || initial.Values[1].OptionTokens[0] != "file" {
+		t.Fatal("initial selection did not use the merchant's first legal choices", err)
+	}
+	if len(snapshot.Schema.Conditions) != 0 {
+		t.Fatal("public evaluation rewrote the provider declaration")
+	}
 }
 
 type publicDynamicCandidateResolverStub struct {
@@ -298,5 +358,140 @@ func publicStructuredTestSchema() *capmodel.ConfigurationSchemaDeclaration {
 				{Action: capmodel.ConfigurationActionRequire, Field: "company_name"},
 			},
 		}},
+	}
+}
+
+func TestPublicLocalNumericControlsKeepOpaqueFieldsAndTypedValues(t *testing.T) {
+	codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{0x72}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := &publicCatalogReaderImpl{revision: codec}
+	snapshot := &publicStructuredConfigurationSnapshot{
+		Target:   publicStructuredConfigurationTarget{CustomerPresentation: `{"cpu":{"displayControl":"radio","quantityStep":"2","numericChoices":["2","4","8"],"numericLabels":{"4":{"zhCN":"4核","enUS":"4 cores"}},"groupZhCN":"硬件","groupEnUS":"Hardware","unit":"核","advanced":true,"descriptionZhCN":"自定义说明","descriptionEnUS":"Custom note"}}`},
+		Revision: "local-control-revision",
+		Schema:   &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "cpu", Type: capmodel.ConfigurationFieldInteger, Label: &capmodel.LocalizedText{ZhCN: "处理器核心数", EnUS: "CPU cores"}, Minimum: "2", Maximum: "16", Required: true}}},
+	}
+	number := int64(4)
+	evaluation, resolved, err := service.evaluateStructuredConfiguration(context.Background(), snapshot, []configurationcontract.ConfigurationValue{{FieldKey: "cpu", IntegerValue: &number}})
+	if err != nil || !evaluation.Valid {
+		t.Fatalf("valid numeric choice rejected: %v", err)
+	}
+	view, err := service.projectStructuredConfiguration(snapshot, evaluation, resolved)
+	if err != nil || !view.Ready || len(view.Fields) != 1 || view.Fields[0].DisplayControl != "radio" || view.Fields[0].QuantityStep != "2" || len(view.Fields[0].NumericChoices) != 3 {
+		t.Fatalf("local control lost: %+v %v", view, err)
+	}
+	if view.Fields[0].GroupZhCN != "硬件" || view.Fields[0].Unit != "核" || !view.Fields[0].Advanced || view.Fields[0].Description.ZhCN != "自定义说明" || view.Fields[0].NumericLabels["4"].ZhCN != "4核" {
+		t.Fatal("merchant presentation metadata lost")
+	}
+	if len(view.Values) != 1 || view.Values[0].IntegerValue == nil || *view.Values[0].IntegerValue != "4" || len(view.Values[0].OptionTokens) > 0 {
+		t.Fatal("numeric control changed provider value type")
+	}
+	if view.Fields[0].FieldToken == "cpu" {
+		t.Fatal("provider field key exposed")
+	}
+	for _, invalid := range []int64{3, 6} {
+		evaluation, _, err = service.evaluateStructuredConfiguration(context.Background(), snapshot, []configurationcontract.ConfigurationValue{{FieldKey: "cpu", IntegerValue: &invalid}})
+		if err != nil || evaluation.Valid {
+			t.Fatalf("crafted invalid choice %d accepted: %v", invalid, err)
+		}
+	}
+}
+
+func TestHiddenPurchaseFieldsUseFrozenDefaultsAcrossPublicProjection(t *testing.T) {
+	codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{0x75}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	hidden := false
+	schema := &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{
+		{Key: "cpu", Type: capmodel.ConfigurationFieldInteger, Required: true, Minimum: "1", Maximum: "16", Label: &capmodel.LocalizedText{ZhCN: "处理器", EnUS: "CPU"}},
+		{Key: "os", Type: capmodel.ConfigurationFieldSingleSelect, Required: true, Label: &capmodel.LocalizedText{ZhCN: "系统", EnUS: "OS"}, StaticCandidates: []*capmodel.ConfigurationCandidate{{Value: "linux", Label: &capmodel.LocalizedText{ZhCN: "Linux", EnUS: "Linux"}}, {Value: "windows", Label: &capmodel.LocalizedText{ZhCN: "Windows", EnUS: "Windows"}}}},
+	}}
+	policies := map[string]configurationcontract.Presentation{"cpu": {CustomerVisible: &hidden, DefaultValue: json.RawMessage(`4`)}, "os": {CustomerVisible: &hidden, DefaultValue: json.RawMessage(`"windows"`)}}
+	encoded, err := json.Marshal(policies)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := &publicStructuredConfigurationSnapshot{Revision: "hidden-default", Schema: schema, Target: publicStructuredConfigurationTarget{CustomerPresentation: string(encoded)}}
+	service := &publicCatalogReaderImpl{revision: codec}
+	values, err := service.decodePublicStructuredValues(snapshot, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	evaluation, resolved, err := service.evaluateStructuredConfiguration(t.Context(), snapshot, values)
+	if err != nil || !evaluation.Valid {
+		t.Fatalf("hidden required field rejected: %+v %v", evaluation, err)
+	}
+	view, err := service.projectStructuredConfiguration(snapshot, evaluation, resolved)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(view.Fields) != 2 || view.Fields[0].Visible || view.Fields[1].Visible || len(view.Values) != 2 {
+		t.Fatalf("hidden field/value projection differs: %+v", view)
+	}
+	compiled, err := configurationcontract.CompileResolved(schema, values, configurationcontract.SurfaceCustomer, nil, resolved)
+	if err != nil || string(compiled.ValuesJSON) != `{"cpu":4,"os":"windows"}` {
+		t.Fatalf("hidden values lost before order freeze: %s %v", compiled.ValuesJSON, err)
+	}
+	initial, _, err := service.evaluateInteractiveStructuredConfiguration(t.Context(), snapshot, nil)
+	if err != nil || !initial.Valid || len(initial.Values) != 2 {
+		t.Fatalf("initial read/default reconciliation lost hidden values: %+v %v", initial, err)
+	}
+}
+
+// Optional presentation does not create a separate package-default choice.
+// Initial and cleared selections must carry real values into quote requests.
+func TestInteractivePurchaseDefaultsIncludeOptionalFirstChoices(t *testing.T) {
+	codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{0x61}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{
+		{Key: "cpu", Type: capmodel.ConfigurationFieldInteger, Minimum: "1", Maximum: "8", Label: &capmodel.LocalizedText{ZhCN: "CPU", EnUS: "CPU"}},
+		{Key: "bandwidth", Type: capmodel.ConfigurationFieldInteger, Minimum: "0", Maximum: "100", Label: &capmodel.LocalizedText{ZhCN: "带宽", EnUS: "Bandwidth"}},
+		{Key: "ratio", Type: capmodel.ConfigurationFieldDecimal, Minimum: "0.5", Maximum: "2", Label: &capmodel.LocalizedText{ZhCN: "比例", EnUS: "Ratio"}},
+		{Key: "plan", Type: capmodel.ConfigurationFieldSingleSelect, Label: &capmodel.LocalizedText{ZhCN: "方案", EnUS: "Plan"}, StaticCandidates: []*capmodel.ConfigurationCandidate{
+			{Value: "b", Label: &capmodel.LocalizedText{ZhCN: "B", EnUS: "B"}},
+			{Value: "a", Label: &capmodel.LocalizedText{ZhCN: "A", EnUS: "A"}},
+		}},
+	}}
+	presentations, err := json.Marshal(map[string]configurationcontract.Presentation{"cpu": {Control: configurationcontract.ControlRadio, NumericChoices: []string{"4", "2"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := &publicStructuredConfigurationSnapshot{Revision: "first-choice", Schema: schema, Target: publicStructuredConfigurationTarget{CustomerPresentation: string(presentations)}}
+	service := &publicCatalogReaderImpl{revision: codec}
+	for _, cleared := range []bool{false, true} {
+		values := []configurationcontract.ConfigurationValue(nil)
+		if cleared {
+			values = []configurationcontract.ConfigurationValue{{FieldKey: "plan"}}
+		}
+		result, _, evaluateErr := service.evaluateInteractiveStructuredConfiguration(t.Context(), snapshot, values)
+		if evaluateErr != nil || !result.Valid || len(result.Values) != 4 {
+			t.Fatalf("first choices not initialized: %+v %v", result, evaluateErr)
+		}
+		actual := make(map[string]configurationcontract.ConfigurationValue)
+		for _, value := range result.Values {
+			actual[value.FieldKey] = value
+		}
+		if actual["cpu"].IntegerValue == nil || *actual["cpu"].IntegerValue != 4 || actual["bandwidth"].IntegerValue == nil || *actual["bandwidth"].IntegerValue != 0 || *actual["ratio"].DecimalValue != "0.5" || actual["plan"].OptionTokens[0] != "b" {
+			t.Fatalf("merchant order/minimum was not preserved: %+v", actual)
+		}
+	}
+	two, zero := "2", "0"
+	values := []configurationcontract.ConfigurationValue{{FieldKey: "cpu", IntegerTextValue: &two}, {FieldKey: "bandwidth", IntegerTextValue: &zero}, {FieldKey: "plan", OptionTokens: []string{"a"}}}
+	result, _, err := service.evaluateInteractiveStructuredConfiguration(t.Context(), snapshot, values)
+	if err != nil || !result.Valid {
+		t.Fatalf("saved selection rejected: %v", err)
+	}
+	for _, value := range result.Values {
+		if value.FieldKey == "cpu" && (value.IntegerValue == nil || *value.IntegerValue != 2) || value.FieldKey == "bandwidth" && (value.IntegerValue == nil || *value.IntegerValue != 0) || value.FieldKey == "plan" && value.OptionTokens[0] != "a" {
+			t.Fatal("first defaults replaced the customer's existing legal selection")
+		}
+	}
+	strict, _, err := service.evaluateStructuredConfiguration(t.Context(), snapshot, nil)
+	if err != nil || strict.Valid || len(strict.Values) != 0 || len(strict.Issues) != 4 {
+		t.Fatal("strict quote/cart evaluator allowed omitted prices or silently inserted defaults", err)
 	}
 }

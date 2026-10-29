@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CustomerPaymentStatus } from '#/api/idc/customer-payments';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
@@ -17,12 +17,26 @@ const failed = ref(false);
 const status = ref<CustomerPaymentStatus>();
 const attemptNo = computed(() => String(route.params.attemptNo || ''));
 const complete = computed(() => status.value?.statusCode === 'succeeded');
+const paymentStatusKey = computed(() => 'finance.status.' + (['created', 'submitted', 'confirming', 'succeeded', 'failed', 'expired', 'closed', 'late_success', 'manual_review', 'disputed'].includes(status.value?.statusCode ?? '') ? status.value!.statusCode : 'unavailable'));
+const orderPayment = computed(() => status.value?.purposeCode === 'invoice');
+const failedPayment = computed(() => ['failed', 'expired', 'closed'].includes(status.value?.statusCode ?? ''));
+const needsReview = computed(() => ['late_success', 'manual_review', 'disputed'].includes(status.value?.statusCode ?? ''));
+const completeTitle = computed(() => status.value?.purposeCode === 'balance_recharge' ? 'finance.paymentReturn.complete' : status.value?.purposeCode === 'credit_statement' ? 'finance.paymentReturn.creditComplete' : 'finance.paymentReturn.orderComplete');
+let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+let refreshCount = 0;
+let disposed = false;
 
-async function refresh() {
-  loading.value = true;
+async function refresh(quiet = false) {
+  if (refreshTimer) clearTimeout(refreshTimer);
+  if (!quiet) loading.value = true;
   failed.value = false;
   try {
-    status.value = await getCustomerPaymentStatus(attemptNo.value);
+    const response = await getCustomerPaymentStatus(attemptNo.value);
+    if (disposed) return;
+    status.value = response;
+    if (['created', 'submitted', 'confirming'].includes(response.statusCode) && refreshCount < 24 && !document.hidden) {
+      refreshTimer = setTimeout(() => { refreshCount += 1; void refresh(true); }, 5000);
+    }
   } catch {
     failed.value = true;
   } finally {
@@ -30,7 +44,8 @@ async function refresh() {
   }
 }
 
-onMounted(refresh);
+onMounted(() => void refresh());
+onBeforeUnmount(() => { disposed = true; if (refreshTimer) clearTimeout(refreshTimer); });
 </script>
 
 <template>
@@ -43,7 +58,7 @@ onMounted(refresh);
           :message="$t('finance.paymentReturn.loadFailed')"
           show-icon
           type="error"
-        />
+        ><template #action><Button @click="refresh(false)">{{ $t('finance.paymentReturn.refresh') }}</Button></template></Alert>
         <template v-else-if="status">
           <div class="payment-return__heading">
             <div>
@@ -51,16 +66,16 @@ onMounted(refresh);
               <h1>
                 {{
                   complete
-                    ? $t('finance.paymentReturn.complete')
-                    : $t('finance.paymentReturn.confirming')
+                    ? $t(completeTitle)
+                    : $t(needsReview ? 'finance.paymentReturn.needsReview' : failedPayment ? 'finance.paymentReturn.unsuccessful' : 'finance.paymentReturn.confirming')
                 }}
               </h1>
             </div>
-            <Tag :color="complete ? 'success' : 'processing'">
-              {{ $t(`finance.status.${status.statusCode}`) }}
+            <Tag :color="complete ? 'success' : failedPayment ? 'error' : needsReview ? 'warning' : 'processing'">
+              {{ $t(paymentStatusKey) }}
             </Tag>
           </div>
-          <p>{{ $t('finance.paymentReturn.description') }}</p>
+          <p>{{ $t(needsReview ? 'finance.paymentReturn.reviewDescription' : orderPayment && complete ? 'finance.paymentReturn.orderDescription' : 'finance.paymentReturn.description') }}</p>
           <dl>
             <div>
               <dt>{{ $t('finance.paymentReturn.attemptNo') }}</dt>
@@ -72,10 +87,13 @@ onMounted(refresh);
             </div>
           </dl>
           <div class="payment-return__actions">
-            <Button :loading="loading" @click="refresh">
+            <Button :loading="loading" @click="refresh(false)">
               {{ $t('finance.paymentReturn.refresh') }}
             </Button>
-            <Button type="primary" @click="router.push('/account/billing')">
+            <Button v-if="orderPayment && complete" type="primary" @click="router.push(status.orderNo ? '/account/orders/' + encodeURIComponent(status.orderNo) : '/account/orders')">
+              {{ $t('finance.paymentReturn.viewDelivery') }}
+            </Button>
+            <Button :type="orderPayment && complete ? 'default' : 'primary'" @click="router.push('/account/billing')">
               {{ $t('finance.paymentReturn.back') }}
             </Button>
           </div>

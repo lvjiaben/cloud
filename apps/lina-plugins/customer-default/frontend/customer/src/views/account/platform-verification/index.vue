@@ -4,11 +4,14 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 
-import { Alert, Skeleton, TabPane, Tabs } from 'ant-design-vue';
+import { Alert, Button, Drawer, Skeleton, TabPane, Tabs } from 'ant-design-vue';
 
 import { getPersonalVerification } from '#/api/idc/personal-verification';
 import { $t } from '#/locales';
 
+import ConsentPanel from './consent-panel.vue';
+
+const consentOpen = ref(false);
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
@@ -51,6 +54,12 @@ onMounted(loadGate);
 <template>
   <Page class="customer-inner-page" header-class="customer-inner-heading" content-class="customer-inner-content" :title="$t('identity.platform.title')">
     <div class="verification-center" data-testid="platform-verification-center">
+      <div class="verification-actions">
+        <Button data-testid="verification-consent-open" @click="consentOpen = true">{{ $t('verificationConsent.consentTitle') }}</Button>
+      </div>
+      <Drawer v-model:open="consentOpen" :title="$t('verificationConsent.heading')" :width="680" destroy-on-close>
+        <ConsentPanel v-if="consentOpen" />
+      </Drawer>
       <Alert
         :description="$t('identity.platform.description')"
         :message="$t('identity.platform.personalFirst')"

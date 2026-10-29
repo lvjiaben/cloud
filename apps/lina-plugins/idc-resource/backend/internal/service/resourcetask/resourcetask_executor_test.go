@@ -60,6 +60,9 @@ func TestExecutorRunWritesPersistsAcceptedOutput(t *testing.T) {
 		t.Fatalf("run writes failed: report=%+v transitions=%+v err=%v", report, store.transitions, err)
 	}
 	transition := store.transitions[0]
+	if transition.NextAt != nil {
+		t.Fatal("accepted task must use owner database time rather than the future write lease")
+	}
 	if transition.To != StatusAccepted || !transition.Evidence.AcceptanceProven ||
 		transition.Upstream == nil || transition.Upstream.TaskRef != "external-task-1" ||
 		transition.Upstream.ResourceRef != "external-resource-1" ||
@@ -187,7 +190,7 @@ func TestExecutorRunWritesBatchesMappingsAndProviders(t *testing.T) {
 				"task-batch-2": "external-resource-2",
 			}, nil
 		},
-		&executorHealthService{},
+		&executorHealthService{}, allowTestWrite,
 	)
 	if err != nil {
 		t.Fatalf("construct executor failed: %v", err)
@@ -235,7 +238,7 @@ func TestExecutorRunWritesHonorsSharedHealthProtectionWithoutProviderCall(t *tes
 		) (map[string]string, error) {
 			return map[string]string{"task-health-protected": "external-resource-1"}, nil
 		},
-		health,
+		health, allowTestWrite,
 	)
 	if err != nil {
 		t.Fatalf("construct protected executor failed: %v", err)
@@ -283,9 +286,8 @@ func TestExecutorRunObservationsReschedulesAndConverges(t *testing.T) {
 	}); err != nil || len(store.reschedules) != 1 || len(store.observations) != 0 {
 		t.Fatalf("query failure did not reschedule safely: err=%v store=%+v", err, store)
 	}
-	wantNext := nextObservationAt(base.TaskNo, base.ObservationAttempt, base.LeaseExpiresAt)
-	if !store.reschedules[0].NextAt.Equal(wantNext) {
-		t.Fatalf("query failure schedule=%s, want %s", store.reschedules[0].NextAt, wantNext)
+	if !store.reschedules[0].NextAt.IsZero() {
+		t.Fatal("query failure must request bounded owner-clock scheduling instead of adding the observation lease")
 	}
 	if len(health.observations) != 1 ||
 		health.observations[0].Operation != providerhealth.OperationQuery ||
@@ -349,9 +351,8 @@ func TestExecutorRunResourceObservationsRequiresExactTargetState(t *testing.T) {
 	}); err != nil || len(store.reschedules) != 1 || len(store.resourceObservations) != 0 {
 		t.Fatalf("non-converging resource snapshot did not remain unknown: err=%v store=%+v", err, store)
 	}
-	wantNext := nextObservationAt(base.TaskNo, base.ObservationAttempt, base.LeaseExpiresAt)
-	if !store.reschedules[0].NextAt.Equal(wantNext) {
-		t.Fatalf("resource observation schedule=%s, want %s", store.reschedules[0].NextAt, wantNext)
+	if !store.reschedules[0].NextAt.IsZero() {
+		t.Fatal("resource query failure must request owner-clock scheduling without the lease duration")
 	}
 
 	store = &executorTaskService{claimedResourceObservations: []ClaimedResourceObservation{base}}
@@ -402,7 +403,7 @@ func newExecutorFixtureWithHealth(
 				"task-write-retry":    "external-resource-1",
 			}, nil
 		},
-		health,
+		health, allowTestWrite,
 	)
 	if err != nil {
 		t.Fatalf("construct executor failed: %v", err)
@@ -539,4 +540,50 @@ func (p *executorProvider) QueryResource(
 	request resourcecap.ResourceQuery,
 ) (*resourcecap.ResourceSnapshot, error) {
 	return p.queryResource(ctx, request)
+}
+
+func allowTestWrite(ctx context.Context, _ ClaimedTask, _ resourcecap.OperationRequest, _ resourcecap.Provider, invoke func(context.Context) error) error {
+	return invoke(ctx)
+}
+
+// Task success must not make an unready or unrelated cloud deliverable.
+func TestExecutorProvisionObservationRequiresActualReadyResource(t *testing.T) {
+	for _, test := range []struct {
+		name, reference string
+		state           resourcecap.ResourceState
+		fail            bool
+		delivered       bool
+	}{
+		{"ready", "cloud-41", resourcecap.ResourceStateActive, false, true},
+		{"stopped ready", "cloud-41", resourcecap.ResourceStateStopped, false, true},
+		{"still creating", "cloud-41", resourcecap.ResourceStatePending, false, false},
+		{"wrong resource", "cloud-42", resourcecap.ResourceStateActive, false, false},
+		{"query unavailable", "cloud-41", resourcecap.ResourceStateActive, true, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			store := &executorTaskService{claimedObservations: []ClaimedObservation{{TaskNo: "task-provision-confirm", CapabilityCode: string(resourcecap.CapabilityProvision), ChannelNo: "channel-1", CurrentStatus: StatusAccepted, ExternalTaskRef: "task-71", ExternalResourceRef: "cloud-41", LeaseToken: "worker:0123456789abcdef0123456789abcdef", LeaseVersion: 2, LeaseExpiresAt: time.Now().Add(time.Minute)}}}
+			provider := &executorProvider{queryTask: func(context.Context, resourcecap.TaskQuery) (*resourcecap.OperationResult, error) {
+				return &resourcecap.OperationResult{Status: resourcecap.TaskStatusSucceeded, ExternalTaskRef: "task-71", ExternalResourceRef: "cloud-41"}, nil
+			}, queryResource: func(_ context.Context, q resourcecap.ResourceQuery) (*resourcecap.ResourceSnapshot, error) {
+				if q.ExternalResourceRef != "cloud-41" {
+					t.Fatal("incorrect resource query")
+				}
+				if test.fail {
+					return nil, gerror.New("unavailable")
+				}
+				return &resourcecap.ResourceSnapshot{ExternalResourceRef: test.reference, State: test.state, Data: []byte(`{}`), ObservedAt: time.Now().UTC()}, nil
+			}}
+			executor := newExecutorFixture(t, store, provider)
+			if _, err := executor.RunObservations(context.Background(), ObservationClaimInput{WorkerID: "worker", Limit: 1, LeaseDuration: time.Minute}); err != nil {
+				t.Fatal(err)
+			}
+			if test.delivered {
+				if len(store.observations) != 1 || store.observations[0].Result.Resource == nil || len(store.reschedules) != 0 {
+					t.Fatal("ready server did not converge")
+				}
+			} else if len(store.observations) != 0 || len(store.reschedules) != 1 {
+				t.Fatal("unproven server delivered")
+			}
+		})
+	}
 }

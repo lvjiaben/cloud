@@ -1,3 +1,6 @@
+// This file resolves exact provider directories and caches choices together
+// with their relationships under one immutable provider/request identity.
+
 package productautomation
 
 import (
@@ -6,21 +9,21 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-core/pkg/plugin/capability/capmodel"
-	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/cap/supplierinterfacecap"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
-	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 )
 
@@ -32,7 +35,14 @@ const (
 type dynamicCandidateCacheEntry struct {
 	key       string
 	expiresAt time.Time
-	value     configurationcontract.ResolvedCandidates
+	value     dynamicCandidateProjection
+}
+
+// Cache choices and their relationships as one observation under the same
+// exact release/method/request key; a cache hit cannot lose eligibility facts.
+type dynamicCandidateProjection struct {
+	candidates    configurationcontract.ResolvedCandidates
+	relationships []resourceinterfaceprojectioncap.ChoiceRelationship
 }
 
 func (s *serviceImpl) loadVersionConfigurationRow(ctx context.Context, versionNo string) (*entity.CatalogProductVersionConfiguration, error) {
@@ -45,7 +55,7 @@ func (s *serviceImpl) loadVersionConfigurationRow(ctx context.Context, versionNo
 
 type dynamicCandidateInflight struct {
 	done    chan struct{}
-	value   configurationcontract.ResolvedCandidates
+	value   dynamicCandidateProjection
 	err     error
 	waiters int
 }
@@ -70,35 +80,35 @@ func newDynamicCandidateCache() *dynamicCandidateCache {
 	}
 }
 
-func (c *dynamicCandidateCache) get(key string) (configurationcontract.ResolvedCandidates, bool) {
+func (c *dynamicCandidateCache) get(key string) (dynamicCandidateProjection, bool) {
 	if c == nil || key == "" {
-		return nil, false
+		return dynamicCandidateProjection{}, false
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.getLocked(key)
 }
 
-func (c *dynamicCandidateCache) getLocked(key string) (configurationcontract.ResolvedCandidates, bool) {
+func (c *dynamicCandidateCache) getLocked(key string) (dynamicCandidateProjection, bool) {
 	element := c.entries[key]
 	if element == nil {
-		return nil, false
+		return dynamicCandidateProjection{}, false
 	}
 	entry, ok := element.Value.(dynamicCandidateCacheEntry)
 	if !ok || !c.now().Before(entry.expiresAt) {
 		delete(c.entries, key)
 		c.order.Remove(element)
-		return nil, false
+		return dynamicCandidateProjection{}, false
 	}
 	c.order.MoveToFront(element)
-	return cloneResolvedCandidates(entry.value), true
+	return cloneDynamicCandidateProjection(entry.value), true
 }
 
 func (c *dynamicCandidateCache) load(
 	ctx context.Context,
 	key string,
-	loader func() (configurationcontract.ResolvedCandidates, error),
-) (value configurationcontract.ResolvedCandidates, err error) {
+	loader func() (dynamicCandidateProjection, error),
+) (value dynamicCandidateProjection, err error) {
 	if c == nil || key == "" {
 		return loader()
 	}
@@ -115,9 +125,9 @@ func (c *dynamicCandidateCache) load(
 		c.mu.Unlock()
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return dynamicCandidateProjection{}, ctx.Err()
 		case <-current.done:
-			return cloneResolvedCandidates(current.value), current.err
+			return cloneDynamicCandidateProjection(current.value), current.err
 		}
 	}
 	call := &dynamicCandidateInflight{done: make(chan struct{})}
@@ -126,14 +136,14 @@ func (c *dynamicCandidateCache) load(
 
 	defer func() {
 		if recover() != nil {
-			value = nil
+			value = dynamicCandidateProjection{}
 			err = gerror.New("plugin.idc-core.product_automation.dynamic_candidates.unavailable")
 		}
 		if err == nil {
 			c.put(key, value)
 		}
 		c.mu.Lock()
-		call.value = cloneResolvedCandidates(value)
+		call.value = cloneDynamicCandidateProjection(value)
 		call.err = err
 		delete(c.inflight, key)
 		close(call.done)
@@ -142,13 +152,13 @@ func (c *dynamicCandidateCache) load(
 	return loader()
 }
 
-func (c *dynamicCandidateCache) put(key string, value configurationcontract.ResolvedCandidates) {
+func (c *dynamicCandidateCache) put(key string, value dynamicCandidateProjection) {
 	if c == nil || key == "" {
 		return
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	entry := dynamicCandidateCacheEntry{key: key, expiresAt: c.now().Add(dynamicCandidateCacheTTL), value: cloneResolvedCandidates(value)}
+	entry := dynamicCandidateCacheEntry{key: key, expiresAt: c.now().Add(dynamicCandidateCacheTTL), value: cloneDynamicCandidateProjection(value)}
 	if current := c.entries[key]; current != nil {
 		current.Value = entry
 		c.order.MoveToFront(current)
@@ -174,30 +184,44 @@ func (s *serviceImpl) ResolvePublicPurchaseCandidates(
 	schema *capmodel.ConfigurationSchemaDeclaration,
 	values []configurationcontract.ConfigurationValue,
 ) (configurationcontract.ResolvedCandidates, error) {
-	available, err := s.CheckPublicPurchaseAvailability(ctx, versionNo)
-	if err != nil || !available {
-		if err != nil {
-			return nil, err
-		}
-		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
-	}
+	// Local candidate projections are already governed by their database owner.
+	// Reading them does not require rediscovering or parsing an executable plugin.
 	binding, err := s.loadBinding(ctx, versionNo, false)
+	if err != nil || binding == nil {
+		return nil, bizerr.WrapCode(err, CodeEvidenceUnavailable)
+	}
+	resourceOwned, err := s.resourceInterfaceOwned(ctx, binding.InterfaceInstanceNo)
 	if err != nil {
-		return nil, gerror.Wrap(err, "load dynamic candidate binding")
+		return nil, err
 	}
-	if binding == nil {
-		return nil, gerror.New("dynamic candidate binding is unavailable")
+	if resourceOwned {
+		configuration, loadErr := s.loadVersionConfigurationRow(ctx, versionNo)
+		if loadErr != nil || configuration == nil || configuration.InterfaceInstanceNo != binding.InterfaceInstanceNo || configuration.InterfaceConfigurationRevision < 1 {
+			return nil, bizerr.WrapCode(loadErr, CodeEvidenceUnavailable)
+		}
+		frozen, decodeErr := configurationcontract.DecodeDeclaration(configuration.CustomerDeclarationSnapshot)
+		if decodeErr != nil || !sameExactConfiguration(schema, frozen) {
+			return nil, bizerr.WrapCode(decodeErr, CodeEvidenceUnavailable)
+		}
+		return s.resolveDynamicCandidates(ctx, bindingEvidence(binding), frozen, values, configurationcontract.SurfaceCustomer, dynamicCandidateScope{
+			versionNo: versionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: configuration.InterfaceConfigurationRevision,
+		})
 	}
-	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
-		PluginID: binding.PluginId, ReleaseVersion: binding.PluginReleaseVersion,
-		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
-		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
-	})
-	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
+	evidence, err := s.loadPublicPurchaseEvidence(ctx, versionNo)
+	if err != nil {
+		return nil, err
+	}
+	if evidence == nil || evidence.binding == nil || evidence.configuration == nil || evidence.provider == nil {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
-	configuration, err := s.loadVersionConfigurationRow(ctx, versionNo)
-	if err != nil || configuration == nil || configuration.InterfaceInstanceNo != binding.InterfaceInstanceNo || configuration.InterfaceConfigurationRevision < 1 {
+	// Active discovery already attested this exact release and declaration; do
+	// not reload the same historical manifest and binding for this directory read.
+	binding = evidence.binding
+	var (
+		configuration = evidence.configuration
+		exact         = evidence.provider
+	)
+	if configuration.InterfaceInstanceNo != binding.InterfaceInstanceNo || configuration.InterfaceConfigurationRevision < 1 {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, configuration, exact)
@@ -217,7 +241,7 @@ func (s *serviceImpl) resolveDynamicCandidates(
 	surface configurationcontract.ConfigurationSurface,
 	scope dynamicCandidateScope,
 ) (configurationcontract.ResolvedCandidates, error) {
-	if exact.PluginID == portableImportProviderID && surface == configurationSurfaceCustomer && scope.versionNo != "" {
+	if supportsPortableImport(exact) && surface == configurationSurfaceCustomer && scope.versionNo != "" {
 		return s.resolveImportedCandidates(ctx, exact, schema, values, scope)
 	}
 	batches, err := configurationcontract.BuildDynamicCandidateBatches(schema, values, surface, exact.AuthorizedMethods)
@@ -242,13 +266,14 @@ func (s *serviceImpl) resolveDynamicCandidates(
 	resolved := make(configurationcontract.ResolvedCandidates)
 	for _, batch := range batches {
 		cacheKey := dynamicCandidateCacheKey(exact, scope, batch.Method, batch.Payload)
-		batchResolved, loadErr := s.dynamicCandidates.load(ctx, cacheKey, func() (configurationcontract.ResolvedCandidates, error) {
+		loader := func() (dynamicCandidateProjection, error) {
 			if resourceOwned {
-				return s.resolveResourceCandidates(ctx, scope.interfaceInstanceNo, scope.resourceConfigurationRevision, batch.Method, batch.Payload, batch.Queries)
+				candidates, readErr := s.resolveResourceCandidates(ctx, scope.interfaceInstanceNo, scope.resourceConfigurationRevision, batch.Method, batch.Payload, batch.Queries, scope.candidateSyncState, scope.candidateRelationships)
+				return dynamicCandidateProjection{candidates: candidates}, readErr
 			}
 			runtimeContext, contextErr := s.runtimeContexts.issue(exact, scope, capmodel.BusinessExtensionInvocationPurposeNewBusiness, batch.Method, runtimeView)
 			if contextErr != nil {
-				return nil, gerror.Wrap(contextErr, "issue supplier runtime context")
+				return dynamicCandidateProjection{}, gerror.Wrap(contextErr, "issue supplier runtime context")
 			}
 			defer s.runtimeContexts.remove(runtimeContext.id)
 			result, invokeErr := s.extensions.InvokeProviderMethod(ctx, pluginhost.BusinessExtensionMethodInvokeInput{
@@ -259,21 +284,36 @@ func (s *serviceImpl) resolveDynamicCandidates(
 				RuntimeContext: &capmodel.BusinessExtensionRuntimeContext{ContextID: runtimeContext.id}, Payload: batch.Payload,
 			})
 			if invokeErr != nil {
-				return nil, gerror.Wrap(invokeErr, "invoke dynamic candidate method")
+				return dynamicCandidateProjection{}, gerror.Wrap(invokeErr, "invoke dynamic candidate method")
 			}
 			if result == nil || result.Version != configurationcontract.DynamicCandidateProtocolV1 {
-				return nil, gerror.New("dynamic candidate method returned an invalid protocol version")
+				return dynamicCandidateProjection{}, gerror.New("dynamic candidate method returned an invalid protocol version")
 			}
-			decoded, invokeErr := configurationcontract.DecodeDynamicCandidateResponse(result.Payload, batch.Queries)
+			decoded, relationships, invokeErr := configurationcontract.DecodeDynamicCandidateResponse(result.Payload, batch.Queries)
 			if invokeErr != nil {
-				return nil, invokeErr
+				return dynamicCandidateProjection{}, invokeErr
 			}
-			return decoded, nil
-		})
+			return dynamicCandidateProjection{candidates: decoded, relationships: relationships}, nil
+		}
+		var (
+			batchResolved dynamicCandidateProjection
+			loadErr       error
+		)
+		if resourceOwned {
+			// The owner provides a shared local projection. Do not retain empty
+			// first reads in this process after asynchronous synchronization.
+			batchResolved, loadErr = loader()
+		} else {
+			batchResolved, loadErr = s.dynamicCandidates.load(ctx, cacheKey, loader)
+		}
 		if loadErr != nil {
+			logger.Warningf(ctx, "product candidate resolution failed reason=%s", safeCandidateFailureReason(loadErr))
 			return nil, loadErr
 		}
-		for fieldKey, candidates := range batchResolved {
+		if err := appendCandidateRelationships(scope.candidateRelationships, batchResolved.relationships); err != nil {
+			return nil, err
+		}
+		for fieldKey, candidates := range batchResolved.candidates {
 			if _, duplicate := resolved[fieldKey]; duplicate {
 				return nil, gerror.New("dynamic candidate field was resolved more than once")
 			}
@@ -294,7 +334,7 @@ func (s *serviceImpl) resourceInterfaceOwned(ctx context.Context, interfaceNo st
 	return value.String() == "resource", nil
 }
 
-func (s *serviceImpl) resolveResourceCandidates(ctx context.Context, interfaceNo, resourceRevision, method string, payload []byte, queries []configurationcontract.DynamicCandidateQuery) (configurationcontract.ResolvedCandidates, error) {
+func (s *serviceImpl) resolveResourceCandidates(ctx context.Context, interfaceNo, resourceRevision, method string, payload []byte, queries []configurationcontract.DynamicCandidateQuery, syncState *resourceinterfaceprojectioncap.CandidateSyncState, relationships *[]resourceinterfaceprojectioncap.ChoiceRelationship) (configurationcontract.ResolvedCandidates, error) {
 	if s.resourceCandidates == nil {
 		return nil, gerror.New("resource interface candidate source is unavailable")
 	}
@@ -308,6 +348,29 @@ func (s *serviceImpl) resolveResourceCandidates(ctx context.Context, interfaceNo
 	}
 	if result == nil {
 		return nil, gerror.New("resource interface candidate result is unavailable")
+	}
+	if err = result.ValidateRelationships(); err != nil {
+		return nil, err
+	}
+	if err = appendCandidateRelationships(relationships, result.Relationships); err != nil {
+		return nil, err
+	}
+	if syncState != nil {
+		priority := func(state resourceinterfaceprojectioncap.CandidateSyncState) int {
+			switch state {
+			case resourceinterfaceprojectioncap.CandidateSyncFailed:
+				return 3
+			case resourceinterfaceprojectioncap.CandidateSyncRetained:
+				return 2
+			case resourceinterfaceprojectioncap.CandidateSyncPending:
+				return 1
+			default:
+				return 0
+			}
+		}
+		if priority(result.SyncState) > priority(*syncState) {
+			*syncState = result.SyncState
+		}
 	}
 	allowed := make(map[string]struct{}, len(queries))
 	for _, query := range queries {
@@ -338,6 +401,51 @@ func (s *serviceImpl) resolveResourceCandidates(ctx context.Context, interfaceNo
 	return resolved, nil
 }
 
+// One request may materialize product and customer surfaces from the same
+// directory. Retain immutable relationship copies, rejecting contradictory
+// snapshots instead of combining old and new supplier constraints.
+func appendCandidateRelationships(target *[]resourceinterfaceprojectioncap.ChoiceRelationship, incoming []resourceinterfaceprojectioncap.ChoiceRelationship) error {
+	if target == nil {
+		return nil
+	}
+	for _, relation := range incoming {
+		found := false
+		for _, existing := range *target {
+			if existing.ParentFieldKey == relation.ParentFieldKey && existing.ChildFieldKey == relation.ChildFieldKey {
+				if !sameCandidateRelationshipLinks(existing.Links, relation.Links) {
+					return gerror.New("supplier relationships changed during configuration evaluation")
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			if len(*target) >= 16 {
+				return gerror.New("supplier relationships exceed their bound")
+			}
+			relation.Links = append([]resourceinterfaceprojectioncap.ChoiceLink(nil), relation.Links...)
+			*target = append(*target, relation)
+		}
+	}
+	return nil
+}
+
+func sameCandidateRelationshipLinks(left, right []resourceinterfaceprojectioncap.ChoiceLink) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	values := make(map[resourceinterfaceprojectioncap.ChoiceLink]bool, len(left))
+	for _, link := range left {
+		values[link] = true
+	}
+	for _, link := range right {
+		if !values[link] {
+			return false
+		}
+	}
+	return true
+}
+
 func dynamicCandidateCacheKey(exact *capmodel.BusinessExtensionProviderEvidence, scope dynamicCandidateScope, method string, payload []byte) string {
 	digest := sha256.New()
 	for _, part := range []string{
@@ -352,6 +460,15 @@ func dynamicCandidateCacheKey(exact *capmodel.BusinessExtensionProviderEvidence,
 	payloadDigest := sha256.Sum256(payload)
 	_, _ = digest.Write(payloadDigest[:])
 	return hex.EncodeToString(digest.Sum(nil))
+}
+
+func cloneDynamicCandidateProjection(value dynamicCandidateProjection) dynamicCandidateProjection {
+	result := dynamicCandidateProjection{candidates: cloneResolvedCandidates(value.candidates)}
+	for _, relationship := range value.relationships {
+		relationship.Links = append([]resourceinterfaceprojectioncap.ChoiceLink(nil), relationship.Links...)
+		result.relationships = append(result.relationships, relationship)
+	}
+	return result
 }
 
 func cloneResolvedCandidates(value configurationcontract.ResolvedCandidates) configurationcontract.ResolvedCandidates {
@@ -372,4 +489,19 @@ func cloneResolvedCandidates(value configurationcontract.ResolvedCandidates) con
 		result[fieldKey] = cloned
 	}
 	return result
+}
+
+// safeCandidateFailureReason emits a fixed diagnostic category, never supplier
+// payloads, credentials, URLs, field values, or the original error text.
+func safeCandidateFailureReason(err error) string {
+	if err == nil {
+		return "none"
+	}
+	text := err.Error()
+	for _, reason := range []string{"candidate connector invocation failed", "candidate result is invalid", "candidate field is invalid", "candidate channel is unavailable", "candidate settings are unavailable", "candidate outbound handler is unavailable", "configuration revision changed", "changed during catalog read", "candidate connector evidence is unavailable", "candidate value is duplicated", "current selection is invalid", "input contains an unknown field"} {
+		if strings.Contains(text, reason) {
+			return reason
+		}
+	}
+	return "unclassified"
 }

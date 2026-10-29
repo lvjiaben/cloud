@@ -24,5 +24,7 @@
   "plugins.idc_core.api.serviceaccount.v1.EntitlementGetReq.meta.summary": "查看我的受管服务",
   "plugins.idc_core.api.serviceaccount.v1.EntitlementGetReq.meta.tags": "IDC 客户服务",
   "plugins.idc_core.api.serviceaccount.v1.EntitlementListReq.meta.summary": "列出我的受管服务",
-  "plugins.idc_core.api.serviceaccount.v1.EntitlementListReq.meta.tags": "IDC 客户服务"
+  "plugins.idc_core.api.serviceaccount.v1.EntitlementListReq.meta.tags": "IDC 客户服务",
+  "plugins.idc_core.api.serviceaccount.v1.EntitlementListReq.fields.directoryNo.dc": "可选会员导航菜单；省略时不按菜单过滤插件客户列表",
+  "plugins.idc_core.api.serviceaccount.v1.EntitlementListReq.fields.pluginId.dc": "可选履约插件，用于独立插件已购内容块的归属过滤"
 }

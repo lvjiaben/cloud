@@ -1,0 +1,18 @@
+{
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddress.fields.notificationOrigin.dc": "接收支付与退款通知的独立 HTTPS 根地址",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddress.fields.customerReturnOrigin.dc": "客户浏览器返回根地址，允许 HTTPS 或本机开发 HTTP 地址",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddress.fields.version.dc": "当前设置版本，首次保存前为零",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressGetRes.fields.addresses.dc": "当前独立支付地址设置",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.fields.notificationOrigin.dc": "通知公网网关的 HTTPS 根地址，无须与系统地址一致",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.fields.customerReturnOrigin.dc": "客户浏览器返回根地址",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.fields.expectedVersion.dc": "编辑前读取的设置版本",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveRes.fields.addresses.dc": "当前独立支付地址设置",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressGetReq.meta.tags": "支付渠道",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressGetReq.meta.summary": "读取支付通知和客户返回地址",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressGetReq.meta.dc": "读取商家当前支付地址，不返回凭据，不创建付款请求。",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressGetReq.schema.dc": "读取商家当前支付地址，不返回凭据，不创建付款请求。",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.meta.tags": "支付渠道",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.meta.summary": "立即保存独立支付通知和浏览器返回地址",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.meta.dc": "校验直接员工身份和版本后替换商家当前地址。留空会关闭新在线支付，不改变历史资金事实与通知处理。",
+  "plugins.idc_payment.api.admin.v1.PaymentPublicAddressSaveReq.schema.dc": "校验直接员工身份和版本后替换商家当前地址。留空会关闭新在线支付，不改变历史资金事实与通知处理。"
+}

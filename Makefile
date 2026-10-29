@@ -44,3 +44,8 @@ DEV_ARGS += website_port=$(LINA_WEBSITE_PORT)
 ifneq ($(origin plan), undefined)
 DEV_ARGS += plan=$(plan)
 endif
+
+# Reuse a complete delivery while retaining the same development supervisor.
+ifneq ($(origin rebuild), undefined)
+DEV_ARGS += rebuild=$(rebuild)
+endif

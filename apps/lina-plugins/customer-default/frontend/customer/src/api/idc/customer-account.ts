@@ -24,7 +24,6 @@ export interface CustomerProfile {
 
 export interface ClosureFinding {
   code:
-    | 'active_contracts'
     | 'active_services'
     | 'in_progress_operations'
     | 'legal_retention'

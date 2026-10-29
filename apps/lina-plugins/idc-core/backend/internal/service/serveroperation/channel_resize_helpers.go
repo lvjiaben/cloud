@@ -76,16 +76,16 @@ ORDER BY field_key,candidate_value,id`, resolved.VersionNo); err != nil {
 (tenant_id,configuration_snapshot_no,product_no,version_no,source_revision_digest,
 selection_digest,selected_option_count,total_selected_quantity,content_digest)
 VALUES(0,?,?,?,?,?,?,?,?)`, snapshotNo, resolved.ProductNo, resolved.VersionNo,
-		resolved.SourceRevisionDigest, selectionDigest, len(selections), total, contentDigest); err != nil {
+		resolved.SourceRevisionDigest, selectionDigest, len(resolved.Items), total, contentDigest); err != nil {
 		return err
 	}
 	for index, item := range resolved.Items {
 		itemNo, _ := deterministicReference("rsi_", fmt.Sprintf("%s:%d", snapshotNo, index))
 		if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_core_commerce_configuration_snapshot_item
-(tenant_id,snapshot_item_no,configuration_snapshot_no,group_no,option_no,group_code,option_code,
+(tenant_id,snapshot_item_no,configuration_snapshot_no,version_no,group_no,option_no,group_code,option_code,
 component_type_code,group_name_zh_cn,group_name_en_us,option_name_zh_cn,option_name_en_us,
 normalized_value,quantity,sort_order)
-VALUES(0,?,?,?,?,?,?,?,?,?,?,?,?,?::JSONB,?,?)`, itemNo, snapshotNo, item.GroupNo,
+VALUES(0,?,?,?,?,?,?,?,?,?,?,?,?,?::JSONB,?,?)`, itemNo, snapshotNo, resolved.VersionNo, item.GroupNo,
 			item.OptionNo, item.GroupCode, item.OptionCode, item.ComponentTypeCode,
 			item.GroupNameZhCN, item.GroupNameEnUS, item.OptionNameZhCN, item.OptionNameEnUS,
 			item.NormalizedValue, item.Quantity, item.SortOrder); err != nil {

@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -46,7 +47,7 @@ var _ paymentcap.ConnectionVerifier = (*Adapter)(nil)
 
 func New(client *http.Client) *Adapter {
 	if client == nil {
-		client = &http.Client{Timeout: 15 * time.Second}
+		client = &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 15 * time.Second}
 	}
 	return &Adapter{httpClient: client, now: time.Now}
 }

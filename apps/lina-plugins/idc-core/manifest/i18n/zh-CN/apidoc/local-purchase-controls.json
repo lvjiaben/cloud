@@ -1,0 +1,9 @@
+{
+  "Optional local purchase control: auto, input, slider, select or radio": "本地购买控件，可选 auto（自动）、input（输入框）、slider（滑块）、select（下拉框）、radio（单选按钮）",
+  "Optional exact positive integer step, anchored at the configured minimum; defaults to one": "可选正整数步长，从配置的最小值开始计算，默认 1",
+  "Optional local integer choices for select or radio controls, within the sale range and step": "下拉框或单选按钮的本地整数选项，须符合销售范围与步长",
+  "Merchant-owned local purchase control: auto, input, slider, select or radio": "商家设置的本地购买控件，可选 auto（自动）、input（输入框）、slider（滑块）、select（下拉框）、radio（单选按钮）",
+  "Exact positive integer increment from the minimum; defaults to one": "从最小值开始的正整数步长，默认 1",
+  "Merchant-defined numeric choices; submissions retain the integer value type": "商家定义的数值选项，提交时保持整数值类型",
+  "Whether the initial normalized configuration is already valid, without another evaluation request": "首次规范化配置是否已经有效，无需再次请求校验"
+}

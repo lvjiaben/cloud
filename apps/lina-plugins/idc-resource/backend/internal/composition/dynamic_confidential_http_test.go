@@ -64,6 +64,35 @@ func (s *confidentialHTTPSessions) Invalidate(_ context.Context, request resourc
 
 type confidentialHTTPClient struct{ client *http.Client }
 
+// TestConfidentialHTTPExecutePreservesValidationRejection prevents an error-only
+// supplier body from erasing a definitive 400/422 and becoming an unknown write.
+func TestConfidentialHTTPExecutePreservesValidationRejection(t *testing.T) {
+	for _, status := range []int{http.StatusBadRequest, http.StatusUnprocessableEntity} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			for _, body := range []string{`{"error":"private validation detail"}`, "invalid input"} {
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(status)
+					if _, err := io.WriteString(w, body); err != nil {
+						t.Error(err)
+					}
+				}))
+				handler := &confidentialHTTPHandler{
+					configuration:  channelconfig.Configuration{PluginID: "idc-zjmfcloud", Config: resourcecap.ProviderConfig{Endpoint: server.URL}},
+					environment:    resourcecap.ProviderEnv{HTTPClient: confidentialHTTPClient{client: server.Client()}},
+					providerMethod: resourcecap.DynamicProviderMethodExecute,
+				}
+				response, err := handler.perform(context.Background(), resourcecap.ConfidentialHTTPRequest{
+					Method: http.MethodPost, Path: "/clouds", ResponseFields: []string{"data", "id"},
+				}, nil)
+				server.Close()
+				if err != nil || response == nil || response.StatusCode != status || string(response.Data) != `{}` {
+					t.Fatalf("known rejection lost or private body exposed: response=%#v err=%v", response, err)
+				}
+			}
+		})
+	}
+}
+
 func (c confidentialHTTPClient) Do(request *http.Request) (*http.Response, error) {
 	return c.client.Do(request)
 }
@@ -484,5 +513,80 @@ func TestConfidentialConnectionProbeBypassesWarmSession(t *testing.T) {
 				t.Fatalf("probe response invalid or confidential")
 			}
 		})
+	}
+}
+
+// TestConfidentialRequestsUseConnectorAPIPrefix proves login and subsequent
+// reads both preserve the custom admin root and append the API version once.
+func TestConfidentialRequestsUseConnectorAPIPrefix(t *testing.T) {
+	for _, root := range []string{"/W5SHNaHntv/", "/W5SHNaHntv/v1/"} {
+		t.Run(root, func(t *testing.T) {
+			var paths []string
+			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				paths = append(paths, r.URL.Path)
+				switch r.URL.Path {
+				case "/W5SHNaHntv/v1/login":
+					if r.Method != http.MethodPost {
+						t.Error("login method changed")
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if _, err := w.Write([]byte(`"host-token"`)); err != nil {
+						t.Error(err)
+					}
+				case "/W5SHNaHntv/v1/clouds/41":
+					if r.Header.Get("Access-Token") != "host-token" {
+						t.Error("host did not supply authenticated token")
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if _, err := w.Write([]byte(`{"id":41}`)); err != nil {
+						t.Error(err)
+					}
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
+			username, err := secretcap.NewHandle("secret_root_username")
+			if err != nil {
+				t.Fatal(err)
+			}
+			password, err := secretcap.NewHandle("secret_root_password")
+			if err != nil {
+				t.Fatal(err)
+			}
+			h := confidentialHTTPHandler{configuration: channelconfig.Configuration{Config: resourcecap.ProviderConfig{
+				Endpoint: server.URL + root, Settings: json.RawMessage(`{"__host":{"apiPathPrefix":"/v1","policy":{"mode":"login_session","mappings":[{"role":"username","slot":"username"},{"role":"password","slot":"password"}],"path":"/login","readPath":["$"],"header":"Access-Token","ttlSeconds":3600}}}`), SecretBindings: []resourcecap.SecretBinding{{Name: "username", Handle: username}, {Name: "password", Handle: password}},
+			}}, environment: resourcecap.ProviderEnv{HTTPClient: confidentialHTTPClient{client: server.Client()}, Secrets: confidentialHTTPAccessor{"secret_root_username": []byte("user"), "secret_root_password": []byte("pass")}}}
+			token, err := h.performLogin(t.Context(), resourcecap.ConfidentialHTTPRequest{Method: http.MethodPost, Path: "/login"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer clear(token)
+			if _, err := h.perform(t.Context(), resourcecap.ConfidentialHTTPRequest{Method: http.MethodGet, Path: "/clouds/41", ResponseFields: []string{"id"}}, token); err != nil {
+				t.Fatal(err)
+			}
+			if len(paths) != 2 || paths[0] != "/W5SHNaHntv/v1/login" || paths[1] != "/W5SHNaHntv/v1/clouds/41" {
+				t.Fatalf("unexpected upstream paths: %v", paths)
+			}
+		})
+	}
+}
+
+func TestPrincipalCreateHTTP400IsDefinitiveAndBodyFree(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		if _, err := w.Write([]byte(`{"password":"private-supplier-canary"}`)); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer server.Close()
+	handler := &confidentialHTTPHandler{providerMethod: resourcecap.DynamicProviderMethodCreatePrincipal, configuration: channelconfig.Configuration{Config: resourcecap.ProviderConfig{Endpoint: server.URL, Settings: json.RawMessage(`{}`)}}, environment: resourcecap.ProviderEnv{HTTPClient: confidentialHTTPClient{client: server.Client()}}}
+	result, err := handler.perform(t.Context(), resourcecap.ConfidentialHTTPRequest{Method: http.MethodPost, Path: "/user", ResponseFields: []string{"id"}}, nil)
+	normalized := resourcecap.NormalizeProviderError(err)
+	if result != nil || normalized == nil || normalized.ResultUnknown || normalized.Code != resourcecap.ProviderCallErrorCodeInvalidResponse {
+		t.Fatalf("principal rejection result=%v failure=%+v", result, normalized)
+	}
+	if strings.Contains(err.Error(), "private-supplier-canary") {
+		t.Fatal("supplier rejection body escaped")
 	}
 }

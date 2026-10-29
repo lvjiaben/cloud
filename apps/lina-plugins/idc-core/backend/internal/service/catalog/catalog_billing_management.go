@@ -181,6 +181,9 @@ func (s *managementServiceImpl) CreatePriceSchedule(
 		}
 		mode := ConfigurationPriceFixed
 		if normalized.configurationPriceDimensionNo != "" {
+			if err := requireLocalConfigurationPrices(ctx, normalized.versionNo); err != nil {
+				return err
+			}
 			mode, lockErr = lockConfigurationPriceDimension(ctx, normalized.versionNo, normalized.configurationPriceDimensionNo)
 			if lockErr != nil {
 				return lockErr

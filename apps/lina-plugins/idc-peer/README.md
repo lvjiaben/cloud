@@ -25,3 +25,5 @@ Complete two-installation acceptance for the current version before delivery. Pa
 Connection verification and discovery consume `observedAt` from the authenticated upstream capabilities response. Renewal tasks use authenticated delivery and renewal-query observations. Missing or invalid observations fail closed; the managed WASM connector never manufactures wall time locally.
 
 Run `GOWORK=off go test ./backend/... -count=1` in this directory to verify the managed manifest, purchase protocol, balance rejection, read-only recovery after a lost response, and service ownership. These tests do not replace integration testing against two real installations.
+
+Restricted sale snapshots use protocol `2` and preserve `fulfillment.maximumPurchaseCycles` through the explicit response projection. A missing limit in protocol `2` is rejected; ordinary protocol `1` snapshots retain their previous behavior. This lets an older connector reject an unsupported restricted source instead of silently offering extra cycles.

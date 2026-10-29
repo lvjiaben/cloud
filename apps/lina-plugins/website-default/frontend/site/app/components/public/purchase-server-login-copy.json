@@ -1,0 +1,22 @@
+{
+  "en-US": {
+    "title": "Server login",
+    "hostname": "Hostname",
+    "password": "Server password",
+    "hintNew": "Enter your own details, or leave blank to generate them automatically.",
+    "hintExisting": "You can change the hostname. Leave the password blank to keep the existing password.",
+    "show": "Show password",
+    "hide": "Hide password",
+    "generate": "Generate"
+  },
+  "zh-CN": {
+    "title": "服务器登录信息",
+    "hostname": "主机名",
+    "password": "主机密码",
+    "hintNew": "允许自行填写，留空时自动生成。",
+    "hintExisting": "主机名可修改，密码留空保留已设置的密码。",
+    "show": "显示密码",
+    "hide": "隐藏密码",
+    "generate": "随机生成"
+  }
+}

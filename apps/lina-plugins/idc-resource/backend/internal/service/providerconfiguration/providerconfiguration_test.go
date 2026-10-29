@@ -14,7 +14,7 @@ import (
 	providerspi "lina-plugin-idc-resource/backend/cap/resourcecap/spi"
 )
 
-func TestValidEndpointAcceptsConnectorOwnedHTTPSRoots(t *testing.T) {
+func TestValidEndpointAcceptsExplicitHTTPAndHTTPSRoots(t *testing.T) {
 	tests := []struct {
 		name  string
 		value string
@@ -23,7 +23,9 @@ func TestValidEndpointAcceptsConnectorOwnedHTTPSRoots(t *testing.T) {
 		{name: "valid", value: "https://api.example.com/v1", want: true},
 		{name: "valid trailing slash", value: "https://api.example.com/v1/", want: true},
 		{name: "connector owned path", value: "https://api.example.com/provider/administrator", want: true},
-		{name: "http rejected", value: "http://api.example.com/v1", want: false},
+		{name: "explicit http", value: "http://api.example.com/v1", want: true},
+		{name: "unsupported scheme", value: "ftp://api.example.com/v1", want: false},
+		{name: "empty query", value: "http://api.example.com/v1?", want: false},
 		{name: "credentials rejected", value: "https://user:pass@api.example.com/v1", want: false},
 		{name: "query rejected", value: "https://api.example.com/v1?token=secret", want: false},
 		{name: "path traversal rejected", value: "https://api.example.com/../private", want: false},
@@ -245,5 +247,26 @@ func TestServerProviderDeclarationsAreSelectedWithoutBrandKnowledge(t *testing.T
 	}
 	if key.PluginID != "phone-like-name" || key.ProviderID != "server-api" {
 		t.Fatalf("server Provider selection still depends on a brand name: %#v", key)
+	}
+}
+
+// TestNativePurchaseAdmissionUsesProtocolRatherThanMissingHardware keeps the
+// generic native identity contract explicit without weakening server schemas.
+func TestNativePurchaseAdmissionUsesProtocolRatherThanMissingHardware(t *testing.T) {
+	resource := &capmodel.BusinessExtensionProviderEvidence{PluginID: "native-contract", ReleaseVersion: "v1.0.0", ReleaseDigest: strings.Repeat("a", 64)}
+	current := validProductEvidence(t, resource)
+	metadata, err := productfulfillmentcap.NewProviderMetadata(&productfulfillmentcap.ProviderDeclaration{SaleImportProtocol: productfulfillmentcap.SaleImportProtocolNativeFinanceV1, Capability: productfulfillmentcap.ProviderCapability{EnUS: "Native sale", ZhCN: "原生转售"}, EntitlementOwnerID: resourcecap.OwnerPluginID, Granularity: productfulfillmentcap.GranularityPerQuantityUnit, OngoingManagement: true, RenewalSupport: productfulfillmentcap.RenewalSupportUnsupported, ExpiryManagement: productfulfillmentcap.ExpiryManagementUnsupported, MethodRoles: productfulfillmentcap.ProviderMethodRoles{Provision: "provision", Query: "query"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	current.ProviderMetadata = metadata
+	current.CustomerConfiguration = nil
+	current.ProductConfiguration = &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "upstream_product_id", Type: capmodel.ConfigurationFieldSingleSelect, Required: true, DynamicCandidates: &capmodel.DynamicCandidateDeclaration{Version: "v1", Method: "configuration.candidates"}}, {Key: "upstream_configuration_revision", Type: capmodel.ConfigurationFieldSingleLine, Required: true, MinimumLength: 64, MaximumLength: 64}}}
+	if err = validateProductFulfillmentEvidence(current); err != nil {
+		t.Fatalf("explicit native contract was rejected: %v", err)
+	}
+	current.ProductConfiguration.Fields = current.ProductConfiguration.Fields[:1]
+	if validateProductFulfillmentEvidence(current) == nil {
+		t.Fatal("native metadata admitted a partial identity schema")
 	}
 }

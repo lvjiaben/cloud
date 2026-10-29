@@ -1,3 +1,6 @@
+// This file projects an already-owned cart and its current immutable quote with
+// bounded set queries; it never resolves a plugin per displayed item.
+
 package commerce
 
 import (
@@ -104,7 +107,7 @@ func (s *serviceImpl) projectCart(ctx context.Context, row *entity.CommerceCart)
 	if err := s.database.GetScan(ctx, &quantityRows, `SELECT quantity.cart_item_no,quantity.quantity
 FROM plugin_idc_core_commerce_cart_item_quantity quantity
 JOIN plugin_idc_core_commerce_cart_item item ON item.tenant_id=quantity.tenant_id AND item.cart_item_no=quantity.cart_item_no
-WHERE item.tenant_id=0 AND item.cart_no=? ORDER BY item.sort_order,item.id LIMIT ?`, row.CartNo, maximumCartItems+1); err != nil || len(quantityRows) != len(items) {
+WHERE item.tenant_id=0 AND item.cart_no=? AND item.status_code<>'removed' ORDER BY item.sort_order,item.id LIMIT ?`, row.CartNo, maximumCartItems+1); err != nil || len(quantityRows) != len(items) {
 		return nil, bizerr.NewCode(CodeUnavailable)
 	}
 	quantityByItem := make(map[string]int, len(quantityRows))
@@ -151,13 +154,20 @@ WHERE item.tenant_id=0 AND item.cart_no=? ORDER BY item.sort_order,item.id LIMIT
 			_, repair = cartItemRepair(issue)
 		}
 		projection := CartItem{
-			CartItemNo: item.CartItemNo, ProductNameZhCN: state.ProductNameZhCN,
+			CartItemNo: item.CartItemNo, ConfigurationReference: item.ConfigurationSnapshotNo, ProductNameZhCN: state.ProductNameZhCN,
 			ProductNameEnUS: state.ProductNameEnUS, PublicSlug: state.PublicSlug,
 			ConfigurationRequired: state.ConfigurationRequired, Quantity: quantityByItem[item.CartItemNo],
 			PurchaseCycles: item.PurchaseCycles, StatusCode: status,
 			IssueCode: issue, RepairAction: repair, Version: item.Version,
 		}
 		result.Items = append(result.Items, projection)
+	}
+	// Only the account DTO publishes these details; anonymous readers do not pay
+	// for a display projection which their contract cannot consume.
+	if row.CustomerNo != nil && *row.CustomerNo != "" {
+		if err = s.projectCartConfiguration(ctx, result); err != nil {
+			return nil, err
+		}
 	}
 	latestQuote, err := s.loadLatestCartQuote(ctx, row)
 	if err != nil {

@@ -63,6 +63,9 @@ export interface PaymentChannelCreateInput {
 }
 
 const api = (path: string) => pluginApiPath("idc-payment", path);
+export interface PaymentPublicAddress { notificationOrigin: string; customerReturnOrigin: string; version: number }
+export const getPaymentPublicAddresses = () => requestClient.get<{addresses: PaymentPublicAddress}>(api('/admin/payment-public-addresses'));
+export const savePaymentPublicAddresses = (input: PaymentPublicAddress) => requestClient.put<{addresses: PaymentPublicAddress}>(api('/admin/payment-public-addresses'), {notificationOrigin: input.notificationOrigin, customerReturnOrigin: input.customerReturnOrigin, expectedVersion: input.version});
 export const getPaymentChannelConfigurations = (page = 1, pageSize = 20) =>
   requestClient.get<{
     channels: PaymentChannel[];
@@ -79,6 +82,8 @@ export const setPaymentChannelStatus = (
     api(`/admin/payment-channels/${encodeURIComponent(channel.channelNo)}/status`),
     { expectedVersion: channel.version, statusCode },
   );
+export const savePaymentChannelModes = (channel: PaymentChannel, enabledModes: string[]) =>
+  requestClient.put<{channel: PaymentChannel}>(api(`/admin/payment-channels/${encodeURIComponent(channel.channelNo)}/payment-modes`), {enabledModes, expectedVersion: channel.version});
 export const verifyPaymentChannelConnection = (channel: PaymentChannel) =>
   requestClient.post<{ channel: PaymentChannel }>(
     api(

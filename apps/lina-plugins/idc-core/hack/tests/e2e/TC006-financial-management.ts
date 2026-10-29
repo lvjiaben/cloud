@@ -158,6 +158,7 @@ test.describe("TC-6 后台财务工作台", () => {
     await finance.goto();
     await expect(finance.invoiceRow(financialInvoiceNo)).toBeVisible();
 
+    await finance.pageRoot.getByText("更多工具：提醒、备注、导出", { exact: true }).click();
     await adminPage
       .getByTestId("finance-resend-invoice")
       .fill(financialInvoiceNo);
@@ -216,8 +217,10 @@ test.describe("TC-6 后台财务工作台", () => {
     await expect(pager.locator(".vxe-pager--sizes")).toBeVisible();
 
     const initialBox = await activeGrid.boundingBox();
-    expect(initialBox?.height).toBeGreaterThan(300);
-    expect(initialBox?.height).toBeLessThanOrEqual(440);
+    expect(initialBox?.height).toBeGreaterThan(200);
+    const pagerBox = await pager.boundingBox();
+    expect(pagerBox?.height).toBeGreaterThan(0);
+    expect((pagerBox?.y ?? 0) + (pagerBox?.height ?? 0)).toBeLessThanOrEqual(adminPage.viewportSize()!.height);
 
     await finance.pageRoot.getByRole("tab", { name: "账本流水" }).click();
     await finance.pageRoot

@@ -1,3 +1,5 @@
+// This file bounds automatic fulfillment progress and hands unresolved results
+// to staff without replaying writes or reporting stopped work as processing.
 package productfulfillment
 
 import "lina-plugin-idc-core/backend/cap/productfulfillmentcap"
@@ -37,10 +39,10 @@ func decideWorkerResult(previousTaskStatus, previousPhase string, action product
 			if cancelRequested {
 				return cancellationAttention
 			}
-			return workerDecision{TaskStatus: "result_unknown", IntentStatus: "processing", PhaseCode: "frozen_unknown"}
+			return workerDecision{TaskStatus: "result_unknown", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 		}
 		if previousTaskStatus == "accepted" || previousTaskStatus == "running" {
-			return workerDecision{TaskStatus: previousTaskStatus, IntentStatus: "processing", PhaseCode: "post_submit_query", ScheduleNext: queryAttempts < maximumQueryAttempts}
+			return continueWorkerObservation(previousTaskStatus, queryAttempts)
 		}
 		if queryAttempts >= maximumQueryAttempts {
 			if cancelRequested {
@@ -57,7 +59,7 @@ func decideWorkerResult(previousTaskStatus, previousPhase string, action product
 		if cancelRequested {
 			return cancellationAttention
 		}
-		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "processing", PhaseCode: "frozen_unknown"}
+		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 	}
 	terminal := func(taskStatus, intentStatus string) workerDecision {
 		return workerDecision{TaskStatus: taskStatus, IntentStatus: intentStatus, PhaseCode: "post_submit_query"}
@@ -74,7 +76,7 @@ func decideWorkerResult(previousTaskStatus, previousPhase string, action product
 		if cancelRequested {
 			return cancellationAttention
 		}
-		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "processing", PhaseCode: "frozen_unknown"}
+		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 	}
 	if takeoverRequested {
 		return manual
@@ -85,7 +87,7 @@ func decideWorkerResult(previousTaskStatus, previousPhase string, action product
 	switch result.Status {
 	case productfulfillmentcap.StatusNotFound:
 		if previousPhase != "pre_submit_query" {
-			return workerDecision{TaskStatus: "result_unknown", IntentStatus: "processing", PhaseCode: "frozen_unknown"}
+			return workerDecision{TaskStatus: "result_unknown", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 		}
 		if submitAttempts >= maximumSubmitAttempts {
 			return workerDecision{TaskStatus: "failed", IntentStatus: "manual_pending", PhaseCode: previousPhase}
@@ -97,12 +99,21 @@ func decideWorkerResult(previousTaskStatus, previousPhase string, action product
 		}
 		return workerDecision{TaskStatus: "retry_wait", IntentStatus: "processing", PhaseCode: "pre_submit_query", ScheduleNext: true}
 	case productfulfillmentcap.StatusAccepted:
-		return workerDecision{TaskStatus: "accepted", IntentStatus: "processing", PhaseCode: "post_submit_query", ScheduleNext: queryAttempts < maximumQueryAttempts}
+		return continueWorkerObservation("accepted", queryAttempts)
 	case productfulfillmentcap.StatusRunning:
-		return workerDecision{TaskStatus: "running", IntentStatus: "processing", PhaseCode: "post_submit_query", ScheduleNext: queryAttempts < maximumQueryAttempts}
+		return continueWorkerObservation("running", queryAttempts)
 	default:
-		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "processing", PhaseCode: "frozen_unknown"}
+		return workerDecision{TaskStatus: "result_unknown", IntentStatus: "manual_pending", PhaseCode: "frozen_unknown"}
 	}
+}
+
+// continueWorkerObservation preserves upstream acceptance while making an
+// exhausted local query budget visible as work requiring staff attention.
+func continueWorkerObservation(taskStatus string, queryAttempts int) workerDecision {
+	if queryAttempts >= maximumQueryAttempts {
+		return workerDecision{TaskStatus: taskStatus, IntentStatus: "manual_pending", PhaseCode: "post_submit_query"}
+	}
+	return workerDecision{TaskStatus: taskStatus, IntentStatus: "processing", PhaseCode: "post_submit_query", ScheduleNext: true}
 }
 
 func decideCancellationResult(action productfulfillmentcap.Action, status productfulfillmentcap.ResultStatus) workerDecision {

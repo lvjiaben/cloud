@@ -36,7 +36,7 @@ func TestReaderRequiresCompleteUniqueAnswers(t *testing.T) {
 		t.Fatal(err)
 	}
 	summary, err := service.Get(context.Background(), "CUS_test")
-	if err != nil || summary.Orders != 1 || summary.Audits != 9 {
+	if err != nil || summary.Orders != 1 || summary.Audits != 8 {
 		t.Fatalf("summary=%+v err=%v", summary, err)
 	}
 	broken := completeStubs("CUS_test")

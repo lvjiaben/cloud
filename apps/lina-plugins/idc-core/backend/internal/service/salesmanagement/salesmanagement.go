@@ -37,13 +37,13 @@ type Service interface {
 	SaveOwnership(context.Context, OwnershipInput) (Ownership, error)
 	// ListPrices returns current price revisions with joined display labels.
 	ListPrices(context.Context, PageInput) (PricePage, error)
-	// SavePrice appends an audited revision; stale concurrent writes are rejected.
+	// SavePrice appends an audited revision against a saved base-price term, including first-draft preparation; stale writes and unpriced terms are rejected.
 	SavePrice(context.Context, PriceInput) (PriceRule, error)
 	// DeletePrice appends a deletion revision, preserving all historical prices; stale versions fail.
 	DeletePrice(context.Context, string, int64) (PriceRule, error)
 	// PriceLevelCandidates lists tiers under price-management authorization.
 	PriceLevelCandidates(context.Context, PageInput) (LevelPage, error)
-	// PriceProductCandidates lists exact or searched published products under pricing authorization.
+	// PriceProductCandidates lists current published or first-draft base-price terms under pricing authorization; it does not enable draft sales.
 	PriceProductCandidates(context.Context, PageInput) (ProductPage, error)
 	// ListLevels returns a bounded page of named agent tiers; errors do not expose storage details.
 	ListLevels(context.Context, PageInput) (LevelPage, error)

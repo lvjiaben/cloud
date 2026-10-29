@@ -77,18 +77,19 @@ func (a *automationTestAuthorizer) AuthorizePublicationAdmission(context.Context
 }
 
 type automationTestExtensions struct {
-	evidence        []*capmodel.BusinessExtensionProviderEvidence
-	listCalls       int
-	exactCalls      int
-	exactBatchCalls int
-	admissionCalls  int
-	admissionErr    error
-	listErr         error
-	exactErr        error
-	lastAdmission   pluginhost.BusinessExtensionAdmissionInput
-	invokeCalls     int
-	invocations     []pluginhost.BusinessExtensionMethodInvokeInput
-	invoke          func(pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error)
+	evidence           []*capmodel.BusinessExtensionProviderEvidence
+	historicalEvidence *capmodel.BusinessExtensionProviderEvidence
+	listCalls          int
+	exactCalls         int
+	exactBatchCalls    int
+	admissionCalls     int
+	admissionErr       error
+	listErr            error
+	exactErr           error
+	lastAdmission      pluginhost.BusinessExtensionAdmissionInput
+	invokeCalls        int
+	invocations        []pluginhost.BusinessExtensionMethodInvokeInput
+	invoke             func(pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error)
 }
 
 type automationLockedContextKey struct{}
@@ -101,8 +102,11 @@ func (e *automationTestExtensions) ListProviders(context.Context, plugincap.Busi
 	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: e.evidence, Total: len(e.evidence)}, nil
 }
 
-func (e *automationTestExtensions) GetProviderExact(context.Context, plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+func (e *automationTestExtensions) GetProviderExact(_ context.Context, input plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
 	e.exactCalls++
+	if e.exactErr == nil && e.historicalEvidence != nil && e.historicalEvidence.ReleaseDigest == input.ReleaseDigest && e.historicalEvidence.DeclarationDigest == input.DeclarationDigest {
+		return cloneAutomationEvidence(e.historicalEvidence), nil
+	}
 	if e.exactErr != nil || len(e.evidence) == 0 {
 		return nil, e.exactErr
 	}
@@ -116,7 +120,7 @@ func (e *automationTestExtensions) GetProvidersExact(_ context.Context, inputs [
 	}
 	result := make([]*capmodel.BusinessExtensionProviderEvidence, len(inputs))
 	for index, input := range inputs {
-		for _, evidence := range e.evidence {
+		for _, evidence := range append(append([]*capmodel.BusinessExtensionProviderEvidence{}, e.evidence...), e.historicalEvidence) {
 			if evidence != nil && evidence.PluginID == input.PluginID && evidence.ReleaseVersion == input.ReleaseVersion && evidence.Point == input.Point && evidence.ContractVersion == input.ContractVersion && evidence.ReleaseDigest == input.ReleaseDigest && evidence.DeclarationDigest == input.DeclarationDigest {
 				result[index] = cloneAutomationEvidence(evidence)
 				break
@@ -147,9 +151,12 @@ func (*automationTestExtensions) WithConfidentialOutboundContext(
 }
 
 func (e *automationTestExtensions) InvokeProviderMethod(
-	_ context.Context,
+	ctx context.Context,
 	input pluginhost.BusinessExtensionMethodInvokeInput,
 ) (*capmodel.BusinessExtensionMethodResult, error) {
+	if ctx.Value(automationLockedContextKey{}) != nil {
+		return nil, errors.New("provider invocation cannot reacquire admission lifecycle lock")
+	}
 	e.invokeCalls++
 	e.invocations = append(e.invocations, input)
 	if e.invoke != nil {
@@ -408,11 +415,11 @@ func TestFrozenBindingEvidenceMatchesExactProviderWithoutPersistingMetadata(t *t
 		t.Fatal("persisted binding identity must not be accepted as exact provider evidence")
 	}
 	frozen.DisplayName = "商家自定义接口名称"
-	if !sameExactEvidence(frozen, exact) {
+	if !sameProviderContract(frozen, exact) {
 		t.Fatal("frozen binding identity with a merchant-owned display name did not match its exact provider release")
 	}
 	exact.ProviderMetadata = nil
-	if sameExactEvidence(frozen, exact) {
+	if sameProviderContract(frozen, exact) {
 		t.Fatal("exact provider evidence without owner metadata was accepted")
 	}
 }
@@ -556,4 +563,25 @@ func cloneAutomationEvidence(value *capmodel.BusinessExtensionProviderEvidence) 
 		clone.ProviderMetadata = &metadata
 	}
 	return &clone
+}
+
+// Verify that a connector outage cannot be presented as missing local prices.
+func TestPublicationReadinessReasonPreservesBusinessCause(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+		want catalog.PublicationReadinessReason
+	}{
+		{name: "provider unavailable", err: bizerr.NewCode(CodeEvidenceUnavailable), want: catalog.PublicationReasonProviderUnavailable},
+		{name: "option prices missing", err: bizerr.WrapCode(bizerr.NewCode(catalog.CodeManagementConflict), codeCustomerOptionPricesRequired), want: catalog.PublicationReasonConfigurationPricesMissing},
+		{name: "supplier unconfirmed", err: bizerr.NewCode(codeSupplierCapabilitiesUnconfirmed), want: catalog.PublicationReasonSupplierUnconfirmed},
+		{name: "incomplete configuration", err: bizerr.NewCode(catalog.CodeManagementConflict), want: catalog.PublicationReasonConfigurationIncomplete},
+		{name: "unexpected error", err: errors.New("database failure"), want: ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := publicationReadinessReason(test.err); got != test.want {
+				t.Fatalf("readiness reason=%s want=%s", got, test.want)
+			}
+		})
+	}
 }

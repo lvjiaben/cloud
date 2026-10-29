@@ -11,19 +11,21 @@ import (
 	"lina-core/pkg/bizerr"
 )
 
-// RequireRenewalSale rejects stopped products and missing sale authority.
+// RequireRenewalSale rejects stopped live offers. Deleted offers retain renewal
+// for already-authorized entitlements; callers still validate the exact service.
 func (s *publicCatalogReaderImpl) RequireRenewalSale(ctx context.Context, productNo string) error {
 	var row *struct {
 		StatusCode string `orm:"status_code"`
+		Deleted    bool   `orm:"deleted"`
 	}
 	err := s.database.GetScan(ctx, &row, `
-SELECT status_code FROM plugin_idc_core_catalog_product
-WHERE tenant_id=0 AND product_no=? AND deleted_at IS NULL
+SELECT status_code, deleted_at IS NOT NULL AS deleted FROM plugin_idc_core_catalog_product
+WHERE tenant_id=0 AND product_no=?
 FOR SHARE`, productNo)
 	if err != nil {
 		return gerror.Wrap(err, "lock renewal product sale")
 	}
-	if row == nil || row.StatusCode != catalogStatusActive {
+	if row == nil || (!row.Deleted && row.StatusCode != catalogStatusActive) {
 		return bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
 	return nil

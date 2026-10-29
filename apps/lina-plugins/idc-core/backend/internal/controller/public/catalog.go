@@ -14,11 +14,12 @@ func (c *ControllerV1) CatalogProductList(
 	req *v1.CatalogProductListReq,
 ) (*v1.CatalogProductListRes, error) {
 	page, err := c.catalog.Search(ctx, catalog.PublicCatalogSearchInput{
-		NamePrefix: req.NamePrefix,
-		CategoryNo: req.CategoryNo,
-		Currency:   req.Currency,
-		Cursor:     req.Cursor,
-		Limit:      req.Limit,
+		PublicSlugs: req.PublicSlugs,
+		NamePrefix:  req.NamePrefix,
+		CategoryNo:  req.CategoryNo,
+		Currency:    req.Currency,
+		Cursor:      req.Cursor,
+		Limit:       req.Limit,
 	})
 	if err != nil {
 		return nil, err

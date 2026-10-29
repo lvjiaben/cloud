@@ -18,4 +18,5 @@ type InboxDeliveryEvidence struct {
 	EvidenceType   string     `json:"evidenceType"   orm:"evidence_type"    description:""`
 	ContentDigest  string     `json:"contentDigest"  orm:"content_digest"   description:""`
 	CreatedAt      *time.Time `json:"createdAt"      orm:"created_at"       description:""`
+	HostMessageId  string     `json:"hostMessageId"  orm:"host_message_id"  description:""`
 }

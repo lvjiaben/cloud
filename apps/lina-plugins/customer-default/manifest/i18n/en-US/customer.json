@@ -5,6 +5,36 @@
       "description": "Independent customer template with services, orders, finance and support."
     }
   },
+  "accountConsole": {
+    "overview": "Console",
+    "welcome": "Welcome back, {name}",
+    "intro": "Manage your services, orders and billing.",
+    "orders": "My orders",
+    "support": "Contact support",
+    "purchase": "Buy products",
+    "balance": "Available balance",
+    "balanceUnavailable": "Balance could not be loaded. Please retry.",
+    "retry": "Retry",
+    "noBalanceAccount": "No balance account yet",
+    "manageBalance": "Balance and billing",
+    "servers": "Cloud servers",
+    "manageServers": "View and manage servers",
+    "unpaidInvoices": "Unpaid invoices",
+    "viewAndPay": "View and pay",
+    "recentOrders": "Recent orders",
+    "allOrders": "All orders",
+    "ordersUnavailable": "Orders could not be loaded. Please retry.",
+    "noOrders": "No orders yet",
+    "viewOrder": "View order",
+    "allServices": "All product services",
+    "accountSettings": "Account settings",
+    "serverHint": "Find provisioned servers, access information and operation history here.",
+    "cloudUnavailable": "Cloud server services are unavailable. Please contact support.",
+    "otherServerServices": "Other server services",
+    "myServices": "My services",
+    "servicesUnavailable": "Services could not be loaded. Please retry.",
+    "noServices": "No purchased services yet"
+  },
   "aiAssistant": {
     "menu": "AI assistant",
     "title": "Customer AI assistant",
@@ -15,6 +45,17 @@
     "dataAsOf": "Data as of: {value}",
     "disabled": "The AI assistant is not enabled yet. Contact an operator.",
     "error": "The AI assistant is temporarily unavailable. Please try again later."
+  },
+  "announcements": {
+    "title": "Announcements",
+    "detail": "Announcement",
+    "empty": "No announcements",
+    "read": "Read",
+    "unread": "Unread",
+    "loadFailed": "Unable to load announcements. Please try again.",
+    "readFailed": "Unable to save read status. Close and reopen to try again.",
+    "retry": "Retry",
+    "total": "Total {count}"
   },
   "assistance": {
     "title": "Customer simulation login",
@@ -41,7 +82,6 @@
       "title": "My orders"
     },
     "order": {
-      "contractOptional": "Ordinary individual orders do not require a contract. Only orders explicitly marked by staff follow contract gating.",
       "created": "Created",
       "delivery": "Product delivery",
       "services": "Ongoing services",
@@ -50,7 +90,9 @@
       "invoice": "Invoice",
       "requestRefund": "Request refund",
       "items": "Product items",
-      "label": "Order"
+      "label": "Order",
+      "refresh": "Refresh status",
+      "contractOptional": "Ordinary individual orders do not require a contract. Only orders explicitly marked by staff follow contract gating."
     },
     "quote": {
       "changed": "The price changed. Review the new amount before placing the order.",
@@ -136,7 +178,8 @@
       "terminated": "Terminated",
       "unavailable": "Status unavailable",
       "unknown": "Status unavailable",
-      "waiting_payment": "Waiting for payment"
+      "waiting_payment": "Waiting for payment",
+      "paid": "Paid"
     },
     "fulfillment": {
       "ongoing": "Ongoing service included",
@@ -156,162 +199,20 @@
         "awaiting_payment": "Awaiting payment",
         "awaiting_review": "Awaiting merchant review",
         "processing": "Processing",
+        "manual_processing": "Needs staff attention",
         "completed": "Completed",
         "not_completed": "Not completed",
         "cancelled": "Cancelled"
-      }
+      },
+      "processingHint": "Provisioning is in progress. This status updates automatically.",
+      "manualHint": "This order needs staff attention. Your payment is recorded; do not pay again.",
+      "incompleteHint": "Delivery is incomplete. Contact support for help; no repeat payment is needed.",
+      "refreshPaused": "Automatic updates have paused. Refresh the status to try again."
     },
     "units": {
       "cycles": "billing cycles",
       "items": "items",
       "servers": "servers"
-    }
-  },
-  "contracts": {
-    "center": {
-      "menu": "Contracts & signers",
-      "title": "Contracts & signers",
-      "contracts": "My contracts",
-      "signers": "Authorized signers",
-      "enterpriseRequired": "Complete enterprise verification before managing authorized signers."
-    },
-    "mine": {
-      "menu": "My contracts",
-      "title": "My contracts",
-      "eyebrow": "Signing and evidence",
-      "heading": "Review and complete your electronic contracts",
-      "subtitle": "Each contract keeps its frozen order, amount, signer, and seven-day deadline. Returning from Tencent or seeing a browser message never replaces an authoritative server result.",
-      "refresh": "Refresh list",
-      "returnTitle": "You are back—check the result explicitly",
-      "returnDescription": "Returning to this page does not prove completion. Select “Recheck signing result” on the matching contract; only Tencent's authoritative result is accepted.",
-      "authorityTitle": "The server-side provider result is authoritative",
-      "authorityDescription": "Recheck only reads the existing flow. Getting another signing entry creates a new 30-minute link for the same contract and flow; it never creates a second contract or extends the seven-day deadline.",
-      "loadFailed": "Contracts could not be loaded. Please try again later.",
-      "retry": "Reload",
-      "empty": "There are no contracts to show",
-      "loadMore": "Load more contracts",
-      "failedDescription": "The customer cannot launch a new signing flow for this contract. If retry remains available, it only creates another short-lived entry for the same contract and flow.",
-      "status": {
-        "processing": "Processing",
-        "completed": "Completed",
-        "failed": "Failed"
-      },
-      "fields": {
-        "order": "Order number",
-        "amount": "Contract amount",
-        "created": "Created",
-        "deadline": "Signing deadline"
-      },
-      "actions": {
-        "openSigning": "Sign with Tencent",
-        "retrySigning": "Get another signing entry",
-        "recheck": "Recheck signing result"
-      },
-      "messages": {
-        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
-        "invalidSigningLink": "The server did not return a safe HTTPS signing entry, so no external page was opened.",
-        "openFailed": "A signing entry could not be obtained. Please try again later.",
-        "recheckFailed": "The signing result could not be rechecked. Please try again later.",
-        "rechecked": "The latest authoritative state was loaded. The contract is still processing.",
-        "completed": "Tencent's authoritative state confirms that the contract is complete."
-      }
-    },
-    "signers": {
-      "menu": "Contract signers",
-      "title": "Contract signers",
-      "eyebrow": "Enterprise contract security",
-      "heading": "Manage people who may sign contracts for the company",
-      "subtitle": "Only active handlers who have completed both personal identity and phone verification can be selected when staff prepare a new contract.",
-      "add": "Add signer",
-      "separationTitle": "This is not the notification contact list",
-      "separationDescription": "Notification contacts only receive messages and never gain authority to sign. Contract signers must be added here and complete both checks separately.",
-      "returnTitle": "Check the identity result explicitly",
-      "returnDescription": "Returning from the identity page does not prove approval. Find the signer and select “Check identity result”; only the server-side provider check is authoritative.",
-      "loadFailed": "Contract signers could not be loaded. Please try again later.",
-      "enterpriseOnlyTitle": "Contract signers are only needed for enterprise customers",
-      "enterpriseOnlyDescription": "This is an individual customer account, so no enterprise contract signer setup is required. Individual contracts are signed by the account holder.",
-      "retry": "Reload",
-      "empty": "No contract signer has been added",
-      "candidateReady": "Available for new contracts",
-      "fields": {
-        "identity": "Identity document",
-        "phone": "Phone",
-        "updated": "Last updated"
-      },
-      "status": {
-        "identity": {
-          "unverified": "Not verified",
-          "verifying": "Verification in progress",
-          "verified": "Identity verified",
-          "review_required": "Manual review required",
-          "expired": "Identity expired"
-        },
-        "phone": {
-          "unverified": "Not verified",
-          "verifying": "Code requested",
-          "verified": "Phone verified"
-        },
-        "signer": {
-          "active": "Verification incomplete",
-          "disabled": "Disabled"
-        }
-      },
-      "identity": {
-        "title": "Personal identity verification",
-        "pending": "Pending",
-        "done": "Verified",
-        "start": "Verify identity",
-        "check": "Check identity result"
-      },
-      "phone": {
-        "title": "Phone verification",
-        "pending": "Pending",
-        "done": "Verified",
-        "start": "Verify phone",
-        "modalTitle": "Verify the signer's phone",
-        "channelTitle": "The code is sent by the platform-wide SMS channel",
-        "channelDescription": "This feature has no separate SMS account or template. It fails clearly if the administrator has not configured an active channel and a template for this purpose.",
-        "humanCheck": "Complete the human check first",
-        "image": "Image",
-        "accessible": "Text",
-        "imageAlt": "Human verification image",
-        "answer": "Enter the answer",
-        "sendCode": "Verify and send SMS code",
-        "unsupportedChallenge": "This human verification method cannot be completed on this page. Ask an administrator to check the verification provider configuration.",
-        "uncertainTitle": "No safe delivery result was received",
-        "uncertainDescription": "The system will not send again automatically. Check the SMS channel, then explicitly request a new challenge before trying again.",
-        "newChallenge": "Get a new challenge",
-        "codeTitle": "The verification code was requested",
-        "codeDescription": "Enter the six-digit code sent to {destination}. It expires at {expires}.",
-        "codePlaceholder": "Six-digit SMS code",
-        "verifyCode": "Confirm phone"
-      },
-      "create": {
-        "title": "Add a contract signer",
-        "notice": "Enter the signer's own legal details",
-        "description": "Only masked values are shown after submission. The signer must still complete both face identity and phone verification before becoming selectable.",
-        "name": "Legal name",
-        "identityNo": "Identity card number",
-        "phone": "Personal phone",
-        "consent": "I have the signer's consent and confirm these details are used only to verify their contract-signing identity.",
-        "cancel": "Cancel",
-        "submit": "Add signer"
-      },
-      "disable": {
-        "action": "Disable",
-        "title": "Disable this contract signer?",
-        "description": "The signer cannot be used for new contracts. Existing contract snapshots keep their frozen signer and are not rewritten.",
-        "cancel": "Keep active",
-        "confirm": "Disable signer"
-      },
-      "messages": {
-        "created": "The signer was added. Complete both verification steps next.",
-        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
-        "identityVerified": "Personal identity verification passed.",
-        "identityChecked": "The latest identity status was loaded.",
-        "phoneVerified": "Phone verification passed.",
-        "disabled": "The signer was disabled and will not appear for new contracts."
-      }
     }
   },
   "credit": {
@@ -448,7 +349,7 @@
       "archiveDescription": "This contact will stop receiving new notifications. Existing history remains retained.",
       "archiveTitle": "Deactivate this contact?",
       "archived": "The contact has been deactivated.",
-      "authorityWarning": "Notification contacts only receive messages you authorize. They do not gain sign-in, payment, server operation or contract signing authority.",
+      "authorityWarning": "Notification contacts only receive messages you authorize. They do not gain sign-in, payment or server operation authority.",
       "callingCode": "Calling code",
       "cancel": "Cancel",
       "createTitle": "Add notification contact",
@@ -478,11 +379,11 @@
       "closureBlocked": "Some items must be resolved before a closure request can be submitted.",
       "closureCancel": "Not now",
       "closureConfirm": "Submit request",
-      "closureConfirmDescription": "The system first checks funds, billing invoices, servers, contracts and in-progress work. Passing the check only starts a manual review; it does not immediately delete the account.",
+      "closureConfirmDescription": "The system first checks funds, billing invoices, servers and in-progress work. Passing the check only starts a manual review; it does not immediately delete the account.",
       "closureConfirmTitle": "Request account closure?",
-      "closureDescription": "Closure is not immediate deletion. Funds, billing invoices, servers, contracts and in-progress work are checked first. Ordinary profile data is anonymized only after approval. Contract, tax invoice and audit evidence required by law remains retained.",
+      "closureDescription": "Closure is not immediate deletion. Funds, billing invoices, servers and in-progress work are checked first. Ordinary profile data is anonymized only after approval. Contract, tax invoice and audit evidence required by law remains retained.",
       "closurePending": "Your closure request is waiting for manual review. Every blocking condition will be checked again before final processing.",
-      "closureSafety": "Closure is blocked while there are funds, unpaid billing invoices, active servers, active contracts or in-progress work.",
+      "closureSafety": "Closure is blocked while there are funds, unpaid billing invoices, active servers or in-progress work.",
       "closureSubmitted": "Your closure request has been submitted for review.",
       "closureTitle": "Account closure",
       "download": "Download export",
@@ -514,12 +415,12 @@
       "succeeded": "Generated"
     },
     "closureFinding": {
-      "active_contracts": "Contracts still in progress",
       "active_services": "Active server services",
       "in_progress_operations": "Business operations still in progress",
       "legal_retention": "Evidence that must be retained by law (does not block the request)",
       "unsettled_funds": "Unsettled balance or held funds",
-      "unsettled_invoices": "Unsettled billing invoices"
+      "unsettled_invoices": "Unsettled billing invoices",
+      "active_contracts": "Contracts still in progress"
     }
   },
   "customerActivation": {
@@ -786,7 +687,13 @@
       "pending_payment": "Awaiting payment",
       "refunded": "Refunded",
       "submitted": "Submitted, awaiting provider confirmation",
-      "succeeded": "Completed"
+      "succeeded": "Completed",
+      "created": "Payment created",
+      "closed": "Closed",
+      "late_success": "Late payment received",
+      "manual_review": "Review required",
+      "disputed": "Payment disputed",
+      "unavailable": "Status unavailable"
     },
     "invoice": {
       "detailTitle": "Invoice {invoiceNo}",
@@ -830,7 +737,9 @@
         "wechat_h5": "WeChat H5",
         "wechat_native": "WeChat QR code",
         "wechat_jsapi": "WeChat Official Account",
-        "epay_cashier": "EPay cashier"
+        "epay_cashier": "EPay cashier",
+        "epay_alipay": "EPay · Alipay",
+        "epay_wechat": "EPay · WeChat Pay"
       },
       "unavailable": "No payment channel has passed the capability gate, so recharge is unavailable. Existing balance payments still work."
     },
@@ -839,12 +748,19 @@
       "eyebrow": "Secure payment status",
       "complete": "Recharge credited",
       "confirming": "Waiting for payment confirmation",
-      "description": "This page shows the server-confirmed result. Returning from a cashier never credits the balance by itself.",
+      "description": "This page shows the confirmed payment result. Returning from the payment provider does not by itself confirm receipt.",
       "attemptNo": "Payment reference",
       "currency": "Currency",
       "refresh": "Refresh status",
       "back": "Back to finance",
-      "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly."
+      "loadFailed": "Payment status is temporarily unavailable. Try refreshing shortly.",
+      "orderComplete": "Payment confirmed",
+      "orderDescription": "The payment has been recorded against your invoice. Provisioning is processed separately; open your order for its latest progress and delivered services.",
+      "unsuccessful": "Payment was not completed",
+      "viewDelivery": "View provisioning progress",
+      "creditComplete": "Repayment confirmed",
+      "needsReview": "Payment needs review",
+      "reviewDescription": "This payment requires review. Keep the payment reference and contact support."
     },
     "merge": {
       "action": "Merge selected invoices",
@@ -888,6 +804,16 @@
       "merged": "Invoices were merged safely and the list was refreshed.",
       "paid": "Balance payment succeeded and invoice facts were refreshed.",
       "renewalSaved": "Automatic-renewal policy updated."
+    },
+    "onlinePayment": {
+      "action": "Pay online",
+      "title": "Choose payment method",
+      "continue": "Confirm and pay",
+      "failed": "Could not prepare payment. Your order and selection are preserved. Please retry.",
+      "identity": "Complete identity verification before paying this invoice.",
+      "noChannels": "No online payment channel is available for this currency. Contact the merchant or use your account balance.",
+      "notPayable": "This order cannot be paid now. Check its status or contact the merchant.",
+      "alreadyPaid": "This invoice is paid. Do not pay again; check the order for processing progress."
     }
   },
   "identity": {
@@ -1098,82 +1024,99 @@
       "tenants": "Tenants"
     }
   },
-  "notifications": {
-    "channelChoices": "Channel choices",
-    "consentOptedIn": "Opted in",
-    "consentOptedOut": "Opted out",
-    "consentUnknown": "Unknown status",
-    "disabled": "Disabled",
-    "enabled": "Enabled",
-    "marketingConsents": "Marketing consent",
-    "marketingDescription": "Turn a marketing channel off to unsubscribe. You can turn it on again only when the current consent policy is available.",
-    "marketingEditingUnavailable": "Use the marketing consent controls below to unsubscribe or opt in again.",
-    "marketingEvidenceMissing": "The current consent information is incomplete, so this setting is locked to avoid recording the wrong choice.",
-    "marketingTitle": "Choose how you receive marketing messages",
-    "marketingToggleLabel": "Receive marketing messages by {channel}",
-    "preferenceRetryReady": "The latest settings are loaded and your choice is retained. Save it again.",
-    "preferenceSaveFailed": "Your change was not saved. Your choice is retained; load the latest settings first.",
-    "preferenceSaved": "Saved",
-    "preferenceToggleLabel": "{channel} delivery for {category}",
-    "preferenceVersion": "Settings version",
-    "preferredLocale": "Message language",
-    "preferencesDescription": "You can change ordinary notification choices one at a time, unsubscribe from or restore marketing messages, and edit quiet hours. Security notices always remain on.",
-    "preferencesEmpty": "No individual channel choices have been saved",
-    "preferencesLoadFailed": "Notification preferences are temporarily unavailable. Try again later.",
-    "preferencesTitle": "Notification delivery settings",
-    "quietHours": "Quiet hours",
-    "quietHoursContactAmbiguous": "More than one marketing contact is available, so quiet hours are locked until the service can identify the correct one.",
-    "quietHoursEnabledLabel": "Enable quiet hours",
-    "quietHoursEnd": "End time",
-    "quietHoursEvidenceMissing": "The current marketing consent information is incomplete, so quiet hours cannot be changed safely.",
-    "quietHoursInvalid": "Enter a valid time zone, start time, and end time.",
-    "quietHoursMissing": "No current quiet-hours setting is available. Nothing has been changed.",
-    "quietHoursStart": "Start time",
-    "quietHoursTimezone": "Time zone (city/region)",
-    "refreshLatest": "Load latest settings",
-    "saveAgain": "Save again",
-    "saveQuietHours": "Save quiet hours",
-    "securityRequired": "This notification cannot be turned off because it protects your account and services.",
-    "categories": {
-      "account": "Account",
-      "billing": "Billing",
-      "marketing": "Marketing",
-      "security": "Security",
-      "service": "Service",
-      "support": "Support tickets"
+  "nativeServers": {
+    "title": "Cloud servers",
+    "product": "Product",
+    "serverNo": "Server number",
+    "resourceState": "Delivery status",
+    "runtimeState": "Runtime status",
+    "entitlementState": "Service status",
+    "actions": "Actions",
+    "refresh": "Refresh status",
+    "manage": "Manage",
+    "more": "Load more",
+    "back": "Back to servers",
+    "sourceOrder": "View order",
+    "overview": "Server overview",
+    "startedAt": "Provisioned at",
+    "expiresAt": "Expires at",
+    "observedAt": "Status observed at",
+    "noExpiry": "No expiry",
+    "notObserved": "No confirmed observation",
+    "loadFailed": "Unable to read this server. Refresh to try again.",
+    "processing": "The operation is in progress. Status updates automatically. Wait for the current task to finish.",
+    "attention": "The operation needs reconciliation. Further operations are paused. Contact support.",
+    "observationUnavailable": "The upstream runtime state could not be confirmed. Operations are disabled until refreshed.",
+    "operationFailed": "The request could not be confirmed. Retry the same request instead of creating another operation.",
+    "retrySame": "Retry same request",
+    "access": "Login credentials",
+    "credentialHint": "The initial password is available once after confirmed provisioning. Save it securely and connect using your selected operating system.",
+    "reveal": "View initial password",
+    "credentialObservationUnavailable": "The server state is temporarily unavailable. Refresh the status before viewing the initial password.",
+    "credentialUnavailable": "The initial password is not ready or was already delivered. Contact support for assistance.",
+    "credentialFailed": "Password delivery did not complete. It will not be automatically retried. Refresh status or contact support.",
+    "credentialConfirmation": "This password is shown only once. After closing, it cannot be viewed again. Prepare to save it securely.",
+    "powerConfirmation": "Stopping or rebooting interrupts workloads. Confirm that work is saved and this action may proceed.",
+    "confirmed": "I understand the impact and confirm this action",
+    "confirm": "Confirm action",
+    "cancel": "Cancel",
+    "initialPassword": "Initial password",
+    "passwordOnce": "Save the password securely now. Closing clears this display.",
+    "closePassword": "Saved, close",
+    "history": "Latest 10 operations",
+    "noOperations": "No power operations yet",
+    "mapping": {
+      "active": "Provisioned",
+      "provisioning": "Provisioning",
+      "quarantined": "Needs attention",
+      "released": "Released",
+      "releasing": "Releasing",
+      "unknown": "Needs reconciliation"
     },
-    "channels": {
-      "email": "Email",
-      "in_app": "In-app",
-      "sms": "SMS",
-      "wechat_official": "WeChat Official Account"
+    "runtime": {
+      "active": "Running",
+      "running": "Running",
+      "stopped": "Stopped",
+      "pending": "Processing",
+      "suspended": "Suspended",
+      "terminated": "Terminated",
+      "failed": "Unhealthy",
+      "unknown": "Needs reconciliation"
     },
-    "completedAt": "Completed",
-    "deliveryHistory": "Delivery history",
-    "empty": "No notification delivery records yet",
-    "loadFailed": "Notification delivery records are temporarily unavailable. Try again later.",
-    "menu": "Notification center",
-    "nextPage": "Next",
-    "pageNumber": "Page {page}",
-    "preferences": "Delivery preferences",
-    "previousPage": "Previous",
-    "queuedAt": "Created",
-    "retry": "Retry",
-    "statuses": {
+    "entitlement": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "terminated": "Terminated",
       "cancelled": "Cancelled",
-      "delivered": "Delivered",
-      "failed": "Failed",
-      "manual_review": "Awaiting manual confirmation",
-      "manual_unknown_closed": "Manual confirmation completed",
-      "preference_blocked": "Skipped by your preference",
-      "queued": "Queued",
-      "result_unknown": "Result pending confirmation",
-      "retry_wait": "Waiting to retry",
-      "sending": "Sending",
-      "submitted": "Submitted to delivery channel",
-      "succeeded": "Sent successfully",
-      "template_error": "Content preparation failed"
-    }
+      "pending_activation": "Awaiting activation",
+      "unknown": "Needs reconciliation"
+    },
+    "power": {
+      "start": "Start",
+      "stop": "Stop",
+      "reboot": "Reboot",
+      "unknown": "Operation"
+    },
+    "operationStatus": {
+      "pending": "Queued",
+      "submitting": "Submitting",
+      "accepted": "Accepted",
+      "running": "Running",
+      "retry_wait": "Awaiting retry",
+      "succeeded": "Completed",
+      "failed": "Unsuccessful",
+      "canceled": "Cancelled",
+      "result_unknown": "Needs reconciliation",
+      "manual_takeover": "Manual attention",
+      "unknown": "Needs reconciliation"
+    },
+    "ipAddresses": "IP addresses",
+    "noAddresses": "No IP addresses are currently allocated",
+    "addressesUnavailable": "No confirmed IP addresses are available. Refresh or contact support.",
+    "allAddresses": "Show all {count} IP addresses",
+    "collapseAddresses": "Collapse",
+    "waitingForProvider": "The upstream channel is temporarily paused. This request has not been sent. It will resume automatically after {time}; do not submit it again."
   },
   "page": {
     "auth": {
@@ -2881,82 +2824,6 @@
     "verified": "Contact verified",
     "verifyAndSendCode": "Verify and send code"
   },
-  "privacy": {
-    "menu": "Privacy & Authorization",
-    "title": "Privacy & Authorization",
-    "eyebrow": "Understand and manage your information",
-    "heading": "Privacy & Authorization",
-    "subtitle": "Review purposes, retention periods, and current consent, or request an export or deletion of your information.",
-    "evidenceTitle": "Withdrawal does not erase records that must legally be retained",
-    "evidenceDescription": "Withdrawal stops future processing that relies on that consent. Contract, tax, dispute, audit, or legally held evidence is handled only after its retention basis ends.",
-    "loadFailed": "Privacy information could not be loaded. Try again later.",
-    "retry": "Reload",
-    "noticeTitle": "How we process information",
-    "noticeEmpty": "No processing notice has been published",
-    "consentTitle": "My consent",
-    "consentEmpty": "No consent record is available",
-    "requestTitle": "My requests",
-    "requestEmpty": "No export or deletion request yet",
-    "days": "days",
-    "fields": {
-      "purpose": "Purpose",
-      "necessity": "Why it is needed",
-      "impact": "Possible impact",
-      "recipients": "Recipients",
-      "storage": "Storage location",
-      "retention": "Retention",
-      "rights": "How to exercise your rights"
-    },
-    "assessment": {
-      "personal_verification": "Personal verification",
-      "sensitive_personal_information": "Sensitive personal information",
-      "enterprise_verification": "Enterprise verification",
-      "electronic_contract": "Electronic contract",
-      "tax_invoice": "Tax invoice"
-    },
-    "consent": {
-      "granted": "Granted",
-      "withdrawn": "Withdrawn"
-    },
-    "withdraw": {
-      "action": "Withdraw future consent",
-      "title": "Withdraw consent for future processing?",
-      "description": "New processing that relies on this consent will stop. Evidence that must be retained will not be deleted immediately.",
-      "confirm": "Withdraw consent"
-    },
-    "request": {
-      "export": "Request data export",
-      "delete": "Request data deletion",
-      "exportDescription": "The system will verify and prepare information owned by you.",
-      "deleteDescription": "The system first checks contract, tax, dispute, audit, and legal retention duties. It will not bypass them for immediate deletion.",
-      "submit": "Submit request"
-    },
-    "requestType": {
-      "export": "Data export",
-      "delete": "Data deletion"
-    },
-    "requestStatus": {
-      "submitted": "Submitted",
-      "processing": "Processing",
-      "retention_blocked": "Retention required",
-      "completed": "Completed",
-      "rejected": "Rejected"
-    },
-    "hold": {
-      "contract": "Contract evidence must be retained",
-      "tax": "Tax evidence must be retained",
-      "dispute": "Dispute evidence must be retained",
-      "audit": "Audit evidence must be retained",
-      "legal_hold": "Legally held"
-    },
-    "messages": {
-      "withdrawn": "Future consent was withdrawn",
-      "requested": "Request submitted"
-    },
-    "common": {
-      "cancel": "Cancel"
-    }
-  },
   "productDirectories": {
     "menu": "My services",
     "all": "All services",
@@ -2981,7 +2848,11 @@
       "provisioning": "Provisioning",
       "pending_activation": "Pending activation"
     },
-    "notStarted": "Not started"
+    "notStarted": "Not started",
+    "management": {
+      "preparing": "Management access is being prepared. Refresh shortly.",
+      "needs_attention": "Management access needs administrator attention. Contact support."
+    }
   },
   "purchaseConfiguration": {
     "actions": {
@@ -3023,9 +2894,22 @@
       "navigationFailed": "The configuration was saved. Return to the cart to continue.",
       "previewOnly": "No cart item is linked. You can validate the configuration and view pricing; enter from a product purchase action to save it to the cart.",
       "quoteFailed": "Pricing could not be calculated. Please try again.",
-      "quoted": "Configuration validated and pricing refreshed"
+      "quoted": "Configuration validated and pricing refreshed",
+      "loginCompleted": "Signed in. Returning to website checkout.",
+      "websiteRedirect": "Opening the website purchase page.",
+      "websiteUnavailable": "The website is temporarily unavailable. Please retry."
     },
-    "title": "Product purchase configuration"
+    "title": "Product purchase configuration",
+    "handoff": {
+      "restored": "Your website selections are restored. Complete the configuration and refresh pricing before adding to cart.",
+      "failed": "The saved configuration cannot be restored. It may have expired, been claimed, or changed. Return to the website and select again; no default configuration was substituted.",
+      "quantity": "Product quantity",
+      "cycles": "Billing cycles",
+      "term": "Billing term (validate and view pricing first)",
+      "selectTerm": "Select an available billing term and check the cycle count.",
+      "cartFailed": "The cart result could not be confirmed. Check your cart before trying again to avoid duplicates.",
+      "add": "Add to cart"
+    }
   },
   "refunds": {
     "actions": {
@@ -3168,6 +3052,18 @@
         "emptyEntries": "No commission entries yet."
       }
     }
+  },
+  "serverRenewal": {
+    "title": "Renew service",
+    "cycles": "Billing cycles",
+    "help": "Use current product prices while retaining your server specifications.",
+    "quote": "Calculate renewal price",
+    "confirm": "Confirm and pay",
+    "cancel": "Cancel",
+    "failed": "Renewal could not be confirmed. Retry, or request a new price if the quote expired.",
+    "amount": "Amount due",
+    "expiry": "Expiry after payment",
+    "payment": "Confirmation creates an invoice. Your service is extended only after successful payment."
   },
   "servers": {
     "actions": {
@@ -3402,7 +3298,7 @@
       "accepted": "The transfer request was accepted. If the email belongs to an eligible customer, they will see a confirmation in their customer center.",
       "confirm": "Accept server",
       "confirmDescription": "After confirmation, server {serviceNo} moves to your account. The former customer's historical invoices, payments, refunds, contracts, tax invoices, and tickets stay with them. Paid and still-valid snapshots or backups that belong only to this server move with it. Auto-renew is turned off, and you may enable it again if needed.",
-      "confirmFailed": "The transfer cannot be completed now. It may have expired, or the server may have an unpaid renewal or add-on invoice, refund, operation, or contract in progress.",
+      "confirmFailed": "The transfer cannot be completed now. It may have expired, or the server may have an unpaid renewal or add-on invoice, refund or operation in progress.",
       "confirmTitle": "Accept this server",
       "confirmed": "The server was transferred to your account.",
       "description": "Enter the recipient's registered and verified email. The same accepted response is shown whether or not the email exists. The recipient must confirm within 24 hours. Resolve unpaid renewal and add-on invoices first; auto-renew is turned off after transfer.",
@@ -3658,8 +3554,340 @@
     "paymentRequired": "Order created. Complete payment to start the traffic addition.",
     "created": "Traffic addition has been queued"
   },
+  "verificationConsent": {
+    "heading": "Verification consent",
+    "subtitle": "View consent for identity and enterprise verification and manage future processing permissions.",
+    "evidenceTitle": "Withdrawal does not erase records that must legally be retained",
+    "evidenceDescription": "Withdrawal stops future processing that relies on this consent. Evidence needed for tax, disputes, audits or legal obligations is retained until its retention requirements have ended.",
+    "loadFailed": "Unable to load consent records. Please try again.",
+    "retry": "Reload",
+    "consentTitle": "My consent",
+    "consentEmpty": "No consent record is available",
+    "assessment": {
+      "personal_verification": "Personal verification",
+      "sensitive_personal_information": "Sensitive personal information",
+      "enterprise_verification": "Enterprise verification",
+      "tax_invoice": "Tax invoice"
+    },
+    "consent": {
+      "granted": "Granted",
+      "withdrawn": "Withdrawn"
+    },
+    "withdraw": {
+      "action": "Withdraw future consent",
+      "title": "Withdraw consent for future processing?",
+      "description": "New processing that relies on this consent will stop. Evidence that must be retained will not be deleted immediately.",
+      "confirm": "Withdraw consent"
+    },
+    "messages": {
+      "withdrawn": "Future consent was withdrawn"
+    },
+    "common": {
+      "cancel": "Cancel"
+    }
+  },
   "cancel": "Cancel",
   "confirm": "Confirm",
   "collapse": "Collapse",
-  "expand": "Expand"
+  "expand": "Expand",
+  "contracts": {
+    "center": {
+      "menu": "Contracts & signers",
+      "title": "Contracts & signers",
+      "contracts": "My contracts",
+      "signers": "Authorized signers",
+      "enterpriseRequired": "Complete enterprise verification before managing authorized signers."
+    },
+    "mine": {
+      "menu": "My contracts",
+      "title": "My contracts",
+      "eyebrow": "Signing and evidence",
+      "heading": "Review and complete your electronic contracts",
+      "subtitle": "Each contract keeps its frozen order, amount, signer, and seven-day deadline. Returning from Tencent or seeing a browser message never replaces an authoritative server result.",
+      "refresh": "Refresh list",
+      "returnTitle": "You are back—check the result explicitly",
+      "returnDescription": "Returning to this page does not prove completion. Select “Recheck signing result” on the matching contract; only Tencent's authoritative result is accepted.",
+      "authorityTitle": "The server-side provider result is authoritative",
+      "authorityDescription": "Recheck only reads the existing flow. Getting another signing entry creates a new 30-minute link for the same contract and flow; it never creates a second contract or extends the seven-day deadline.",
+      "loadFailed": "Contracts could not be loaded. Please try again later.",
+      "retry": "Reload",
+      "empty": "There are no contracts to show",
+      "loadMore": "Load more contracts",
+      "failedDescription": "The customer cannot launch a new signing flow for this contract. If retry remains available, it only creates another short-lived entry for the same contract and flow.",
+      "status": {
+        "processing": "Processing",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "fields": {
+        "order": "Order number",
+        "amount": "Contract amount",
+        "created": "Created",
+        "deadline": "Signing deadline"
+      },
+      "actions": {
+        "openSigning": "Sign with Tencent",
+        "retrySigning": "Get another signing entry",
+        "recheck": "Recheck signing result"
+      },
+      "messages": {
+        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
+        "invalidSigningLink": "The server did not return a safe HTTPS signing entry, so no external page was opened.",
+        "openFailed": "A signing entry could not be obtained. Please try again later.",
+        "recheckFailed": "The signing result could not be rechecked. Please try again later.",
+        "rechecked": "The latest authoritative state was loaded. The contract is still processing.",
+        "completed": "Tencent's authoritative state confirms that the contract is complete."
+      }
+    },
+    "signers": {
+      "menu": "Contract signers",
+      "title": "Contract signers",
+      "eyebrow": "Enterprise contract security",
+      "heading": "Manage people who may sign contracts for the company",
+      "subtitle": "Only active handlers who have completed both personal identity and phone verification can be selected when staff prepare a new contract.",
+      "add": "Add signer",
+      "separationTitle": "This is not the notification contact list",
+      "separationDescription": "Notification contacts only receive messages and never gain authority to sign. Contract signers must be added here and complete both checks separately.",
+      "returnTitle": "Check the identity result explicitly",
+      "returnDescription": "Returning from the identity page does not prove approval. Find the signer and select “Check identity result”; only the server-side provider check is authoritative.",
+      "loadFailed": "Contract signers could not be loaded. Please try again later.",
+      "enterpriseOnlyTitle": "Contract signers are only needed for enterprise customers",
+      "enterpriseOnlyDescription": "This is an individual customer account, so no enterprise contract signer setup is required. Individual contracts are signed by the account holder.",
+      "retry": "Reload",
+      "empty": "No contract signer has been added",
+      "candidateReady": "Available for new contracts",
+      "fields": {
+        "identity": "Identity document",
+        "phone": "Phone",
+        "updated": "Last updated"
+      },
+      "status": {
+        "identity": {
+          "unverified": "Not verified",
+          "verifying": "Verification in progress",
+          "verified": "Identity verified",
+          "review_required": "Manual review required",
+          "expired": "Identity expired"
+        },
+        "phone": {
+          "unverified": "Not verified",
+          "verifying": "Code requested",
+          "verified": "Phone verified"
+        },
+        "signer": {
+          "active": "Verification incomplete",
+          "disabled": "Disabled"
+        }
+      },
+      "identity": {
+        "title": "Personal identity verification",
+        "pending": "Pending",
+        "done": "Verified",
+        "start": "Verify identity",
+        "check": "Check identity result"
+      },
+      "phone": {
+        "title": "Phone verification",
+        "pending": "Pending",
+        "done": "Verified",
+        "start": "Verify phone",
+        "modalTitle": "Verify the signer's phone",
+        "channelTitle": "The code is sent by the platform-wide SMS channel",
+        "channelDescription": "This feature has no separate SMS account or template. It fails clearly if the administrator has not configured an active channel and a template for this purpose.",
+        "humanCheck": "Complete the human check first",
+        "image": "Image",
+        "accessible": "Text",
+        "imageAlt": "Human verification image",
+        "answer": "Enter the answer",
+        "sendCode": "Verify and send SMS code",
+        "unsupportedChallenge": "This human verification method cannot be completed on this page. Ask an administrator to check the verification provider configuration.",
+        "uncertainTitle": "No safe delivery result was received",
+        "uncertainDescription": "The system will not send again automatically. Check the SMS channel, then explicitly request a new challenge before trying again.",
+        "newChallenge": "Get a new challenge",
+        "codeTitle": "The verification code was requested",
+        "codeDescription": "Enter the six-digit code sent to {destination}. It expires at {expires}.",
+        "codePlaceholder": "Six-digit SMS code",
+        "verifyCode": "Confirm phone"
+      },
+      "create": {
+        "title": "Add a contract signer",
+        "notice": "Enter the signer's own legal details",
+        "description": "Only masked values are shown after submission. The signer must still complete both face identity and phone verification before becoming selectable.",
+        "name": "Legal name",
+        "identityNo": "Identity card number",
+        "phone": "Personal phone",
+        "consent": "I have the signer's consent and confirm these details are used only to verify their contract-signing identity.",
+        "cancel": "Cancel",
+        "submit": "Add signer"
+      },
+      "disable": {
+        "action": "Disable",
+        "title": "Disable this contract signer?",
+        "description": "The signer cannot be used for new contracts. Existing contract snapshots keep their frozen signer and are not rewritten.",
+        "cancel": "Keep active",
+        "confirm": "Disable signer"
+      },
+      "messages": {
+        "created": "The signer was added. Complete both verification steps next.",
+        "popupBlocked": "The browser blocked the new window. Allow pop-ups and try again.",
+        "identityVerified": "Personal identity verification passed.",
+        "identityChecked": "The latest identity status was loaded.",
+        "phoneVerified": "Phone verification passed.",
+        "disabled": "The signer was disabled and will not appear for new contracts."
+      }
+    }
+  },
+  "notifications": {
+    "channelChoices": "Channel choices",
+    "consentOptedIn": "Opted in",
+    "consentOptedOut": "Opted out",
+    "consentUnknown": "Unknown status",
+    "disabled": "Disabled",
+    "enabled": "Enabled",
+    "marketingConsents": "Marketing consent",
+    "marketingDescription": "Turn a marketing channel off to unsubscribe. You can turn it on again only when the current consent policy is available.",
+    "marketingEditingUnavailable": "Use the marketing consent controls below to unsubscribe or opt in again.",
+    "marketingEvidenceMissing": "The current consent information is incomplete, so this setting is locked to avoid recording the wrong choice.",
+    "marketingTitle": "Choose how you receive marketing messages",
+    "marketingToggleLabel": "Receive marketing messages by {channel}",
+    "preferenceRetryReady": "The latest settings are loaded and your choice is retained. Save it again.",
+    "preferenceSaveFailed": "Your change was not saved. Your choice is retained; load the latest settings first.",
+    "preferenceSaved": "Saved",
+    "preferenceToggleLabel": "{channel} delivery for {category}",
+    "preferenceVersion": "Settings version",
+    "preferredLocale": "Message language",
+    "preferencesDescription": "You can change ordinary notification choices one at a time, unsubscribe from or restore marketing messages, and edit quiet hours. Security notices always remain on.",
+    "preferencesEmpty": "No individual channel choices have been saved",
+    "preferencesLoadFailed": "Notification preferences are temporarily unavailable. Try again later.",
+    "preferencesTitle": "Notification delivery settings",
+    "quietHours": "Quiet hours",
+    "quietHoursContactAmbiguous": "More than one marketing contact is available, so quiet hours are locked until the service can identify the correct one.",
+    "quietHoursEnabledLabel": "Enable quiet hours",
+    "quietHoursEnd": "End time",
+    "quietHoursEvidenceMissing": "The current marketing consent information is incomplete, so quiet hours cannot be changed safely.",
+    "quietHoursInvalid": "Enter a valid time zone, start time, and end time.",
+    "quietHoursMissing": "No current quiet-hours setting is available. Nothing has been changed.",
+    "quietHoursStart": "Start time",
+    "quietHoursTimezone": "Time zone (city/region)",
+    "refreshLatest": "Load latest settings",
+    "saveAgain": "Save again",
+    "saveQuietHours": "Save quiet hours",
+    "securityRequired": "This notification cannot be turned off because it protects your account and services.",
+    "categories": {
+      "account": "Account",
+      "billing": "Billing",
+      "marketing": "Marketing",
+      "security": "Security",
+      "service": "Service",
+      "support": "Support tickets"
+    },
+    "channels": {
+      "email": "Email",
+      "in_app": "In-app",
+      "sms": "SMS",
+      "wechat_official": "WeChat Official Account"
+    },
+    "completedAt": "Completed",
+    "deliveryHistory": "Delivery history",
+    "empty": "No notification delivery records yet",
+    "loadFailed": "Notification delivery records are temporarily unavailable. Try again later.",
+    "menu": "Notification center",
+    "nextPage": "Next",
+    "pageNumber": "Page {page}",
+    "preferences": "Delivery preferences",
+    "previousPage": "Previous",
+    "queuedAt": "Created",
+    "retry": "Retry",
+    "statuses": {
+      "cancelled": "Cancelled",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "manual_review": "Awaiting manual confirmation",
+      "manual_unknown_closed": "Manual confirmation completed",
+      "preference_blocked": "Skipped by your preference",
+      "queued": "Queued",
+      "result_unknown": "Result pending confirmation",
+      "retry_wait": "Waiting to retry",
+      "sending": "Sending",
+      "submitted": "Submitted to delivery channel",
+      "succeeded": "Sent successfully",
+      "template_error": "Content preparation failed"
+    }
+  },
+  "privacy": {
+    "menu": "Privacy & Authorization",
+    "title": "Privacy & Authorization",
+    "eyebrow": "Understand and manage your information",
+    "heading": "Privacy & Authorization",
+    "subtitle": "Review purposes, retention periods, and current consent, or request an export or deletion of your information.",
+    "evidenceTitle": "Withdrawal does not erase records that must legally be retained",
+    "evidenceDescription": "Withdrawal stops future processing that relies on that consent. Contract, tax, dispute, audit, or legally held evidence is handled only after its retention basis ends.",
+    "loadFailed": "Privacy information could not be loaded. Try again later.",
+    "retry": "Reload",
+    "noticeTitle": "How we process information",
+    "noticeEmpty": "No processing notice has been published",
+    "consentTitle": "My consent",
+    "consentEmpty": "No consent record is available",
+    "requestTitle": "My requests",
+    "requestEmpty": "No export or deletion request yet",
+    "days": "days",
+    "fields": {
+      "purpose": "Purpose",
+      "necessity": "Why it is needed",
+      "impact": "Possible impact",
+      "recipients": "Recipients",
+      "storage": "Storage location",
+      "retention": "Retention",
+      "rights": "How to exercise your rights"
+    },
+    "assessment": {
+      "personal_verification": "Personal verification",
+      "sensitive_personal_information": "Sensitive personal information",
+      "enterprise_verification": "Enterprise verification",
+      "electronic_contract": "Electronic contract",
+      "tax_invoice": "Tax invoice"
+    },
+    "consent": {
+      "granted": "Granted",
+      "withdrawn": "Withdrawn"
+    },
+    "withdraw": {
+      "action": "Withdraw future consent",
+      "title": "Withdraw consent for future processing?",
+      "description": "New processing that relies on this consent will stop. Evidence that must be retained will not be deleted immediately.",
+      "confirm": "Withdraw consent"
+    },
+    "request": {
+      "export": "Request data export",
+      "delete": "Request data deletion",
+      "exportDescription": "The system will verify and prepare information owned by you.",
+      "deleteDescription": "The system first checks contract, tax, dispute, audit, and legal retention duties. It will not bypass them for immediate deletion.",
+      "submit": "Submit request"
+    },
+    "requestType": {
+      "export": "Data export",
+      "delete": "Data deletion"
+    },
+    "requestStatus": {
+      "submitted": "Submitted",
+      "processing": "Processing",
+      "retention_blocked": "Retention required",
+      "completed": "Completed",
+      "rejected": "Rejected"
+    },
+    "hold": {
+      "contract": "Contract evidence must be retained",
+      "tax": "Tax evidence must be retained",
+      "dispute": "Dispute evidence must be retained",
+      "audit": "Audit evidence must be retained",
+      "legal_hold": "Legally held"
+    },
+    "messages": {
+      "withdrawn": "Future consent was withdrawn",
+      "requested": "Request submitted"
+    },
+    "common": {
+      "cancel": "Cancel"
+    }
+  }
 }

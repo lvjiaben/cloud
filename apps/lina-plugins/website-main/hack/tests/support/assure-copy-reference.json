@@ -1,0 +1,366 @@
+{
+  "source": "user-attachment:7b0eafe0-80c3-419e-bae1-9f9d8df23555",
+  "copy": [
+    {
+      "section": "hero",
+      "order": 0,
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/h1.pagebanner-title[1]",
+      "tag": "h1",
+      "headingLevel": 1,
+      "text": "服务保障",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 1,
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/p.pagebanner-description[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "保障您的服务安全和稳定运行，我们提供全方位的服务保障措施，确保您随时享受高品质的云服务体验。",
+      "interaction": "visible"
+    },
+    {
+      "section": "navigation",
+      "order": 2,
+      "parent": "navigation/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab.active[1]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "服务支持",
+      "interaction": "scroll-navigation"
+    },
+    {
+      "section": "navigation",
+      "order": 3,
+      "parent": "navigation/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[3]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "退款服务",
+      "interaction": "scroll-navigation"
+    },
+    {
+      "section": "navigation",
+      "order": 4,
+      "parent": "navigation/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[5]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "投诉建议",
+      "interaction": "scroll-navigation"
+    },
+    {
+      "section": "support",
+      "order": 5,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        24/7 技术支持",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 6,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        24/7 技术支持",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 7,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-left-item[1]/h2.serviceSupport-title[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                            在线客服                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 8,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-left-item[1]/p.serviceSuppor-desc[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                            我们的在线客服团队将在工作时间内为您提供实时支持，解答问题、提供帮助。                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 9,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-left-item[1]/p.serviceSuppor-desc[5]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                            在线时间：工作日 00:00-23:45                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 10,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-left-item[1]/div.serviceSupport-consultingService[7]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "立即咨询",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 11,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[1]/h2.serviceSupport-title[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                                    服务热线                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 12,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[1]/a.serviceSuppor-desc.cutOneSHair[3]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "\n                                    24小时服务热线： 400-8876675                                ",
+      "interaction": "visible",
+      "binding": "contactPhone"
+    },
+    {
+      "section": "support",
+      "order": 13,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[3]/h2.serviceSupport-title[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                                    工单服务                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 14,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[3]/p.serviceSuppor-desc[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                    我们的售前工程师团队将为您提供产品功能介绍、产品使用指导、产品演示等服务。                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 15,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[3]/div.serviceSupport-button[5]/a.cutOneSHair[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "我的工单",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 16,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-information[1]/div.serviceSupport-right-item[3]/div.serviceSupport-button[5]/a.cutOneSHair[3]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "提交工单",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 17,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-document[3]/a.document-title[3]/h2.cutOneSHair[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                                    常见问题\n                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "support",
+      "order": 18,
+      "parent": "support/div.comp_container.comp_container_auto[1]/div.serviceSupport[1]/div.serviceSupport-content.black[3]/div.serviceSupport-right-row[3]/div.serviceSupport-document[3]/p.document-desc[5]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                                提供常见技术文档提供产品使用、产品配置、使用须知、故障排查等服务文档。\n                            ",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 19,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        无忧退款政策",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 20,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        我们支持您在购买后的24小时内无理由退款，让您购买无后顾之忧（某些特殊产品除外）。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 21,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice[1]/p[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "退款政策",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 22,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "自购买服务日起计算24小时内可以申请请退款（前提没有违反本站条例内容），所有产品购买超过24小时后不接受任何退款，申请退款不包括产品套餐外的其他产品或者服务，如建站服务等，(除月付以外套餐不支持退款请求！请购买月付外套餐之前测试好！)。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 23,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "备注条例：",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 24,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[5]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "1:使用余额购买的产品，24小时内仅退回余额，不允许退回其他收款方式，不支持余额提现(推介计划返利除外)。请提供需要退款的账户、产品，发起工单处理。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 25,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[7]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "2:发起退款请求以后，请在规定的购买时间1天内提供收款方式，否则超过规定时间将不允许退款，在退款后我们有权删除所有的数据并且不保留任何备份。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 26,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[9]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "3:一个账户一个月内最多只能申请1次退款请求，并且不允许一个人申请多个账户，如果发现将多账户合并，超过本要求将不提供任何退款服务。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 27,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[11]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "4:VPS在两小时内流量使用超过1G并提出退款申请的的不予受理。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 28,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[13]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "通过微信购买退款手续费：服务器购买价格x10%接口手续费",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 29,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[15]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "通过支付宝购买退款手续费：服务器购买价格x10%接口手续费",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 30,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.refundService-left[1]/div.refundNotice-content[3]/p[17]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "特别备注：在特殊情况请勿进行与国内大流量交换，如果IP由于自身使用原因被墙将不提供退款服务，部分套餐退款要求特殊规定，将按套餐要求进行。",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 31,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.serviceSupport-document[3]/a.document-title[3]/h2.cutOneSHair[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                                退款申请\n                            ",
+      "interaction": "visible"
+    },
+    {
+      "section": "refund",
+      "order": 32,
+      "parent": "refund/div.comp_container.comp_container_auto[1]/div.refundService[1]/div.refundService-content[3]/div.serviceSupport-document[3]/p.document-desc[5]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                            灵活的退款政策，让您购买无忧。满足您的需求，保障您的权益。\n                        ",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 33,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        投诉与建议",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 34,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        欢迎提供关于产品功能使用、产品/系统稳定性的建议，或者提交投诉举报，我们将认真处理并改进。",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 35,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.reportingPlatform-container[3]/div.reporting-body[1]/div.reporting-left[1]/div.reporting-text[1]/div.reporting-text-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                    意见反馈与建议                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 36,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.reportingPlatform-container[3]/div.reporting-body[1]/div.reporting-left[1]/div.reporting-text[1]/div.reporting-text-description[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                    您在使用产品和服务过程中，对产品有更好的建议请反馈给我们，谢谢！                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 37,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.reportingPlatform-container[3]/div.reporting-body[1]/div.reporting-left[1]/a.reporting-btn.cutOneSHair[3]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "提交举报或建议",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 38,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.reportingPlatform-container[3]/div.reporting-body[1]/div.reporting-right[3]/div.reporting-text[1]/div.reporting-text-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                    我要举报违法信息                                ",
+      "interaction": "visible"
+    },
+    {
+      "section": "report",
+      "order": 39,
+      "parent": "report/div.comp_container.comp_container_auto[1]/div.reportingPlatform[1]/div.reportingPlatform-container[3]/div.reporting-body[1]/div.reporting-right[3]/div.reporting-text[1]/div.reporting-text-description[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                    如果您遇到任何正在使用我们的服务进行传播违法信息等，我们将竭诚为您提供支持，确保您的举报得到及时处理，共同维护网络环境的清朗。                                ",
+      "interaction": "visible"
+    }
+  ]
+}

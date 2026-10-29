@@ -7,7 +7,10 @@
     "transactions": "资金流水",
     "renewals": "自动续费"
   },
-  "overview": { "openInvoices": "待处理账单", "autoRenew": "已开启自动续费" },
+  "overview": {
+    "openInvoices": "待处理账单",
+    "autoRenew": "已开启自动续费"
+  },
   "creditPayment": {
     "action": "使用信用额度支付",
     "title": "确认使用信用额度",
@@ -43,7 +46,13 @@
     "pending_payment": "待付款",
     "refunded": "已退款",
     "submitted": "已提交，待通道确认",
-    "succeeded": "已完成"
+    "succeeded": "已完成",
+    "created": "待发起付款",
+    "closed": "已关闭",
+    "late_success": "迟到款待处理",
+    "manual_review": "待人工核对",
+    "disputed": "款项有争议",
+    "unavailable": "状态暂不可用"
   },
   "invoice": {
     "detailTitle": "账单 {invoiceNo}",
@@ -55,7 +64,9 @@
     "change": "账户变动",
     "posted": "入账时间"
   },
-  "filters": { "currency": "币种，如 CNY" },
+  "filters": {
+    "currency": "币种，如 CNY"
+  },
   "empty": {
     "balances": "暂时没有余额账户",
     "invoices": "暂无账单",
@@ -85,7 +96,9 @@
       "wechat_h5": "微信 H5",
       "wechat_native": "微信扫码",
       "wechat_jsapi": "微信公众号支付",
-      "epay_cashier": "易支付收银台"
+      "epay_cashier": "易支付收银台",
+      "epay_alipay": "易支付 · 支付宝",
+      "epay_wechat": "易支付 · 微信支付"
     },
     "unavailable": "当前尚未安装通过能力门禁的支付通道，充值入口暂不可用；余额支付不受影响。"
   },
@@ -94,12 +107,19 @@
     "eyebrow": "安全付款状态",
     "complete": "充值已经到账",
     "confirming": "正在等待支付平台确认",
-    "description": "这里展示服务端确认结果。即使付款页面已返回，也不会直接把余额显示为到账。",
+    "description": "这里展示支付平台确认后的结果。付款页面返回不代表已经到账。",
     "attemptNo": "付款编号",
     "currency": "币种",
     "refresh": "刷新状态",
     "back": "返回财务中心",
-    "loadFailed": "暂时无法读取付款状态，请稍后刷新。"
+    "loadFailed": "暂时无法读取付款状态，请稍后刷新。",
+    "orderComplete": "付款已确认",
+    "orderDescription": "付款已提交到账单。商品开通单独处理，您可以进入订单查看最新进度和已交付服务。",
+    "unsuccessful": "本次付款未完成",
+    "viewDelivery": "查看开通进度",
+    "creditComplete": "还款已确认",
+    "needsReview": "付款需要核对",
+    "reviewDescription": "本次支付结果需要人工核对，请保留付款编号并联系支持。"
   },
   "merge": {
     "action": "合并所选账单",
@@ -143,5 +163,15 @@
     "merged": "账单已安全合并，列表已经刷新。",
     "paid": "余额支付成功，账单状态已经刷新。",
     "renewalSaved": "自动续费策略已更新。"
+  },
+  "onlinePayment": {
+    "action": "在线支付",
+    "title": "选择支付方式",
+    "continue": "确认并付款",
+    "failed": "付款准备失败，订单和选择已保留，请重试。",
+    "identity": "请先完成实名认证，再支付当前账单。",
+    "noChannels": "当前币种暂无可用的在线支付渠道，请联系商家或使用账户余额。",
+    "notPayable": "当前订单暂不能付款，请核对订单状态或联系商家。",
+    "alreadyPaid": "账单已付款，无需重复支付。订单处理进度请查看订单。"
   }
 }

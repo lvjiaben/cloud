@@ -100,6 +100,7 @@ func TestManagementFinanceAuthorizerKeepsEveryPermissionIndependent(t *testing.T
 		{permissionBillingAdjustmentQuery, func(a ManagementFinanceAuthorizer) (int, error) {
 			return a.AuthorizeAdjustmentDetail(ctx, "BAR_AUTH_0001")
 		}},
+		{permissionBillingBalanceAdjustmentCreate, func(a ManagementFinanceAuthorizer) (int, error) { return a.AuthorizeBalanceAdjustmentCreate(ctx) }},
 		{permissionBillingManualReceiptCreate, func(a ManagementFinanceAuthorizer) (int, error) { return a.AuthorizeManualReceiptCreate(ctx) }},
 		{permissionBillingInvoiceWaiverCreate, func(a ManagementFinanceAuthorizer) (int, error) { return a.AuthorizeInvoiceWaiverCreate(ctx) }},
 		{permissionBillingAdjustmentReview, func(a ManagementFinanceAuthorizer) (int, error) {

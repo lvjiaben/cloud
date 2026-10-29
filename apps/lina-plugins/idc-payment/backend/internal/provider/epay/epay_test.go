@@ -71,3 +71,39 @@ func TestEPayKeepsUndocumentedOperationsClosed(t *testing.T) {
 		t.Fatalf("unsupported capability became enabled: %+v", capabilities)
 	}
 }
+
+// TestEPayUsesConfiguredLoopbackBrowserReturn verifies the real adapter consumes
+// the same development return URL accepted by merchant address settings.
+func TestEPayUsesConfiguredLoopbackBrowserReturn(t *testing.T) {
+	adapter, err := New("https://epay.example/submit.php")
+	if err != nil {
+		t.Fatal(err)
+	}
+	input := paymentcap.CreateRequest{AttemptNo: "PAT_loopback", InvoiceNo: "INV_loopback", Mode: paymentcap.ModeEPayCashier, Currency: "CNY", AmountMinor: 100, Subject: "isolated payment", NotifyURL: "https://baidu.com/x/idc-payment/api/v1/callbacks/payments/EPAY_MAIN", ReturnURL: "http://127.0.0.1:6032/payment/return/PAT_loopback", ExpiresAt: time.Now().Add(time.Hour)}
+	redirect, err := adapter.Create(context.Background(), paymentcap.Credentials{MerchantID: "1108", Secret: []byte("isolated-test-secret")}, input)
+	if err != nil || redirect.Fields["return_url"] != input.ReturnURL || redirect.Fields["notify_url"] != input.NotifyURL || redirect.Fields["money"] != "1.00" || redirect.Fields["sign"] == "" {
+		t.Fatalf("configured browser return failed: err=%v", err)
+	}
+}
+
+// TestEPayDirectMethodsIncludeTypeInSignature covers providers without a
+// standalone cashier.php: explicit methods remain normal signed POST requests.
+func TestEPayDirectMethodsIncludeTypeInSignature(t *testing.T) {
+	adapter, err := New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for mode, kind := range map[paymentcap.Mode]string{paymentcap.ModeEPayAlipay: "alipay", paymentcap.ModeEPayWechat: "wxpay"} {
+		t.Run(string(mode), func(t *testing.T) {
+			credentials := paymentcap.Credentials{MerchantID: "1108", Secret: []byte("isolated-test-secret")}
+			result, createErr := adapter.Create(context.Background(), credentials, paymentcap.CreateRequest{AttemptNo: "PAT_direct", InvoiceNo: "INV_direct", Mode: mode, Currency: "CNY", AmountMinor: 100, Subject: "isolated payment", NotifyURL: "https://notify.example/callback", ReturnURL: "http://127.0.0.1:6032/payment/return/PAT_direct", ExpiresAt: time.Now().Add(time.Hour)})
+			if createErr != nil || result.Fields["type"] != kind || result.Fields["sign"] != sign(result.Fields, credentials.Secret) {
+				t.Fatalf("direct EPay request failed: %v", createErr)
+			}
+			result.Fields["type"] = "changed"
+			if result.Fields["sign"] == sign(result.Fields, credentials.Secret) {
+				t.Fatal("payment type not covered by signature")
+			}
+		})
+	}
+}

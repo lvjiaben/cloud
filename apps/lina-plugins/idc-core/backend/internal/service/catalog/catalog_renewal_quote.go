@@ -59,6 +59,7 @@ func RenewalQuoteAssemblerFromPublicReader(reader PublicCatalogReader) (RenewalQ
 
 // AssembleRenewalQuote prices the entitlement's exact persisted product
 // version with the active renewal schedule in that version and currency.
+// Catalog deletion preserves that schedule for existing services.
 func (s *publicCatalogReaderImpl) AssembleRenewalQuote(
 	ctx context.Context,
 	input RenewalQuoteInput,
@@ -152,10 +153,10 @@ func buildRenewalQuote(
 	for _, requested := range input.Lines {
 		product, found := index.products[purchaseQuotePair(requested.ProductNo, requested.VersionNo)]
 		if !found || product.VersionStatusCode != "published" ||
-			product.ProductStatusCode != catalogStatusActive {
+			(!product.Deleted && product.ProductStatusCode != catalogStatusActive) {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
-		if input.TrialConversion && (product.ProductStatusCode != "active" || product.CategoryStatusCode != "active" ||
+		if input.TrialConversion && (product.Deleted || product.ProductStatusCode != "active" || product.CategoryStatusCode != "active" ||
 			product.CurrentVersionNo == nil || *product.CurrentVersionNo != requested.VersionNo) {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 		}
@@ -194,7 +195,7 @@ func buildRenewalQuote(
 			ProductNameZhCN: product.NameZhCN, ProductNameEnUS: product.NameEnUS,
 			Quantity: requested.Quantity, PurchaseCycles: requested.PurchaseCycles,
 			ChargeTypeCode: rule.ChargeTypeCode, PeriodUnitCode: rule.PeriodUnitCode,
-			PeriodCount: rule.PeriodCount, RequiresContract: product.RequiresContract,
+			PeriodCount:         rule.PeriodCount,
 			FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 			InventoryDecisionCode: "not_required",
 			TaxPolicyNo:           tax.TaxPolicyNo, PriceIncludesTax: tax.PriceIncludesTax,

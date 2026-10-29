@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -56,7 +57,7 @@ func Declare() error {
 				{Key: accessKeySecretField, LabelKey: "notification.aliyun_sms.access_key_secret", Secret: true, Required: true, MaxLength: 256},
 			},
 			Factory: func(accessor secretcap.Accessor) (channelcap.Adapter, error) {
-				return newAdapter(accessor, &http.Client{Timeout: 20 * time.Second}, time.Now, randomNonce)
+				return newAdapter(accessor, &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 20 * time.Second}, time.Now, randomNonce)
 			},
 		})
 	})

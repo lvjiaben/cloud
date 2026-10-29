@@ -15,6 +15,7 @@ import (
 	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/provideradmissioncap"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
@@ -53,7 +54,7 @@ func (s *serviceImpl) CreateInterface(ctx context.Context, input CreateInterface
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
-	if !sameExactEvidence(selected, exact) {
+	if !sameEvidence(selected, exact) || !validProviderEvidence(exact) {
 		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	selected = exact
@@ -74,7 +75,7 @@ func (s *serviceImpl) CreateInterface(ctx context.Context, input CreateInterface
 	}
 	var result *InterfaceInstance
 	err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(selected, evidence) {
+		if !sameProviderContract(selected, evidence) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		return s.database.Transaction(guardCtx, func(txCtx context.Context, _ gdb.TX) error {
@@ -292,7 +293,7 @@ func (s *serviceImpl) UpdateNewBusinessState(ctx context.Context, input Interfac
 		}
 		selected := interfaceEvidence(row)
 		_, exact, resolveErr := s.loadExactInterfaceEvidence(ctx, input.InterfaceInstanceNo)
-		if resolveErr != nil || !sameExactEvidence(selected, exact) {
+		if resolveErr != nil || !sameProviderContract(selected, exact) {
 			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 		}
 		resolved, resolveErr := s.resolveCurrentInterfaceCandidates(ctx, input.InterfaceInstanceNo, exact)
@@ -300,7 +301,7 @@ func (s *serviceImpl) UpdateNewBusinessState(ctx context.Context, input Interfac
 			return nil, bizerr.WrapCode(resolveErr, CodeEvidenceUnavailable)
 		}
 		err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-			if !sameExactEvidence(selected, evidence) {
+			if !sameProviderContract(selected, evidence) {
 				return bizerr.NewCode(catalog.CodeManagementConflict)
 			}
 			if validationErr := s.validateCurrentInterfaceConfigurationWithCandidates(guardCtx, input.InterfaceInstanceNo, evidence, resolved); validationErr != nil {
@@ -325,8 +326,8 @@ func (s *serviceImpl) UpdateNewBusinessState(ctx context.Context, input Interfac
 	return &value, nil
 }
 
-// Bind replaces or creates one draft-version binding while host admission and
-// the local product-version row lock are both held through audit commit.
+// Bind retains an unchanged draft binding locally. New or different bindings
+// require host admission and the product-version row lock through audit commit.
 func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, error) {
 	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, input.VersionNo)
 	if err != nil {
@@ -341,6 +342,17 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 	if err = validateBusinessNo(input.InterfaceInstanceNo, "pfi"); err != nil {
 		return nil, err
 	}
+	unchanged, err := s.retainDraftBinding(ctx, input)
+	if err != nil {
+		return nil, normalizeManagementWriteError(err)
+	}
+	if unchanged != nil {
+		return unchanged, nil
+	}
+	detached, err := s.prepareDetachedOffer(ctx, input.VersionNo, authorization.ActorUserID)
+	if err != nil {
+		return nil, err
+	}
 	instance, err := s.loadInterface(ctx, input.InterfaceInstanceNo, false)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
@@ -350,7 +362,7 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 	}
 	selected := interfaceEvidence(instance)
 	_, exact, err := s.loadExactInterfaceEvidence(ctx, input.InterfaceInstanceNo)
-	if err != nil || !sameExactEvidence(selected, exact) {
+	if err != nil || !sameProviderContract(selected, exact) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	resolved, err := s.resolveCurrentInterfaceCandidates(ctx, input.InterfaceInstanceNo, exact)
@@ -359,7 +371,7 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 	}
 	var result *Binding
 	err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(selected, evidence) {
+		if !sameProviderContract(selected, evidence) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		if validationErr := s.validateCurrentInterfaceConfigurationWithCandidates(guardCtx, input.InterfaceInstanceNo, evidence, resolved); validationErr != nil {
@@ -391,6 +403,9 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 				return clearErr
 			}
 			if before != nil {
+				if detachErr := s.detachDraftCommercialConfiguration(txCtx, input.VersionNo, authorization.ActorUserID, detached); detachErr != nil {
+					return detachErr
+				}
 				deleteResult, deleteErr := s.database.Model(do.CatalogProductVersionFulfillmentBinding{}).Ctx(txCtx).
 					Where(do.CatalogProductVersionFulfillmentBinding{TenantId: idccap.DefaultTenantID, VersionNo: input.VersionNo}).Delete()
 				if deleteErr != nil {
@@ -402,15 +417,18 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 					return gerror.New("replaced product automation binding delete affected an unexpected row count")
 				}
 			}
-			methods := append([]string{}, evidence.AuthorizedMethods...)
+			// Keep the selected local interface snapshot. Host admission above
+			// uses the current executable; an upgrade must not invent a new
+			// interface tuple and violate the database binding invariant.
+			methods := append([]string{}, lockedInstance.AuthorizedMethods...)
 			_, writeErr := s.database.Model(do.CatalogProductVersionFulfillmentBinding{}).Ctx(txCtx).
 				Data(do.CatalogProductVersionFulfillmentBinding{
 					TenantId: idccap.DefaultTenantID, VersionNo: input.VersionNo,
 					InterfaceInstanceNo: input.InterfaceInstanceNo, InterfaceDisplayNameSnapshot: lockedInstance.DisplayName,
-					PluginId: evidence.PluginID, ExtensionPointCode: evidence.Point,
-					PluginReleaseVersion: evidence.ReleaseVersion, ContractVersion: evidence.ContractVersion,
-					AuthorizedMethods: methods, ReleaseDigest: evidence.ReleaseDigest,
-					DeclarationDigest: evidence.DeclarationDigest, BoundBy: authorization.ActorUserID,
+					PluginId: lockedInstance.PluginId, ExtensionPointCode: lockedInstance.ExtensionPointCode,
+					PluginReleaseVersion: lockedInstance.PluginReleaseVersion, ContractVersion: lockedInstance.ContractVersion,
+					AuthorizedMethods: methods, ReleaseDigest: lockedInstance.ReleaseDigest,
+					DeclarationDigest: lockedInstance.DeclarationDigest, BoundBy: authorization.ActorUserID,
 					BoundAt: gdb.Raw("CURRENT_TIMESTAMP"),
 				}).Insert()
 			if writeErr != nil {
@@ -442,6 +460,37 @@ func (s *serviceImpl) Bind(ctx context.Context, input BindInput) (*Binding, erro
 	return result, nil
 }
 
+// retainDraftBinding recognizes an unchanged selection under the normal lock
+// order. It does not admit a new binding, rewrite configuration, clear policy or
+// attest historical evidence. Actual interface changes still use Bind's gates.
+func (s *serviceImpl) retainDraftBinding(ctx context.Context, input BindInput) (*Binding, error) {
+	var result *Binding
+	err := s.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
+		if err := s.lockDraftVersion(txCtx, input.VersionNo); err != nil {
+			return err
+		}
+		instance, err := s.loadInterface(txCtx, input.InterfaceInstanceNo, true)
+		if err != nil {
+			return err
+		}
+		if instance == nil {
+			return bizerr.NewCode(catalog.CodeManagementNotAccessible)
+		}
+		binding, err := s.loadBinding(txCtx, input.VersionNo, true)
+		if err != nil {
+			return err
+		}
+		if binding == nil || binding.InterfaceInstanceNo != input.InterfaceInstanceNo {
+			return nil
+		}
+		projection := safeBinding(binding)
+		projection.InterfaceNewBusinessState = instance.NewBusinessState
+		result = &projection
+		return nil
+	})
+	return result, err
+}
+
 // Unbind removes only a draft-version binding and appends audit in the same transaction.
 func (s *serviceImpl) Unbind(ctx context.Context, versionNo string) error {
 	authorization, err := s.authorizer.AuthorizeBindingWrite(ctx, versionNo)
@@ -452,6 +501,10 @@ func (s *serviceImpl) Unbind(ctx context.Context, versionNo string) error {
 		return err
 	}
 	if err = validateBusinessNo(versionNo, "ver"); err != nil {
+		return err
+	}
+	detached, err := s.prepareDetachedOffer(ctx, versionNo, authorization.ActorUserID)
+	if err != nil {
 		return err
 	}
 	err = s.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
@@ -472,6 +525,9 @@ func (s *serviceImpl) Unbind(ctx context.Context, versionNo string) error {
 		}
 		if clearErr := s.clearDraftFulfillmentPolicy(txCtx, versionNo); clearErr != nil {
 			return clearErr
+		}
+		if detachErr := s.detachDraftCommercialConfiguration(txCtx, versionNo, authorization.ActorUserID, detached); detachErr != nil {
+			return detachErr
 		}
 		result, deleteErr := s.database.Model(do.CatalogProductVersionFulfillmentBinding{}).Ctx(txCtx).
 			Where(do.CatalogProductVersionFulfillmentBinding{TenantId: idccap.DefaultTenantID, VersionNo: versionNo}).Delete()
@@ -551,7 +607,7 @@ func (s *serviceImpl) ResumeNewBusiness(ctx context.Context, interfaceNo string)
 	}
 	selected := interfaceEvidence(instance)
 	_, exact, err := s.loadExactInterfaceEvidence(ctx, interfaceNo)
-	if err != nil || !sameExactEvidence(selected, exact) {
+	if err != nil || !sameProviderContract(selected, exact) {
 		return bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	resolved, err := s.resolveCurrentInterfaceCandidates(ctx, interfaceNo, exact)
@@ -559,7 +615,7 @@ func (s *serviceImpl) ResumeNewBusiness(ctx context.Context, interfaceNo string)
 		return bizerr.WrapCode(err, CodeEvidenceUnavailable)
 	}
 	err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(selected, evidence) {
+		if !sameProviderContract(selected, evidence) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		if validationErr := s.validateCurrentInterfaceConfigurationWithCandidates(guardCtx, interfaceNo, evidence, resolved); validationErr != nil {
@@ -603,97 +659,149 @@ func (s *serviceImpl) WithPublicationAdmission(ctx context.Context, versionNo st
 
 // CheckPublicationReadiness performs the same frozen-evidence, current-host,
 // and accepting-interface checks as final publication, but commits no state.
-func (s *serviceImpl) CheckPublicationReadiness(ctx context.Context, versionNo string) (bool, error) {
+func (s *serviceImpl) CheckPublicationReadiness(ctx context.Context, versionNo string) (catalog.PublicationReadinessCheck, error) {
+	check := catalog.PublicationReadinessCheck{Code: catalog.PublicationCheckAutomation}
 	authorization, err := s.authorizer.AuthorizePublicationAdmission(ctx, versionNo)
 	if err != nil {
-		return false, err
+		return check, err
 	}
 	if err = requireAuthorization(authorization); err != nil {
-		return false, err
+		return check, err
 	}
 	if err = validateBusinessNo(versionNo, "ver"); err != nil {
-		return false, err
+		return check, err
 	}
 	err = normalizeManagementWriteError(s.withPublicationBindingAdmission(
 		ctx, versionNo, func(context.Context) error { return nil },
 	))
 	if err == nil {
-		return true, nil
+		check.Passed = true
+		return check, nil
 	}
-	if bizerr.Is(err, catalog.CodeManagementConflict) || bizerr.Is(err, catalog.CodeManagementNotAccessible) ||
-		bizerr.Is(err, CodeEvidenceUnavailable) {
-		return false, nil
+	check.ReasonCode = publicationReadinessReason(err)
+	if check.ReasonCode != "" {
+		return check, nil
 	}
-	return false, err
+	return check, err
 }
 
-// CheckPublicPurchaseAvailability reuses the exact frozen provider admission
-// for a published version without applying an employee permission to an
-// anonymous request. Dynamic candidates are resolved before the host lifecycle
-// lock and then revalidated under the exact admission evidence.
+// publicationReadinessReason preserves business causes instead of reporting
+// every failed automation check as a missing purchase-option price.
+func publicationReadinessReason(err error) catalog.PublicationReadinessReason {
+	switch {
+	case bizerr.Is(err, CodeEvidenceUnavailable):
+		return catalog.PublicationReasonProviderUnavailable
+	case bizerr.Is(err, codeCustomerOptionPricesRequired):
+		return catalog.PublicationReasonConfigurationPricesMissing
+	case bizerr.Is(err, codeSupplierCapabilitiesUnconfirmed):
+		return catalog.PublicationReasonSupplierUnconfirmed
+	case bizerr.Is(err, catalog.CodeManagementConflict), bizerr.Is(err, catalog.CodeManagementNotAccessible):
+		return catalog.PublicationReasonConfigurationIncomplete
+	default:
+		return ""
+	}
+}
+
+// publicPurchaseEvidence belongs to one read only; it is never cached across
+// requests, so provider disablement and interface changes remain authoritative.
+type publicPurchaseEvidence struct {
+	binding       *entity.CatalogProductVersionFulfillmentBinding
+	configuration *entity.CatalogProductVersionConfiguration
+	provider      *capmodel.BusinessExtensionProviderEvidence
+}
+
+// CheckPublicPurchaseAvailability reads active host discovery and immutable local
+// facts without claiming a lifecycle mutation lock. Concurrent catalog reads must
+// not reject each other. Actual provider calls and final order admission retain
+// their host lifecycle guards; no enabled-state or contract result is cached.
 func (s *serviceImpl) CheckPublicPurchaseAvailability(ctx context.Context, versionNo string) (bool, error) {
+	evidence, err := s.loadPublicPurchaseEvidence(ctx, versionNo)
+	return evidence != nil, err
+}
+
+// loadPublicPurchaseEvidence validates current availability and retains the
+// exact active evidence for candidate resolution within the same read.
+func (s *serviceImpl) loadPublicPurchaseEvidence(ctx context.Context, versionNo string) (*publicPurchaseEvidence, error) {
 	if err := validateBusinessNo(versionNo, "ver"); err != nil {
-		return false, err
+		return nil, err
 	}
 	binding, err := s.loadBinding(ctx, versionNo, false)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	if binding == nil {
-		return true, nil
+		return &publicPurchaseEvidence{}, nil
+	}
+	page, err := s.extensions.ListProviders(ctx, plugincap.BusinessExtensionProviderListInput{
+		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
+		Page: capmodel.PageRequest{PageNum: 1, PageSize: 100, Limit: 100},
+	})
+	if err != nil || page == nil {
+		return nil, bizerr.WrapCode(err, CodeEvidenceUnavailable)
 	}
 	selected := bindingEvidence(binding)
-	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
-		PluginID: binding.PluginId, ReleaseVersion: binding.PluginReleaseVersion,
-		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
-		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
-	})
-	if err != nil || !sameExactEvidence(selected, exact) {
-		return false, bizerr.NewCode(CodeEvidenceUnavailable)
+	var active *capmodel.BusinessExtensionProviderEvidence
+	for _, evidence := range page.Items {
+		if evidence != nil && evidence.PluginID == binding.PluginId && sameProviderContract(selected, evidence) {
+			active = evidence
+			break
+		}
 	}
-	resolved, err := s.resolveFrozenConfigurationCandidates(ctx, binding, exact)
+	if active == nil {
+		return nil, nil
+	}
+	var version struct {
+		StatusCode string `orm:"status_code"`
+	}
+	if err = s.database.Model(do.CatalogProductVersion{}).Ctx(ctx).Fields("status_code").Where(do.CatalogProductVersion{TenantId: idccap.DefaultTenantID, VersionNo: versionNo}).Scan(&version); err != nil {
+		return nil, gerror.Wrap(err, "load public purchase product version")
+	}
+	if version.StatusCode != "published" {
+		return nil, nil
+	}
+	instance, err := s.loadInterface(ctx, binding.InterfaceInstanceNo, false)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(selected, evidence) {
-			return bizerr.NewCode(catalog.CodeManagementConflict)
-		}
-		var version struct {
-			StatusCode string `orm:"status_code"`
-		}
-		if loadErr := s.database.Model(do.CatalogProductVersion{}).Ctx(guardCtx).
-			Fields("status_code").Where(do.CatalogProductVersion{TenantId: idccap.DefaultTenantID, VersionNo: versionNo}).
-			Scan(&version); loadErr != nil {
-			return gerror.Wrap(loadErr, "load public purchase product version")
-		}
-		if version.StatusCode != "published" {
-			return bizerr.NewCode(catalog.CodeManagementConflict)
-		}
-		currentBinding, loadErr := s.loadBinding(guardCtx, versionNo, false)
-		if loadErr != nil {
-			return loadErr
-		}
-		if currentBinding == nil || !sameEvidence(selected, bindingEvidence(currentBinding)) {
-			return bizerr.NewCode(catalog.CodeManagementConflict)
-		}
-		instance, loadErr := s.loadInterface(guardCtx, currentBinding.InterfaceInstanceNo, false)
-		if loadErr != nil {
-			return loadErr
-		}
-		if instance == nil || instance.NewBusinessState != InterfaceStateAccepting ||
-			!sameEvidence(bindingEvidence(currentBinding), interfaceEvidence(instance)) {
-			return bizerr.NewCode(catalog.CodeManagementConflict)
-		}
-		return s.validateFrozenVersionConfiguration(guardCtx, currentBinding, evidence, false, resolved)
-	})
+	if instance == nil || instance.NewBusinessState != InterfaceStateAccepting || !sameEvidence(selected, interfaceEvidence(instance)) {
+		return nil, nil
+	}
+	configuration, err := s.loadVersionConfigurationRow(ctx, versionNo)
+	if err != nil || configuration == nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementConflict)
+	}
+	revision, err := s.loadLatestInterfaceConfigurationRevision(ctx, binding.InterfaceInstanceNo, false)
+	if err != nil {
+		return nil, err
+	}
+	err = s.validateConfigurationInterfaceRevision(ctx, binding.InterfaceInstanceNo, configuration, revision)
 	if err == nil {
-		return true, nil
+		return &publicPurchaseEvidence{binding: binding, configuration: configuration, provider: active}, nil
 	}
 	if bizerr.Is(err, catalog.CodeManagementConflict) || bizerr.Is(err, catalog.CodeManagementNotAccessible) {
-		return false, nil
+		return nil, nil
 	}
-	return false, err
+	return nil, err
+}
+
+// WithSaleStateAdmission permits local stopping even when a provider is offline.
+// Resuming uses the same exact provider evidence as publication; the catalog
+// callback locks and rechecks the current product pointer before changing state.
+func (s *serviceImpl) WithSaleStateAdmission(ctx context.Context, versionNo string, active bool, action func(context.Context) error) error {
+	authorization, err := s.authorizer.AuthorizePublicationAdmission(ctx, versionNo)
+	if err != nil {
+		return err
+	}
+	if err = requireAuthorization(authorization); err != nil {
+		return err
+	}
+	if validateBusinessNo(versionNo, "ver") != nil || action == nil {
+		return bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
+	if !active {
+		return normalizeManagementWriteError(s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error { return action(ctx) }))
+	}
+	return normalizeManagementWriteError(s.withPublicationBindingAdmissionState(ctx, versionNo, action, true))
 }
 
 func (s *serviceImpl) withPublicationBindingAdmission(
@@ -701,13 +809,17 @@ func (s *serviceImpl) withPublicationBindingAdmission(
 	versionNo string,
 	action func(context.Context) error,
 ) error {
+	return s.withPublicationBindingAdmissionState(ctx, versionNo, action, false)
+}
+
+func (s *serviceImpl) withPublicationBindingAdmissionState(ctx context.Context, versionNo string, action func(context.Context) error, published bool) error {
 	binding, err := s.loadBinding(ctx, versionNo, false)
 	if err != nil {
 		return err
 	}
 	if binding == nil {
 		err = s.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
-			if lockErr := s.lockDraftVersion(txCtx, versionNo); lockErr != nil {
+			if lockErr := s.checkPublicationVersionState(txCtx, versionNo, published); lockErr != nil {
 				return lockErr
 			}
 			current, loadErr := s.loadBinding(txCtx, versionNo, true)
@@ -720,6 +832,19 @@ func (s *serviceImpl) withPublicationBindingAdmission(
 			if policyErr := s.validateFrozenFulfillmentPolicy(txCtx, versionNo, nil); policyErr != nil {
 				return policyErr
 			}
+			configuration, configurationErr := s.readManualConfiguration(txCtx, versionNo)
+			if configurationErr != nil {
+				return configurationErr
+			}
+			if configuration.Version > 0 {
+				presentation, presentationErr := compileCustomerPresentations(configuration.CustomerDeclaration, configuration.CustomerFieldSelections)
+				if presentationErr != nil {
+					return presentationErr
+				}
+				if priceErr := s.validateCustomerSelectionPrices(txCtx, versionNo, nil, configuration.CustomerDeclaration, presentation); priceErr != nil {
+					return priceErr
+				}
+			}
 			return action(txCtx)
 		})
 		return err
@@ -730,7 +855,7 @@ func (s *serviceImpl) withPublicationBindingAdmission(
 		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
 		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(selected, exact) {
+	if err != nil || !sameProviderContract(selected, exact) {
 		return bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	resolved, err := s.resolveFrozenConfigurationCandidates(ctx, binding, exact)
@@ -738,11 +863,11 @@ func (s *serviceImpl) withPublicationBindingAdmission(
 		return err
 	}
 	err = s.extensions.WithNewBusinessAdmission(ctx, admissionInput(selected), func(guardCtx context.Context, evidence *capmodel.BusinessExtensionProviderEvidence) error {
-		if !sameExactEvidence(selected, evidence) {
+		if !sameProviderContract(selected, evidence) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		return s.database.Transaction(guardCtx, func(txCtx context.Context, _ gdb.TX) error {
-			if lockErr := s.lockDraftVersion(txCtx, versionNo); lockErr != nil {
+			if lockErr := s.checkPublicationVersionState(txCtx, versionNo, published); lockErr != nil {
 				return lockErr
 			}
 			lockedBinding, loadErr := s.loadBinding(txCtx, versionNo, true)
@@ -803,10 +928,15 @@ func (s *serviceImpl) transitionInterfaceState(
 }
 
 func normalizeManagementWriteError(err error) error {
-	if err == nil || bizerr.Is(err, catalog.CodeManagementNotAccessible) || bizerr.Is(err, catalog.CodeManagementConflict) ||
+	if provideradmissioncap.IsBusy(err) {
+		return bizerr.NewCode(codeProviderBusy)
+	}
+	if err == nil || bizerr.Is(err, catalog.CodePublicationState) || bizerr.Is(err, catalog.CodePublicationInvalid) || bizerr.Is(err, catalog.CodePublicationNotAccessible) || bizerr.Is(err, catalog.CodePublicationIncomplete) || bizerr.Is(err, catalog.CodeManagementNotAccessible) || bizerr.Is(err, catalog.CodeManagementConflict) ||
+		bizerr.Is(err, catalog.CodeSaleCopyRequired) || bizerr.Is(err, catalog.CodeSalePricingRequired) || bizerr.Is(err, catalog.CodeSaleTaxRequired) ||
 		bizerr.Is(err, catalog.CodeManagementInvalid) || bizerr.Is(err, catalog.CodeFulfillmentPolicyBindingRequired) ||
 		bizerr.Is(err, catalog.CodeFulfillmentPolicyContractChanged) || bizerr.Is(err, catalog.CodeFulfillmentPolicyImmutable) ||
-		bizerr.Is(err, catalog.CodeTrialFulfillmentUnavailable) || bizerr.Is(err, codeSupplierCapabilitiesUnconfirmed) ||
+		bizerr.Is(err, catalog.CodeTrialFulfillmentUnavailable) || bizerr.Is(err, codeSupplierCapabilitiesUnconfirmed) || bizerr.Is(err, codeProviderBusy) || bizerr.Is(err, codeProviderValidationUnavailable) || bizerr.Is(err, codeProviderValidationResponseInvalid) ||
+		bizerr.Is(err, codeOfferDetachUnsupported) || bizerr.Is(err, codeOfferMappingRequired) || bizerr.Is(err, codeOfferOptionsRequired) || bizerr.Is(err, codeChoiceRelationsRequired) ||
 		bizerr.Is(err, codeCustomerOptionPricesRequired) || bizerr.Is(err, CodeInterfaceEverReferenced) || bizerr.Is(err, CodeEvidenceUnavailable) {
 		return err
 	}
@@ -877,4 +1007,23 @@ func bindingAudit(authorization Authorization, input BindInput, before *entity.C
 
 func bindingAuditIdentity(versionNo string, bindingID int64) string {
 	return fmt.Sprintf("%s:%d", versionNo, bindingID)
+}
+
+// checkPublicationVersionState preserves the draft lock for publishing. For
+// immutable published versions, the catalog callback supplies product-first
+// locking and current-pointer fencing, avoiding reverse lock order with copies.
+func (s *serviceImpl) checkPublicationVersionState(ctx context.Context, versionNo string, published bool) error {
+	if !published {
+		return s.lockDraftVersion(ctx, versionNo)
+	}
+	var row struct {
+		StatusCode string `orm:"status_code"`
+	}
+	if err := s.database.Model(do.CatalogProductVersion{}).Ctx(ctx).Fields("status_code").Where(do.CatalogProductVersion{TenantId: 0, VersionNo: versionNo}).Scan(&row); err != nil {
+		return err
+	}
+	if row.StatusCode != "published" {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	return nil
 }

@@ -91,7 +91,7 @@ export interface ProviderTaskMockState {
 
 export async function installProviderTaskMock(
   page: Page,
-  options: { canTakeOver?: boolean; withEvidence?: boolean } = {},
+  options: { canTakeOver?: boolean; withEvidence?: boolean; provisioning?: boolean; callTimeout?: boolean; responseExcerpt?:string; callDiagnostic?:string; notSent?:boolean } = {},
 ): Promise<ProviderTaskMockState> {
   const state: ProviderTaskMockState = {
     detailRequests: [],
@@ -99,13 +99,18 @@ export async function installProviderTaskMock(
     takeoverRequests: [],
   };
   let currentTask: Record<string, unknown> = structuredClone(baseTask);
-  const currentEvidence = options.withEvidence === false ? [] : evidence;
+  if (options.provisioning) currentTask.capabilityCode = "server.provision";
+  if (options.notSent) { currentTask.status="failed";currentTask.resultUnknown=false;currentTask.nextObserveAt=null; }
+  const currentEvidence = options.withEvidence === false || options.notSent ? [] : options.provisioning ? [{...evidence[0]!, evidenceKind: options.callTimeout ? "upstream_call_failed" : "upstream_result_unknown", summary: options.callTimeout ? "The upstream connection timed out" : "operation submission outcome could not be proven"}] : evidence;
+  if(options.responseExcerpt) currentEvidence.push({...evidence[0]!,evidenceNo:"evidence_http_response_0001",evidenceKind:"upstream_http_response",summary:options.responseExcerpt});
+  if(options.callDiagnostic) currentEvidence.push({...evidence[0]!,evidenceNo:"evidence_call_diagnostic_0001",evidenceKind:"upstream_call_diagnostic",summary:options.callDiagnostic});
+  if(options.notSent) currentEvidence.push({...evidence[0]!,evidenceNo:"evidence_owner_not_sent",evidenceKind:"owner_provision_request_not_sent",reference:taskNo,summary:"The resource owner confirmed no business HTTP request was attempted"});
   let currentLocale: keyof typeof catalogs = "zh-CN";
 
   const detail = () => ({
     evidence: currentEvidence,
     task: currentTask,
-    upstream: {
+    upstream: options.notSent ? null : {
       externalResourceRef: "600100",
       externalTaskRef: "900100",
       observedAt,

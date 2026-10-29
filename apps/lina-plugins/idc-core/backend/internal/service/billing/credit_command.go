@@ -388,8 +388,10 @@ func (s *managementCreditCommandImpl) ConfigureCreditPolicy(
 	if err != nil {
 		return nil, err
 	}
-	if err = consumeCreditProof(ctx, s.recentAuth, input.ConfiguredBy, proofToken, binding); err != nil {
-		return nil, err
+	if proofToken != "" {
+		if err = consumeCreditProof(ctx, s.recentAuth, input.ConfiguredBy, proofToken, binding); err != nil {
+			return nil, err
+		}
 	}
 	var result *CreditPolicy
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
@@ -437,8 +439,10 @@ func (s *managementCreditCommandImpl) ReviewCreditApplication(
 	if err != nil {
 		return nil, err
 	}
-	if err = consumeCreditProof(ctx, s.recentAuth, input.ReviewerID, proofToken, binding); err != nil {
-		return nil, err
+	if proofToken != "" {
+		if err = consumeCreditProof(ctx, s.recentAuth, input.ReviewerID, proofToken, binding); err != nil {
+			return nil, err
+		}
 	}
 	var result *CreditApplication
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
@@ -506,6 +510,8 @@ func (s *managementCreditCommandImpl) prepareReview(
 	if !validBusinessReference(intent.RequestNo, 128) {
 		return CreditReviewInput{}, reauth.Binding{}, bizerr.NewCode(CodeCreditInvalid)
 	}
+	_, intent.CommentDigest = adjustmentMetadata("", intent.CommentDigest, "", intent.RequestNo)
+	_, intent.EvidenceDigest = adjustmentMetadata("", intent.EvidenceDigest, "", intent.RequestNo)
 	input, err := normalizeCreditReview(CreditReviewInput{
 		ApplicationNo: intent.ApplicationNo, Decision: intent.Decision,
 		ReviewerID: actor, CommentDigest: intent.CommentDigest,

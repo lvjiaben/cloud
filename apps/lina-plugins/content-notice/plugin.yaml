@@ -4,11 +4,11 @@ id: content-notice
 
 # Plugin display name used in plugin management, menu governance, and docs.
 # 插件显示名称，用于插件管理、菜单治理和文档展示。
-name: 内容管理-通知公告
+name: 内容管理-公告
 
 # Plugin semantic version used for plugin sync, upgrades, and delivery asset identity.
 # 插件语义化版本号，用于插件同步、升级和交付资产识别。
-version: v0.3.0
+version: v0.3.1
 
 # Plugin type enum. Allowed values: `source` is compiled with the host; `dynamic` is loaded as a runtime plugin artifact.
 # 插件类型枚举。可选值：`source` 表示随宿主源码编译交付；`dynamic` 表示作为运行时动态插件产物加载。
@@ -32,7 +32,7 @@ default_install_mode: global
 
 # Plugin capability summary for management pages, delivery notes, and developer context.
 # 插件能力说明，用于插件管理页、交付说明和开发者理解边界。
-description: 提供通知公告管理、发布和站内消息投递的内置源码插件
+description: 提供公告管理、发布和已读状态的内置源码插件
 
 # Plugin author or owning team.
 # 插件作者或归属团队。
@@ -65,7 +65,7 @@ menus:
     parent_key: content
     # Menu display name.
     # 菜单显示名称。
-    name: 通知公告
+    name: 公告
     # Menu route path.
     # 菜单路由路径。
     path: /system/notice
@@ -86,12 +86,12 @@ menus:
     sort: 1
     # Menu remark stored in host menu governance data.
     # 菜单备注，写入宿主菜单治理数据。
-    remark: 内容管理插件-通知公告
+    remark: 内容管理插件-公告
   # Unique button key mounted under the notice menu.
-  # 按钮唯一键，挂载在通知公告菜单下。
+  # 按钮唯一键，挂载在公告菜单下。
   - key: plugin:content-notice:notice:query
     # Parent menu key pointing to the notice menu.
-    # 父级菜单键，指向通知公告菜单。
+    # 父级菜单键，指向公告菜单。
     parent_key: plugin:content-notice:notice
     # Button display name.
     # 按钮显示名称。
@@ -106,10 +106,10 @@ menus:
     # 按钮排序值，数值越小越靠前。
     sort: 1
   # Unique button key mounted under the notice menu.
-  # 按钮唯一键，挂载在通知公告菜单下。
+  # 按钮唯一键，挂载在公告菜单下。
   - key: plugin:content-notice:notice:add
     # Parent menu key pointing to the notice menu.
-    # 父级菜单键，指向通知公告菜单。
+    # 父级菜单键，指向公告菜单。
     parent_key: plugin:content-notice:notice
     # Button display name.
     # 按钮显示名称。
@@ -124,10 +124,10 @@ menus:
     # 按钮排序值，数值越小越靠前。
     sort: 2
   # Unique button key mounted under the notice menu.
-  # 按钮唯一键，挂载在通知公告菜单下。
+  # 按钮唯一键，挂载在公告菜单下。
   - key: plugin:content-notice:notice:edit
     # Parent menu key pointing to the notice menu.
-    # 父级菜单键，指向通知公告菜单。
+    # 父级菜单键，指向公告菜单。
     parent_key: plugin:content-notice:notice
     # Button display name.
     # 按钮显示名称。
@@ -142,10 +142,10 @@ menus:
     # 按钮排序值，数值越小越靠前。
     sort: 3
   # Unique button key mounted under the notice menu.
-  # 按钮唯一键，挂载在通知公告菜单下。
+  # 按钮唯一键，挂载在公告菜单下。
   - key: plugin:content-notice:notice:remove
     # Parent menu key pointing to the notice menu.
-    # 父级菜单键，指向通知公告菜单。
+    # 父级菜单键，指向公告菜单。
     parent_key: plugin:content-notice:notice
     # Button display name.
     # 按钮显示名称。

@@ -53,4 +53,8 @@ type ServerAccessoryQuote struct {
 	BaselineObjectNos      any        //
 	BaselineSnapshotNo     any        //
 	BaselineObservedAt     *time.Time //
+	SubjectTypeCode        any        //
+	SubjectNo              any        //
+	ExpectedSubjectVersion any        //
+	NativeTargetSnapshot   any        // Source-validated frozen native resource route, directory and local server evidence; never accepted from HTTP
 }

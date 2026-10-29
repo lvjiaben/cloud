@@ -71,7 +71,7 @@ func TestConfigurationPriceRejectsInvalidSchedulesAndOverflow(t *testing.T) {
 }
 
 func TestConfigurationSelectionPreservesQuantityAndAlgorithm(t *testing.T) {
-	for _, mode := range []ConfigurationPriceMode{ConfigurationPricePerUnit, ConfigurationPriceBandTotal} {
+	for _, mode := range []ConfigurationPriceMode{ConfigurationPricePerUnit, ConfigurationPriceBandTotal, ConfigurationPriceGraduated} {
 		t.Run(string(mode), func(t *testing.T) {
 			rows := []configurationPriceDimensionIdentity{{DimensionNo: "cpd_11111111111111111111111111111111", FieldKey: "disk", CandidateValue: "quantity", PricingMode: mode}}
 			for _, quantity := range []int64{0, 100, 129, 2147483647} {
@@ -117,5 +117,59 @@ func TestConfigurationSelectionPreservesQuantityAndAlgorithm(t *testing.T) {
 	band, err := ConfigurationPriceSelectionDigest(fixed)
 	if err != nil || band == unit {
 		t.Fatal("different algorithms share digest")
+	}
+}
+
+// TestConfigurationGraduatedPrice proves actual marginal quantities rather than
+// silently applying a band's rate to the whole selection. Old modes stay above.
+func TestConfigurationGraduatedPrice(t *testing.T) {
+	rule := BillingRuleDefinition{ChargeType: ChargeTypeRecurring, PeriodUnit: PeriodUnitMonth, PeriodCount: 1, PricePhase: PricePhaseBoth, QuantityMode: QuantityModeFixed, MinimumPurchaseCycles: 1}
+	tiers := []PriceTierDefinition{
+		{MinimumQuantity: 20, AmountMinor: 100, RenewalAmountMinor: int64Pointer(150)},
+		{MaximumQuantity: int64Pointer(10), AmountMinor: 0, RenewalAmountMinor: int64Pointer(0), SetupFeeMinor: 7},
+		{MinimumQuantity: 10, MaximumQuantity: int64Pointer(20), AmountMinor: 200, RenewalAmountMinor: int64Pointer(300)},
+	}
+	for _, scenario := range []struct {
+		quantity      int64
+		phase         QuotePhase
+		cycles        int
+		amount, setup int64
+		segments      int
+	}{
+		{0, QuotePhaseNewPurchase, 1, 0, 0, 0},
+		{10, QuotePhaseNewPurchase, 1, 0, 7, 1},
+		{15, QuotePhaseNewPurchase, 1, 1000, 7, 2},
+		{20, QuotePhaseNewPurchase, 1, 2000, 7, 2},
+		{25, QuotePhaseNewPurchase, 1, 2500, 7, 3},
+		{25, QuotePhaseRenewal, 2, 7500, 0, 3},
+	} {
+		got, err := quoteConfigurationPrice(rule, ConfigurationPriceGraduated, tiers, BillingQuoteRequest{Phase: scenario.phase, Cycles: scenario.cycles, Quantity: &scenario.quantity})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if *got.ChargeAmountMinor != scenario.amount || *got.SetupFeeMinor != scenario.setup || *got.TotalAmountMinor != scenario.amount+scenario.setup || *got.InputQuantity != scenario.quantity || *got.BilledQuantity != scenario.quantity || len(got.Segments) != scenario.segments {
+			t.Fatalf("quantity=%d phase=%s quote=%+v", scenario.quantity, scenario.phase, got)
+		}
+	}
+	if tiers[0].MinimumQuantity != 20 || tiers[1].SetupFeeMinor != 7 {
+		t.Fatal("graduated quote mutated input")
+	}
+	invalid := append([]PriceTierDefinition(nil), tiers...)
+	invalid[0].SetupFeeMinor = 1
+	if err := validateConfigurationPriceSchedule(rule, ConfigurationPriceGraduated, invalid); err == nil {
+		t.Fatal("non-first setup fee accepted")
+	}
+	quantity := int64(2)
+	if _, err := quoteConfigurationPrice(rule, ConfigurationPriceGraduated, []PriceTierDefinition{{AmountMinor: math.MaxInt64, RenewalAmountMinor: int64Pointer(0)}}, BillingQuoteRequest{Phase: QuotePhaseNewPurchase, Cycles: 1, Quantity: &quantity}); err == nil {
+		t.Fatal("marginal overflow accepted")
+	}
+	// The same configuration can be used with an ordinary one-time product;
+	// its base billing model must not be turned into a recurring tiered product.
+	once := BillingRuleDefinition{ChargeType: ChargeTypeOneTime, PeriodUnit: PeriodUnitOnce, PeriodCount: 1, PricePhase: PricePhaseNewPurchase, QuantityMode: QuantityModeFixed, MinimumPurchaseCycles: 1}
+	onceTiers := []PriceTierDefinition{{MaximumQuantity: int64Pointer(10), SetupFeeMinor: 5}, {MinimumQuantity: 10, AmountMinor: 200}}
+	quantity = 15
+	got, err := quoteConfigurationPrice(once, ConfigurationPriceGraduated, onceTiers, BillingQuoteRequest{Phase: QuotePhaseNewPurchase, Cycles: 1, Quantity: &quantity})
+	if err != nil || *got.TotalAmountMinor != 1005 {
+		t.Fatalf("one-time graduated quote=%+v err=%v", got, err)
 	}
 }

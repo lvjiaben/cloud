@@ -95,7 +95,6 @@ func TestCatalogCategoryAndProductCreateRequestsAreBounded(t *testing.T) {
 		CategoryNo: "ctg_0123456789abcdef0123456789abcdef", PublicSlug: "managed-ssl",
 		NameZhCn: "托管 SSL 证书", NameEnUs: "Managed SSL",
 		SummaryZhCn: strings.Repeat("云", 1024), SortOrder: -1_000_000,
-		ContractPolicyCode: "inherit",
 	}
 	if err := g.Validator().Data(product).Run(context.Background()); err != nil {
 		t.Fatalf("validate maximum product create request: %v", err)

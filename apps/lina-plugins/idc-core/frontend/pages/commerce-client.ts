@@ -1,7 +1,6 @@
 import { pluginApiPath, requestClient } from "#/api/request";
 import { requestPreservingHttpStatus } from "./commerce-request";
 
-import type { ContractPolicyOrderRule } from "./contract-policy-client";
 
 const pluginID = "idc-core";
 
@@ -24,7 +23,6 @@ export interface CommerceOrderSummary {
   paymentTermCode: string;
   productSummary?: string;
   remark?: string;
-  requiresContract: boolean;
   riskDecisionCode: string;
   statusCode: string;
   totalAmountMinor: string;
@@ -55,6 +53,7 @@ export interface CommerceDelivery {
     | "awaiting_review"
     | "cancelled"
     | "completed"
+    | "manual_processing"
     | "not_completed"
     | "processing";
   updatedAt: number;
@@ -75,7 +74,6 @@ export interface CommerceOrderPage {
 }
 
 export interface CommerceOrderDetailResult {
-  contractRule: ContractPolicyOrderRule;
   order: CommerceOrderDetail;
 }
 

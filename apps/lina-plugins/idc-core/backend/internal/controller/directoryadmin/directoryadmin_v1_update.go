@@ -8,7 +8,7 @@ import (
 )
 
 func (c *ControllerV1) Update(ctx context.Context, req *v1.UpdateReq) (*v1.UpdateRes, error) {
-	directory, err := c.service.Save(ctx, productdirectory.SaveInput{NavigationType: productdirectory.NavigationType(req.NavigationType), TargetURL: req.TargetURL, Icon: req.Icon, DirectoryNo: req.DirectoryNo, NameZhCn: req.NameZhCn, NameEnUs: req.NameEnUs, SortOrder: req.SortOrder, ExpectedVersion: req.ExpectedVersion, StatusCode: productdirectory.Status(req.StatusCode)})
+	directory, err := c.service.Save(ctx, productdirectory.SaveInput{PagePluginIDs: req.PagePluginIDs, NavigationType: productdirectory.NavigationType(req.NavigationType), TargetURL: req.TargetURL, Icon: req.Icon, ParentDirectoryNo: req.ParentDirectoryNo, DirectoryNo: req.DirectoryNo, NameZhCn: req.NameZhCn, NameEnUs: req.NameEnUs, SortOrder: req.SortOrder, ExpectedVersion: req.ExpectedVersion, StatusCode: productdirectory.Status(req.StatusCode)})
 	if err != nil {
 		return nil, err
 	}

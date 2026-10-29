@@ -1,0 +1,7 @@
+{
+  "plugin.idc-core.catalog.upstreamPricing.sample": "Supplier price for the current default configuration (changes with customer selections)",
+  "plugin.idc-core.catalog.upstreamPricing.wholePrice": "Final whole-item price",
+  "plugin.idc-core.catalog.upstreamPricing.mixed": "Rules vary by period",
+  "plugin.idc-core.catalog.upstreamPricing.mixedHint": "Billing periods currently use different price rules. Leave them unchanged, or explicitly choose one percentage markup or whole-item prices for every period.",
+  "plugin.idc-core.catalog.upstreamPricing.percentRequired": "Enter a markup percentage; zero is allowed."
+}

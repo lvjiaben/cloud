@@ -4,6 +4,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -30,12 +31,28 @@ func (s *emptyMerchantHTTPService) SaveVersionConfiguration(context.Context, pro
 func (*emptyMerchantHTTPService) GetVersionConfiguration(context.Context, string) (*productautomation.VersionConfiguration, error) {
 	return &productautomation.VersionConfiguration{}, nil
 }
+func (s *emptyMerchantHTTPService) GetMerchantConfiguration(ctx context.Context, versionNo string) (*productautomation.VersionConfiguration, error) {
+	return s.GetVersionConfiguration(ctx, versionNo)
+}
 func (s *emptyMerchantHTTPService) EvaluateVersionConfiguration(context.Context, productautomation.EvaluateVersionConfigurationInput) (*productautomation.ConfigurationEvaluation, error) {
 	s.evaluations++
 	return &productautomation.ConfigurationEvaluation{}, nil
 }
 
 type emptyMerchantHTTPController struct{ target *ControllerV1 }
+
+type emptyMerchantHTTPWriter struct {
+	catalog.ManagementService
+	writes int
+}
+
+func (s *emptyMerchantHTTPWriter) SaveConfigurationPriceBatch(_ context.Context, _ string, rows []catalog.ConfigurationPriceBatchRow, _ catalog.ConfigurationPriceTargetSource) error {
+	if len(rows) != 1 {
+		return bizerr.NewCode(catalog.CodeManagementInvalid)
+	}
+	s.writes++
+	return nil
+}
 
 func (c *emptyMerchantHTTPController) Update(ctx context.Context, req *v1.CatalogProductVersionConfigurationUpdateReq) (*v1.CatalogProductVersionConfigurationUpdateRes, error) {
 	return c.target.CatalogProductVersionConfigurationUpdate(ctx, req)
@@ -46,6 +63,7 @@ func (c *emptyMerchantHTTPController) Evaluate(ctx context.Context, req *v1.Cata
 
 func TestEmptyMerchantConfigurationHTTP(t *testing.T) {
 	service := &emptyMerchantHTTPService{}
+	writer := &emptyMerchantHTTPWriter{}
 	server := g.Server("empty-merchant-" + guid.S())
 	server.SetPort(0)
 	server.SetDumpRouterMap(false)
@@ -63,7 +81,7 @@ func TestEmptyMerchantConfigurationHTTP(t *testing.T) {
 			}
 			r.Response.Write("accepted")
 		})
-		group.Bind(&emptyMerchantHTTPController{target: &ControllerV1{productAutomation: service}})
+		group.Bind(&emptyMerchantHTTPController{target: &ControllerV1{productAutomation: service, catalogPublication: &emptyMerchantPublication{}, catalogWriter: writer}})
 	})
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
@@ -102,4 +120,51 @@ func TestEmptyMerchantConfigurationHTTP(t *testing.T) {
 	if service.saves != 1 || service.evaluations != 1 {
 		t.Fatalf("invalid arrays reached owner: %+v", service)
 	}
+	// Array bounds must count rows, not the length of their serialized JSON.
+	// One ordinary price row is already longer than 256 characters.
+	for _, count := range []int{1, 257} {
+		rows := make([]json.RawMessage, count)
+		for index := range rows {
+			rows[index] = json.RawMessage(`{"fieldKey":"local_validation_method","candidateValue":"dns","quantity":false,"pricingMode":"fixed","active":true,"previousPriceNo":"","billingRuleNo":"bil_11111111111111111111111111111111","currencyCode":"CNY","tiers":[{"minimumQuantity":0,"maximumQuantity":null,"amountMinor":"100","setupFeeMinor":"0","renewalAmountMinor":"100"}]}`)
+		}
+		body, err := json.Marshal(struct {
+			MerchantValues []string          `json:"merchantValues"`
+			PriceRows      []json.RawMessage `json:"priceRows"`
+		}{MerchantValues: []string{}, PriceRows: rows})
+		if err != nil {
+			t.Fatal(err)
+		}
+		url := "http://127.0.0.1:" + strings.TrimPrefix(server.GetListenedAddress(), ":") + "/x/idc-core/api/v1/admin/catalog/product-versions/ver_" + strings.Repeat("1", 32) + "/configuration"
+		req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(string(body)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		response, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		payload, readErr := io.ReadAll(response.Body)
+		closeErr := response.Body.Close()
+		if readErr != nil || closeErr != nil {
+			t.Fatal(readErr, closeErr)
+		}
+		want := "accepted"
+		if count > 256 {
+			want = catalog.CodeManagementInvalid.RuntimeCode()
+		}
+		if string(payload) != want {
+			t.Fatalf("%d price rows: %s", count, payload)
+		}
+	}
+	if writer.writes != 1 || service.saves != 2 {
+		t.Fatalf("price row bounds reached owners incorrectly: writes=%d saves=%d", writer.writes, service.saves)
+	}
+}
+
+// emptyMerchantPublication isolates request binding from persistence in this HTTP test.
+type emptyMerchantPublication struct{ catalog.PublicationService }
+
+func (*emptyMerchantPublication) WithSavedSettings(ctx context.Context, _ string, save func(context.Context) error) error {
+	return save(ctx)
 }

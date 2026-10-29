@@ -1,4 +1,5 @@
 {
   "plugin.idc-zjmf-finance.name": "魔方财务原生连接器",
-  "plugin.idc-zjmf-finance.description": "通过魔方财务原生 JWT 接口提供商品配置发现和服务器操作。"
+  "plugin.idc-zjmf-finance.description": "通过魔方财务原生 JWT 接口提供商品配置发现和服务器操作。",
+  "plugins.idc_zjmf_finance.catalog.unselected": "不选"
 }

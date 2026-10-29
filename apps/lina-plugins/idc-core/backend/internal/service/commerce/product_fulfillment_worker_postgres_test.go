@@ -230,7 +230,7 @@ func prepareGenericWorkerScenarioWithFrozenConfiguration(
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, structuredFulfillmentEvidenceValidator{files: files}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"))
+	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, structuredFulfillmentEvidenceValidator{files: files}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -459,7 +459,7 @@ func TestManualConsultingProductCompletesWithoutPluginOrResourceCallsPostgreSQL(
 	service, err := productfulfillmentservice.NewFullConfigured(
 		scenario.database, structuredFulfillmentEvidenceValidator{}, fulfillmentGateStub{},
 		fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{},
-		fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"),
+		fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"), nil,
 	)
 	if err != nil {
 		t.Fatal(err)

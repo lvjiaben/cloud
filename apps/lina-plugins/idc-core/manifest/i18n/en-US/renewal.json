@@ -1,0 +1,23 @@
+{
+  "plugin": {
+    "idc-core": {
+      "renewal": {
+        "title": "Accessory renewal work items",
+        "subject": "Service number",
+        "customer": "Customer number",
+        "invoice": "Invoice number",
+        "status": "Reason",
+        "createdAt": "Created at",
+        "action": "Action",
+        "awaitingPayment": "Awaiting payment",
+        "cancellationPending": "Invoice closure pending",
+        "needsReview": "Needs review",
+        "viewInvoice": "View invoice",
+        "refresh": "Refresh work items",
+        "guidance": "Snapshots and backups awaiting payment are retained, with restore and other usage paused. After payment, check the resource status and whether restore is available. Pending invoice closures require confirmation. Process invoices using your existing invoice permissions.",
+        "syncFailed": "Renewal reminders could not be updated. The count may be out of date. Refresh to try again.",
+        "listFailed": "Renewal work items could not be loaded. Refresh to try again, or contact an administrator if this continues."
+      }
+    }
+  }
+}

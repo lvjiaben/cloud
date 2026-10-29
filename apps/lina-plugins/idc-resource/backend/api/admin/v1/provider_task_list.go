@@ -4,7 +4,8 @@ package v1
 import "github.com/gogf/gf/v2/frame/g"
 
 type ProviderTaskListReq struct {
-	Page      int `json:"page" in:"query" v:"between:1,1000000" dc:"One-based page number; cannot be combined with a cursor" eg:"1"`
+	ServiceNo string `json:"serviceNo" in:"query" v:"max-length:40" dc:"Optional exact server entitlement number; filters linked tasks in the database before counting and paging" eg:"SVC_0123456789abcdef"`
+	Page      int    `json:"page" in:"query" v:"between:1,1000000" dc:"One-based page number; cannot be combined with a cursor" eg:"1"`
 	g.Meta    `path:"/admin/resource/tasks" method:"get" tags:"IDC Resource Tasks" summary:"List Provider tasks" dc:"Return one bounded keyset page from the local Provider task projection. This endpoint never calls a Provider and never returns task parameters, credentials, secret bindings, or raw upstream payloads." permission:"idc:admin:resource:task:list"`
 	ChannelNo string `json:"channelNo" in:"query" v:"max-length:64" dc:"Optional exact opaque resource channel number" eg:"channel_primary"`
 	Status    string `json:"status" in:"query" v:"max-length:24" dc:"Optional exact durable Provider task status" eg:"result_unknown"`

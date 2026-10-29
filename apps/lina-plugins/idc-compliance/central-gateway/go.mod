@@ -6,8 +6,6 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/gowebpki/jcs v1.0.1
 	github.com/jackc/pgx/v5 v5.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.159
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/essbasic v1.3.159
 )
 
 require (

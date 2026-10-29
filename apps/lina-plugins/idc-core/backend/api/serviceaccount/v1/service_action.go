@@ -46,9 +46,11 @@ type ServiceEntitlement struct {
 	Downloads        []ServiceDownloadDeclaration `json:"downloads"`
 }
 type EntitlementListReq struct {
-	g.Meta `path:"/account/service-entitlements" method:"get" tags:"IDC Customer Services" summary:"List my managed services" pageBridgeCapability:"service-entitlements.customer.v1" pageBridgeHost:"customer"`
-	Cursor string `json:"cursor"`
-	Limit  int    `json:"limit" d:"20" v:"between:1,100"`
+	DirectoryNo string `json:"directoryNo" v:"max-length:40" dc:"Optional member navigation directory; omitted keeps the plugin customer list ungrouped" eg:"pdr_example"`
+	PluginID    string `json:"pluginId" v:"max-length:128" dc:"Optional owning fulfillment plugin filter for one plugin-owned purchased-services block" eg:"yunsu-ssl"`
+	g.Meta      `path:"/account/service-entitlements" method:"get" tags:"IDC Customer Services" summary:"List my managed services" pageBridgeCapability:"service-entitlements.customer.v1" pageBridgeHost:"customer"`
+	Cursor      string `json:"cursor"`
+	Limit       int    `json:"limit" d:"20" v:"between:1,100"`
 }
 type EntitlementListRes struct {
 	Items      []ServiceEntitlement `json:"items"`

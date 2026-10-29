@@ -80,3 +80,40 @@ func TestAdminDirectoryAuthorizesBeforeFixedProviderQueries(t *testing.T) {
 		})
 	}
 }
+
+func TestAdminEntitlementFilterIsAppliedBeforeCountAndPagePostgreSQL(t *testing.T) {
+	ctx, database := newDirectoryDatabase(t)
+	seedDirectoryFoundation(t, ctx, database)
+	seedDirectoryServer(t, ctx, database, "customer-a", "1", "active", "succeeded")
+	seedDirectoryServer(t, ctx, database, "customer-b", "2", "active", "succeeded")
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_resource_channel SET provider_plugin_id=? WHERE channel_no='channel-main'`, cloudConnectorPluginID); err != nil {
+		t.Fatal(err)
+	}
+	directory, err := newWithScanner(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin, err := NewAdmin(directory, &staffDirectoryAuthorizer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	entitlement := "ent_" + strings.Repeat("1", 32)
+	page, err := admin.List(ctx, 1, 1, entitlement)
+	if err != nil || page.Total != 1 || len(page.Items) != 1 || page.NextCursor != "" || page.Items[0].ProductNameZhCN != "客户商品 1" {
+		t.Fatalf("scoped native server page leaked another customer: %+v %v", page, err)
+	}
+	missing, err := admin.List(ctx, 1, 1, "ent_missing")
+	if err != nil || missing.Total != 0 || len(missing.Items) != 0 {
+		t.Fatalf("unknown entitlement fell back to global: %+v %v", missing, err)
+	}
+	if _, err = admin.List(ctx, 1, 1, "../ent_bad"); err == nil {
+		t.Fatal("invalid entitlement filter accepted")
+	}
+	denied, err := NewAdmin(directory, &staffDirectoryAuthorizer{denied: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = denied.List(ctx, 1, 1, entitlement); err == nil {
+		t.Fatal("denied staff read a native entitlement")
+	}
+}

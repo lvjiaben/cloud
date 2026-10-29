@@ -27,13 +27,15 @@ const (
 // PurchaseQuoteLineInput contains only catalog-owned references previously
 // persisted by the cart service.
 type PurchaseQuoteLineInput struct {
-	ReferenceNo     string
-	ProductNo       string
-	VersionNo       string
-	BillingRuleNo   string
-	Quantity        int
-	PurchaseCycles  int
-	PriceSelections []ConfigurationPriceSelection
+	nativePrice             *nativePurchasePrice
+	ConfigurationSnapshotNo string
+	ReferenceNo             string
+	ProductNo               string
+	VersionNo               string
+	BillingRuleNo           string
+	Quantity                int
+	PurchaseCycles          int
+	PriceSelections         []ConfigurationPriceSelection
 }
 
 // PurchaseQuoteInput is one explicit-currency, new-purchase batch.
@@ -59,25 +61,23 @@ type PurchaseQuoteCharge struct {
 
 // PurchaseQuoteLine is the complete local catalog fact set for one cart item.
 type PurchaseQuoteLine struct {
-	ReferenceNo               string
-	ProductNo                 string
-	VersionNo                 string
-	BillingRuleNo             string
-	CategoryNo                string
-	ProductNameZhCN           string
-	ProductNameEnUS           string
-	PublicSlug                string
-	ConfigurationRequired     bool
-	Quantity                  int
-	PurchaseCycles            int
-	ChargeTypeCode            string
-	TrialLimitQuantity        int
-	PriorTrialUses            int
-	PeriodUnitCode            string
-	PeriodCount               int
-	RequiresContract          bool
-	ContractPolicyCode        string
-	ContractTemplateNo        string
+	ReferenceNo           string
+	ProductNo             string
+	VersionNo             string
+	BillingRuleNo         string
+	CategoryNo            string
+	ProductNameZhCN       string
+	ProductNameEnUS       string
+	PublicSlug            string
+	ConfigurationRequired bool
+	Quantity              int
+	PurchaseCycles        int
+	ChargeTypeCode        string
+	TrialLimitQuantity    int
+	PriorTrialUses        int
+	PeriodUnitCode        string
+	PeriodCount           int
+
 	FulfillmentModeCode       string
 	RiskDecisionCode          string
 	InventoryDecisionCode     string
@@ -121,14 +121,13 @@ type purchaseQuoteProductRow struct {
 	NameEnUS              string  `orm:"name_en_us"`
 	PublicSlug            string  `orm:"public_slug"`
 	ConfigurationRequired bool    `orm:"configuration_required"`
+	Deleted               bool    `orm:"deleted"`
 	ProductStatusCode     string  `orm:"product_status_code"`
 	CategoryStatusCode    string  `orm:"category_status_code"`
 	VersionStatusCode     string  `orm:"version_status_code"`
 	CurrentVersionNo      *string `orm:"current_version_no"`
-	RequiresContract      bool    `orm:"requires_contract"`
-	ContractPolicyCode    string  `orm:"contract_policy_code"`
-	ContractTemplateNo    string  `orm:"contract_template_no"`
-	FulfillmentStrategy   string  `orm:"fulfillment_strategy"`
+
+	FulfillmentStrategy string `orm:"fulfillment_strategy"`
 }
 
 type purchaseQuoteSimpleInventoryRow struct {
@@ -203,10 +202,17 @@ func (s *publicCatalogReaderImpl) AssemblePurchaseQuote(
 	if len(simpleInventoryRows) > len(versions) {
 		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
+	input, priceRows, err = s.nativePurchaseQuoteRows(ctx, input, versions, ruleRows, priceRows)
+	if err != nil {
+		return nil, err
+	}
 	lines, err := buildPurchaseQuoteWithSimpleInventory(
 		input, productRows, ruleRows, priceRows, taxRows, simpleInventoryRows,
 	)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.validateImportedPurchaseCycles(ctx, lines); err != nil {
 		return nil, err
 	}
 	return s.applyImportedPurchasePrices(ctx, input.CurrencyCode, versions, lines)
@@ -367,7 +373,7 @@ func buildPurchaseQuoteWithSimpleInventory(
 	for _, requested := range input.Lines {
 		requestedQuantity := requested.Quantity
 		product, found := index.products[purchaseQuotePair(requested.ProductNo, requested.VersionNo)]
-		if !found || product.ProductStatusCode != "active" || product.CategoryStatusCode != "active" ||
+		if !found || product.Deleted || product.ProductStatusCode != "active" || product.CategoryStatusCode != "active" ||
 			product.VersionStatusCode != "published" || product.CurrentVersionNo == nil ||
 			*product.CurrentVersionNo != requested.VersionNo {
 			return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
@@ -407,9 +413,9 @@ func buildPurchaseQuoteWithSimpleInventory(
 			PurchaseCycles: requested.PurchaseCycles, ChargeTypeCode: rule.ChargeTypeCode,
 			TrialLimitQuantity: trial.limitQuantity, PriorTrialUses: trial.priorUses,
 			PeriodUnitCode: rule.PeriodUnitCode, PeriodCount: rule.PeriodCount,
-			RequiresContract: product.RequiresContract, ContractPolicyCode: product.ContractPolicyCode,
-			ContractTemplateNo: product.ContractTemplateNo, FulfillmentModeCode: fulfillment,
-			RiskDecisionCode: risk, InventoryDecisionCode: inventory.decision,
+
+			FulfillmentModeCode: fulfillment,
+			RiskDecisionCode:    risk, InventoryDecisionCode: inventory.decision,
 			InventoryTrackingEnabled: inventory.trackingEnabled,
 			InventoryVersion:         inventory.version, InventorySellableQuantity: inventory.sellableQuantity,
 			RouteDecisionDigest: inventory.digest,
@@ -542,6 +548,13 @@ func purchaseQuoteCharges(
 	prices map[string][]entity.CatalogPrice,
 	priorTrialUses *int,
 ) ([]PurchaseQuoteCharge, error) {
+	if line.nativePrice != nil {
+		charge, err := nativePurchaseQuoteCharge(line)
+		if err != nil {
+			return nil, err
+		}
+		return []PurchaseQuoteCharge{charge}, nil
+	}
 	definition := BillingRuleDefinitionFromEntity(rule)
 	result := make([]PurchaseQuoteCharge, 0, 1)
 	base, err := purchaseQuoteCharge(line, definition, "", false, ConfigurationPriceFixed, 1, prices, priorTrialUses)
@@ -667,10 +680,10 @@ func unavailablePurchaseQuote(err error) error {
 
 const purchaseQuoteProductsSQL = `
 SELECT p.product_no, v.version_no, p.category_no, p.public_slug,
-       p.name_zh_cn, p.name_en_us, p.status_code AS product_status_code,
+       p.name_zh_cn, p.name_en_us, p.status_code AS product_status_code, p.deleted_at IS NOT NULL AS deleted,
        c.status_code AS category_status_code, v.status_code AS version_status_code,
 	   p.current_version_no,
-       v.requires_contract, v.contract_policy_code, v.contract_template_no,
+
 	   policy.strategy_code AS fulfillment_strategy,
        EXISTS(SELECT 1 FROM plugin_idc_core_catalog_product_version_configuration configured WHERE configured.tenant_id=v.tenant_id AND configured.version_no=v.version_no) AS configuration_required
 FROM plugin_idc_core_catalog_product p
@@ -689,11 +702,13 @@ FOR SHARE OF p, c, v, policy`
 
 const purchaseQuoteSimpleInventorySQL = `
 WITH active_reservation AS (
-    SELECT version_no, SUM(reserved_quantity)::BIGINT AS reserved_quantity
-    FROM plugin_idc_core_commerce_inventory_reservation
-    WHERE version_no = ANY(string_to_array(?, ','))
-      AND status_code IN ('held','committed')
-    GROUP BY version_no
+    SELECT requested.version_no, SUM(reservation.reserved_quantity)::BIGINT AS reserved_quantity
+    FROM plugin_idc_core_catalog_product_version requested
+    JOIN plugin_idc_core_catalog_product_version sibling ON sibling.tenant_id=requested.tenant_id AND sibling.product_no=requested.product_no
+    JOIN plugin_idc_core_commerce_inventory_reservation reservation ON reservation.version_no=sibling.version_no
+    WHERE requested.version_no = ANY(string_to_array(?, ','))
+      AND reservation.status_code IN ('held','committed')
+    GROUP BY requested.version_no
 )
 SELECT inventory.version_no, inventory.tracking_enabled,
        inventory.sellable_quantity, COALESCE(active_reservation.reserved_quantity,0) AS reserved_quantity,

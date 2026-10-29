@@ -8,12 +8,12 @@ import (
 	"lina-plugin-idc-core/backend/api/admin/v1"
 )
 
-// CatalogProductPublish publishes one complete draft product version.
+// CatalogProductPublish immediately applies saved product settings.
 func (c *ControllerV1) CatalogProductPublish(
 	ctx context.Context,
 	req *v1.CatalogProductPublishReq,
 ) (res *v1.CatalogProductPublishRes, err error) {
-	result, err := c.catalogPublication.PublishVersion(ctx, req.VersionNo)
+	result, err := c.catalogPublication.ApplySavedVersion(ctx, req.VersionNo)
 	if err != nil {
 		return nil, err
 	}

@@ -231,7 +231,6 @@ watch(reviewOpen, async (open) => {
         component: "Textarea",
         label: tr("finance.credit.comment"),
         componentProps: { placeholder: tr("finance.credit.comment"), rows: 4 },
-        rules: "required",
       },
       {
         fieldName: "evidence",
@@ -241,7 +240,6 @@ watch(reviewOpen, async (open) => {
           placeholder: tr("finance.credit.evidenceBasis"),
           rows: 4,
         },
-        rules: "required",
       },
     ],
   });

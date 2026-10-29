@@ -66,6 +66,9 @@ func (s *publicCatalogReaderImpl) ReadImportSnapshot(ctx context.Context, public
 		Prices: prices, PricingComplete: true, Fulfillment: *fulfillment,
 		Currencies: make([]channelcommercecap.CatalogCurrency, 0, len(product.Currencies)),
 	}
+	if result.Fulfillment.MaximumPurchaseCycles > 0 || importMappingsHaveCustomerPolicy(projection.mappings) {
+		result.ProtocolVersion = channelcommercecap.ImportPurchaseCycleLimitProtocolVersion
+	}
 	for _, code := range product.Currencies {
 		unit, parseErr := currency.ParseISO(code)
 		if parseErr != nil || unit == currency.XXX {
@@ -106,5 +109,18 @@ FROM plugin_idc_core_catalog_product_version_fulfillment_policy WHERE tenant_id=
 	default:
 		return nil, bizerr.NewCode(CodePublicCatalogUnavailable)
 	}
-	return &channelcommercecap.ImportFulfillment{Granularity: row.Granularity, OngoingService: row.Ongoing, RenewalMode: row.Renewal}, nil
+	limits, err := loadImportedPurchaseCycleLimits(ctx, s.database, []string{versionNo})
+	if err != nil {
+		return nil, err
+	}
+	return &channelcommercecap.ImportFulfillment{Granularity: row.Granularity, OngoingService: row.Ongoing, RenewalMode: row.Renewal, MaximumPurchaseCycles: limits[versionNo]}, nil
+}
+
+func importMappingsHaveCustomerPolicy(mappings []channelcommercecap.ImportFieldMapping) bool {
+	for _, mapping := range mappings {
+		if mapping.CustomerVisible != nil || len(mapping.DefaultValue) > 0 {
+			return true
+		}
+	}
+	return false
 }

@@ -2,7 +2,7 @@ import { pluginApiPath, requestClient } from "#/api/request";
 
 const pluginID = "idc-compliance";
 
-export type SupplierProviderCode = "nuonuo_invoice" | "tencent_essbasic";
+export type SupplierProviderCode = "nuonuo_invoice";
 
 export interface SupplierConfiguration {
   adapterEnabled: boolean;

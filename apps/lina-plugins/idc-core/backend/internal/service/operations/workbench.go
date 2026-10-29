@@ -191,8 +191,6 @@ UNION ALL SELECT 'payment_exceptions', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plu
 UNION ALL SELECT 'pending_ip_changes', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_server_ip_change_intent WHERE tenant_id=0 AND reservation_status_code IN ('reserved','unknown')
 UNION ALL SELECT 'pending_identity', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_customer_individual_profile WHERE tenant_id=0 AND identity_status_code IN ('pending','unverified')
 UNION ALL SELECT 'pending_enterprise_identity', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_customer_enterprise_profile WHERE tenant_id=0 AND verification_status_code IN ('pending','unverified')
-UNION ALL SELECT 'contract_exceptions', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_contract_failure_compensation WHERE tenant_id=0 AND status_code IN ('refund_pending','manual_review')
-UNION ALL SELECT 'pending_contracts', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_async_task WHERE tenant_id=0 AND task_type ILIKE '%contract%' AND status_code IN ('pending','running','retry_wait','result_unknown','manual_takeover')
 UNION ALL SELECT 'pending_commission_settlements', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_sales_commission_settlement WHERE tenant_id=0 AND status_code IN ('pending_review','approved','batched','manual_review')
 UNION ALL SELECT 'notification_failures', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_async_task WHERE tenant_id=0 AND task_type ILIKE '%notif%' AND status_code IN ('failed','dead_letter','result_unknown')
 UNION ALL SELECT 'resource_alerts', COUNT(*), NULL, 0, 0, 0, 0, NULL FROM plugin_idc_core_operations_signal WHERE tenant_id=0 AND signal_kind IN ('inventory_freshness','adapter_health') AND status_code IN ('warning','critical','unknown')
@@ -210,7 +208,6 @@ UNION ALL SELECT 'watermark', 0, NULL, 0, 0, 0, 0,
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_server_ip_change_intent WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_customer_individual_profile WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_customer_enterprise_profile WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
-           COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_contract_failure_compensation WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_operations_signal WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_business_operation WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),
            COALESCE((SELECT MAX(updated_at) FROM plugin_idc_core_catalog_product WHERE tenant_id=0), TIMESTAMPTZ 'epoch'),

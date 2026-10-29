@@ -20,7 +20,7 @@ export class ProductMemberMenuPage extends CatalogWorkspacePage {
       await this.productCreateModal.getByTestId('catalog-product-create-' + field).fill(value);
     }
   }
-  async createProduct() { await this.page.getByRole('dialog').filter({ has: this.productCreateModal }).getByRole('button', { name: '创建商品草稿', exact: true }).click(); }
-  async editDescription() { await this.page.getByTestId('catalog-description-edit').click(); }
+  async createProduct() { await this.page.getByRole('dialog').filter({ has: this.productCreateModal }).getByRole('button', { name: '创建商品', exact: true }).click(); }
+  async editDescription() { await this.selectEditSection('基本资料'); }
   async saveDescription() { await this.page.getByTestId('catalog-description-save').click(); }
 }

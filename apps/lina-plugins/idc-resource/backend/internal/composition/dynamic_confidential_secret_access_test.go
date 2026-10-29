@@ -123,3 +123,15 @@ func TestProviderLoginRetainsTLSAndAuthFailureThroughMaskingSecretService(t *tes
 		})
 	}
 }
+
+func TestPrincipalRejectionSurvivesSecretErrorMasking(t *testing.T) {
+	original := &resourcecap.ProviderCallError{Code: resourcecap.ProviderCallErrorCodeInvalidResponse}
+	err := accessConfidentialProviderSecret(t.Context(), &maskingProviderSecretAccessor{}, secretcap.AccessRequest{}, func([]byte) error { return original })
+	normalized := resourcecap.NormalizeProviderError(err)
+	if normalized.ResultUnknown || normalized.Code != resourcecap.ProviderCallErrorCodeInvalidResponse {
+		t.Fatalf("documented rejection became unknown: %+v", normalized)
+	}
+	if safeConfidentialProviderError(&resourcecap.ProviderCallError{Code: resourcecap.ProviderCallErrorCodeUnknown, Retryable: true}) != nil {
+		t.Fatal("invalid retry classification accepted")
+	}
+}

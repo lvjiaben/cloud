@@ -6,6 +6,7 @@ import "github.com/gogf/gf/v2/frame/g"
 
 type CatalogAutomationInterfaceListReq struct {
 	g.Meta                 `path:"/admin/catalog/automation/interfaces" method:"get" tags:"IDC Catalog Management" summary:"List automation interfaces" dc:"Return one bounded page filtered by connector selection, name, and new-business state without per-row provider lookups." permission:"idc:admin:catalog:automation-interface:view"`
+	ForProductBinding      bool   `json:"forProductBinding" dc:"Include resource-owned local projections for product binding; false by default returns managed interfaces only. Binding admission remains required." eg:"true"`
 	Page                   int    `json:"page" d:"1" v:"min:1" dc:"One-based page" eg:"1"`
 	PageSize               int    `json:"pageSize" d:"20" v:"min:1|max:100" dc:"Page size" eg:"20"`
 	NamePrefix             string `json:"namePrefix" v:"max-length:128" dc:"Optional literal interface-name prefix" eg:"SSL"`

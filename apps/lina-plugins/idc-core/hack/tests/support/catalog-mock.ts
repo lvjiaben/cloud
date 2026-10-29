@@ -47,6 +47,7 @@ const categories = [
 
 export const products = [
   {
+    sortOrder: 100, availableQuantity: null, provisionedQuantity: 0, totalQuantity: 0,
     billingRuleCount: 1,
     categoryNameEnUs: "Certificates",
     categoryNameZhCn: "证书服务",
@@ -68,6 +69,7 @@ export const products = [
     versionStatus: "published",
   },
   {
+    sortOrder: 100, availableQuantity: null, provisionedQuantity: 0, totalQuantity: 0,
     billingRuleCount: 1,
     categoryNameEnUs: "Physical products",
     categoryNameZhCn: "实物商品",
@@ -261,14 +263,23 @@ export async function installCatalogManagementMock(
     const response = await route.fetch({ headers, url: new URL(requested.pathname + requested.search, config.backendBaseURL).href });
     const payload = await response.json();
     const locale = new URL(route.request().url()).searchParams.get("lang") === "en-US" ? "en-US" : "zh-CN";
-    const messages = JSON.parse(await readFile(new URL(`../../../manifest/i18n/${locale}/catalog-workspace.json`, import.meta.url), "utf8"));
+    const messages = {...JSON.parse(await readFile(new URL(`../../../manifest/i18n/${locale}/catalog-workspace.json`, import.meta.url), "utf8")), ...JSON.parse(await readFile(new URL(`../../../manifest/i18n/${locale}/merchant-workspace.json`, import.meta.url), "utf8"))};
     payload.data.messages.plugin ??= {};
     payload.data.messages.plugin["idc-core"] ??= {};
     payload.data.messages.plugin["idc-core"].catalog ??= {};
-    for (const section of ["workspace", "commerce", "configurationPrice", "copy"]) {
+    for (const section of ["workspace", "screen", "commerce", "configurationPrice", "priceTable", "copy", "merchantWorkspace"]) {
       payload.data.messages.plugin["idc-core"].catalog[section] = { ...payload.data.messages.plugin["idc-core"].catalog[section], ...Object.fromEntries(
         Object.entries(messages).filter(([key]) => key.startsWith(`plugin.idc-core.catalog.${section}.`)).map(([key, value]) => [key.replace(`plugin.idc-core.catalog.${section}.`, ""), value]),
       ) };
+    }
+    for (const file of ['product-editor-tabs.json', 'product-editor-visibility.json','addons.json','plugin.json','product-directory.json','catalog-price-overview.json','product-editor-safety.json','product-editor-price-preview.json','product-editor-upstream-pricing.json']) {
+      const extra=JSON.parse(await readFile(new URL(`../../../manifest/i18n/${locale}/${file}`,import.meta.url),'utf8'));
+      for (const [key,value] of Object.entries(extra)) {
+        if (!key.startsWith('plugin.')) continue;
+        const parts=key.split('.');let node=payload.data.messages;
+        for (const part of parts.slice(0,-1)) node=node[part]??={};
+        node[parts.at(-1)!]=value;
+      }
     }
     await route.fulfill({ response, json: payload });
   });
@@ -429,7 +440,7 @@ export async function installCatalogManagementMock(
         return;
       }
       const deletionState = url.searchParams.get("deletionState") ?? "active";
-      await route.fulfill({ json: apiEnvelope({ categories: categoryRows.filter(item => deletionState === "all" || item.deleted === (deletionState === "deleted")) }) });
+      await route.fulfill({ json: apiEnvelope({ categories: categoryRows.filter(item => deletionState === "all" || item.deleted === (deletionState === "deleted")).sort((a,b)=>a.sortOrder-b.sortOrder) }) });
     },
   );
   await page.route(

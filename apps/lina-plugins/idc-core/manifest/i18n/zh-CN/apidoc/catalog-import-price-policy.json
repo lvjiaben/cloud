@@ -1,0 +1,5 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedPricingMode.dc": "已保存的转售定价方式：百分比加价、自定义整件价，或各周期方式不同。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedMarkupPercent.dc": "所有导入周期共用的已保存加价百分比，使用精确十进制文本。",
+  "plugins.idc_core.api.admin.v1.CatalogProductVersionConfiguration.fields.importedManualPrices.dc": "已按整件自定义售价的周期；不含税，安装费单列。"
+}

@@ -1,7 +1,7 @@
 <script lang="ts">
 export const pluginPageMeta = {
   routePath: "/system/notice",
-  title: "Notices",
+  title: "Announcements",
 };
 </script>
 
@@ -14,11 +14,11 @@ import { computed, onMounted, ref } from "vue";
 
 import { Page, useVbenDrawer, useVbenModal } from "@vben/common-ui";
 
-import { message, Modal, Popconfirm, Space } from "ant-design-vue";
+import { Input, message, Modal, Popconfirm, Space } from "ant-design-vue";
 
 import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { $t } from "#/locales";
-import { noticeDelete, noticeList } from "./notice-client";
+import { noticeDelete, noticeList, noticeUpdate } from "./notice-client";
 import { DictTag } from "#/components/dict";
 import { useDictStore } from "#/store/dict";
 
@@ -27,31 +27,17 @@ import NoticeModal from "./notice-modal.vue";
 import NoticePreviewModal from "./notice-preview-modal.vue";
 
 const dictStore = useDictStore();
-const noticeTypeDicts = ref<any[]>([]);
 const noticeStatusDicts = ref<any[]>([]);
 
 onMounted(async () => {
-  [noticeTypeDicts.value, noticeStatusDicts.value] = await Promise.all([
-    dictStore.getDictOptionsAsync("sys_notice_type"),
-    dictStore.getDictOptionsAsync("sys_notice_status"),
-  ]);
-  gridApi.formApi.updateSchema([
-    {
-      fieldName: "type",
-      componentProps: {
-        options: noticeTypeDicts.value.map((item: any) => ({
-          label: item.label,
-          value: Number(item.value),
-        })),
-      },
-    },
-  ]);
+  noticeStatusDicts.value =
+    await dictStore.getDictOptionsAsync("sys_notice_status");
 });
 
 const [NoticeModalRef, noticeModalApi] = useVbenDrawer({
   connectedComponent: NoticeModal,
+  modal: true,
   closeOnClickModal: false,
-  modal: false,
 });
 
 const [NoticePreviewModalRef, noticePreviewModalApi] = useVbenModal({
@@ -128,7 +114,7 @@ function handleEdit(row: Notice) {
 }
 
 async function handleDelete(row: Notice) {
-  await noticeDelete(String(row.id));
+  await noticeDelete(row.id);
   message.success($t("pages.common.deleteSuccess"));
   await gridApi.query();
 }
@@ -150,6 +136,32 @@ function handleMultiDelete() {
   });
 }
 
+async function saveSort(row: Notice, event: Event) {
+  const input = event.target as HTMLInputElement;
+  const value = Number(input.value);
+  if (
+    input.value.trim() === "" ||
+    !Number.isInteger(value) ||
+    value < 0
+  ) {
+    input.value = String(row.sortOrder);
+    message.error($t("plugin.content-notice.validation.sortOrder"));
+    return;
+  }
+  if (value === row.sortOrder) return;
+  input.disabled = true;
+  try {
+    await noticeUpdate(row.id, { sortOrder: value });
+    row.sortOrder = value;
+    await gridApi.query();
+  } catch {
+    input.value = String(row.sortOrder);
+    message.error($t("plugin.content-notice.messages.sortFailed"));
+  } finally {
+    input.disabled = false;
+  }
+}
+
 function onReload() {
   gridApi.query();
 }
@@ -157,7 +169,12 @@ const layoutRoot = useAdminGridLayout(gridApi);
 </script>
 
 <template>
-  <Page :ref="layoutRoot" class="plugin-admin-page" :auto-content-height="true" content-class="p-0">
+  <Page
+    :ref="layoutRoot"
+    class="plugin-admin-page"
+    :auto-content-height="true"
+    content-class="p-0"
+  >
     <section class="notice-page" data-testid="notice-management-page">
       <div class="notice-list-panel">
         <Grid :table-title="$t('plugin.content-notice.tableTitle')">
@@ -181,8 +198,15 @@ const layoutRoot = useAdminGridLayout(gridApi);
             </Space>
           </template>
 
-          <template #type="{ row }">
-            <DictTag :dicts="noticeTypeDicts" :value="String(row.type)" />
+          <template #sortOrder="{ row }">
+            <Input
+              :value="String(row.sortOrder)"
+              type="number"
+              min="0"
+              :aria-label="$t('plugin.content-notice.fields.sortOrder')"
+              @blur="saveSort(row, $event)"
+              @press-enter="($event.target as HTMLInputElement).blur()"
+            />
           </template>
 
           <template #status="{ row }">
@@ -219,10 +243,16 @@ const layoutRoot = useAdminGridLayout(gridApi);
 
 <style scoped>
 .notice-page {
+  animation: notice-page-in 180ms ease-out;
   background: hsl(var(--background-deep));
   height: 100%;
   min-height: 0;
   padding: 12px;
+}
+
+@keyframes notice-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .notice-list-panel {

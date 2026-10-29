@@ -1,0 +1,9 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.currencyCode.dc": "已配置的 ISO 币种，不做币种换算。",
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.amountMinor.dc": "以最小货币单位表示的准确基础购买金额，不含配置附加费。",
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.setupFeeMinor.dc": "以最小货币单位表示的新购额外开通费。",
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.periodUnit.dc": "计费周期单位：once 单次、hour 小时、day 天、month 月或 year 年。",
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.periodCount.dc": "每个计费周期包含的单位数量。",
+  "plugins.idc_core.api.admin.v1.CatalogProductBasePricePreview.fields.chargeType.dc": "计费类型：one_time 一次性、recurring 周期性或 trial 试用。",
+  "plugins.idc_core.api.admin.v1.CatalogProductSummaryItem.fields.basePrice.dc": "一个带明确周期的已配置公开基础购买价格；没有时为 null。不是完整配置报价，也不是跨币种换算的最低价。"
+}

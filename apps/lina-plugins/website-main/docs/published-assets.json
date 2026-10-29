@@ -1,0 +1,835 @@
+{
+  "checkedAt": "2026-10-18T02:49:24.809Z",
+  "base": "/x-assets/website-main/v0.1.9/",
+  "verified": 138,
+  "checks": [
+    {
+      "path": "frontend/public/about.html",
+      "status": 200,
+      "hash": "666c1a1c97f197878d7fa9dcf207812ef479cb7278863d6334af6c400e4ecab1",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/announcements.html",
+      "status": 200,
+      "hash": "69dd7fad4443238569dfa937cd74141d36f85fd80f88ee7fb4e9273d3aa8984a",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/configure.html",
+      "status": 200,
+      "hash": "3d1227cadbc2ae1467961f6aa49993f6814e6205ab34cd9b0b4e5fcd12942e10",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/contact.html",
+      "status": 200,
+      "hash": "73bebdbd3c8253cb9a6ca926a29a9ac3f5c1d0186495985e5dfff9bbb98d9aed",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/content.html",
+      "status": 200,
+      "hash": "a7956a6d8c0fa786493014568f0a9ddbba95b62294ccd36ebfaf678b1202dbab",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/downloads.html",
+      "status": 200,
+      "hash": "4105b22709d1c5cbc681e44707089101a268491ac0b3d33960876520b1b7b847",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/help.html",
+      "status": 200,
+      "hash": "588c9ff0304f4181fec4ad7683bf83bd636d9a7a19ed4cc1914f31e7d08b9d2d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/index.html",
+      "status": 200,
+      "hash": "383d124817e1967d09de0695ea045a7eb576b919c839d65baa9b35882bdb6b34",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/lina/home.js",
+      "status": 200,
+      "hash": "a1519b71cb7d341cb5b998635edf5f0c030e09525c3128db184298c39c42c260",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/lina/quote-state.js",
+      "status": 200,
+      "hash": "9f35b72e42197d4b9be6f3430976c8385d96c5c64a4b1b51831b52418fd976ce",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/lina/site.css",
+      "status": 200,
+      "hash": "96c628d454f3b87882c1456dbf1c3e25828669ba5737e8a711a7ec72159f2e55",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/lina/site.js",
+      "status": 200,
+      "hash": "5dc5e34db348af5683006d86dbc68c7a098c9e9fb09f5b21e97d72d0ae8a8c50",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/news.html",
+      "status": 200,
+      "hash": "43d864ae2b3a00906c3b1ebdb11bee6be87619c55d26487f1301d3296be8a63c",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/products.html",
+      "status": 200,
+      "hash": "6787f7cc9b9812517033f5d4258282e7f82eb72325fcbb0a7b063ab828c28066",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/Assure.css",
+      "status": 200,
+      "hash": "5755411148d3989139c7a6b5495bde4b7aa7e97764baff30a634e6ccdc4cb903",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/Introduction.css",
+      "status": 200,
+      "hash": "aa38770bcf3790e717db6fd07c1d86812b20eaea404e2a51e5bbafd434087e25",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/about.css",
+      "status": 200,
+      "hash": "8c82b492760f5344ffa45137d272fd3f2f7cba8f8a9fbe559704f5bca443eda2",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/aff.css",
+      "status": 200,
+      "hash": "9c88e44fcc509008eb75a77828debb132bbea94f74d6ac86225455bc1c38c785",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/animate.min.css",
+      "status": 200,
+      "hash": "072915b2ac1b9bf7d3d9b2abecf0ac31a8679d1a396ff3c424f7029a661b5256",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/app.min.css",
+      "status": 200,
+      "hash": "f0fa9409d77c4e53dd634a1a214259cc7ef6529fc93f4a0af745e18c775a2764",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/bootstrap-select.min.css",
+      "status": 200,
+      "hash": "02fbd1287dc971a9e4527bd6a4b26d95f227ec14f946b10aaa32df8a577e978b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/bootstrap.min-v7.9.5.css",
+      "status": 200,
+      "hash": "97769425c6dc9fa1404de3bd68a0ebcf8827b3da7c159790df3f259783e439f1",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/bootstrap.min.css",
+      "status": 200,
+      "hash": "bd759e13c108a3befd34382bd955acbb3843df024cae15d9c44b06cc3cea399f",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/bt.css",
+      "status": 200,
+      "hash": "f06b79eb0253c5e8061ac05e226dfff8044d0102aaa168b86addbacc3bb8cb01",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/carttypo.css",
+      "status": 200,
+      "hash": "9bfb6409b2860b0a9428e9c9dee52162e491abcea4e6d4762cab4d867451b9c0",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/certificate.css",
+      "status": 200,
+      "hash": "0d8b429120c5c66f8b023ed32ac1d0af8b098301649620e2ff816168e99edc8b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/config.css",
+      "status": 200,
+      "hash": "f1eb7b8f560b518f09866dbba08dbc34d26ac441bc22584c61458290d59ec994",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/contact.css",
+      "status": 200,
+      "hash": "fd0aa774d658e62ab4cb9ee4c7dc999f82e12cefef4829d0ab722f11f39820e5",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/font_4334155_zodnrrjlblp.css",
+      "status": 200,
+      "hash": "7f6d02edb9a3125eafe9b4b997ca7f45d327682624e9e3b0d15f9db1c0dceb3e",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/font_4454768_wll5sjcs77g.css",
+      "status": 200,
+      "hash": "b8edd2f9f929ee0b2828a8b10fb10df37072df82f959a2d8ac528ef70a5ee8b4",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/footer.css",
+      "status": 200,
+      "hash": "d8491692a95788c5c4b5902a7ab4c67a2e5d0551d5a147d378b2bcfe41bd06b7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/global-f91e2263a2aa0a0be4deafd52918362b.css",
+      "status": 200,
+      "hash": "8252980770e3cd076c402455bde435df1cbb3cc789ab5b354a7b77bc8f8672fb",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/global.css",
+      "status": 200,
+      "hash": "eb7531f4dd8916a5686fc0c6f2aed4d3de359fbc208a2643ce4bf8bca216aae1",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/globalCSS.css",
+      "status": 200,
+      "hash": "f1945cd6c19e56b3c1c78943ef5ec18116907a4ca1efc40a57d48ab1db7adfc5",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/iconfont-1.0.03219.css",
+      "status": 200,
+      "hash": "c8963bbd0bc66a57e7a9eb340c493b398d57dc69b70efb375cfffdc90ffbd240",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/iconfont-v7.9.5.css",
+      "status": 200,
+      "hash": "ca6f36200770ff3d03dfd498f7a04ae1beed86f6e51843f805b555bc52130353",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/icons.css",
+      "status": 200,
+      "hash": "86a0f2cdf02805a6bf15fd656861516462e6b283f194cbac766dceb3a12942e1",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/icons.min.css",
+      "status": 200,
+      "hash": "fe710dc64a73a1567f0bea93dac975704db663d030b0e842c37c2ffab2d132bf",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/iconsk.css",
+      "status": 200,
+      "hash": "5fba580d5b12c7519af2a4a962bff6c06682eb990097964237a4ab097422f15d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/inherit.css",
+      "status": 200,
+      "hash": "11918a72f7473027b24044d99e32d94dece1857f733419f43d60420af2ae8da7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/inherit1.css",
+      "status": 200,
+      "hash": "b531ddb664bd8629b086f9b3bd9f05938843c872b2f16896459e75a64649a372",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/ion.rangeSlider.min.css",
+      "status": 200,
+      "hash": "09ce1d53a19d97ecf5fb1ad39c2571bee2a177aeaac9ed888b433aefdb282bf9",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/jTippy.css",
+      "status": 200,
+      "hash": "1115539a4c409bbc5a47b7c30d539f7fdfa7c3d04bc8fabb8caeaf13432ad16a",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/layer-animate.css",
+      "status": 200,
+      "hash": "d93695753f3a8579f894a86f2bd4492c00161c33eb9f149ee12c9fd5b19f1661",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/lightgallery.css",
+      "status": 200,
+      "hash": "64c3326159bbe65fd5c8c47a491060c4fca90e96ae5763d3ee078d6042a3a1d4",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/loading.css",
+      "status": 200,
+      "hash": "dd3e3ef57cf57357ed240bbef71ea02b142a1488511ea1bb523a5f924b37ab10",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/logincode.css",
+      "status": 200,
+      "hash": "2cde16879020705ae0840f42d28e7b53c16c7625134ab909c95e1354038cddd5",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/m_index.css",
+      "status": 200,
+      "hash": "451605a3737a1f6edeb800f75d3166711450e670e42c0f5a0de15430b938d978",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/module.css",
+      "status": 200,
+      "hash": "d782006b921822ff6db76174203b6a3dd13ff4430975216fef4c0f54fb2cdfb8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/module1.css",
+      "status": 200,
+      "hash": "2280de5d53788b29928bd48632c9c9426c03d7a01955b1cd699c6cd249c92348",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/module2.css",
+      "status": 200,
+      "hash": "7daeb33cc83146d7d9b24da711b9cf0dc692dd357a9aafbafd4da437bd6d6992",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/nav.css",
+      "status": 200,
+      "hash": "93e8684d9842dee51c49c9cef7671f7e3d2f15ddd6dafa8ade11df54d261ffe0",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/newestactivity.css",
+      "status": 200,
+      "hash": "512d4461cccda7b49b3cfb11e1db3e77625bd44b6047fb1648cbb8efae5eaaef",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/news.css",
+      "status": 200,
+      "hash": "7f034da3e60ca24e4a1802ebc9dc27987ea47173e0af36cd9eb71d65bd414f8f",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/partner.css",
+      "status": 200,
+      "hash": "01ded324afe27aa727288aa09a2166b6b4abf9d8a741d38deb2698edb03a75d5",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/prism.css",
+      "status": 200,
+      "hash": "5f77c9b9954000141d0a6b0eaff586f8472baa8832a7eb3924d8eca08a41d412",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/responsive.css",
+      "status": 200,
+      "hash": "547d4e41440145b268a9a60a842b8a125f32dca1e4d2007a0f2162d136cd34aa",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/ssl-inline.css",
+      "status": 200,
+      "hash": "de4ebfbf1eba3e83c94e751bd7a26bb0128ab67e3960a04693b62a021cc7c2ee",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/style.css",
+      "status": 200,
+      "hash": "107e95c8c8a71581fae235273f72ef7fb7dc9473126307d7d213fd9803a9ab40",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/swiper-bundle.min.css",
+      "status": 200,
+      "hash": "261bdfdb1cb4421dd49cabbd7c836d5122baeba4e926ee521a0198fcb2306400",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/toastr.min.css",
+      "status": 200,
+      "hash": "6e60178b33d601ed836b6f2ffecdd22ac303ed069a7701843168a009513059bc",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/typo.css",
+      "status": 200,
+      "hash": "b1b3074ff74fa3359b7a4a35a9132919d00790b2d4cf68595ea0caa21ad642e3",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/typo1.css",
+      "status": 200,
+      "hash": "249c9ba4c39e541ab3bd6a1239e634bffbad9ca084631452f32ab3246b9ed70c",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/universalComponents.css",
+      "status": 200,
+      "hash": "f2767c4f1cf1dcd99a180d521a4b44f95ed7ca0188ee5a41bb88cd4851542590",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/css/webmaster.css",
+      "status": 200,
+      "hash": "24f1cee7739ef89c07b32654f7db91806844dd92ea4c7cd365efbcf234b1c6b4",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/DINPro-Medium.woff",
+      "status": 200,
+      "hash": "c3008541f1f223dc76148b7a750bd1f0cffd0b12bc8bca720a2f8e77d5c794b9",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/Montserrat-VariableFont_wght.ttf",
+      "status": 200,
+      "hash": "e5b1a3fbac6e5bf9f20860f9a254abe39240439f445568d8cd37482789e5dcac",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/bodrum.ttf",
+      "status": 200,
+      "hash": "39421573fc0d40d044c5cbd919374e6aa7ed64c7b454491538385f0388991207",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/boxicons.eot",
+      "status": 200,
+      "hash": "802c35640fced8e2ab71a41f8783677e43e6ceff07f08d3eb5e30c7dd0a5bc7d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/boxicons.svg",
+      "status": 200,
+      "hash": "809f57f0bba7aa595c00cc723e84682096013df8a8e6df393691bbdec461c937",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/boxicons.ttf",
+      "status": 200,
+      "hash": "ac7dcf49337576dda35e1b5ba8a605dd4b327e4904382c1800447299fe81c8c8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/boxicons.woff",
+      "status": 200,
+      "hash": "77e1b957cddd1a0f76110f716b3b2ae865b8acfeb7bdce7a6f5f8dd4a52097e7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/boxicons.woff2",
+      "status": 200,
+      "hash": "79f146048436739bb1c4dd1964b0e2493166373e611ca6ba66c79ddb07930cb8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/dripicons-v2.eot",
+      "status": 200,
+      "hash": "4551d45f9461084536f7f773b845761b945e68ec435c6f244e8b2d72b371d335",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/dripicons-v2.svg",
+      "status": 200,
+      "hash": "2c1ce9e2c6fa50aadaaa63c72eeb45bed1f61bdfa0746619c21f33d8d59a4ef0",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/dripicons-v2.ttf",
+      "status": 200,
+      "hash": "d8c798b53ed325b354524c6f83c735bc8a461a429daa2c0302d671988aa6da0f",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/dripicons-v2.woff",
+      "status": 200,
+      "hash": "e87a09cef1a17d8c6a5a1b542521889f2f409262589d8d4fb1d9112c9e144bfb",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-brands-400.eot",
+      "status": 200,
+      "hash": "be34e2d1c49c464cf9386c548194ad39639b90aa4fbf394d6950bb267674184e",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-brands-400.svg",
+      "status": 200,
+      "hash": "02340ba1789d09bcc507563c89c4a847ba537bb8132082777a50519cf74bcb5b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-brands-400.ttf",
+      "status": 200,
+      "hash": "527301d2a546387a1f5663efc5cbd233168bc85d631398a5efc7f34fb9bb78ef",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-brands-400.woff",
+      "status": 200,
+      "hash": "fac6b5c9313f04da8a4bad7664a658d5cd83849a3dfc7f34c287584cce5f4fe2",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-brands-400.woff2",
+      "status": 200,
+      "hash": "835914c1ccc20d0d7eeef572c3652004d87400aa1221f3a0c3455135b8cf629d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-duotone-900.eot",
+      "status": 200,
+      "hash": "af60501c1cb121c573f9becf486189f8baa2f1d7d290a0c9ac310eb7ca6d513f",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-duotone-900.svg",
+      "status": 200,
+      "hash": "76ad77ae8a65fa3c468747dcb20e1734a6210652629ac4b64bebb90245fa7d29",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-duotone-900.ttf",
+      "status": 200,
+      "hash": "4188fa3adc358a48eea6524f0051e9146d07bae3e04c7d143033f27a46f64c22",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-duotone-900.woff",
+      "status": 200,
+      "hash": "3879ae224832f685be89d3a19bca898bd4e630d972df8cb6615a057e2b4cb723",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fa-duotone-900.woff2",
+      "status": 200,
+      "hash": "7f4e9c6429be23d9e1b884cfa72fdd436037106662ed473110e6480c61677642",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4334155_zodnrrjlblp.ttf",
+      "status": 200,
+      "hash": "acbcf63354d2f017aa45561f6ec7ecc81305c692a656673b5a5a512f60620ce5",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4334155_zodnrrjlblp.woff",
+      "status": 200,
+      "hash": "5495ec734e64289a8bcdd60e0affc6f35db8f4c8a98b0efa4f047924b5fbd15d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4334155_zodnrrjlblp.woff2",
+      "status": 200,
+      "hash": "9a555939f0b53f71a9f29c743eef8fc053cfd4ed8d61b01a2ec28c3f796318f8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4454768_wll5sjcs77g.ttf",
+      "status": 200,
+      "hash": "642a9f159ad6c4394d8aa78faf22854060c2d1048a329837b73526e99c2383b7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4454768_wll5sjcs77g.woff",
+      "status": 200,
+      "hash": "8c7021f4ccc2d3baf28e8eec9a4ccc566cc1e0f98c2d097284f3586141e7b590",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/font_4454768_wll5sjcs77g.woff2",
+      "status": 200,
+      "hash": "1e98aa6ccad9ac4adbd5a23c563e265fc723a1200225f14a931961db0a8932a9",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fontawesome-webfont.eot",
+      "status": 200,
+      "hash": "7bfcab6db99d5cfbf1705ca0536ddc78585432cc5fa41bbd7ad0f009033b2979",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fontawesome-webfont.svg",
+      "status": 200,
+      "hash": "ad6157926c1622ba4e1d03d478f1541368524bfc46f51e42fe0d945f7ef323e4",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fontawesome-webfont.ttf",
+      "status": 200,
+      "hash": "aa58f33f239a0fb02f5c7a6c45c043d7a9ac9a093335806694ecd6d4edc0d6a8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fontawesome-webfont.woff",
+      "status": 200,
+      "hash": "ba0c59deb5450f5cb41b3f93609ee2d0d995415877ddfa223e8a8a7533474f07",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/fontawesome-webfont.woff2",
+      "status": 200,
+      "hash": "2adefcbc041e7d18fcf2d417879dc5a09997aa64d675b7a3c4b6ce33da13f3fe",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont-1614138343949.ttf",
+      "status": 200,
+      "hash": "f8d4ffebe2946629a2adc9b0503143d6275d6fd9bc69b8dc2e5fd547ee2f8e4a",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont-1614138343949.woff",
+      "status": 200,
+      "hash": "84b87bee05a6740d405221b2d99178a1583067ce38c5a69d69d6148ab3e40583",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont-1700197307019.ttf",
+      "status": 200,
+      "hash": "d08485e42045633a7e268efa690a4f329e73c9f983a9c2e7d68ee3c74a62e8fc",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont-1700197307019.woff",
+      "status": 200,
+      "hash": "d4542584de510de7578373e15ab40a2f52704c02bfd23df54092a84b422314fd",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont.eot",
+      "status": 200,
+      "hash": "4f3e08839b81ecc45214c64bd2eac11befa799814330b64649c367737a617de8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont.svg",
+      "status": 200,
+      "hash": "e0b0265f31fc2cab83af8698f686108f962a5b0f9501613fec8c3d30aa1a53bb",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/iconfont.woff2",
+      "status": 200,
+      "hash": "38cc8bca552b19e953bcc20e7259391cdca2e67a5a040e7e9d789c78588641b9",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/ionicons.eot",
+      "status": 200,
+      "hash": "9212b0ec8ae63aaeb11b357e0b3a900ac3c2c484f0c78e14c14ec74acf0c55b0",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/ionicons.svg",
+      "status": 200,
+      "hash": "d76c528facedcebc7d9be20d636cf6b19266fc3aea4b9f06886efc107ccb23bd",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/ionicons.ttf",
+      "status": 200,
+      "hash": "5b1ad9c798c9a39850008601cf89dbb96ad8edbd77f80fa8bbb6252f7b9e76ea",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/ionicons.woff",
+      "status": 200,
+      "hash": "b3ffda4093042970e3eb05842f5484c0dcee18cc4d0efd634582852cdb17f915",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/lg.eot",
+      "status": 200,
+      "hash": "0970881145aecce7668909140fc2f552c680007c147905bae6bf87d0fca9df6c",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/lg.svg",
+      "status": 200,
+      "hash": "e89650de3b0ea9eb1f03f80da079963a97f94b050a7ad68b61876cb34b8b3e8c",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/lg.ttf",
+      "status": 200,
+      "hash": "5c3cb8b4780e7037479381cda6f640bb12c56b5c8dc0104b03dec0294aeec0e6",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/lg.woff",
+      "status": 200,
+      "hash": "78e558964f6a4d4970dad55bc53bf6a7cdc0437d228ee2c60bc6d1dc9e0beefd",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-1.6.50.eot",
+      "status": 200,
+      "hash": "7c6969237fbfda3f60660d4c069d9662048457ace7092c575fc6cb46f284f957",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-1.6.50.ttf",
+      "status": 200,
+      "hash": "fa357e31fe02cb093a16cb022c619ba4cc663e5b1d4520f90e4005f2d8f9678e",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-1.6.50.woff",
+      "status": 200,
+      "hash": "55c38cbd4eb40a4c89fdade57801913a8ba1aa90f20b2c5f509028cea83c4e9e",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-1.6.50.woff2",
+      "status": 200,
+      "hash": "12a7e137fc8d5ec6bf5b898e010f8de41a78c7e979f3825f90fb722d65f0e3f8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-5.0.45.eot",
+      "status": 200,
+      "hash": "a2089c94145a3227124907bb8e548061b2792a4e4d4d843c270cc5d4497f0e3d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-5.0.45.ttf",
+      "status": 200,
+      "hash": "93ce1ba21ad4e01130173ef7aa14d26e782b6674cd6dd5256acfdef427268289",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-5.0.45.woff",
+      "status": 200,
+      "hash": "726fc90d174b00f425dc8530673fa9ceb6147e2f473a6d9a5512c5dee6736c74",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont-5.0.45.woff2",
+      "status": 200,
+      "hash": "4d7cdc283f4c2434a60e4d640b6f6c76c6bfae5464c20aa1fb3ea89bfb52ad7f",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/materialdesignicons-webfont.svg",
+      "status": 200,
+      "hash": "1cdf7ddf23244bbddc5b7d8bed4ff7bc0a9748f6e57c686ca007ab76a2b58f6b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/sk.eot",
+      "status": 200,
+      "hash": "9cb13febce3709f6831e617cafd2089e3bc3132c851322501f3292593f208caf",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/sk.svg",
+      "status": 200,
+      "hash": "4b42a666d33463e91a9573c23f4ad99e4802549ca5bfff4696ce50a33d179f59",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/sk.ttf",
+      "status": 200,
+      "hash": "d138d7ea8c92c60610fe7f8239d4518caeb01c9d645b99c08571ae746f56b92d",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/sk.woff2",
+      "status": 200,
+      "hash": "ec14a19eace6d3d572cb0b02f54f030ed3a1119789fc64fa859af49ef9500b5e",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/themify.eot",
+      "status": 200,
+      "hash": "dff415daec911b65dca5be02071a1825b75508ff158de5b8d85976957db931cb",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/themify.svg",
+      "status": 200,
+      "hash": "f7af2e096c85c2ed6f68bb086f792c67f2a6041cbb814fc2796912b2eef4fe76",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/themify.ttf",
+      "status": 200,
+      "hash": "350663a4665e00072c68a87ad3fa0be47b8a91424127f5f3e09f664197295f01",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/themify.woff",
+      "status": 200,
+      "hash": "0db5c5a1475eb7a3e5028983ea1e642d1b2c00faff6a250a37502b0f3832a4a7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/typicons.eot",
+      "status": 200,
+      "hash": "9709867514ff52d688eecd090e19aa6be67b870df68088f99f9820dfb6ba984b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/typicons.svg",
+      "status": 200,
+      "hash": "48cf417942e863ceeaaebaa57d074ae5f118b2b1688e5b2766ba0e7997ca4ce8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/typicons.ttf",
+      "status": 200,
+      "hash": "91935ab8b9cd9252a73fb300a898a321a2d71f5cfda3e3ec8216a372a878505b",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/font/typicons.woff",
+      "status": 200,
+      "hash": "c2430aad2b6a33948dc064cfaee8ad65ff9e3ca439834f3aaa84abec3d10dea8",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/picture/Hotline.svg",
+      "status": 200,
+      "hash": "27652b635d157f75cc3f3e3ffc313261860c3c829e85b0f764d5a2bf3dc7e1f7",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/picture/remoteL16850667456953.svg",
+      "status": 200,
+      "hash": "30f9db6e7d3267ea1c14cde323604eb6341f070e98fb8e9f83d445d4ceb5e9a2",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/picture/remoteL16905328288110.svg",
+      "status": 200,
+      "hash": "1ffc65606baaf79a8f299fde984f662620b7cea80e050d7a5c5489151018ccf4",
+      "matchesEmbedded": true
+    },
+    {
+      "path": "frontend/public/static/picture/remoteL17054789546267.svg",
+      "status": 200,
+      "hash": "242714036d913524e1dcee18461caee9898bf1d24335b2183953233be5c38ad6",
+      "matchesEmbedded": true
+    }
+  ]
+}

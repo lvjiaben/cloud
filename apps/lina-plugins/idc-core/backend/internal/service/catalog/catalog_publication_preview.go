@@ -21,10 +21,20 @@ const (
 	PublicationCheckAutomation PublicationCheckCode = "automation"
 )
 
+// PublicationReadinessReason is a safe, client-localized reason for a failed gate.
+type PublicationReadinessReason string
+
+const (
+	PublicationReasonProviderUnavailable        PublicationReadinessReason = "provider_unavailable"
+	PublicationReasonConfigurationPricesMissing PublicationReadinessReason = "configuration_prices_missing"
+	PublicationReasonSupplierUnconfirmed        PublicationReadinessReason = "supplier_capabilities_unconfirmed"
+	PublicationReasonConfigurationIncomplete    PublicationReadinessReason = "configuration_incomplete"
+)
+
 // PublicationAutomationReadiness reads the optional automation binding's
 // authoritative new-business admission without exposing management details.
 type PublicationAutomationReadiness interface {
-	CheckPublicationReadiness(ctx context.Context, versionNo string) (bool, error)
+	CheckPublicationReadiness(ctx context.Context, versionNo string) (PublicationReadinessCheck, error)
 }
 
 // PublicationPreview is a bounded, advisory projection. PublishVersion always rechecks.
@@ -99,7 +109,7 @@ func (s *publicationPreviewServiceImpl) PreviewVersion(
 		return nil, err
 	}
 	checks = append(checks, PublicationReadinessCheck{
-		Code: PublicationCheckAutomation, Passed: automationReady,
+		Code: PublicationCheckAutomation, Passed: automationReady.Passed, ReasonCode: automationReady.ReasonCode,
 	})
 	preview := &PublicationPreview{
 		ProductNo: product.ProductNo, VersionNo: version.VersionNo, Checks: checks, Ready: true,
@@ -113,18 +123,21 @@ func (s *publicationPreviewServiceImpl) PreviewVersion(
 func (s *publicationPreviewServiceImpl) publicationAutomationReady(
 	ctx context.Context,
 	versionNo string,
-) (bool, error) {
-	ready, err := s.automation.CheckPublicationReadiness(ctx, versionNo)
+) (PublicationReadinessCheck, error) {
+	check, err := s.automation.CheckPublicationReadiness(ctx, versionNo)
+	check.Code = PublicationCheckAutomation
 	if err == nil {
-		return ready, nil
+		return check, nil
 	}
+	check.Passed = false
 	if bizerr.Is(err, CodePublicationNotAccessible) {
-		return false, err
+		return check, err
 	}
 	if bizerr.Is(err, CodeManagementConflict) || bizerr.Is(err, CodeManagementNotAccessible) {
-		return false, nil
+		check.ReasonCode = PublicationReasonConfigurationIncomplete
+		return check, nil
 	}
-	return false, bizerr.WrapCode(err, CodePublicationUnavailable)
+	return check, bizerr.WrapCode(err, CodePublicationUnavailable)
 }
 
 func loadCatalogPublicationPreviewTarget(

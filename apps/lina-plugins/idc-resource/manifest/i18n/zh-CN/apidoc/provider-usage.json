@@ -13,5 +13,6 @@
   "plugins.idc_resource.api.admin.v1.ProviderChannelUsageItem.fields.totalInstances.dc": "当前绑定此接口的全部本地实例数，包含导入和已终止实例",
   "plugins.idc_resource.api.admin.v1.ProviderChannelUsageItem.fields.configuredProducts.dc": "当前生效版本使用此接口的未删除商品去重数量",
   "plugins.idc_resource.api.admin.v1.ProviderChannelItem.fields.usage.dc": "由分页目录提供的权威本地使用统计",
-  "plugins.idc_resource.api.admin.v1.ResourcePoolItem.fields.channelName.dc": "资源池所属接口名称，不受当前接口分页影响"
+  "plugins.idc_resource.api.admin.v1.ResourcePoolItem.fields.channelName.dc": "资源池所属接口名称，不受当前接口分页影响",
+  "plugins.idc_resource.api.admin.v1.ProviderSecretFieldStatus.fields.updatedAt.dc": "凭据生命周期校验时间，Unix毫秒时间戳"
 }

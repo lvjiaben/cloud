@@ -1,0 +1,23 @@
+{
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.meta.tags": "IDC资源任务",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.meta.summary": "查询接口调用日志",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.meta.dc": "分页读取当前商家的本地接口调用记录，不保存请求响应正文，不调用上游",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.schema.dc": "分页读取当前商家的本地接口调用记录，不保存请求响应正文，不调用上游",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.page.dc": "从1开始的页码",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.limit.dc": "每页记录数，1至100条",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.channelNo.dc": "可选的完整接口编号，省略时查询全部授权接口",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.channelName.dc": "可选的完整接口名称，省略时查询全部名称",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.methodCode.dc": "调用的方法，省略时查询全部方法",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListReq.fields.result.dc": "可选结果：succeeded 请求完成，failed 调用异常（包含失败、未知或无效结果），省略时查询全部结果",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListRes.fields.items.dc": "当前页不包含请求响应正文的调用记录",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogListRes.fields.total.dc": "相同权限和筛选条件下的准确总数",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.id.dc": "不可变记录编号",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.channelNo.dc": "可选的完整接口编号，省略时查询全部授权接口",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.channelName.dc": "可选的完整接口名称，省略时查询全部名称",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.providerPluginId.dc": "连接器标识",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.methodCode.dc": "调用的方法，省略时查询全部方法",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.succeeded.dc": "接口调用是否完成且未返回失败或未知的操作结果；不代表资源已最终开通成功",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.errorCode.dc": "拥有方安全错误分类，成功时为空",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.durationMs.dc": "接口调用耗时，单位毫秒",
+  "plugins.idc_resource.api.admin.v1.ProviderAPILogItem.fields.startedAt.dc": "调用开始时间，Unix毫秒时间戳"
+}

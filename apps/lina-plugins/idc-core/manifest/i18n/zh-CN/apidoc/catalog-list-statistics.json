@@ -1,0 +1,10 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductSummaryItem.fields.sortOrder.dc": "展示顺序，数值越小越靠前",
+  "plugins.idc_core.api.admin.v1.CatalogProductSummaryItem.fields.availableQuantity.dc": "扣除本商品所有版本已预留和已确认占用后的剩余可售库存；空值表示不限库存",
+  "plugins.idc_core.api.admin.v1.CatalogProductSummaryItem.fields.provisionedQuantity.dc": "已成功交付且未终止、未取消的数量；不含等待激活的服务",
+  "plugins.idc_core.api.admin.v1.CatalogProductSummaryItem.fields.totalQuantity.dc": "历史累计成功交付数量，包含后来终止的服务，不含失败的尝试",
+  "plugins.idc_core.api.admin.v1.CatalogProductDeleteReq.summary": "删除商品",
+  "plugins.idc_core.api.admin.v1.CatalogProductDeleteReq.dc": "从销售及管理列表移除商品，保留历史订单、已有服务与续费。",
+  "plugins.idc_core.api.admin.v1.CatalogProductDeleteReq.fields.productNo.dc": "稳定的商品业务编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductDeleteReq.fields.version.dc": "最近读取的商品资料修订号"
+}

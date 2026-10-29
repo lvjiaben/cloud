@@ -143,3 +143,16 @@ func TestFinancialManagementControllerMapsProofAndRejectsNonCanonicalAmount(t *t
 		t.Fatal("non-canonical minor-unit amount reached command service")
 	}
 }
+
+func (s *financialManagementCommandRecordingStub) IssueBalanceAdjustmentProof(_ context.Context, intent billing.ManagementBalanceAdjustmentIntent) (*reauth.ProofContext, error) {
+	return &reauth.ProofContext{Token: "opaque-proof", ExpiresAt: time.Unix(1_800_000_000, 0).UTC()}, nil
+}
+
+func (s *financialManagementCommandRecordingStub) CreateBalanceAdjustment(_ context.Context, intent billing.ManagementBalanceAdjustmentIntent, proofToken string) (*billing.FinancialAdjustment, error) {
+	s.proofToken = proofToken
+	return &billing.FinancialAdjustment{
+		AdjustmentNo: "adjustment-controller", AdjustmentType: "manual_receipt",
+		Status: billing.AdjustmentStatusPendingReview, CustomerNo: intent.CustomerNo,
+		CurrencyCode: intent.CurrencyCode, AmountMinor: intent.AmountMinor, ApprovalRequired: true,
+	}, nil
+}

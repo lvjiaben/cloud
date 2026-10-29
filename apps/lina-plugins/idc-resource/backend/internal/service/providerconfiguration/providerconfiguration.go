@@ -230,7 +230,7 @@ func (s *service) channelConfigurationStatuses(ctx context.Context, channels []c
 		channelNos = append(channelNos, channel.ChannelNo)
 	}
 	if err := s.db.Model("plugin_idc_resource_channel_secret_binding").Safe().Ctx(ctx).
-		Fields("channel_no,binding_name,updated_at").
+		Fields("channel_no,binding_name,bound_at AS updated_at").
 		Where("tenant_id", idccap.DefaultTenantID).Where("status_code", "active").
 		WhereIn("channel_no", channelNos).OrderAsc("channel_no").OrderAsc("binding_name").
 		Limit(len(channels)*resourcecap.MaximumSecretBindingCount + 1).Scan(&activeRows); err != nil ||
@@ -247,35 +247,29 @@ func (s *service) channelConfigurationStatuses(ctx context.Context, channels []c
 	if s.extensions == nil {
 		return result, nil
 	}
-	inputs := make([]plugincap.BusinessExtensionProviderExactInput, 0, len(channels))
-	channelOrder := make([]string, 0, len(channels))
+	// Management uses the installed connector declaration; historical releases
+	// remain execution evidence and do not own the editable configuration form.
+	page, err := s.extensions.ListProviders(ctx, plugincap.BusinessExtensionProviderListInput{
+		Point: resourcecap.DynamicProviderPoint, ContractVersion: resourcecap.DynamicProviderContractVersion,
+		Page: capmodel.PageRequest{PageNum: 1, PageSize: 100, Limit: 100},
+	})
+	if err != nil || page == nil || len(page.Items) > 100 {
+		return nil, bizerr.WrapCode(errOrLimit(err), CodeUnavailable)
+	}
+	current := make(map[string]*capmodel.BusinessExtensionProviderEvidence, len(page.Items))
+	for _, item := range page.Items {
+		if item != nil && item.InterfaceConfiguration != nil &&
+			resourcecap.ValidateProviderMetadata(item.ProviderMetadata, item.InterfaceConfiguration) == nil {
+			current[item.PluginID] = item
+		}
+	}
 	for _, row := range channels {
-		if row.ProviderRuntimeType != "dynamic" {
+		item := current[row.ProviderPluginID]
+		if row.ProviderRuntimeType != "dynamic" || item == nil {
 			continue
 		}
-		inputs = append(inputs, plugincap.BusinessExtensionProviderExactInput{
-			PluginID: row.ProviderPluginID, Point: resourcecap.DynamicProviderPoint,
-			ContractVersion: row.ResourceContractVersion, ReleaseVersion: row.ResourceReleaseVersion,
-			ReleaseDigest: row.ResourceReleaseDigest, DeclarationDigest: row.ResourceDeclarationDigest,
-		})
-		channelOrder = append(channelOrder, row.ChannelNo)
-	}
-	if len(inputs) == 0 {
-		return result, nil
-	}
-	evidence, err := s.extensions.GetProvidersExact(ctx, inputs)
-	if err != nil || len(evidence) != len(inputs) {
-		// A channel may retain a historical release that is no longer installed
-		// or whose evidence was never persisted in the development database.
-		// Keep the configuration row visible and mark its dynamic fields as
-		// unavailable instead of making the whole provider list fail.
-		logger.Warning(ctx, "provider channel historical extension evidence unavailable", "error", err)
-		return result, nil
-	}
-	for index, item := range evidence {
-		if item == nil || item.InterfaceConfiguration == nil {
-			// Exact discovery keeps missing releases as nil slots. An unavailable
-			// row must not discard the independently verified neighboring rows.
+		providerID, valid := dynamicProviderID(item)
+		if !valid || providerID != row.ProviderID || item.ContractVersion != row.ResourceContractVersion {
 			continue
 		}
 		statuses := make([]SecretFieldStatus, 0)
@@ -283,10 +277,10 @@ func (s *service) channelConfigurationStatuses(ctx context.Context, channels []c
 			if field == nil || field.Type != capmodel.ConfigurationFieldSecret {
 				continue
 			}
-			updatedAt, ready := active[channelOrder[index]][field.Key]
+			updatedAt, ready := active[row.ChannelNo][field.Key]
 			statuses = append(statuses, SecretFieldStatus{Key: field.Key, Required: field.Required, Ready: ready, UpdatedAt: updatedAt})
 		}
-		result[channelOrder[index]] = channelConfigurationStatus{SecretFields: statuses, InterfaceConfiguration: item.InterfaceConfiguration}
+		result[row.ChannelNo] = channelConfigurationStatus{SecretFields: statuses, InterfaceConfiguration: item.InterfaceConfiguration}
 	}
 	return result, nil
 }
@@ -611,6 +605,11 @@ func validateProductFulfillmentEvidence(evidence *capmodel.BusinessExtensionProv
 		evidence.ContractVersion == "" || len(evidence.AuthorizedMethods) == 0 {
 		return gerror.New("product fulfillment evidence is incomplete")
 	}
+	// Native sales are admitted by explicit owner metadata and their complete
+	// identity schema, never by the connector name or absent server fields.
+	if evidence.ProviderMetadata != nil && evidence.ProviderMetadata.Values["saleImportProtocol"] != nil {
+		return resourcecap.ValidateNativeProductEvidence(evidence)
+	}
 	return nil
 }
 
@@ -659,12 +658,12 @@ func (s *service) UpdateChannel(ctx context.Context, input ChannelInput) (*Chann
 	if err != nil {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
-	interfaceSchema, err := s.frozenInterfaceConfiguration(ctx, before)
+	interfaceSchema, err := s.currentInterfaceConfiguration(ctx, before)
 	if err != nil {
 		return nil, bizerr.NewCode(CodeUnavailable)
 	}
 	err = s.db.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
-		configurationChanged := before.Endpoint != input.Endpoint || string(before.NonSecretSettings) != string(input.NonSecretSettings)
+		configurationChanged := before.Endpoint != input.Endpoint || !sameNonSecretSettings(before.NonSecretSettings, input.NonSecretSettings)
 		configurationRevision := ""
 		if configurationChanged {
 			configurationRevision, err = configurationRevisionNo()
@@ -757,7 +756,10 @@ func enqueueUpdatedChannelProjection(ctx context.Context, tx gdb.TX, input Chann
 	newState := projectionState(input.Status)
 	nameChanged := projection.DisplayName != input.DisplayName
 	stateChanged := projection.NewBusinessState != newState
-	sequence := (input.Version + 1) * 2
+	sequence, err := interfaceprojection.NextSequence(ctx, tx, projection.InterfaceInstanceNo)
+	if err != nil {
+		return err
+	}
 	if stateChanged {
 		projection.NewBusinessState = newState
 		if err = interfaceprojection.Enqueue(ctx, tx, *projection, sequence); err != nil {
@@ -808,8 +810,7 @@ func (s *service) channel(ctx context.Context, no string) (*Channel, error) {
 		return nil, configurationErr
 	}
 	configuration := configurations[row.ChannelNo]
-	// Only the read-only list may degrade a missing historical declaration.
-	// Mutation paths must still resolve this channel's exact frozen schema.
+	// Mutations require the currently installed compatible connector declaration.
 	if row.ProviderRuntimeType == "dynamic" && configuration.InterfaceConfiguration == nil {
 		return nil, bizerr.NewCode(CodeUnavailable)
 	}
@@ -935,7 +936,7 @@ func oneOf(v string, allowed ...string) bool {
 }
 func validEndpoint(value string) bool {
 	u, err := url.Parse(value)
-	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Opaque != "" || u.Fragment != "" {
 		return false
 	}
 	return !strings.Contains(u.Path, "..")
@@ -1153,7 +1154,7 @@ func (s *service) validateUpdatedSettings(
 	if len(settings) == 0 {
 		settings = channel.NonSecretSettings
 	}
-	evidence, err := s.frozenProviderEvidence(ctx, channel)
+	evidence, err := s.configurationProviderEvidence(ctx, channel)
 	if err != nil {
 		return nil, err
 	}
@@ -1170,41 +1171,25 @@ func (s *service) validateUpdatedSettings(
 	return resourcecap.CompileInterfaceSettings(normalized, evidence.ProviderMetadata)
 }
 
-func (s *service) frozenInterfaceConfiguration(ctx context.Context, channel *Channel) (*capmodel.ConfigurationSchemaDeclaration, error) {
-	evidence, err := s.frozenProviderEvidence(ctx, channel)
+func (s *service) currentInterfaceConfiguration(ctx context.Context, channel *Channel) (*capmodel.ConfigurationSchemaDeclaration, error) {
+	evidence, err := s.configurationProviderEvidence(ctx, channel)
 	if err != nil || evidence == nil {
 		return nil, err
 	}
 	return evidence.InterfaceConfiguration, nil
 }
 
-func (s *service) frozenProviderEvidence(ctx context.Context, channel *Channel) (*capmodel.BusinessExtensionProviderEvidence, error) {
+func (s *service) configurationProviderEvidence(ctx context.Context, channel *Channel) (*capmodel.BusinessExtensionProviderEvidence, error) {
 	if s.extensions == nil {
 		return nil, nil
 	}
-	var evidenceRef struct {
-		PluginID, ReleaseVersion, ContractVersion, ReleaseDigest, DeclarationDigest string
-	}
-	if err := s.db.GetScan(ctx, &evidenceRef, `
-SELECT resource_plugin_id AS plugin_id,
-       resource_plugin_release_version AS release_version,
-       resource_contract_version AS contract_version,
-       resource_release_digest AS release_digest,
-       resource_declaration_digest AS declaration_digest
-FROM plugin_idc_resource_interface_channel_binding
-WHERE tenant_id=? AND channel_no=?`, idccap.DefaultTenantID, channel.ChannelNo); err != nil {
+	evidence, err := s.currentProviderEvidence(ctx, channel.ProviderPluginID)
+	if err != nil {
 		return nil, err
 	}
-	if evidenceRef.PluginID == "" {
-		return nil, nil
-	}
-	evidence, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
-		PluginID: evidenceRef.PluginID, ReleaseVersion: evidenceRef.ReleaseVersion,
-		Point: resourcecap.DynamicProviderPoint, ContractVersion: evidenceRef.ContractVersion,
-		ReleaseDigest: evidenceRef.ReleaseDigest, DeclarationDigest: evidenceRef.DeclarationDigest,
-	})
-	if err != nil || evidence == nil {
-		return nil, gerror.New("resource Provider configuration declaration is unavailable")
+	providerID, valid := dynamicProviderID(evidence)
+	if !valid || providerID != channel.ProviderID || evidence.ContractVersion != channel.ProviderContractVersion {
+		return nil, bizerr.NewCode(CodeUnavailable)
 	}
 	return evidence, nil
 }

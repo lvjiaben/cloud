@@ -43,7 +43,7 @@ func TestSupplierConfigurationUpdateConsumesCredentialAndStaysBlocked(t *testing
 	stub := &supplierConfigurationStub{}
 	controller := &ControllerV1{supplierConfiguration: stub}
 	request := &v1.SupplierCredentialUpdateReq{
-		ProviderCode:       supplierconfig.ProviderTencentESSBasic,
+		ProviderCode:       supplierconfig.ProviderNuonuoInvoice,
 		CredentialEnvelope: "opaque-local-envelope", IdempotencyKey: "supplier-config-0001",
 	}
 	result, err := controller.SupplierCredentialUpdate(context.Background(), request)

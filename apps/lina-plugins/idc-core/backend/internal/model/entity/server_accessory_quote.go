@@ -50,4 +50,8 @@ type ServerAccessoryQuote struct {
 	BaselineObjectNos      string     `json:"baselineObjectNos"      orm:"baseline_object_nos"      description:""`
 	BaselineSnapshotNo     string     `json:"baselineSnapshotNo"     orm:"baseline_snapshot_no"     description:""`
 	BaselineObservedAt     *time.Time `json:"baselineObservedAt"     orm:"baseline_observed_at"     description:""`
+	SubjectTypeCode        string     `json:"subjectTypeCode"        orm:"subject_type_code"        description:""`
+	SubjectNo              string     `json:"subjectNo"              orm:"subject_no"               description:""`
+	ExpectedSubjectVersion int64      `json:"expectedSubjectVersion" orm:"expected_subject_version" description:""`
+	NativeTargetSnapshot   string     `json:"nativeTargetSnapshot"   orm:"native_target_snapshot"   description:"Source-validated frozen native resource route, directory and local server evidence; never accepted from HTTP"`
 }

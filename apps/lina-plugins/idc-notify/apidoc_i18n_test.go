@@ -22,8 +22,18 @@ func TestAPIDocI18NCoversNotificationSourceMetadata(t *testing.T) {
 		t.Fatalf("English API-document bundle must remain an empty source-text placeholder")
 	}
 
-	var chinese map[string]string
-	readEmbeddedJSON(t, "manifest/i18n/zh-CN/apidoc/index.json", &chinese)
+	chinese := make(map[string]string)
+	catalogs, err := fs.Glob(EmbeddedFiles, "manifest/i18n/zh-CN/apidoc/*.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range catalogs {
+		var catalog map[string]string
+		readEmbeddedJSON(t, path, &catalog)
+		for key, value := range catalog {
+			chinese[key] = value
+		}
+	}
 	required := notificationAPIDocKeys(t)
 	var missing []string
 	for _, key := range required {

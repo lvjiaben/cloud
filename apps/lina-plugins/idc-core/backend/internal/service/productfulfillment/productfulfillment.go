@@ -11,6 +11,7 @@ import (
 
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 )
 
@@ -38,12 +39,13 @@ const (
 	GranularityPerOrderItem        = "per_order_item"
 	GranularityPerQuantityUnit     = "per_quantity_unit"
 
-	PermissionTaskList       = "idc:admin:product-fulfillment:task:list"
-	PermissionTaskQuery      = "idc:admin:product-fulfillment:task:query"
-	PermissionReviewApprove  = "idc:admin:product-fulfillment:review-approve"
-	PermissionReviewReject   = "idc:admin:product-fulfillment:review-reject"
-	PermissionManualTakeover = "idc:admin:product-fulfillment:takeover"
-	PermissionManualConclude = "idc:admin:product-fulfillment:manual-conclude"
+	PermissionTaskList           = "idc:admin:product-fulfillment:task:list"
+	PermissionTaskQuery          = "idc:admin:product-fulfillment:task:query"
+	PermissionReviewApprove      = "idc:admin:product-fulfillment:review-approve"
+	PermissionReviewReject       = "idc:admin:product-fulfillment:review-reject"
+	PermissionManualTakeover     = "idc:admin:product-fulfillment:takeover"
+	PermissionManualConclude     = "idc:admin:product-fulfillment:manual-conclude"
+	PermissionPreparationRecover = "idc:admin:product-fulfillment:recover"
 )
 
 // Fulfillment retries are host policy, not merchant or provider input. A query
@@ -51,7 +53,7 @@ const (
 // later submit retry.
 const (
 	maximumQueryAttempts  = 10
-	maximumSubmitAttempts = 3
+	maximumSubmitAttempts = 10
 	retryIntervalSeconds  = 30
 )
 
@@ -118,9 +120,11 @@ type ManagementAuthorizer interface {
 	AuthorizeReviewReject(context.Context, string) (Authorization, error)
 	AuthorizeTakeover(context.Context, string) (Authorization, error)
 	AuthorizeManualConclude(context.Context, string) (Authorization, error)
+	// AuthorizeRecovery checks the independent permission and current staff data scope.
+	AuthorizeRecovery(context.Context, string) (Authorization, error)
 }
 
-// OwnerGateValidator is the owning commerce/contract/inventory boundary. It
+// OwnerGateValidator is the owning commerce and inventory boundary. It
 // must validate all supplied order items as one bounded batch.
 type OwnerGateValidator interface {
 	EvaluateFulfillmentRelease(context.Context, string, []string) (map[string]bool, error)
@@ -135,11 +139,12 @@ type ReasonOption struct {
 }
 
 type ActionInput struct {
-	IntentNo        string
-	ExpectedVersion int64
-	IdempotencyKey  string
-	ReasonCode      string
-	Note            string
+	RecoveryConfiguration *provisionresourcecap.RecoveryConfiguration `json:"RecoveryConfiguration,omitempty"`
+	IntentNo              string
+	ExpectedVersion       int64
+	IdempotencyKey        string
+	ReasonCode            string
+	Note                  string
 }
 
 type ManualConclusionInput struct {
@@ -147,7 +152,27 @@ type ManualConclusionInput struct {
 	Outcome string
 }
 
+// ManagementPreparation is a safe local management handoff projection for staff.
+// Its status is independent from fulfillment and financial outcomes.
+type ManagementPreparation struct {
+	StatusCode   string
+	AttemptCount int
+	FailureCode  string
+}
+
+// ManagementRepairInput binds a local-only repair to one authorized workflow.
+type ManagementRepairInput struct {
+	IntentNo        string
+	IdempotencyKey  string
+	ExpectedVersion int64
+}
+
 type IntentDetail struct {
+	CanRepairManagement                                     bool
+	ManagementPreparation                                   *ManagementPreparation
+	CanVerifyNonAcceptance                                  bool
+	NonAcceptanceVerifications                              []NonAcceptanceRecord
+	Execution                                               *ExecutionDiagnostic
 	TargetEntitlementNo                                     string
 	IntentNo, OrderNo, OrderItemNo, CustomerNo              string
 	CustomerCode, CustomerDisplayName, CustomerPrimaryPhone string
@@ -159,9 +184,20 @@ type IntentDetail struct {
 	UpdatedAt                                               time.Time
 	CanReviewApprove, CanReviewReject                       bool
 	CanTakeover, CanManualConclude                          bool
+	CanRecoverPreparation                                   bool
+	CanRequestRefund                                        bool
 	ReasonOptions                                           map[string][]ReasonOption
 	Events                                                  []IntentEvent
+	RecoveryConfigurations                                  []RecoveryConfigurationRecord
 	internalStatus                                          string
+}
+
+// ExecutionDiagnostic contains only local, non-secret automation facts for staff.
+// It never queries a supplier or authorizes a retry.
+type ExecutionDiagnostic struct {
+	ResponseExcerpt                                                    string
+	ResourceTaskNo, StatusCode, PhaseCode, LastResultCode, FailureCode string
+	AttemptCount                                                       int
 }
 
 type IntentEvent struct {
@@ -184,12 +220,21 @@ type IntentPage struct {
 }
 
 type ManagementService interface {
+	// RepairManagement requeues only a stopped local resource mapping notification.
+	// It preserves paid facts and provider tasks, with scope, refund and audit checks.
+	RepairManagement(context.Context, ManagementRepairInput) (*IntentDetail, error)
+	// InspectRecoveryConfiguration checks recovery permission and scope before reading paid operational choices.
+	InspectRecoveryConfiguration(context.Context, string, *provisionresourcecap.RecoveryConfiguration) (*provisionresourcecap.RecoveryEditor, error)
 	List(context.Context, ListInput) (*IntentPage, error)
 	Detail(context.Context, string) (*IntentDetail, error)
 	ApproveAndStart(context.Context, ActionInput) (*IntentDetail, error)
 	RejectToManual(context.Context, ActionInput) (*IntentDetail, error)
 	Takeover(context.Context, ActionInput) (*IntentDetail, error)
 	ConcludeManual(context.Context, ManualConclusionInput) (*IntentDetail, error)
+	// RecoverPreparation grants an audited bounded round to a safe resource preparation failure.
+	RecoverPreparation(context.Context, ActionInput) (*IntentDetail, error)
+	// VerifyNonAcceptance records staff proof in customer scope without contacting upstream or creating resources.
+	VerifyNonAcceptance(context.Context, NonAcceptanceInput) (*IntentDetail, error)
 }
 
 type Service interface {
@@ -208,14 +253,15 @@ type Worker interface {
 }
 
 type serviceImpl struct {
-	database      gdb.DB
-	frozen        productautomation.FrozenCustomerConfigurationValidator
-	gates         OwnerGateValidator
-	systemReasons SystemTransitionReasonCatalog
-	authorizer    ManagementAuthorizer
-	audit         idccap.BusinessAuditWriter
-	actors        ActorDirectory
-	cursor        *fulfillmentCursorCodec
+	resourceSource provisionresourcecap.Source
+	database       gdb.DB
+	frozen         productautomation.FrozenCustomerConfigurationValidator
+	gates          OwnerGateValidator
+	systemReasons  SystemTransitionReasonCatalog
+	authorizer     ManagementAuthorizer
+	audit          idccap.BusinessAuditWriter
+	actors         ActorDirectory
+	cursor         *fulfillmentCursorCodec
 }
 
 func New(database gdb.DB) (SettlementConsumer, error) {
@@ -249,7 +295,7 @@ func NewOrderCancellationConsumer(database gdb.DB, systemReasons SystemTransitio
 	return &serviceImpl{database: database, systemReasons: systemReasons}, nil
 }
 
-func NewFullConfigured(database gdb.DB, validator productautomation.FrozenCustomerConfigurationValidator, gates OwnerGateValidator, systemReasons SystemTransitionReasonCatalog, authorizer ManagementAuthorizer, audit idccap.BusinessAuditWriter, actors ActorDirectory, cursorKey []byte) (Service, error) {
+func NewFullConfigured(database gdb.DB, validator productautomation.FrozenCustomerConfigurationValidator, gates OwnerGateValidator, systemReasons SystemTransitionReasonCatalog, authorizer ManagementAuthorizer, audit idccap.BusinessAuditWriter, actors ActorDirectory, cursorKey []byte, resourceSource provisionresourcecap.Source) (Service, error) {
 	if database == nil || validator == nil || gates == nil || systemReasons == nil || authorizer == nil || audit == nil || actors == nil {
 		return nil, errors.New("product fulfillment requires database, validators, authorization, and audit")
 	}
@@ -257,7 +303,7 @@ func NewFullConfigured(database gdb.DB, validator productautomation.FrozenCustom
 	if err != nil {
 		return nil, err
 	}
-	return &serviceImpl{database: database, frozen: validator, gates: gates, systemReasons: systemReasons, authorizer: authorizer, audit: audit, actors: actors, cursor: cursor}, nil
+	return &serviceImpl{database: database, frozen: validator, gates: gates, systemReasons: systemReasons, authorizer: authorizer, audit: audit, actors: actors, cursor: cursor, resourceSource: resourceSource}, nil
 }
 
 type settlementAuthority struct {
@@ -270,8 +316,8 @@ type settlementAuthority struct {
 	SettledAt              time.Time `orm:"settled_at"`
 	OrderStatus            string    `orm:"order_status"`
 	RiskDecision           string    `orm:"risk_decision_code"`
-	RequiresContract       bool      `orm:"requires_contract"`
-	ItemCount              int       `orm:"item_count"`
+
+	ItemCount int `orm:"item_count"`
 }
 
 type frozenItem struct {
@@ -317,4 +363,10 @@ type frozenItem struct {
 	CustomerDeclarationSnapshot    string    `orm:"customer_declaration_snapshot"`
 	CandidateSnapshot              string    `orm:"candidate_snapshot"`
 	TypedValueSnapshot             string    `orm:"typed_value_snapshot"`
+}
+
+// RecoveryConfigurationRecord retains one immutable operational selection.
+type RecoveryConfigurationRecord struct {
+	Configuration provisionresourcecap.RecoveryConfiguration
+	OccurredAt    time.Time
 }

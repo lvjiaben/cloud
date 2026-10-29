@@ -272,6 +272,9 @@ func TestSourceAuthorizerAllowsOnlyExactNotifyChannelAccess(t *testing.T) {
 		{name: "broad channel", mutate: func(request *AuthorizationRequest) {
 			request.Scope.CallerScope = notifyChannelPrefix + "all.c0123456789abcdef0123456789abcdef"
 		}},
+		{name: "retired employee channel", mutate: func(request *AuthorizationRequest) {
+			request.Scope.CallerScope = notifyChannelPrefix + "wechat-work.c0123456789abcdef0123456789abcdef"
+		}},
 		{name: "missing instance", mutate: func(request *AuthorizationRequest) { request.Scope.CallerScope = notifyChannelPrefix + "email" }},
 		{name: "uppercase instance", mutate: func(request *AuthorizationRequest) {
 			request.Scope.CallerScope = notifyChannelPrefix + "email.c0123456789abcdef0123456789abcdeF"

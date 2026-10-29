@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS plugin_idc_notify_event_policy (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CHECK ("recipient_kind" IN ('customer_contact','staff_user','verified_destination')),
-    CHECK ("recipient_kind" = 'staff_user' OR "channel_code" <> 'wechat_work'),
     PRIMARY KEY ("tenant_id", "event_code", "recipient_kind", "channel_code"),
     FOREIGN KEY ("tenant_id", "event_code")
         REFERENCES plugin_idc_notify_event_catalog("tenant_id", "event_code"),
@@ -89,7 +88,7 @@ WITH event_audience("event_code", "recipient_kind") AS (
         ('billing.payment_result', 'customer_contact'),
         ('marketing.campaign', 'customer_contact')
 ), bounded_channels("channel_code") AS (
-    VALUES ('in_app'), ('email'), ('sms'), ('wechat_official'), ('wechat_work'), ('signed_webhook')
+    VALUES ('in_app'), ('email'), ('sms'), ('wechat_official'), ('signed_webhook')
 )
 INSERT INTO plugin_idc_notify_event_policy
     ("tenant_id", "event_code", "recipient_kind", "channel_code", enabled)
@@ -101,7 +100,6 @@ SELECT 0, audience."event_code", audience."recipient_kind", channel."channel_cod
        END
 FROM event_audience audience
 CROSS JOIN bounded_channels channel
-WHERE NOT (audience."recipient_kind" <> 'staff_user' AND channel."channel_code" = 'wechat_work')
 ON CONFLICT ("tenant_id", "event_code", "recipient_kind", "channel_code") DO NOTHING;
 
 WITH template_defaults("event_code", "locale_code", "subject_template", "body_template") AS (

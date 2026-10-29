@@ -2,19 +2,37 @@
 package v1
 
 type CommerceCartItem struct {
-	CartItemNo            string `json:"cartItemNo" dc:"Stable cart item number"`
-	ProductNameZhCN       string `json:"productNameZhCN" dc:"Simplified Chinese product name"`
-	ProductNameEnUS       string `json:"productNameEnUS" dc:"English product name"`
-	PublicSlug            string `json:"publicSlug,omitempty" dc:"Public product slug used only to open governed customer configuration"`
-	ConfigurationRequired bool   `json:"configurationRequired" dc:"Whether checkout requires governed customer configuration"`
-	ConfigurationFrozen   bool   `json:"configurationFrozen" dc:"Whether the latest server-authoritative quote item has an immutable governed configuration" eg:"true"`
-	ConfigurationRevision string `json:"configurationRevision,omitempty" dc:"Opaque governed configuration revision frozen for the latest quote item, or empty" eg:"Q1JfYWJj"`
-	Quantity              int    `json:"quantity" dc:"Number of product units" eg:"1"`
-	PurchaseCycles        int    `json:"purchaseCycles" dc:"Number of billing cycles" eg:"1"`
-	StatusCode            string `json:"statusCode" dc:"Current cart item status" eg:"active"`
-	IssueCode             string `json:"issueCode" dc:"Stable availability issue code, or empty"`
-	RepairAction          string `json:"repairAction" dc:"Suggested customer repair action, or empty"`
-	Version               int64  `json:"version" dc:"Cart item optimistic concurrency version" eg:"1"`
+	HasServerLogin                bool   `json:"hasServerLogin" dc:"Whether this independently configured server has private customer login choices and quantity must remain one" eg:"true"`
+	ServerLoginToken              string `json:"serverLoginToken,omitempty" dc:"Opaque login choice token for this owned cart item; may be used only by the same customer and product version" eg:"PSL_0123456789abcdef"`
+	ServerLoginHostname           string `json:"serverLoginHostname,omitempty" dc:"Customer-entered hostname, or empty for automatic generation" eg:"server.example"`
+	ServerLoginPasswordConfigured bool   `json:"serverLoginPasswordConfigured" dc:"Whether a customer password is stored privately; the password is never returned" eg:"true"`
+
+	Configuration          []*CommerceCartConfiguration `json:"configuration" dc:"Persisted priced choice labels and values owned by this cart; excludes credentials and private provider fields" eg:"[]"`
+	ChargeTypeCode         string                       `json:"chargeTypeCode" dc:"Billing charge type from the selected published rule" eg:"recurring"`
+	PeriodUnitCode         string                       `json:"periodUnitCode" dc:"Billing period unit from the selected published rule" eg:"month"`
+	PeriodCount            int                          `json:"periodCount" dc:"Number of period units per billing cycle" eg:"1"`
+	ConfigurationReference string                       `json:"configurationReference" dc:"Opaque selected-configuration reference retained through cart merge; never configuration values or an ownership credential" eg:"CFS_01J2ABCDEF"`
+	CartItemNo             string                       `json:"cartItemNo" dc:"Stable cart item number"`
+	ProductNameZhCN        string                       `json:"productNameZhCN" dc:"Simplified Chinese product name"`
+	ProductNameEnUS        string                       `json:"productNameEnUS" dc:"English product name"`
+	PublicSlug             string                       `json:"publicSlug,omitempty" dc:"Public product slug used only to open governed customer configuration"`
+	ConfigurationRequired  bool                         `json:"configurationRequired" dc:"Whether checkout requires governed customer configuration"`
+	ConfigurationFrozen    bool                         `json:"configurationFrozen" dc:"Whether the latest server-authoritative quote item has an immutable governed configuration" eg:"true"`
+	ConfigurationRevision  string                       `json:"configurationRevision,omitempty" dc:"Opaque governed configuration revision frozen for the latest quote item, or empty" eg:"Q1JfYWJj"`
+	Quantity               int                          `json:"quantity" dc:"Number of product units" eg:"1"`
+	PurchaseCycles         int                          `json:"purchaseCycles" dc:"Number of billing cycles" eg:"1"`
+	StatusCode             string                       `json:"statusCode" dc:"Current cart item status" eg:"active"`
+	IssueCode              string                       `json:"issueCode" dc:"Stable availability issue code, or empty"`
+	RepairAction           string                       `json:"repairAction" dc:"Suggested customer repair action, or empty"`
+	Version                int64                        `json:"version" dc:"Cart item optimistic concurrency version" eg:"1"`
+}
+
+// CommerceCartConfiguration is a customer-safe persisted choice projection.
+type CommerceCartConfiguration struct {
+	LabelZhCN string `json:"labelZhCN" dc:"Chinese field label" eg:"CPU"`
+	LabelEnUS string `json:"labelEnUS" dc:"English field label" eg:"CPU"`
+	ValueZhCN string `json:"valueZhCN" dc:"Chinese selected value label" eg:"4核"`
+	ValueEnUS string `json:"valueEnUS" dc:"English selected value label" eg:"4 cores"`
 }
 
 type CommerceCart struct {
@@ -78,9 +96,9 @@ type CommerceCheckout struct {
 	CurrencyCode     string `json:"currencyCode" dc:"Exact order currency"`
 	ItemCount        int    `json:"itemCount" dc:"Number of order items"`
 	TotalAmountMinor string `json:"totalAmountMinor" dc:"Exact payable minor units"`
-	RequiresContract bool   `json:"requiresContract" dc:"Whether fulfillment requires a contract"`
-	PaymentDueAt     int64  `json:"paymentDueAt" dc:"Frozen payment deadline as Unix milliseconds"`
-	Reused           bool   `json:"reused" dc:"Whether exact idempotent replay returned the first order"`
+
+	PaymentDueAt int64 `json:"paymentDueAt" dc:"Frozen payment deadline as Unix milliseconds"`
+	Reused       bool  `json:"reused" dc:"Whether exact idempotent replay returned the first order"`
 }
 
 type CommercePaymentPreparation struct {
@@ -93,11 +111,11 @@ type CommercePaymentPreparation struct {
 	IdentityStatusCode string `json:"identityStatusCode" dc:"Current authoritative identity status"`
 	CurrencyCode       string `json:"currencyCode" dc:"Exact invoice currency"`
 	AmountDueMinor     string `json:"amountDueMinor" dc:"Exact amount still due in minor units"`
-	RequiresContract   bool   `json:"requiresContract" dc:"Informational contract requirement"`
-	PaymentDueAt       int64  `json:"paymentDueAt" dc:"Frozen payment deadline as Unix milliseconds"`
-	LastEvaluatedAt    int64  `json:"lastEvaluatedAt" dc:"Latest authoritative evaluation time as Unix milliseconds"`
-	Ready              bool   `json:"ready" dc:"Whether the current evaluation permits payment attempt creation"`
-	Reused             bool   `json:"reused" dc:"Whether the existing preparation context was reused"`
+
+	PaymentDueAt    int64 `json:"paymentDueAt" dc:"Frozen payment deadline as Unix milliseconds"`
+	LastEvaluatedAt int64 `json:"lastEvaluatedAt" dc:"Latest authoritative evaluation time as Unix milliseconds"`
+	Ready           bool  `json:"ready" dc:"Whether the current evaluation permits payment attempt creation"`
+	Reused          bool  `json:"reused" dc:"Whether the existing preparation context was reused"`
 }
 
 type CommerceOrderCancellation struct {
@@ -126,13 +144,13 @@ type CommerceOrderSummary struct {
 	CurrencyCode         string `json:"currencyCode" dc:"Exact order currency"`
 	ItemCount            int    `json:"itemCount" dc:"Number of order items"`
 	TotalAmountMinor     string `json:"totalAmountMinor" dc:"Exact total minor units"`
-	RequiresContract     bool   `json:"requiresContract" dc:"Whether fulfillment requires a contract"`
-	PaymentDueAt         int64  `json:"paymentDueAt,omitempty" dc:"Payment deadline as Unix milliseconds, or zero"`
-	CreatedAt            int64  `json:"createdAt" dc:"Order creation time as Unix milliseconds"`
-	CanCancel            bool   `json:"canCancel" dc:"Whether customer cancellation may be requested"`
-	CanPreparePayment    bool   `json:"canPreparePayment" dc:"Whether payment preparation may be evaluated"`
-	AssistedRequestNo    string `json:"assistedRequestNo,omitempty" dc:"Originating assisted quote request, returned only to staff"`
-	PaymentTermCode      string `json:"paymentTermCode" dc:"Frozen prepayment deadline policy"`
+
+	PaymentDueAt      int64  `json:"paymentDueAt,omitempty" dc:"Payment deadline as Unix milliseconds, or zero"`
+	CreatedAt         int64  `json:"createdAt" dc:"Order creation time as Unix milliseconds"`
+	CanCancel         bool   `json:"canCancel" dc:"Whether customer cancellation may be requested"`
+	CanPreparePayment bool   `json:"canPreparePayment" dc:"Whether payment preparation may be evaluated"`
+	AssistedRequestNo string `json:"assistedRequestNo,omitempty" dc:"Originating assisted quote request, returned only to staff"`
+	PaymentTermCode   string `json:"paymentTermCode" dc:"Frozen prepayment deadline policy"`
 }
 
 type CommerceOrderInvoice struct {
@@ -154,16 +172,16 @@ type CommerceOrderInvoice struct {
 }
 
 type CommerceOrderItem struct {
-	OrderItemNo           string `json:"orderItemNo" dc:"Stable order-item number"`
-	LineNumber            int    `json:"lineNumber" dc:"Stable line sequence"`
-	ProductNameZhCN       string `json:"productNameZhCN" dc:"Frozen Chinese product name"`
-	ProductNameEnUS       string `json:"productNameEnUS" dc:"Frozen English product name"`
-	Quantity              int    `json:"quantity" dc:"Number of product units"`
-	PurchaseCycles        int    `json:"purchaseCycles" dc:"Purchased billing cycles"`
-	ChargeTypeCode        string `json:"chargeTypeCode" dc:"Frozen charge type"`
-	PeriodUnitCode        string `json:"periodUnitCode" dc:"Frozen billing period unit"`
-	PeriodCount           int    `json:"periodCount" dc:"Frozen billing period count"`
-	RequiresContract      bool   `json:"requiresContract" dc:"Whether this line requires a contract"`
+	OrderItemNo     string `json:"orderItemNo" dc:"Stable order-item number"`
+	LineNumber      int    `json:"lineNumber" dc:"Stable line sequence"`
+	ProductNameZhCN string `json:"productNameZhCN" dc:"Frozen Chinese product name"`
+	ProductNameEnUS string `json:"productNameEnUS" dc:"Frozen English product name"`
+	Quantity        int    `json:"quantity" dc:"Number of product units"`
+	PurchaseCycles  int    `json:"purchaseCycles" dc:"Purchased billing cycles"`
+	ChargeTypeCode  string `json:"chargeTypeCode" dc:"Frozen charge type"`
+	PeriodUnitCode  string `json:"periodUnitCode" dc:"Frozen billing period unit"`
+	PeriodCount     int    `json:"periodCount" dc:"Frozen billing period count"`
+
 	FulfillmentModeCode   string `json:"fulfillmentModeCode" dc:"Fulfillment decision"`
 	RiskDecisionCode      string `json:"riskDecisionCode" dc:"Risk decision"`
 	InventoryDecisionCode string `json:"inventoryDecisionCode" dc:"Inventory decision"`
@@ -180,7 +198,7 @@ type CommerceDelivery struct {
 	ProductNameZhCN string `json:"productNameZhCN" dc:"Frozen Simplified Chinese product name" eg:"SSL Certificate"`
 	ProductNameEnUS string `json:"productNameEnUS" dc:"Frozen English product name" eg:"SSL Certificate"`
 	Quantity        int    `json:"quantity" dc:"Delivered product quantity" eg:"1"`
-	StatusCode      string `json:"statusCode" dc:"Customer-safe status: awaiting_payment, awaiting_review, processing, completed, not_completed, or cancelled" eg:"processing"`
+	StatusCode      string `json:"statusCode" dc:"Customer-safe status: awaiting_payment, awaiting_review, processing, manual_processing (staff attention required), completed, not_completed, or cancelled" eg:"processing"`
 	OngoingService  bool   `json:"ongoingService" dc:"Whether the delivered product includes ongoing service management" eg:"true"`
 	StartedAt       int64  `json:"startedAt,omitempty" dc:"Processing start time as Unix milliseconds, or zero" eg:"1787803200000"`
 	CompletedAt     int64  `json:"completedAt,omitempty" dc:"Completion time as Unix milliseconds, or zero" eg:"1787806800000"`
@@ -188,13 +206,15 @@ type CommerceDelivery struct {
 }
 
 type CommerceServiceEntitlement struct {
-	EntitlementNo   string `json:"entitlementNo" dc:"Stable customer-owned service entitlement number" eg:"ent_0123456789abcdef0123456789abcdef"`
-	OrderItemNo     string `json:"orderItemNo" dc:"Stable owning order-item number" eg:"ord_item_01J2ABCDEF"`
-	ProductNameZhCN string `json:"productNameZhCN" dc:"Frozen Simplified Chinese product name" eg:"SSL Certificate"`
-	ProductNameEnUS string `json:"productNameEnUS" dc:"Frozen English product name" eg:"SSL Certificate"`
-	StatusCode      string `json:"statusCode" dc:"Customer-safe service status: active, suspended, expired, or terminated" eg:"active"`
-	StartedAt       int64  `json:"startedAt" dc:"Service start time as Unix milliseconds" eg:"1787806800000"`
-	ExpiresAt       int64  `json:"expiresAt,omitempty" dc:"Service expiry time as Unix milliseconds, or zero" eg:"1819342800000"`
+	ManagementPreparation string `json:"managementPreparation,omitempty" dc:"Optional local service management readiness: preparing, ready, or needs_attention; absent for historical services without a notification; does not change delivery, lifecycle or billing" eg:"preparing"`
+	EntitlementOwnerID    string `json:"entitlementOwnerId,omitempty" dc:"Frozen owner plugin for service management navigation" eg:"idc-resource"`
+	EntitlementNo         string `json:"entitlementNo" dc:"Stable customer-owned service entitlement number" eg:"ent_0123456789abcdef0123456789abcdef"`
+	OrderItemNo           string `json:"orderItemNo" dc:"Stable owning order-item number" eg:"ord_item_01J2ABCDEF"`
+	ProductNameZhCN       string `json:"productNameZhCN" dc:"Frozen Simplified Chinese product name" eg:"SSL Certificate"`
+	ProductNameEnUS       string `json:"productNameEnUS" dc:"Frozen English product name" eg:"SSL Certificate"`
+	StatusCode            string `json:"statusCode" dc:"Customer-safe service status: active, suspended, expired, or terminated" eg:"active"`
+	StartedAt             int64  `json:"startedAt" dc:"Service start time as Unix milliseconds" eg:"1787806800000"`
+	ExpiresAt             int64  `json:"expiresAt,omitempty" dc:"Service expiry time as Unix milliseconds, or zero" eg:"1819342800000"`
 }
 
 type CommerceOrderReview struct {

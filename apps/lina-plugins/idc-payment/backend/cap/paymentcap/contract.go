@@ -3,6 +3,7 @@ package paymentcap
 
 import (
 	"context"
+	"net"
 	"net/url"
 	"regexp"
 	"time"
@@ -26,6 +27,8 @@ const (
 	ModeWechatNative Mode = "wechat_native"
 	ModeWechatJSAPI  Mode = "wechat_jsapi"
 	ModeEPayCashier  Mode = "epay_cashier"
+	ModeEPayAlipay   Mode = "epay_alipay"
+	ModeEPayWechat   Mode = "epay_wechat"
 	ModeUnionPayWeb  Mode = "unionpay_web"
 	ModeUnionPayWAP  Mode = "unionpay_wap"
 
@@ -146,8 +149,9 @@ type CredentialValidator interface {
 }
 
 // ConnectionVerifier performs one bounded, read-only upstream request. A
-// successful result means that the provider accepted the configured merchant
-// identity and signature; it must never create a charge or mutate an order.
+// result proves only the provider-specific checks documented by its adapter.
+// EPay can prove endpoint reachability and credential shape only. This method
+// must never create a charge or mutate an order.
 type ConnectionVerifier interface {
 	VerifyConnection(context.Context, Credentials) error
 }
@@ -159,10 +163,19 @@ func ValidateCreateRequest(input CreateRequest) error {
 		input.Subject == "" || input.ExpiresAt.IsZero() {
 		return gerror.New("invalid payment request")
 	}
-	for _, raw := range []string{input.NotifyURL, input.ReturnURL} {
+	for index, raw := range []string{input.NotifyURL, input.ReturnURL} {
 		parsed, err := url.ParseRequestURI(raw)
-		if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
-			return gerror.New("payment callback URL must use HTTPS")
+		if err != nil || parsed.Hostname() == "" || parsed.User != nil || parsed.Fragment != "" {
+			return gerror.New("payment callback or return URL is invalid")
+		}
+		if parsed.Scheme == "https" {
+			continue
+		}
+		// Browser returns may use the configured local development customer
+		// origin. Server notifications always require HTTPS.
+		address := net.ParseIP(parsed.Hostname())
+		if index != 1 || parsed.Scheme != "http" || parsed.Hostname() != "localhost" && (address == nil || !address.IsLoopback()) {
+			return gerror.New("payment notification requires HTTPS and browser returns require HTTPS or loopback HTTP")
 		}
 	}
 	return nil

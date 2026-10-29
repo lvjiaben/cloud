@@ -66,3 +66,15 @@ func TestConfigurationPriceCandidatesExposeQuantityWithoutProviderKeys(t *testin
 		t.Fatal("quantity identity unstable")
 	}
 }
+
+func TestBooleanPriceCandidatesUsePackedLabels(t *testing.T) {
+	configuration := &VersionConfiguration{Version: 1, CustomerDeclaration: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "local_support", Type: capmodel.ConfigurationFieldBoolean, Label: &capmodel.LocalizedText{ZhCN: "支持", EnUS: "Support"}}}}}
+	if _, err := configurationPriceCandidates("version", configuration); err == nil {
+		t.Fatal("missing label resources were silently replaced")
+	}
+	labels := map[bool]capmodel.LocalizedText{false: {ZhCN: "否", EnUS: "No"}, true: {ZhCN: "是", EnUS: "Yes"}}
+	candidates, err := configurationPriceCandidates("version", configuration, labels)
+	if err != nil || len(candidates) != 2 || candidates[0].Quantity || candidates[0].candidateValue != "false" || candidates[0].CandidateLabel.ZhCN != "否" || candidates[1].CandidateLabel.EnUS != "Yes" {
+		t.Fatalf("boolean prices lost typed choices or labels: %+v %v", candidates, err)
+	}
+}

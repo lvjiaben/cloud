@@ -1,6 +1,6 @@
 id: idc-v10
 name: IDC V10 Provider
-version: v0.2.3
+version: v0.2.4
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -20,9 +20,9 @@ i18n:
 dependencies:
   plugins:
     - id: idc-core
-      version: ">=0.1.85 <1.0.0"
+      version: ">=0.1.165 <1.0.0"
     - id: idc-resource
-      version: ">=0.1.33 <1.0.0"
+      version: ">=0.1.72 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -41,76 +41,20 @@ business_extensions:
           label: { en-US: V10 upstream product, zh-CN: V10 上游商品 }
           required: true
           dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: upstream_region_option_id
-          type: single_select
-          label: { en-US: Upstream region option, zh-CN: 上游地区配置项 }
+        - key: upstream_configuration_revision
+          type: single_line
+          label: { en-US: Upstream configuration revision, zh-CN: 上游配置版本 }
           required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: upstream_line_option_id
-          type: single_select
-          label: { en-US: Upstream network option, zh-CN: 上游线路配置项 }
-          required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: upstream_os_option_id
-          type: single_select
-          label: { en-US: Upstream operating system option, zh-CN: 上游操作系统配置项 }
-          required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: region
-          type: single_select
-          label: { en-US: Region, zh-CN: 地区 }
-          required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: line
-          type: single_select
-          label: { en-US: Network line, zh-CN: 线路 }
-          required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
-        - key: cpu
-          type: integer
-          label: { en-US: CPU cores, zh-CN: 处理器核心数 }
-          required: true
-          minimum: "1"
-          maximum: "1024"
-        - key: memory
-          type: integer
-          label: { en-US: Memory (MiB), zh-CN: 内存（MiB） }
-          required: true
-          minimum: "128"
-          maximum: "1048576"
-        - key: system_disk
-          type: integer
-          label: { en-US: System disk (GiB), zh-CN: 系统盘（GiB） }
-          required: true
-          minimum: "1"
-          maximum: "1048576"
-        - key: data_disk
-          type: integer
-          label: { en-US: Data disk (GiB), zh-CN: 数据盘（GiB） }
-          required: true
-          minimum: "0"
-          maximum: "1048576"
-        - key: bandwidth
-          type: integer
-          label: { en-US: Bandwidth (Mbps), zh-CN: 带宽（Mbps） }
-          required: true
-          minimum: "1"
-          maximum: "1000000"
-    customer_configuration:
-      version: v1
-      fields:
-        - key: operating_system
-          type: single_select
-          label: { en-US: Operating system, zh-CN: 操作系统 }
-          required: true
-          dynamic_candidates: { version: v1, method: configuration.candidates }
+          minimum_length: 64
+          maximum_length: 64
     provider_metadata:
       type: product-fulfillment-contract
       version: v1
       values:
         capability:
-          enUS: IDCSmart V10 upstream server fulfillment and management
-          zhCN: 魔方 V10 上游服务器履约与管理
+          enUS: IDCSmart V10 upstream product fulfillment and management
+          zhCN: 魔方 V10 上游商品履约与管理
+        saleImportProtocol: native_v10_common_v1
         granularity: per_quantity_unit
         ongoingManagement: true
         renewalSupport: unsupported
@@ -147,6 +91,8 @@ business_extensions:
       - provider-capacity.list
       - catalog.products.list
       - catalog.products.detail
+      - catalog.configuration.evaluate
+      - catalog.billing-terms
       - operation.execute
       - task.query
       - resource.query

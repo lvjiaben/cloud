@@ -16,7 +16,6 @@ func (c *ControllerV1) List(ctx context.Context, req *v1.ListReq) (res *v1.ListR
 		PageNum:   req.PageNum,
 		PageSize:  req.PageSize,
 		Title:     req.Title,
-		Type:      req.Type,
 		CreatedBy: req.CreatedBy,
 	})
 	if err != nil {

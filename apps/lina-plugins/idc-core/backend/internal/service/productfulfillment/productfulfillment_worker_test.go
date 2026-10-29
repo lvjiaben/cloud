@@ -16,6 +16,7 @@ func TestSafeProviderCustomerConfiguration(t *testing.T) {
 		{name: "empty declaration", declaration: "{}", values: "{}", want: "{}"},
 		{name: "absent declaration", values: "{}", want: "{}"},
 		{name: "strip file", declaration: `{"version":"v1","fields":[{"key":"attachment","type":"file"},{"key":"name","type":"text"}]}`, values: `{"attachment":["opaque-file"],"name":"example"}`, want: `{"name":"example"}`},
+		{name: "merchant-only values", declaration: `{"version":"v1","fields":[{"key":"local_support","type":"single_select"},{"key":"cpu","type":"integer"}]}`, values: `{"local_support":"premium","cpu":2}`, want: `{"cpu":2}`},
 		{name: "bad declaration", declaration: "{", values: "{}", invalid: true},
 		{name: "null values", declaration: "{}", values: "null", invalid: true},
 		{name: "bad values", declaration: "{}", values: "[", invalid: true},

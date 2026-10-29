@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -54,6 +55,18 @@ const (
 	ServiceActionAudienceCustomer = "customer"
 	// ServiceActionAudienceAdmin allows an authorized and data-scoped employee to request an action.
 	ServiceActionAudienceAdmin = "admin"
+)
+
+// SaleImportProtocol identifies an explicitly owner-reviewed imported-sale
+// protocol. Empty preserves providers without native catalog procurement.
+type SaleImportProtocol string
+
+const (
+	// SaleImportProtocolNativeFinanceV1 imports a complete financial-system
+	// catalog and provisions its immutable native purchase through idc-resource.
+	SaleImportProtocolNativeFinanceV1 SaleImportProtocol = "native_finance_v1"
+	// SaleImportProtocolNativeV10CommonV1 evaluates native common-module prices at purchase.
+	SaleImportProtocolNativeV10CommonV1 SaleImportProtocol = "native_v10_common_v1"
 )
 
 // ProviderCapability is the bounded user-readable provider description.
@@ -110,6 +123,12 @@ type ManagedServiceProjection struct {
 
 // ProviderDeclaration is the typed contract owned by idc-core.
 type ProviderDeclaration struct {
+	// SaleImportProtocol explicitly opts into owner-validated native imported sales.
+	SaleImportProtocol SaleImportProtocol `json:"saleImportProtocol,omitempty"`
+	// ProductChoiceFields opts declared text parameters into pure batch validation of merchant string alternatives.
+	ProductChoiceFields []string `json:"productChoiceFields,omitempty"`
+	// CustomerProductFields identifies product parameters supplied by declared customer fields. Unit conversion remains exclusively provider-owned.
+	CustomerProductFields map[string]string `json:"customerProductFields,omitempty"`
 	// MerchantCustomerFields are optional paid fields that remain hidden until the merchant explicitly enables them.
 	MerchantCustomerFields []string `json:"merchantCustomerFields,omitempty"`
 	// TrialPauseResume explicitly attests real system-owned pause and resume support.
@@ -174,6 +193,9 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 		len([]rune(declaration.Capability.EnUS)) > 256 || len([]rune(declaration.Capability.ZhCN)) > 256 {
 		return gerror.New("product fulfillment capability requires bounded English and Chinese text")
 	}
+	if err := validateSaleImportProtocol(declaration); err != nil {
+		return err
+	}
 	if declaration.Granularity != GranularityPerOrderItem && declaration.Granularity != GranularityPerQuantityUnit {
 		return gerror.New("product fulfillment granularity is invalid")
 	}
@@ -181,6 +203,13 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 		declaration.MethodRoles.Provision == declaration.MethodRoles.Query {
 		return gerror.New("product fulfillment provision and query roles require distinct methods")
 	}
+	if err := validateProductChoiceFields(declaration.ProductChoiceFields, authorizedMethods); err != nil {
+		return err
+	}
+	if err := validateCustomerProductSources(declaration.CustomerProductFields); err != nil {
+		return err
+	}
+
 	if err := validateMerchantCustomerFields(declaration.MerchantCustomerFields); err != nil {
 		return err
 	}
@@ -212,12 +241,8 @@ func ValidateProviderDeclaration(declaration *ProviderDeclaration, authorizedMet
 	} else if declaration.MethodRoles.Renewal != "" {
 		return gerror.New("non-provider renewal must not declare a renewal method")
 	}
-	if declaration.OngoingManagement {
-		if len(declaration.EntitlementOwnerID) > 64 || !entitlementOwnerIDPattern.MatchString(declaration.EntitlementOwnerID) {
-			return gerror.New("ongoing fulfillment requires one valid entitlement owner")
-		}
-	} else if declaration.EntitlementOwnerID != "" {
-		return gerror.New("one-time fulfillment must not declare an entitlement owner")
+	if err := validateEntitlementOwner(declaration); err != nil {
+		return err
 	}
 	if err := validateManagedServiceActions(declaration, allowed); err != nil {
 		return err
@@ -437,4 +462,60 @@ func validateMerchantCustomerFields(fields []string) error {
 		seenFields[field] = true
 	}
 	return nil
+}
+
+// validateCustomerProductSources bounds explicit source/target parameter keys.
+func validateCustomerProductSources(fields map[string]string) error {
+	sources, targets := make([]string, 0, len(fields)), make([]string, 0, len(fields))
+	for source, target := range fields {
+		sources = append(sources, source)
+		targets = append(targets, target)
+	}
+	if err := validateMerchantCustomerFields(sources); err != nil {
+		return err
+	}
+	return validateMerchantCustomerFields(targets)
+}
+
+func validateProductChoiceFields(fields, methods []string) error {
+	if err := validateMerchantCustomerFields(fields); err != nil {
+		return err
+	}
+	if len(fields) > 0 && !slices.Contains(methods, MethodValidateProductConfiguration) {
+		return gerror.New("merchant text choices require pure provider validation")
+	}
+	return nil
+}
+
+// validateSaleImportProtocol keeps procurement admission separate from ordinary
+// product fulfillment and requires the resource owner's per-unit native arm.
+func validateSaleImportProtocol(declaration *ProviderDeclaration) error {
+	if declaration.SaleImportProtocol == "" {
+		return nil
+	}
+	if !declaration.SaleImportProtocol.NativePurchase() {
+		return gerror.New("product fulfillment sale import protocol is unsupported")
+	}
+	if declaration.Granularity != GranularityPerQuantityUnit || !declaration.OngoingManagement || declaration.EntitlementOwnerID != "idc-resource" {
+		return gerror.New("native import requires resource-owned per-unit ongoing fulfillment")
+	}
+	return nil
+}
+
+// validateEntitlementOwner keeps lifecycle ownership independent of the optional
+// sale-import protocol; providers cannot acquire an owner through display data.
+func validateEntitlementOwner(declaration *ProviderDeclaration) error {
+	if declaration.OngoingManagement {
+		if len(declaration.EntitlementOwnerID) > 64 || !entitlementOwnerIDPattern.MatchString(declaration.EntitlementOwnerID) {
+			return gerror.New("ongoing fulfillment requires one valid entitlement owner")
+		}
+	} else if declaration.EntitlementOwnerID != "" {
+		return gerror.New("one-time fulfillment must not declare an entitlement owner")
+	}
+	return nil
+}
+
+// NativePurchase identifies owner-reviewed generic native procurement protocols.
+func (protocol SaleImportProtocol) NativePurchase() bool {
+	return protocol == SaleImportProtocolNativeFinanceV1 || protocol == SaleImportProtocolNativeV10CommonV1
 }

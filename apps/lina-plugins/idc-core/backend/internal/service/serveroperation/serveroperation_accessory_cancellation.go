@@ -39,6 +39,7 @@ type accessoryCancellationRow struct {
 	Version                                                                          int64
 	FinanciallySettledAt, ExecutionStartedAt                                         *time.Time
 	FinancialSettlementRequired                                                      bool
+	SubjectTypeCode, SubjectNo                                                       string
 }
 
 // ConsumeAddonCancellation releases only the local pending intent. It never
@@ -72,7 +73,11 @@ func (s *accessoryCancellationConsumer) ConsumeAddonCancellation(ctx context.Con
 			return ErrOperationConflict
 		}
 		var rows []accessoryCancellationRow
-		if err = s.database.GetScan(ctx, &rows, accessoryCancellationSQL, input.OrderNo); err != nil {
+		query, err := accessoryCancellationQuery(ctx, s.database, input.OrderNo)
+		if err != nil {
+			return err
+		}
+		if err = s.database.GetScan(ctx, &rows, query, input.OrderNo); err != nil {
 			return err
 		}
 		if len(rows) != 1 {
@@ -143,6 +148,10 @@ LIMIT 2 FOR UPDATE OF op,service`
 
 // appendCancellationEvent uses the generated model and ORM automatic timestamps.
 func (s *accessoryCancellationConsumer) appendCancellationEvent(ctx context.Context, row accessoryCancellationRow, proof *commerce.CompletedCancellationEvidence, evidence string) error {
+	if row.SubjectTypeCode == nativeAccessorySubject {
+		return appendNativeAccessoryEvent(ctx, s.database, row.OperationNo, row.SubjectNo, row.Version+1,
+			row.StatusCode, string(accessoryCancelled), string(accessoryCancellationReason), proof.CancellationNo, evidence)
+	}
 	eventNo, err := deterministicReference("soe_", struct {
 		OperationNo string
 		Sequence    int

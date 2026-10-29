@@ -1,3 +1,6 @@
+import {fileURLToPath} from "node:url";
+import {workspacePath} from "@host-tests/fixtures/config";
+import {waitForRouteReady} from "@host-tests/support/ui";
 import type { Page } from "@host-tests/support/playwright";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -11,15 +14,17 @@ export class OperationsDataPage {
     return this.root().getByTestId(`period-${key}`);
   }
   async goto() {
-    await this.page.goto("/admin/idc/operations/workbench", {
+    await waitForRouteReady(this.page);
+    await this.page.goto(workspacePath("/idc/operations/workbench"), {
       waitUntil: "domcontentloaded",
     });
   }
   async screenshot(name: string) {
-    const directory = resolve("../../temp/20261010");
+    const now=new Date().toISOString();
+    const directory = resolve(fileURLToPath(new URL("../../../../../../temp/",import.meta.url)),now.slice(0,10).replaceAll("-",""));
     await mkdir(directory, { recursive: true });
     await this.page.screenshot({
-      path: resolve(directory, `${Date.now()}-operations-${name}.png`),
+      path: resolve(directory, `${now.slice(11,23).replace(/[:.]/g,"")}-operations-${name}.png`),
       fullPage: false,
     });
   }

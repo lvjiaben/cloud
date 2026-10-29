@@ -2,13 +2,19 @@ import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
   {
+    component: () => import('#/views/account/website-purchase.vue'),
+    meta: { hideInMenu: true, title: 'purchaseConfiguration.title' },
+    name: 'WebsitePurchaseLogin',
+    path: '/account/website-purchase',
+  },
+  {
     component: () => import('#/views/account/finance/payment-return.vue'),
     meta: { hideInMenu: true, title: 'finance.paymentReturn.title' },
     name: 'CustomerPaymentReturn',
     path: '/payment/return/:attemptNo',
   },
   {
-    component: () => import('#/views/account/overview/index.vue'),
+    component: () => import('#/views/account/overview/console.vue'),
     meta: {
       affixTab: true,
       icon: 'lucide:layout-dashboard',
@@ -29,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     redirect: '/account/products/catalog',
     children: [
       {
-        component: () => import('#/views/account/products/index.vue'),
+        component: () => import('#/views/account/website-purchase-redirect.vue'),
         meta: {
           icon: 'lucide:shopping-bag',
           fullPathKey: false,
@@ -39,7 +45,7 @@ const routes: RouteRecordRaw[] = [
         path: '/account/products/catalog',
       },
       {
-        component: () => import('#/views/account/products/configure.vue'),
+        component: () => import('#/views/account/website-purchase-redirect.vue'),
         meta: { hideInMenu: true, title: 'purchaseConfiguration.title' },
         name: 'CustomerProductConfiguration',
         path: '/account/products/:publicSlug/configure',
@@ -59,10 +65,28 @@ const routes: RouteRecordRaw[] = [
         path: '/account/product-directories/:directoryNo',
       },
       {
-        component: () => import('#/views/account/servers/index.vue'),
+        component: () => import('#/views/account/native-servers/detail.vue'),
+        meta: { hideInMenu: true, title: 'nativeServers.title' },
+        name: 'CustomerNativeServerFromOrder',
+        path: '/account/native-servers/by-entitlement/:entitlementNo',
+      },
+      {
+        component: () => import('#/views/account/native-servers/detail.vue'),
+        meta: { hideInMenu: true, title: 'nativeServers.title' },
+        name: 'CustomerNativeServerDetail',
+        path: '/account/native-servers/:serverNo',
+      },
+      {
+        component: () => import('#/views/account/native-servers/console.vue'),
         meta: { icon: 'lucide:server', title: 'servers.menu' },
         name: 'CustomerServers',
         path: '/account/servers',
+      },
+      {
+        component: () => import('#/views/account/servers/index.vue'),
+        meta: { hideInMenu: true, title: 'servers.detail.title' },
+        name: 'CustomerLegacyServers',
+        path: '/account/servers/legacy',
       },
       {
         component: () => import('#/views/account/servers/index.vue'),
@@ -71,7 +95,7 @@ const routes: RouteRecordRaw[] = [
         path: '/account/servers/:serviceNo',
       },
       {
-        component: () => import('#/views/account/commerce/index.vue'),
+        component: () => import('#/views/account/website-purchase-redirect.vue'),
         meta: { icon: 'lucide:shopping-cart', title: 'commerce.cart.menu' },
         name: 'CustomerCart',
         path: '/account/cart',
@@ -249,12 +273,6 @@ const routes: RouteRecordRaw[] = [
         path: '/account/data-rights',
       },
       {
-        component: () => import('#/views/account/privacy/index.vue'),
-        meta: { icon: 'lucide:shield-check', title: 'privacy.menu' },
-        name: 'CustomerPrivacy',
-        path: '/account/privacy',
-      },
-      {
         component: () =>
           import('#/views/account/platform-verification/index.vue'),
         meta: {
@@ -284,31 +302,7 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
-      {
-        component: () => import('#/views/account/contracts/center.vue'),
-        meta: {
-          icon: 'lucide:file-signature',
-          title: 'contracts.center.menu',
-        },
-        name: 'CustomerContractCenter',
-        path: '/account/contracts',
-        children: [
-          {
-            component: () => import('#/views/account/contracts/index.vue'),
-            meta: { hideInMenu: true, title: 'contracts.mine.menu' },
-            name: 'CustomerContracts',
-            path: '',
-            props: { embedded: true },
-          },
-          {
-            component: () => import('#/views/account/contracts/signers.vue'),
-            meta: { hideInMenu: true, title: 'contracts.signers.menu' },
-            name: 'CustomerContractSigners',
-            path: 'signers',
-            props: { embedded: true },
-          },
-        ],
-      },
+
       {
         meta: { hideInMenu: true, title: 'identity.menu' },
         path: '/account/identity',

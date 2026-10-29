@@ -5,9 +5,7 @@ package resourcetask
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"io"
-	"strconv"
 	"time"
 
 	"github.com/gogf/gf/v2/database/gdb"
@@ -209,8 +207,6 @@ const (
 	taskEvidenceSourceOwnerState taskEvidenceSource = "owner_resource_state"
 	// taskEvidenceKindOwnerState is the stable evidence type for owner state convergence.
 	taskEvidenceKindOwnerState = "resourceState"
-	// taskEvidenceKindIPCount is the stable evidence type for exact IP-count convergence.
-	taskEvidenceKindIPCount = "ipCount"
 )
 
 // insertResourceObservationEvidence appends bounded owner and Provider facts
@@ -229,20 +225,6 @@ func insertResourceObservationEvidence(
 		ObservedAt: snapshot.ObservedAt,
 	}, random); err != nil {
 		return err
-	}
-	if resourcecap.CapabilityCode(task.CapabilityCode) == resourcecap.CapabilityChangeIP {
-		observed, ok := exactJSONInteger(snapshot.Data, "ip_count")
-		if !ok {
-			return gerror.New("resource IP count evidence is unavailable")
-		}
-		if err := insertTaskEvidence(ctx, tx, task.TaskNo, taskEvidenceSourceOwnerState, resourcecap.Evidence{
-			Kind:       taskEvidenceKindIPCount,
-			Reference:  snapshot.ExternalResourceRef,
-			Summary:    strconv.FormatInt(observed, 10),
-			ObservedAt: snapshot.ObservedAt,
-		}, random); err != nil {
-			return err
-		}
 	}
 	return insertTaskEvidenceBatch(
 		ctx, tx, task.TaskNo, taskEvidenceSourceProviderResource, snapshot.Evidence, random,
@@ -412,7 +394,7 @@ func loadExactActiveMapping(
 // sufficient to prove the idempotent outcome of the requested capability.
 func resourceObservationConverges(
 	capability resourcecap.CapabilityCode,
-	sanitizedParameters string,
+	_ string,
 	snapshot resourcecap.ResourceSnapshot,
 ) bool {
 	switch capability {
@@ -426,47 +408,11 @@ func resourceObservationConverges(
 	case resourcecap.CapabilityTerminate:
 		return snapshot.State == resourcecap.ResourceStateTerminated
 	case resourcecap.CapabilityChangeIP:
-		return changeIPObservationConverges(sanitizedParameters, snapshot)
+		// Replacement preserves the requested count. The same count cannot prove
+		// a changed address set or associate the change with this task. Only the
+		// exact supplier task outcome may finish this non-idempotent operation.
+		return false
 	default:
 		return false
 	}
-}
-
-// changeIPObservationConverges proves the exact requested IP count from the
-// Provider's normalized resource projection. Generic running state is not evidence.
-func changeIPObservationConverges(
-	sanitizedParameters string,
-	snapshot resourcecap.ResourceSnapshot,
-) bool {
-	switch snapshot.State {
-	case resourcecap.ResourceStateRunning,
-		resourcecap.ResourceStateActive,
-		resourcecap.ResourceStateStopped,
-		resourcecap.ResourceStateSuspended:
-	default:
-		return false
-	}
-	expected, ok := exactJSONInteger([]byte(sanitizedParameters), "ip_num")
-	if !ok || expected <= 0 || expected > 65535 {
-		return false
-	}
-	observed, ok := exactJSONInteger(snapshot.Data, "ip_count")
-	return ok && observed == expected
-}
-
-// exactJSONInteger extracts one exact integer field from a bounded JSON object.
-func exactJSONInteger(document []byte, field string) (int64, bool) {
-	object := make(map[string]json.RawMessage)
-	if json.Unmarshal(document, &object) != nil {
-		return 0, false
-	}
-	raw, exists := object[field]
-	if !exists {
-		return 0, false
-	}
-	var value int64
-	if json.Unmarshal(raw, &value) != nil {
-		return 0, false
-	}
-	return value, true
 }

@@ -3,9 +3,32 @@ package notification
 import (
 	"testing"
 
+	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/notificationcap"
 	"lina-plugin-idc-notify/backend/cap/channelcap"
 )
+
+// TestEnqueueRejectsRetiredEmployeeChannelBeforeDependencies ensures a stale
+// channel row cannot restore a deleted channel through the service contract.
+func TestEnqueueRejectsRetiredEmployeeChannelBeforeDependencies(t *testing.T) {
+	input := EnqueueInput{
+		EventCode: "support.ticket_updated", ChannelCode: "wechat_work", Locale: "zh-CN",
+		OwnerUserID: 101, BusinessObjectType: "support_ticket", BusinessObjectNo: "ticket-retired-channel",
+		TemplateNo: "retired-template", TemplateVersion: 1, Body: "Retired channel notification",
+		IdempotencyKey: "retired-employee-channel-0001",
+	}
+	service := &serviceImpl{}
+	if _, err := service.Enqueue(t.Context(), input); !bizerr.Is(err, CodeInvalid) {
+		t.Fatalf("retired channel was not rejected before database/provider access: %v", err)
+	}
+	for _, channel := range supportedChannelCodes {
+		input.ChannelCode = channel
+		input.CustomerNo, input.ContactNo = "customer-1", "contact-1"
+		if err := validateEnqueueInput(input); err != nil {
+			t.Fatalf("supported channel %q lost its enqueue contract: %v", channel, err)
+		}
+	}
+}
 
 func TestDeliveryStatusForResultUsesExactlyThreeAutomaticRetries(t *testing.T) {
 	for sequence := 0; sequence < 3; sequence++ {
@@ -83,7 +106,7 @@ func TestManualResendAllowsConfiguredInAppChannelWithoutProviderSecret(t *testin
 }
 
 func TestChannelsWithoutProviderBalanceDoNotBlockManualResend(t *testing.T) {
-	for _, channel := range []string{"in_app", "email", "wechat_official", "wechat_work", "signed_webhook", "dingtalk", "feishu"} {
+	for _, channel := range []string{"in_app", "email", "wechat_official", "signed_webhook", "dingtalk", "feishu"} {
 		if state := channelBalanceState(channel); state != "sufficient" {
 			t.Fatalf("channel %q balance state=%q want sufficient", channel, state)
 		}

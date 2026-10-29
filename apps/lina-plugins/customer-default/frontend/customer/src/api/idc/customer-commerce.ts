@@ -1,8 +1,8 @@
-import { pluginApiPath, requestClient } from '#/api/request';
+import { pluginApiPath, requestClient } from "#/api/request";
 
-import type { PurchaseValue } from './purchase-configuration';
+import type { PurchaseValue } from "./purchase-configuration";
 
-const corePluginID = 'idc-core';
+const corePluginID = "idc-core";
 
 export interface CartItem {
   cartItemNo: string;
@@ -72,7 +72,6 @@ export interface Checkout {
   orderNo: string;
   paymentDueAt: number;
   quoteNo: string;
-  requiresContract: boolean;
   reused: boolean;
   statusCode: string;
   totalAmountMinor: string;
@@ -102,7 +101,6 @@ export interface OrderSummary {
   itemCount: number;
   orderNo: string;
   paymentDueAt?: number;
-  requiresContract: boolean;
   riskDecisionCode: string;
   statusCode: string;
   totalAmountMinor: string;
@@ -134,23 +132,26 @@ export interface Delivery {
   quantity: number;
   startedAt?: number;
   statusCode:
-    | 'awaiting_payment'
-    | 'awaiting_review'
-    | 'cancelled'
-    | 'completed'
-    | 'not_completed'
-    | 'processing';
+    | "awaiting_payment"
+    | "awaiting_review"
+    | "cancelled"
+    | "completed"
+    | "not_completed"
+    | "manual_processing"
+    | "processing";
   updatedAt: number;
 }
 
 export interface ServiceEntitlement {
+  managementPreparation?: "preparing" | "ready" | "needs_attention";
+  entitlementOwnerId?: string;
   entitlementNo: string;
   expiresAt?: number;
   orderItemNo: string;
   productNameEnUS: string;
   productNameZhCN: string;
   startedAt: number;
-  statusCode: 'active' | 'expired' | 'suspended' | 'terminated';
+  statusCode: "active" | "expired" | "suspended" | "terminated";
 }
 
 export interface OrderPage {
@@ -174,21 +175,21 @@ function path(pathName: string) {
 }
 
 export function getCart() {
-  return requestClient.get<{ cart: Cart }>(path('cart'));
+  return requestClient.get<{ cart: Cart }>(path("cart"));
 }
 
 export function mergeGuestCart() {
   return requestClient.post<{ cart?: Cart; merged: boolean }>(
-    path('guest-cart-merge'),
+    path("guest-cart-merge"),
   );
 }
 
 export function openCart(currencyCode: string) {
-  return requestClient.post<{ cart: Cart }>(path('carts'), { currencyCode });
+  return requestClient.post<{ cart: Cart }>(path("carts"), { currencyCode });
 }
 
 export function addCartItem(input: AddCartItemInput) {
-  return requestClient.post<{ cart: Cart }>(path('cart-items'), input);
+  return requestClient.post<{ cart: Cart }>(path("cart-items"), input);
 }
 
 export function removeCartItem(
@@ -203,14 +204,14 @@ export function removeCartItem(
 }
 
 export function createFinalQuote(expectedCartVersion: number) {
-  return requestClient.post<{ quote: FinalQuote }>(path('quotes'), {
+  return requestClient.post<{ quote: FinalQuote }>(path("quotes"), {
     assetNumbers: [],
     expectedCartVersion,
   });
 }
 
 export function checkoutQuote(quoteNo: string, idempotencyKey: string) {
-  return requestClient.post<{ checkout: Checkout }>(path('orders'), {
+  return requestClient.post<{ checkout: Checkout }>(path("orders"), {
     idempotencyKey,
     quoteNo,
   });
@@ -243,7 +244,7 @@ export function listOrders(
     statusCode?: string;
   } = {},
 ) {
-  return requestClient.get<OrderPage>(path('orders'), {
+  return requestClient.get<OrderPage>(path("orders"), {
     params: { limit: 20, ...params },
   });
 }
@@ -251,6 +252,7 @@ export function listOrders(
 export function getOrder(orderNo: string) {
   return requestClient.get<{ order: OrderDetail }>(
     path(`orders/${encodeURIComponent(orderNo)}`),
+    { silentErrorMessage: true },
   );
 }
 

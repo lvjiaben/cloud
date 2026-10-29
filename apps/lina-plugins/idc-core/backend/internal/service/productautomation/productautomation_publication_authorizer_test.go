@@ -197,3 +197,8 @@ func TestNewPublicationOnlyAuthorizerRejectsNil(t *testing.T) {
 		t.Fatal("typed-nil publication authorizer accepted")
 	}
 }
+
+// AuthorizeProductSave provides ordinary editing authority in this fixture.
+func (a *publicationAuthorityStub) AuthorizeProductSave(ctx context.Context, versionNo string) (int, error) {
+	return a.AuthorizeProductPublication(ctx, versionNo)
+}

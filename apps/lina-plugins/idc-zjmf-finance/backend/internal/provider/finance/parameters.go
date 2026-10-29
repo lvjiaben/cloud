@@ -59,7 +59,7 @@ func BuildProvisionParameters(ctx context.Context, plan resourcecap.ServerProvis
 		return nil, errInvalidConfig
 	}
 	parameters := map[string]any{
-		"pid": product.UpstreamProductID, "billingcycle": selector.BillingCycle,
+		"workflow": "serialized_cart_v1", "pid": product.UpstreamProductID, "billingcycle": selector.BillingCycle,
 		"host": plan.Hostname, "qty": 1,
 	}
 	configOptions := map[string]string{

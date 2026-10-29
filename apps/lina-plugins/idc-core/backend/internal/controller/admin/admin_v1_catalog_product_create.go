@@ -7,7 +7,6 @@ import (
 
 	"lina-plugin-idc-core/backend/api/admin/v1"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 func (c *ControllerV1) CatalogProductCreate(
@@ -18,8 +17,8 @@ func (c *ControllerV1) CatalogProductCreate(
 		DirectoryNo: req.DirectoryNo, CategoryNo: req.CategoryNo, PublicSlug: req.PublicSlug,
 		NameZhCN: req.NameZhCn, NameEnUS: req.NameEnUs,
 		SummaryZhCN: req.SummaryZhCn, SummaryEnUS: req.SummaryEnUs,
-		SortOrder: req.SortOrder, ContractPolicyCode: contractpolicy.Policy(req.ContractPolicyCode),
-		ContractTemplateNo:       req.ContractTemplateNo,
+		SortOrder: req.SortOrder,
+
 		InventoryTrackingEnabled: req.InventoryTrackingEnabled,
 		SellableQuantity:         req.SellableQuantity,
 	})

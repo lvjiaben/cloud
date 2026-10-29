@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420">
+ <defs>
+  <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f6f9fd"/><stop offset="1" stop-color="#e6f1fb"/></linearGradient>
+  <linearGradient id="top" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#c2e5ff"/></linearGradient>
+  <linearGradient id="side" x2="0" y2="1"><stop stop-color="#4dbbff"/><stop offset="1" stop-color="#2761e7"/></linearGradient>
+  <linearGradient id="cloud" x2="1" y2="1"><stop stop-color="#75e7f3"/><stop offset=".5" stop-color="#31baff"/><stop offset="1" stop-color="#4274ec"/></linearGradient>
+  <filter id="s"><feDropShadow dx="0" dy="13" stdDeviation="15" flood-color="#247bd0" flood-opacity=".2"/></filter>
+ </defs>
+ <path fill="url(#bg)" d="M0 0h1600v420H0z"/>
+ <g stroke="#d9e6f4" fill="none" opacity=".6"><path d="m700 0 720 420M920 0l680 396M1160 0l440 258M1420 0l180 106M1600 100l-540 320M1600 260l-270 160M1320 0 610 420M1040 0 340 420"/></g>
+ <g filter="url(#s)">
+  <path d="m980 274 247-125 247 125v34l-247 124-247-124z" fill="#cfdef2"/>
+  <path d="m980 274 247-125 247 125-247 124z" fill="url(#top)"/>
+  <path d="m1040 252 187-96 187 96v32l-187 95-187-95z" fill="url(#side)"/>
+  <path d="m1040 252 187-96 187 96-187 96z" fill="url(#top)"/>
+  <path d="m1115 211 112-58 112 58v34l-112 57-112-57z" fill="#6ab6f0"/>
+  <path d="m1115 211 112-58 112 58-112 57z" fill="#fff"/>
+  <ellipse cx="1227" cy="211" rx="59" ry="23" fill="#caedff"/>
+  <path d="M1166 145c-25 0-37-18-33-37 3-14 13-25 27-28 5-27 25-45 49-45 24 0 44 15 50 37 24-4 47 11 50 34 21 2 36 18 34 37-2 20-17 33-39 33h-132c-12 0-21-12-6-31z" fill="#6596ea"/>
+  <path d="M1155 136c-24 0-35-17-31-35 3-14 13-24 26-27 5-26 24-43 47-43 23 0 43 14 48 36 23-4 46 11 49 33 20 2 35 17 33 36-2 19-17 32-38 32h-126c-12 0-23-12-8-32z" fill="url(#cloud)" stroke="#b2f2ff" stroke-width="2"/>
+  <path d="m1197 95-24 26h16v72h21v-72h16z" fill="#e4ffff"/>
+ </g>
+ <path d="M0 0h850v420H0z" fill="#f7fafc" opacity=".65"/>
+</svg>

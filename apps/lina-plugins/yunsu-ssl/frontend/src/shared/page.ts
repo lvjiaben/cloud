@@ -49,7 +49,7 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
 
   function createTable() {
     const handle = mountIsolatedVbenTable<CertificateRow>(node('ssl-table'), {
-      columns: [], rows: [], rowKey: 'entitlementNo', height: 480, locale,
+      columns: tableColumns(), rows: [], rowKey: 'entitlementNo', height: 480, locale,
     });
     void handle.ready.then(resize).catch(() => {
       if (disposed || table !== handle) return;
@@ -110,10 +110,10 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
     return button;
   }
 
-  function renderRows() {
+  function tableColumns(): IsolatedTableColumn<CertificateRow>[] {
     const words = copy[locale];
     const compact = win.innerWidth <= 720;
-    const columns: IsolatedTableColumn<CertificateRow>[] = [
+    return [
       {field:'primaryDomain', title:words.domain, minWidth:compact ? 120 : 180},
       ...(!compact ? [
         {field:'product',title:words.product,minWidth:160,cell:(item:CertificateRow) => displayProduct(item,locale)},
@@ -129,6 +129,11 @@ export function startCertificatePage(options: PageOptions, win: Window = window,
         return actions;
       }},
     ];
+  }
+
+  function renderRows() {
+    const words = copy[locale];
+    const columns = tableColumns();
     table.update({columns, rows: items as CertificateRow[], locale});
     setText("ssl-summary", locale === "en-US" ? `${items.length} certificate${items.length === 1 ? "" : "s"}` : `共 ${items.length} 张证书`);
     show("ssl-content", !tableFailed && items.length > 0); show("ssl-empty", !tableFailed && items.length === 0); show("ssl-load-more-wrap", Boolean(nextCursor)); resize();

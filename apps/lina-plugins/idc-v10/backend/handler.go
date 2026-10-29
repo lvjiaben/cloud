@@ -53,6 +53,8 @@ func validInvocation(value *capmodel.BusinessExtensionBridgeRequest) bool {
 	}
 	if value.Method == resourcecap.DynamicProviderMethodConfigurationCandidates ||
 		value.Method == resourcecap.DynamicProviderMethodListCatalog ||
+		value.Method == resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration ||
+		value.Method == resourcecap.DynamicProviderMethodCatalogBillingTerms ||
 		value.Method == resourcecap.DynamicProviderMethodReadCatalogProduct {
 		return value.Purpose == capmodel.BusinessExtensionInvocationPurposeNewBusiness
 	}

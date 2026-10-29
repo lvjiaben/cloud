@@ -66,4 +66,21 @@ describe("confirmed resource numeric page", () => {
     expect(directory.current.total).toBe(121);
     expect(isResourceAccessDenied({code: 401})).toBe(false);
   });
+
+  it.each(["success", "denied"])("invalidates a pending %s response when its object context leaves", async (outcome) => {
+    const { directory, onDenied, onFailure } = fixture();
+    let finish!: (value: { items: string[]; total: number }) => void;
+    let fail!: (error: unknown) => void;
+    const commit = vi.fn();
+    const old = directory.query({currentPage: 1, pageSize: 10}, "old-product", () => new Promise((resolve, reject) => { finish = resolve; fail = reject; }), commit);
+    directory.invalidate();
+    await directory.query({currentPage: 1, pageSize: 10}, "new-product", async () => ({items: ["new-product"], total: 1}));
+    if (outcome === "success") finish({items: ["old-product"], total: 1});
+    else fail({response: {status: 403}});
+    await old;
+    expect(directory.current.items).toEqual(["new-product"]);
+    expect(commit).not.toHaveBeenCalled();
+    expect(onDenied).not.toHaveBeenCalled();
+    expect(onFailure).not.toHaveBeenCalled();
+  });
 });

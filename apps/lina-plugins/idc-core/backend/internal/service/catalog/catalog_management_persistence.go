@@ -6,7 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
-	"errors"
+
 	"io"
 	"regexp"
 	"strings"
@@ -16,12 +16,11 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
+
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 const (
@@ -48,16 +47,15 @@ type normalizedCategoryCreate struct {
 }
 
 type normalizedProductCreate struct {
-	directoryNo              string
-	categoryNo               string
-	publicSlug               string
-	nameZhCN                 string
-	nameEnUS                 string
-	summaryZhCN              string
-	summaryEnUS              string
-	sortOrder                int
-	contractPolicyCode       contractpolicy.Policy
-	contractTemplateNo       string
+	directoryNo string
+	categoryNo  string
+	publicSlug  string
+	nameZhCN    string
+	nameEnUS    string
+	summaryZhCN string
+	summaryEnUS string
+	sortOrder   int
+
 	inventoryTrackingEnabled bool
 	sellableQuantity         int64
 }
@@ -160,9 +158,6 @@ func (s *managementServiceImpl) CreateProductDraft(
 	if err != nil {
 		return nil, err
 	}
-	if err = s.validateProductContractRule(ctx, normalized); err != nil {
-		return nil, err
-	}
 	productNo, err := newCatalogNumber(s.random, "prd")
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeManagementUnavailable)
@@ -230,10 +225,8 @@ func (s *managementServiceImpl) createProductDraftInTransaction(
 	insertResult, insertErr = dao.CatalogProductVersion.Ctx(ctx).Data(do.CatalogProductVersion{
 		TenantId: idccap.DefaultTenantID, VersionNo: versionNo, ProductNo: productNo,
 		VersionNumber: 1, StatusCode: catalogStatusDraft, SourceCode: catalogSourceManual,
-		RequiresContract:      input.contractPolicyCode == contractpolicy.PolicyRequired,
-		ContractPolicyCode:    string(input.contractPolicyCode),
-		ContractTemplateNo:    nullableCatalogContractTemplate(input.contractTemplateNo),
-		ContractPolicyVersion: 1, CreatedBy: actorUserID,
+
+		CreatedBy: actorUserID,
 	}).InsertIgnore()
 	if err = requireSingleCatalogInsert(insertResult, insertErr, "insert initial catalog product version"); err != nil {
 		return nil, err
@@ -259,8 +252,6 @@ func (s *managementServiceImpl) createProductDraftInTransaction(
 		AfterSnapshot: map[string]any{
 			"state": catalogStatusDraft, "version_no": versionNo,
 			"category_no":                input.categoryNo,
-			"contract_policy_code":       input.contractPolicyCode,
-			"contract_template_no":       input.contractTemplateNo,
 			"inventory_tracking_enabled": input.inventoryTrackingEnabled,
 			"sellable_quantity":          input.sellableQuantity,
 		},
@@ -307,60 +298,21 @@ func normalizeProductCreate(input ProductCreateInput) (normalizedProductCreate, 
 	nameEnUS := strings.TrimSpace(input.NameEnUS)
 	summaryZhCN := strings.TrimSpace(input.SummaryZhCN)
 	summaryEnUS := strings.TrimSpace(input.SummaryEnUS)
-	if input.ContractPolicyCode == "" {
-		input.ContractPolicyCode = contractpolicy.PolicyInherit
-	}
-	rule, ruleErr := contractpolicy.NormalizeRule(contractpolicy.Rule{
-		Policy: input.ContractPolicyCode, TemplateNo: input.ContractTemplateNo,
-	}, true)
 	if input.DirectoryNo != "" && !existingCatalogReferencePattern.MatchString(strings.TrimSpace(input.DirectoryNo)) || !categoryNumberPattern.MatchString(categoryNo) ||
 		!validLocalizedText(publicSlug, 128, false) || !publicSlugPattern.MatchString(publicSlug) ||
 		!validLocalizedText(nameZhCN, 256, false) || !validLocalizedText(nameEnUS, 256, false) ||
 		!validLocalizedText(summaryZhCN, 1024, true) || !validLocalizedText(summaryEnUS, 1024, true) ||
-		!validSortOrder(input.SortOrder) || input.SellableQuantity < 0 || ruleErr != nil {
+		!validSortOrder(input.SortOrder) || input.SellableQuantity < 0 {
 		return normalizedProductCreate{}, bizerr.NewCode(CodeManagementInvalid)
 	}
 	return normalizedProductCreate{
 		directoryNo: strings.TrimSpace(input.DirectoryNo), categoryNo: categoryNo, publicSlug: publicSlug,
 		nameZhCN: nameZhCN, nameEnUS: nameEnUS, summaryZhCN: summaryZhCN,
 		summaryEnUS: summaryEnUS, sortOrder: input.SortOrder,
-		contractPolicyCode: rule.Policy, contractTemplateNo: rule.TemplateNo,
+
 		inventoryTrackingEnabled: input.InventoryTrackingEnabled,
 		sellableQuantity:         input.SellableQuantity,
 	}, nil
-}
-
-func (s *managementServiceImpl) validateProductContractRule(
-	ctx context.Context,
-	input normalizedProductCreate,
-) error {
-	if input.contractPolicyCode != contractpolicy.PolicyRequired {
-		return nil
-	}
-	if s.templates == nil {
-		return bizerr.NewCode(CodeManagementContractTemplateUnavailable)
-	}
-	selection := contracttemplatecap.Selection{Level: contracttemplatecap.SelectionLevelProduct}
-	resolved, err := s.templates.ResolveAvailable(ctx, selection, []string{input.contractTemplateNo})
-	if err != nil {
-		if errors.Is(err, contracttemplatecap.ErrSourceUnavailable) ||
-			errors.Is(err, contracttemplatecap.ErrTemplateUnavailable) {
-			return bizerr.WrapCode(err, CodeManagementContractTemplateUnavailable)
-		}
-		return bizerr.WrapCode(err, CodeManagementUnavailable)
-	}
-	if len(resolved) != 1 || resolved[0].TemplateNo != input.contractTemplateNo ||
-		contracttemplatecap.ValidateTemplate(resolved[0], selection) != nil {
-		return bizerr.NewCode(CodeManagementContractTemplateUnavailable)
-	}
-	return nil
-}
-
-func nullableCatalogContractTemplate(value string) any {
-	if value == "" {
-		return nil
-	}
-	return value
 }
 
 func validLocalizedText(value string, maximum int, allowEmpty bool) bool {

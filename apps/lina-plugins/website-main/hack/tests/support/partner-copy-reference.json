@@ -1,0 +1,748 @@
+{
+  "source": "https://www.xiaobaiyun.cn/cooperation/partner.html",
+  "sourceSha256": "166dbe671b075498d71ac51317b2a5763585058b203976171ba32c5c28653b5a",
+  "sourceCopy": [
+    {
+      "section": "hero",
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/h1.pagebanner-title[1]",
+      "tag": "h1",
+      "level": 1,
+      "text": "合作伙伴"
+    },
+    {
+      "section": "hero",
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/p.pagebanner-description[3]",
+      "tag": "p",
+      "level": null,
+      "text": "与我们合作伙伴，共同创造无限可能。我们提供全方位的云服务，助您实现业务增长和创新发展。"
+    },
+    {
+      "section": "hero",
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/div.pagebanner-button[5]/a.Button.fancy-button.bg-gradient[1]/span[0]",
+      "tag": "span",
+      "level": null,
+      "text": "咨询我们 →"
+    },
+    {
+      "section": "hero",
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/div.pagebanner-button[5]/a.Button.fancy-button.bg-gradient[3]/span[0]",
+      "tag": "span",
+      "level": null,
+      "text": "立即申请"
+    },
+    {
+      "section": "anchors",
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab.active[1]/a[1]",
+      "tag": "a",
+      "level": null,
+      "text": "服务优势"
+    },
+    {
+      "section": "anchors",
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[3]/a[1]",
+      "tag": "a",
+      "level": null,
+      "text": "伙伴权益"
+    },
+    {
+      "section": "anchors",
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[5]/a[1]",
+      "tag": "a",
+      "level": null,
+      "text": "申请要求"
+    },
+    {
+      "section": "anchors",
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[7]/a[1]",
+      "tag": "a",
+      "level": null,
+      "text": "申请流程"
+    },
+    {
+      "section": "anchors",
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[9]/a[1]",
+      "tag": "a",
+      "level": null,
+      "text": "常见问题"
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                        服务优势"
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                        降低成本助您稳固市场地位，提升竞争力。充分利用我们的云服务，实现共赢合作！                    "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[1]/div.introduce-section-img[1]/div.introduce-section-container[1]/h2.introduce-section-title[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                                    全面支持多渠道商机触达，扩展市场覆盖范围                                "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[1]/div.introduce-section-img[1]/div.introduce-section-container[1]/div.introduce-section-desc[3]/p[1]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                                        通过线上线下联动，提供全方位的商机触达服务，帮助合作伙伴快速扩大市场覆盖。                                                                            "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[3]/div.introduce-section-img[1]/div.introduce-section-container[1]/h2.introduce-section-title[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                                    强化线上推广支持，提升品牌知名度和曝光率                                "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[3]/div.introduce-section-img[1]/div.introduce-section-container[1]/div.introduce-section-desc[3]/p[1]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                                        合作伙伴将获得定制的线上推广计划，包括SEO优化和社交媒体广告，提升品牌可见度。                                                                            "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[5]/div.introduce-section-img[1]/div.introduce-section-container[1]/h2.introduce-section-title[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                                    提供丰富的线下渠道资源，加速市场渗透                                "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[5]/div.introduce-section-img[1]/div.introduce-section-container[1]/div.introduce-section-desc[3]/p[1]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                                        结合实体活动和地区代理，充分利用线下渠道资源，加快产品市场渗透速度。                                                                            "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[7]/div.introduce-section-img[1]/div.introduce-section-container[1]/h2.introduce-section-title[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                                    直销支持，加强客户关系管理和销售效率                                "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[7]/div.introduce-section-img[1]/div.introduce-section-container[1]/div.introduce-section-desc[3]/p[1]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                                        提供专业直销队伍支持，帮助合作伙伴增强客户关系管理，提升销售转化。                                                                            "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[9]/div.introduce-section-img[1]/div.introduce-section-container[1]/h2.introduce-section-title[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                                    生态资源互助，共享合作网络中的多方资源                                "
+    },
+    {
+      "section": "advantages",
+      "parent": "body/section.et-slide[1]/div.comp_container.comp_container_auto.overflow_tab[1]/div.introduce[1]/div.introduce-row[3]/div.introduce-section[9]/div.introduce-section-img[1]/div.introduce-section-container[1]/div.introduce-section-desc[3]/p[1]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                                        在合作生态系统中，合作伙伴可共享资源，包括技术、市场信息及客户资源。                                                                            "
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "伙伴权益"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                        提升您的合作伙伴等级，享受更多专属优惠！与我们合作，共同开拓市场，共享成功！"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[1]",
+      "tag": "th",
+      "level": null,
+      "text": "类型"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[3]",
+      "tag": "th",
+      "level": null,
+      "text": "权益类型"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[5]",
+      "tag": "th",
+      "level": null,
+      "text": "\n                            银牌代理"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[7]",
+      "tag": "th",
+      "level": null,
+      "text": "\n                            金牌代理"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[9]",
+      "tag": "th",
+      "level": null,
+      "text": "\n                            铂金代理"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-table-header[1]/th.grade-table-header-cell[11]",
+      "tag": "th",
+      "level": null,
+      "text": "\n                            钻石代理"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[3]/td.grade-table-cell.grade-category[1]",
+      "tag": "td",
+      "level": null,
+      "text": "\n                            销售支持                        "
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[3]/td.grade-table-cell.grade-subcategory[3]",
+      "tag": "td",
+      "level": null,
+      "text": "专业销售支持"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[5]/td.grade-table-cell.grade-subcategory[1]",
+      "tag": "td",
+      "level": null,
+      "text": "专属生态合作经理"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[7]/td.grade-table-cell.grade-subcategory[1]",
+      "tag": "td",
+      "level": null,
+      "text": "优先售前支持"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[9]/td.grade-table-cell.grade-subcategory[1]",
+      "tag": "td",
+      "level": null,
+      "text": "销售商机共享"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[11]/td.grade-table-cell.grade-subcategory[1]",
+      "tag": "td",
+      "level": null,
+      "text": "专属产品或方案定制化价格"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[13]/td.grade-table-cell.grade-category[1]",
+      "tag": "td",
+      "level": null,
+      "text": "\n                            技术支持                        "
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[13]/td.grade-table-cell.grade-subcategory[3]",
+      "tag": "td",
+      "level": null,
+      "text": "开放API平台"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[15]/td.grade-table-cell.grade-subcategory[1]",
+      "tag": "td",
+      "level": null,
+      "text": "销售平台代搭建"
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[17]/td.grade-table-cell.grade-category[1]",
+      "tag": "td",
+      "level": null,
+      "text": "\n                            赋能支持                        "
+    },
+    {
+      "section": "benefits",
+      "parent": "body/section.et-slide[3]/div.comp_container.comp_container_auto.overflow_tab[1]/div.grade[1]/table.grade-table[3]/tr.grade-row[17]/td.grade-table-cell.grade-subcategory[3]",
+      "tag": "td",
+      "level": null,
+      "text": "专属销售能力培训"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "申请要求"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                        积极寻求与各行各业的优秀合作伙伴合作，共同打造智慧未来。欢迎有志之士加入我们的大家庭，共同创造美好！"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[1]",
+      "tag": "div",
+      "level": null,
+      "text": "伙伴等级"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[3]",
+      "tag": "div",
+      "level": null,
+      "text": "预存金额"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[5]",
+      "tag": "div",
+      "level": null,
+      "text": "产品折扣"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[7]",
+      "tag": "div",
+      "level": null,
+      "text": "公司规模标准"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[9]",
+      "tag": "div",
+      "level": null,
+      "text": "专职团队人数"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[11]",
+      "tag": "div",
+      "level": null,
+      "text": "季度销售额"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row.partner_header[1]/div.partner_cell[13]",
+      "tag": "div",
+      "level": null,
+      "text": "年度销售额"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[1]",
+      "tag": "div",
+      "level": null,
+      "text": "银牌代理"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[3]",
+      "tag": "div",
+      "level": null,
+      "text": "1000"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[5]",
+      "tag": "div",
+      "level": null,
+      "text": "9折"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[7]",
+      "tag": "div",
+      "level": null,
+      "text": "公司成立时间满1年\n注册资本≥1万元"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[9]",
+      "tag": "div",
+      "level": null,
+      "text": "x"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[11]",
+      "tag": "div",
+      "level": null,
+      "text": "1000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[3]/div.partner_cell[13]",
+      "tag": "div",
+      "level": null,
+      "text": "3000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[1]",
+      "tag": "div",
+      "level": null,
+      "text": "金牌代理"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[3]",
+      "tag": "div",
+      "level": null,
+      "text": "3000"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[5]",
+      "tag": "div",
+      "level": null,
+      "text": "8.5折"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[7]",
+      "tag": "div",
+      "level": null,
+      "text": "公司成立时间满1年\n注册资本≥50万元"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[9]",
+      "tag": "div",
+      "level": null,
+      "text": "销售：1人 售前（解决方案）：1人"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[11]",
+      "tag": "div",
+      "level": null,
+      "text": "5000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[5]/div.partner_cell[13]",
+      "tag": "div",
+      "level": null,
+      "text": "10000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[1]",
+      "tag": "div",
+      "level": null,
+      "text": "铂金代理"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[3]",
+      "tag": "div",
+      "level": null,
+      "text": "5000"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[5]",
+      "tag": "div",
+      "level": null,
+      "text": "8折"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[7]",
+      "tag": "div",
+      "level": null,
+      "text": "公司成立时间满1年\n注册资本≥100万元"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[9]",
+      "tag": "div",
+      "level": null,
+      "text": "销售：1人 售前（解决方案）：1人"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[11]",
+      "tag": "div",
+      "level": null,
+      "text": "10000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[7]/div.partner_cell[13]",
+      "tag": "div",
+      "level": null,
+      "text": "20000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[1]",
+      "tag": "div",
+      "level": null,
+      "text": "砖石代理"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[3]",
+      "tag": "div",
+      "level": null,
+      "text": "10000"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[5]",
+      "tag": "div",
+      "level": null,
+      "text": "7折"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[7]",
+      "tag": "div",
+      "level": null,
+      "text": "公司成立时间满1年\n注册资本≥100万元"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[9]",
+      "tag": "div",
+      "level": null,
+      "text": "销售：2人 售前（解决方案）：3人"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[11]",
+      "tag": "div",
+      "level": null,
+      "text": "20000.00"
+    },
+    {
+      "section": "requirements",
+      "parent": "body/section.et-slide[5]/div.comp_container.comp_container_auto.overflow_tab[1]/div.requirement[1]/div.partner_table[3]/div.partner_row[9]/div.partner_cell[13]",
+      "tag": "div",
+      "level": null,
+      "text": "50000.00"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "申请流程"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "level": null,
+      "text": "\n                        提供快速高效的申请渠道和审核流程，助您轻松加入我们的合作伙伴网络！"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[1]/div[1]",
+      "tag": "div",
+      "level": null,
+      "text": "1"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[1]/div[3]",
+      "tag": "div",
+      "level": null,
+      "text": "提交申请"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[3]/div[1]",
+      "tag": "div",
+      "level": null,
+      "text": "2"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[3]/div[3]",
+      "tag": "div",
+      "level": null,
+      "text": "审核评估"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[5]/div[1]",
+      "tag": "div",
+      "level": null,
+      "text": "3"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[5]/div[3]",
+      "tag": "div",
+      "level": null,
+      "text": "沟通共创"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[7]/div[1]",
+      "tag": "div",
+      "level": null,
+      "text": "4"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[7]/div[3]",
+      "tag": "div",
+      "level": null,
+      "text": "签署协议"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[9]/div[1]",
+      "tag": "div",
+      "level": null,
+      "text": "5"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.cooperate-content[3]/div.cooperate-item[9]/div[3]",
+      "tag": "div",
+      "level": null,
+      "text": "成为伙伴"
+    },
+    {
+      "section": "process",
+      "parent": "body/section.et-slide[7]/div.comp_container.comp_container_auto.overflow_tab[1]/div.flow[1]/div.flow-content[3]/div.flow-btn[5]/a.Button.fancy-button.bg-gradient[1]/span[0]",
+      "tag": "span",
+      "level": null,
+      "text": "提交申请\n                        "
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "level": 2,
+      "text": "\n                        常见问题"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[1]/div.problem-content-item-title[1]/h3[1]",
+      "tag": "h3",
+      "level": 3,
+      "text": "合作伙伴的选择标准是什么？"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[1]/div.problem-content-item-content[3]/p[2]",
+      "tag": "p",
+      "level": null,
+      "text": "选择标准包括技术能力、安全合规性、价格竞争力、服务支持品质以及合作伙伴的市场声誉。"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[3]/div.problem-content-item-title[1]/h3[1]",
+      "tag": "h3",
+      "level": 3,
+      "text": "合作伙伴提供的云服务如何保证数据安全？"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[3]/div.problem-content-item-content[3]/p[2]",
+      "tag": "p",
+      "level": null,
+      "text": "通过加密技术、数据备份、多重认证等手段来确保数据安全。"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[5]/div.problem-content-item-title[1]/h3[1]",
+      "tag": "h3",
+      "level": 3,
+      "text": "合作伙伴如何处理技术支持？"
+    },
+    {
+      "section": "faq",
+      "parent": "body/section.et-slide.problem_bg[9]/div.comp_container.comp_container_auto.overflow_tab[1]/div.problem[1]/div.problem-content[3]/div.problem-content-item[5]/div.problem-content-item-content[3]/p[2]",
+      "tag": "p",
+      "level": null,
+      "text": "提供24/7的技术支持服务，包括电话支持、在线聊天、以及知识库访问等。"
+    }
+  ],
+  "allowedDifference": {
+    "section": "benefits",
+    "from": "砖石代理",
+    "to": "钻石代理"
+  },
+  "gradeMatrix": [
+    [
+      "专业销售支持",
+      "y",
+      "y",
+      "y",
+      "y"
+    ],
+    [
+      "专属生态合作经理",
+      "n",
+      "y",
+      "y",
+      "y"
+    ],
+    [
+      "优先售前支持",
+      "y",
+      "y",
+      "y",
+      "y"
+    ],
+    [
+      "销售商机共享",
+      "n",
+      "n",
+      "n",
+      "y"
+    ],
+    [
+      "专属产品或方案定制化价格",
+      "n",
+      "n",
+      "y",
+      "y"
+    ],
+    [
+      "开放API平台",
+      "y",
+      "y",
+      "y",
+      "y"
+    ],
+    [
+      "销售平台代搭建",
+      "n",
+      "n",
+      "y",
+      "y"
+    ],
+    [
+      "专属销售能力培训",
+      "n",
+      "n",
+      "n",
+      "y"
+    ]
+  ]
+}

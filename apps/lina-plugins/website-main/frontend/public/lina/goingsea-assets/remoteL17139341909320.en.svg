@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820" role="img" aria-labelledby="title description">
+  <title id="title">Global cloud service architecture</title>
+  <desc id="description">Users connect through the internet and load balancers to cloud hosts across two availability zones. An elastic scaling service manages an Elastic Compute Cluster.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 10 5 0 10Z" fill="#253545" />
+    </marker>
+    <g id="server" fill="#fff" stroke="#fff" stroke-width="2">
+      <rect x="0" y="0" width="52" height="58" rx="8" fill="#347cf5" stroke="#347cf5" />
+      <rect x="10" y="10" width="9" height="38" rx="1" fill="none" />
+      <rect x="24" y="10" width="9" height="38" rx="1" fill="none" />
+      <rect x="38" y="10" width="9" height="38" rx="1" fill="none" />
+      <path d="M12 17h5m-5 7h5m-5 16h5m9-23h5m-5 7h5m-5 16h5m9-23h5m-5 7h5m-5 16h5" />
+    </g>
+    <g id="scaling" stroke="#347cf5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M20 11H8V23M8 11l13 13M44 11h12v12m0-12L43 24M20 49H8V37m0 12 13-13m23 13h12V37m0 12L43 36" />
+      <rect x="22" y="23" width="20" height="14" rx="2" />
+      <path d="M27 28h10m-10 5h7" />
+    </g>
+  </defs>
+  <rect width="1400" height="820" fill="#fff" />
+
+  <g font-family="Arial, Helvetica, sans-serif" fill="#253545" text-anchor="middle">
+    <g>
+      <circle cx="84" cy="112" r="26" fill="#347cf5" />
+      <path d="M38 178c4-29 22-44 46-44s42 15 46 44" fill="#347cf5" />
+      <text x="84" y="210" font-size="20" font-weight="600">User</text>
+      <path d="M160 145h214" stroke="#253545" stroke-width="3" marker-end="url(#arrow)" />
+      <circle cx="450" cy="145" r="45" fill="#347cf5" />
+      <circle cx="450" cy="145" r="27" fill="none" stroke="#fff" stroke-width="4" />
+      <path d="M424 145h52M450 118c-16 16-16 38 0 54m0-54c16 16 16 38 0 54M430 132h40m-40 26h40" fill="none" stroke="#fff" stroke-width="3" />
+      <text x="450" y="210" font-size="20" font-weight="600">Internet</text>
+      <path d="M512 145h232" stroke="#253545" stroke-width="3" marker-end="url(#arrow)" />
+    </g>
+
+    <rect x="776" y="58" width="578" height="168" rx="12" fill="#eef2f7" />
+    <g fill="#347cf5">
+      <circle cx="906" cy="118" r="33" />
+      <circle cx="1065" cy="118" r="33" />
+      <circle cx="1224" cy="118" r="33" />
+    </g>
+    <g fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M887 121a19 19 0 0 1 37-6 12 12 0 0 1-3 23h-29a10 10 0 0 1-5-17Z" />
+      <path d="M1046 121a19 19 0 0 1 37-6 12 12 0 0 1-3 23h-29a10 10 0 0 1-5-17Z" />
+      <path d="M1205 121a19 19 0 0 1 37-6 12 12 0 0 1-3 23h-29a10 10 0 0 1-5-17Z" />
+    </g>
+    <text x="906" y="185" font-size="18" font-weight="600">Load Balancer</text>
+    <text x="1065" y="185" font-size="18" font-weight="600">Load Balancer</text>
+    <text x="1224" y="185" font-size="18" font-weight="600">Load Balancer</text>
+
+    <path d="M906 226v66h160m-1 0h158m-158 0v42m-160-42v42m318-42v42" fill="none" stroke="#253545" stroke-width="3" />
+    <g fill="#253545">
+      <rect x="834" y="334" width="144" height="46" rx="4" />
+      <rect x="995" y="334" width="144" height="46" rx="4" />
+      <rect x="1156" y="334" width="144" height="46" rx="4" />
+    </g>
+    <g fill="#fff" font-size="17" font-weight="600">
+      <text x="906" y="363">Route Requests</text>
+      <text x="1067" y="363">Route Requests</text>
+      <text x="1228" y="363">Route Requests</text>
+    </g>
+    <path d="M906 380v45m161-45v45m161-45v45" stroke="#253545" stroke-width="3" marker-end="url(#arrow)" />
+
+    <rect x="74" y="400" width="278" height="305" rx="8" fill="#eef2f7" />
+    <path d="M74 408a8 8 0 0 1 8-8h262a8 8 0 0 1 8 8v58H74Z" fill="#347cf5" />
+    <text x="213" y="446" fill="#fff" font-size="24" font-weight="700">Elastic Scaling</text>
+    <g>
+      <rect x="110" y="498" width="94" height="82" rx="8" fill="#fff" />
+      <rect x="222" y="498" width="94" height="82" rx="8" fill="#fff" />
+      <rect x="110" y="602" width="94" height="82" rx="8" fill="#fff" />
+      <rect x="222" y="602" width="94" height="82" rx="8" fill="#fff" />
+      <g transform="translate(128 507) scale(.95)"><use href="#scaling" /></g>
+      <g transform="translate(240 507) scale(.95)"><use href="#scaling" /></g>
+      <g transform="translate(128 611) scale(.95)"><use href="#scaling" /></g>
+      <g transform="translate(240 611) scale(.95)"><use href="#scaling" /></g>
+    </g>
+    <text x="157" y="594" font-size="15" font-weight="600">Scale Out</text>
+    <text x="269" y="594" font-size="15" font-weight="600">Scale Out</text>
+    <text x="157" y="698" font-size="15" font-weight="600">Scale Out</text>
+    <text x="269" y="698" font-size="15" font-weight="600">Scale Out</text>
+
+    <path d="M373 551h253" stroke="#253545" stroke-width="3" marker-start="url(#arrow)" marker-end="url(#arrow)" />
+    <rect x="660" y="412" width="684" height="293" rx="8" fill="none" stroke="#c8d0dc" stroke-width="5" stroke-dasharray="14 12" />
+    <rect x="692" y="444" width="302" height="232" rx="4" fill="#eef2f7" />
+    <rect x="1010" y="444" width="302" height="232" rx="4" fill="#eef2f7" />
+    <path d="M692 452a8 8 0 0 1 8-8h286v40H692Z" fill="#253545" />
+    <path d="M1010 452a8 8 0 0 1 8-8h286v40h-294Z" fill="#253545" />
+    <text x="843" y="471" fill="#fff" font-size="18" font-weight="600">Availability Zone 1</text>
+    <text x="1161" y="471" fill="#fff" font-size="18" font-weight="600">Availability Zone 2</text>
+
+    <g>
+      <g transform="translate(741 512)"><use href="#server" /></g>
+      <g transform="translate(884 512)"><use href="#server" /></g>
+      <g transform="translate(741 596)"><use href="#server" /></g>
+      <g transform="translate(884 596)"><use href="#server" /></g>
+      <g transform="translate(1059 512)"><use href="#server" /></g>
+      <g transform="translate(1202 512)"><use href="#server" /></g>
+      <g transform="translate(1059 596)"><use href="#server" /></g>
+      <g transform="translate(1202 596)"><use href="#server" /></g>
+    </g>
+    <text x="767" y="588" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="910" y="588" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="767" y="672" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="910" y="672" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="1085" y="588" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="1228" y="588" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="1085" y="672" font-size="14" font-weight="600">Cloud Host</text>
+    <text x="1228" y="672" font-size="14" font-weight="600">Cloud Host</text>
+
+    <rect x="660" y="724" width="684" height="64" rx="4" fill="#347cf5" />
+    <text x="1002" y="766" fill="#fff" font-size="24" font-weight="700">Elastic Compute Cluster (ECS)</text>
+  </g>
+</svg>

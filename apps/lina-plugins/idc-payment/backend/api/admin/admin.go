@@ -1,3 +1,7 @@
+// =================================================================================
+// Code generated and maintained by GoFrame CLI tool. DO NOT EDIT.
+// =================================================================================
+
 package admin
 
 import (
@@ -7,18 +11,21 @@ import (
 )
 
 type IAdminV1 interface {
-	PaymentChannelList(context.Context, *v1.PaymentChannelListReq) (*v1.PaymentChannelListRes, error)
-	PaymentChannelCreate(context.Context, *v1.PaymentChannelCreateReq) (*v1.PaymentChannelCreateRes, error)
-	PaymentChannelStatus(context.Context, *v1.PaymentChannelStatusReq) (*v1.PaymentChannelStatusRes, error)
-	PaymentChannelConnectionVerification(context.Context, *v1.PaymentChannelConnectionVerificationReq) (*v1.PaymentChannelConnectionVerificationRes, error)
-	ReconciliationHealth(context.Context, *v1.ReconciliationHealthReq) (*v1.ReconciliationHealthRes, error)
-	ReconciliationBatchList(context.Context, *v1.ReconciliationBatchListReq) (*v1.ReconciliationBatchListRes, error)
-	ReconciliationDifferenceList(context.Context, *v1.ReconciliationDifferenceListReq) (*v1.ReconciliationDifferenceListRes, error)
-	ReconciliationSupplementSubmit(context.Context, *v1.ReconciliationSupplementSubmitReq) (*v1.ReconciliationSupplementSubmitRes, error)
-	ReconciliationSupplementReview(context.Context, *v1.ReconciliationSupplementReviewReq) (*v1.ReconciliationSupplementReviewRes, error)
-	ExceptionFundList(context.Context, *v1.ExceptionFundListReq) (*v1.ExceptionFundListRes, error)
-	ExceptionFundAllocate(context.Context, *v1.ExceptionFundAllocateReq) (*v1.ExceptionFundAllocateRes, error)
-	ExceptionFundRefund(context.Context, *v1.ExceptionFundRefundReq) (*v1.ExceptionFundRefundRes, error)
-	ExceptionFundManualRefundConfirm(context.Context, *v1.ExceptionFundManualRefundConfirmReq) (*v1.ExceptionFundManualRefundConfirmRes, error)
-	ExceptionFundProofUpload(context.Context, *v1.ExceptionFundProofUploadReq) (*v1.ExceptionFundProofUploadRes, error)
+	PaymentChannelList(ctx context.Context, req *v1.PaymentChannelListReq) (res *v1.PaymentChannelListRes, err error)
+	PaymentChannelCreate(ctx context.Context, req *v1.PaymentChannelCreateReq) (res *v1.PaymentChannelCreateRes, err error)
+	PaymentChannelStatus(ctx context.Context, req *v1.PaymentChannelStatusReq) (res *v1.PaymentChannelStatusRes, err error)
+	PaymentChannelConnectionVerification(ctx context.Context, req *v1.PaymentChannelConnectionVerificationReq) (res *v1.PaymentChannelConnectionVerificationRes, err error)
+	PaymentChannelModesSave(ctx context.Context, req *v1.PaymentChannelModesSaveReq) (res *v1.PaymentChannelModesSaveRes, err error)
+	ExceptionFundList(ctx context.Context, req *v1.ExceptionFundListReq) (res *v1.ExceptionFundListRes, err error)
+	ExceptionFundAllocate(ctx context.Context, req *v1.ExceptionFundAllocateReq) (res *v1.ExceptionFundAllocateRes, err error)
+	ExceptionFundRefund(ctx context.Context, req *v1.ExceptionFundRefundReq) (res *v1.ExceptionFundRefundRes, err error)
+	ExceptionFundManualRefundConfirm(ctx context.Context, req *v1.ExceptionFundManualRefundConfirmReq) (res *v1.ExceptionFundManualRefundConfirmRes, err error)
+	ExceptionFundProofUpload(ctx context.Context, req *v1.ExceptionFundProofUploadReq) (res *v1.ExceptionFundProofUploadRes, err error)
+	PaymentPublicAddressGet(ctx context.Context, req *v1.PaymentPublicAddressGetReq) (res *v1.PaymentPublicAddressGetRes, err error)
+	PaymentPublicAddressSave(ctx context.Context, req *v1.PaymentPublicAddressSaveReq) (res *v1.PaymentPublicAddressSaveRes, err error)
+	ReconciliationHealth(ctx context.Context, req *v1.ReconciliationHealthReq) (res *v1.ReconciliationHealthRes, err error)
+	ReconciliationBatchList(ctx context.Context, req *v1.ReconciliationBatchListReq) (res *v1.ReconciliationBatchListRes, err error)
+	ReconciliationDifferenceList(ctx context.Context, req *v1.ReconciliationDifferenceListReq) (res *v1.ReconciliationDifferenceListRes, err error)
+	ReconciliationSupplementSubmit(ctx context.Context, req *v1.ReconciliationSupplementSubmitReq) (res *v1.ReconciliationSupplementSubmitRes, err error)
+	ReconciliationSupplementReview(ctx context.Context, req *v1.ReconciliationSupplementReviewReq) (res *v1.ReconciliationSupplementReviewRes, err error)
 }

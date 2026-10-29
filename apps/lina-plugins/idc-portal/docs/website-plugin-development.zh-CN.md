@@ -92,7 +92,7 @@ business_extensions:
 
 ## 四、公开商品与内容接口
 
-官网只使用匿名白名单，不持有后台令牌。当前实现包括 `GET /x/idc-core/api/v1/public/catalog/products`、商品详情及 `purchase-configuration`、`public/content`和 `public/commerce`。开发文档中的接口索引直接读取当前服务`/api.json`，可按路径搜索并查看请求、响应字段；完整OpenAPI也可新窗口打开或下载。同源代理和部署边界见本文“官网应用部署与调试”及根安装说明。货币金额沿用服务返回的最小单位字符串，不能在页面重新算出一个价格代替真实报价。购买跳转客户应用完成身份、结账和付款。
+官网只使用匿名白名单，不持有后台令牌。当前实现包括 `GET /x/idc-core/api/v1/public/catalog/products`、商品详情及 `purchase-configuration`、`public/content`和 `public/commerce`。开发文档中的接口索引直接读取当前服务`/api.json`，可按路径搜索并查看请求、响应字段；完整OpenAPI也可新窗口打开或下载。同源代理和部署边界见本文“官网应用部署与调试”及根安装说明。货币金额沿用服务返回的最小单位字符串，不能在页面重新算出一个价格代替真实报价。官网负责选配、购物车和确认订单，借助配置客户中心的受信任会话桥完成登录；订单创建后再进入客户账单和支付流程。模板不得自行伪造会话、价格或付款成功。
 
 ## 五、构建、安装与升级
 

@@ -31,7 +31,7 @@ test("TC-33: 商品介绍双语编辑、冲突保留和重载", async ({ adminPa
   await catalog.goto();
   await catalog.openProductDetail("product-manual-service");
   await screenshot("product-description-loaded");
-  await adminPage.getByTestId("catalog-description-edit").click();
+  await catalog.selectEditSection("基本资料");
   await expect(adminPage.getByTestId("catalog-description-editor")).toContainText("中文商品名称");
   await expect(adminPage.getByTestId("catalog-description-editor")).toContainText("英文商品介绍");
   await adminPage.getByTestId("catalog-description-summary-zh").fill("专业迁移服务");
@@ -46,6 +46,6 @@ test("TC-33: 商品介绍双语编辑、冲突保留和重载", async ({ adminPa
   await adminPage.getByTestId("catalog-description-save").click();
   await expect(adminPage.getByText("商品介绍已保存")).toBeVisible();
   await expect(catalog.detailDrawer).toContainText("专业迁移服务");
-  await expect(adminPage.getByTestId("catalog-description-editor")).toHaveCount(0);
+  await expect(adminPage.getByTestId("catalog-description-editor")).toBeVisible();
   await screenshot("product-description-saved");
 });

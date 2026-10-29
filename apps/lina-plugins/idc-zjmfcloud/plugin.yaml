@@ -1,6 +1,6 @@
 id: idc-zjmfcloud
 name: IDC ZJMFCloud Provider
-version: v0.3.0
+version: v0.3.21
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -24,7 +24,7 @@ dependencies:
     - id: idc-core
       version: ">=0.1.85 <1.0.0"
     - id: idc-resource
-      version: ">=0.1.33 <1.0.0"
+      version: ">=0.1.73 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -97,6 +97,124 @@ business_extensions:
           required: true
           minimum: "1"
           maximum: "1000000"
+        - key: ip_count
+          type: integer
+          label: { en-US: "IPv4 addresses", zh-CN: "IPv4数量" }
+          description: { en-US: "Leave blank to retain the package or channel default.", zh-CN: "留空沿用套餐或渠道默认值；填写后按此值开通。" }
+          minimum: "0"
+          maximum: "1024"
+        - key: inbound_bandwidth
+          type: integer
+          label: { en-US: "Inbound bandwidth (Mbps)", zh-CN: "入站带宽（Mbps）" }
+          description: { en-US: "Leave blank to retain the package or channel default.", zh-CN: "留空沿用套餐或渠道默认值；填写后按此值开通。" }
+          minimum: "1"
+          maximum: "1000000"
+        - key: outbound_bandwidth
+          type: integer
+          label: { en-US: "Outbound bandwidth (Mbps)", zh-CN: "出站带宽（Mbps）" }
+          description: { en-US: "Leave blank to retain the package or channel default.", zh-CN: "留空沿用套餐或渠道默认值；填写后按此值开通。" }
+          minimum: "1"
+          maximum: "1000000"
+        - key: node_priority
+          type: single_select
+          label: { en-US: "Node selection priority", zh-CN: "节点选择优先级" }
+          static_candidates:
+            - value: "1"
+              label: { en-US: "Fewest instances", zh-CN: "实例数量最少" }
+            - value: "2"
+              label: { en-US: "Lowest CPU load", zh-CN: "CPU负载最低" }
+            - value: "3"
+              label: { en-US: "Lowest memory usage", zh-CN: "内存占用最低" }
+            - value: "4"
+              label: { en-US: "Fill nodes in order", zh-CN: "按节点顺序填满" }
+        - key: traffic_bill_type
+          type: single_select
+          label: { en-US: "Traffic reset cycle", zh-CN: "流量重置周期" }
+          static_candidates:
+            - value: month
+              label: { en-US: "Calendar month", zh-CN: "每月一日重置" }
+            - value: last_30days
+              label: { en-US: "Service month", zh-CN: "按开通日每月重置" }
+        - key: system_disk_io_limit
+          type: single_line
+          label: { en-US: "System disk performance", zh-CN: "系统盘性能" }
+          description: { en-US: "Read MB/s, write MB/s, read IOPS, write IOPS. Example: 500,500,2000,2000. Zero means unlimited.", zh-CN: "依次填写读取MB/s、写入MB/s、读取IOPS、写入IOPS，例如500,500,2000,2000；0表示不限制。不要同时设置同一磁盘的单项性能限制。" }
+          maximum_length: 43
+        - key: data_disk_io_limit
+          type: single_line
+          label: { en-US: "Data disk performance", zh-CN: "数据盘性能" }
+          description: { en-US: "Read MB/s, write MB/s, read IOPS, write IOPS. Example: 500,500,2000,2000. Zero means unlimited.", zh-CN: "依次填写读取MB/s、写入MB/s、读取IOPS、写入IOPS，例如500,500,2000,2000；0表示不限制。不要同时设置同一磁盘的单项性能限制。" }
+          maximum_length: 43
+        - key: network_type
+          type: single_select
+          label: { en-US: "Network type", zh-CN: "网络类型" }
+          description: { en-US: "Leave blank to retain the package default. VPC creates a dedicated network for this server.", zh-CN: "留空沿用套餐默认；VPC会为此服务器创建独立网络。" }
+          static_candidates:
+            - value: normal
+              label: { en-US: "Classic network", zh-CN: "经典网络" }
+            - value: vpc
+              label: { en-US: "Private network (VPC)", zh-CN: "私有网络（VPC）" }
+        - key: port
+          type: single_line
+          label: { en-US: "Login port", zh-CN: "登录端口" }
+          description: { en-US: "Enter 1–65535 or auto for a random port. Leave blank to retain the system default.", zh-CN: "填写1至65535，或auto表示随机端口；留空沿用系统默认。" }
+          maximum_length: 5
+        - key: system_read_mbps
+          type: integer
+          label: { en-US: "System disk read speed (MB/s)", zh-CN: "系统盘读取速度（MB/s）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_write_mbps
+          type: integer
+          label: { en-US: "System disk write speed (MB/s)", zh-CN: "系统盘写入速度（MB/s）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_read_iops
+          type: integer
+          label: { en-US: "System disk read IOPS (IOPS)", zh-CN: "系统盘读取IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_write_iops
+          type: integer
+          label: { en-US: "System disk write IOPS (IOPS)", zh-CN: "系统盘写入IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_read_mbps
+          type: integer
+          label: { en-US: "Data disk read speed (MB/s)", zh-CN: "数据盘读取速度（MB/s）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_write_mbps
+          type: integer
+          label: { en-US: "Data disk write speed (MB/s)", zh-CN: "数据盘写入速度（MB/s）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_read_iops
+          type: integer
+          label: { en-US: "Data disk read IOPS (IOPS)", zh-CN: "数据盘读取IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_write_iops
+          type: integer
+          label: { en-US: "Data disk write IOPS (IOPS)", zh-CN: "数据盘写入IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit. Leave blank to retain the package or provider default.", zh-CN: "填0表示不限速；留空沿用套餐或上游默认。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: hostname_customer_input
+          type: boolean
+          label: { en-US: Allow customers to enter hostname, zh-CN: 允许客户填写主机名 }
+          description: { en-US: Leave the customer input blank to generate automatically., zh-CN: 客户留空时自动生成。 }
+        - key: password_customer_input
+          type: boolean
+          label: { en-US: Allow customers to enter password, zh-CN: 允许客户填写主机密码 }
+          description: { en-US: Leave the customer input blank to generate automatically., zh-CN: 客户留空时自动生成。 }
         - key: hostname_prefix
           type: single_line
           label: { en-US: Hostname prefix, zh-CN: 主机名前缀 }
@@ -150,37 +268,139 @@ business_extensions:
         - key: cpu
           type: integer
           label: { en-US: "CPU cores", zh-CN: "处理器核心数" }
-          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
           minimum: "1"
           maximum: "1024"
         - key: memory_gib
           type: integer
           label: { en-US: "Memory (GiB)", zh-CN: "内存（GiB）" }
-          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
           minimum: "1"
           maximum: "1024"
         - key: system_disk
           type: integer
           label: { en-US: "System disk (GiB)", zh-CN: "系统盘（GiB）" }
-          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
           minimum: "1"
           maximum: "1048576"
         - key: data_disk
           type: integer
           label: { en-US: "Data disk (GiB, zero means none)", zh-CN: "数据盘（GiB，0表示不要）" }
-          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
           minimum: "0"
           maximum: "1048576"
         - key: bandwidth
           type: integer
           label: { en-US: "Bandwidth (Mbps)", zh-CN: "带宽（Mbps）" }
-          description: { en-US: Leave blank to use the package size., zh-CN: 留空使用套餐默认配置，选择后按配置价格计费。 }
           minimum: "1"
           maximum: "1000000"
+        - key: ip_count
+          type: integer
+          label: { en-US: "IPv4 addresses", zh-CN: "IPv4数量" }
+          minimum: "0"
+          maximum: "1024"
+        - key: inbound_bandwidth
+          type: integer
+          label: { en-US: "Inbound bandwidth (Mbps)", zh-CN: "入站带宽（Mbps）" }
+          minimum: "1"
+          maximum: "1000000"
+        - key: outbound_bandwidth
+          type: integer
+          label: { en-US: "Outbound bandwidth (Mbps)", zh-CN: "出站带宽（Mbps）" }
+          minimum: "1"
+          maximum: "1000000"
+        - key: node_priority
+          type: single_select
+          label: { en-US: "Node selection priority", zh-CN: "节点选择优先级" }
+          static_candidates:
+            - value: "1"
+              label: { en-US: "Fewest instances", zh-CN: "实例数量最少" }
+            - value: "2"
+              label: { en-US: "Lowest CPU load", zh-CN: "CPU负载最低" }
+            - value: "3"
+              label: { en-US: "Lowest memory usage", zh-CN: "内存占用最低" }
+            - value: "4"
+              label: { en-US: "Fill nodes in order", zh-CN: "按节点顺序填满" }
+        - key: traffic_bill_type
+          type: single_select
+          label: { en-US: "Traffic reset cycle", zh-CN: "流量重置周期" }
+          static_candidates:
+            - value: month
+              label: { en-US: "Calendar month", zh-CN: "每月一日重置" }
+            - value: last_30days
+              label: { en-US: "Service month", zh-CN: "按开通日每月重置" }
+        - key: system_disk_io_limit
+          type: single_line
+          label: { en-US: "System disk performance", zh-CN: "系统盘性能" }
+          description: { en-US: "Read MB/s, write MB/s, read IOPS, write IOPS. Example: 500,500,2000,2000. Zero means unlimited.", zh-CN: "依次填写读取MB/s、写入MB/s、读取IOPS、写入IOPS，例如500,500,2000,2000；0表示不限制。不要同时设置同一磁盘的单项性能限制。" }
+          maximum_length: 43
+        - key: data_disk_io_limit
+          type: single_line
+          label: { en-US: "Data disk performance", zh-CN: "数据盘性能" }
+          description: { en-US: "Read MB/s, write MB/s, read IOPS, write IOPS. Example: 500,500,2000,2000. Zero means unlimited.", zh-CN: "依次填写读取MB/s、写入MB/s、读取IOPS、写入IOPS，例如500,500,2000,2000；0表示不限制。不要同时设置同一磁盘的单项性能限制。" }
+          maximum_length: 43
+        - key: network_type
+          type: single_select
+          label: { en-US: "Network type", zh-CN: "网络类型" }
+          description: { en-US: "VPC creates a dedicated network for this server.", zh-CN: "VPC会为此服务器创建独立网络。" }
+          static_candidates:
+            - value: normal
+              label: { en-US: "Classic network", zh-CN: "经典网络" }
+            - value: vpc
+              label: { en-US: "Private network (VPC)", zh-CN: "私有网络（VPC）" }
+        - key: port
+          type: single_line
+          label: { en-US: "Login port", zh-CN: "登录端口" }
+          description: { en-US: "Enter 1–65535 or auto for a random port.", zh-CN: "填写1至65535，或auto表示随机端口。" }
+          maximum_length: 5
+        - key: system_read_mbps
+          type: integer
+          label: { en-US: "System disk read speed (MB/s)", zh-CN: "系统盘读取速度（MB/s）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_write_mbps
+          type: integer
+          label: { en-US: "System disk write speed (MB/s)", zh-CN: "系统盘写入速度（MB/s）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_read_iops
+          type: integer
+          label: { en-US: "System disk read IOPS (IOPS)", zh-CN: "系统盘读取IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: system_write_iops
+          type: integer
+          label: { en-US: "System disk write IOPS (IOPS)", zh-CN: "系统盘写入IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_read_mbps
+          type: integer
+          label: { en-US: "Data disk read speed (MB/s)", zh-CN: "数据盘读取速度（MB/s）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_write_mbps
+          type: integer
+          label: { en-US: "Data disk write speed (MB/s)", zh-CN: "数据盘写入速度（MB/s）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_read_iops
+          type: integer
+          label: { en-US: "Data disk read IOPS (IOPS)", zh-CN: "数据盘读取IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
+        - key: data_write_iops
+          type: integer
+          label: { en-US: "Data disk write IOPS (IOPS)", zh-CN: "数据盘写入IOPS（IOPS）" }
+          description: { en-US: "0 removes this limit.", zh-CN: "填0表示不限速。" }
+          minimum: "0"
+          maximum: "2147483647"
         - key: snapshot_count
           type: integer
           label: { en-US: "Number of snapshots", zh-CN: "快照数量" }
-          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          description: { en-US: "0 disables this feature.", zh-CN: "填0不开通且不收费。" }
           minimum: "0"
           maximum: "1000000"
         - key: snapshot_unlimited
@@ -193,7 +413,7 @@ business_extensions:
         - key: backup_count
           type: integer
           label: { en-US: "Number of backups", zh-CN: "备份数量" }
-          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          description: { en-US: "0 disables this feature.", zh-CN: "填0不开通且不收费。" }
           minimum: "0"
           maximum: "1000000"
         - key: backup_unlimited
@@ -206,7 +426,7 @@ business_extensions:
         - key: nat_forward_count
           type: integer
           label: { en-US: "Number of NAT forwarding rules", zh-CN: "NAT转发数量" }
-          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          description: { en-US: "0 disables this feature.", zh-CN: "填0不开通且不收费。" }
           minimum: "0"
           maximum: "1000000"
         - key: nat_forward_unlimited
@@ -219,7 +439,7 @@ business_extensions:
         - key: nat_website_count
           type: integer
           label: { en-US: "Number of NAT websites", zh-CN: "共享建站数量" }
-          description: { en-US: "0 disables this feature. Leave blank to keep the package default.", zh-CN: "填0不开通且不收费；留空沿用套餐默认。" }
+          description: { en-US: "0 disables this feature.", zh-CN: "填0不开通且不收费。" }
           minimum: "0"
           maximum: "1000000"
         - key: nat_website_unlimited
@@ -249,7 +469,9 @@ business_extensions:
         capability:
           enUS: ZJMFCloud server configuration with idc-resource-owned provisioning and ongoing management
           zhCN: 智简魔方云服务器配置，以及由 idc-resource 负责的开通和持续管理
-        merchantCustomerFields: [cpu, memory_gib, system_disk, data_disk, bandwidth, snapshot_count, snapshot_unlimited, backup_count, backup_unlimited, nat_forward_count, nat_forward_unlimited, nat_website_count, nat_website_unlimited]
+        productChoiceFields: [port, system_disk_io_limit, data_disk_io_limit]
+        customerProductFields: {memory_gib: memory}
+        merchantCustomerFields: [node_priority, traffic_bill_type, system_disk_io_limit, data_disk_io_limit, network_type, port, system_read_mbps, system_write_mbps, system_read_iops, system_write_iops, data_read_mbps, data_write_mbps, data_read_iops, data_write_iops, cpu, memory_gib, system_disk, data_disk, bandwidth, ip_count, inbound_bandwidth, outbound_bandwidth, snapshot_count, snapshot_unlimited, backup_count, backup_unlimited, nat_forward_count, nat_forward_unlimited, nat_website_count, nat_website_unlimited]
         granularity: per_quantity_unit
         ongoingManagement: true
         renewalSupport: unsupported
@@ -289,11 +511,14 @@ business_extensions:
       - operation.execute
       - task.query
       - resource.query
+      - principal.lookup
+      - principal.create
     provider_metadata:
       type: resource-provider-contract
       version: v1
       values:
         providerId: zjmfcloud-v1
+        apiPathPrefix: /v1
         authenticationProfiles:
           profiles:
             default:
@@ -303,19 +528,6 @@ business_extensions:
               tokenJSONPath: [$]
               tokenHeader: Access-Token
               sessionTTLSeconds: 3600
-
-admin_surfaces:
-  - key: server-management
-    version: v1
-    title: 魔方云服务器管理
-    icon: lucide:server-cog
-    permission: idc:admin:resource:server-batch:view
-    slot: admin.resource-operations
-    route: zjmfcloud-servers
-    entry: admin/server-management/index.html
-    bridge_capabilities:
-      - zjmfcloud-servers.admin.v1
-    status: active
 
 customer_surfaces:
   - key: servers

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import type { VbenFormProps } from '@vben/common-ui';
-import { useVbenDrawer } from '@vben/common-ui';
+import { useVbenDrawer, useVbenModal } from '@vben/common-ui';
 import { Alert, message } from 'ant-design-vue';
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
 import { searchCustomerOptions, type CustomerSelectOption } from '../customer-selection';
 import { majorToMinorAmount, minorToMajorAmount } from '../catalog-money';
 import { salesList, salesPriceLevels, salesPriceProducts, salesProducts, salesSave, salesStaff, type SalesProduct, type SalesRow, type SalesSection, type SalesTerm } from '../sales-management-client';
+const props = defineProps<{modal?:boolean}>();
 const emit = defineEmits<{ saved: [] }>();
 const tr = (key: string) => $t(`plugin.idc-core.salesManagement.${key}`);
 const section = ref<SalesSection>('levels');
@@ -82,7 +83,7 @@ async function refreshSchema() { await formApi.setState({ schema: schema() }); }
 function percentage(value: unknown) { const text = String(value || '').trim(); if (!/^\d{1,3}(?:\.\d{1,2})?$/.test(text)) throw new Error('invalid'); const [integer, fraction = ''] = text.split('.'); const points = Number(integer) * 100 + Number(fraction.padEnd(2, '0')); if (points > 10000) throw new Error('invalid'); return points; }
 async function submit() {
   if (busy.value || !(await formApi.validate()).valid) return;
-  busy.value = true; drawer.lock(true); error.value = '';
+  busy.value = true; panel.lock(true); error.value = '';
   try {
     const values = await formApi.getValues<Record<string, any>>();
     const row = original.value;
@@ -106,15 +107,15 @@ async function submit() {
       const next = JSON.stringify(body); if (next !== fingerprint) { fingerprint = next; requestKey = `sales-payout-${crypto.randomUUID()}`; } body.idempotencyKey = requestKey;
     }
     await salesSave(section.value === 'commission/accounts' ? 'commission/payouts' : section.value, body, !!row && section.value !== 'commission/accounts');
-    message.success(tr('saved')); emit('saved'); drawer.close();
-  } catch { error.value = tr('saveFailed'); } finally { busy.value = false; drawer.lock(false); }
+    message.success(tr('saved')); emit('saved'); panel.close();
+  } catch { error.value = tr('saveFailed'); } finally { busy.value = false; panel.lock(false); }
 }
-const [Drawer, drawer] = useVbenDrawer({
+const panelOptions = {
   onConfirm: submit,
-  async onOpenChange(open) {
+  async onOpenChange(open:boolean) {
     if (!open) { opening++; return; }
     const sequence = ++opening;
-    const data = drawer.getData<{ section: SalesSection; row?: SalesRow; priceTarget?: 'customer' | 'level'; priceProduct?: { productNo: string; name: string } }>();
+    const data = panel.getData<{ section: SalesSection; row?: SalesRow; priceTarget?: 'customer' | 'level'; priceProduct?: { productNo: string; name: string } }>();
     priceTarget = data.priceTarget; priceProduct = data.priceProduct;
     section.value = data.section; original.value = data.row; error.value = ''; fingerprint = ''; requestKey = '';
     customers = []; referrers = []; levels = []; products = []; staff = []; terms = []; currencies = [];
@@ -148,14 +149,18 @@ const [Drawer, drawer] = useVbenDrawer({
     }
     if (!row?.currencyCode && currencies.length) await formApi.setFieldValue('currencyCode', currencies[0]);
   },
-});
+};
+const [Editor,panel] = props.modal ? useVbenModal(panelOptions) : useVbenDrawer(panelOptions);
 </script>
 <template>
-  <Drawer :title="section === 'commission/accounts' ? tr('recordPayout') : tr(original ? 'edit' : 'add')" class="w-[580px]">
+  <Editor :confirm-text="modal ? $t('plugin.idc-core.catalog.merchantWorkspace.save') : undefined" :title="section === 'commission/accounts' ? tr('recordPayout') : props.modal && section === 'prices' ? tr(original ? 'editLevelPrice' : 'addAgentPrice') : tr(original ? 'edit' : 'add')" class="w-[580px] max-w-[95vw]" :class="{'catalog-agent-price-modal':modal}">
     <div data-testid="sales-management-drawer">
-    <Alert class="mb-4" type="info" show-icon :message="section === 'prices' && priceTarget ? tr(priceTarget === 'customer' ? 'customPriceHelp' : 'levelPriceHelp') : tr(`help.${section.replace('commission/', '')}`)" />
+    <Alert v-if="!props.modal" class="mb-4" type="info" show-icon :message="section === 'prices' && priceTarget ? tr(priceTarget === 'customer' ? 'customPriceHelp' : 'levelPriceHelp') : tr(`help.${section.replace('commission/', '')}`)" />
     <Form />
     <Alert v-if="error" class="mt-4" type="error" show-icon :message="error" data-testid="sales-form-error" />
     </div>
-  </Drawer>
+  </Editor>
 </template>
+<style scoped>
+:global(.catalog-agent-price-modal) {width:min(580px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;}
+</style>

@@ -2,6 +2,7 @@ package resourcecap
 
 import (
 	"encoding/json"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -62,6 +63,7 @@ type hostAuthenticationPolicy struct {
 
 type hostInterfaceSettings struct {
 	Policy                      hostAuthenticationPolicy `json:"policy"`
+	APIPathPrefix               string                   `json:"apiPathPrefix,omitempty"`
 	InterfaceSettingsProjection []string                 `json:"interfaceSettingsProjection,omitempty"`
 }
 
@@ -108,11 +110,14 @@ func ValidateProviderMetadata(metadata *capmodel.BusinessExtensionProviderMetada
 	if metadata == nil || metadata.Type != DynamicProviderMetadataType || metadata.Version != DynamicProviderContractVersion || metadata.Values == nil {
 		return gerror.New("resource dynamic Provider metadata is invalid")
 	}
-	allowedKeys := map[string]struct{}{"providerId": {}, "authenticationProfiles": {}, "interfaceSettingsProjection": {}}
+	allowedKeys := map[string]struct{}{"providerId": {}, "authenticationProfiles": {}, "interfaceSettingsProjection": {}, "apiPathPrefix": {}}
 	for key := range metadata.Values {
 		if _, ok := allowedKeys[key]; !ok {
 			return gerror.New("resource dynamic Provider metadata is invalid")
 		}
+	}
+	if _, err := declaredAPIPathPrefix(metadata); err != nil {
+		return err
 	}
 	profiles, projection, err := decodeProviderProfiles(metadata)
 	if err != nil {
@@ -286,7 +291,11 @@ func CompileInterfaceSettings(payload json.RawMessage, metadata *capmodel.Busine
 	if !ok {
 		return nil, gerror.New("resource Provider authentication profile is unavailable")
 	}
-	compiled, err := json.Marshal(hostInterfaceSettings{Policy: compileHostAuthenticationPolicy(profile), InterfaceSettingsProjection: projection})
+	prefix, err := declaredAPIPathPrefix(metadata)
+	if err != nil {
+		return nil, err
+	}
+	compiled, err := json.Marshal(hostInterfaceSettings{Policy: compileHostAuthenticationPolicy(profile), InterfaceSettingsProjection: projection, APIPathPrefix: prefix})
 	if err != nil {
 		return nil, err
 	}
@@ -326,4 +335,54 @@ func DecodeHostAuthenticationSettings(payload json.RawMessage) (ProviderAuthenti
 		return ProviderAuthenticationProfile{}, gerror.New("resource Provider host authentication settings are invalid")
 	}
 	return host.Policy.authenticationProfile()
+}
+
+// declaredAPIPathPrefix accepts one connector-owned API version segment only.
+func declaredAPIPathPrefix(metadata *capmodel.BusinessExtensionProviderMetadata) (string, error) {
+	raw, exists := metadata.Values["apiPathPrefix"]
+	if !exists {
+		return "", nil
+	}
+	prefix, ok := raw.(string)
+	if !ok || len(prefix) > 16 || !providerAPIPrefixPattern.MatchString(prefix) {
+		return "", gerror.New("resource Provider API path prefix is invalid")
+	}
+	return prefix, nil
+}
+
+var providerAPIPrefixPattern = regexp.MustCompile(`^/v[0-9]+$`)
+
+// ResolveInterfaceAPIEndpoint adds the connector-owned API prefix to the
+// administrator's root address. The prefix remains in host-only compiled policy,
+// never in guest configuration or user-entered settings; an existing matching
+// version is preserved and an incompatible explicit version is rejected.
+func ResolveInterfaceAPIEndpoint(endpoint string, payload json.RawMessage) (string, error) {
+	if len(payload) == 0 {
+		return endpoint, nil
+	}
+	var values map[string]json.RawMessage
+	var host hostInterfaceSettings
+	if json.Unmarshal(payload, &values) != nil || (len(values[hostInterfaceSettingsKey]) > 0 && json.Unmarshal(values[hostInterfaceSettingsKey], &host) != nil) {
+		return "", gerror.New("resource Provider host settings are invalid")
+	}
+	if host.APIPathPrefix == "" {
+		return endpoint, nil
+	}
+	if len(host.APIPathPrefix) > 16 || !providerAPIPrefixPattern.MatchString(host.APIPathPrefix) {
+		return "", gerror.New("resource Provider API path prefix is invalid")
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil {
+		return "", gerror.Wrap(err, "parse resource Provider root address")
+	}
+	base := strings.TrimRight(parsed.Path, "/")
+	last := base[strings.LastIndex(base, "/")+1:]
+	if providerAPIPrefixPattern.MatchString("/"+last) && "/"+last != host.APIPathPrefix {
+		return "", gerror.New("resource Provider API version is incompatible")
+	}
+	if !strings.HasSuffix(base, host.APIPathPrefix) {
+		base += host.APIPathPrefix
+	}
+	parsed.Path = base
+	return parsed.String(), nil
 }

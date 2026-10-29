@@ -9,6 +9,7 @@
     "test:requests": "node ../../../lina-vben/node_modules/vitest/vitest.mjs run --config vitest.requests.config.mjs",
     "test:typecheck": "vue-tsc -p tsconfig.tests.json --noEmit",
     "typecheck": "vue-tsc --noEmit",
+    "typecheck:catalog": "vue-tsc --noEmit --skipLibCheck -p tsconfig.catalog.json",
     "verify:bundle": "node scripts/verify-build.mjs"
   },
   "dependencies": {

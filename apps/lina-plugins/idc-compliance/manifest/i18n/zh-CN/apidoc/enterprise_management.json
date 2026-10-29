@@ -10,7 +10,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseItem.fields.submittedAt.dc": "Unix 毫秒格式的提交时间",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseItem.fields.updatedAt.dc": "Unix 毫秒格式的最后更新时间",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseItem.fields.version.dc": "乐观并发版本",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.legalName.dc": "脱敏后的企业法定名称",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.registrationCountryCode.dc": "登记国家代码",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.registrationIdentifier.dc": "脱敏后的企业登记标识",
@@ -21,7 +20,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.agentIdentityNumber.dc": "脱敏后的授权经办人证件号码，不存在时为空",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.industryCode.dc": "可选行业编码",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaskedLegalProfile.fields.applicantRoleCode.dc": "申请人法定角色码",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.materialNo.dc": "不透明材料编号",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.materialTypeCode.dc": "企业认证材料类型码",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.sequenceNo.dc": "材料顺序号",
@@ -30,13 +28,11 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.statusCode.dc": "材料留存状态码",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.retentionUntil.dc": "Unix 毫秒格式的留存截止时间，未安排时为空",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialItem.fields.legalHold.dc": "法律保全是否阻止普通处置",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewResult.fields.caseNo.dc": "企业实名认证案件编号",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewResult.fields.statusCode.dc": "变更后的案件状态",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewResult.fields.decisionReasonCode.dc": "稳定审核原因码，审核中时为空",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewResult.fields.version.dc": "变更后的乐观并发版本",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewResult.fields.reused.dc": "是否重放了同一个幂等结果",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListReq.meta.summary": "查询企业认证案件列表",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListReq.meta.dc": "返回一页有界的已提交企业认证案件及授权范围内的准确总数，不返回法定资料原文、材料原件或存储引用。",
@@ -47,7 +43,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListReq.fields.cursor.dc": "上一页响应返回的不透明游标",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListRes.fields.items.dc": "已提交的企业认证案件",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseListRes.fields.nextCursor.dc": "下一页不透明游标，最后一页为空",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseGetReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseGetReq.meta.summary": "查询企业认证案件详情",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseGetReq.meta.dc": "返回一个脱敏法定资料投影和一批有界材料元数据；查看原件必须使用独立的当前有效登录单次访问流程。",
@@ -59,7 +54,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseDetail.fields.verifiedAt.dc": "Unix 毫秒格式的认证通过时间，未通过时为空",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseDetail.fields.rejectedAt.dc": "Unix 毫秒格式的驳回时间，未驳回时为空",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationCaseDetail.fields.expiresAt.dc": "Unix 毫秒格式的认证过期时间，未配置时为空",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateReq.meta.summary": "创建企业认证原件单次访问上下文",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateReq.meta.dc": "在精确原件访问授权和近期完整登录通过后，签发短期、会话绑定、目标绑定且只能消费一次的上下文，不创建永久地址。",
@@ -68,7 +62,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateReq.fields.materialNo.dc": "企业认证材料编号",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateRes.fields.accessContext.dc": "不透明、已签名、会话绑定且只能使用一次的访问上下文",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialAccessCreateRes.fields.expiresAt.dc": "Unix 毫秒格式的访问上下文硬过期时间",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.meta.summary": "下载一份企业认证原件",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.meta.dc": "消费一个当前有效登录、会话绑定和目标绑定的访问上下文，追加不可变逐次查看审计，并以禁止缓存的附件流返回认证解密后的原件。",
@@ -76,7 +69,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.fields.caseNo.dc": "企业实名认证案件编号",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.fields.materialNo.dc": "企业认证材料编号",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationMaterialContentCreateReq.fields.accessContext.dc": "原件访问上下文接口返回的不透明上下文",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateReq.meta.summary": "开始企业认证人工审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateReq.meta.dc": "使用精确权限、乐观并发、幂等和不可变审计，把待审核或需要复核的企业案件转为审核中。",
@@ -85,7 +77,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateReq.fields.expectedVersion.dc": "后台最后读取到的案件版本",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateReq.fields.idempotencyKey.dc": "只随本次 JSON 命令传输的调用方重试键",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationReviewStartCreateRes.fields.item.dc": "变更后的审核状态",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateReq.meta.summary": "批准企业认证案件",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateReq.meta.dc": "只批准服务端选定且已认证的加密法定资料快照；请求不能提交或覆盖法定资料，企业登记标识重复时转为需要复核。",
@@ -94,7 +85,6 @@
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateReq.fields.expectedVersion.dc": "后台最后读取到的案件版本",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateReq.fields.idempotencyKey.dc": "只随本次 JSON 命令传输的调用方重试键",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationApprovalCreateRes.fields.item.dc": "认证通过或需要复核的结果",
-
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationRejectionCreateReq.meta.tags": "IDC 合规企业认证审核",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationRejectionCreateReq.meta.summary": "驳回企业认证案件",
   "plugins.idc_compliance.api.admin.v1.EnterpriseVerificationRejectionCreateReq.meta.dc": "使用面向客户的稳定原因码、乐观并发、幂等和不可变审计，驳回审核中或需要复核的企业案件。",

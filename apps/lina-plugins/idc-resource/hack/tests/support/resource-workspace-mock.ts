@@ -1,9 +1,23 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { isAbsolute, relative, resolve } from "node:path";
 import type { Page } from "@host-tests/support/playwright";
 
 // Project the actual menu declaration and retain ancestors of granted child pages.
 // This reproduces the host's role filtering without inventing workspace grants.
 export async function installResourceWorkspaceMenus(page: Page, permissions: string[]) {
+  const staticUI = process.env.E2E_STATIC_UI_DIR;
+  if (staticUI) {
+    const state = JSON.parse(readFileSync(new URL("../../../../../../hack/tests/temp/storage-state/admin.json", import.meta.url), "utf8"));
+    await page.addInitScript((entries: Array<{ name: string; value: string }>) => {
+      for (const item of entries) localStorage.setItem(item.name, item.value);
+    }, state.origins[0]?.localStorage ?? []);
+  }
+  if (staticUI) await page.route(url => url.pathname.startsWith("/admin/"), route => {
+    const pathname = new URL(route.request().url()).pathname.replace(/^\/admin\//u, "");
+    const file = resolve(staticUI, pathname);
+    const path = relative(staticUI, file);
+    return route.fulfill({ path: path && !path.startsWith("..") && !isAbsolute(path) && existsSync(file) ? file : resolve(staticUI, "index.html") });
+  });
   const manifest = readFileSync(new URL("../../../plugin.yaml", import.meta.url), "utf8");
   const menus = [...manifest.matchAll(/^  - key: (plugin:idc-resource:[^\n]+)\n([\s\S]*?)(?=^  - key: |$(?![\s\S]))/gm)];
   const specs = menus.map((match) => {
@@ -13,7 +27,7 @@ export async function installResourceWorkspaceMenus(page: Page, permissions: str
       query: value("query_param") ? JSON.parse(value("query_param").slice(1, -1)) : undefined };
   });
   const selected = new Set<string>();
-  for (const spec of specs.filter((item) => item.type === "M" && permissions.includes(item.permission))) {
+  for (const spec of specs.filter((item) => permissions.includes(item.permission))) {
     let current: typeof spec | undefined = spec;
     while (current) {
       selected.add(current.key);
@@ -25,7 +39,7 @@ export async function installResourceWorkspaceMenus(page: Page, permissions: str
     meta: { title: `menu.${spec.key}.title`, hideInMenu: spec.hidden, authority: spec.permission, query: spec.query },
     children: specs.filter((item) => selected.has(item.key) && item.parent === spec.key && item.type === "M").map(route),
   });
-  const roots = specs.filter((item) => selected.has(item.key) && item.parent === "plugin:idc-core:resource-operations");
+  const roots = specs.filter((item) => selected.has(item.key) && item.parent === "plugin:idc-core:resource-operations" && item.type === "M");
   await page.route("**/api/v1/menus/all", (request) => request.fulfill({ json: {
     code: 0, message: "success", data: { list: [{ name: "ResourceOperations", path: "/idc-resources",
       component: "BasicLayout", meta: { title: "服务器与资源" }, children: roots.map(route) }] },
@@ -34,6 +48,7 @@ export async function installResourceWorkspaceMenus(page: Page, permissions: str
     const response = await request.fetch();
     const payload = await response.json();
     payload.data.permissions = permissions;
+    payload.data.homePath = "/idc/resource/provider-configuration";
     await request.fulfill({ response, json: payload });
   });
   for (const locale of ["zh-CN", "en-US"]) {

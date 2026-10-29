@@ -1,6 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import type {
@@ -9,12 +9,30 @@ import type {
   Route,
 } from "../../../../../../hack/tests/fixtures/auth";
 
-import { expect, test } from "../../../../../../hack/tests/fixtures/auth";
+import { expect, test as baseTest } from "../../../../../../hack/tests/fixtures/auth";
 import { workspacePath } from "../../../../../../hack/tests/fixtures/config";
+import { installResourceWorkspaceMenus } from "../support/resource-workspace-mock";
 import {
   waitForDialogReady,
   waitForRouteReady,
 } from "../../../../../../hack/tests/support/ui";
+
+const test = baseTest.extend({ adminPage: async ({ authenticatedPage }, use) => { await use(authenticatedPage); } });
+
+async function installFrozenUI(page: Page) {
+  const staticUI = process.env.E2E_STATIC_UI_DIR;
+  if (!staticUI) return;
+  const state = JSON.parse(readFileSync(new URL("../../../../../../hack/tests/temp/storage-state/admin.json", import.meta.url), "utf8"));
+  await page.addInitScript((entries: Array<{ name: string; value: string }>) => {
+    for (const item of entries) localStorage.setItem(item.name, item.value);
+  }, state.origins[0]?.localStorage ?? []);
+  await page.route(url => url.pathname.startsWith("/admin/"), route => {
+    const pathname = new URL(route.request().url()).pathname.replace(/^\/admin\//u, "");
+    const file = resolve(staticUI, pathname);
+    const path = relative(staticUI, file);
+    return route.fulfill({ path: path && !path.startsWith("..") && !isAbsolute(path) && existsSync(file) ? file : resolve(staticUI, "index.html") });
+  });
+}
 
 const catalogs = {
   "zh-CN": JSON.parse(
@@ -28,7 +46,7 @@ const catalogs = {
 type PoolStatus = "disabled" | "draining" | "enabled" | "maintenance";
 
 interface ProviderConfigurationMockOptions {
-  missingHistoricalSchema?: boolean;
+  unavailableConnector?: boolean;
   outdatedProvider?: boolean;
   candidates?: Array<{
     displayName: string;
@@ -169,7 +187,7 @@ async function installProviderConfigurationMock(
           key: "access_token",
           ready: true,
           required: true,
-          updatedAt: "2026-08-28T10:00:00Z",
+          updatedAt: Date.parse("2026-08-28T10:00:00Z"),
         },
       ],
       status: "disabled",
@@ -178,7 +196,7 @@ async function installProviderConfigurationMock(
   ];
   const diagnostic = {status: "tls_untrusted", requests: 0};
   const channel = channels[0]!;
-  if (options.missingHistoricalSchema)
+  if (options.unavailableConnector)
     channel.interfaceConfiguration = undefined;
   const pool = {
     channelNo: channel.channelNo,
@@ -194,6 +212,8 @@ async function installProviderConfigurationMock(
   const channelCreates: Array<Record<string, unknown>> = [];
   const channelUpdates: Array<Record<string, unknown>> = [];
   const secretCreates: Array<Record<string, unknown>> = [];
+  const secretReplaces: Array<Record<string, unknown>> = [];
+  const secretAccesses: Array<Record<string, unknown>> = [];
 
   await page.route("**/api/v1/user/info", async (route: Route) => {
     const response = await route.fetch();
@@ -261,7 +281,9 @@ async function installProviderConfigurationMock(
         channelTotal: channels.length,
         poolTotal: 1,
         pools: [pool],
-        providerCandidates: candidates,
+        providerCandidates: options.unavailableConnector
+          ? candidates.filter((item) => item.pluginId !== channel.providerPluginId)
+          : candidates,
       });
     },
   );
@@ -307,6 +329,7 @@ async function installProviderConfigurationMock(
   await page.route(
     "**/x/idc-resource/api/v1/admin/resource/channels/*/secrets/access-contexts",
     async (route: Route) => {
+      secretAccesses.push(route.request().postDataJSON());
       await fulfill(route, { item: { token: "test-secret-access" } });
     },
   );
@@ -324,11 +347,24 @@ async function installProviderConfigurationMock(
       if (status)
         Object.assign(status, {
           ready: true,
-          updatedAt: "2026-08-28T11:00:00Z",
+          updatedAt: Date.parse("2026-08-28T11:00:00Z"),
         });
       await fulfill(route, { item: status });
     },
   );
+  await page.route("**/x/idc-resource/api/v1/admin/resource/channels/*/secrets/*", async (route: Route) => {
+    if (route.request().method() !== "PUT") return route.fallback();
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    const target = channels.find((item) => route.request().url().includes(`/${item.channelNo}/`))!;
+    const status = target.secretFields.find((item) => item.key === body.bindingName)!;
+    if (body.expectedUpdatedAt !== status.updatedAt) {
+      await route.fulfill({json:{code:60,errorCode:"IDC_RESOURCE_CHANNEL_SECRET_CONFLICT",message:"渠道秘密已发生变化，请刷新后重试"}});
+      return;
+    }
+    secretReplaces.push(body);
+    Object.assign(status, {ready:true, updatedAt:status.updatedAt! + 1000});
+    await fulfill(route, {item:status});
+  });
   await page.route(
     "**/x/idc-resource/api/v1/admin/resource/provider-configurations/pools/*",
     async (route: Route) => {
@@ -343,7 +379,7 @@ async function installProviderConfigurationMock(
     diagnostic.requests++;
     await fulfill(route,{verified:false,statusCode:diagnostic.status,observedAt:Date.now()});
   });
-  return { channelCreates, channelUpdates, poolUpdates, secretCreates, diagnostic };
+  return { channelCreates, channelUpdates, poolUpdates, secretCreates, secretReplaces, secretAccesses, diagnostic };
 }
 
 class ProviderConfigurationPage {
@@ -377,6 +413,14 @@ class ProviderConfigurationPage {
     }
   }
 
+  async openChannelDetail(name: string) {
+    const row = await this.channelActionRow(name);
+    await row.getByRole("button", { name: "详情", exact: true }).click();
+    return waitForDialogReady(this.page.getByRole("dialog"));
+  }
+  async detailTab(name: string) {
+    await this.page.getByRole("dialog").getByRole("tab", { name, exact: true }).click();
+  }
   async openChannelCreate() {
     await this.root.getByRole("button", { name: "新增接口" }).click();
     return waitForDialogReady(this.page.getByRole("dialog"));
@@ -446,20 +490,82 @@ class ProviderConfigurationPage {
 }
 
 test.describe("TC-7 供应商接口与资源池配置", () => {
-  test("TC-7f: 历史配置缺失只禁用该行操作而不影响正常接口", async ({
+  for (const capability of ["task", "api-log"] as const) {
+    test(`TC-7k: 仅${capability}权限从供应商配置进入，不读取配置目录`, async ({ adminPage }) => {
+      await installFrozenUI(adminPage);
+      await installProviderConfigurationMock(adminPage);
+      await installResourceWorkspaceMenus(adminPage, [`idc:admin:resource:${capability}:list`]);
+      await adminPage.route("**/api/v1/user/info", async route => {
+        const response = await route.fetch(); const body = await response.json();
+        body.data.homePath = "/idc/resource/provider-configuration";
+        body.data.permissions = [`idc:admin:resource:${capability}:list`];
+        await route.fulfill({ json: body });
+      });
+      let configurationReads = 0; const reads: URL[] = [];
+      await adminPage.route("**/x/idc-resource/api/v1/admin/resource/provider-configurations**", route => { configurationReads++; return route.fulfill({ status: 403, json: { code: 403 } }); });
+      const path = capability === "task" ? "tasks" : "api-logs";
+      await adminPage.route(`**/x/idc-resource/api/v1/admin/resource/${path}?**`, route => {
+        reads.push(new URL(route.request().url()));
+        return route.fulfill({ json: envelope({ items: [], total: 0, nextCursor: "" }) });
+      });
+      const configuration = new ProviderConfigurationPage(adminPage);
+      await configuration.goto();
+      await expect.poll(() => reads.length).toBeGreaterThan(0);
+      expect(configurationReads).toBe(0);
+      await expect(configuration.root.getByRole("button", { name: "新增接口", exact: true })).toHaveCount(0);
+      await expect(configuration.root).not.toContainText("plugin.idc-resource");
+      await expect.poll(async () => {
+        const bounds = await configuration.root.locator(".vxe-pager").boundingBox();
+        return Boolean(bounds && bounds.height > 0 && bounds.y + bounds.height <= (adminPage.viewportSize()?.height ?? 0));
+      }).toBe(true);
+      await configuration.screenshot(`provider-configuration-${capability}-only`);
+    });
+  }
+  test("TC-7j: 接口配置详情内的任务与日志固定接口范围，未打开的页签不读取", async ({ adminPage }) => {
+    await installFrozenUI(adminPage);
+    await installProviderConfigurationMock(adminPage);
+    await adminPage.route("**/api/v1/user/info", async route => {
+      const response = await route.fetch(); const body = await response.json();
+      body.data.homePath = "/idc/resource/provider-configuration";
+      body.data.permissions = ["idc:admin:resource:configuration:list", "idc:admin:resource:task:list", "idc:admin:resource:api-log:list"];
+      await route.fulfill({ json: body });
+    });
+    const reads: Array<{ kind: string; url: URL }> = [];
+    for (const kind of ["tasks", "api-logs"]) {
+      await adminPage.route(`**/x/idc-resource/api/v1/admin/resource/${kind}?**`, route => {
+        reads.push({ kind, url: new URL(route.request().url()) });
+        return route.fulfill({ json: envelope({ items: [], total: 0, nextCursor: "" }) });
+      });
+    }
+    const configuration = new ProviderConfigurationPage(adminPage);
+    await configuration.goto();
+    const dialog = await configuration.openChannelDetail("华东生产渠道");
+    expect(reads).toHaveLength(0);
+    await configuration.detailTab("操作记录");
+    await expect.poll(() => reads.filter(item => item.kind === "tasks").length).toBeGreaterThan(0);
+    expect(reads.every(item => item.url.searchParams.get("channelNo") === "channel_primary")).toBe(true);
+    expect(reads.filter(item => item.kind === "api-logs")).toHaveLength(0);
+    await configuration.detailTab("对接日志");
+    await expect.poll(() => reads.filter(item => item.kind === "api-logs").length).toBeGreaterThan(0);
+    expect(reads.every(item => item.url.searchParams.get("channelNo") === "channel_primary")).toBe(true);
+    await expect(dialog).toContainText("对接日志");
+    await expect(dialog).not.toContainText("plugin.idc-resource");
+    await configuration.screenshot("provider-interface-scoped-logs");
+  });
+  test("TC-7f: 连接器不可用只限制该行而不影响正常接口", async ({
     adminPage,
   }) => {
     const state = await installProviderConfigurationMock(adminPage, {
-      missingHistoricalSchema: true,
+      unavailableConnector: true,
     });
     const configuration = new ProviderConfigurationPage(adminPage);
     await configuration.goto();
     await expect(
-      configuration.root.getByText("配置版本缺失", { exact: true }),
+      configuration.root.getByText("连接器不可用", { exact: true }),
     ).toBeVisible();
     await expect(
       configuration.root.getByText(
-        "找不到此接口保存时的插件配置版本，暂不能修改或测试；请联系管理员恢复对应版本。",
+        "当前连接器不可用或配置不兼容，请检查插件是否已安装并启用。",
         { exact: true },
       ),
     ).toBeVisible();
@@ -469,7 +575,7 @@ test.describe("TC-7 供应商接口与资源池配置", () => {
         missing.getByRole("button", { name, exact: true }),
       ).toBeDisabled();
     }
-    await configuration.screenshot("provider-missing-history-isolated");
+    await configuration.screenshot("provider-current-connector-unavailable");
     const dialog = await configuration.openChannelEdit("已停售 DCIM 接口");
     await expect(dialog).toContainText("接口版本");
     expect(state.channelUpdates).toHaveLength(0);
@@ -653,43 +759,70 @@ test.describe("TC-7 供应商接口与资源池配置", () => {
     await expect(alert).not.toContainText("plugin.idc-resource");
     await configuration.screenshot("provider-channel-no-connector");
   });
-  test("TC-7h: 旧接口可明确更新配置并保留停用状态和密钥", async ({adminPage})=>{
-    const state = await installProviderConfigurationMock(adminPage,{outdatedProvider:true});
+  test("TC-7h: 插件升级后接口可直接编辑和测试，不要求更新配置版本", async ({adminPage}) => {
+    const state = await installProviderConfigurationMock(adminPage, {outdatedProvider:true});
     const configuration = new ProviderConfigurationPage(adminPage);
     await configuration.goto();
-    const row = await configuration.channelActionRow("华东生产渠道");
-    await expect(configuration.root.getByText("接口配置需要更新",{exact:true}).first()).toBeVisible();
-    const update = row.getByRole("button",{name:"更新接口配置",exact:true});
-    await update.click();
-    await expect(configuration.root.getByRole("button",{name:"更新接口配置",exact:true})).toHaveCount(0);
+    await expect(configuration.root.getByText("接口配置需要更新", {exact:true})).toHaveCount(0);
+    await expect(configuration.root.getByRole("button", {name:"更新接口配置",exact:true})).toHaveCount(0);
+    await configuration.screenshot("provider-upgrade-current-list");
+    const dialog = await configuration.openChannelEdit("华东生产渠道");
+    await dialog.locator('input[name="displayName"]').fill("升级后可维护接口");
+    await dialog.locator('input[name="access_user"]').fill("account-upgraded");
+    await dialog.locator('input[name="access_token"]').fill("token-upgraded");
+    await configuration.screenshot("provider-upgrade-current-edit");
+    await dialog.getByRole("button", {name:/确\s*认/}).click();
+    await expect(dialog).toBeHidden();
     expect(state.channelUpdates).toHaveLength(1);
-    expect(state.channelUpdates[0]).toMatchObject({refreshProvider:true,status:"disabled",version:3,endpoint:"https://provider.example.test/api"});
-    expect(state.channelUpdates[0]).not.toHaveProperty("secrets");
-    expect(state.secretCreates).toHaveLength(0);
-    const current = await configuration.channelActionRow("华东生产渠道");
-    await expect(current.getByRole("button",{name:"启用",exact:true})).toBeVisible();
-    await expect(adminPage.getByText("接口配置已更新，原地址、密钥和启用状态已保留",{exact:true})).toBeVisible();
-    await configuration.screenshot("provider-configuration-refreshed");
+    expect(state.channelUpdates[0]).toMatchObject({displayName:"升级后可维护接口",status:"disabled"});
+    expect(state.channelUpdates[0]).not.toHaveProperty("refreshProvider");
+    const row = await configuration.channelActionRow("升级后可维护接口");
+    await row.getByRole("button", {name:"测试连接",exact:true}).click();
+    await expect.poll(() => state.diagnostic.requests).toBe(1);
+    await expect(adminPage.getByText(catalogs["zh-CN"]!["plugin.idc-resource.providerConfiguration.verification.tls_untrusted"]!, {exact:true})).toBeVisible();
+    await configuration.screenshot("provider-upgrade-current-probe");
   });
-  test("TC-7g: 证书指纹独立保存清除，连接错误用准确中文原因展示", async ({adminPage})=>{
+  test("TC-7i: 已保存凭据按毫秒版本替换，留空编辑不重写凭据", async ({adminPage}) => {
     const state = await installProviderConfigurationMock(adminPage);
     const configuration = new ProviderConfigurationPage(adminPage);
     await configuration.goto();
     const dialog = await configuration.openChannelEdit("已停售 DCIM 接口");
-    const fingerprint = dialog.locator('input[name="tlsCertificateSha256"]');
-    await expect(dialog).toContainText("证书指纹（可选）");
-    await fingerprint.fill("A".repeat(64));
-    await configuration.screenshot("provider-certificate-fingerprint");
+    await expect(dialog.locator('input[name="access_token"]')).toHaveValue("");
+    await dialog.locator('input[name="access_token"]').fill("replacement-for-existing-token");
+    await dialog.getByRole("button", {name:/确\s*认/}).click();
+    await expect(dialog).toBeHidden();
+    expect(state.secretReplaces).toHaveLength(1);
+    expect(state.secretReplaces[0]).toMatchObject({bindingName:"access_token",expectedUpdatedAt:Date.parse("2026-08-28T10:00:00Z")});
+    expect(state.secretAccesses[0]).toMatchObject({operation:"replace",expectedUpdatedAt:Date.parse("2026-08-28T10:00:00Z")});
+    expect(state.secretCreates).toHaveLength(0);
+    await expect(adminPage.getByText("供应商接口已保存", {exact:true})).toBeVisible();
+    await configuration.screenshot("provider-existing-credential-replaced");
+    const again = await configuration.openChannelEdit("已停售 DCIM 接口");
+    await expect(again.locator('input[name="access_token"]')).toHaveValue("");
+    await again.locator('input[name="displayName"]').fill("仅更新接口名称");
+    await again.getByRole("button", {name:/确\s*认/}).click();
+    await expect(again).toBeHidden();
+    expect(state.secretReplaces).toHaveLength(1);
+    expect(state.secretAccesses).toHaveLength(1);
+    expect(state.channelUpdates).toHaveLength(2);
+    await expect(await configuration.channelActionRow("仅更新接口名称")).toBeVisible();
+    await configuration.screenshot("provider-credential-unchanged-edit");
+  });
+  test("TC-7g: 仅填写供应商根地址，不要求证书指纹或手工 API 路由", async ({adminPage})=>{
+    const state = await installProviderConfigurationMock(adminPage);
+    const configuration = new ProviderConfigurationPage(adminPage);
+    await configuration.goto();
+    const dialog = await configuration.openChannelEdit("已停售 DCIM 接口");
+    await expect(dialog.locator('input[name="tlsCertificateSha256"]')).toHaveCount(0);
+    await expect(dialog.getByText("证书指纹（可选）",{exact:true})).toHaveCount(0);
+    await expect(dialog).toContainText("供应商根地址");
+    await dialog.locator('input[name="endpoint"]').fill("https://provider.example.test/W5SHNaHntv/");
+    await configuration.screenshot("provider-root-address-no-certificate-field");
     await dialog.getByRole("button",{name:/确\s*认/u}).click();
     await expect(dialog).toBeHidden();
-    expect(state.channelUpdates.at(-1)?.tlsCertificateSha256).toBe("a".repeat(64));
+    expect(state.channelUpdates.at(-1)?.endpoint).toBe("https://provider.example.test/W5SHNaHntv/");
+    expect(state.channelUpdates.at(-1)).not.toHaveProperty("tlsCertificateSha256");
     expect(state.channelUpdates.at(-1)?.nonSecretSettings).toEqual({protocol:"legacy"});
-    const edit = await configuration.openChannelEdit("已停售 DCIM 接口");
-    await expect(edit.locator('input[name="tlsCertificateSha256"]')).toHaveValue("a".repeat(64));
-    await edit.locator('input[name="tlsCertificateSha256"]').fill("");
-    await edit.getByRole("button",{name:/确\s*认/u}).click();
-    await expect(edit).toBeHidden();
-    expect(state.channelUpdates.at(-1)?.tlsCertificateSha256).toBe("");
     for (const status of ["tls_untrusted","timeout","dns","network","endpoint_not_found","invalid_response","auth_rejected","local_auth_policy"]) {
       state.diagnostic.status=status;
       await configuration.testChannel("已停售 DCIM 接口");

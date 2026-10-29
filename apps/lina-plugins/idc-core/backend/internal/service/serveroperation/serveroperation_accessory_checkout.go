@@ -331,7 +331,7 @@ func (s *accessoryPricingImpl) persistAccessoryOrderAndInvoice(ctx context.Conte
 	}
 	order := do.CommerceOrder{TenantId: 0, OrderNo: orderNo, CustomerNo: row.CustomerNo,
 		QuoteNo: row.QuoteNo, CurrencyCode: row.CurrencyCode, SourceCode: "portal",
-		StatusCode: "pending_payment", RiskDecisionCode: "approved", RequiresContract: false, ItemCount: 1,
+		StatusCode: "pending_payment", RiskDecisionCode: "approved", ItemCount: 1,
 		SubtotalMinor: row.SubtotalMinor, DiscountMinor: 0, NetAmountMinor: row.NetAmountMinor,
 		TaxAmountMinor: row.TaxAmountMinor, TotalAmountMinor: row.TotalAmountMinor,
 		CheckoutIdempotencyDigest: idempotencyDigest, CheckoutRequestDigest: requestDigest,
@@ -343,7 +343,7 @@ func (s *accessoryPricingImpl) persistAccessoryOrderAndInvoice(ctx context.Conte
 		ProductNameZhCn: quoteItem.ProductNameZhCn, ProductNameEnUs: quoteItem.ProductNameEnUs,
 		PurchaseCycles: 1,
 		ChargeTypeCode: quoteItem.ChargeTypeCode, PeriodUnitCode: quoteItem.PeriodUnitCode,
-		PeriodCount: quoteItem.PeriodCount, RequiresContract: false, FulfillmentModeCode: "automatic",
+		PeriodCount: quoteItem.PeriodCount, FulfillmentModeCode: "automatic",
 		RiskDecisionCode:      "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: quoteItem.RouteDecisionDigest,
 		TaxPolicyNo: quoteItem.TaxPolicyNo, PriceIncludesTax: true,

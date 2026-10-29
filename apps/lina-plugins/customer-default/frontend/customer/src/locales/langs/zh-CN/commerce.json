@@ -14,7 +14,6 @@
     "title": "我的订单"
   },
   "order": {
-    "contractOptional": "普通个人订单不强制签合同；只有后台明确要求的订单才会按合同状态处理。",
     "created": "创建时间",
     "delivery": "商品交付",
     "services": "持续服务",
@@ -23,7 +22,8 @@
     "invoice": "账单",
     "requestRefund": "申请退款",
     "items": "商品项目",
-    "label": "订单"
+    "label": "订单",
+    "refresh": "刷新状态"
   },
   "quote": {
     "changed": "价格已经变化，请先确认新金额再提交订单。",
@@ -109,7 +109,8 @@
     "terminated": "已终止",
     "unavailable": "状态暂不可用",
     "unknown": "状态暂不可用",
-    "waiting_payment": "等待付款"
+    "waiting_payment": "等待付款",
+    "paid": "已付款"
   },
   "fulfillment": {
     "ongoing": "包含持续服务",
@@ -129,10 +130,15 @@
       "awaiting_payment": "待付款",
       "awaiting_review": "待商家审核",
       "processing": "处理中",
+      "manual_processing": "待人工处理",
       "completed": "已完成",
       "not_completed": "处理未完成",
       "cancelled": "已取消"
-    }
+    },
+    "processingHint": "开通正在处理中，状态会自动更新。",
+    "manualHint": "商家需要进一步处理这笔订单，付款记录已保留，请勿重复付款。",
+    "incompleteHint": "当前交付未完成，请联系支持协助处理，无需重复付款。",
+    "refreshPaused": "自动更新已暂停，请点击刷新状态重试。"
   },
   "units": {
     "cycles": "个计费周期",

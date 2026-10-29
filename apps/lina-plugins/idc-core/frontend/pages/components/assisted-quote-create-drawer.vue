@@ -98,7 +98,6 @@ async function submit() {
       customerNo: customer.value.customerNo, currencyCode: values.currencyCode,
       manualDiscountMinor: majorToMinorAmount(values.manualDiscount, values.currencyCode),
       paymentDueAt,
-      contractPolicyCode: "inherit" as const, contractTemplateNo: "",
       reason: values.reason?.trim() || "", internalNote: "", items,
     };
     const fingerprint = JSON.stringify(payload);

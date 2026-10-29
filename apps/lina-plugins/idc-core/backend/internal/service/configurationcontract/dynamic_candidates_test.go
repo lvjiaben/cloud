@@ -65,7 +65,7 @@ func TestDynamicCandidateResponseRejectsUnsafeShapes(t *testing.T) {
 		}
 		return payload
 	}
-	if _, err := DecodeDynamicCandidateResponse(encode(valid), []DynamicCandidateQuery{{FieldKey: "region"}}); err != nil {
+	if _, _, err := DecodeDynamicCandidateResponse(encode(valid), []DynamicCandidateQuery{{FieldKey: "region"}}); err != nil {
 		t.Fatalf("valid response rejected: %v", err)
 	}
 	tests := map[string][]byte{
@@ -87,7 +87,7 @@ func TestDynamicCandidateResponseRejectsUnsafeShapes(t *testing.T) {
 			if name == "duplicate field" {
 				fields = []DynamicCandidateQuery{{FieldKey: "region"}, {FieldKey: "zone"}}
 			}
-			if _, err := DecodeDynamicCandidateResponse(payload, fields); err == nil {
+			if _, _, err := DecodeDynamicCandidateResponse(payload, fields); err == nil {
 				t.Fatal("unsafe dynamic response accepted")
 			}
 		})

@@ -1,4 +1,4 @@
--- Local acceptance data only. Tencent e-sign and NuoNuo remain unconfigured.
+-- Local acceptance data only. NuoNuo remains unconfigured.
 
 INSERT INTO plugin_idc_compliance_provider_configuration
   ("configuration_no", "provider_code", "status_code", "scene_id",
@@ -12,7 +12,6 @@ INSERT INTO plugin_idc_compliance_supplier_configuration
    "credential_generation", "capability_evidence_code", adapter_enabled,
    subject_status_code, last_operation_kind_code, last_operation_result_code)
 VALUES
-  ('local-supplier-tencent_essbasic', 'tencent_essbasic', 'unconfigured', 0, 'external_confirmation_required', false, 'unbound', 'none', 'none'),
   ('local-supplier-nuonuo_invoice', 'nuonuo_invoice', 'unconfigured', 0, 'external_confirmation_required', false, 'unbound', 'none', 'none')
 ON CONFLICT ("configuration_no") DO NOTHING;
 

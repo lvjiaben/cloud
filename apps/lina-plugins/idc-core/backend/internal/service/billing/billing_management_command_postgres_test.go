@@ -16,6 +16,9 @@ type managementCommandAuthorizerStub struct {
 	reviewActor int
 }
 
+func (s managementCommandAuthorizerStub) AuthorizeBalanceAdjustmentCreate(context.Context) (int, error) {
+	return s.actor(), nil
+}
 func (s managementCommandAuthorizerStub) actor() int {
 	if s.createActor > 0 {
 		return s.createActor
@@ -121,7 +124,7 @@ func (*managementCommandAuditStub) AppendBusinessBatchTransition(
 	return idccap.BusinessAuditAppendResult{}, nil
 }
 
-func TestManagementFinanceCommandPostgreSQLBindsProofAndAuditsDualReview(t *testing.T) {
+func TestManagementFinanceCommandPostsImmediatelyWithoutProofOrEvidence(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	database := configureBillingServiceIntegrationDB(t, ctx)
@@ -130,49 +133,23 @@ func TestManagementFinanceCommandPostgreSQLBindsProofAndAuditsDualReview(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
-	authorizer := managementCommandAuthorizerStub{createActor: 9001, reviewActor: 9002}
-	recentAuth := &managementCommandRecentAuthStub{consumeActor: authorizer.createActor}
-	auditWriter := &managementCommandAuditStub{}
-	service, err := NewManagementFinanceCommandService(
-		database, auditWriter, authorizer, recentAuth, adjustments,
-		financialSettlementServiceStub{},
-	)
+	recent := &managementCommandRecentAuthStub{}
+	audit := &managementCommandAuditStub{}
+	service, err := NewManagementFinanceCommandService(database, audit, managementCommandAuthorizerStub{}, recent, adjustments, financialSettlementServiceStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	receipt := ManagementManualReceiptIntent{
-		RequestNo: "management-receipt-000001", CustomerNo: "customer-ledger",
-		CurrencyCode: "CNY", AmountMinor: 800, ReasonCode: "offline_balance_credit",
-		ProofReference:            "private-proof-management-command-001",
-		ReceivingAccountReference: "merchant-collection-cny-001",
-		BusinessPurposeCode:       "balance_recharge", EvidenceDigest: strings.Repeat("a", 64),
+	intent := ManagementManualReceiptIntent{RequestNo: "direct-management-receipt-001", CustomerNo: "customer-ledger", CurrencyCode: "CNY", AmountMinor: 800}
+	posted, err := service.CreateManualReceipt(ctx, intent, "")
+	if err != nil || posted == nil || posted.Status != AdjustmentStatusPosted || posted.ApprovalRequired || posted.Balance == nil || posted.Balance.BalanceMinor != 800 || posted.LedgerTransactionNo == "" {
+		t.Fatalf("direct receipt: %+v %v", posted, err)
 	}
-	issued, err := service.IssueManualReceiptProof(ctx, receipt)
-	if err != nil || issued.Token == "" || recentAuth.issued.Purpose != reauth.PurposeHighValueFunds {
-		t.Fatalf("issue manual receipt proof: proof=%+v binding=%+v err=%v", issued, recentAuth.issued, err)
+	if recent.issueCalls != 0 || recent.consumeCalls != 0 || len(audit.transitions) != 1 || audit.transitions[0].RequiredPermission != permissionBillingManualReceiptCreate {
+		t.Fatalf("unexpected authentication/audit: %+v %+v", recent, audit)
 	}
-	pending, err := service.CreateManualReceipt(ctx, receipt, issued.Token)
-	if err != nil || pending.Status != AdjustmentStatusPendingReview || !pending.ApprovalRequired ||
-		recentAuth.consumed != recentAuth.issued || len(auditWriter.transitions) != 1 ||
-		auditWriter.transitions[0].RequiredPermission != permissionBillingManualReceiptCreate {
-		t.Fatalf("create reviewed receipt: result=%+v auth=%+v audit=%+v err=%v", pending, recentAuth, auditWriter.transitions, err)
-	}
-
-	review := ManagementAdjustmentReviewIntent{
-		RequestNo: "management-review-0000001", AdjustmentNo: pending.AdjustmentNo,
-		Decision: AdjustmentDecisionApprove, CommentDigest: strings.Repeat("b", 64),
-		EvidenceDigest: strings.Repeat("c", 64),
-	}
-	recentAuth.consumeActor = authorizer.reviewActor
-	issued, err = service.IssueAdjustmentReviewProof(ctx, review)
-	if err != nil {
-		t.Fatalf("issue review proof: %v", err)
-	}
-	posted, err := service.ReviewAdjustment(ctx, review, issued.Token)
-	if err != nil || posted.Status != AdjustmentStatusPosted || posted.LedgerTransactionNo == "" ||
-		len(auditWriter.transitions) != 2 ||
-		auditWriter.transitions[1].RequiredPermission != permissionBillingAdjustmentReview {
-		t.Fatalf("review receipt: result=%+v audit=%+v err=%v", posted, auditWriter.transitions, err)
+	replay, err := service.CreateManualReceipt(ctx, intent, "")
+	if err != nil || !replay.Reused || replay.LedgerTransactionNo != posted.LedgerTransactionNo || replay.Balance.BalanceMinor != 800 {
+		t.Fatalf("receipt replay: %+v %v", replay, err)
 	}
 }
 
@@ -264,5 +241,52 @@ SELECT count(*) FROM plugin_idc_core_billing_adjustment_request`)
 	if after.Int64() != before.Int64() || len(auditWriter.transitions) != 1 {
 		t.Fatalf("failed audit rollback: before=%d after=%d attempts=%d",
 			before.Int64(), after.Int64(), len(auditWriter.transitions))
+	}
+}
+
+// TestManagementBalanceCommandBindsOperationAndRollsBackAudit verifies the
+// management boundary rather than only exercising internal ledger methods.
+func TestManagementBalanceCommandBindsOperationAndRollsBackAudit(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := configureBillingServiceIntegrationDB(t, ctx)
+	seedBillingService(t, ctx, database)
+	adjustments, err := NewFinancialAdjustmentService(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = adjustments.ConfigureApprovalPolicy(ctx, AdjustmentPolicyInput{CurrencyCode: "CNY", ReviewThresholdMinor: 5000, ConfiguredBy: 9001}); err != nil {
+		t.Fatal(err)
+	}
+	recent := &managementCommandRecentAuthStub{consumeActor: 9001}
+	audit := &managementCommandAuditStub{err: errors.New("audit unavailable")}
+	service, err := NewManagementFinanceCommandService(database, audit, managementCommandAuthorizerStub{}, recent, adjustments, financialSettlementServiceStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	intent := ManagementBalanceAdjustmentIntent{RequestNo: "management-gift-command-001", CustomerNo: "customer-ledger", CurrencyCode: "CNY", AmountMinor: 500, ReasonCode: "manual_gift", EvidenceDigest: strings.Repeat("a", 64)}
+	proof, err := service.IssueBalanceAdjustmentProof(ctx, intent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changed := intent
+	changed.Deduct = true
+	if _, err = service.CreateBalanceAdjustment(ctx, changed, proof.Token); err == nil {
+		t.Fatal("gift proof accepted cash deduction")
+	}
+	if _, err = service.CreateBalanceAdjustment(ctx, intent, proof.Token); err == nil {
+		t.Fatal("audit failure accepted")
+	}
+	value, err := database.GetValue(ctx, "SELECT COUNT(*) FROM plugin_idc_core_billing_adjustment_request")
+	if err != nil || value.Int() != 0 {
+		t.Fatalf("request survived audit rollback: %v %v", value, err)
+	}
+	audit.err = nil
+	result, err := service.CreateBalanceAdjustment(ctx, intent, proof.Token)
+	if err != nil || result.Balance == nil || result.Balance.BalanceMinor != 500 {
+		t.Fatalf("gift command: %+v %v", result, err)
+	}
+	if audit.transitions[len(audit.transitions)-1].RequiredPermission != permissionBillingBalanceAdjustmentCreate {
+		t.Fatal("wrong audit permission")
 	}
 }

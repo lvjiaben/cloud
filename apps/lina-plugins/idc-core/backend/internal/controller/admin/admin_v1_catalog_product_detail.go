@@ -22,13 +22,14 @@ func (c *ControllerV1) CatalogProductDetail(ctx context.Context, req *v1.Catalog
 	}
 	res.FulfillmentBinding = mapAutomationBinding(binding)
 	var contract *catalog.FrozenFulfillmentContract
-	if detail.FulfillmentPolicy != nil && detail.FulfillmentPolicy.StrategyCode != catalog.FulfillmentStrategyManual {
+	evidenceAvailable := binding == nil || binding.EvidenceVerified
+	if evidenceAvailable && detail.FulfillmentPolicy != nil && detail.FulfillmentPolicy.StrategyCode != catalog.FulfillmentStrategyManual {
 		contract, bindingErr = c.productAutomation.GetFrozenFulfillmentContract(ctx, detail.Version.VersionNo)
 		if bindingErr != nil {
 			return nil, bindingErr
 		}
 	}
-	if detail.FulfillmentPolicy != nil {
+	if evidenceAvailable && detail.FulfillmentPolicy != nil {
 		if bindingErr = catalog.ValidateFulfillmentPolicyEvidence(*detail.FulfillmentPolicy, contract); bindingErr != nil {
 			return nil, bindingErr
 		}
@@ -64,7 +65,7 @@ func toAPICatalogProductDetail(detail *catalog.ProductManagementDetail) *v1.Cata
 	version := detail.Version
 	res := &v1.CatalogProductDetailRes{
 		Product: &v1.CatalogProductDetailProduct{
-			DirectoryNo: product.DirectoryNo, DescriptionVersion: product.DescriptionVersion,
+			DirectoryNo: product.DirectoryNo, DescriptionVersion: product.DescriptionVersion, CurrentVersionNo: product.CurrentVersionNo,
 			ProductNo: product.ProductNo, CategoryNo: product.CategoryNo,
 			CategoryNameZhCn: product.CategoryNameZhCN, CategoryNameEnUs: product.CategoryNameEnUS,
 			Status: product.Status, PublicSlug: product.PublicSlug, NameZhCn: product.NameZhCN,
@@ -74,8 +75,7 @@ func toAPICatalogProductDetail(detail *catalog.ProductManagementDetail) *v1.Cata
 		Version: &v1.CatalogProductDetailVersion{
 			VersionNo: version.VersionNo, VersionNumber: version.VersionNumber, Status: version.Status,
 			Source: version.Source, SourceVersion: version.SourceVersion, ChangeSummary: version.ChangeSummary,
-			RequiresContract: version.RequiresContract, ContractPolicyCode: version.ContractPolicyCode,
-			ContractTemplateNo: version.ContractTemplateNo, ContractPolicyVersion: version.ContractPolicyVersion,
+
 			PublishedAt: toUnixMilliseconds(version.PublishedAt),
 			RetiredAt:   toUnixMilliseconds(version.RetiredAt), CreatedAt: version.CreatedAt.UnixMilli(),
 		},
@@ -105,6 +105,7 @@ func toAPICatalogProductDetail(detail *catalog.ProductManagementDetail) *v1.Cata
 			RenewalAmountMinor: formatOptionalCatalogAmount(item.RenewalAmountMinor), MinimumQuantity: item.MinimumQuantity,
 			MaximumQuantity: item.MaximumQuantity, Status: item.Status,
 			ConfigurationPriceDimensionNo:   item.ConfigurationPriceDimensionNo,
+			ConfigurationPricingMode:        string(item.ConfigurationPricingMode),
 			ConfigurationFieldLabelZhCn:     item.ConfigurationFieldLabelZhCN,
 			ConfigurationFieldLabelEnUs:     item.ConfigurationFieldLabelEnUS,
 			ConfigurationCandidateLabelZhCn: item.ConfigurationCandidateLabelZhCN,

@@ -101,3 +101,46 @@ func TestImportSchemaPreservesDynamicResolution(t *testing.T) {
 		t.Fatal("source method was mutated")
 	}
 }
+
+func TestImportSchemaProjectsHiddenDefaultsAcrossResale(t *testing.T) {
+	codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{3}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	label := &capmodel.LocalizedText{ZhCN: "配置", EnUS: "Configuration"}
+	schema := &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{
+		{Key: "local_plan", Type: capmodel.ConfigurationFieldSingleSelect, Label: label, Required: true, StaticCandidates: []*capmodel.ConfigurationCandidate{{Value: "paid", Label: label}}},
+		{Key: "quantity", Type: capmodel.ConfigurationFieldInteger, Label: label, Minimum: "0", Maximum: "10"},
+		{Key: "flag", Type: capmodel.ConfigurationFieldBoolean, Label: label},
+	}}
+	policy := `{"local_plan":{"customerVisible":false,"defaultValue":"paid","productFieldKey":"private","productChoiceBindings":{"paid":"private-provider-option"},"descriptionEnUS":"local"},"quantity":{"customerVisible":false,"defaultValue":0},"flag":{"customerVisible":false,"defaultValue":false}}`
+	first, err := projectImportSchema(codec, &publicStructuredConfigurationSnapshot{Revision: "first", Schema: schema, Target: publicStructuredConfigurationTarget{CustomerPresentation: policy}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(first.mappings[0].DefaultValue) != `"`+first.schema.Fields[0].StaticCandidates[0].Value+`"` || string(first.mappings[1].DefaultValue) != "0" || string(first.mappings[2].DefaultValue) != "false" {
+		t.Fatalf("default projection: %+v", first.mappings)
+	}
+	portablePolicy := map[string]map[string]any{}
+	for _, m := range first.mappings {
+		portablePolicy[m.FieldKey] = map[string]any{"customerVisible": m.CustomerVisible, "defaultValue": m.DefaultValue}
+	}
+	raw, err := json.Marshal(portablePolicy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := projectImportSchema(codec, &publicStructuredConfigurationSnapshot{Revision: "second", Schema: first.schema, Target: publicStructuredConfigurationTarget{CustomerPresentation: string(raw)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(second.mappings[0].DefaultValue) != `"`+second.schema.Fields[0].StaticCandidates[0].Value+`"` || second.schema.Fields[0].StaticCandidates[0].Value == first.schema.Fields[0].StaticCandidates[0].Value || *second.mappings[0].CustomerVisible {
+		t.Fatal("second resale changed hidden default policy")
+	}
+	encoded, _ := json.Marshal(second.mappings)
+	if bytes.Contains(encoded, []byte("descriptionEnUS")) || bytes.Contains(encoded, []byte("productFieldKey")) {
+		t.Fatal("private presentation metadata leaked")
+	}
+	if schema.Fields[0].StaticCandidates[0].Value != "paid" {
+		t.Fatal("source mutated")
+	}
+}

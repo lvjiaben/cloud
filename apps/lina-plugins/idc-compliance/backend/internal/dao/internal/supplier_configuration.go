@@ -28,8 +28,8 @@ type SupplierConfigurationColumns struct {
 	CredentialStatusCode    string // Credential lifecycle only; independent from supplier subject binding state
 	CredentialSecretRef     string // Sensitive secretcap routing reference for one provider-neutral credential envelope; plaintext and ciphertext are forbidden
 	CredentialGeneration    string //
-	CapabilityEvidenceCode  string // Reviewed provider-contract gate; official_public_contract is valid only for Tencent ESS Basic
-	AdapterEnabled          string // True only for an active Tencent local subject backed by the reviewed public API contract
+	CapabilityEvidenceCode  string // Fail-closed external evidence gate; this migration deliberately permits only external_confirmation_required
+	AdapterEnabled          string //
 	LastMutationDigest      string //
 	MutationOperationKey    string //
 	MutationSecretUpdatedAt string //

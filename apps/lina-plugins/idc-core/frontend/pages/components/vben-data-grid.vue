@@ -22,8 +22,11 @@ const props = withDefaults(
     loading?: boolean;
     pagination?: { currentPage: number; pageSize: number; total: number };
     rowKey: string;
+    toolbar?: boolean;
+    rowHeight?: number;
+    virtualRows?: boolean;
   }>(),
-  { height: 360, loading: false },
+  { height: 360, loading: false, toolbar: true },
 );
 
 const emit = defineEmits<{
@@ -50,13 +53,15 @@ const [Grid, gridApi] = useVbenVxeGrid({
   gridOptions: {
     border: true,
     columns: normalizedColumns.value,
-    data: [],
+    data: props.data as Record<string, unknown>[],
     height: props.height,
     loading: props.loading,
     pagerConfig: props.pagination
       ? { enabled: true, ...props.pagination }
       : { enabled: false },
-    rowConfig: { keyField: props.rowKey },
+    rowConfig: { keyField: props.rowKey, height: props.rowHeight },
+    ...(props.virtualRows ? { scrollY: { enabled: true, gt: 20 } } : {}),
+    toolbarConfig: { enabled: props.toolbar },
     showOverflow: true,
   },
 });
@@ -94,7 +99,7 @@ watch(
         :column="{ key: column.field }"
         :record="row"
         :value="row[column.field]"
-      />
+      >{{ row[column.field] }}</slot>
     </template>
   </Grid>
 </template>

@@ -51,8 +51,8 @@ type ManagementCreditEvidenceOpenRes struct{}
 type ManagementCreditApplicationReviewIntent struct {
 	RequestNo      string `json:"requestNo" v:"required|min-length:8|max-length:128" dc:"Stable request number shared by proof issuance and execution" eg:"credit-review-01J2"`
 	DecisionCode   string `json:"decisionCode" v:"required|in:approved,rejected" dc:"Independent reviewer decision: approved or rejected" eg:"approved"`
-	CommentDigest  string `json:"commentDigest" v:"required|regex:^[0-9a-f]{64}$" dc:"Lowercase SHA-256 digest of immutable review comment" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
-	EvidenceDigest string `json:"evidenceDigest" v:"required|regex:^[0-9a-f]{64}$" dc:"Lowercase SHA-256 digest of immutable independent review evidence" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	CommentDigest  string `json:"commentDigest" v:"regex:^$|^[0-9a-f]{64}$" dc:"Optional annotation SHA-256 digest; absent input uses a system request trace" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	EvidenceDigest string `json:"evidenceDigest" v:"regex:^$|^[0-9a-f]{64}$" dc:"Optional annotation SHA-256 digest; absent input uses a system request trace" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 }
 
 // ManagementCreditApplicationReviewProofReq requests a proof bound to one review decision.
@@ -72,7 +72,7 @@ type ManagementCreditApplicationReviewReq struct {
 	g.Meta        `path:"/admin/billing/credit/applications/{applicationNo}/reviews" method:"post" tags:"IDC Credit Management" summary:"Review a credit application" dc:"Re-authorize and consume the exact-preview proof before appending an independent decision; account activation remains atomic." permission:"idc:admin:billing:credit-application:review"`
 	ApplicationNo string `json:"applicationNo" in:"path" v:"required|max-length:40" dc:"Stable pending credit application number" eg:"CAP_01J2ABCDEF"`
 	ManagementCreditApplicationReviewIntent
-	ProofToken string `json:"proofToken" v:"required|max-length:4096" dc:"Opaque proof issued for this exact review preview" eg:"opaque-proof"`
+	ProofToken string `json:"proofToken" v:"max-length:4096" dc:"Optional exact-review proof; current action permission is sufficient" eg:"opaque-proof"`
 }
 
 // ManagementCreditApplicationReviewRes returns the committed application lifecycle result.

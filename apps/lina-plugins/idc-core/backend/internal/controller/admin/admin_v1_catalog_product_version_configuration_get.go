@@ -6,7 +6,7 @@ import (
 )
 
 func (c *ControllerV1) CatalogProductVersionConfigurationGet(ctx context.Context, req *v1.CatalogProductVersionConfigurationGetReq) (*v1.CatalogProductVersionConfigurationGetRes, error) {
-	configuration, err := c.productAutomation.GetVersionConfiguration(ctx, req.VersionNo)
+	configuration, err := c.productAutomation.GetMerchantConfiguration(ctx, req.VersionNo)
 	if err != nil {
 		return nil, err
 	}

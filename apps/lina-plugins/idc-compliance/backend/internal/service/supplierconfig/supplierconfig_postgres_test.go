@@ -162,7 +162,7 @@ func TestSupplierSubjectBindingProofAndFailureStatePostgreSQL(t *testing.T) {
 	service.(*serviceImpl).now = func() time.Time { return now }
 
 	request := SubjectAuthorizationRequest{
-		ProviderCode: ProviderTencentESSBasic, Operation: OperationSubjectBind,
+		ProviderCode: ProviderNuonuoInvoice, Operation: OperationSubjectBind,
 		IdempotencyKey: "supplier-subject-bind-0001",
 	}
 	issued, err := service.IssueSubjectAuthorization(ctx, request)
@@ -177,8 +177,8 @@ func TestSupplierSubjectBindingProofAndFailureStatePostgreSQL(t *testing.T) {
 	if err != nil || configuration == nil || configuration.SubjectStatus != SubjectActive ||
 		configuration.LastOperationResult != OperationResultSucceeded ||
 		configuration.SubjectBindingNo != "lsb_0123456789abcdef0123456789abcdef" ||
-		configuration.CapabilityEvidenceCode != EvidenceOfficialPublicContract ||
-		!configuration.AdapterEnabled || gateway.bindCalls != 1 {
+		configuration.CapabilityEvidenceCode != EvidenceExternalConfirmationRequired ||
+		configuration.AdapterEnabled || gateway.bindCalls != 1 {
 		t.Fatalf("configuration=%+v gatewayCalls=%d err=%v", configuration, gateway.bindCalls, err)
 	}
 	assertClearedSupplierBytes(t, authorizationResult)
@@ -188,7 +188,7 @@ FROM plugin_idc_compliance_supplier_configuration
 WHERE provider_code = ?
   AND subject_proof_digest = ?
   AND subject_proof_expires_at = ?`,
-		ProviderTencentESSBasic, proofTokenDigest(issued.Token), issued.ExpiresAt,
+		ProviderNuonuoInvoice, proofTokenDigest(issued.Token), issued.ExpiresAt,
 	)
 	if proofErr != nil || persistedProofs.Int() != 1 {
 		t.Fatalf("persisted proof count=%d want=1 err=%v", persistedProofs.Int(), proofErr)
@@ -202,6 +202,32 @@ WHERE provider_code = ?
 		t.Fatalf("replayed proof error=%v gatewayCalls=%d", err, gateway.bindCalls)
 	}
 	assertClearedSupplierBytes(t, replayedResult)
+
+}
+
+// TestSupplierSubjectFailureStatePostgreSQL uses a fresh supplier fixture after electronic-sign retirement.
+func TestSupplierSubjectFailureStatePostgreSQL(t *testing.T) {
+	ctx := context.Background()
+	database := supplierConfigurationTestDatabase(t, ctx)
+	now := time.Date(2026, time.August, 14, 9, 0, 0, 0, time.UTC)
+	proofs := &supplierProofStore{now: now}
+	gateway := &supplierSubjectGatewayRecorder{}
+	audit := &supplierAuditRecorder{}
+	service, err := New(
+		&supplierManager{},
+		managementcap.Runtime{
+			Authorizer: &supplierAuthorizer{actor: 42}, Audit: audit, SensitiveAccess: proofs,
+		},
+		&supplierSessions{current: &sessioncap.SessionInfo{
+			ID: "supplier-session", UserID: "42", TenantID: capmodel.DomainID("0"),
+			LoginAt: timePointer(now),
+		}},
+		gateway,
+	)
+	if err != nil {
+		t.Fatalf("create supplier service: %v", err)
+	}
+	service.(*serviceImpl).now = func() time.Time { return now }
 
 	gateway.failBind = true
 	failureRequest := SubjectAuthorizationRequest{
@@ -234,49 +260,6 @@ WHERE provider_code = ?
 		t.Fatalf("retryable supplier state=%+v", row)
 	}
 	assertSupplierPlaintextAbsent(t, ctx, database, "provider-owned-failure-result", audit)
-}
-
-func TestManagedTencentOnboardingBindingEnablesOnlyReviewedAdapterPostgreSQL(t *testing.T) {
-	ctx := context.Background()
-	database := supplierConfigurationTestDatabase(t, ctx)
-	now := time.Date(2026, time.August, 14, 9, 0, 0, 0, time.UTC)
-	audit := &supplierAuditRecorder{}
-	service, err := New(
-		&supplierManager{},
-		managementcap.Runtime{
-			Authorizer: &supplierAuthorizer{actor: 42}, Audit: audit,
-			SensitiveAccess: &supplierProofStore{now: now},
-		},
-		&supplierSessions{current: &sessioncap.SessionInfo{
-			ID: "supplier-session", UserID: "42", TenantID: capmodel.DomainID("0"),
-			LoginAt: timePointer(now),
-		}},
-		&supplierSubjectGatewayRecorder{},
-	)
-	if err != nil {
-		t.Fatalf("create supplier service: %v", err)
-	}
-	service.(*serviceImpl).now = func() time.Time { return now }
-	configuration, err := service.RecordManagedBinding(ctx, ProviderTencentESSBasic, GatewayResult{
-		OperationNo: "lsi_1123456789abcdef0123456789abcdef",
-		BindingNo:   "lsb_1123456789abcdef0123456789abcdef",
-	})
-	if err != nil || configuration == nil || configuration.SubjectStatus != SubjectActive ||
-		configuration.SubjectBindingNo != "lsb_1123456789abcdef0123456789abcdef" ||
-		configuration.CapabilityEvidenceCode != EvidenceOfficialPublicContract ||
-		!configuration.AdapterEnabled {
-		t.Fatalf("managed configuration=%+v err=%v", configuration, err)
-	}
-	var row struct {
-		CapabilityEvidenceCode string `json:"capability_evidence_code"`
-		AdapterEnabled         bool   `json:"adapter_enabled"`
-	}
-	if err = database.Model("plugin_idc_compliance_supplier_configuration").
-		Fields("capability_evidence_code", "adapter_enabled").
-		Where("provider_code", ProviderTencentESSBasic).Scan(&row); err != nil ||
-		row.CapabilityEvidenceCode != EvidenceOfficialPublicContract || !row.AdapterEnabled {
-		t.Fatalf("persisted managed gate=%+v err=%v", row, err)
-	}
 }
 
 func assertClearedSupplierBytes(t *testing.T, value []byte) {
@@ -353,7 +336,6 @@ func supplierConfigurationTestDatabase(t *testing.T, ctx context.Context) gdb.DB
 	}
 	for _, name := range []string{
 		"006-local-supplier-configuration.sql", "007-local-supplier-subject-boundary.sql",
-		"008-tencent-essbasic-onboarding.sql",
 	} {
 		content, readErr := os.ReadFile(filepath.Join(root, name))
 		if readErr != nil {

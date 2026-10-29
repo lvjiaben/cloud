@@ -17,12 +17,11 @@ func TestFrontendDeliveryOwnsBuildAndHostedMount(t *testing.T) {
 		t.Fatal("plugin manifest must publish the plugin-owned frontend/dist directory")
 	}
 	manifestText := string(manifest)
-	if strings.Count(manifestText, "pluginAccessMode: embedded-mount") != 4 ||
-		strings.Count(manifestText, "embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js") != 4 {
+	if strings.Count(manifestText, "pluginAccessMode: embedded-mount") != 3 ||
+		strings.Count(manifestText, "embeddedSrc: /x-assets/idc-notify/v0.1.11/mount.js") != 3 {
 		t.Fatal("every notification page menu must mount the plugin-owned frontend bundle")
 	}
 	for _, routePath := range []string{
-		"/idc/notifications/wechat-work-binding",
 		"/idc/notifications/channels",
 		"/idc/notifications/templates",
 		"/idc/notifications/deliveries",

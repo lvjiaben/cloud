@@ -1,7 +1,6 @@
 import { test, expect } from '@host-tests/fixtures/auth';
 import { ensureSourcePluginEnabled } from '@host-tests/fixtures/plugin';
 import { NoticePage } from '../../pages/NoticePage';
-import { waitForDropdown } from '@host-tests/support/ui';
 
 test.describe('TC002 通知公告搜索筛选', () => {
   test.beforeEach(async ({ adminPage }) => {
@@ -16,21 +15,6 @@ test.describe('TC002 通知公告搜索筛选', () => {
 
     const hasNotice = await noticePage.hasNotice('系统升级通知');
     expect(hasNotice).toBeTruthy();
-  });
-
-  test('TC002b: 按类型筛选', async ({ adminPage }) => {
-    const noticePage = new NoticePage(adminPage);
-    await noticePage.goto();
-
-    // Select type filter
-    await adminPage.getByLabel('公告类型', { exact: true }).first().click();
-    const dropdown = await waitForDropdown(adminPage);
-    await dropdown.getByText('通知', { exact: true }).click();
-    await noticePage.clickSearch();
-
-    // Results should only contain type=通知
-    const total = await noticePage.getTotalCount();
-    expect(total).toBeGreaterThan(0);
   });
 
   test('TC002c: 重置搜索条件', async ({ adminPage }) => {

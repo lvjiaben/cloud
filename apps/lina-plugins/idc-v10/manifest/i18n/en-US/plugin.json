@@ -2,5 +2,7 @@
   "plugin.idc-v10.name": "IDC V10 Provider",
   "plugin.idc-v10.description": "Managed V10 connector using its independent JWT and console supplier protocol",
   "error.idc.v10.catalog.invalid": "The upstream product selection is invalid",
-  "error.idc.v10.catalog.unavailable": "The upstream product catalog could not be read"
+  "error.idc.v10.catalog.unavailable": "The upstream product catalog could not be read",
+  "plugins.idc_v10.catalog.once": "One-time",
+  "plugins.idc_v10.catalog.free": "Free"
 }

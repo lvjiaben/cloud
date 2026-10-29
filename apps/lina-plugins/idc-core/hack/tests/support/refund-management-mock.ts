@@ -98,7 +98,7 @@ export interface RefundManagementMockState {
 
 export async function installRefundManagementMock(
   page: Page,
-  options: { highAmount?: boolean } = {},
+  options: { highAmount?: boolean; failedDelivery?: boolean } = {},
 ) {
   await installFinancialManagementMock(page);
   const refundPermissions = [
@@ -226,7 +226,7 @@ export async function installRefundManagementMock(
                   amountMinor: "500000",
                   descriptionEnUS: "Production cloud server",
                   descriptionZhCN: "生产云服务器",
-                  impacts: [
+                  impacts: options.failedDelivery ? [] : [
                     {
                       entitlementNo: "ENT_REFUND_0001",
                       entitlementVersion: 7,
@@ -241,7 +241,7 @@ export async function installRefundManagementMock(
                   refundItemNo: "RFI_REFUND_0001",
                 },
               ],
-              refund: summary(state.highAmount, state.statusCode),
+              refund: { ...summary(state.highAmount, state.statusCode), ...(options.failedDelivery ? {hasResourceImpact:false, requiresServiceTermination:false, reasonCode:"service_issue", reasonDetail:"供应商拒绝开通，管理员选择退款"} : {}) },
             },
           }),
         });
@@ -268,7 +268,7 @@ export async function installRefundManagementMock(
           body.decisionCode === "approve" ? "approved" : "rejected";
         await route.fulfill({
           json: envelope({
-            refund: summary(state.highAmount, state.statusCode),
+            refund: { ...summary(state.highAmount, state.statusCode), ...(options.failedDelivery ? {hasResourceImpact:false, requiresServiceTermination:false, reasonCode:"service_issue", reasonDetail:"供应商拒绝开通，管理员选择退款"} : {}) },
           }),
         });
         return;

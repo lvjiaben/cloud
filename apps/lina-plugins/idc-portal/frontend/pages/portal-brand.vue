@@ -11,6 +11,8 @@ import WebsiteDeveloperGuide from "./website-developer-guide.vue";
 import WebsiteNavigationEditor from "./website-navigation-editor.vue";
 import type { WebsiteNavigation } from "./website-configuration-client";
 import { Page } from "@vben/common-ui";
+import { useAccess } from "@vben/access";
+import { useRouter } from "vue-router";
 import { Alert, Button, Empty, Spin, Tag, message } from "ant-design-vue";
 import { computed, onMounted, ref } from "vue";
 import { useVbenForm } from "#/adapter/form";
@@ -25,6 +27,9 @@ import {
 
 const tr = (key: string) => $t(`plugin.idc-portal.website.${key}`);
 const context = usePortalMountContext();
+const router = useRouter();
+const { hasAccessByCodes } = useAccess();
+const canManageContent = computed(() => hasAccessByCodes(["*:*:*"]) || hasAccessByCodes(["idc:admin:content:manage"]));
 const navigation = ref<WebsiteNavigation>({ header: [], footer: [] });
 const plugins = ref<WebsitePlugin[]>([]);
 const selectedPlugin = ref("");
@@ -42,9 +47,23 @@ const commonKeys = [
   "siteName",
   "siteTitle",
   "companyName",
+  "icpNumber",
+  "icpUrl",
+  "policeNumber",
+  "policeUrl",
   "contactEmail",
   "contactPhone",
   "logoUrl",
+  "headerLogoUrl",
+  "footerLogoUrl",
+  "copyright",
+  "businessQq",
+  "companyAddress",
+  "enterpriseWechatQrCodeUrl",
+  "wechatOfficialQrCodeUrl",
+  "telecomLicenseNumber",
+  "telecomLicenseUrl",
+
   "description",
 ] as const;
 const [CommonForm, commonApi] = useVbenForm({
@@ -66,7 +85,7 @@ function commonSchema() {
     component: key === "description" ? "Textarea" : "Input",
     componentProps: {
       "aria-label": tr(key),
-      maxlength: key === "description" ? 1000 : 300,
+      maxlength: key.endsWith("Url") ? 2048 : key === "description" ? 1000 : 300,
     },
     ...(key === "siteName" ? { rules: "required" } : {}),
   }));
@@ -79,7 +98,7 @@ async function choose(pluginId: string) {
       configCache.set(selectedPlugin.value, await pluginApi.getValues());
     selectedPlugin.value = pluginId;
     // Structured navigation owns menu editing; retain legacy values only for old public consumers.
-    const fields = (current.value?.schema.fields ?? []).filter(field => field.key !== 'menutext');
+    const fields = (current.value?.schema?.fields ?? []).filter(field => field.key !== 'menutext');
     pluginApi.setState({
       schema: fields.map((field) => ({
         fieldName: field.key,
@@ -186,6 +205,7 @@ onMounted(async () => {
           <p>{{ tr("intro") }}</p>
         </div>
         <div class="flex gap-2">
+          <Button v-if="canManageContent" data-testid="website-content-management" @click="router.push('/idc/content')">{{ tr("contentManagement") }}</Button>
           <WebsiteDeveloperGuide />
           <Button :disabled="loading || saving || switching" @click="load">{{
             tr("reload")
@@ -239,9 +259,9 @@ onMounted(async () => {
             </button>
           </div>
         </section>
-        <section v-if="ready && current" class="website-section">
+        <section v-if="ready && plugins.length" class="website-section">
 <h2>{{ tr("nav.title") }}</h2>
-<WebsiteNavigationEditor v-model="navigation" :pages="current.pages ?? []" :disabled="saving" />
+<WebsiteNavigationEditor v-model="navigation" :pages="current?.pages ?? []" :disabled="saving || !current" />
 </section>
 <div v-show="ready" class="website-forms">
           <section class="website-section">
@@ -253,7 +273,7 @@ onMounted(async () => {
             <h2>{{ tr("content") }} · {{ current?.name }}</h2>
             <p>{{ tr("contentHint") }}</p>
             <PluginForm :disabled="saving" />
-            <p v-if="!current?.schema.fields.length">{{ tr("noFields") }}</p>
+            <p v-if="!current?.schema?.fields?.length">{{ tr("noFields") }}</p>
           </section>
         </div>
       </Spin>

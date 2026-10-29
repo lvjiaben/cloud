@@ -83,7 +83,7 @@ function count(value: number) {
 function money(minor: string) {
   const exponent = data.value?.currencyExponent ?? 2;
   const value = BigInt(minor);
-  const scale = 10n ** BigInt(exponent);
+  const scale = BigInt(`1${"0".repeat(exponent)}`);
   const absolute = value < 0n ? -value : value;
   const integer = new Intl.NumberFormat(locale.value).format(absolute / scale);
   const fraction = exponent

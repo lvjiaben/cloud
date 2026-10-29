@@ -14,11 +14,12 @@ func (c *ControllerV1) PrivacyDeletionList(ctx context.Context, req *v1.PrivacyD
 	if req == nil {
 		return nil, bizerr.NewCode(privacygovernance.CodeInvalid)
 	}
-	items, err := c.privacyGovernance.ListDeletionTasks(ctx, req.Limit)
+	page, err := c.privacyGovernance.ListDeletionTasks(ctx, req.Page, req.PageSize)
 	if err != nil {
 		return nil, err
 	}
-	result := &v1.PrivacyDeletionListRes{Items: make([]v1.PrivacyDeletionItem, 0, len(items))}
+	items := page.Items
+	result := &v1.PrivacyDeletionListRes{Items: make([]v1.PrivacyDeletionItem, 0, len(items)), Total: page.Total}
 	for index := range items {
 		result.Items = append(result.Items, privacyDeletionItem(&items[index]))
 	}

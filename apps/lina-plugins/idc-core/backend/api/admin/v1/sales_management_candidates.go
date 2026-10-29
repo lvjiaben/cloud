@@ -40,7 +40,7 @@ type SalesManagementStaffRes struct {
 
 // SalesManagementPriceProductsReq scopes catalog choices to the price operator's capability.
 type SalesManagementPriceProductsReq struct {
-	g.Meta `path:"/admin/sales-management/price-product-candidates" method:"get" tags:"IDC Sales Management" summary:"List price product candidates" dc:"Search published products or resolve one exact product and its currency-period choices." permission:"idc:admin:sales-channel:pricing:manage"`
+	g.Meta `path:"/admin/sales-management/price-product-candidates" method:"get" tags:"IDC Sales Management" summary:"List price product candidates" dc:"Search products and their saved base-price currency-period choices, including first-draft price preparation; draft products remain unavailable for sale." permission:"idc:admin:sales-channel:pricing:manage"`
 	SalesManagementPageQuery
 	ProductNo string `json:"productNo" v:"max-length:128" dc:"Exact product reference filter" eg:"PRD_example"`
 }

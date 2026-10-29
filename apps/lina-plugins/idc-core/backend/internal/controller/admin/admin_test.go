@@ -808,7 +808,9 @@ type catalogManagementServiceStub struct {
 	taxPolicy           *catalog.TaxPolicy
 }
 
-func (s *catalogManagementServiceStub) UpdateProductDescription(context.Context, catalog.ProductDescriptionUpdateInput) (int64, error) { return 2,nil }
+func (s *catalogManagementServiceStub) UpdateProductDescription(context.Context, catalog.ProductDescriptionUpdateInput) (int64, error) {
+	return 2, nil
+}
 
 func (s *catalogManagementServiceStub) CreateCategory(
 	_ context.Context,
@@ -1171,6 +1173,7 @@ func TestCatalogProductPublicationPreviewControllerMapsStableChecks(t *testing.T
 		Checks: []catalog.PublicationReadinessCheck{
 			{Code: catalog.PublicationCheckLifecycle, Passed: true},
 			{Code: catalog.PublicationCheckPricing, Passed: false},
+			{Code: catalog.PublicationCheckAutomation, Passed: false, ReasonCode: catalog.PublicationReasonProviderUnavailable},
 		},
 	}}
 	controller := newAdminControllerForTest(t,
@@ -1184,9 +1187,9 @@ func TestCatalogProductPublicationPreviewControllerMapsStableChecks(t *testing.T
 		&v1.CatalogProductPublicationPreviewReq{VersionNo: "version-route-2"},
 	)
 	if err != nil || result == nil || result.Ready || result.ProductNo != "product-route" ||
-		len(result.Checks) != 2 || result.Checks[0].Code != "lifecycle" ||
+		len(result.Checks) != 3 || result.Checks[0].Code != "lifecycle" ||
 		!result.Checks[0].Passed || result.Checks[1].Code != "pricing" ||
-		result.Checks[1].Passed || preview.versionNo != "version-route-2" {
+		result.Checks[1].Passed || result.Checks[2].ReasonCode != "provider_unavailable" || preview.versionNo != "version-route-2" {
 		t.Fatalf("publication preview=%+v request=%q err=%v", result, preview.versionNo, err)
 	}
 }
@@ -1229,4 +1232,24 @@ func TestMarketingOverviewControllerMapsCurrencySafeSnapshot(t *testing.T) {
 		*result.RecentGrants[0].ExpiresAt != expiresAt.UnixMilli() {
 		t.Fatalf("marketing overview mapping=%+v reader=%+v err=%v", result, reader, err)
 	}
+}
+
+func (managementFinanceCommandServiceStub) IssueBalanceAdjustmentProof(context.Context, billing.ManagementBalanceAdjustmentIntent) (*reauth.ProofContext, error) {
+	return &reauth.ProofContext{}, nil
+}
+
+func (managementFinanceCommandServiceStub) CreateBalanceAdjustment(context.Context, billing.ManagementBalanceAdjustmentIntent, string) (*billing.FinancialAdjustment, error) {
+	return nil, nil
+}
+
+func (s *catalogPublicationServiceStub) SetSaleState(context.Context, catalog.ProductSaleStateInput) (int64, error) {
+	return 2, nil
+}
+
+// WithSavedSettings runs the typed write in controller mapping tests.
+func (s *catalogPublicationServiceStub) WithSavedSettings(ctx context.Context, _ string, save func(context.Context) error) error {
+	return save(ctx)
+}
+func (s *catalogPublicationServiceStub) ApplySavedVersion(ctx context.Context, versionNo string) (*catalog.PublicationResult, error) {
+	return s.PublishVersion(ctx, versionNo)
 }

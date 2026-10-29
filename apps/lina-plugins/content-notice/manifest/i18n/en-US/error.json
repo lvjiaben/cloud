@@ -6,10 +6,12 @@
           "required": "Select at least one notice to delete"
         },
         "not": {
-          "found": "Notice does not exist"
+          "found": "Announcement does not exist"
+        },
+        "login": {
+          "required": "Sign in to view announcements"
         }
       }
     }
   }
 }
-

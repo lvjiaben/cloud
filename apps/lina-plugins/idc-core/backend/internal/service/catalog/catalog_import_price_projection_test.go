@@ -54,7 +54,7 @@ func stringPtr(value string) *string { return &value }
 // TestProjectImportQuantityPrices freezes the algorithm and schema limits
 // across portable export, JSON transport and downstream price persistence.
 func TestProjectImportQuantityPrices(t *testing.T) {
-	for _, mode := range []ConfigurationPriceMode{ConfigurationPricePerUnit, ConfigurationPriceBandTotal} {
+	for _, mode := range []ConfigurationPriceMode{ConfigurationPricePerUnit, ConfigurationPriceBandTotal, ConfigurationPriceGraduated} {
 		t.Run(string(mode), func(t *testing.T) {
 			codec, err := newPublicConfigurationRevisionCodec(bytes.Repeat([]byte{3}, 32))
 			if err != nil {
@@ -72,6 +72,11 @@ func TestProjectImportQuantityPrices(t *testing.T) {
 					{VersionNo: "v1", BillingRuleNo: "rule", CurrencyCode: "USD", ConfigurationPriceDimensionNo: "cpd_disk", MinimumQuantity: 100, AmountMinor: 1, SetupFeeMinor: 5, RenewalAmountMinor: &renewal}},
 				TaxPolicies: []entity.CatalogTaxPolicy{{CurrencyCode: "USD", TaxTreatmentCode: "exempt", TaxCategoryCode: "service", RoundingScopeCode: "line", RoundingModeCode: "half_up", RoundingQuantumMinor: 1}},
 			}
+			expectedLaterSetup := int64(5)
+			if mode == ConfigurationPriceGraduated {
+				source.Prices[2].SetupFeeMinor = 0
+				expectedLaterSetup = 0
+			}
 			result, err := projectImportPrices(codec, "demo", snapshot, projection, source, []configurationPriceDimensionIdentity{{DimensionNo: "cpd_disk", FieldKey: "disk", CandidateValue: "quantity", PricingMode: mode}}, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -85,7 +90,7 @@ func TestProjectImportQuantityPrices(t *testing.T) {
 				t.Fatal(err)
 			}
 			option := transported[0].Options[0]
-			if ConfigurationPriceMode(option.PricingMode) != mode || option.Value != "" || len(option.Bands) != 2 || option.Bands[1].SetupAmountMinor != 5 {
+			if ConfigurationPriceMode(option.PricingMode) != mode || option.Value != "" || len(option.Bands) != 2 || option.Bands[1].SetupAmountMinor != expectedLaterSetup {
 				t.Fatalf("quantity algorithm lost: %+v", option)
 			}
 			downstream := &channelcommercecap.ImportSnapshot{Schema: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "field_disk", Type: capmodel.ConfigurationFieldInteger, Label: label}}}}

@@ -2,8 +2,8 @@
 import {readFile} from 'node:fs/promises';
 import type {Page} from '@host-tests/support/playwright';
 export async function installDirectoryMock(page:Page,customer=false){
- const state={failNext:false,directoryFailure:false,paginated:false,writes:[] as Record<string,unknown>[],services:[] as string[]};
- const directory={directoryNo:'dir_ui_cloud',nameZhCn:'云服务器',nameEnUs:'Cloud servers',sortOrder:100,statusCode:'enabled',version:1,productNos:['prd_ui_cloud'],productCount:1,products:[{productNo:'prd_ui_cloud',nameZhCn:'回归云服务器',nameEnUs:'Test cloud server'}]};
+ const state={failNext:false,directoryFailure:false,paginated:false,hierarchy:false,writes:[] as Record<string,unknown>[],services:[] as string[]};
+ const directory={navigationType:'product',targetUrl:'',icon:'lucide:server',pagePluginIds:[] as string[],directoryNo:'dir_ui_cloud',nameZhCn:'云服务器',nameEnUs:'Cloud servers',sortOrder:100,statusCode:'enabled',version:1,productNos:['prd_ui_cloud'],productCount:1,products:[{productNo:'prd_ui_cloud',nameZhCn:'回归云服务器',nameEnUs:'Test cloud server'}]};
  const created:Record<string,unknown>[]=[];
  if(customer){
   await page.route('**/api/v1/auth/login',route=>route.fulfill({json:{code:0,data:{accessToken:'ui-contract-only',refreshToken:'ui-contract-refresh',tenants:[]}}}));
@@ -12,6 +12,8 @@ export async function installDirectoryMock(page:Page,customer=false){
   await page.route('**/customer/external-menus',route=>route.fulfill({json:{code:0,data:{items:[]}}}));
   await page.route('**/account/initial-password/status',route=>route.fulfill({json:{code:0,data:{required:false}}}));
  }
+ await page.addInitScript(()=>{for(const key of Object.keys(localStorage)){if(key.startsWith('linapro:i18n:runtime:'))localStorage.removeItem(key);}});
+ await page.route('https://api.iconify.design/collection?prefix=lucide',route=>route.fulfill({json:{prefix:'lucide',total:45,uncategorized:['server','cloud','database-zap','network','shield-check','wallet','user','folder',...Array.from({length:37},(_,i)=>'test-icon-'+i)]}}));
  const translations=JSON.parse(await readFile(new URL('../../../manifest/i18n/zh-CN/product-directory.json',import.meta.url),'utf8'));
  await page.route('**/api/v1/i18n/runtime/messages*',async route=>{
   const headers={...route.request().headers()};delete headers['if-none-match'];delete headers['if-modified-since'];
@@ -39,7 +41,9 @@ export async function installDirectoryMock(page:Page,customer=false){
     const ssl={...directory,directoryNo:'dir_ui_ssl',nameZhCn:'SSL证书',nameEnUs:'SSL certificates',serviceCount:1};
     const current=Number(url.searchParams.get('page')||1);
     const first=[{...directory,serviceCount:1},...Array.from({length:99},(_,i)=>({...directory,directoryNo:`dir_extra_${i}`,nameZhCn:`其他服务${i}`,serviceCount:0}))];
-    const items=state.paginated?(current===1?first:[ssl]):[{...directory,serviceCount:1},ssl,...created];
+    if(state.hierarchy && !("parentDirectoryNo" in directory))Object.assign(directory,{parentDirectoryNo:'dir_root',navigationType:'product',icon:'lucide:server'});
+    const hierarchy=[{directoryNo:'dir_root',nameZhCn:'产品与服务',nameEnUs:'Products and services',parentDirectoryNo:'',navigationType:'system',targetUrl:'/account/servers',icon:'lucide:cloud',sortOrder:10,statusCode:'enabled',version:1,productCount:0},{...directory,serviceCount:1},{...ssl,parentDirectoryNo:'dir_root',icon:'lucide:shield-check'},{directoryNo:'dir_external',nameZhCn:'帮助文档',nameEnUs:'Documentation',navigationType:'custom',targetUrl:'https://docs.example.com',icon:'lucide:book-open',sortOrder:200,statusCode:'enabled',version:1,productCount:0}];
+    const items=state.hierarchy?hierarchy:state.paginated?(current===1?first:[ssl]):[{...directory,serviceCount:1},ssl,...created];
     await route.fulfill({json:{code:0,data:{items,total:state.paginated?101:items.length,page:current,pageSize:100}}});
    }
    return;

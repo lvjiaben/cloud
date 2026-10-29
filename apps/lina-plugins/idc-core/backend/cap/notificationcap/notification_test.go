@@ -17,21 +17,6 @@ func (currentAudienceStub) Current(context.Context) (CurrentAudienceProjection, 
 	return CurrentAudienceProjection{CustomerNo: "CUS_test", CustomerVersion: 1}, nil
 }
 
-type currentStaffStub struct{}
-
-func (currentStaffStub) Current(context.Context) (CurrentStaffProjection, error) {
-	return CurrentStaffProjection{HostUserID: 7, StaffVersion: 1}, nil
-}
-
-type staffDirectoryStub struct{}
-
-func (staffDirectoryStub) ResolveActiveBatch(
-	context.Context,
-	[]StaffDirectoryRequest,
-) ([]StaffDirectoryProjection, error) {
-	return []StaffDirectoryProjection{}, nil
-}
-
 type eventFeedStub struct{}
 
 func (eventFeedStub) Claim(context.Context, EventClaimInput) ([]ClaimedEvent, error) {
@@ -77,7 +62,7 @@ func (preferenceCommanderStub) UpdateCurrent(
 
 func TestValidateRuntimeRejectsIncompleteDependencies(t *testing.T) {
 	valid := Runtime{
-		Audience: currentAudienceStub{}, Staff: currentStaffStub{}, StaffDirectory: staffDirectoryStub{}, Events: eventFeedStub{}, Contacts: contactResolverStub{}, BusinessObjects: businessObjectAccessStub{},
+		Audience: currentAudienceStub{}, Events: eventFeedStub{}, Contacts: contactResolverStub{}, BusinessObjects: businessObjectAccessStub{},
 		Marketing: marketingSendGateStub{}, Preferences: preferenceCommanderStub{},
 	}
 	if err := ValidateRuntime(valid); err != nil {
@@ -87,16 +72,6 @@ func TestValidateRuntimeRejectsIncompleteDependencies(t *testing.T) {
 	invalid.Contacts = nil
 	if err := ValidateRuntime(invalid); err == nil {
 		t.Fatal("incomplete runtime accepted")
-	}
-	invalid = valid
-	invalid.Staff = nil
-	if err := ValidateRuntime(invalid); err == nil {
-		t.Fatal("runtime without current staff accepted")
-	}
-	invalid = valid
-	invalid.StaffDirectory = nil
-	if err := ValidateRuntime(invalid); err == nil {
-		t.Fatal("runtime without staff directory accepted")
 	}
 }
 

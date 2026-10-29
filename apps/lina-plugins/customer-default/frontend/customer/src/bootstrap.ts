@@ -23,12 +23,14 @@ import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { setupGlobalComponent } from './components/global';
 import { loadPluginSvgIcons } from './plugins/icon-registry';
+import { registerConsoleIcons } from './plugins/console-icons';
 import { router } from './router';
 import { syncPublicFrontendSettings } from './runtime/public-frontend';
 import './styles/customer-console.css';
 import { downloadBlob } from './utils/download';
 
 async function bootstrap(namespace: string) {
+  registerConsoleIcons();
   document.documentElement.dataset.customerConsole = 'true';
   document.body.classList.add('customer-console-app');
 

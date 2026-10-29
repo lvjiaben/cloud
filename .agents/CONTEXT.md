@@ -10,6 +10,14 @@
 
 
 ```bash
+# 修改前查看有界状态，指定路径再展开相关文件。
+go run ./.agents/tools/context.go status
+go run ./.agents/tools/context.go status apps/lina-plugins/idc-payment
+go run ./.agents/tools/context.go audit --thread 01a1533d-0a8d-7dd3-a0bb-c6b704a6716a
+go run ./.agents/tools/context.go check --path .agents/tools --change streamline-agent-context
+go run ./.agents/tools/context.go handoff streamline-agent-context 6.1
+# 本地订单一次性只读诊断；令牌使用LINA_DIAG_TOKEN或显式私有会话文件。
+go run ./.agents/tools/context.go order --order ORD_example --session-file <私有会话JSON>
 # 规范与偏好，只输出少量命中位置。
 go run ./.agents/tools/context.go locate 退款
 go run ./.agents/tools/context.go locate security-keyring
@@ -42,10 +50,10 @@ rg -n '具体错误或函数名' apps/lina-plugins/idc-payment
 | 短信、邮件、通知 | `idc-notify` | 通知、短信、退订 | `idc-support-notification` |
 | AI、官网、客户中心模板 | `idc-ai`、`idc-portal`、`website-{default,minimal}/frontend/site`、`website-html`、`customer-default` | `72-customer-website-visual.md`、框架无关、开发文档 | `idc-ai-copilot`、`idc-merchant-portal`、`customer-template` |
 | 客户业务、代理价格、佣金、开放 API | `idc-core`、`idc-channel` | `76-customer-business-openapi.md`、`32-assisted-orders.md` | `idc-sales-channel`、`idc-downstream-channel`、`idc-checkout-order` |
-| 渠道、代理、迁移 | `idc-channel`、`idc-zjmfmigrate`等适配器 | 客户业务、代理价格、佣金、开放 API | `idc-core`、`idc-channel` | `76-customer-business-openapi.md`、`32-assisted-orders.md` | `idc-sales-channel`、`idc-downstream-channel`、`idc-checkout-order` |
-| 渠道、代理、迁移 | `idc-sales-channel`、`idc-migration-reconciliation` |
+| 渠道、代理、迁移 | `idc-channel`、`idc-zjmfmigrate`等适配器 | 客户业务、代理价格、佣金、开放 API | `idc-sales-channel`、`idc-downstream-channel`、`idc-migration-reconciliation` |
+| 插件管理、分类与开发规范 | `plugin-manager`及`apps/lina-plugins/README.zh-CN.md` | `78-plugin-management.md` | `plugin-management-workspace` |
 | 宿主通用能力 | `apps/lina-core`、`apps/lina-vben` | 具体接口或模块名 | 在`openspec/specs/`按能力名查 |
-| AI规则、技能、上下文与流程 | `AGENTS.md`、`.agents/rules`、`.agents/skills`、`.agents/prompts` | 上下文、流程、规则 | `agent-context-navigation` |
+| AI规则、技能、上下文与流程 | `AGENTS.md`、`.agents/rules`、`.agents/skills`、`.agents/prompts` | 上下文、流程、规则、`77-agent-quality.md` | `agent-context-navigation` |
 
 ## 大变更的读取方式
 

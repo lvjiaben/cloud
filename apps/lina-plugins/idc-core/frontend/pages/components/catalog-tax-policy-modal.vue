@@ -24,7 +24,8 @@ const [Modal, modalApi] = useVbenModal({
       { component: "Select", fieldName: "taxTreatment", label: label("taxTreatment"), componentProps: { "data-testid": "catalog-tax-treatment", options: ["taxable", "zero_rated", "exempt"].map(value => ({ value, label: $t(`plugin.idc-core.catalog.detail.code.taxTreatment.${value}`) })) }, rules: z.enum(["taxable", "zero_rated", "exempt"]) },
       { component: "Input", fieldName: "rate", label: label("taxPercent"), componentProps: { "data-testid": "catalog-tax-rate", inputmode: "decimal", placeholder: "6" }, rules: z.string().regex(/^\d{1,3}(?:\.\d{1,2})?$/).refine(value => Number(value) <= 100), dependencies: { triggerFields: ["taxTreatment"], if: values => values.taxTreatment === "taxable" } },
       { component: "Switch", fieldName: "priceIncludesTax", label: $t("plugin.idc-core.catalog.detail.priceIncludesTax"), componentProps: { class: "w-auto" }, rules: z.boolean() },
-      { component: "Input", fieldName: "taxCategoryCode", label: label("taxCategory"), componentProps: { "data-testid": "catalog-tax-category", maxlength: 64 }, rules: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/) },
+      { component: "Select", fieldName: "taxCategoryCode", label: label("taxCategory"), componentProps: { "data-testid": "catalog-tax-category", options: ["cloud_service", "hosting", "domain", "certificate", "other", "custom"].map(value => ({ value, label: label(`taxCategory_${value}`) })) }, help: label("taxCategoryHint"), rules: z.string().min(1) },
+      { component: "Input", fieldName: "customTaxCategoryCode", label: label("taxCategoryCustom"), componentProps: { maxlength: 64, "data-testid": "catalog-tax-category-custom" }, rules: z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/), dependencies: { triggerFields: ["taxCategoryCode"], if: values => values.taxCategoryCode === "custom" } },
       { component: "Select", fieldName: "roundingScope", label: label("roundingScope"), componentProps: { options: ["line", "total"].map(value => ({ value, label: label(`roundingScope_${value}`) })) }, rules: z.enum(["line", "total"]) },
       { component: "Select", fieldName: "roundingMode", label: label("roundingMode"), componentProps: { options: ["half_up", "down", "up"].map(value => ({ value, label: label(`roundingMode_${value}`) })) }, rules: z.enum(["half_up", "down", "up"]) },
     ] });
@@ -32,14 +33,14 @@ const [Modal, modalApi] = useVbenModal({
   },
   async onConfirm() {
     if (!(await formApi.validate()).valid) return false;
-    const values = await formApi.getValues<Omit<CatalogTaxPolicy, "taxPolicyNo" | "taxRateBasisPoints" | "roundingQuantumMinor"> & { rate?: string }>();
+    const values = await formApi.getValues<Omit<CatalogTaxPolicy, "taxPolicyNo" | "taxRateBasisPoints" | "roundingQuantumMinor"> & { rate?: string; customTaxCategoryCode?: string }>();
     const rate = values.rate ?? "0";
     const [whole = "0", fraction = ""] = rate.split(".");
     modalApi.lock(true);
     try {
       await catalogTaxPolicyCreate(versionNo, {
         currencyCode: values.currencyCode, priceIncludesTax: values.priceIncludesTax,
-        taxTreatment: values.taxTreatment, taxCategoryCode: values.taxCategoryCode,
+        taxTreatment: values.taxTreatment, taxCategoryCode: values.taxCategoryCode === "custom" ? values.customTaxCategoryCode! : values.taxCategoryCode,
         taxRateBasisPoints: values.taxTreatment === "exempt" ? null : values.taxTreatment === "zero_rated" ? 0 : Number(whole) * 100 + Number(fraction.padEnd(2, "0")),
         roundingScope: values.roundingScope, roundingMode: values.roundingMode, roundingQuantumMinor: "1",
       });

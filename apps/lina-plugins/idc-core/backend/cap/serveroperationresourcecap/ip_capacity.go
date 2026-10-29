@@ -19,10 +19,12 @@ var (
 type IPReservationStatus string
 
 const (
-	IPReservationReserved IPReservationStatus = "reserved"
-	IPReservationConsumed IPReservationStatus = "consumed"
-	IPReservationReleased IPReservationStatus = "released"
-	IPReservationExpired  IPReservationStatus = "expired"
+	IPReservationReserved       IPReservationStatus = "reserved"
+	IPReservationInFlight       IPReservationStatus = "in_flight"
+	IPReservationCommercialHold IPReservationStatus = "commercial_hold"
+	IPReservationConsumed       IPReservationStatus = "consumed"
+	IPReservationReleased       IPReservationStatus = "released"
+	IPReservationExpired        IPReservationStatus = "expired"
 )
 
 // IPReservationRequest freezes the resource route and capacity-freshness rule
@@ -54,6 +56,40 @@ type IPReservationReleaseRequest struct {
 type IPReservationConsumeRequest struct {
 	ReservationNo  string
 	ProviderTaskNo string
+}
+
+// IPReservationHoldRequest binds capacity to the actual durable resource task.
+// In-flight capacity cannot expire or be reused while its outcome is unknown.
+type IPReservationHoldRequest struct {
+	ReservationNo  string
+	ProviderTaskNo string
+}
+
+// IPExecutionHold is injected alongside IPCapacity for durable native dispatch.
+// HoldIP must commit in the same transaction that binds the local resource task.
+type IPExecutionHold interface {
+	HoldIP(context.Context, IPReservationHoldRequest) (*IPReservation, error)
+}
+
+// IPCommercialHoldRequest identifies the core-owned checkout intent. Core calls
+// BindIPCommercial in the same transaction that accepts the frozen quote.
+type IPCommercialHoldRequest struct {
+	ReservationNo string
+	OperationNo   string
+}
+
+// IPCommercialReleaseRequest is an authoritative core outcome for an intent
+// that has no provider task. ReasonCode is core_order_cancelled,
+// core_completed_refund or core_unsent_rejected; pending outcomes are invalid.
+type IPCommercialReleaseRequest struct {
+	ReservationNo string
+	OperationNo   string
+	ReasonCode    string
+}
+
+type IPCommercialHold interface {
+	BindIPCommercial(context.Context, IPCommercialHoldRequest) (*IPReservation, error)
+	ReleaseIPCommercial(context.Context, IPCommercialReleaseRequest) (*IPReservation, error)
 }
 
 // IPCapacity is a separate owner boundary so ordinary Provider task sources
@@ -104,7 +140,7 @@ func ValidateIPReservation(reservation IPReservation) error {
 		return ErrIPReservationConflict
 	}
 	switch reservation.Status {
-	case IPReservationReserved, IPReservationConsumed, IPReservationReleased, IPReservationExpired:
+	case IPReservationReserved, IPReservationCommercialHold, IPReservationInFlight, IPReservationConsumed, IPReservationReleased, IPReservationExpired:
 		return nil
 	default:
 		return ErrIPReservationConflict

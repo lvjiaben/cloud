@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   createFulfillmentActionAttempt,
+  fulfillmentFailureTranslationKey,
+  fulfillmentPhaseTranslationKey,
   fulfillmentEventTranslationKey,
   fulfillmentEventReasonLabel,
   fulfillmentModeTranslationKey,
@@ -20,6 +22,7 @@ describe("product fulfillment presentation", () => {
     "awaiting_payment",
     "awaiting_review",
     "processing",
+    "manual_processing",
     "completed",
     "not_completed",
     "cancelled",
@@ -35,6 +38,7 @@ describe("product fulfillment presentation", () => {
     expect(values).toEqual([
       "awaiting_review",
       "processing",
+    "manual_processing",
       "completed",
       "not_completed",
       "cancelled",
@@ -147,4 +151,19 @@ describe("product fulfillment presentation", () => {
     ).toBe("不可用");
     expect(fulfillmentEventReasonLabel({}, false, "不可用")).toBe("");
   });
+});
+
+describe("operator provisioning diagnostics", () => {
+ it.each([
+  ["request_invalid","localRequest"], ["lookup_failed","localLookup"], ["parameters_unavailable","localParameters"],
+  ["credential_failed","localCredential"], ["callback_unavailable","localCallback"], ["task_input_invalid","localTaskInput"], ["task_storage_failed","localTaskStorage"],
+ ])("local preparation %s has a reviewed operator reason",(code,label)=>{
+  expect(fulfillmentFailureTranslationKey({statusCode:"failed",failureCode:"resource_preparation_"+code})).toBe("plugin.idc-core.fulfillment.diagnostic.reason."+label);
+ });
+ it("maps only reviewed causes and never renders arbitrary supplier text", () => {
+  expect(fulfillmentFailureTranslationKey({statusCode: "failed", failureCode: "provider_request_not_sent"})).toBe("plugin.idc-core.fulfillment.diagnostic.reason.notSent");
+  expect(fulfillmentFailureTranslationKey({statusCode: "result_unknown", failureCode: "IDC_RESOURCE_PROVIDER_TIMEOUT"})).toBe("plugin.idc-core.fulfillment.diagnostic.reason.timeout");
+  expect(fulfillmentFailureTranslationKey({statusCode: "failed", failureCode: "private_secret_canary"})).toBe("plugin.idc-core.fulfillment.diagnostic.reason.unrecorded");
+  expect(fulfillmentPhaseTranslationKey("frozen_unknown")).toBe("plugin.idc-core.fulfillment.diagnostic.phase.reconciliation");
+ });
 });

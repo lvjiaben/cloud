@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"sort"
 	"strconv"
 
@@ -199,14 +200,17 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
 	if binding == nil {
-		return nil, nil
+		return s.readManualConfiguration(ctx, versionNo)
 	}
 	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
 		PluginID: binding.PluginId, ReleaseVersion: binding.PluginReleaseVersion, Point: binding.ExtensionPointCode,
 		ContractVersion: binding.ContractVersion, ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
-		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, CodeEvidenceUnavailable)
+	}
+	if !sameProviderContract(bindingEvidence(binding), exact) {
+		return nil, bizerr.WrapCode(gerror.New("resolved product declaration does not preserve the saved binding"), CodeEvidenceUnavailable)
 	}
 	var row *entity.CatalogProductVersionConfiguration
 	if err = s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(ctx).
@@ -214,7 +218,14 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
 	var interfaceRevision int64
-	if row != nil {
+	var independent *VersionConfiguration
+	if row != nil && row.InterfaceInstanceNo == "" {
+		independent, err = s.readManualConfiguration(ctx, versionNo)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if row != nil && independent == nil {
 		interfaceRevision = row.InterfaceConfigurationRevision
 	} else {
 		latest, loadErr := s.loadLatestInterfaceConfigurationRevision(ctx, binding.InterfaceInstanceNo, false)
@@ -223,31 +234,13 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 		}
 		interfaceRevision = latest.Revision
 	}
-	scope := dynamicCandidateScope{versionNo: versionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: interfaceRevision}
-	if row == nil {
-		defaultCustomer, schemaErr := selectCustomerSchema(exact, nil)
-		if schemaErr != nil {
-			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
-		}
-		product, productCandidates, presentationErr := s.materializeConfiguration(
-			ctx, exact, exact.ProductConfiguration, nil, configurationSurfaceProduct, scope,
-		)
-		if presentationErr != nil {
-			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
-		}
-		customer, customerCandidates, presentationErr := s.materializeConfiguration(
-			ctx, exact, defaultCustomer, nil, configurationSurfaceCustomer, scope,
-		)
-		if presentationErr != nil {
-			return nil, bizerr.NewCode(CodeEvidenceUnavailable)
-		}
-		return &VersionConfiguration{
-			CustomerConfigurableFields: configurableCustomerFields(exact),
-			ProductDeclaration:         product, CustomerDeclaration: customer,
-			MerchantValues: []ConfigurationValue{}, ProductResolvedCandidates: productCandidates,
-			CustomerResolvedCandidates: customerCandidates, Version: 0,
-		}, nil
+	syncState := resourceinterfaceprojectioncap.CandidateSyncReady
+	var relationships []resourceinterfaceprojectioncap.ChoiceRelationship
+	scope := dynamicCandidateScope{versionNo: versionNo, interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: interfaceRevision, candidateSyncState: &syncState, candidateRelationships: &relationships}
+	if row == nil || independent != nil {
+		return s.materializeUnvalidatedOfferConfiguration(ctx, exact, scope, independent)
 	}
+
 	product, err := decodeConfigurationDeclaration(row.ProductDeclarationSnapshot)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
@@ -258,46 +251,67 @@ func (s *serviceImpl) GetVersionConfiguration(ctx context.Context, versionNo str
 	}
 	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, row, exact)
 	if schemaErr != nil {
-		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+		return nil, bizerr.WrapCode(schemaErr, CodeEvidenceUnavailable)
 	}
-	imported := false
-	if exact.PluginID == portableImportProviderID {
-		imported, err = s.database.Model(do.CatalogImportContract{}).Ctx(ctx).Where(do.CatalogImportContract{TenantId: 0, VersionNo: versionNo, InterfaceInstanceNo: binding.InterfaceInstanceNo}).Exist()
-		if err != nil {
-			return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
-		}
+	imported, importedReference, importedName, err := s.readImportedConfiguration(ctx, versionNo, binding.InterfaceInstanceNo, exact)
+	if err != nil {
+		return nil, err
 	}
-	if !sameExactConfiguration(product, exact.ProductConfiguration) ||
-		!sameExactConfiguration(customer, customerSchema) {
+	if !sameCompatibleProductConfiguration(product, exact.ProductConfiguration) ||
+		!sameCompatibleProductConfiguration(customer, customerSchema) {
 		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	values, err := configurationValuesFromJSON(product, []byte(row.MerchantValueSnapshot))
 	if err != nil {
 		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
-	productPresentation, productCandidates, err := s.materializeConfiguration(
-		ctx, exact, product, values, configurationSurfaceProduct, scope,
+	productPresentation, productCandidates, err := s.materializeSavedConfiguration(
+		ctx, exact, exact.ProductConfiguration, values, configurationSurfaceProduct, scope,
 	)
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementUnavailable)
 	}
-	customerPresentation, customerCandidates, err := s.materializeConfiguration(
+	customerPresentation, customerCandidates, err := s.materializeSavedConfiguration(
 		ctx, exact, customer, nil, configurationSurfaceCustomer, scope,
 	)
 	if err != nil {
 		return nil, bizerr.NewCode(catalog.CodeManagementUnavailable)
 	}
+	if err = s.restoreMerchantChoiceSources(ctx, exact, customer, scope, &customerCandidates); err != nil {
+		return nil, bizerr.WrapCode(err, CodeEvidenceUnavailable)
+	}
 	selections, selectionErr := frozenCustomerSelections(exact, customer)
 	if selectionErr != nil && !imported {
-		return nil, bizerr.NewCode(CodeEvidenceUnavailable)
+		return nil, bizerr.WrapCode(selectionErr, CodeEvidenceUnavailable)
 	}
-	return &VersionConfiguration{
-		CustomerConfigurableFields: configurableCustomerFields(exact), CustomerFieldSelections: selections,
-		ImportedConfiguration: imported,
-		ProductDeclaration:    productPresentation, CustomerDeclaration: customerPresentation,
+	selections, err = withCustomerPresentations(selections, row.CustomerPresentationSnapshot)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	}
+	presentations, err := configurationcontract.DecodePresentations(row.CustomerPresentationSnapshot)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	}
+	customerPresentation, err = configurationcontract.WithPresentationChoiceRules(customerPresentation, presentations)
+	if err != nil {
+		return nil, bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
+	}
+	result := &VersionConfiguration{
+		DirectoryRelationships: relationships,
+		UpstreamOptionsStatus:  syncState,
+		ProductChoiceFields:    productChoiceFields(exact), CustomerProductFields: customerProductFields(exact), CustomerConfigurableFields: configurableCustomerFields(exact), CustomerFieldSelections: selections,
+		ImportedConfiguration: imported, ImportedProductReference: importedReference, ImportedProductName: importedName,
+		PriceFieldTokens:   configurationPriceFieldTokens(versionNo, row.Version, customerPresentation),
+		ProductDeclaration: productPresentation, CustomerDeclaration: customerPresentation,
 		MerchantValues: values, ProductResolvedCandidates: productCandidates,
 		CustomerResolvedCandidates: customerCandidates, Version: row.Version,
-	}, nil
+	}
+	if imported {
+		if priceErr := applyImportedPricingView(ctx, s.database, versionNo, result); priceErr != nil {
+			return nil, priceErr
+		}
+	}
+	return result, nil
 }
 
 func (s *serviceImpl) materializeConfiguration(
@@ -334,7 +348,7 @@ func (s *serviceImpl) loadExactInterfaceEvidence(ctx context.Context, interfaceN
 		PluginID: instance.PluginId, ReleaseVersion: instance.PluginReleaseVersion, Point: instance.ExtensionPointCode,
 		ContractVersion: instance.ContractVersion, ReleaseDigest: instance.ReleaseDigest, DeclarationDigest: instance.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(interfaceEvidence(instance), exact) {
+	if err != nil || !sameProviderContract(interfaceEvidence(instance), exact) {
 		return nil, nil, bizerr.NewCode(CodeEvidenceUnavailable)
 	}
 	return instance, exact, nil
@@ -747,4 +761,58 @@ func configurationValuesFromJSON(schema *capmodel.ConfigurationSchemaDeclaration
 		values = append(values, value)
 	}
 	return values, nil
+}
+
+// materializeUnvalidatedOfferConfiguration preserves independent commercial
+// fields when an interface is first chosen. Only a later validated save freezes
+// exact provider parameters; this read model does not authorize execution.
+func (s *serviceImpl) materializeUnvalidatedOfferConfiguration(ctx context.Context, exact *capmodel.BusinessExtensionProviderEvidence, scope dynamicCandidateScope, independent *VersionConfiguration) (*VersionConfiguration, error) {
+	var (
+		selections           []CustomerFieldSelection
+		configurationVersion int64
+		relationships        []resourceinterfaceprojectioncap.ChoiceRelationship
+	)
+	if independent != nil {
+		selections, configurationVersion = independent.CustomerFieldSelections, independent.Version
+	}
+	defaultCustomer, schemaErr := selectCustomerSchema(exact, selections)
+	if schemaErr != nil {
+		return nil, bizerr.WrapCode(schemaErr, CodeEvidenceUnavailable)
+	}
+	product, productCandidates, presentationErr := s.materializeConfiguration(
+		ctx, exact, exact.ProductConfiguration, nil, configurationSurfaceProduct, scope,
+	)
+	if presentationErr != nil {
+		return nil, bizerr.WrapCode(presentationErr, CodeEvidenceUnavailable)
+	}
+	customer, customerCandidates, presentationErr := s.materializeConfiguration(
+		ctx, exact, defaultCustomer, nil, configurationSurfaceCustomer, scope,
+	)
+	if presentationErr != nil {
+		return nil, bizerr.WrapCode(presentationErr, CodeEvidenceUnavailable)
+	}
+	if scope.candidateRelationships != nil {
+		relationships = *scope.candidateRelationships
+	}
+	return &VersionConfiguration{
+		DirectoryRelationships: relationships,
+		UpstreamOptionsStatus:  *scope.candidateSyncState,
+		ProductChoiceFields:    productChoiceFields(exact), CustomerProductFields: customerProductFields(exact), CustomerConfigurableFields: configurableCustomerFields(exact),
+		ProductDeclaration: product, CustomerDeclaration: customer,
+		MerchantValues: []ConfigurationValue{}, ProductResolvedCandidates: productCandidates,
+		CustomerResolvedCandidates: customerCandidates, CustomerFieldSelections: selections, Version: configurationVersion,
+	}, nil
+}
+
+func applyImportedPricingView(ctx context.Context, db gdb.DB, version string, result *VersionConfiguration) error {
+	pricing, err := catalog.ReadImportedNativePricing(ctx, db, version)
+	if err != nil {
+		return err
+	}
+	if pricing != nil {
+		result.ImportedPricingMode = pricing.Mode
+		result.ImportedMarkupPercent = pricing.MarkupPercent
+		result.ImportedManualPrices = pricing.ManualPrices
+	}
+	return nil
 }

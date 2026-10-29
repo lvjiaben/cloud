@@ -1,0 +1,11 @@
+{
+  "plugin.idc-core.catalog.priceOverview.allCurrencies": "全部币种",
+  "plugin.idc-core.catalog.priceOverview.copy": "复制价格",
+  "plugin.idc-core.catalog.priceOverview.source": "来源价格",
+  "plugin.idc-core.catalog.priceOverview.targets": "目标周期",
+  "plugin.idc-core.catalog.priceOverview.target": "目标周期",
+  "plugin.idc-core.catalog.priceOverview.fillDraft": "填入草稿",
+  "plugin.idc-core.catalog.priceOverview.pending": "{count} 项价格未保存",
+  "plugin.idc-core.catalog.priceOverview.copyHelp": "将首期价、续费价和开通费复制到同币种的所选周期，金额原样填入，不按周期倍数换算，启用状态保持不变。核对预览后填入草稿，再统一保存。",
+  "plugin.idc-core.catalog.priceOverview.copiedDraft": "已填入 {count} 项价格，保存后生效。"
+}

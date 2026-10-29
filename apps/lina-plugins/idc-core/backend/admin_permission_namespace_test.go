@@ -140,6 +140,12 @@ func TestInspectIDCAPIFileClassifiesAdminContracts(t *testing.T) {
 			wantPermission: "idc:admin:product-directory:list",
 		},
 		{
+			name:           "renewal current staff resource is explicitly registered",
+			path:           "backend/api/renewalstaff/v1/work_item_list.go",
+			meta:           `path:"/admin/server-accessory-renewal-work-items" method:"get" permission:"idc:admin:resource:accessory-renewal:handle"`,
+			wantPermission: "idc:admin:resource:accessory-renewal:handle",
+		},
+		{
 			name:           "server resource is explicitly registered",
 			path:           "backend/api/adminserver/v1/server_list.go",
 			meta:           `path:"/admin/resource/zjmfcloud-servers" method:"get" permission:"idc:admin:resource:server-batch:view"`,
@@ -250,7 +256,7 @@ func isAdminAPIFile(path string) bool {
 	normalized := "/" + strings.Trim(filepath.ToSlash(path), "/") + "/"
 	// Resource-specific namespaces keep generated controllers independent while
 	// retaining an explicit, closed set of management API directories.
-	for _, directory := range []string{"admin", "directoryadmin", "adminserver"} {
+	for _, directory := range []string{"admin", "directoryadmin", "adminserver", "loginadmin", "renewalstaff"} {
 		if strings.Contains(normalized, "/backend/api/"+directory+"/") {
 			return true
 		}

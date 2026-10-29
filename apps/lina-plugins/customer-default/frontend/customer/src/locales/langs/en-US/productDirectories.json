@@ -22,5 +22,9 @@
     "provisioning": "Provisioning",
     "pending_activation": "Pending activation"
   },
-  "notStarted": "Not started"
+  "notStarted": "Not started",
+  "management": {
+    "preparing": "Management access is being prepared. Refresh shortly.",
+    "needs_attention": "Management access needs administrator attention. Contact support."
+  }
 }

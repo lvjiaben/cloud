@@ -337,53 +337,6 @@ WHERE route_no = $1 AND installation_id = $2 AND provider_code = $3
 	return consume(reference)
 }
 
-// WithCompletedReference decrypts one successfully completed route reference
-// only for a synchronous follow-up provider write such as a release agreement.
-// Reconciliation conflicts and already-relieved flows remain closed.
-func (s *QueryService) WithCompletedReference(
-	ctx context.Context,
-	routeNo string,
-	provider string,
-	operationScope string,
-	consume ReferenceConsumer,
-) error {
-	if s == nil || ctx == nil || ctx.Err() != nil || consume == nil ||
-		!routeNoPattern.MatchString(routeNo) || !validProvider(provider) ||
-		!operationScopePattern.MatchString(operationScope) {
-		return ErrInvalid
-	}
-	var sealed callbacksecurity.SealedEvidence
-	var status Status
-	var providerStatus string
-	var reconciliation string
-	err := s.database.QueryRowContext(ctx, `
-SELECT projected_status, COALESCE(provider_status, ''), reconciliation_status,
-       external_ref_cipher_format_version, external_ref_encryption_key_version,
-       external_ref_nonce, external_ref_ciphertext
-FROM idc_gateway_local_supplier_route
-WHERE route_no = $1 AND installation_id = $2 AND provider_code = $3
-  AND operation_scope = $4 AND external_ref_hmac IS NOT NULL`,
-		routeNo, s.installationID, provider, operationScope).Scan(
-		&status, &providerStatus, &reconciliation, &sealed.FormatVersion, &sealed.KeyVersion,
-		&sealed.Nonce, &sealed.Ciphertext,
-	)
-	if errors.Is(err, sql.ErrNoRows) || status != StatusSucceeded ||
-		providerStatus != "ALL" || reconciliation != "none" {
-		return ErrConflict
-	}
-	if err != nil {
-		return ErrRejected
-	}
-	defer clear(sealed.Nonce)
-	defer clear(sealed.Ciphertext)
-	reference, err := s.keyring.OpenReference(routeNo, provider, sealed)
-	if err != nil {
-		return ErrRejected
-	}
-	defer clear(reference)
-	return consume(reference)
-}
-
 // WithTerminalReference decrypts a succeeded route reference only when its
 // operation and provider status match one of the caller's explicit rules.
 func (s *QueryService) WithTerminalReference(

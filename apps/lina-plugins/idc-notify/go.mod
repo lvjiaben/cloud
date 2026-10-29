@@ -7,7 +7,7 @@ require (
 	github.com/gogf/gf/v2 v2.10.1
 	lina-core v0.0.0
 	lina-plugin-idc-core v0.1.0
-	lina-plugin-shared-services v0.1.0
+	lina-plugin-shared-services v0.1.1
 )
 
 require (

@@ -105,3 +105,33 @@ func TestQueryAccessoriesRejectsInvalidResourceBeforeNetwork(t *testing.T) {
 		t.Fatalf("invalid resource made %d network requests", requests.Load())
 	}
 }
+
+// Status spellings and numbers in a list have no verified readiness semantics.
+// Retain identity and safe diagnostics, but never manufacture available state.
+func TestSnapshotDirectoryKeepsUnverifiedStatusesUnknown(t *testing.T) {
+	var loginCount int
+	var mu sync.Mutex
+	login := loginHandler(t, &loginCount, &mu, "token-one")
+	fixture := newProviderFixture(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/administrator/v1/login" {
+			login(w, r)
+			return
+		}
+		if r.Method != http.MethodGet || r.URL.Path != "/administrator/v1/clouds/41/snapshots" {
+			t.Errorf("unexpected read %s %s", r.Method, r.URL.Path)
+		}
+		writeJSON(t, w, http.StatusOK, `{"data":{"data":[{"id":11,"type":"snap","name":"missing"},{"id":12,"type":"snap","status":"unknown"},{"id":13,"type":"snap","status":"ready"},{"id":14,"type":"backup","status":2},{"id":15,"type":"backup","status":"success"}]}}`)
+	}))
+	items, err := fixture.provider.readSnapshotAccessories(context.Background(), "41")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 5 {
+		t.Fatal("real directory identities lost")
+	}
+	for _, item := range items {
+		if item.ExternalRef == "" || item.State != resourcecap.AccessoryStateUnknown {
+			t.Fatal("unverified list state became restorable", item)
+		}
+	}
+}

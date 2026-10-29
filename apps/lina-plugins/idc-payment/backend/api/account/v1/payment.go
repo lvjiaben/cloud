@@ -61,6 +61,8 @@ type PaymentStatusReq struct {
 	AttemptNo string `json:"attemptNo" in:"path" v:"required|max-length:40"`
 }
 type PaymentStatusRes struct {
+	InvoiceNo          string `json:"invoiceNo,omitempty" dc:"Customer-owned invoice associated with this payment, omitted for balance recharge or credit repayment" eg:"INV_0123456789abcdef0123456789abcdef"`
+	OrderNo            string `json:"orderNo,omitempty" dc:"Customer-owned order associated with this payment, omitted for balance recharge or credit repayment" eg:"ORD_0123456789abcdef0123456789abcdef"`
 	AttemptNo          string `json:"attemptNo"`
 	StatusCode         string `json:"statusCode"`
 	ChannelNo          string `json:"channelNo"`

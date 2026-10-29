@@ -4,11 +4,11 @@ This plugin does not expose extra runtime settings in the current release. After
 
 ## Notes
 
-- Notice categories and status behavior are owned by plugin resources.
+- Announcements support drafts and publication, with inline images and saved sort order.
 - No extra runtime configuration is required in this release.
 
 ## Entry Points
 
 | Name | Path |
 | --- | --- |
-| Notices | `/system/notice` |
+| Announcements | `/system/notice` |

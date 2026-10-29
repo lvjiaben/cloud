@@ -1,6 +1,6 @@
 id: idc-peer
 name: Same-system connector
-version: v0.1.0
+version: v0.1.1
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -20,9 +20,9 @@ i18n:
 dependencies:
   plugins:
     - id: idc-core
-      version: ">=0.1.85 <1.0.0"
+      version: ">=0.1.165 <1.0.0"
     - id: idc-resource
-      version: ">=0.1.21 <1.0.0"
+      version: ">=0.1.72 <1.0.0"
 business_extensions:
   - point: product-fulfillment
     version: v1

@@ -78,13 +78,14 @@ type settlementInventorySummary struct {
 // settlementIdentityEvidence is the minimal current identity projection whose
 // digest is persisted without personal material.
 type settlementIdentityEvidence struct {
-	CustomerType   string
-	SubjectVersion int64
-	StatusCode     string
-	CaseNo         string
-	Version        int64
-	VerifiedAt     *time.Time
-	ExpiresAt      *time.Time
+	ManualVerification bool
+	CustomerType       string
+	SubjectVersion     int64
+	StatusCode         string
+	CaseNo             string
+	Version            int64
+	VerifiedAt         *time.Time
+	ExpiresAt          *time.Time
 }
 
 // newFinancialSettlementService validates the explicit database and outbox
@@ -480,13 +481,14 @@ FOR SHARE`, customerNo); err != nil {
 		var profile *entity.CustomerIndividualProfile
 		if err := database.GetScan(ctx, &profile, `
 SELECT identity_status_code, identity_case_no, identity_verified_at,
-       identity_expires_at, version
+       identity_expires_at, manual_verification, version
 FROM plugin_idc_core_customer_individual_profile
 WHERE tenant_id = 0 AND customer_no = ?
 FOR SHARE`, customerNo); err != nil {
 			return "", gerror.Wrap(err, "lock individual settlement identity")
 		}
 		if profile != nil {
+			evidence.ManualVerification = profile.ManualVerification
 			evidence.StatusCode = profile.IdentityStatusCode
 			evidence.CaseNo = profile.IdentityCaseNo
 			evidence.Version = profile.Version
@@ -497,13 +499,14 @@ FOR SHARE`, customerNo); err != nil {
 		var profile *entity.CustomerEnterpriseProfile
 		if err := database.GetScan(ctx, &profile, `
 SELECT verification_status_code, verification_case_no, verified_at,
-       expires_at, version
+       expires_at, manual_verification, version
 FROM plugin_idc_core_customer_enterprise_profile
 WHERE tenant_id = 0 AND customer_no = ?
 FOR SHARE`, customerNo); err != nil {
 			return "", gerror.Wrap(err, "lock enterprise settlement identity")
 		}
 		if profile != nil {
+			evidence.ManualVerification = profile.ManualVerification
 			evidence.StatusCode = profile.VerificationStatusCode
 			evidence.CaseNo = profile.VerificationCaseNo
 			evidence.Version = profile.Version
@@ -514,21 +517,22 @@ FOR SHARE`, customerNo); err != nil {
 		return "", bizerr.NewCode(CodeSettlementNotEligible)
 	}
 	if evidence.StatusCode != "verified" ||
-		!validBusinessReference(evidence.CaseNo, 128) || evidence.Version < 1 ||
+		!(validBusinessReference(evidence.CaseNo, 128) || (evidence.ManualVerification && evidence.CaseNo == "")) || evidence.Version < 1 ||
 		evidence.VerifiedAt == nil || evidence.VerifiedAt.After(now) ||
 		(evidence.ExpiresAt != nil && !evidence.ExpiresAt.After(now)) {
 		return "", bizerr.NewCode(CodeSettlementNotEligible)
 	}
 	digest, err := contentDigest(struct {
-		CustomerType   string     `json:"customerType"`
-		SubjectVersion int64      `json:"subjectVersion"`
-		StatusCode     string     `json:"statusCode"`
-		CaseNo         string     `json:"caseNo"`
-		Version        int64      `json:"version"`
-		VerifiedAt     *time.Time `json:"verifiedAt"`
-		ExpiresAt      *time.Time `json:"expiresAt"`
+		ManualVerification bool       `json:"manualVerification,omitempty"`
+		CustomerType       string     `json:"customerType"`
+		SubjectVersion     int64      `json:"subjectVersion"`
+		StatusCode         string     `json:"statusCode"`
+		CaseNo             string     `json:"caseNo"`
+		Version            int64      `json:"version"`
+		VerifiedAt         *time.Time `json:"verifiedAt"`
+		ExpiresAt          *time.Time `json:"expiresAt"`
 	}{
-		evidence.CustomerType, evidence.SubjectVersion, evidence.StatusCode,
+		evidence.ManualVerification, evidence.CustomerType, evidence.SubjectVersion, evidence.StatusCode,
 		evidence.CaseNo, evidence.Version, evidence.VerifiedAt, evidence.ExpiresAt,
 	})
 	if err != nil {

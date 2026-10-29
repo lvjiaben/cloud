@@ -19,14 +19,12 @@
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationSelection.fields.refundAllocationNo.dc": "核心退款分配的不透明编号",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationSelection.fields.taxInvoiceAllocationNo.dc": "合格的原税务发票分配编号",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationSelection.fields.grossAmountMinor.dc": "分配到该原发票的最小货币单位含税金额",
-
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetReq.meta.tags": "IDC 合规红字处理",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetReq.meta.summary": "查询红字任务",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetReq.meta.dc": "使用独立红字查询权限返回一项有界任务，不返回任何私有凭证位置。",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetReq.schema.dc": "使用独立红字查询权限返回一项有界任务，不返回任何私有凭证位置。",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetReq.fields.taskNo.dc": "稳定的红字任务编号",
   "plugins.idc_compliance.api.admin.v1.RedLetterTaskGetRes.fields.item.dc": "后台安全的红字任务投影",
-
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateReq.meta.tags": "IDC 合规红字处理",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateReq.meta.summary": "明确红字对应的原发票",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateReq.meta.dc": "退款无法唯一对应原发票时，由有权员工提交完整且明确的分配方案。服务端拒绝猜测、不完整、超额或过期方案。",
@@ -36,7 +34,6 @@
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateReq.fields.idempotencyKey.dc": "调用方生成的精确重试键",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateReq.fields.selections.dc": "完整且明确的原发票分配方案",
   "plugins.idc_compliance.api.admin.v1.RedLetterAllocationResolutionCreateRes.fields.item.dc": "完成精确分配后的红字任务",
-
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateReq.meta.tags": "IDC 合规红字处理",
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateReq.meta.summary": "使用真实凭证完成人工红字任务",
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateReq.meta.dc": "使用独立红字处理权限记录真实税务红冲凭证。凭证和审计只能追加，结果不明且没有凭证时不能完成。",
@@ -51,7 +48,6 @@
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateReq.fields.byteSize.dc": "提供上传文件引用时必填的凭证文件大小",
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateReq.fields.occurredAt.dc": "Unix 毫秒格式的凭证实际发生时间",
   "plugins.idc_compliance.api.admin.v1.RedLetterManualCompletionCreateRes.fields.item.dc": "已完成的红字任务",
-
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.taskNo.dc": "稳定的红字任务编号",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.taxInvoiceNo.dc": "只涉及一张原发票时返回该发票编号",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.statusCode.dc": "客户可理解的红字处理状态",
@@ -62,14 +58,12 @@
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.createdAt.dc": "Unix 毫秒格式的创建时间",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.completedAt.dc": "Unix 毫秒格式的完成时间，未完成时为零",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskItem.fields.customerActionUrl.dc": "当前可用的供应商短期确认地址",
-
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetReq.meta.tags": "IDC 合规客户中心",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetReq.meta.summary": "查询我的红字任务",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetReq.meta.dc": "只在任务属于当前登录客户时返回，排除后台原因和私有凭证。",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetReq.schema.dc": "只在任务属于当前登录客户时返回，排除后台原因和私有凭证。",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetReq.fields.taskNo.dc": "当前客户拥有的红字任务编号",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterTaskGetRes.fields.item.dc": "客户安全的红字任务",
-
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterAuthoritativeStateUpdateReq.meta.tags": "IDC 合规客户中心",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterAuthoritativeStateUpdateReq.meta.summary": "重新检查我的红字确认状态",
   "plugins.idc_compliance.api.account.v1.CustomerRedLetterAuthoritativeStateUpdateReq.meta.dc": "向已验证的供应商适配器查询权威状态。客户返回供应商页面或点击本操作本身都不能确认任务。",

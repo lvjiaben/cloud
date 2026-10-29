@@ -8,8 +8,8 @@ type RefundManagementReviewIntent struct {
 	RequestNo       string `json:"requestNo" v:"required|min-length:8|max-length:128" dc:"Random action key kept unchanged for proof issuance and retries" eg:"refund-review-01J2ABCDEF"`
 	ExpectedVersion int64  `json:"expectedVersion" v:"required|min:1" dc:"Refund version reviewed by the employee" eg:"1"`
 	DecisionCode    string `json:"decisionCode" v:"required|in:approve,reject" dc:"Approve or reject the pending refund" eg:"approve"`
-	CommentDigest   string `json:"commentDigest" v:"regex:^$|^[0-9a-f]{64}$" dc:"Optional lowercase SHA-256 digest of the review comment" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
-	EvidenceDigest  string `json:"evidenceDigest" v:"required|regex:^[0-9a-f]{64}$" dc:"Lowercase SHA-256 digest of the immutable review evidence" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	CommentDigest   string `json:"commentDigest" v:"regex:^$|^[0-9a-f]{64}$" dc:"Optional annotation SHA-256 digest; absent input uses a system request trace" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
+	EvidenceDigest  string `json:"evidenceDigest" v:"regex:^$|^[0-9a-f]{64}$" dc:"Optional annotation SHA-256 digest; absent input uses a system request trace" eg:"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"`
 }
 
 type RefundManagementReviewProofReq struct {
@@ -26,7 +26,7 @@ type RefundManagementReviewReq struct {
 	g.Meta   `path:"/admin/billing/refunds/{refundNo}/reviews" method:"post" tags:"IDC Refund Management" summary:"Review a pending refund" dc:"Approve or reject one exact pending refund version. High-amount approval consumes the exact proof; rejection never requires that proof." permission:"idc:admin:billing:refund:review"`
 	RefundNo string `json:"refundNo" in:"path" v:"required|max-length:40" dc:"Stable pending refund number" eg:"rfd_01J2ABCDEF"`
 	RefundManagementReviewIntent
-	ProofToken string `json:"proofToken" v:"max-length:4096" dc:"Required only for high-amount approval and issued for this exact review" eg:"opaque-proof"`
+	ProofToken string `json:"proofToken" v:"max-length:4096" dc:"Optional exact-review proof; current action permission is sufficient" eg:"opaque-proof"`
 }
 
 type RefundManagementReviewRes struct {
@@ -80,4 +80,18 @@ type RefundManagementPolicy struct {
 	AutomaticApprovalEnabled bool   `json:"automaticApprovalEnabled" dc:"Whether clear unprovisioned risk-free requests may auto approve" eg:"true"`
 	ConfiguredBy             int    `json:"configuredBy" dc:"Employee that appended this version" eg:"1"`
 	EffectiveAt              int64  `json:"effectiveAt" dc:"Effective time as Unix timestamp in milliseconds" eg:"1735689600000"`
+}
+
+// RefundFailedFulfillmentReq records an employee's refund choice for one failed server delivery.
+type RefundFailedFulfillmentReq struct {
+	g.Meta          `path:"/admin/billing/failed-fulfillments/{intentNo}/refunds" method:"post" tags:"IDC Refund Management" summary:"Request refund for failed server delivery" dc:"Record a staff refund choice using original invoice allocations, current refund policy and immutable audit evidence. Unknown and active deliveries cannot use this entry." permission:"idc:admin:billing:refund:review"`
+	IntentNo        string `json:"intentNo" in:"path" v:"required|max-length:40" dc:"Failed delivery intent" eg:"pft_0123456789abcdef0123456789abcdef"`
+	ExpectedVersion int64  `json:"expectedVersion" v:"required|min:1" dc:"Observed delivery version" eg:"3"`
+	IdempotencyKey  string `json:"idempotencyKey" v:"required|min-length:16|max-length:128" dc:"Stable staff command key" eg:"failed-delivery-refund-20261020-0001"`
+	Note            string `json:"note" v:"required|max-length:1000" dc:"Staff refund reason" eg:"Provider rejected creation; refund chosen by staff"`
+}
+
+// RefundFailedFulfillmentRes returns the existing financial refund workflow.
+type RefundFailedFulfillmentRes struct {
+	Refund *RefundManagementMutation `json:"refund" dc:"Refund following the current financial approval policy" eg:"{}"`
 }

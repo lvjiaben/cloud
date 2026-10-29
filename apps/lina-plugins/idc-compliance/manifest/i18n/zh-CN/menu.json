@@ -1,41 +1,5 @@
 {
   "menu": {
-    "plugin:idc-compliance:center": {
-      "title": "合规中心"
-    },
-    "plugin:idc-compliance:electronic-contract": {
-      "title": "电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:onboard": {
-      "title": "开通电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:template:query": {
-      "title": "查看电子合同模板"
-    },
-    "plugin:idc-compliance:electronic-contract:template:manage": {
-      "title": "管理电子合同模板"
-    },
-    "plugin:idc-compliance:electronic-contract:create": {
-      "title": "发起电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:query": {
-      "title": "查看电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:reissue": {
-      "title": "重新发起电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:terminate": {
-      "title": "解除电子合同"
-    },
-    "plugin:idc-compliance:electronic-contract:cancel-order": {
-      "title": "取消合同失败订单"
-    },
-    "plugin:idc-compliance:electronic-contract:failure-policy": {
-      "title": "配置合同失败处理期限"
-    },
-    "plugin:idc-compliance:electronic-contract:auto-sign:manage": {
-      "title": "管理企业自动签授权"
-    },
     "plugin:idc-compliance:provider": {
       "title": "实名认证服务商"
     },
@@ -46,7 +10,7 @@
       "title": "配置实名认证服务商"
     },
     "plugin:idc-compliance:suppliers": {
-      "title": "合同与开票服务商"
+      "title": "发票服务商"
     },
     "plugin:idc-compliance:supplier:query": {
       "title": "查看本地供应商配置"
@@ -64,6 +28,9 @@
       "title": "重新开通本地供应商主体"
     },
     "plugin:idc-compliance:enterprise-verification": {
+      "title": "查看企业认证列表"
+    },
+    "plugin:idc-compliance:enterprise-verification-management": {
       "title": "企业实名认证审核"
     },
     "plugin:idc-compliance:enterprise-verification:query": {
@@ -99,8 +66,11 @@
     "plugin:idc-compliance:red-letter:handle": {
       "title": "处理红字任务"
     },
-    "plugin:idc-compliance:privacy:query": { "title": "隐私治理" },
-    "plugin:idc-compliance:privacy:configure": { "title": "配置隐私规则" },
-    "plugin:idc-compliance:privacy:incident": { "title": "处理泄露事件" }
+    "plugin:idc-compliance:material-retention:query": {
+      "title": "查看材料留存"
+    },
+    "plugin:idc-compliance:material-retention:configure": {
+      "title": "管理材料留存"
+    }
   }
 }

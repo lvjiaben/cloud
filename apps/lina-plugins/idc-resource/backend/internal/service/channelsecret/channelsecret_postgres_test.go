@@ -16,6 +16,7 @@ import (
 	_ "github.com/gogf/gf/contrib/drivers/pgsql/v2"
 	"github.com/gogf/gf/v2/database/gdb"
 
+	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
@@ -144,7 +145,7 @@ func (m *testManager) Create(
 	m.creates++
 	m.secret = testSecret{
 		handle: handle, value: value, createKey: key, replace: make(map[string]secretcap.MutationResult),
-		metadata: secretcap.Metadata{Configured: true, MaskedTail: "tail", UpdatedAt: time.Now().UTC()},
+		metadata: secretcap.Metadata{Configured: true, MaskedTail: "tail", UpdatedAt: time.Now().UTC().Truncate(time.Millisecond).Add(123 * time.Microsecond)},
 	}
 	return secretcap.CreateResult{Handle: handle, Metadata: m.secret.metadata}, nil
 }
@@ -292,13 +293,26 @@ VALUES (?,?,?,'https://example.com','{}'::jsonb,'{}'::jsonb,42)`, initialRevisio
 	}
 
 	replacement := []byte("replacement-password-do-not-leak")
+	// Browser requests carry milliseconds even when the persisted secret has microseconds.
+	if created.UpdatedAt.Nanosecond()%int(time.Millisecond) == 0 {
+		t.Fatal("fixture must exercise sub-millisecond precision")
+	}
+	stale := MutationInput{ChannelNo: channelNo, BindingName: "password", Secret: append([]byte(nil), replacement...),
+		ExpectedUpdatedAt: time.UnixMilli(created.UpdatedAt.UnixMilli() - 1), IdempotencyKey: "replace-stale-0001"}
+	stale.AccessContext = issueTestAccess(t, service, proofs, AccessRequest{
+		Operation: OperationReplace, ChannelNo: channelNo, BindingName: "password", SecretDigest: secretDigest(replacement),
+		ExpectedUpdatedAt: stale.ExpectedUpdatedAt, IdempotencyKey: stale.IdempotencyKey,
+	})
+	if _, err := service.Replace(ctx, stale); !bizerr.Is(err, CodeConflict) || manager.creates != 1 {
+		t.Fatalf("stale lifecycle fence must reject without creating a secret: creates=%d err=%v", manager.creates, err)
+	}
 	replace := MutationInput{
 		ChannelNo: channelNo, BindingName: "password", Secret: append([]byte(nil), replacement...),
-		ExpectedUpdatedAt: created.UpdatedAt, IdempotencyKey: "replace-secret-0001",
+		ExpectedUpdatedAt: time.UnixMilli(created.UpdatedAt.UnixMilli()), IdempotencyKey: "replace-secret-0001",
 	}
 	replace.AccessContext = issueTestAccess(t, service, proofs, AccessRequest{
 		Operation: OperationReplace, ChannelNo: channelNo, BindingName: "password",
-		SecretDigest: secretDigest(replacement), ExpectedUpdatedAt: created.UpdatedAt,
+		SecretDigest: secretDigest(replacement), ExpectedUpdatedAt: time.UnixMilli(created.UpdatedAt.UnixMilli()),
 		IdempotencyKey: replace.IdempotencyKey,
 	})
 	replaced, err := service.Replace(ctx, replace)
@@ -317,12 +331,12 @@ FROM plugin_idc_resource_interface_configuration_revision WHERE revision_no=?`, 
 	}
 
 	revoke := MutationInput{
-		ChannelNo: channelNo, BindingName: "password", ExpectedUpdatedAt: replaced.UpdatedAt,
+		ChannelNo: channelNo, BindingName: "password", ExpectedUpdatedAt: time.UnixMilli(replaced.UpdatedAt.UnixMilli()),
 		IdempotencyKey: "revoke-secret-0001",
 	}
 	revoke.AccessContext = issueTestAccess(t, service, proofs, AccessRequest{
 		Operation: OperationRevoke, ChannelNo: channelNo, BindingName: "password",
-		ExpectedUpdatedAt: replaced.UpdatedAt, IdempotencyKey: revoke.IdempotencyKey,
+		ExpectedUpdatedAt: time.UnixMilli(replaced.UpdatedAt.UnixMilli()), IdempotencyKey: revoke.IdempotencyKey,
 	})
 	revoked, err := service.Revoke(ctx, revoke)
 	if err != nil || revoked == nil || revoked.Configured {

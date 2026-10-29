@@ -84,62 +84,7 @@ func NewHandler(info buildinfo.Info, options ...HandlerOption) http.Handler {
 		writeJSON(writer, http.StatusOK, healthResponse{Status: "ready", Build: info})
 	}))
 	if config.runtime != nil {
-		if config.runtime.tencentCallback != nil {
-			mux.HandleFunc(TencentCallbackPath, methodPOST(localTencentCallbackHandler(config.runtime)))
-		}
 		mux.HandleFunc(localInstallationPath, methodGET(localInstallationHandler(config.runtime)))
-		mux.HandleFunc(
-			processauth.TencentOnboardingPath,
-			methodGET(localTencentOnboardingStatusHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentOnboardingLinksPath,
-			methodPOST(localTencentOnboardingLinkHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentOnboardingRechecksPath,
-			methodPOST(localTencentOnboardingRecheckHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentTemplatesPath,
-			methodGET(localTencentTemplatesHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentTemplatePreviewsPath,
-			methodPOST(localTencentTemplatePreviewHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractFlowsPath,
-			methodPOST(localTencentContractFlowHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractTerminationsPath,
-			methodPOST(localTencentContractTerminationHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractSigningLinksPath,
-			methodPOST(localTencentContractSigningLinkHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractFlowRechecksPath,
-			methodPOST(localTencentContractFlowRecheckHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractFinalPDFsPath,
-			methodPOST(localTencentContractFinalPDFHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractSignReportsPath,
-			methodPOST(localTencentContractSignReportHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractDeliveryPagesPath,
-			methodGET(localTencentContractDeliveryPageHandler(config.runtime)),
-		)
-		mux.HandleFunc(
-			processauth.TencentContractDeliveryAcknowledgementsPath,
-			methodPOST(localTencentContractDeliveryAcknowledgementHandler(config.runtime)),
-		)
 		mux.HandleFunc(
 			processauth.SupplierSubjectBindingsPath,
 			methodPOST(localSupplierSubjectBindingHandler(config.runtime)),
@@ -187,7 +132,7 @@ func localInstallationHandler(runtime *localRuntime) http.HandlerFunc {
 		}
 		writeJSON(writer, http.StatusOK, installationResponse{
 			Scope: "local_installation", ActiveKeyID: runtime.keyring.ActiveKeyID(),
-			SupplierClientsEnabled: runtime.tencentESS != nil && runtime.tencentESS.Configured(),
+			SupplierClientsEnabled: false,
 			BusinessRoutesEnabled:  true,
 		})
 	}

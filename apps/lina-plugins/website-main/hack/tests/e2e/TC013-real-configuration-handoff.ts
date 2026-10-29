@@ -1,0 +1,40 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+import {WebsitePage} from '../pages/WebsitePage';
+import {CustomerCheckoutPage} from '../pages/CustomerCheckoutPage';
+
+test.describe('TC-13 真实网关及一次性配置恢复',()=>{
+ test.use({locale:'zh-CN'});
+ test('TC-13a: 真实保存经登录恢复数量周期，再次领取被拒绝，私有路由不被官网代理',async({page})=>{
+  test.skip(process.env.WEBSITE_LOCAL_CHECKOUT!=='1','需要明确授权的本地隔离后端');
+  const origin=process.env.WEBSITE_TEST_URL!;const center=process.env.WEBSITE_CUSTOMER_URL!;
+  for(const address of [origin,center])expect(['localhost','127.0.0.1']).toContain(new URL(address).hostname);
+  const account=JSON.parse(await readFile(process.env.WEBSITE_QA_ACCOUNT_FILE!,'utf8')) as {email:string;password:string};
+  const slug=process.env.WEBSITE_REAL_PRODUCT!;
+  const root='/x/idc-core/api/v1';
+  const configuration=await (await page.request.get(origin+root+'/public/catalog/products/'+encodeURIComponent(slug)+'/purchase-configuration')).json();
+  expect(configuration.code).toBe(0);
+  const saved=await (await page.request.post(origin+root+'/public/purchase-configuration-handoffs',{data:{publicSlug:slug,configurationRevision:configuration.data.configurationRevision,values:configuration.data.values,currencyCode:'CNY',billingTermToken:'',quantity:2,purchaseCycles:3}})).json();
+  expect(saved.code).toBe(0);expect(saved.data.reference).toMatch(/^[a-f0-9]{64}$/);
+  expect(saved.data.expiresAt).toBeGreaterThan(Date.now());
+  const binding=(await page.context().cookies(origin)).find(cookie=>cookie.name==='lina_idc_purchase_handoff');
+  expect(binding).toMatchObject({httpOnly:true,sameSite:'Lax',path:'/'});
+  expect((await page.request.get(origin+root+'/public/purchase-configuration-handoffs')).status()).toBe(405);
+  expect((await page.request.post(origin+root+'/account/purchase-configuration-handoffs/'+saved.data.reference+'/claims')).status()).toBe(404);
+  const target=center+'/account/products/'+encodeURIComponent(slug)+'/configure?handoff='+saved.data.reference+'&currency=CNY';
+  const site=new WebsitePage(page);const customer=new CustomerCheckoutPage(page);
+  await site.open(target);await expect(page.getByPlaceholder('请输入用户名')).toBeVisible();
+  const claimed=page.waitForResponse(response=>response.url().endsWith('/'+saved.data.reference+'/claims'));
+  await customer.login(account.email,account.password);
+  const result=await (await claimed).json();expect(result.code).toBe(0);
+  expect(result.data).toMatchObject({publicSlug:slug,currencyCode:'CNY',quantity:2,purchaseCycles:3,configurationRevision:configuration.data.configurationRevision});
+  await expect(page.getByText('官网选择已恢复，请补全配置并重新查看价格后加入购物车。',{exact:true})).toBeVisible();
+  await expect(page.getByRole('spinbutton').nth(0)).toHaveValue('2');
+  await expect(page.getByRole('spinbutton').nth(1)).toHaveValue('3');
+  await site.capture('real-configuration-restored',false);
+  await page.reload();
+  await expect(page.getByText('官网配置无法恢复，可能已过期、被领取或商品已变更。请返回官网重新选择；未使用默认配置代替。',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'加入购物车',exact:true})).toHaveCount(0);
+  await site.capture('real-configuration-replay-denied',false);
+ });
+});

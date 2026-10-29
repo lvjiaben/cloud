@@ -1,0 +1,11 @@
+{
+  "plugin.idc-core.catalog.priceOverview.allCurrencies": "All currencies",
+  "plugin.idc-core.catalog.priceOverview.copy": "Copy prices",
+  "plugin.idc-core.catalog.priceOverview.source": "Copy from",
+  "plugin.idc-core.catalog.priceOverview.targets": "Copy to",
+  "plugin.idc-core.catalog.priceOverview.target": "Target period",
+  "plugin.idc-core.catalog.priceOverview.fillDraft": "Fill draft",
+  "plugin.idc-core.catalog.priceOverview.pending": "{count} prices unsaved",
+  "plugin.idc-core.catalog.priceOverview.copyHelp": "Copy purchase, renewal and setup amounts to selected periods in the same currency. Amounts are copied as entered; periods are not scaled. Existing enabled states stay unchanged. Review the preview, fill the draft, then save prices.",
+  "plugin.idc-core.catalog.priceOverview.copiedDraft": "{count} prices filled into the draft. Save to apply."
+}

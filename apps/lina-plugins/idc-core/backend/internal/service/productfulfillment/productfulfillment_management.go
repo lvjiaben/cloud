@@ -1,3 +1,4 @@
+// This file implements authorized staff fulfillment queries and actions.
 package productfulfillment
 
 import (
@@ -16,6 +17,7 @@ import (
 
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/service/customerprojection"
+	"lina-plugin-idc-core/backend/internal/service/entitlementprogress"
 )
 
 const (
@@ -157,8 +159,8 @@ func (s *serviceImpl) applyAction(ctx context.Context, current *IntentDetail, in
 		if err != nil {
 			return err
 		}
-		var taskCount int
-		if err = s.database.GetScan(ctx, &taskCount, `SELECT count(*) FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.task_no=? AND task.intent_no=? AND task.maximum_attempts=intent.maximum_attempts AND task.retry_base_seconds=intent.retry_base_seconds`, taskNo, current.IntentNo); err != nil || taskCount != 1 {
+		taskCount, err := s.database.GetValue(ctx, `SELECT count(*) FROM plugin_idc_core_product_fulfillment_task task JOIN plugin_idc_core_product_fulfillment_intent intent ON intent.intent_no=task.intent_no WHERE task.tenant_id=0 AND task.task_no=? AND task.intent_no=? AND task.maximum_attempts=intent.maximum_attempts AND task.retry_base_seconds=intent.retry_base_seconds`, taskNo, current.IntentNo)
+		if err != nil || taskCount.Int() != 1 {
 			return errorsNew(taskConflictCode)
 		}
 		return nil
@@ -217,8 +219,8 @@ func (s *serviceImpl) validateOwnerRelease(ctx context.Context, orderNo, orderIt
 	if err != nil || !ready[orderItemNo] {
 		return errorsNew("product_fulfillment_owner_gate_blocked")
 	}
-	var state string
-	if err := s.database.GetScan(ctx, &state, `SELECT interface.new_business_state FROM plugin_idc_core_product_fulfillment_intent intent JOIN plugin_idc_core_product_automation_interface_instance interface ON interface.tenant_id=intent.tenant_id AND interface.interface_instance_no=intent.interface_instance_no WHERE intent.tenant_id=0 AND intent.order_no=? AND intent.order_item_no=? LIMIT 1`, orderNo, orderItemNo); err != nil || state != "accepting" {
+	state, err := s.database.GetValue(ctx, `SELECT interface.new_business_state FROM plugin_idc_core_product_fulfillment_intent intent JOIN plugin_idc_core_product_automation_interface_instance interface ON interface.tenant_id=intent.tenant_id AND interface.interface_instance_no=intent.interface_instance_no WHERE intent.tenant_id=0 AND intent.order_no=? AND intent.order_item_no=? LIMIT 1`, orderNo, orderItemNo)
+	if err != nil || state.String() != "accepting" {
 		return errorsNew("product_fulfillment_new_business_stopped")
 	}
 	return nil
@@ -304,7 +306,7 @@ func (s *serviceImpl) loadDetailAuthorized(ctx context.Context, intentNo string,
 	if err != nil {
 		return nil, errorsNew("product_fulfillment_not_accessible")
 	}
-	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::jsonb))) LIMIT 1`
+	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,entitlement_owner_id,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::jsonb))) LIMIT 1`
 	if lock {
 		query += ` FOR UPDATE`
 	}
@@ -312,7 +314,7 @@ func (s *serviceImpl) loadDetailAuthorized(ctx context.Context, intentNo string,
 }
 
 func (s *serviceImpl) loadDetail(ctx context.Context, intentNo string, lock bool) (*IntentDetail, error) {
-	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? LIMIT 1`
+	query := `SELECT COALESCE((SELECT target.entitlement_no FROM plugin_idc_core_commerce_addon_target target WHERE target.tenant_id=intent.tenant_id AND target.order_no=intent.order_no),'') AS target_entitlement_no,entitlement_owner_id,intent_no,order_no,order_item_no,customer_no,product_name_zh_cn,product_name_en_us,strategy_code,granularity_code,initial_status_code,status_code,quantity,unit_sequence,version,financially_settled_at,updated_at,EXISTS(SELECT 1 FROM plugin_idc_core_product_fulfillment_task task WHERE task.tenant_id=0 AND task.intent_no=intent.intent_no AND task.takeover_requested) AS takeover_requested FROM plugin_idc_core_product_fulfillment_intent intent WHERE tenant_id=0 AND intent_no=? LIMIT 1`
 	if lock {
 		query += ` FOR UPDATE`
 	}
@@ -328,6 +330,38 @@ func (s *serviceImpl) scanDetail(ctx context.Context, query string, args ...any)
 		return nil, errorsNew("product_fulfillment_management_unavailable")
 	}
 	detail := row.safe()
+	preparation, preparationErr := s.loadManagementPreparation(ctx, row.IntentNo, row.CustomerNo, row.EntitlementOwnerID)
+	if preparationErr != nil {
+		return nil, errorsNew("product_fulfillment_management_unavailable")
+	}
+	detail.ManagementPreparation = preparation
+	if row.EntitlementOwnerID == resourceEntitlementOwnerID && detail.StatusCode == managementRepairCompleted && preparation != nil && preparation.StatusCode == string(entitlementprogress.Attention) {
+		candidate, candidateErr := s.managementRepairCandidate(ctx, detail, false)
+		if candidateErr != nil {
+			return nil, errorsNew("product_fulfillment_management_unavailable")
+		}
+		detail.CanRepairManagement = candidate != nil
+	}
+	if row.EntitlementOwnerID == resourceEntitlementOwnerID {
+		diagnostic, diagnosticErr := s.loadExecutionDiagnostic(ctx, row.IntentNo)
+		if diagnosticErr != nil {
+			return nil, diagnosticErr
+		}
+		verificationTask, verificationErr := s.nonAcceptanceTask(ctx, row.IntentNo, false)
+		if verificationErr != nil {
+			return nil, verificationErr
+		}
+		detail.CanVerifyNonAcceptance = verificationTask != nil
+		detail.NonAcceptanceVerifications, verificationErr = s.loadNonAcceptanceHistory(ctx, row.IntentNo)
+		if verificationErr != nil {
+			return nil, verificationErr
+		}
+		detail.Execution = diagnostic
+		detail.RecoveryConfigurations, diagnosticErr = s.loadRecoveryConfigurationHistory(ctx, row.IntentNo)
+		if diagnosticErr != nil {
+			return nil, diagnosticErr
+		}
+	}
 	customers, err := customerprojection.Load(ctx, s.database, []string{row.CustomerNo})
 	if err != nil {
 		return nil, errorsNew("product_fulfillment_management_unavailable")
@@ -339,6 +373,12 @@ func (s *serviceImpl) scanDetail(ctx context.Context, query string, args ...any)
 	if err != nil {
 		return nil, err
 	}
+	recovery, recoveryErr := s.preparationRecoveryTask(ctx, row.IntentNo, false)
+	if recoveryErr != nil {
+		return nil, recoveryErr
+	}
+	detail.CanRecoverPreparation = recovery != nil
+	detail.CanRequestRefund = row.StatusCode == "incomplete" && recovery != nil
 	detail.ReasonOptions = options
 	detail.Events, err = s.loadSafeEvents(ctx, row)
 	if err != nil {
@@ -360,7 +400,7 @@ func validAuthorizationScope(authorization Authorization) bool {
 }
 
 type intentDetailRow struct {
-	TargetEntitlementNo                                          string
+	TargetEntitlementNo, EntitlementOwnerID                      string
 	IntentNo, OrderNo, OrderItemNo, CustomerNo                   string
 	ProductNameZhCN, ProductNameEnUS                             string
 	StrategyCode, GranularityCode, InitialStatusCode, StatusCode string
@@ -385,7 +425,9 @@ func safeIntentStatus(status string) string {
 	switch status {
 	case "review_pending":
 		return "awaiting_review"
-	case "manual_pending", "gate_pending", "queued", "processing":
+	case "manual_pending":
+		return "manual_processing"
+	case "gate_pending", "queued", "processing":
 		return "processing"
 	case "completed":
 		return "completed"
@@ -404,11 +446,11 @@ func (s *serviceImpl) loadSafeEvents(ctx context.Context, row *intentDetailRow) 
 		ActorUserID                                                      int
 		OccurredAt                                                       time.Time
 	}
-	rows := make([]eventRow, 0, 65)
-	if err := s.database.GetScan(ctx, &rows, `SELECT type_code,reason_code,reason_label_zh_cn,reason_label_en_us,safe_note,actor_user_id,occurred_at FROM (
+	rows := make([]eventRow, 0, 64)
+	if err := s.database.GetScan(ctx, &rows, `WITH events AS (
 SELECT CASE action_code WHEN 'review_approve' THEN 'review_approved' WHEN 'review_reject' THEN 'review_rejected'
 WHEN 'takeover' THEN 'taken_over' WHEN 'manual_conclude_completed' THEN 'manual_completed'
-WHEN 'manual_conclude_unable' THEN 'manual_unable_to_complete' END AS type_code,
+WHEN 'manual_conclude_unable' THEN 'manual_unable_to_complete' WHEN 'recover_preparation' THEN 'preparation_recovered' WHEN 'repair_management' THEN 'management_repair_queued' END AS type_code,
 reason_code,reason_label_zh_cn,reason_label_en_us,safe_note,actor_user_id,created_at AS occurred_at
 FROM plugin_idc_core_product_fulfillment_command WHERE tenant_id=0 AND intent_no=?
 UNION ALL
@@ -422,7 +464,12 @@ SELECT CASE attempt.result_status_code WHEN 'succeeded' THEN 'automation_complet
 ELSE 'automation_processing' END,'','','','',0,attempt.finished_at
 FROM plugin_idc_core_product_fulfillment_attempt attempt JOIN plugin_idc_core_product_fulfillment_task task ON task.task_no=attempt.task_no
 WHERE task.tenant_id=0 AND task.intent_no=? AND attempt.finished_at IS NOT NULL
-) event ORDER BY occurred_at,type_code LIMIT 65`, row.IntentNo, row.IntentNo, row.IntentNo, row.IntentNo); err != nil || len(rows) > 64 {
+), ordered_events AS (
+ SELECT type_code,reason_code,reason_label_zh_cn,reason_label_en_us,safe_note,actor_user_id,occurred_at,LAG(type_code) OVER (ORDER BY occurred_at,type_code) AS previous_type FROM events
+)
+SELECT type_code,reason_code,reason_label_zh_cn,reason_label_en_us,safe_note,actor_user_id,occurred_at
+FROM ordered_events WHERE type_code<>'automation_processing' OR previous_type IS DISTINCT FROM type_code
+ORDER BY occurred_at DESC,type_code DESC LIMIT 64`, row.IntentNo, row.IntentNo, row.IntentNo, row.IntentNo); err != nil {
 		return nil, errorsNew("product_fulfillment_management_unavailable")
 	}
 	actorSet := make(map[int]struct{}, len(rows))
@@ -446,7 +493,9 @@ WHERE task.tenant_id=0 AND task.intent_no=? AND attempt.finished_at IS NOT NULL
 	}
 	result := make([]IntentEvent, 0, len(rows)+1)
 	result = append(result, IntentEvent{TypeCode: "intent_created", StatusCode: safeIntentStatus(row.InitialStatusCode), OccurredAt: row.FinanciallySettledAt})
-	for _, event := range rows {
+	// Preserve chronological presentation of the latest bounded audit projection.
+	for index := len(rows) - 1; index >= 0; index-- {
+		event := rows[index]
 		safeStatus := safeCommandStatus(event.TypeCode)
 		if safeStatus == "" {
 			return nil, errorsNew("product_fulfillment_management_unavailable")
@@ -465,11 +514,11 @@ WHERE task.tenant_id=0 AND task.intent_no=? AND attempt.finished_at IS NOT NULL
 
 func safeCommandStatus(action string) string {
 	switch action {
-	case "review_approved", "taken_over", "moved_to_manual", "automation_started", "automation_processing":
+	case "review_approved", "taken_over", "moved_to_manual", "automation_started", "automation_processing", "preparation_recovered":
 		return "processing"
 	case "review_rejected":
 		return "processing"
-	case "manual_completed", "automation_completed":
+	case "manual_completed", "automation_completed", "management_repair_queued":
 		return "completed"
 	case "manual_unable_to_complete", "automation_failed":
 		return "not_completed"
@@ -541,10 +590,11 @@ func (s *serviceImpl) List(ctx context.Context, input ListInput) (*IntentPage, e
 WHERE tenant_id=0 AND (? OR customer_no IN(SELECT jsonb_array_elements_text(?::jsonb)))
   AND (?='' OR order_no=?) AND (?='' OR customer_no=?) AND (?='' OR strategy_code=?)
   AND (?='' OR (?='awaiting_review' AND status_code='review_pending')
-       OR (?='processing' AND status_code IN ('manual_pending','gate_pending','queued','processing'))
+       OR (?='processing' AND status_code IN ('gate_pending','queued','processing'))
+       OR (?='manual_processing' AND status_code='manual_pending')
        OR (?='completed' AND status_code='completed') OR (?='not_completed' AND status_code='incomplete')
        OR (?='cancelled' AND status_code='canceled'))`
-	args := []any{authorization.AllCustomers, scopeJSON, input.OrderNo, input.OrderNo, input.CustomerNo, input.CustomerNo, input.Mode, input.Mode, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus}
+	args := []any{authorization.AllCustomers, scopeJSON, input.OrderNo, input.OrderNo, input.CustomerNo, input.CustomerNo, input.Mode, input.Mode, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus, input.SafeStatus}
 	var total, offset int
 	if input.Page > 0 {
 		offset = (input.Page - 1) * input.Limit
@@ -617,7 +667,7 @@ func normalizeIntentListInput(input ListInput) (ListInput, error) {
 }
 
 func validSafeStatus(value string) bool {
-	return value == "awaiting_review" || value == "processing" || value == "completed" || value == "not_completed" || value == "cancelled"
+	return value == "awaiting_review" || value == "processing" || value == "manual_processing" || value == "completed" || value == "not_completed" || value == "cancelled"
 }
 
 func validManagementMode(value string) bool {

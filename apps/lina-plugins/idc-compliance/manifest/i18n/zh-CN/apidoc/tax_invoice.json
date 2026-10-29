@@ -17,7 +17,6 @@
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceManagementActionResult.fields.item.dc": "当前安全的开票申请投影",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceManagementActionResult.fields.applied.dc": "本次操作是否到达目标本地状态；供应商门禁安全阻止时为否",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceManagementActionResult.fields.reused.dc": "是否精确重放了之前相同操作的结果",
-
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceGetReq.meta.tags": "IDC 合规发票",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceGetReq.meta.summary": "查询开票申请",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceGetReq.meta.dc": "返回一份有界后台投影、当前供应商能力，以及申请时选中的不可变购方资料。私有快照位置、银行账号秘密和销方秘密永不返回；后台内部备注永远不会进入客户接口。",
@@ -34,7 +33,6 @@
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceBuyerProfileItem.fields.bankName.dc": "冻结的可选购方开户行",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceBuyerProfileItem.fields.bankAccountMasked.dc": "冻结的脱敏购方银行账号，永不返回明文",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceBuyerProfileItem.fields.version.dc": "冻结的常用抬头版本",
-
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateReq.meta.tags": "IDC 合规发票",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateReq.meta.summary": "审核通过开票申请",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateReq.meta.dc": "确认当前安装供应商确实支持的一种票种，并把待审核申请变为待提交开票。门禁关闭时保留待审核状态并返回阻断原因。",
@@ -44,7 +42,6 @@
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateReq.fields.expectedVersion.dc": "后台最后读取到的申请版本",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateReq.fields.idempotencyKey.dc": "调用方生成的精确重试键",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceApprovalCreateRes.fields.result.dc": "审核结果与当前供应商能力",
-
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateReq.meta.tags": "IDC 合规发票",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateReq.meta.summary": "驳回开票申请",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateReq.meta.dc": "使用固定的客户可见原因和可选后台内部备注驳回一份待审核申请，并以乐观并发、精确重放和原子审计方式释放开票额度。",
@@ -55,7 +52,6 @@
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateReq.fields.expectedVersion.dc": "后台最后读取到的申请版本",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateReq.fields.idempotencyKey.dc": "调用方生成的精确重试键",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceRejectionCreateRes.fields.result.dc": "已驳回的申请结果",
-
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateReq.meta.tags": "IDC 合规发票",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateReq.meta.summary": "将开票申请加入提交队列",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateReq.meta.dc": "重新检查当前供应商能力，并通过独立操作把审核通过的申请加入本地队列。本接口不调用真实供应商；门禁关闭时保留待提交开票状态并返回阻断原因。",
@@ -64,7 +60,6 @@
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateReq.fields.expectedVersion.dc": "后台最后读取到的申请版本",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateReq.fields.idempotencyKey.dc": "调用方生成的精确重试键",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceSubmissionCreateRes.fields.result.dc": "本地提交排队结果与当前供应商能力",
-
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceCancellationCreateReq.meta.tags": "IDC 合规发票",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceCancellationCreateReq.meta.summary": "取消开票申请",
   "plugins.idc_compliance.api.admin.v1.TaxInvoiceCancellationCreateReq.meta.dc": "只允许取消待审核、待提交开票，或已有供应商权威未开票证据的失败申请。操作使用固定客户可见原因、可选后台内部备注、精确重放和原子审计后释放开票额度。",

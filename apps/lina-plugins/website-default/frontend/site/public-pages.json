@@ -6,6 +6,18 @@
     "path": "/"
   },
   {
+    "id": "cart",
+    "nameZh": "购物车",
+    "nameEn": "Cart",
+    "path": "/cart"
+  },
+  {
+    "id": "checkout",
+    "nameZh": "确认订单",
+    "nameEn": "Checkout",
+    "path": "/checkout"
+  },
+  {
     "id": "products",
     "nameZh": "商品列表",
     "nameEn": "Products",

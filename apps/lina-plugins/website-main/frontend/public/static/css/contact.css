@@ -1,0 +1,204 @@
+﻿.preSalesConsultation {
+  padding: var(--pcspacing);
+}
+.preSalesConsultation .currency-content {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 20px;
+}
+.preSalesConsultation .currency-content .currency-content-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-shadow: var(--global-shadow);
+  padding: 40px 20px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+.preSalesConsultation .currency-content .currency-content-item:hover {
+  box-shadow: rgba(16, 36, 94, 0.4) 0px 2px 6px 0px;
+}
+.preSalesConsultation .currency-content .currency-content-item:hover .consultationButton {
+  height: 100%;
+}
+.preSalesConsultation .currency-content .currency-content-item:hover .consultationButton.Button-ewm {
+  height: 100%;
+}
+.preSalesConsultation .currency-content .currency-content-item .consultationButton {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.preSalesConsultation .currency-content .currency-content-item .consultationButton .consultation-ewm {
+  width: 180px;
+  max-height: 180px;
+}
+.preSalesConsultation .currency-content .currency-content-item .consultationButton .consultation-ewm img {
+  width: 100%;
+  height: 100%;
+}
+.preSalesConsultation .currency-content .currency-content-item .currency-content-item-img {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 32px;
+}
+.preSalesConsultation .currency-content .currency-content-item .currency-content-item-img img {
+  width: 100%;
+  height: 100%;
+}
+.preSalesConsultation .currency-content .currency-content-item .currency-content-item-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.preSalesConsultation .currency-content .currency-content-item .currency-content-item-label .label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+.preSalesConsultation .currency-content .currency-content-item .currency-content-item-label .desc {
+  font-size: 14px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.companyAddress {
+  padding: var(--pcspacing);
+}
+.companyAddress .atlascontent {
+  box-shadow: var(--global-shadow);
+  padding: 24px;
+  background: #fff;
+  border-radius: var(--radius);
+}
+.companyAddress .atlascontent #atlas {
+  border-radius: var(--radius);
+}
+.companyAddress .info-window {
+  padding: 16px;
+}
+.companyAddress .info-window .info-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--txtcl);
+  margin-bottom: 6px;
+}
+.companyAddress .info-window .info-address {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--txtcl);
+  opacity: 0.45;
+}
+.companyAddress .info-window img {
+  width: 98px;
+  height: auto;
+  margin-bottom: 14px;
+}
+
+.frequentlyAskedQuestions {
+  padding: var(--pcspacing);
+}
+.frequentlyAskedQuestions .problem-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+}
+.frequentlyAskedQuestions .problem-row .problem-row-item {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  box-shadow: var(--global-shadow);
+}
+.frequentlyAskedQuestions .problem-row .problem-row-item:last-child .problem-row-item-title {
+  background-image: url("../image/remoteL17075769161931.png");
+}
+.frequentlyAskedQuestions .problem-row .problem-row-item-title {
+  padding: 0px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 60px;
+  color: #fff;
+  width: 100%;
+  background-image: url("../image/remoteL17075769177597.png");
+  background-size: 100% 100%;
+}
+.frequentlyAskedQuestions .problem-row .problem-item-news {
+  padding: 10px 24px 24px;
+  width: 100%;
+  cursor: pointer;
+}
+.frequentlyAskedQuestions .problem-row .problem-item-news .problem-news-title {
+  line-height: 42px;
+  font-size: 14px;
+  color: var(--txtcl);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.frequentlyAskedQuestions .problem-row .problem-item-news .problem-news-title:hover {
+  color: var(--Original);
+}
+
+@media (max-width: 768px) {
+  .preSalesConsultation {
+    padding: var(--wapspacing);
+  }
+  .preSalesConsultation .currency-content {
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 12px;
+  }
+  .preSalesConsultation .currency-content .currency-content-item {
+    padding: 20px;
+  }
+  .preSalesConsultation .currency-content .currency-content-item .currency-content-item-img {
+    width: 38px;
+    height: 38px;
+    margin-bottom: 16px;
+  }
+  .preSalesConsultation .currency-content .currency-content-item .currency-content-item-label .label {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .preSalesConsultation .currency-content .currency-content-item .currency-content-item-label .desc {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .preSalesConsultation .currency-content .currency-content-item .consultationButton .consultation-ewm {
+    width: 90%;
+    max-height: 90%;
+  }
+  .companyAddress {
+    padding: var(--wapspacing);
+  }
+  .companyAddress .atlascontent {
+    padding: 0px;
+  }
+  .frequentlyAskedQuestions {
+    padding: var(--wapspacing);
+  }
+  .frequentlyAskedQuestions .problem-row {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+  }
+}
+
+/*# sourceMappingURL=contact.css.map */

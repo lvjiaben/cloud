@@ -24,16 +24,14 @@ type NoticeColumns struct {
 	Id        string // Notice ID
 	TenantId  string // Owning tenant ID, 0 means PLATFORM
 	Title     string // Notice title
-	Type      string // Notice type: 1=notification, 2=announcement
 	Content   string // Notice content
-	FileIds   string // Attachment file ID list, comma-separated
 	Status    string // Notice status: 0=draft, 1=published
-	Remark    string // Remark
 	CreatedBy string // Creator
 	UpdatedBy string // Updater
 	CreatedAt string // Creation time
 	UpdatedAt string // Update time
 	DeletedAt string // Deletion time
+	SortOrder string //
 }
 
 // noticeColumns holds the columns for the table plugin_content_notice.
@@ -41,16 +39,14 @@ var noticeColumns = NoticeColumns{
 	Id:        "id",
 	TenantId:  "tenant_id",
 	Title:     "title",
-	Type:      "type",
 	Content:   "content",
-	FileIds:   "file_ids",
 	Status:    "status",
-	Remark:    "remark",
 	CreatedBy: "created_by",
 	UpdatedBy: "updated_by",
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
 	DeletedAt: "deleted_at",
+	SortOrder: "sort_order",
 }
 
 // NewNoticeDao creates and returns a new DAO object for table data access.

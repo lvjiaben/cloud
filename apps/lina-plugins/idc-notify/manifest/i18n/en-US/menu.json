@@ -1,8 +1,5 @@
 {
   "menu": {
-    "plugin:idc-notify:wecom-self-binding": {
-      "title": "My WeCom Binding"
-    },
     "plugin:idc-notify:channels": {
       "title": "Notification Channels"
     },

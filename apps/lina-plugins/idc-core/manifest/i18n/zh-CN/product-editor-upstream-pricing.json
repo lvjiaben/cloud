@@ -1,0 +1,7 @@
+{
+  "plugin.idc-core.catalog.upstreamPricing.sample": "上游当前默认配置示例价（随客户选配变化）",
+  "plugin.idc-core.catalog.upstreamPricing.wholePrice": "整件最终售价",
+  "plugin.idc-core.catalog.upstreamPricing.mixed": "按周期分别设置",
+  "plugin.idc-core.catalog.upstreamPricing.mixedHint": "当前各周期使用不同售价规则。保留现规则无需操作；如需调整，请明确选择统一百分比加价或逐周期整件售价。",
+  "plugin.idc-core.catalog.upstreamPricing.percentRequired": "请填写加价百分比，允许为 0。"
+}

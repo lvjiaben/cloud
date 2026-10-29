@@ -26,28 +26,32 @@ func (c *ControllerV1) CatalogProductVersionCostList(ctx context.Context, req *v
 
 // CatalogProductVersionCostCreate creates one authorized cost setting.
 func (c *ControllerV1) CatalogProductVersionCostCreate(ctx context.Context, req *v1.CatalogProductVersionCostCreateReq) (*v1.CatalogProductVersionCostCreateRes, error) {
-	amount, start, end, err := parseCatalogProductVersionCost(req.UnitCostMinor, req.EffectiveFrom, req.EffectiveUntil)
-	if err != nil {
-		return nil, err
-	}
-	row, err := c.catalogWriter.CreateProductVersionCost(ctx, catalog.ProductVersionCostCreateInput{VersionNo: req.VersionNo, CurrencyCode: req.CurrencyCode, PeriodUnit: catalog.PeriodUnit(req.PeriodUnit), PeriodCount: req.PeriodCount, UnitCostMinor: amount, EffectiveFrom: start, EffectiveUntil: end})
-	if err != nil {
-		return nil, err
-	}
-	return &v1.CatalogProductVersionCostCreateRes{Cost: mapCatalogProductVersionCost(*row)}, nil
+	return saveCatalogSettings(ctx, c.catalogPublication, req.VersionNo, func(ctx context.Context) (*v1.CatalogProductVersionCostCreateRes, error) {
+		amount, start, end, err := parseCatalogProductVersionCost(req.UnitCostMinor, req.EffectiveFrom, req.EffectiveUntil)
+		if err != nil {
+			return nil, err
+		}
+		row, err := c.catalogWriter.CreateProductVersionCost(ctx, catalog.ProductVersionCostCreateInput{VersionNo: req.VersionNo, CurrencyCode: req.CurrencyCode, PeriodUnit: catalog.PeriodUnit(req.PeriodUnit), PeriodCount: req.PeriodCount, UnitCostMinor: amount, EffectiveFrom: start, EffectiveUntil: end})
+		if err != nil {
+			return nil, err
+		}
+		return &v1.CatalogProductVersionCostCreateRes{Cost: mapCatalogProductVersionCost(*row)}, nil
+	})
 }
 
 // CatalogProductVersionCostUpdate updates one setting at an expected version.
 func (c *ControllerV1) CatalogProductVersionCostUpdate(ctx context.Context, req *v1.CatalogProductVersionCostUpdateReq) (*v1.CatalogProductVersionCostUpdateRes, error) {
-	amount, start, end, err := parseCatalogProductVersionCost(req.UnitCostMinor, req.EffectiveFrom, req.EffectiveUntil)
-	if err != nil {
-		return nil, err
-	}
-	row, err := c.catalogWriter.UpdateProductVersionCost(ctx, catalog.ProductVersionCostUpdateInput{ProductVersionCostCreateInput: catalog.ProductVersionCostCreateInput{VersionNo: req.VersionNo, CurrencyCode: req.CurrencyCode, PeriodUnit: catalog.PeriodUnit(req.PeriodUnit), PeriodCount: req.PeriodCount, UnitCostMinor: amount, EffectiveFrom: start, EffectiveUntil: end}, CostNo: req.CostNo, ExpectedVersion: req.ExpectedVersion})
-	if err != nil {
-		return nil, err
-	}
-	return &v1.CatalogProductVersionCostUpdateRes{Cost: mapCatalogProductVersionCost(*row)}, nil
+	return saveCatalogSettings(ctx, c.catalogPublication, req.VersionNo, func(ctx context.Context) (*v1.CatalogProductVersionCostUpdateRes, error) {
+		amount, start, end, err := parseCatalogProductVersionCost(req.UnitCostMinor, req.EffectiveFrom, req.EffectiveUntil)
+		if err != nil {
+			return nil, err
+		}
+		row, err := c.catalogWriter.UpdateProductVersionCost(ctx, catalog.ProductVersionCostUpdateInput{ProductVersionCostCreateInput: catalog.ProductVersionCostCreateInput{VersionNo: req.VersionNo, CurrencyCode: req.CurrencyCode, PeriodUnit: catalog.PeriodUnit(req.PeriodUnit), PeriodCount: req.PeriodCount, UnitCostMinor: amount, EffectiveFrom: start, EffectiveUntil: end}, CostNo: req.CostNo, ExpectedVersion: req.ExpectedVersion})
+		if err != nil {
+			return nil, err
+		}
+		return &v1.CatalogProductVersionCostUpdateRes{Cost: mapCatalogProductVersionCost(*row)}, nil
+	})
 }
 
 func parseCatalogProductVersionCost(amountText string, startMillis, endMillis *int64) (int64, *time.Time, *time.Time, error) {

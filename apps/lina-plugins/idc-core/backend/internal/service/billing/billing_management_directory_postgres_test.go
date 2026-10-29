@@ -10,6 +10,9 @@ import (
 
 type managementFinanceAuthorizerStub struct{}
 
+func (managementFinanceAuthorizerStub) AuthorizeBalanceAdjustmentCreate(context.Context) (int, error) {
+	return 9001, nil
+}
 func (managementFinanceAuthorizerStub) AuthorizeFinancialOverview(context.Context) (int, error) {
 	return 9001, nil
 }
@@ -66,7 +69,7 @@ func TestManagementFinanceDirectoryPostgreSQLReadsBoundedFacts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pending, err := adjustments.CreateManualReceipt(ctx, ManualReceiptInput{
+	pending, err := seedLegacyReceipt(t, ctx, adjustments, ManualReceiptInput{
 		CustomerNo: "customer-ledger", CurrencyCode: "CNY", AmountMinor: 800,
 		ReasonCode: "offline_balance_credit", ProofReference: "private-proof-management-001",
 		ReceivingAccountReference: "merchant-collection-cny-001",
@@ -135,7 +138,7 @@ func TestManagementFinanceDirectoryPostgreSQLReadsBoundedFacts(t *testing.T) {
 		}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err = adjustments.CreateManualReceipt(ctx, ManualReceiptInput{
+		if _, err = seedLegacyReceipt(t, ctx, adjustments, ManualReceiptInput{
 			CustomerNo: "customer-ledger", CurrencyCode: "CNY", AmountMinor: 800,
 			ReasonCode: "offline_balance_credit", ProofReference: fmt.Sprintf("numbered-proof-%02d", index),
 			ReceivingAccountReference: "merchant-collection-cny-001", BusinessPurposeCode: "balance_recharge",

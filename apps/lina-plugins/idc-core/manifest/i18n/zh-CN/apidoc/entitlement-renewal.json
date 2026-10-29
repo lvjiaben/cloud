@@ -1,0 +1,23 @@
+{
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.meta.tags": "客户账单",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.meta.summary": "核算我的服务续费",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.meta.dc": "按当前售价核算本人服务续费，保留现有规格并检查商品可售状态。",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.schema.dc": "按当前售价核算本人服务续费，保留现有规格并检查商品可售状态。",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.fields.entitlementNo.dc": "本人拥有的服务编号",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.fields.renewalCycles.dc": "需要续费的计费周期数量",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteReq.fields.idempotencyKey.dc": "报价请求幂等编号，重试时保持不变",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.quoteNo.dc": "本人续费报价编号",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.currencyCode.dc": "服务使用的币种",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.totalAmountMinor.dc": "应付金额，以币种最小单位的精确整数字符串表示",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.taxAmountMinor.dc": "所含税额，以币种最小单位的精确整数字符串表示",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.projectedExpiresAt.dc": "付款成功后的服务到期时间，Unix毫秒时间戳",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuote.fields.expiresAt.dc": "报价失效时间，Unix毫秒时间戳",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalQuoteRes.fields.quote.dc": "服务端核算的当前续费报价",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.meta.tags": "客户账单",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.meta.summary": "确认我的服务续费",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.meta.dc": "确认本人有效报价并生成续费账单；应付账单实际结清后才延长服务。",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.schema.dc": "确认本人有效报价并生成续费账单；应付账单实际结清后才延长服务。",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.fields.quoteNo.dc": "本人拥有的续费报价编号",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmReq.fields.idempotencyKey.dc": "确认请求幂等编号，重试时保持不变",
+  "plugins.idc_core.api.account.v1.EntitlementRenewalConfirmRes.fields.operation.dc": "本人的续费账单及付款状态"
+}

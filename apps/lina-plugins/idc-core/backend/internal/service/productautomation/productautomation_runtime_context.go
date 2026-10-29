@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"strings"
 	"sync"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/capregistry"
+	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-core/backend/cap/supplierinterfacecap"
@@ -23,6 +25,8 @@ import (
 const supplierRuntimeContextTTL = 10 * time.Second
 
 type dynamicCandidateScope struct {
+	candidateRelationships        *[]resourceinterfaceprojectioncap.ChoiceRelationship
+	candidateSyncState            *resourceinterfaceprojectioncap.CandidateSyncState
 	versionNo                     string
 	interfaceInstanceNo           string
 	configurationRevision         int64
@@ -89,6 +93,13 @@ func (s *supplierRuntimeContextStore) issue(exact *capmodel.BusinessExtensionPro
 		return supplierRuntimeContext{}, gerror.New("supplier runtime context business scope is invalid")
 	}
 	if len(business) == 1 {
+		// Consumed-file authorization follows the purchased business snapshot.
+		// The host invocation independently receives the actual resolved package.
+		if business[0].ReleaseVersion != "" {
+			item.releaseVersion = business[0].ReleaseVersion
+			item.releaseDigest = business[0].ReleaseDigest
+			item.declarationDigest = business[0].DeclarationDigest
+		}
 		item.intentNo, item.orderNo, item.orderItemNo = business[0].IntentNo, business[0].OrderNo, business[0].OrderItemNo
 		item.configurationSnapshotNo = business[0].ConfigurationSnapshotNo
 		item.fileReadFields = make(map[string]struct{})
@@ -384,9 +395,14 @@ func (s *serviceImpl) loadRuntimeConfigurationView(ctx context.Context, exact *c
 	}
 	var row *supplierRuntimeConfigurationRow
 	if err := s.database.GetScan(ctx, &row, supplierRuntimeConfigurationQuery, scope.interfaceInstanceNo, scope.configurationRevision); err != nil || row == nil ||
-		row.PluginID != exact.PluginID || row.PluginReleaseVersion != exact.ReleaseVersion || row.ReleaseDigest != exact.ReleaseDigest ||
-		row.BindingDeclarationDigest != exact.DeclarationDigest {
+		row.PluginID != exact.PluginID {
 		return nil, gerror.New("supplier runtime configuration evidence is unavailable")
+	}
+	if row.BindingDeclarationDigest != exact.DeclarationDigest {
+		resolved, resolveErr := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{PluginID: row.PluginID, ReleaseVersion: row.PluginReleaseVersion, ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.BindingDeclarationDigest, Point: exact.Point, ContractVersion: exact.ContractVersion})
+		if resolveErr != nil || !sameEvidence(resolved, exact) {
+			return nil, gerror.New("supplier runtime configuration evidence is unavailable")
+		}
 	}
 	declaration, err := decodeConfigurationDeclaration(row.DeclarationSnapshot)
 	expectedDeclaration, expectedErr := configurationDeclarationJSON(exact.InterfaceConfiguration)

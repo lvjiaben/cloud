@@ -88,7 +88,7 @@ func TestPublishedProviderMethods(t *testing.T) {
 	if err := gyaml.DecodeTo(content, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	want := append(resourcecap.DynamicProviderMethods(), resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct, resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration, resourcecap.DynamicProviderMethodCatalogBillingTerms)
+	want := append(resourcecap.DynamicProviderMethods(), resourcecap.DynamicProviderMethodListCatalog, resourcecap.DynamicProviderMethodReadCatalogProduct, resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration, resourcecap.DynamicProviderMethodCatalogBillingTerms, resourcecap.DynamicProviderMethodLookupPrincipal, resourcecap.DynamicProviderMethodCreatePrincipal)
 	slices.Sort(want)
 	for _, extension := range manifest.Extensions {
 		if extension.Point == "resource-provider" && extension.Role == "owner" && extension.Owner == pluginID && extension.Version == "v1" {

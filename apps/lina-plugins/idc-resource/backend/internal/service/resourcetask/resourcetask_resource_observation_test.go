@@ -25,7 +25,7 @@ func TestResourceObservationConvergenceIsCapabilitySpecific(t *testing.T) {
 		{capability: resourcecap.CapabilityTerminate, snapshot: resourcecap.ResourceSnapshot{State: resourcecap.ResourceStateTerminated}, want: true},
 		{capability: resourcecap.CapabilityChangeIP, parameters: `{"ip_num":2}`, snapshot: resourcecap.ResourceSnapshot{
 			State: resourcecap.ResourceStateRunning, Data: []byte(`{"ip_count":2}`),
-		}, want: true},
+		}, want: false},
 		{capability: resourcecap.CapabilityChangeIP, parameters: `{"ip_num":2}`, snapshot: resourcecap.ResourceSnapshot{
 			State: resourcecap.ResourceStateRunning, Data: []byte(`{"ip_count":1}`),
 		}, want: false},
@@ -50,5 +50,17 @@ func TestNewTaskEvidenceNumber(t *testing.T) {
 	number, err := newTaskEvidenceNumber(zeroReader{})
 	if err != nil || number != "evidence_00000000000000000000000000000000" {
 		t.Fatalf("unexpected evidence number: number=%q err=%v", number, err)
+	}
+}
+
+// Equal counts (or a new-looking address list without the original task proof)
+// cannot turn an unknown replacement into success and unlock another write.
+func TestChangeIPObservationNeverProvesReplacementByCount(t *testing.T) {
+	for _, data := range []string{`{"ip_count":2,"addresses":["192.0.2.1","192.0.2.2"]}`, `{"ip_count":2,"addresses":["192.0.2.3","192.0.2.4"]}`} {
+		for _, state := range []resourcecap.ResourceState{resourcecap.ResourceStateRunning, resourcecap.ResourceStateStopped, resourcecap.ResourceStateSuspended} {
+			if resourceObservationConverges(resourcecap.CapabilityChangeIP, `{"ip_num":2}`, resourcecap.ResourceSnapshot{State: state, Data: []byte(data)}) {
+				t.Fatal("unbound address observation falsely proves an IP replacement")
+			}
+		}
 	}
 }

@@ -1,0 +1,23 @@
+{
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.meta.tags": "IDC附属资源续费",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.meta.summary": "查看附属资源续费待办",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.meta.dc": "按当前员工续费权限和可表达的商家数据范围读取有界待办队列。",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.schema.dc": "按当前员工续费权限和可表达的商家数据范围读取有界待办队列。",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateReq.meta.tags": "IDC附属资源续费",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateReq.meta.summary": "同步当前员工续费通知",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateReq.meta.dc": "为当前未处理续费事项创建幂等通知意图，收件人来自实际登录员工身份。",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateReq.schema.dc": "为当前未处理续费事项创建幂等通知意图，收件人来自实际登录员工身份。",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.fields.page.dc": "从1开始的页码",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListReq.fields.pageSize.dc": "每页条数，范围为1至50",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.workItemNo.dc": "稳定的续费待办编号",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.invoiceNo.dc": "相关未付账单编号",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.customerNo.dc": "附属资源所属客户编号",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.subjectNo.dc": "原服务或原生权益编号",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.reasonCode.dc": "原因：balance_payment_failed 表示余额扣款失败；deletion_invoice_pending 表示删除后账单关闭待处理",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItem.fields.createdAt.dc": "创建时间，Unix 毫秒时间戳",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListRes.fields.items.dc": "当前页未处理续费事项",
+  "plugins.idc_core.api.renewalstaff.v1.WorkItemListRes.fields.total.dc": "同一员工数据范围下的准确总数",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateReq.fields.locale.dc": "通知语言：zh-CN 或 en-US",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateRes.fields.total.dc": "当前可见未处理事项的准确数量",
+  "plugins.idc_core.api.renewalstaff.v1.NotificationSyncCreateRes.fields.eventNo.dc": "持久事件意图编号；无待办时为空，不代表已经送达"
+}

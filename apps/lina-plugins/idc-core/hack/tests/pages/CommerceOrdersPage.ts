@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url';
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -121,25 +122,11 @@ export class CommerceOrdersPage {
     return this.page.getByTestId("optional-contract-section");
   }
 
-  async generateOptionalContractPreview() {
-    await this.page.getByTestId("optional-contract-template").waitFor();
-    await this.page.getByTestId("optional-contract-signer").waitFor();
-    await this.page.getByTestId("optional-contract-create").click();
-    await this.page.getByRole("button", { name: "确认生成预览" }).click();
-    await this.page.getByTestId("optional-contract-preview").waitFor();
-  }
-
-  async submitOptionalContract() {
-    await this.page.getByTestId("optional-contract-submit").click();
-    await this.page.getByRole("button", { name: "确认提交签署" }).click();
-    await this.page.locator(".ant-modal-wrap").waitFor({ state: "hidden" });
-  }
-
   async screenshot(description: string) {
     const now = new Date();
     const day = now.toISOString().slice(0, 10).replaceAll("-", "");
     const stamp = now.toISOString().slice(11, 19).replaceAll(":", "");
-    const directory = resolve(process.cwd(), "../../temp", day);
+    const directory = resolve(fileURLToPath(new URL("../../../../../../temp/",import.meta.url)), day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
     await this.page.screenshot({ animations: "disabled", fullPage: false, path });

@@ -6,6 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/gogf/gf/v2/database/gdb"
@@ -170,7 +171,7 @@ func (s *Service) TestConfig(ctx context.Context, baseURL, key, model string) (b
 	if key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}
-	c := http.Client{Timeout: 5 * time.Second}
+	c := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 5 * time.Second}
 	resp, err := c.Do(req)
 	if err != nil {
 		return false, s.translate(ctx, "plugin.idc-ai.service.test.unreachable", "The model service is temporarily unreachable")
@@ -276,7 +277,7 @@ func (s *Service) callModel(ctx context.Context, baseURL, key, model, prompt str
 	if key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}
-	client := http.Client{Timeout: 10 * time.Second}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", false

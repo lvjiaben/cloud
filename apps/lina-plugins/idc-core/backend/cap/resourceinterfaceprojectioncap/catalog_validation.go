@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 )
 
 // Decimal input has a transport bound, not a business pricing ceiling.
@@ -18,6 +19,9 @@ var catalogCurrencyPattern = regexp.MustCompile(`^[A-Z]{3}$`)
 
 // Validate rejects incomplete owner-generated read evidence before admission.
 func (e CatalogReadEvidence) Validate() error {
+	if e.SaleImportProtocol != "" && !e.SaleImportProtocol.NativePurchase() {
+		return gerror.New("upstream sale import protocol is unsupported")
+	}
 	if !interfaceNoPattern.MatchString(e.InterfaceInstanceNo) || e.OwnerID != OwnerID ||
 		!channelPattern.MatchString(e.ResourceChannelRef) || !configurationRevisionPattern.MatchString(e.InterfaceConfigurationRevision) ||
 		!pluginPattern.MatchString(e.PluginID) || len(e.PluginID) > 64 ||
@@ -173,18 +177,18 @@ func validCatalogPrices(prices []CatalogPrice) bool {
 	seen := make(map[key]struct{}, len(prices))
 	for _, price := range prices {
 		if !catalogCurrencyPattern.MatchString(price.CurrencyCode) || !catalogDecimalPattern.MatchString(price.Amount) ||
-			!catalogDecimalPattern.MatchString(price.SetupFee) || price.PeriodCount < 1 || price.PeriodCount > 120 {
+			!catalogDecimalPattern.MatchString(price.SetupFee) {
 			return false
 		}
-		switch price.Period {
-		case CatalogPeriodOnce:
-			if price.PeriodCount != 1 {
-				return false
-			}
-		case CatalogPeriodHour, CatalogPeriodDay, CatalogPeriodMonth, CatalogPeriodYear:
-		default:
+		charge := productfulfillmentcap.BillingChargeRecurring
+		if price.Period == CatalogPeriodOnce {
+			charge = productfulfillmentcap.BillingChargeOneTime
+		}
+		schedule := productfulfillmentcap.BillingSchedule{CurrencyCode: price.CurrencyCode, ChargeType: charge, PeriodUnit: productfulfillmentcap.BillingPeriodUnit(price.Period), PeriodCount: price.PeriodCount, PurchaseCycles: 1}
+		if schedule.Validate() != nil {
 			return false
 		}
+
 		dimension := key{price.CurrencyCode, price.Period, price.PeriodCount}
 		if _, exists := seen[dimension]; exists {
 			return false

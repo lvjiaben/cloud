@@ -17,6 +17,8 @@ type Service interface {
 	// Import returns the original identity for an unchanged actor-scoped retry,
 	// rejects changed-key content, and rolls back every local write on failure.
 	Import(context.Context, catalog.ImportInput) (*catalog.ImportResult, error)
+	// ImportExisting prepares remote data outside the local transaction, then atomically replaces and applies the exact editable version. Failed or incomplete supplier contracts leave the product untouched.
+	ImportExisting(context.Context, catalog.ImportInput, catalog.PublicationService, productautomation.Service, string) (*catalog.ImportResult, error)
 }
 
 type serviceImpl struct {

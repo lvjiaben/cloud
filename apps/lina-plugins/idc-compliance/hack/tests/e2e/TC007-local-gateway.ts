@@ -42,17 +42,10 @@ test.describe("TC-7 随安装交付的本地合规网关", () => {
     );
   });
 
-  test("TC-7b: 回调主体或安装主体伪造在路由查找前被拒绝", async () => {
-    await goTest(
-      ["./internal/tencentess"],
-      "Test(CallbackVerifierRejectsWrongInstallationSubject|SubjectCanonicalizerAcceptsOnlyClosedAuthorizationProjection)$",
-    );
-  });
-
   test("TC-7c: 商家自己的套餐或授权不足时停止新的收费调用", async () => {
     await goTest(
-      ["./internal/localusage", "./internal/tencentess"],
-      "Test(AdmitNewChargeStopsInsufficientPlanAndKeepsUnmeteredHistoryAvailable|CreateFlowStopsBeforeSupplierWhenBuyerPlanIsInsufficient)$",
+      ["./internal/localusage"],
+      "Test(AdmitNewChargeStopsInsufficientPlanAndKeepsUnmeteredHistoryAvailable)$",
     );
   });
 

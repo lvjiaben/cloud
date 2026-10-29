@@ -29,6 +29,15 @@ export class PortalBrandPage {
     await expect(active).toContainText(name);
     await expect(active).toContainText("使用中");
   }
+  get navigation() { return this.root.locator('.website-navigation-editor'); }
+  get editor() { return this.page.getByRole('dialog').filter({has: this.page.getByLabel(/中文名称|Chinese name/, {exact:true})}); }
+  async navigationPosition(name: string) { await this.navigation.getByText(name,{exact:true}).click(); }
+  async addNavigation(name = '添加导航') { await this.navigation.getByRole('button',{name:new RegExp(name.split('').join('\\s*'))}).click(); }
+  async editNavigation(label: string, action = '编辑') { await this.navigation.getByRole('row').filter({hasText:label}).getByRole('button',{name:new RegExp(action.split('').join('\\s*'))}).click(); }
+  async removeNavigation(label: string) { await this.navigation.getByRole('row').filter({hasText:label}).getByRole('button',{name:/删\s*除/}).click();await this.page.getByRole('button',{name:/确\s*定/}).last().click(); }
+  async confirmNavigation(name = '确认') { await this.editor.getByRole('button',{name:new RegExp(name.split('').join('\\s*'))}).click(); }
+  async destination(label: string, option: string) { await this.editor.getByLabel(label,{exact:true}).click();await this.page.locator('.ant-select-dropdown:visible').getByText(option,{exact:true}).click(); }
+  async screenshot(path:string) { await this.page.screenshot({path,fullPage:false,animations:'disabled'}); }
   async goto() {
     await this.page.goto("/admin/system/website-configuration");
   }

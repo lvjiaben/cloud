@@ -9,6 +9,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
@@ -27,6 +28,8 @@ type catalogPublicationGraph struct {
 	taxPolicies        []entity.CatalogTaxPolicy
 	priceDimensionNos  []string
 	configurationModes map[string]ConfigurationPriceMode
+	remoteSnapshot     *channelcommercecap.ImportSnapshot
+	importTerms        []entity.CatalogImportTerm
 }
 
 // PublicationCheckCode is one stable, localized-by-the-client readiness dimension.
@@ -41,8 +44,9 @@ const (
 
 // PublicationReadinessCheck reports one bounded publication gate result.
 type PublicationReadinessCheck struct {
-	Code   PublicationCheckCode
-	Passed bool
+	Code       PublicationCheckCode
+	Passed     bool
+	ReasonCode PublicationReadinessReason
 }
 
 func validateCatalogPublicationCompleteness(
@@ -161,6 +165,9 @@ ORDER BY dimension_no LIMIT ?`, versionNo, maximumConfigurationPriceDimensions+1
 	if len(graph.taxPolicies) > maximumPublicationTaxPolicies {
 		return nil, publicationIncomplete()
 	}
+	if err := loadRemotePublicationPricing(ctx, versionNo, graph); err != nil {
+		return nil, err
+	}
 	return graph, nil
 }
 
@@ -170,6 +177,9 @@ func completePublicationProductCopy(product *entity.CatalogProduct) bool {
 }
 
 func completePublicationPricing(graph *catalogPublicationGraph) bool {
+	if graph != nil && graph.remoteSnapshot != nil {
+		return completeRemotePublicationPricing(graph)
+	}
 	index, err := NewCurrencyPricingIndex(graph.billingRules, graph.prices)
 	if err != nil {
 		return false
@@ -193,6 +203,11 @@ func completePublicationTaxPolicies(graph *catalogPublicationGraph) bool {
 		return false
 	}
 	pricedCurrencies := make(map[string]struct{})
+	if graph.remoteSnapshot != nil {
+		for _, term := range graph.importTerms {
+			pricedCurrencies[term.CurrencyCode] = struct{}{}
+		}
+	}
 	for _, price := range graph.prices {
 		if !currencyCodePattern.MatchString(price.CurrencyCode) {
 			return false

@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import type { CatalogProductCreateResult } from "../catalog-client";
 import type { CatalogCategory } from "../catalog-client";
-import type { ContractPolicyTemplate } from "../contract-policy-client";
 import type { VbenFormProps } from "@vben/common-ui";
 
 import { ref, watch } from "vue";
@@ -8,7 +8,7 @@ import { ref, watch } from "vue";
 import { useVbenModal } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
 
-import { message } from "ant-design-vue";
+import { Alert, Button, message } from "ant-design-vue";
 
 import { useVbenForm, z } from "#/adapter/form";
 import { $t } from "#/locales";
@@ -16,13 +16,12 @@ import { $t } from "#/locales";
 import { catalogCategoryList, catalogProductCreate } from "../catalog-client";
 import { useAccess } from "../plugin-access";
 import { listProductDirectoryOptions, type ProductDirectory } from "../product-directory-client";
-import { contractPolicyTemplates } from "../contract-policy-client";
 
-const emit = defineEmits<{ success: [] }>();
+const emit = defineEmits<{ success: [created: CatalogProductCreateResult] }>();
 const categories = ref<CatalogCategory[]>([]);
 const memberMenus = ref<ProductDirectory[]>([]);
 const { hasAccessByCodes } = useAccess();
-const contractTemplates = ref<ContractPolicyTemplate[]>([]);
+const advancedOpen = ref(false);
 
 function localizedCategory(category: CatalogCategory) {
   return preferences.app.locale === "zh-CN"
@@ -56,8 +55,8 @@ function categoryTree(items: CatalogCategory[]) {
 }
 
 function formSchema(): VbenFormProps["schema"] {
-  return [
-    ...(hasAccessByCodes(["idc:admin:product-directory:list"]) ? [{ component: "Select", fieldName: "directoryNo", label: $t("plugin.idc-core.productDirectory.productMenu"), defaultValue: "", componentProps: { "data-testid": "catalog-product-create-member-menu", allowClear: true, options: memberMenus.value.filter(item => item.statusCode === "enabled" && (!item.navigationType || item.navigationType === "product")).map(item => ({value: item.directoryNo, label: preferences.app.locale === "zh-CN" ? item.nameZhCn : item.nameEnUs})), placeholder: $t("plugin.idc-core.productDirectory.unclassified") } }] : []),
+  const fields: NonNullable<VbenFormProps["schema"]> = [
+    ...(hasAccessByCodes(["idc:admin:product-directory:list"]) ? [{ component: "Select", fieldName: "directoryNo", label: $t("plugin.idc-core.productDirectory.productMenu"), defaultValue: "", componentProps: { "data-testid": "catalog-product-create-member-menu", allowClear: false, options: memberMenus.value.filter(item => item.statusCode === "enabled" && (!item.navigationType || item.navigationType === "product")).map(item => ({value: item.directoryNo, label: preferences.app.locale === "zh-CN" ? item.nameZhCn : item.nameEnUs})), placeholder: $t("plugin.idc-core.productDirectory.productMenu") }, rules: z.string().trim().min(1, $t("plugin.idc-core.catalog.description.required")) }] : []),
     {
       component: "TreeSelect",
       componentProps: {
@@ -116,7 +115,7 @@ function formSchema(): VbenFormProps["schema"] {
       },
       fieldName: "summaryZhCn",
       label: $t("plugin.idc-core.catalog.create.summaryZhCn"),
-      rules: z.string().trim().max(1024),
+      rules: z.string().trim().min(1, $t("plugin.idc-core.catalog.description.required")).max(1024),
     },
     {
       component: "Textarea",
@@ -127,7 +126,7 @@ function formSchema(): VbenFormProps["schema"] {
       },
       fieldName: "summaryEnUs",
       label: $t("plugin.idc-core.catalog.create.summaryEnUs"),
-      rules: z.string().trim().max(1024),
+      rules: z.string().trim().min(1, $t("plugin.idc-core.catalog.description.required")).max(1024),
     },
     {
       component: "InputNumber",
@@ -165,62 +164,28 @@ function formSchema(): VbenFormProps["schema"] {
       label: $t("plugin.idc-core.catalog.inventory.sellableQuantity"),
       rules: z.number().int().min(0),
     },
-    {
-      component: "Select",
-      componentProps: {
-        "data-testid": "catalog-product-create-contract-policy",
-        options: ["inherit", "none", "required"].map((value) => ({
-          label: $t(`plugin.idc-core.contractPolicy.policy.${value}`),
-          value,
-        })),
-      },
-      defaultValue: "inherit",
-      fieldName: "contractPolicyCode",
-      label: $t("plugin.idc-core.contractPolicy.rule"),
-      rules: z.enum(["inherit", "none", "required"]),
-    },
-    {
-      component: "Select",
-      componentProps: {
-        "data-testid": "catalog-product-create-contract-template",
-        options: contractTemplates.value.map((item) => ({
-          label: `${item.name} · ${$t(`plugin.idc-core.contractPolicy.language.${item.languageCode}`)}`,
-          value: item.templateNo,
-        })),
-        placeholder: $t("plugin.idc-core.contractPolicy.templatePlaceholder"),
-        showSearch: true,
-      },
-      dependencies: {
-        show: (values) => values.contractPolicyCode === "required",
-        triggerFields: ["contractPolicyCode"],
-      },
-      fieldName: "contractTemplateNo",
-      label: $t("plugin.idc-core.contractPolicy.template"),
-      rules: z.string(),
-    },
   ];
+  const order = ["nameZhCn", "nameEnUs", "categoryNo", "directoryNo", "publicSlug", "sortOrder", "summaryZhCn", "summaryEnUs", "inventoryTrackingEnabled", "sellableQuantity"];
+  const requiredFields = new Set(['nameZhCn','nameEnUs','categoryNo','publicSlug','summaryZhCn','summaryEnUs','directoryNo','inventoryTrackingEnabled','sellableQuantity']);
+  for(const field of fields) {
+   if(requiredFields.has(field.fieldName)) continue;
+   const originalShow = field.dependencies?.show;
+   field.dependencies = {...field.dependencies, triggerFields: field.dependencies?.triggerFields ?? ['nameZhCn'], show: (values, actions) => advancedOpen.value && (typeof originalShow === 'function' ? originalShow(values, actions) : originalShow !== false)};
+  }
+  return fields.sort((a,b) => order.indexOf(a.fieldName) - order.indexOf(b.fieldName));
 }
 
 const [Form, formApi] = useVbenForm({
   commonConfig: { componentProps: { class: "w-full" }, labelWidth: 118 },
   schema: [],
   showDefaultActions: false,
-  wrapperClass: "idc-plugin-form-surface grid-cols-2 gap-x-4",
+  wrapperClass: "idc-plugin-form-surface grid-cols-1 md:grid-cols-2 gap-x-4",
 });
 
 async function loadCategories() {
   const result = await catalogCategoryList();
   categories.value = result.categories;
   modalApi.setState({ confirmDisabled: result.categories.length === 0 });
-}
-
-async function loadContractTemplates() {
-  try {
-    const result = await contractPolicyTemplates("product");
-    contractTemplates.value = result.templates;
-  } catch {
-    contractTemplates.value = [];
-  }
 }
 
 watch(
@@ -230,19 +195,17 @@ watch(
 
 const [Modal, modalApi] = useVbenModal({
   async onClosed() {
+    advancedOpen.value = false;
     categories.value = [];
-    contractTemplates.value = [];
     modalApi.setState({ confirmDisabled: true });
     await formApi.resetForm();
   },
   async onConfirm() {
     const { valid } = await formApi.validate();
-    if (!valid) return false;
+    if (!valid) {advancedOpen.value=true;await formApi.setState({schema:formSchema()});return false;}
     const values = await formApi.getValues<{
       directoryNo?: string;
       categoryNo: string;
-      contractPolicyCode: "inherit" | "none" | "required";
-      contractTemplateNo: string;
       nameEnUs: string;
       nameZhCn: string;
       publicSlug: string;
@@ -254,16 +217,9 @@ const [Modal, modalApi] = useVbenModal({
     }>();
     if (!categories.value.some((item) => item.categoryNo === values.categoryNo))
       return false;
-    if (
-      values.contractPolicyCode === "required" &&
-      !values.contractTemplateNo
-    ) {
-      message.warning($t("plugin.idc-core.contractPolicy.templateRequired"));
-      return false;
-    }
     modalApi.lock(true);
     try {
-      await catalogProductCreate({
+      const created = await catalogProductCreate({
         ...values,
         directoryNo: values.directoryNo ?? "",
         nameEnUs: values.nameEnUs.trim(),
@@ -273,8 +229,8 @@ const [Modal, modalApi] = useVbenModal({
         summaryZhCn: values.summaryZhCn.trim(),
       });
       message.success($t("plugin.idc-core.catalog.create.productSucceeded"));
-      emit("success");
-      modalApi.close();
+      await modalApi.close();
+      emit("success",created);
     } finally {
       modalApi.lock(false);
     }
@@ -284,34 +240,35 @@ const [Modal, modalApi] = useVbenModal({
     modalApi.setState({ confirmDisabled: true });
     if (hasAccessByCodes(["idc:admin:product-directory:list"])) { memberMenus.value = await listProductDirectoryOptions(); }
     await loadCategories();
-    await loadContractTemplates();
     await formApi.setState({ schema: formSchema() });
     await formApi.setValues({
       categoryNo: categories.value.some(item => item.categoryNo === modalApi.getData<{ categoryNo?: string }>()?.categoryNo) ? modalApi.getData<{ categoryNo?: string }>().categoryNo : undefined,
       directoryNo: "",
-      contractPolicyCode: "inherit",
-      contractTemplateNo: "",
 	  inventoryTrackingEnabled: false,
 	  sellableQuantity: 0,
+      publicSlug: `product-${globalThis.crypto.randomUUID().slice(0,8)}`,
       sortOrder: 100,
       summaryEnUs: "",
       summaryZhCn: "",
     });
   },
 });
+async function toggleAdvanced() {
+ const values = await formApi.getValues(); advancedOpen.value = !advancedOpen.value;
+ await formApi.setState({schema:formSchema()}); await formApi.setValues(values);
+}
 </script>
 
 <template>
   <Modal
     :confirm-text="$t('plugin.idc-core.catalog.create.createProduct')"
     :title="$t('plugin.idc-core.catalog.create.productTitle')"
-    class="w-[720px]"
+    class="w-[800px] max-w-[96vw]"
   >
     <div data-testid="catalog-product-create-modal">
-      <div class="creation-note">
-        {{ $t("plugin.idc-core.catalog.create.productNote") }}
-      </div>
+      <Alert class="mb-5" type="info" show-icon :message="$t('plugin.idc-core.catalog.screen.createHint')" />
       <Form />
+      <Button class="mt-2" type="link" data-testid="catalog-create-advanced" @click="toggleAdvanced">{{ $t(advancedOpen ? 'plugin.idc-core.catalog.screen.hideSettings' : 'plugin.idc-core.catalog.screen.moreSettings') }}</Button>
       <div v-if="categories.length === 0" class="empty-category-note">
         {{ $t("plugin.idc-core.catalog.create.noCategories") }}
       </div>

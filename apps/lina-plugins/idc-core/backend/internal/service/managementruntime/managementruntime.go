@@ -45,7 +45,9 @@ func New(ctx context.Context, services capability.Services, adjustments commerce
 		services.Sessions() == nil || services.Auth() == nil || services.Auth().Authz() == nil {
 		return managementcap.Runtime{}, gerror.New("IDC management runtime host capabilities are unavailable")
 	}
-	principalReader, err := principal.NewReader(services.BizCtx())
+	// Resource customer actions share this audit writer. Their audience checks
+	// need effective authority as well as the persisted principal binding.
+	principalReader, err := principal.NewAuthorizedReader(services.BizCtx(), services.Auth().Authz())
 	if err != nil {
 		return managementcap.Runtime{}, err
 	}

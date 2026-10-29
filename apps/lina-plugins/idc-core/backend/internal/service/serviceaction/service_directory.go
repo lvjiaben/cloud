@@ -36,12 +36,32 @@ type Entitlement struct {
 	PluginID, ReleaseVersion, ContractVersion, ReleaseDigest, DeclarationDigest string
 }
 
-func (s *service) ListEntitlements(ctx context.Context, actor Actor, beforeID int64, limit int) ([]Entitlement, int64, error) {
-	if validateActor(actor) != nil || limit < 1 || limit > 100 || beforeID < 0 {
+func (s *service) ListEntitlements(ctx context.Context, actor Actor, beforeID int64, limit int, filters ...DirectoryFilter) ([]Entitlement, int64, error) {
+	if validateActor(actor) != nil || limit < 1 || limit > 100 || beforeID < 0 || len(filters) > 1 {
 		return nil, 0, bizerr.NewCode(CodeInvalid)
 	}
 	var rows []Entitlement
-	err := s.database.GetScan(ctx, &rows, serviceDirectorySelect+` WHERE entitlement.tenant_id=0 AND (?='admin' OR entitlement.customer_no=?) AND (?=0 OR entitlement.id<?) ORDER BY entitlement.id DESC LIMIT ?`, actor.Audience, actor.CustomerNo, beforeID, beforeID, limit)
+	where := ` WHERE entitlement.tenant_id=0 AND (?='admin' OR entitlement.customer_no=?) AND (?=0 OR entitlement.id<?)`
+	args := []any{actor.Audience, actor.CustomerNo, beforeID, beforeID}
+	if actor.Audience == AudienceCustomer {
+		where += ` AND EXISTS (SELECT 1 FROM plugin_idc_core_commerce_order paid_order WHERE paid_order.tenant_id=entitlement.tenant_id AND paid_order.customer_no=entitlement.customer_no AND paid_order.order_no=entitlement.order_no AND paid_order.paid_at IS NOT NULL)`
+	}
+	if len(filters) == 1 {
+		f := filters[0]
+		if len(f.DirectoryNo) > 40 || len(f.PluginID) > 128 {
+			return nil, 0, bizerr.NewCode(CodeInvalid)
+		}
+		if f.DirectoryNo != "" && f.DirectoryNo != "all" {
+			where += ` AND EXISTS (SELECT 1 FROM plugin_idc_core_product_directory_membership member WHERE member.tenant_id=entitlement.tenant_id AND member.product_no=entitlement.product_no AND member.directory_no=?)`
+			args = append(args, f.DirectoryNo)
+		}
+		if f.PluginID != "" {
+			where += ` AND entitlement.plugin_id=?`
+			args = append(args, f.PluginID)
+		}
+	}
+	args = append(args, limit)
+	err := s.database.GetScan(ctx, &rows, serviceDirectorySelect+where+` ORDER BY entitlement.id DESC LIMIT ?`, args...)
 	if err != nil {
 		return nil, 0, err
 	}

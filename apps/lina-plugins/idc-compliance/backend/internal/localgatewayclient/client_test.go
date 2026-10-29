@@ -111,7 +111,7 @@ func TestRevokeUsesSignedLoopbackRouteAndSafeProjection(t *testing.T) {
 		result.BindingNo != "lsb_0123456789abcdef0123456789abcdef" {
 		t.Fatalf("seen=%v result=%+v err=%v", seen, result, err)
 	}
-	if !client.RecognizerAvailable("tencent_essbasic") || client.RecognizerAvailable("nuonuo_invoice") {
-		t.Fatal("reviewed Tencent recognizer or closed NuoNuo gate is incorrect")
+	if client.RecognizerAvailable("tencent_essbasic") || client.RecognizerAvailable("nuonuo_invoice") {
+		t.Fatal("retired contract provider or closed invoice gate is incorrect")
 	}
 }

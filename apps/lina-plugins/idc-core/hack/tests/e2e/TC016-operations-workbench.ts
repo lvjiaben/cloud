@@ -18,9 +18,8 @@ test.describe("TC-16 运营数据真实接口回归", () => {
     expect(result.periods).toHaveLength(4);
     expect(result.trend.length).toBeGreaterThanOrEqual(28);
     expect(result.trend.length).toBeLessThanOrEqual(31);
-    await expect(
-      view.root().getByRole("heading", { name: "运营数据", exact: true }),
-    ).toBeVisible();
+    await expect(view.root()).toBeVisible();
+    await expect(adminPage.getByRole("menuitem", { name: "运营数据", exact: true })).toBeVisible();
     for (const period of result.periods) {
       const amount = BigInt(period.incomeMinor);
       const scale = 10n ** BigInt(result.currencyExponent);

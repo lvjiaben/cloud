@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -14,20 +15,19 @@ import (
 
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability/capmodel"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
+	"lina-plugin-idc-core/backend/internal/dao"
+	"lina-plugin-idc-core/backend/internal/model/do"
+	"lina-plugin-idc-core/backend/internal/model/entity"
+
 	billingservice "lina-plugin-idc-core/backend/internal/service/billing"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/marketing"
 	"lina-plugin-idc-core/backend/internal/service/outbox"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 )
-
-const checkoutContractTemplateNo = "ctpl_11111111111111111111111111111111"
-
-type checkoutContractTemplateSource struct{}
 
 type checkoutPurchaseRuntimeStub struct{}
 
@@ -57,36 +57,6 @@ func (checkoutPurchaseFileVerifierStub) VerifyFields(
 		result = append(result, purchaseconfigurationfile.VerifiedField{Target: input.Target})
 	}
 	return result, nil
-}
-
-func (checkoutContractTemplateSource) ListAvailable(
-	context.Context,
-	contracttemplatecap.Selection,
-) ([]contracttemplatecap.Template, error) {
-	return []contracttemplatecap.Template{checkoutContractTemplate()}, nil
-}
-
-func (checkoutContractTemplateSource) ResolveAvailable(
-	_ context.Context,
-	_ contracttemplatecap.Selection,
-	templateNos []string,
-) ([]contracttemplatecap.Template, error) {
-	if len(templateNos) != 1 || templateNos[0] != checkoutContractTemplateNo {
-		return nil, contracttemplatecap.ErrTemplateUnavailable
-	}
-	return []contracttemplatecap.Template{checkoutContractTemplate()}, nil
-}
-
-func (checkoutContractTemplateSource) OrderContractExists(context.Context, string) (bool, error) {
-	return false, nil
-}
-
-func checkoutContractTemplate() contracttemplatecap.Template {
-	return contracttemplatecap.Template{
-		TemplateNo: checkoutContractTemplateNo, VersionNo: 1,
-		Name: "Checkout contract fixture", ScopeCode: "all_customers",
-		SigningOrderCode: "customer_first", LanguageCode: "zh-CN",
-	}
 }
 
 type checkoutTestScenario struct {
@@ -517,6 +487,93 @@ SELECT status_code FROM plugin_idc_core_commerce_cart WHERE latest_quote_no = ?`
 	}
 }
 
+// A quote is not an order: deleting a product must close the remaining new-sale
+// window without changing already-created orders or their idempotent replay.
+func TestCommerceCheckoutRejectsDeletedQuotedProductPostgreSQL(t *testing.T) {
+	for _, state := range []string{"retired", "suspended"} {
+		t.Run(state, func(t *testing.T) {
+			scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
+			if _, err := scenario.database.Exec(scenario.ctx, `UPDATE plugin_idc_core_catalog_product SET status_code=?,deleted_at=CASE WHEN ?='retired' THEN CURRENT_TIMESTAMP ELSE NULL END WHERE product_no='product-commerce-service'`, state, state); err != nil {
+				t.Fatal(err)
+			}
+			_, err := scenario.service.CheckoutAccountQuote(scenario.ctx, CheckoutRequest{
+				QuoteNo: scenario.quote.QuoteNo, IdempotencyKey: "checkout-deleted-product-0001",
+			})
+			if !bizerr.Is(err, CodeQuoteNotAvailable) {
+				t.Fatalf("deleted product accepted a new checkout: %v", err)
+			}
+			for _, table := range []string{"plugin_idc_core_commerce_order", "plugin_idc_core_billing_invoice", "plugin_idc_core_commerce_inventory_reservation", "plugin_idc_core_outbox_event"} {
+				assertCheckoutCount(t, scenario, table, 0)
+			}
+		})
+	}
+}
+
+func TestCommerceCheckoutDeletedProductRetainsExistingOrderReplayPostgreSQL(t *testing.T) {
+	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
+	request := CheckoutRequest{QuoteNo: scenario.quote.QuoteNo, IdempotencyKey: "checkout-preserved-deleted-0001"}
+	// An accepted final quote retains its frozen price, unlike a public estimate.
+	if _, err := scenario.database.Exec(scenario.ctx, `UPDATE plugin_idc_core_catalog_price SET amount_minor=amount_minor+1000 WHERE version_no='version-commerce-service-1'`); err != nil {
+		t.Fatal(err)
+	}
+	order, err := scenario.service.CheckoutAccountQuote(scenario.ctx, request)
+	if err != nil || order == nil || order.TotalAmountMinor != scenario.quote.TotalAmountMinor {
+		t.Fatalf("final quote amount was replaced: %+v %v", order, err)
+	}
+	if _, err = scenario.database.Exec(scenario.ctx, `UPDATE plugin_idc_core_catalog_product SET status_code='retired',deleted_at=CURRENT_TIMESTAMP WHERE product_no='product-commerce-service'`); err != nil {
+		t.Fatal(err)
+	}
+	replayed, err := scenario.service.CheckoutAccountQuote(scenario.ctx, request)
+	if err != nil || replayed == nil || !replayed.Reused || replayed.OrderNo != order.OrderNo || replayed.TotalAmountMinor != order.TotalAmountMinor {
+		t.Fatalf("deleted product lost original checkout: %+v %v", replayed, err)
+	}
+	assertCheckoutCount(t, scenario, "plugin_idc_core_commerce_order", 1)
+	assertCheckoutCount(t, scenario, "plugin_idc_core_billing_invoice", 1)
+	assertCheckoutCount(t, scenario, "plugin_idc_core_outbox_event", 1)
+}
+
+// The new admission gate must not add a lookup for every quoted product.
+func TestCommerceCheckoutSaleAdmissionUsesOneBatchPostgreSQL(t *testing.T) {
+	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
+	var original entity.CatalogProduct
+	if err := scenario.database.Model(dao.CatalogProduct.Table()).Ctx(scenario.ctx).
+		Where(do.CatalogProduct{ProductNo: "product-commerce-service"}).Scan(&original); err != nil {
+		t.Fatal(err)
+	}
+	items := []entity.CommerceQuoteItemSnapshot{{ProductNo: original.ProductNo}}
+	for i := 1; i < 8; i++ {
+		no := "batch-sale-product-" + strconv.Itoa(i)
+		if _, err := scenario.database.Model(dao.CatalogProduct.Table()).Ctx(scenario.ctx).Data(do.CatalogProduct{
+			TenantId: 0, ProductNo: no, CategoryNo: original.CategoryNo, PublicSlug: no,
+			NameZhCn: no, NameEnUs: no, StatusCode: checkoutProductActive,
+		}).Insert(); err != nil {
+			t.Fatal(err)
+		}
+		items = append(items, entity.CommerceQuoteItemSnapshot{ProductNo: no})
+	}
+	service := scenario.service
+	if err := service.lockCheckoutSaleAdmission(scenario.ctx, items); err != nil {
+		t.Fatal(err)
+	}
+	previousLogger, previousDebug := scenario.database.GetLogger(), scenario.database.GetDebug()
+	logger := &checkoutBenchmarkQueryLogger{ILogger: previousLogger, counts: make(map[int]int)}
+	scenario.database.SetLogger(logger)
+	scenario.database.SetDebug(true)
+	t.Cleanup(func() {
+		scenario.database.SetLogger(previousLogger)
+		scenario.database.SetDebug(previousDebug)
+	})
+	for _, size := range []int{1, 8} {
+		ctx := context.WithValue(scenario.ctx, checkoutBenchmarkSampleKey{}, size)
+		if err := service.lockCheckoutSaleAdmission(ctx, items[:size]); err != nil {
+			t.Fatal(err)
+		}
+		if count := logger.count(size); count != 1 {
+			t.Fatalf("sale admission for %d products issued %d queries", size, count)
+		}
+	}
+}
+
 func TestCommerceCheckoutRejectsSupersededQuotePostgreSQL(t *testing.T) {
 	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
 	fresh, err := scenario.service.QuoteAccountCart(scenario.ctx, QuoteRequest{
@@ -658,7 +715,6 @@ func newCheckoutCustomer(
 	if err != nil {
 		t.Fatalf("create checkout service: %v", err)
 	}
-	service.contractPolicy = contractpolicy.NewResolver(checkoutContractTemplateSource{})
 	if withMarketing {
 		marketingService, marketingErr := marketing.New(database, marketing.Config{})
 		if marketingErr != nil {
@@ -736,5 +792,23 @@ func assertCheckoutCount(t *testing.T, scenario checkoutTestScenario, table stri
 	value, err := scenario.database.GetValue(scenario.ctx, `SELECT COUNT(*) FROM `+table)
 	if err != nil || value.Int64() != expected {
 		t.Fatalf("checkout table %s count=%d expected=%d err=%v", table, value.Int64(), expected, err)
+	}
+}
+
+func TestCommerceZeroCheckoutReportsCommittedPaidStatusPostgreSQL(t *testing.T) {
+	scenario := newCheckoutTestScenarioWithSetup(t, "customer-commerce-service-1", 101, 1, false, 0, func(ctx context.Context, database gdb.DB) {
+		if _, err := database.Exec(ctx, `UPDATE plugin_idc_core_catalog_price SET amount_minor=0,setup_fee_minor=0,renewal_amount_minor=0 WHERE version_no='version-commerce-service-1'`); err != nil {
+			t.Fatal(err)
+		}
+	})
+	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-1")
+	request := CheckoutRequest{QuoteNo: scenario.quote.QuoteNo, IdempotencyKey: "zero-checkout-paid-status-1"}
+	result, err := scenario.service.CheckoutAccountQuote(scenario.ctx, request)
+	if err != nil || result == nil || result.StatusCode != "paid" || result.TotalAmountMinor != 0 {
+		t.Fatalf("zero checkout=%+v err=%v", result, err)
+	}
+	replay, err := scenario.service.CheckoutAccountQuote(scenario.ctx, request)
+	if err != nil || replay == nil || replay.OrderNo != result.OrderNo || replay.StatusCode != "paid" {
+		t.Fatalf("zero checkout replay=%+v err=%v", replay, err)
 	}
 }

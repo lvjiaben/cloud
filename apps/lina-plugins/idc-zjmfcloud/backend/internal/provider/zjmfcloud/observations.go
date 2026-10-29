@@ -104,7 +104,8 @@ func (p *Provider) QueryTask(
 }
 
 // QueryResource observes the documented full instance endpoint so accepted
-// changes can be reconciled. Only status and IP count survive projection.
+// changes can be reconciled. Only validated runtime, address and guest-display
+// fields survive projection; provider credentials never enter the snapshot.
 func (p *Provider) QueryResource(
 	ctx context.Context,
 	query resourcecap.ResourceQuery,
@@ -150,7 +151,15 @@ func (p *Provider) QueryResource(
 	}
 	ipCount := normalizedIPCount(object)
 	state, normalizedStatus := normalizeUpstreamResourceState(status)
-	return p.resourceSnapshot(query.ExternalResourceRef, state, normalizedStatus, ipCount, true)
+	snapshot, snapshotErr := p.resourceSnapshot(query.ExternalResourceRef, state, normalizedStatus, ipCount, true)
+	if snapshotErr != nil {
+		return nil, snapshotErr
+	}
+	snapshot.Data, snapshotErr = json.Marshal(resourceObservationData(object, normalizedStatus))
+	if snapshotErr != nil || snapshot.Validate() != nil {
+		return nil, errInvalidResponse
+	}
+	return snapshot, nil
 }
 
 func (p *Provider) unknownTaskResult(
@@ -245,7 +254,7 @@ func normalizeUpstreamResourceState(status string) (resourcecap.ResourceState, s
 	case "wait_reboot":
 		return resourcecap.ResourceStatePending, status
 	case "task", "cold_migrate", "hot_migrate":
-		return resourcecap.ResourceStateRunning, status
+		return resourcecap.ResourceStatePending, status
 	case "unknown":
 		return resourcecap.ResourceStateUnknown, status
 	default:

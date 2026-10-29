@@ -1,7 +1,48 @@
+import { existsSync, readFileSync } from "node:fs";
+import { isAbsolute, relative, resolve } from "node:path";
 import type { Page } from "@host-tests/support/playwright";
 import { installCustomerManagementMock } from "./customer-mock";
 export const workspaceCustomerNo = "CUS_0123456789abcdef0123456789abcdef";
 const envelope = (data: unknown) => ({ code: 0, data, message: "success" });
+// Serve current plugin resources when the test backend runs a previously built release.
+export async function installProductManagementLocales(page: Page) {
+  const staticUI = process.env.E2E_STATIC_UI_DIR;
+  if (staticUI) await page.route("**/api/v1/user/info", async route => {
+    const response = await route.fetch(); const body = await response.json();
+    body.data.homePath = "/idc/customers";
+    await route.fulfill({ json: body });
+  });
+  if (staticUI) {
+    const state = JSON.parse(readFileSync(new URL("../../../../../../hack/tests/temp/storage-state/admin.json", import.meta.url), "utf8"));
+    await page.addInitScript((entries: Array<{ name: string; value: string }>) => {
+      for (const item of entries) localStorage.setItem(item.name, item.value);
+    }, state.origins[0]?.localStorage ?? []);
+  }
+  if (staticUI) await page.route(url => url.pathname.startsWith("/admin/"), route => {
+    const pathname = new URL(route.request().url()).pathname.replace(/^\/admin\//u, "");
+    const file = resolve(staticUI, pathname);
+    const path = relative(staticUI, file);
+    return route.fulfill({ path: path && !path.startsWith("..") && !isAbsolute(path) && existsSync(file) ? file : resolve(staticUI, "index.html") });
+  });
+  await page.addInitScript(() => {
+    for (const key of Object.keys(localStorage)) if (key.startsWith("linapro:i18n:runtime:")) localStorage.removeItem(key);
+  });
+  await page.route("**/api/v1/i18n/runtime/messages?**", async route => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const locale = new URL(route.request().url()).searchParams.get("lang") === "en-US" ? "en-US" : "zh-CN";
+    for (const relative of [`../../../manifest/i18n/${locale}/plugin.json`, `../../../../idc-resource/manifest/i18n/${locale}/plugin.json`]) {
+      const messages = JSON.parse(readFileSync(new URL(relative, import.meta.url), "utf8"));
+      for (const [key, value] of Object.entries(messages)) {
+        const segments = key.split(".");
+        let target = body.data.messages;
+        for (const segment of segments.slice(0, -1)) target = target[segment] ??= {};
+        target[segments.at(-1)!] = value;
+      }
+    }
+    await route.fulfill({ json: body });
+  });
+}
 export async function installCustomerWorkspaceMock(
   page: Page,
   { channel = true, resource = true } = {},

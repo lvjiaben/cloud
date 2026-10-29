@@ -4,362 +4,293 @@
       "api": {
         "notice": {
           "v1": {
-            "CreateReq": {
-              "fields": {
-                "content": {
-                  "dc": "公告内容（支持富文本HTML）"
-                },
-                "fileIds": {
-                  "dc": "附件文件ID列表，逗号分隔，通过文件上传接口获取"
-                },
-                "remark": {
-                  "dc": "备注"
-                },
-                "status": {
-                  "dc": "公告状态：0=草稿 1=已发布"
-                },
-                "title": {
-                  "dc": "公告标题"
-                },
-                "type": {
-                  "dc": "公告类型：1=通知 2=公告"
-                }
-              },
-              "meta": {
-                "dc": "创建一条通知或公告，支持设置为草稿或直接发布，可附带附件文件",
-                "summary": "创建通知公告",
-                "tags": "通知公告"
-              },
-              "responses": {
-                "200": {
-                  "content": {
-                    "application_json": {
-                      "fields": {
-                        "data": {
-                          "fields": {
-                            "id": {
-                              "dc": "公告ID"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "schema": {
-                "dc": "创建一条通知或公告，支持设置为草稿或直接发布，可附带附件文件"
-              }
-            },
-            "CreateRes": {
-              "fields": {
-                "id": {
-                  "dc": "公告ID"
-                }
-              }
-            },
             "DeleteReq": {
+              "meta": {
+                "dc": "使用查询数组ids[]删除一条或多条公告",
+                "summary": "删除公告",
+                "tags": "公告"
+              },
               "fields": {
                 "ids": {
-                  "dc": "公告ID，多个用逗号分隔"
-                }
-              },
-              "meta": {
-                "dc": "删除一条或多条通知公告",
-                "summary": "删除通知公告",
-                "tags": "通知公告"
-              },
-              "schema": {
-                "dc": "删除一条或多条通知公告"
-              }
-            },
-            "GetReq": {
-              "fields": {
-                "id": {
-                  "dc": "公告ID"
-                }
-              },
-              "meta": {
-                "dc": "根据公告ID获取通知公告的详细信息，包括内容和创建者信息",
-                "summary": "获取通知公告详情",
-                "tags": "通知公告"
-              },
-              "responses": {
-                "200": {
-                  "content": {
-                    "application_json": {
-                      "fields": {
-                        "data": {
-                          "fields": {
-                            "content": {
-                              "dc": "公告内容，支持富文本 HTML"
-                            },
-                            "createdBy": {
-                              "dc": "创建者用户ID"
-                            },
-                            "createdByName": {
-                              "dc": "创建者用户名"
-                            },
-                            "createdAt": {
-                              "dc": "创建时间，Unix 毫秒时间戳"
-                            },
-                            "fileIds": {
-                              "dc": "附件文件ID列表，逗号分隔"
-                            },
-                            "id": {
-                              "dc": "公告ID"
-                            },
-                            "remark": {
-                              "dc": "备注"
-                            },
-                            "status": {
-                              "dc": "公告状态：0=草稿 1=已发布"
-                            },
-                            "title": {
-                              "dc": "公告标题"
-                            },
-                            "type": {
-                              "dc": "公告类型：1=通知 2=公告"
-                            },
-                            "updatedAt": {
-                              "dc": "最后更新时间，Unix 毫秒时间戳"
-                            },
-                            "updatedBy": {
-                              "dc": "最后更新者用户ID"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "schema": {
-                "dc": "根据公告ID获取通知公告的详细信息，包括内容和创建者信息"
-              }
-            },
-            "GetRes": {
-              "fields": {
-                "content": {
-                  "dc": "公告内容，支持富文本 HTML"
-                },
-                "createdBy": {
-                  "dc": "创建者用户ID"
-                },
-                "createdByName": {
-                  "dc": "创建者用户名"
-                },
-                "createdAt": {
-                  "dc": "创建时间，Unix 毫秒时间戳"
-                },
-                "fileIds": {
-                  "dc": "附件文件ID列表，逗号分隔"
-                },
-                "id": {
-                  "dc": "公告ID"
-                },
-                "remark": {
-                  "dc": "备注"
-                },
-                "status": {
-                  "dc": "公告状态：0=草稿 1=已发布"
-                },
-                "title": {
-                  "dc": "公告标题"
-                },
-                "type": {
-                  "dc": "公告类型：1=通知 2=公告"
-                },
-                "updatedAt": {
-                  "dc": "最后更新时间，Unix 毫秒时间戳"
-                },
-                "updatedBy": {
-                  "dc": "最后更新者用户ID"
-                }
-              }
-            },
-            "ListItem": {
-              "fields": {
-                "content": {
-                  "dc": "公告内容，支持富文本 HTML"
-                },
-                "createdBy": {
-                  "dc": "创建者用户ID"
-                },
-                "createdByName": {
-                  "dc": "创建者用户名"
-                },
-                "createdAt": {
-                  "dc": "创建时间，Unix 毫秒时间戳"
-                },
-                "fileIds": {
-                  "dc": "附件文件ID列表，逗号分隔"
-                },
-                "id": {
-                  "dc": "公告ID"
-                },
-                "remark": {
-                  "dc": "备注"
-                },
-                "status": {
-                  "dc": "公告状态：0=草稿 1=已发布"
-                },
-                "title": {
-                  "dc": "公告标题"
-                },
-                "type": {
-                  "dc": "公告类型：1=通知 2=公告"
-                },
-                "updatedAt": {
-                  "dc": "最后更新时间，Unix 毫秒时间戳"
-                },
-                "updatedBy": {
-                  "dc": "最后更新者用户ID"
+                  "dc": "公告编号列表，使用查询数组，例如ids[]=1&ids[]=2&ids[]=3"
                 }
               }
             },
             "ListReq": {
+              "meta": {
+                "dc": "按页查询公告，支持标题及创建人筛选。",
+                "summary": "获取公告列表",
+                "tags": "公告"
+              },
               "fields": {
-                "createdBy": {
-                  "dc": "按创建人用户名筛选"
+                "pageNum": {
+                  "dc": "页码"
+                },
+                "pageSize": {
+                  "dc": "每页条数"
                 },
                 "title": {
-                  "dc": "按标题筛选（模糊匹配）"
+                  "dc": "按标题模糊筛选"
                 },
-                "type": {
-                  "dc": "按类型筛选：1=通知 2=公告"
+                "createdBy": {
+                  "dc": "按创建人用户名筛选"
                 }
-              },
-              "meta": {
-                "dc": "分页查询通知公告列表，支持按标题、类型、创建人筛选",
-                "summary": "获取通知公告列表",
-                "tags": "通知公告"
-              },
-              "responses": {
-                "200": {
-                  "content": {
-                    "application_json": {
-                      "fields": {
-                        "data": {
-                          "fields": {
-                            "list": {
-                              "dc": "通知公告列表"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "schema": {
-                "dc": "分页查询通知公告列表，支持按标题、类型、创建人筛选"
               }
             },
             "ListRes": {
               "fields": {
                 "list": {
-                  "dc": "通知公告列表"
+                  "dc": "公告列表"
+                },
+                "total": {
+                  "dc": "总条数"
+                }
+              }
+            },
+            "ListItem": {
+              "fields": {
+                "createdByName": {
+                  "dc": "创建人用户名"
                 }
               }
             },
             "NoticeItem": {
               "fields": {
-                "content": {
-                  "dc": "公告内容，支持富文本 HTML"
-                },
-                "createdBy": {
-                  "dc": "创建者用户ID"
-                },
-                "createdAt": {
-                  "dc": "创建时间，Unix 毫秒时间戳"
-                },
-                "fileIds": {
-                  "dc": "附件文件ID列表，逗号分隔"
-                },
                 "id": {
-                  "dc": "公告ID"
-                },
-                "remark": {
-                  "dc": "备注"
-                },
-                "status": {
-                  "dc": "公告状态：0=草稿 1=已发布"
+                  "dc": "公告编号"
                 },
                 "title": {
                   "dc": "公告标题"
                 },
-                "type": {
-                  "dc": "公告类型：1=通知 2=公告"
+                "content": {
+                  "dc": "公告正文，支持富文本HTML"
                 },
-                "updatedAt": {
-                  "dc": "最后更新时间，Unix 毫秒时间戳"
+                "sortOrder": {
+                  "dc": "排序值，数值越小越靠前"
+                },
+                "status": {
+                  "dc": "公告状态：0=草稿，1=已发布"
+                },
+                "createdBy": {
+                  "dc": "创建人用户编号"
                 },
                 "updatedBy": {
-                  "dc": "最后更新者用户ID"
+                  "dc": "最后修改人用户编号"
+                },
+                "createdAt": {
+                  "dc": "创建时间，Unix毫秒时间戳"
+                },
+                "updatedAt": {
+                  "dc": "最后修改时间，Unix毫秒时间戳"
                 }
               }
             },
             "UpdateReq": {
+              "meta": {
+                "dc": "修改指定公告，所有字段均可按需更新。",
+                "summary": "修改公告",
+                "tags": "公告"
+              },
               "fields": {
-                "content": {
-                  "dc": "公告内容（支持富文本HTML）"
-                },
-                "fileIds": {
-                  "dc": "附件文件ID列表，逗号分隔"
-                },
                 "id": {
-                  "dc": "公告ID"
-                },
-                "remark": {
-                  "dc": "备注"
-                },
-                "status": {
-                  "dc": "公告状态：0=草稿 1=已发布"
+                  "dc": "公告编号"
                 },
                 "title": {
                   "dc": "公告标题"
                 },
-                "type": {
-                  "dc": "公告类型：1=通知 2=公告"
-                }
-              },
-              "meta": {
-                "dc": "更新指定通知公告的信息，所有字段均为可选更新",
-                "summary": "更新通知公告",
-                "tags": "通知公告"
-              },
-              "requestBody": {
                 "content": {
-                  "application_json": {
-                    "fields": {
-                      "content": {
-                        "dc": "公告内容（支持富文本HTML）"
-                      },
-                      "fileIds": {
-                        "dc": "附件文件ID列表，逗号分隔"
-                      },
-                      "remark": {
-                        "dc": "备注"
-                      },
-                      "status": {
-                        "dc": "公告状态：0=草稿 1=已发布"
-                      },
-                      "title": {
-                        "dc": "公告标题"
-                      },
-                      "type": {
-                        "dc": "公告类型：1=通知 2=公告"
-                      }
-                    },
-                    "schema": {
-                      "dc": "更新指定通知公告的信息，所有字段均为可选更新"
-                    }
-                  }
+                  "dc": "公告正文，支持富文本HTML"
+                },
+                "sortOrder": {
+                  "dc": "排序值，数值越小越靠前"
+                },
+                "status": {
+                  "dc": "公告状态：0=草稿，1=已发布"
                 }
+              }
+            },
+            "GetReq": {
+              "meta": {
+                "dc": "根据编号获取公告正文及创建人信息。",
+                "summary": "获取公告详情",
+                "tags": "公告"
               },
-              "schema": {
-                "dc": "更新指定通知公告的信息，所有字段均为可选更新"
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                }
+              }
+            },
+            "GetRes": {
+              "fields": {
+                "createdByName": {
+                  "dc": "创建人用户名"
+                }
+              }
+            },
+            "CreateReq": {
+              "meta": {
+                "dc": "创建草稿或已发布公告，正文支持图片。",
+                "summary": "新增公告",
+                "tags": "公告"
+              },
+              "fields": {
+                "title": {
+                  "dc": "公告标题"
+                },
+                "content": {
+                  "dc": "公告正文，支持富文本HTML"
+                },
+                "sortOrder": {
+                  "dc": "排序值，数值越小越靠前"
+                },
+                "status": {
+                  "dc": "公告状态：0=草稿，1=已发布"
+                }
+              }
+            },
+            "CreateRes": {
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                }
+              }
+            },
+            "AnnouncementItem": {
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                },
+                "title": {
+                  "dc": "公告标题"
+                },
+                "content": {
+                  "dc": "公告正文，包含正文图片"
+                },
+                "sortOrder": {
+                  "dc": "排序值，数值越小越靠前"
+                },
+                "createdAt": {
+                  "dc": "创建时间，Unix毫秒时间戳"
+                },
+                "updatedAt": {
+                  "dc": "最后修改时间，Unix毫秒时间戳"
+                },
+                "read": {
+                  "dc": "当前用户是否已读该公告"
+                }
+              }
+            },
+            "AnnouncementsReq": {
+              "meta": {
+                "dc": "列出全部已发布公告及当前用户的阅读状态。",
+                "summary": "获取已发布公告列表",
+                "tags": "公告"
+              },
+              "fields": {
+                "pageNum": {
+                  "dc": "页码"
+                },
+                "pageSize": {
+                  "dc": "每页条数"
+                }
+              }
+            },
+            "AnnouncementsRes": {
+              "fields": {
+                "list": {
+                  "dc": "已发布公告"
+                },
+                "total": {
+                  "dc": "总条数"
+                }
+              }
+            },
+            "AnnouncementReq": {
+              "meta": {
+                "dc": "获取已发布公告及当前用户的阅读状态。",
+                "summary": "获取已发布公告",
+                "tags": "公告"
+              },
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                }
+              }
+            },
+            "AnnouncementReadReq": {
+              "meta": {
+                "dc": "为当前登录用户幂等标记公告已读。",
+                "summary": "标记公告已读",
+                "tags": "公告"
+              },
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                }
+              }
+            }
+          }
+        },
+        "publicnotice": {
+          "v1": {
+            "Item": {
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                },
+                "title": {
+                  "dc": "公告标题"
+                },
+                "content": {
+                  "dc": "公告正文，包含正文图片"
+                },
+                "sortOrder": {
+                  "dc": "排序值，数值越小越靠前"
+                },
+                "createdAt": {
+                  "dc": "创建时间，Unix毫秒时间戳"
+                },
+                "updatedAt": {
+                  "dc": "最后修改时间，Unix毫秒时间戳"
+                }
+              }
+            },
+            "ListReq": {
+              "meta": {
+                "dc": "列出官网已发布公告。",
+                "summary": "获取官网公告列表",
+                "tags": "公告"
+              },
+              "fields": {
+                "pageNum": {
+                  "dc": "页码"
+                },
+                "pageSize": {
+                  "dc": "每页条数"
+                }
+              }
+            },
+            "ListRes": {
+              "fields": {
+                "list": {
+                  "dc": "已发布公告"
+                },
+                "total": {
+                  "dc": "总条数"
+                }
+              }
+            },
+            "GetReq": {
+              "meta": {
+                "dc": "获取官网已发布公告。",
+                "summary": "获取官网公告",
+                "tags": "公告"
+              },
+              "fields": {
+                "id": {
+                  "dc": "公告编号"
+                }
               }
             }
           }

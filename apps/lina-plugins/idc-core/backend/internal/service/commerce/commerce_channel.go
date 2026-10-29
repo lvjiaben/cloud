@@ -14,7 +14,7 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
@@ -193,8 +193,8 @@ func (s *channelOrderService) Checkout(
 		_ = quote
 		result, loadErr = s.commerce.checkoutInTransaction(ctx, tx, checkoutAuthority{
 			customerNo: input.PayerCustomerNo, sourceCode: "channel", userID: uploader,
-			paymentTermCode:  "standard_prepay",
-			contractOverride: contractpolicy.Rule{Policy: contractpolicy.PolicyInherit},
+			paymentTermCode: "standard_prepay",
+
 			channelAttribution: &channelCheckoutAttribution{
 				ChannelID: input.ChannelID, ExternalCustomerID: input.ExternalCustomerID,
 				OwnershipMode: input.OwnershipMode, ServiceOwnerCustomerNo: input.ServiceOwnerCustomerNo,

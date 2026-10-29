@@ -1,7 +1,11 @@
+// This file verifies local server ownership evidence, customer isolation and
+// idempotent entitlement delivery, including corrected connector versions.
+
 package backend
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"strings"
@@ -211,6 +215,125 @@ FROM plugin_idc_resource_server_entitlement_projection
 WHERE customer_no=? AND entitlement_no=?`, binding.CustomerNo, binding.EntitlementNo)
 	if err != nil || row["total"].Int() != 1 {
 		t.Fatalf("server entitlement projection count=%d err=%v", row["total"].Int(), err)
+	}
+}
+
+// TestEntitlementCreatedSinkSeparatesPurchasedAndExecutedVersionsPostgreSQL
+// keeps paid references immutable while verifying the corrected channel itself.
+func TestEntitlementCreatedSinkSeparatesPurchasedAndExecutedVersionsPostgreSQL(t *testing.T) {
+	ctx, database := newServerOwnershipDatabase(t)
+	seedServerOwnershipResource(t, ctx, database, "10000", "5")
+	seedServerOwnershipResource(t, ctx, database, "10000", "6")
+	purchased := serverOwnershipBinding("10000", "5")
+	executed := serverOwnershipBinding("10000", "6")
+	const snapshot = "configuration_corrected_6"
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_resource_interface_channel_binding
+ SET product_declaration_digest=? WHERE interface_instance_no=?`, strings.Repeat("d", 64), executed.InterfaceInstanceNo); err != nil {
+		t.Fatal(err)
+	}
+	metadata, err := json.Marshal(struct {
+		Purchased  string `json:"purchasedInterfaceInstanceNo"`
+		Correction struct {
+			Interface string `json:"interfaceInstanceNo"`
+		} `json:"recoveryConfiguration"`
+	}{Purchased: purchased.InterfaceInstanceNo, Correction: struct {
+		Interface string `json:"interfaceInstanceNo"`
+	}{Interface: executed.InterfaceInstanceNo}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_task SET owner_metadata=?::jsonb WHERE task_no=?`, string(metadata), executed.ProviderTaskNo); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = database.Exec(ctx, `INSERT INTO plugin_idc_resource_provision_outcome_receipt(
+ tenant_id,receipt_no,task_no,service_no,operation_no,customer_no,configuration_snapshot_no,
+ status_code,request_digest,task_evidence_digest,core_evidence_digest)
+ VALUES(0,?,?,?,?,?,?,'succeeded',?,?,?)`, "receipt_corrected_6", executed.ProviderTaskNo,
+		purchased.EntitlementNo, purchased.SourceIntentNo, purchased.CustomerNo, snapshot,
+		strings.Repeat("1", 64), strings.Repeat("2", 64), strings.Repeat("3", 64)); err != nil {
+		t.Fatal(err)
+	}
+	sink, err := serverownership.NewEntitlementCreatedSink(database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	event := entitlementcreatedcap.Event{
+		Version: entitlementcreatedcap.ContractVersion, EventNo: "event_corrected_6",
+		EntitlementNo: purchased.EntitlementNo, IntentNo: purchased.SourceIntentNo, CustomerNo: purchased.CustomerNo,
+		ProductNo: purchased.ProductNo, ProductVersionNo: purchased.ProductVersionNo,
+		ProductNameZhCN: purchased.ProductNameZhCN, ProductNameEnUS: purchased.ProductNameEnUS,
+		ConfigurationSnapshotNo: snapshot, InterfaceInstanceNo: purchased.InterfaceInstanceNo,
+		PluginID: purchased.ProviderPluginID, PluginReleaseVersion: purchased.PluginReleaseVersion,
+		ContractVersion: purchased.FulfillmentContractVersion, DeclarationDigest: purchased.DeclarationDigest,
+		OwnerID: serverownership.EntitlementOwnerID,
+	}
+	for _, name := range []string{"customer", "snapshot", "interface", "plugin", "version", "declaration"} {
+		forged := event
+		switch name {
+		case "customer":
+			forged.CustomerNo = "10001"
+		case "snapshot":
+			forged.ConfigurationSnapshotNo = "configuration_other"
+		case "interface":
+			forged.InterfaceInstanceNo = executed.InterfaceInstanceNo
+		case "plugin":
+			forged.PluginID = "other-server-provider"
+		case "version":
+			forged.PluginReleaseVersion = executed.PluginReleaseVersion
+		case "declaration":
+			forged.DeclarationDigest = strings.Repeat("d", 64)
+		}
+		if receipt, deliverErr := sink.Deliver(ctx, forged); deliverErr == nil || receipt != nil {
+			t.Fatalf("forged %s was accepted", name)
+		}
+	}
+	for _, mismatch := range []struct{ column, invalid, original string }{
+		{"provider_id", "foreign-provider", "zjmfcloud"},
+		{"provider_contract_version", "v2", "v1"},
+		{"provider_release_version", "v9.9.9", executed.PluginReleaseVersion},
+		{"provider_release_digest", strings.Repeat("e", 64), executed.ReleaseDigest},
+	} {
+		// Only known fixture column identifiers are interpolated; values stay bound.
+		query := "UPDATE plugin_idc_resource_channel SET " + mismatch.column + "=? WHERE channel_no=?"
+		if _, err = database.Exec(ctx, query, mismatch.invalid, "channel_server_6"); err != nil {
+			t.Fatal(err)
+		}
+		if receipt, deliverErr := sink.Deliver(ctx, event); deliverErr == nil || receipt != nil {
+			t.Fatalf("mismatched %s was accepted", mismatch.column)
+		}
+		if _, err = database.Exec(ctx, query, mismatch.original, "channel_server_6"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_task
+ SET owner_metadata=jsonb_set(owner_metadata,'{recoveryConfiguration,interfaceInstanceNo}',to_jsonb(?::text)) WHERE task_no=?`, purchased.InterfaceInstanceNo, executed.ProviderTaskNo); err != nil {
+		t.Fatal(err)
+	}
+	if receipt, deliverErr := sink.Deliver(ctx, event); deliverErr == nil || receipt != nil {
+		t.Fatal("execution outside the frozen correction was accepted")
+	}
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_task SET owner_metadata=?::jsonb WHERE task_no=?`, string(metadata), executed.ProviderTaskNo); err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := sink.Deliver(ctx, event)
+	if err != nil || receipt == nil || !entitlementcreatedcap.ValidateReceipt(event, *receipt) || receipt.OwnerReference != executed.MappingNo {
+		t.Fatalf("corrected receipt=%+v err=%v", receipt, err)
+	}
+	replayed, err := sink.Deliver(ctx, event)
+	if err != nil || replayed == nil || *replayed != *receipt {
+		t.Fatalf("corrected replay=%+v err=%v", replayed, err)
+	}
+	row, err := database.GetOne(ctx, `SELECT customer_no,product_no,product_version_no,source_intent_no,
+ interface_instance_no,plugin_release_version,declaration_digest,provider_task_no
+ FROM plugin_idc_resource_server_entitlement_projection WHERE entitlement_no=?`, purchased.EntitlementNo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row["customer_no"].String() != purchased.CustomerNo || row["product_no"].String() != purchased.ProductNo ||
+		row["product_version_no"].String() != purchased.ProductVersionNo || row["source_intent_no"].String() != purchased.SourceIntentNo ||
+		row["interface_instance_no"].String() != executed.InterfaceInstanceNo || row["plugin_release_version"].String() != executed.PluginReleaseVersion ||
+		row["declaration_digest"].String() != strings.Repeat("d", 64) || row["provider_task_no"].String() != executed.ProviderTaskNo {
+		t.Fatalf("corrected ownership=%v", row)
 	}
 }
 

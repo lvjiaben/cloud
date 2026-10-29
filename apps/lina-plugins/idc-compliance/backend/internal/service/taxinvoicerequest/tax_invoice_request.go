@@ -124,7 +124,7 @@ func New(
 }
 
 // NewWithCollectionGate blocks new invoice evidence collection until the
-// merchant publishes both the assessment and retention policy.
+// merchant configures the matching retention policy.
 func NewWithCollectionGate(
 	database gdb.DB,
 	source taxinvoicecap.Service,

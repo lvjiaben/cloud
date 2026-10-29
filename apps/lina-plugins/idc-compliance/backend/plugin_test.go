@@ -36,7 +36,7 @@ func TestSourcePluginRegistrationAndManifest(t *testing.T) {
 	}
 	for _, fragment := range []string{
 		"id: idc-compliance",
-		"version: v0.1.19",
+		"version: v0.1.23",
 		"distribution: builtin",
 		"id: idc-core",
 		"version: \">=0.1.0 <1.0.0\"",

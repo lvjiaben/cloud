@@ -1,0 +1,47 @@
+body[data-page=assure]{--banner_height:420px;--banner_background:url('/lina/assure-assets/remoteL17069813929829.jpg')}
+[data-assure] .globalBanner{background-image:var(--banner_background);background-size:cover;background-position:center}
+[data-assure] .globalBanner>.comp_container{height:100%}
+[data-assure] .pagebanner-description{display:block!important;overflow:visible!important;-webkit-line-clamp:unset!important;max-width:670px}
+[data-assure] .et-container{position:sticky;top:0;z-index:1000;background:#fff}
+[data-assure] .et-container.is-stuck{box-shadow:0 2px 8px #182e5814}
+[data-assure] .et-slide{scroll-margin-top:var(--assure-anchor-height,76px)}
+[data-assure] .et-hero-tab-slider{display:none!important}
+[data-assure] .et-hero-tab{border-bottom:3px solid transparent;transition:none}
+[data-assure] .et-container .et-hero-tabs-container .et-hero-tab:before{display:none}
+[data-assure] .et-hero-tab.active{border-bottom-color:var(--Original)}
+body.assure-reading>.nav-layoutcontainer{transform:translateY(-100%);pointer-events:none}
+[data-assure] .cutOneSHair,[data-assure] .reporting-text-description{display:block;white-space:normal;overflow:visible;text-overflow:clip;-webkit-line-clamp:unset;max-height:none;height:auto}
+[data-assure] .refundNotice-content p{white-space:normal;overflow-wrap:anywhere;line-height:1.9}
+[data-assure] .serviceSupport-right-row,[data-assure] .serviceSupport-information,[data-assure] .refundService-left{min-width:0}
+[data-assure] img{object-fit:contain;max-width:100%}
+[data-assure] .serviceSupport-button{flex-wrap:wrap}
+[data-assure] .serviceSupport-document{display:block}
+body[data-page=assure]>.sky-footer-container.footer_deep{display:block!important}
+body[data-page=assure] .sky-footer-block img{width:38px;height:38px;object-fit:contain;filter:brightness(0) invert(1)}
+body[data-page=assure]>.lina-brand-error{position:fixed;right:24px;bottom:24px;z-index:10001;max-width:calc(100vw - 48px)}
+[data-assure] :is(a,button):focus-visible{outline:2px solid var(--Original);outline-offset:4px}
+@media(max-width:1023px){
+ [data-assure] .serviceSupport-content,[data-assure] .refundService-content{flex-direction:column}
+ [data-assure] .serviceSupport-left-item{min-width:0!important;max-width:none!important;width:100%}
+ [data-assure] .serviceSupport-right-row{width:100%}
+ [data-assure] .serviceSupport-document{min-width:0!important;max-width:none!important}
+}
+@media(max-width:767px){
+ body[data-page=assure] .sky-footer-top{height:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px;padding:24px 0}
+ body[data-page=assure] .sky-footer-container .sky-footer-top .sky-footer-block{min-width:0;max-width:100%;flex-direction:column}
+ body[data-page=assure] .sky-footer-container .sky-footer-top .sky-footer-block .sky-footer-title{white-space:nowrap;overflow-wrap:normal;font-size:14px}
+ body[data-page=assure]{--banner_height:420px}
+ [data-assure] .pagebanner-text{width:100%!important}
+ [data-assure] .pagebanner-title{font-size:30px!important}
+ [data-assure] .pagebanner-description{max-width:100%;font-size:15px;background:#f1f6fce6}
+ [data-assure] .et-hero-tabs-container{display:flex;flex-wrap:nowrap;justify-content:space-around!important}
+ [data-assure] .et-hero-tab{flex:0 0 auto;margin:0 8px}
+ [data-assure] .et-hero-tab a{font-size:14px;white-space:nowrap;line-height:60px}
+ [data-assure] .et-hero-tab:after{display:none}
+ [data-assure] .serviceSupport-right-row,[data-assure] .reporting-body{flex-direction:column!important}
+ [data-assure] .serviceSupport-information,[data-assure] .serviceSupport-document,[data-assure] .reporting-left,[data-assure] .reporting-right{width:100%!important;min-width:0!important;max-width:100%!important}
+ [data-assure] .serviceSupport-left-item,[data-assure] .reporting-left,[data-assure] .reporting-right{padding:24px!important}
+ [data-assure] .currency-title-a-content{display:block!important;overflow:visible!important;-webkit-line-clamp:unset!important}
+ [data-assure] .serviceSupport,[data-assure] .refundService,[data-assure] .reportingPlatform{padding-right:40px}
+}
+@media(prefers-reduced-motion:reduce){[data-assure] *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

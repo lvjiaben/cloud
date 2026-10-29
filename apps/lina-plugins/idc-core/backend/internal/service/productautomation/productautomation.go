@@ -5,6 +5,7 @@ package productautomation
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"io"
 	"reflect"
 	"time"
@@ -79,6 +80,7 @@ type ProviderSelectionCodec interface {
 
 // PageInput requests one bounded, one-based page.
 type PageInput struct {
+	ForProductBinding      bool
 	Page                   int
 	PageSize               int
 	NamePrefix             string
@@ -105,6 +107,7 @@ type ProviderCandidatePage struct {
 
 // InterfaceInstance is a safe UI projection of one immutable local interface.
 type InterfaceInstance struct {
+	CatalogAvailable    bool
 	InterfaceInstanceNo string
 	DisplayName         string
 	ReleaseVersion      string
@@ -124,6 +127,7 @@ type InterfacePage struct {
 
 // Binding is the safe historical projection of one product-version binding.
 type Binding struct {
+	CatalogAvailable          bool
 	VersionNo                 string
 	InterfaceInstanceNo       string
 	InterfaceDisplayName      string
@@ -233,20 +237,66 @@ type InterfaceConfiguration struct {
 	Revision           int64
 }
 
-// CustomerFieldSelection explicitly enables one provider-declared customer field.
-// Integer bounds must be supplied; candidates can only select declared values.
+// CustomerFieldSelection enables a declared optional field, a merchant-only local
+// field, or presentation settings for a retained core field. Provider bounds stay authoritative.
 type CustomerFieldSelection struct {
-	FieldKey        string   `json:"fieldKey"`
-	Minimum         string   `json:"minimum,omitempty"`
-	Maximum         string   `json:"maximum,omitempty"`
-	CandidateValues []string `json:"candidateValues,omitempty"`
+	CustomerVisible *bool           `json:"customerVisible,omitempty"`
+	DefaultValue    json.RawMessage `json:"defaultValue,omitempty"`
+
+	// UpgradeEnabled is nil for existing offers, retaining their previous upgrade behavior.
+	UpgradeEnabled         *bool    `json:"upgradeEnabled,omitempty"`
+	UpgradeMinimum         string   `json:"upgradeMinimum,omitempty"`
+	UpgradeMaximum         string   `json:"upgradeMaximum,omitempty"`
+	UpgradeCandidateValues []string `json:"upgradeCandidateValues,omitempty"`
+
+	// ChoiceRules are owner-derived commercial restrictions, never accepted
+	// as arbitrary provider instructions from an administration DTO.
+	ChoiceRules              []*capmodel.ConfigurationRuleDeclaration `json:"-"`
+	AutomationMappingPending bool                                     `json:"-"`
+	BasePriceIncluded        bool                                     `json:"-"`
+	FixedPriceIncluded       bool                                     `json:"-"`
+	InformationOnly          bool                                     `json:"informationOnly,omitempty"`
+	ProductChoiceBindings    map[string]string                        `json:"productChoiceBindings,omitempty"`
+	ProductFieldKey          string                                   `json:"productFieldKey,omitempty" dc:"Explicit provisioning API parameter name; declared fields retain their type checks, custom native names and contents are frozen for direct provisioning; empty records customer information only" eg:"region"`
+	NumericPricing           string                                   `json:"numericPricing,omitempty" dc:"Numeric pricing policy: quantity keeps unit or band prices, per_choice uses independent fixed specification prices; omitted preserves existing behavior" eg:"quantity"`
+	GroupZhCN                string                                   `json:"groupZhCN,omitempty" dc:"Configuration group Chinese label" eg:"Specifications"`
+	GroupEnUS                string                                   `json:"groupEnUS,omitempty" dc:"Configuration group English label" eg:"Specifications"`
+	Unit                     string                                   `json:"unit,omitempty" dc:"Merchant display suffix without parameter conversion" eg:"GiB"`
+	DescriptionZhCN          string                                   `json:"descriptionZhCN,omitempty" dc:"Merchant Chinese field description" eg:"Choose a specification"`
+	DescriptionEnUS          string                                   `json:"descriptionEnUS,omitempty" dc:"Merchant English field description" eg:"Choose a specification"`
+	Advanced                 bool                                     `json:"advanced,omitempty" dc:"Whether the purchase field is in advanced settings" eg:"false"`
+	NumericLabels            map[string]*capmodel.LocalizedText       `json:"numericLabels,omitempty" dc:"Optional bilingual display labels keyed by numeric choices" eg:"{}"`
+	LocalField               *capmodel.ConfigurationFieldDeclaration  `json:"localField,omitempty" dc:"Merchant-only typed field; reserved local_ key; never forwarded to providers" eg:"{}"`
+
+	DisplayControl  string                             `json:"displayControl,omitempty"`
+	QuantityStep    string                             `json:"quantityStep,omitempty"`
+	NumericChoices  []string                           `json:"numericChoices,omitempty"`
+	FieldKey        string                             `json:"fieldKey"`
+	Minimum         string                             `json:"minimum,omitempty"`
+	Maximum         string                             `json:"maximum,omitempty"`
+	CandidateValues []string                           `json:"candidateValues,omitempty"`
+	CandidateLabels map[string]*capmodel.LocalizedText `json:"candidateLabels,omitempty" dc:"Optional bilingual labels for the ordered merchant choice values" eg:"{}"`
+	DisplayNameZhCN string                             `json:"displayNameZhCN,omitempty" dc:"Merchant Chinese display name; empty preserves the connector label" eg:"CPU cores"`
+	DisplayNameEnUS string                             `json:"displayNameEnUS,omitempty" dc:"Merchant English display name; empty preserves the connector label" eg:"CPU cores"`
+	SortOrder       int                                `json:"sortOrder,omitempty" dc:"Optional display order for enabled merchant fields, from zero to 1024" eg:"1"`
 }
 
 type VersionConfiguration struct {
+	DirectoryRelationships     []resourceinterfaceprojectioncap.ChoiceRelationship
+	MerchantPriceTargets       []MerchantPriceTarget
+	ProductChoiceFields        []string
+	CustomerProductFields      map[string]string
+	PriceFieldTokens           map[string]string
+	UpstreamOptionsStatus      resourceinterfaceprojectioncap.CandidateSyncState
 	CustomerConfigurableFields []*capmodel.ConfigurationFieldDeclaration
 	CustomerFieldSelections    []CustomerFieldSelection
-	// ImportedConfiguration is true only when an immutable import contract exists.
+	// ImportedConfiguration protects an immutable supplier source or portable contract.
+	ImportedPricingMode        string
+	ImportedMarkupPercent      string
+	ImportedManualPrices       []resourceinterfaceprojectioncap.CatalogPrice
 	ImportedConfiguration      bool
+	ImportedProductName        string
+	ImportedProductReference   string
 	ProductDeclaration         *capmodel.ConfigurationSchemaDeclaration
 	CustomerDeclaration        *capmodel.ConfigurationSchemaDeclaration
 	MerchantValues             []ConfigurationValue
@@ -255,9 +305,31 @@ type VersionConfiguration struct {
 	Version                    int64
 }
 
+// MerchantPriceTarget belongs only to the authorized configuration editor.
+// Unlike the separate opaque pricing API, this projection joins values the
+// merchant is already editing to their existing local price dimensions.
+type MerchantPriceTarget struct {
+	FieldKey       string
+	CandidateValue string
+	Quantity       bool
+	DimensionNo    string
+	PricingMode    catalog.ConfigurationPriceMode
+}
+
+// MerchantPriceTargetInput identifies a price target in the just-saved merchant
+// schema. Token is local to one atomic save, never a public supplier identity.
+type MerchantPriceTargetInput struct {
+	Token          string
+	FieldKey       string
+	CandidateValue string
+	Quantity       bool
+	PricingMode    catalog.ConfigurationPriceMode
+}
+
 // ConfigurationPriceCandidate is one safe, currently selectable customer
 // candidate. CandidateToken does not reveal the plugin field key or value.
 type ConfigurationPriceCandidate struct {
+	FieldToken     string
 	Quantity       bool
 	PricingMode    catalog.ConfigurationPriceMode
 	CandidateToken string
@@ -302,12 +374,12 @@ type ConfigurationEvaluation struct {
 }
 
 // PublicationReadiness is the narrow read-only admission seam consumed by
-// catalog publication preview. It returns false for a currently unusable
-// binding and an error only when readiness cannot be determined safely.
+// catalog publication preview. It preserves a safe failure reason for unusable
+// bindings and returns errors when readiness cannot be determined safely.
 type PublicationReadiness interface {
 	// CheckPublicationReadiness reuses the authoritative publication admission
 	// evidence and lifecycle checks without changing catalog or interface state.
-	CheckPublicationReadiness(ctx context.Context, versionNo string) (bool, error)
+	CheckPublicationReadiness(ctx context.Context, versionNo string) (catalog.PublicationReadinessCheck, error)
 }
 
 // PublicPurchaseAvailability is the authorization-free internal seam used by
@@ -344,11 +416,22 @@ type ExistingBusinessRuntimeContextIssuer interface {
 	IssueExistingBusinessRuntimeContext(context.Context, ExistingBusinessRuntimeContextInput) (*ExistingBusinessRuntimeContext, error)
 }
 
-// Service exposes the safe 0.9 automation-management subset. It permits only
-// future-facing rename and new-business state changes, and permanently blocks
-// deletion after the first product-version reference. Structured configuration
-// editing remains outside this version.
+// Service owns supplier-interface bindings, typed product configuration and
+// frozen customer schemas. Merchant editing and public projections retain
+// their separate authority; an existing product reference prevents deletion
+// of the supplier identity used by historical orders.
 type Service interface {
+	// GetMerchantConfiguration checks exact configuration visibility and joins
+	// one bounded local price-target projection for the editor. Internal reads
+	// and public purchase projections retain GetVersionConfiguration semantics.
+	GetMerchantConfiguration(context.Context, string) (*VersionConfiguration, error)
+	// ResolveMerchantPriceTargets validates up to 256 targets against the saved
+	// schema under the caller transaction, checks configuration authority, and
+	// creates missing dimensions in one batch. The price owner checks price
+	// authority before calling it; invalid targets or mode changes reject all.
+	ResolveMerchantPriceTargets(context.Context, string, []MerchantPriceTargetInput) (map[string]string, error)
+	// ResolvePriceTargets resolves at most 256 local fixed-price tokens under the caller transaction; exact configuration authorization, draft locking, revision checking and audit are enforced.
+	ResolvePriceTargets(context.Context, string, []string) (map[string]string, error)
 	ImportBindingService
 	PublicationReadiness
 	PublicPurchaseAvailability
@@ -397,9 +480,13 @@ type Service interface {
 	// WithPublicationAdmission runs publication inside the transaction holding all
 	// relevant version, binding, and interface locks.
 	WithPublicationAdmission(ctx context.Context, versionNo string, action func(context.Context) error) error
+	// WithSaleStateAdmission checks published-provider admission when resuming;
+	// stopping stays available offline and executes only the authorized local callback.
+	WithSaleStateAdmission(context.Context, string, bool, func(context.Context) error) error
 }
 
 type serviceImpl struct {
+	booleanPriceLabels         map[bool]capmodel.LocalizedText
 	database                   gdb.DB
 	extensions                 pluginhost.BusinessExtensionRegistrar
 	authorizer                 Authorizer
@@ -445,6 +532,8 @@ func NewConfigured(
 	storage storagecap.Service,
 	fileScanner purchaseconfigurationfile.Scanner,
 	resourceCandidates resourceinterfaceprojectioncap.CandidateSource,
+	falseLabel capmodel.LocalizedText,
+	trueLabel capmodel.LocalizedText,
 ) (Service, error) {
 	service, err := newWithRandom(database, extensions, authorizer, audit, codec, rand.Reader)
 	if err != nil {
@@ -457,6 +546,10 @@ func NewConfigured(
 	service.secretAccessor = secretAccessor
 	service.storage = storage
 	service.fileScanner = fileScanner
+	if falseLabel.ZhCN == "" || falseLabel.EnUS == "" || trueLabel.ZhCN == "" || trueLabel.EnUS == "" {
+		return nil, gerror.New("boolean price labels are required")
+	}
+	service.booleanPriceLabels = map[bool]capmodel.LocalizedText{false: falseLabel, true: trueLabel}
 	service.resourceCandidates = resourceCandidates
 	service.consumedFiles, err = purchaseconfigurationfile.NewConsumedFileReader(database, storage)
 	if err != nil {

@@ -7,6 +7,8 @@ import type {
 
 import { computed, onBeforeUnmount, ref } from "vue";
 
+import { useRouter } from "vue-router";
+
 import { useAccess } from "../plugin-access";
 import { useVbenDrawer } from "@vben/common-ui";
 
@@ -47,7 +49,10 @@ const reasonCodes: ProviderTaskTakeoverReason[] = [
 ];
 
 const { hasAccessByCodes } = useAccess();
+const router = useRouter();
 const detail = ref<ProviderTaskDetail>();
+const targetScope = ref<{ serviceNo?: string; channelNo?: string }>({});
+const hasNonSubmissionProof = computed(() => detail.value?.task.status === 'failed' && detail.value.evidence.some(item => item.evidenceKind === 'owner_provision_request_not_sent'));
 const selectedEvidence = ref<string[]>([]);
 const reasonCode = ref<ProviderTaskTakeoverReason>();
 
@@ -185,6 +190,12 @@ function upstreamStatusLabel(status: string) {
 
 function evidenceLabel(kind: string) {
   const known = new Set([
+    "upstream_http_response",
+    "upstream_call_diagnostic",
+	"owner_provision_request_not_sent",
+    "upstream_result_unknown",
+    "upstream_rejection",
+    "upstream_call_failed",
     "resource_observation",
     "residualResource",
     "task_observation",
@@ -196,12 +207,36 @@ function evidenceLabel(kind: string) {
 
 function evidenceSummaryLabel(summary: string) {
   const keys: Record<string, string> = {
+	"The resource owner confirmed no business HTTP request was attempted": "requestNotSent",
     "resource.power_state_on": "resourcePowerOn",
     "task.running": "taskRunning",
+    "operation submission outcome could not be proven": "submissionUnknown",
+    "upstream rejected the operation before acceptance": "requestRejected",
+    "The upstream connection timed out": "timeout",
+    "The upstream hostname could not be resolved": "dns",
+    "The upstream network connection failed": "network",
+    "The upstream API endpoint was not found": "endpoint",
+    "The upstream API returned an invalid response": "invalidResponse",
+    "The upstream API rejected authentication": "authentication",
+    "The connector authentication configuration does not match its request": "configuration",
   };
   return $t(
     `plugin.idc-resource.tasks.evidenceSummary.${keys[summary] || "unknown"}`,
   );
+}
+
+function formatHTTPResponse(text: string) {
+  try { return JSON.stringify(JSON.parse(text), null, 2) ?? text; }
+  catch { return text; }
+}
+
+function callFailureLabel(summary: string) {
+  const stages = new Set(["request_validation", "authentication", "request_preparation", "http_transport", "response_processing", "provider_dispatch", "provider_result", "owner_setup"]);
+  try {
+    const value: unknown = JSON.parse(summary);
+    if (value && typeof value === "object" && "stage" in value && typeof value.stage === "string" && stages.has(value.stage)) return $t(`plugin.idc-resource.tasks.callStage.${value.stage}`);
+  } catch { /* Historical unstructured summaries use the safe fallback. */ }
+  return $t("plugin.idc-resource.tasks.evidenceKind.upstream_call_diagnostic");
 }
 
 function residualKindLabel(kind: string) {
@@ -230,6 +265,8 @@ function residualReasonLabel(reason: string) {
 
 function confirmTakeover() {
   if (!canSubmit.value || !detail.value || !reasonCode.value) return;
+  const revision = detailRevision;
+  const taskNo = detail.value.task.taskNo;
   Modal.confirm({
     cancelText: $t("common.cancel"),
     content: $t("plugin.idc-resource.tasks.takeover.confirmDescription", {
@@ -239,13 +276,13 @@ function confirmTakeover() {
     okText: $t("plugin.idc-resource.tasks.takeover.confirm"),
     title: $t("plugin.idc-resource.tasks.takeover.confirmTitle"),
     async onOk() {
-      if (!detail.value || !reasonCode.value) return;
-      const revision = detailRevision;
+      if (!canSubmit.value || !detail.value || !reasonCode.value || revision !== detailRevision || detail.value.task.taskNo !== taskNo) return;
       submitting.value = true;
       try {
         const result = await providerTaskManualTakeover(
           detail.value.task.taskNo,
           {
+            ...targetScope.value,
             evidenceNos: [...selectedEvidence.value],
             expectedVersion: detail.value.task.version,
             reasonCode: reasonCode.value,
@@ -275,11 +312,12 @@ const [Drawer, drawerApi] = useVbenDrawer({
       reasonCode.value = undefined;
       return;
     }
-    const data = drawerApi.getData<{ taskNo?: string }>();
+    const data = drawerApi.getData<{ taskNo?: string; serviceNo?: string; channelNo?: string }>();
+    targetScope.value = { serviceNo: data?.serviceNo, channelNo: data?.channelNo };
     if (!data?.taskNo) return;
     drawerApi.setState({ loading: true });
     try {
-      const item = (await providerTaskDetail(data.taskNo)).item;
+      const item = (await providerTaskDetail(data.taskNo, targetScope.value)).item;
       if (revision === detailRevision) detail.value = normalizeDetail(item);
     } finally {
       if (revision === detailRevision) drawerApi.setState({ loading: false });
@@ -314,11 +352,26 @@ const [Drawer, drawerApi] = useVbenDrawer({
       </section>
 
       <Alert
+        v-if="canTakeOver"
         :description="$t('plugin.idc-resource.tasks.takeover.boundary')"
         :message="$t('plugin.idc-resource.tasks.takeover.safety')"
         show-icon
         type="warning"
       />
+
+      <Alert v-if="hasNonSubmissionProof" type="info" show-icon :message="$t('plugin.idc-resource.tasks.evidenceSummary.requestNotSent')" :description="$t('plugin.idc-resource.tasks.detail.orderHandlingHelp')" />
+
+      <Alert
+        v-if="detail.task.capabilityCode === 'server.provision' && detail.task.status === 'result_unknown'"
+        data-testid="provider-provision-unknown"
+        :message="$t('plugin.idc-resource.tasks.detail.provisionUnknown')"
+        :description="$t('plugin.idc-resource.tasks.detail.provisionUnknownHelp')"
+        show-icon type="warning"
+      />
+      <div v-if="detail.task.capabilityCode === 'server.provision'" class="task-section">
+        <p v-if="!hasNonSubmissionProof">{{ $t('plugin.idc-resource.tasks.detail.orderHandlingHelp') }}</p>
+        <Button v-if="hasAccessByCodes(['idc:admin:product-fulfillment:task:list'])" @click="drawerApi.close(); router.push('/idc/product-fulfillment/tasks')">{{ $t('plugin.idc-resource.tasks.detail.orderHandling') }}</Button>
+      </div>
 
       <Descriptions bordered :column="2" size="small">
         <Descriptions.Item
@@ -377,7 +430,7 @@ const [Drawer, drawerApi] = useVbenDrawer({
             <Progress :percent="detail.upstream.progress" size="small" />
           </div>
         </div>
-        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+        <Empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" :description="hasNonSubmissionProof ? $t('plugin.idc-resource.tasks.evidenceSummary.requestNotSent') : undefined" />
       </section>
 
       <section v-if="detail.residualResources.length" class="task-section">
@@ -423,7 +476,8 @@ const [Drawer, drawerApi] = useVbenDrawer({
           >
             <Checkbox :disabled="!canTakeOver" :value="item.evidenceNo" />
             <div>
-              <strong>{{ evidenceSummaryLabel(item.summary) }}</strong>
+              <strong>{{ item.evidenceKind === 'upstream_http_response' ? $t('plugin.idc-resource.tasks.detail.httpResponse') : item.evidenceKind === 'upstream_call_diagnostic' ? callFailureLabel(item.summary) : evidenceSummaryLabel(item.summary) }}</strong>
+              <pre v-if="item.evidenceKind === 'upstream_http_response' || item.evidenceKind === 'upstream_call_diagnostic'" class="max-h-64 overflow-auto whitespace-pre-wrap break-all text-sm" :data-testid="item.evidenceKind === 'upstream_http_response' ? 'resource-http-response' : 'resource-call-diagnostic'">{{ formatHTTPResponse(item.summary) }}</pre>
               <span>{{ evidenceLabel(item.evidenceKind) }}</span>
               <time>{{ formatTimestamp(item.observedAt) }}</time>
             </div>

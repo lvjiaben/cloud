@@ -1,0 +1,580 @@
+﻿.support {
+  position: relative;
+  top: -50px;
+  z-index: 1;
+}
+.support .support-navbottom-container {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+.support .support-navbottom-container .support-navbottom-item {
+  flex: 1;
+  padding: 20px;
+  box-sizing: border-box;
+  border: 1px solid #E6E9EC;
+  box-shadow: 0px 2px 7px 0px #F2F5F7;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #fff;
+}
+.support .support-navbottom-container .support-navbottom-item.active {
+  padding: 34px 20px 20px;
+}
+.support .support-navbottom-container .support-navbottom-item.active .support-navbottom-content {
+  gap: 20px;
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header .support-navbottom-highlight {
+  color: #FF5722;
+  font-size: 20px;
+  font-weight: bold;
+  margin-right: 6px;
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header h2 {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--txtcolor);
+  margin: 0;
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content p {
+  color: var(--txtdesc);
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-navbottom-link {
+  color: var(--Original);
+}
+.support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-navbottom-link:hover {
+  color: var(--darker1);
+}
+
+.applicationRequirements {
+  padding: var(--pcspacing);
+}
+.applicationRequirements .applicationRequirements-container {
+  width: 100%;
+  border: 1px solid #E6E9EC;
+  box-shadow: 0px 2px 7px 0px #F2F5F7;
+}
+.applicationRequirements .applicationRequirements-container .applicationRequirements-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 20px;
+  background-color: #f4f7fc;
+  margin-bottom: 20px;
+}
+.applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-header-content h2 {
+  color: #000;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+.applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-header-content p {
+  color: #666;
+  font-size: 16px;
+}
+.applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-applyBtn {
+  padding: 10px 20px;
+  background-color: var(--Original);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 2px;
+}
+.applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-applyBtn:hover {
+  background-color: #0062cc;
+}
+.applicationRequirements .applicationRequirements-container .requirement-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement {
+  width: 33.33%;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px 20px 40px;
+  background-color: #fff;
+  border-radius: 5px;
+  flex-direction: column;
+}
+.applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement img {
+  width: 48px;
+  height: 48px;
+  margin-right: 15px;
+}
+.applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement h3 {
+  margin-bottom: 20px;
+  color: #333;
+  flex: 1;
+}
+.applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement p {
+  color: #666;
+  font-size: 14px;
+}
+
+.planNotice {
+  padding: var(--pcspacing);
+}
+.planNotice .rebate-content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+.planNotice .rebate-content .rebate-left {
+  flex: 1;
+  min-height: 300px;
+  width: 100%;
+  background: #f7f9fd;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0);
+  box-shadow: 0px 2px 7px 0px #F2F5F7;
+  padding: 20px 40px 40px 20px;
+}
+.planNotice .rebate-content .refundNotice {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #fff;
+}
+.planNotice .rebate-content .refundNotice img {
+  width: 24px;
+  height: auto;
+  margin-right: 12px;
+}
+.planNotice .rebate-content .refundNotice p {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  line-height: 28px;
+  padding-bottom: 10px;
+}
+.planNotice .rebate-content .refundNotice-content {
+  line-height: 28px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--txtdesc);
+}
+.planNotice .rebate-content .rebate-document {
+  max-width: 288px;
+  min-width: 288px;
+}
+
+.caseList {
+  padding: var(--pcspacing);
+}
+.caseList .caseList-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 28px;
+}
+.caseList .caseList-container .caseList-card {
+  width: 100%;
+  text-decoration: none;
+  border-radius: var(--radius);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 50px;
+  transition: transform 0.3s ease;
+}
+.caseList .caseList-container .caseList-card:hover {
+  transform: translateY(-5px);
+}
+.caseList .caseList-container .caseList-card .caseList-imageWrap {
+  height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 12px;
+}
+.caseList .caseList-container .caseList-card .caseList-imageWrap .caseList-image {
+  width: 100%;
+  height: 100%;
+  padding-top: 25%;
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.sponsorshipProgram {
+  padding: var(--pcspacing);
+}
+.sponsorshipProgram .program-row {
+  display: flex;
+  isplay: flex;
+  align-items: stretch;
+  gap: 24px;
+  flex-direction: column;
+}
+.sponsorshipProgram .program-grid-style {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 auto;
+}
+.sponsorshipProgram .program-grid-style * {
+  font-family: codeB;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content {
+  overflow: hidden;
+  border: 1px solid #B9CCE1;
+  position: relative;
+  height: 192px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left {
+  width: 40%;
+  display: inline-block;
+  position: relative;
+  top: 0;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-shadow {
+  position: absolute;
+  height: 225px;
+  width: 71px;
+  top: -15px;
+  right: -83px;
+  opacity: 0.3;
+  z-index: 2;
+  transform: rotate(-12deg);
+  background-image: linear-gradient(90deg, #6c6c6c 10%, #fffeff);
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content {
+  width: 112%;
+  height: 192px;
+  z-index: 2;
+  position: relative;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  padding: 30px 24px;
+  background-image: none;
+  background-size: auto 192px;
+  background-position: 100%;
+  background-repeat: no-repeat;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-title {
+  font-weight: 600;
+  font-size: 26px;
+  color: #000;
+  letter-spacing: 0;
+  margin-bottom: 4px;
+  line-height: 36px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-desc {
+  opacity: 0.94;
+  font-weight: 400;
+  font-size: 14px;
+  color: #09285d;
+  letter-spacing: 0;
+  line-height: 24px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-link {
+  cursor: pointer;
+  background-image: var(--gradient2);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: 0.57px;
+  text-align: center;
+  line-height: 44px;
+  width: 210px;
+  height: 44px;
+  display: inline-block;
+  position: absolute;
+  bottom: 30px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-link:hover {
+  background-image: var(--gradient1);
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right {
+  flex: 1;
+  display: inline-block;
+  background-image: none;
+  background-size: cover;
+  background-position: 50%;
+  padding: 12px 12px 12px 0;
+  position: absolute;
+  right: 0;
+  height: 100%;
+  min-width: 60%;
+  max-width: 60%;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card {
+  height: 100%;
+  width: calc(100% - 6px);
+  display: flex;
+  justify-content: flex-start;
+  padding: 14px 24px 14px 114px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  background-image: none;
+  background-size: 104% 113%;
+  background-position: 50%;
+  background-repeat: no-repeat;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left {
+  width: 180px;
+  height: 100%;
+  display: inline-block;
+  padding: 26px 30px 26px 0;
+  vertical-align: bottom;
+  position: relative;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit {
+  background-image: linear-gradient(90deg, #ff6822, #ff922b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit span {
+  font-weight: 600;
+  font-size: 44px;
+  text-align: center;
+  line-height: 60px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit p {
+  font-weight: 600;
+  font-size: 18px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit-desc {
+  font-weight: 400;
+  font-size: 14px;
+  color: #3d3d3d;
+  letter-spacing: 0;
+  margin-top: 4px;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-border {
+  position: absolute;
+  right: 0;
+  top: 26px;
+  height: calc(100% - 46px);
+  width: 1px;
+  background-color: #e9e9e9;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-right {
+  width: calc(100% - 181px);
+  height: 100%;
+  display: flex;
+  vertical-align: bottom;
+  padding: 26px 30px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-right .program-right-card-introduce {
+  margin-top: 15px;
+  font-size: 14px;
+  color: #181818;
+  overflow: hidden;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-right .program-right-card-introduce span {
+  color: #8c8c8c;
+  font-weight: 400;
+}
+
+@media screen and (max-width: 768px) {
+  .support {
+    top: -30px;
+  }
+  .support .support-navbottom-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .support .support-navbottom-container .support-navbottom-item {
+    padding: 20px;
+  }
+  .support .support-navbottom-container .support-navbottom-item.active {
+    padding: 20px;
+  }
+  .support .support-navbottom-container .support-navbottom-item .support-navbottom-content {
+    gap: 12px !important;
+  }
+  .support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header .support-navbottom-highlight,
+  .support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header h2 {
+    font-size: 16px;
+  }
+  .support .support-navbottom-container .support-navbottom-item .support-navbottom-content .support-item-header p {
+    font-size: 14px;
+  }
+  .applicationRequirements {
+    padding-bottom: 40px;
+  }
+  .applicationRequirements .applicationRequirements-container .applicationRequirements-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-header-content {
+    margin-bottom: 10px;
+  }
+  .applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-header-content h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .applicationRequirements .applicationRequirements-container .applicationRequirements-header .applicationRequirements-header-content p {
+    font-size: 14px;
+  }
+  .applicationRequirements .applicationRequirements-container .requirement-row {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement {
+    width: 100%;
+    padding: 20px;
+    gap: 16px;
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+  .applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement img {
+    margin-right: 0 !important;
+  }
+  .applicationRequirements .applicationRequirements-container .requirement-row .applicationRequirements-requirement h3 {
+    font-weight: 500;
+    margin-bottom: 10px !important;
+  }
+  .planNotice {
+    padding-bottom: 40px;
+    height: max-content;
+  }
+  .planNotice .rebate-content {
+    flex-direction: column;
+    gap: 20px;
+    height: 100%;
+  }
+  .planNotice .rebate-content .program-voucher-left {
+    width: 100%;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-shadow {
+    display: none;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-content {
+    width: 100%;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-content .program-left-text {
+    padding: 20px;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-content .program-left-text .program-left-text-title {
+    font-size: 16px;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-content .program-left-text .program-left-text-desc {
+    font-size: 14px;
+  }
+  .planNotice .rebate-content .program-voucher-left .program-left-content .program-left-text .program-left-text-link {
+    width: 100%;
+  }
+  .planNotice .rebate-content .program-left-content {
+    width: 100%;
+  }
+  .caseList {
+    padding-bottom: 40px;
+  }
+  .caseList .caseList-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 10px;
+  }
+  .caseList .caseList-container .caseList-card .caseList-imageWrap {
+    height: 60px;
+    padding: 5px;
+  }
+  .sponsorshipProgram {
+    padding-bottom: 40px;
+  }
+  .sponsorshipProgram .program-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content {
+    flex-direction: column;
+    gap: 0px;
+    height: max-content;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left {
+    width: 100%;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-shadow {
+    display: none;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content {
+    width: 100%;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text {
+    padding: 20px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-title {
+    font-size: 18px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-desc {
+    font-size: 14px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-left .program-left-content .program-left-text .program-left-text-link {
+    width: fit-content;
+    padding: 0 20px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    position: relative;
+    padding: 0;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card {
+    flex-direction: column;
+    gap: 5px;
+    width: 100%;
+    border: none;
+    border-top: 1px solid #E6E9EC;
+    padding: 20px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left {
+    width: 100%;
+    padding: 0;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit span {
+    font-size: 36px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit p {
+    font-size: 16px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-limit-desc {
+    font-size: 14px;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-left .program-right-card-border {
+    display: none;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-right {
+    width: 100%;
+    padding: 0;
+  }
+  .sponsorshipProgram .program-grid-style .program-voucher-content .program-voucher-right .program-right-card .program-right-card-right .program-right-card-introduce {
+    font-size: 14px;
+  }
+}
+
+/*# sourceMappingURL=webmaster.css.map */

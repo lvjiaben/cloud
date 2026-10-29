@@ -3,6 +3,7 @@
 package v1
 
 type CatalogProductDetailProduct struct {
+	CurrentVersionNo   string `json:"currentVersionNo" dc:"Current published sale version; distinct from the latest editable draft" eg:"ver_0123456789abcdef0123456789abcdef"`
 	DirectoryNo        string `json:"directoryNo" dc:"Single member product-navigation reference; empty means unclassified" eg:"pdr_example"`
 	DescriptionVersion int64  `json:"descriptionVersion" dc:"Optimistic revision for bilingual sales copy updates" eg:"1"`
 	ProductNo          string `json:"productNo" dc:"Stable product business number" eg:"prd_0123456789abcdef0123456789abcdef"`
@@ -21,19 +22,16 @@ type CatalogProductDetailProduct struct {
 }
 
 type CatalogProductDetailVersion struct {
-	VersionNo             string `json:"versionNo" dc:"Stable version business number" eg:"ver_0123456789abcdef0123456789abcdef"`
-	VersionNumber         int    `json:"versionNumber" dc:"Monotonic product version number" eg:"3"`
-	Status                string `json:"status" dc:"Version status: draft, published, superseded, or retired" eg:"draft"`
-	Source                string `json:"source" dc:"Version source: manual, migration, or copy" eg:"manual"`
-	SourceVersion         string `json:"sourceVersion" dc:"Display-safe external source version, or empty" eg:"2026-08"`
-	ChangeSummary         string `json:"changeSummary" dc:"Merchant change summary" eg:"Add yearly billing"`
-	RequiresContract      bool   `json:"requiresContract" dc:"Whether this version requires a contract for applicable orders" eg:"false"`
-	ContractPolicyCode    string `json:"contractPolicyCode" dc:"Product contract choice: inherit, none, or required" eg:"inherit"`
-	ContractTemplateNo    string `json:"contractTemplateNo" dc:"Selected all-customer template number, or empty"`
-	ContractPolicyVersion int64  `json:"contractPolicyVersion" dc:"Contract rule optimistic concurrency version" eg:"1"`
-	PublishedAt           *int64 `json:"publishedAt" dc:"Publication time as Unix milliseconds, or null" eg:"1786161600000"`
-	RetiredAt             *int64 `json:"retiredAt" dc:"Retirement time as Unix milliseconds, or null" eg:"1786161600000"`
-	CreatedAt             int64  `json:"createdAt" dc:"Version creation time as Unix milliseconds" eg:"1786161600000"`
+	VersionNo     string `json:"versionNo" dc:"Stable version business number" eg:"ver_0123456789abcdef0123456789abcdef"`
+	VersionNumber int    `json:"versionNumber" dc:"Monotonic product version number" eg:"3"`
+	Status        string `json:"status" dc:"Version status: draft, published, superseded, or retired" eg:"draft"`
+	Source        string `json:"source" dc:"Version source: manual, migration, or copy" eg:"manual"`
+	SourceVersion string `json:"sourceVersion" dc:"Display-safe external source version, or empty" eg:"2026-08"`
+	ChangeSummary string `json:"changeSummary" dc:"Merchant change summary" eg:"Add yearly billing"`
+
+	PublishedAt *int64 `json:"publishedAt" dc:"Publication time as Unix milliseconds, or null" eg:"1786161600000"`
+	RetiredAt   *int64 `json:"retiredAt" dc:"Retirement time as Unix milliseconds, or null" eg:"1786161600000"`
+	CreatedAt   int64  `json:"createdAt" dc:"Version creation time as Unix milliseconds" eg:"1786161600000"`
 }
 
 // CatalogFulfillmentPolicySummary deliberately excludes plugin methods,
@@ -76,9 +74,10 @@ type CatalogProductDetailPrice struct {
 	AmountMinor                     string  `json:"amountMinor" dc:"Exact base or tier amount in decimal minor units" eg:"9900"`
 	SetupFeeMinor                   string  `json:"setupFeeMinor" dc:"Exact one-time setup fee in decimal minor units" eg:"0"`
 	RenewalAmountMinor              *string `json:"renewalAmountMinor" dc:"Exact renewal amount in decimal minor units, or null" eg:"10900"`
-	MinimumQuantity                 int64   `json:"minimumQuantity" dc:"Inclusive tier lower bound" eg:"0"`
-	MaximumQuantity                 *int64  `json:"maximumQuantity" dc:"Exclusive tier upper bound, or null" eg:"10"`
+	MinimumQuantity                 int64   `json:"minimumQuantity" dc:"Exclusive tier lower bound; bands use (minimum, maximum]" eg:"0"`
+	MaximumQuantity                 *int64  `json:"maximumQuantity" dc:"Inclusive tier upper bound, or null" eg:"10"`
 	Status                          string  `json:"status" dc:"Price status: active or inactive" eg:"active"`
+	ConfigurationPricingMode        string  `json:"configurationPricingMode" dc:"Frozen configuration pricing mode: fixed, per_unit, band_total or graduated; empty for base price" eg:"per_unit"`
 	ConfigurationPriceDimensionNo   string  `json:"configurationPriceDimensionNo" dc:"Configuration price dimension number, or empty for base price"`
 	ConfigurationFieldLabelZhCn     string  `json:"configurationFieldLabelZhCn" dc:"Frozen Chinese configuration field label, or empty for base price"`
 	ConfigurationFieldLabelEnUs     string  `json:"configurationFieldLabelEnUs" dc:"Frozen English configuration field label, or empty for base price"`

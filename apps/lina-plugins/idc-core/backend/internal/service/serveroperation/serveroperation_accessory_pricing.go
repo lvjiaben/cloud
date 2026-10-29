@@ -109,6 +109,10 @@ type AccessoryQuote struct {
 	IssuedAt               time.Time
 	ExpiresAt              time.Time
 	Reused                 bool
+	SubjectTypeCode        string
+	SubjectNo              string
+	ExpectedSubjectVersion int64
+	NativeTargetSnapshot   string
 }
 
 type AccessoryPricing interface {
@@ -561,8 +565,9 @@ period_unit_code,period_count,policy_no,policy_version,parameters,customer_subje
 expected_service_version,tax_policy_no,tax_treatment_code,tax_rate_basis_points,tax_category_code,
 rounding_scope_code,rounding_mode_code,rounding_quantum_minor,
 baseline_object_nos,baseline_snapshot_no,baseline_observed_at,
-idempotency_digest,request_digest,content_digest,issued_at,expires_at)
-VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, quote.QuoteNo, quote.CustomerNo, quote.ServiceNo,
+idempotency_digest,request_digest,content_digest,issued_at,expires_at,
+subject_type_code,subject_no,expected_subject_version,native_target_snapshot)
+VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?::JSONB)`, quote.QuoteNo, quote.CustomerNo, accessoryLegacyService(quote),
 			quote.Action, quote.Kind, quote.CurrencyCode, quote.RequestedQuantity, quote.ExistingObjectCount,
 			quote.ReservedCreateCount, quote.FreeCountPerServer, quote.ChargedQuantity, quote.UnitAmountMinor,
 			quote.SubtotalMinor, quote.NetAmountMinor, quote.TaxAmountMinor, quote.TotalAmountMinor,
@@ -572,7 +577,8 @@ VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 			accessoryQuoteTaxValue(quote, commerceContext, "category"), accessoryQuoteTaxValue(quote, commerceContext, "scope"),
 			accessoryQuoteTaxValue(quote, commerceContext, "mode"), accessoryQuoteTaxQuantum(quote, commerceContext),
 			string(baselineJSON), quote.BaselineSnapshotNo, nullableAccessoryBaselineObservedAt(quote),
-			idempotencyDigest, requestDigest, contentDigest, quote.IssuedAt, quote.ExpiresAt)
+			idempotencyDigest, requestDigest, contentDigest, quote.IssuedAt, quote.ExpiresAt,
+			accessorySubjectType(quote), accessorySubjectNo(quote), accessorySubjectVersion(quote), accessoryNativeSnapshot(quote))
 		if insertErr != nil {
 			return insertErr
 		}

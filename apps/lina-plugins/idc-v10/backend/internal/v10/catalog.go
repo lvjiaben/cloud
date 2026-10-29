@@ -57,12 +57,19 @@ func executeCatalogDetail(executor confidentialoutboundcap.Service, contextID st
 	if strictDecode(payload, &query) != nil || query.Validate() != nil || !positiveDecimal(query.Reference) {
 		return nil, bizerr.NewCode(codeCatalogInvalid)
 	}
-	raw, err := catalogRead(executor, contextID, "/api/v1/product/"+query.Reference, []string{"status", "data", "product", "id", "name", "description"})
+	raw, err := catalogRead(executor, contextID, "/api/v1/product/"+query.Reference, commonProductResponseFields)
 	if err != nil {
 		return nil, err
 	}
 	detail, err := projectCatalogDetail(raw, query)
 	if err != nil {
+		return nil, err
+	}
+	fields, err := readCommonCustomFields(raw)
+	if err != nil {
+		return nil, err
+	}
+	if err = attachCommonSnapshot(executor, contextID, detail, fields); err != nil {
 		return nil, err
 	}
 	return json.Marshal(detail)

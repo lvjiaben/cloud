@@ -9,16 +9,18 @@ import (
 	"strconv"
 	"strings"
 
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
 
 type productConfiguration struct {
-	ServerGroup    string `json:"server_group"`
-	IPAddressCount int64  `json:"ip_address_count"`
-	IPAddressGroup string `json:"ip_address_group,omitempty"`
-	StoragePool    string `json:"storage_pool,omitempty"`
-	SnapshotCount  int64  `json:"snapshot_count,omitempty"`
-	BackupCount    int64  `json:"backup_count,omitempty"`
+	CustomParameters map[string]json.RawMessage `json:"custom_parameters,omitempty"`
+	ServerGroup      string                     `json:"server_group"`
+	IPAddressCount   int64                      `json:"ip_address_count"`
+	IPAddressGroup   string                     `json:"ip_address_group,omitempty"`
+	StoragePool      string                     `json:"storage_pool,omitempty"`
+	SnapshotCount    int64                      `json:"snapshot_count,omitempty"`
+	BackupCount      int64                      `json:"backup_count,omitempty"`
 }
 
 type customerConfiguration struct {
@@ -26,18 +28,19 @@ type customerConfiguration struct {
 }
 
 type bmsProvisionParameters struct {
-	Name                 string `json:"name"`
-	Type                 int    `json:"type"`
-	Size                 int64  `json:"size"`
-	ExternalPrincipalRef string `json:"name3"`
-	GroupID              string `json:"group_id"`
-	OSID                 string `json:"os_id"`
-	IPCount              int64  `json:"ip_num"`
-	IPGroupID            string `json:"ip_group_id,omitempty"`
-	DataSize             int64  `json:"data_size"`
-	StoragePoolID        string `json:"ceph_id,omitempty"`
-	BackupCount          int64  `json:"backup_num"`
-	SnapshotCount        int64  `json:"snap_num"`
+	CustomParameters     map[string]json.RawMessage `json:"custom_parameters,omitempty"`
+	Name                 string                     `json:"name"`
+	Type                 int                        `json:"type"`
+	Size                 int64                      `json:"size"`
+	ExternalPrincipalRef string                     `json:"name3"`
+	GroupID              string                     `json:"group_id"`
+	OSID                 string                     `json:"os_id"`
+	IPCount              int64                      `json:"ip_num"`
+	IPGroupID            string                     `json:"ip_group_id,omitempty"`
+	DataSize             int64                      `json:"data_size"`
+	StoragePoolID        string                     `json:"ceph_id,omitempty"`
+	BackupCount          int64                      `json:"backup_num"`
+	SnapshotCount        int64                      `json:"snap_num"`
 }
 
 func buildProvisionParameters(protocol Protocol, plan resourcecap.ServerProvisionPlan) (json.RawMessage, error) {
@@ -55,8 +58,13 @@ func buildProvisionParameters(protocol Protocol, plan resourcecap.ServerProvisio
 	if err != nil {
 		return nil, err
 	}
+	custom, err := productfulfillmentcap.CustomParameters(plan.ProductConfiguration)
+	if err != nil {
+		return nil, errInvalidConfiguration
+	}
 	parameters := bmsProvisionParameters{
-		Name: strings.TrimSpace(plan.Hostname), Type: 2,
+		CustomParameters: custom,
+		Name:             strings.TrimSpace(plan.Hostname), Type: 2,
 		ExternalPrincipalRef: plan.ExternalPrincipalRef, GroupID: configuration.ServerGroup,
 		OSID: customer.OperatingSystem, IPCount: configuration.IPAddressCount,
 		IPGroupID: configuration.IPAddressGroup, StoragePoolID: configuration.StoragePool,

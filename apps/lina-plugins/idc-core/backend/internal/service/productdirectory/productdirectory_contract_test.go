@@ -26,8 +26,9 @@ func TestDirectoryContractMetadataHasChineseCoverage(t *testing.T) {
 	if err = json.Unmarshal(content, &translations); err != nil {
 		t.Fatal(err)
 	}
-	for _, namespace := range []string{"directoryadmin", "directoryaccount"} {
-		file, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, "backend/api", namespace, "v1/directory.go"), nil, 0)
+	for _, scope := range []struct{ namespace, source string }{{"directoryadmin", "directory.go"}, {"directoryaccount", "directory.go"}, {"directoryaccount", "customer_note.go"}} {
+		namespace := scope.namespace
+		file, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, "backend/api", namespace, "v1", scope.source), nil, 0)
 		if err != nil {
 			t.Fatal(err)
 		}

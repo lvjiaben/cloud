@@ -42,24 +42,23 @@ type SearchInput struct {
 
 // Summary is the non-legal, non-credential customer list projection.
 type Summary struct {
-	Balances                     []BalanceSummary
-	CustomerNo                   string
-	CustomerCode                 string
-	PrimaryEmail                 string
-	PrimaryPhone                 string
-	Type                         customer.Type
-	Status                       customer.Status
-	Verification                 customer.VerificationStatus
-	DisplayName                  string
-	CountryCode                  string
-	PreferredLocale              string
-	EnterpriseContractPolicyCode string
-	EnterpriseContractTemplateNo string
-	Level                        *LevelSummary
-	TagCount                     int
-	Version                      int64
-	CreatedAt                    time.Time
-	UpdatedAt                    time.Time
+	Balances        []BalanceSummary
+	CustomerNo      string
+	CustomerCode    string
+	PrimaryEmail    string
+	PrimaryPhone    string
+	Type            customer.Type
+	Status          customer.Status
+	Verification    customer.VerificationStatus
+	DisplayName     string
+	CountryCode     string
+	PreferredLocale string
+
+	Level     *LevelSummary
+	TagCount  int
+	Version   int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // LevelSummary is the display-safe current customer-level projection.
@@ -191,11 +190,11 @@ type OverviewCounts struct {
 
 // BusinessSummary contains display-safe counts supplied by each owning domain.
 type BusinessSummary struct {
-	Orders        int64
-	Bills         int64
-	Transactions  int64
-	Servers       int64
-	Contracts     int64
+	Orders       int64
+	Bills        int64
+	Transactions int64
+	Servers      int64
+
 	TaxInvoices   int64
 	Tickets       int64
 	Notifications int64

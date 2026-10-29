@@ -15,11 +15,13 @@ var errServerGenerationPolicy = gerror.New("server generation policy is invalid"
 
 // ServerGenerationPolicy is a secret-free snapshot of plugin-declared rules.
 type ServerGenerationPolicy struct {
-	HostnamePrefix     string   `json:"hostname_prefix"`
-	HostnameLength     *int     `json:"hostname_length"`
-	HostnameCharacters []string `json:"hostname_characters"`
-	PasswordLength     *int     `json:"password_length"`
-	PasswordCharacters []string `json:"password_characters"`
+	HostnameCustomerInput bool     `json:"hostname_customer_input"`
+	PasswordCustomerInput bool     `json:"password_customer_input"`
+	HostnamePrefix        string   `json:"hostname_prefix"`
+	HostnameLength        *int     `json:"hostname_length"`
+	HostnameCharacters    []string `json:"hostname_characters"`
+	PasswordLength        *int     `json:"password_length"`
+	PasswordCharacters    []string `json:"password_characters"`
 }
 
 const (

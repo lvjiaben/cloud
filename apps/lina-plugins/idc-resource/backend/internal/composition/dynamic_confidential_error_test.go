@@ -86,7 +86,7 @@ func (f *sanitizedDiagnosticRegistrar) InvokeProviderMethod(ctx context.Context,
 func TestDynamicProviderPreservesOnlyOwnerDiagnostic(t *testing.T) {
 	for _, code := range []*bizerr.Code{resourcecap.CodeProviderTLSUntrusted, resourcecap.CodeProviderTimeout, resourcecap.CodeProviderDNS, resourcecap.CodeProviderNetwork, resourcecap.CodeProviderEndpointNotFound, resourcecap.CodeProviderInvalidResponse, resourcecap.CodeProviderAuthRejected, resourcecap.CodeProviderLocalAuthPolicy} {
 		registrar := &sanitizedDiagnosticRegistrar{}
-		p := &dynamicProvider{extensions: registrar, configuration: channelconfig.Configuration{Config: resourcecap.ProviderConfig{Settings: []byte("{}")}}, outbound: func(context.Context, channelconfig.Configuration, string, []resourcecap.SecretBinding) (pluginhost.ConfidentialOutboundHandler, func(), error) {
+		p := &dynamicProvider{extensions: registrar, configuration: channelconfig.Configuration{Config: resourcecap.ProviderConfig{Settings: []byte("{}")}}, outbound: func(context.Context, channelconfig.Configuration, string, []resourcecap.SecretBinding, ...func(resourcecap.Evidence)) (pluginhost.ConfidentialOutboundHandler, func(), error) {
 			return func(context.Context, *pluginhost.ConfidentialOutboundRequest) (*pluginhost.ConfidentialOutboundResult, error) {
 				return nil, bizerr.NewCode(code)
 			}, func() {}, nil

@@ -1,0 +1,15 @@
+{
+  "plugin.idc-core.catalog.customerOptions.visibility": "Customer form",
+  "plugin.idc-core.catalog.customerOptions.shown": "Visible",
+  "plugin.idc-core.catalog.customerOptions.hidden": "Hidden",
+  "plugin.idc-core.catalog.customerOptions.defaultValue": "Default value",
+  "plugin.idc-core.catalog.customerOptions.defaultPlaceholder": "Use the first sellable value when empty",
+  "plugin.idc-core.catalog.customerOptions.defaultInvalid": "A hidden field needs a valid default within its sellable bounds",
+  "plugin.idc-core.catalog.customerOptions.copyDefinition": "Copy definition",
+  "plugin.idc-core.catalog.customerOptions.copySuffix": " (copy)",
+  "plugin.idc-core.catalog.optionBatchPrice.title": "Set prices in bulk",
+  "plugin.idc-core.catalog.optionBatchPrice.targets": "Target options",
+  "plugin.idc-core.catalog.optionBatchPrice.keep": "Keep unchanged",
+  "plugin.idc-core.catalog.optionBatchPrice.apply": "Apply to draft",
+  "plugin.idc-core.catalog.optionBatchPrice.invalid": "Choose up to 256 options and enter at least one valid amount"
+}

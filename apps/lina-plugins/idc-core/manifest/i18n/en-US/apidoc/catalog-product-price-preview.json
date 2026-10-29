@@ -1,0 +1,12 @@
+{
+  "Pricing status: final (known payable amount), unavailable (saved price schedules missing or invalid), pending_usage (actual usage required), or requires_customer_context (customer eligibility or tax context required)": "Pricing status: final (known payable amount), unavailable (saved price schedules missing or invalid), pending_usage (actual usage required), or requires_customer_context (customer eligibility or tax context required)",
+  "Base charge in integer minor units, excluding setup fees, or null when unavailable": "Base charge in integer minor units, excluding setup fees, or null when unavailable",
+  "Configuration charge in integer minor units, excluding setup fees, or null when unavailable": "Configuration charge in integer minor units, excluding setup fees, or null when unavailable",
+  "Total setup fees in integer minor units, or null when unavailable": "Total setup fees in integer minor units, or null when unavailable",
+  "Explicit saved price schedule issues for this period; not upstream, tax or authorization failures": "Explicit saved price schedule issues for this period; not upstream, tax or authorization failures",
+  "Price dimension: base (product base price) or option (selected configuration price)": "Price dimension: base (product base price) or option (selected configuration price)",
+  "Saved price schedule issue: missing (not configured) or invalid (schedule validation failed)": "Saved price schedule issue: missing (not configured) or invalid (schedule validation failed)",
+  "Safe customer configuration field key, empty for base price": "Safe customer configuration field key, empty for base price",
+  "Customer configuration label and selected option in Simplified Chinese": "Customer configuration label and selected option in Simplified Chinese",
+  "Customer configuration label and selected option in English": "Customer configuration label and selected option in English"
+}

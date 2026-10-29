@@ -540,17 +540,16 @@ func validateManualReceiptSettlementAccounting(row settlementAllocationEvidenceR
 }
 
 // validateManualReceiptSettlementReview verifies private evidence references,
-// request digests, and the required second-person approval count.
+// request digests, and any historic approval decision.
 func validateManualReceiptSettlementReview(row settlementAllocationEvidenceRow) error {
 	if row.AdjustmentEvidenceDigest == nil ||
 		!canonicalDigestPattern.MatchString(*row.AdjustmentEvidenceDigest) ||
 		row.AdjustmentRequestDigest == nil ||
 		!canonicalDigestPattern.MatchString(*row.AdjustmentRequestDigest) ||
 		row.AdjustmentApprovalRequired == nil || row.AdjustmentRequestedBy == nil ||
-		*row.AdjustmentRequestedBy < 1 || row.AdjustmentProofReference == nil ||
-		!validBusinessReference(*row.AdjustmentProofReference, 128) ||
-		row.AdjustmentReceivingReference == nil ||
-		!validBusinessReference(*row.AdjustmentReceivingReference, 128) ||
+		*row.AdjustmentRequestedBy < 1 ||
+		(row.AdjustmentProofReference != nil && !validBusinessReference(*row.AdjustmentProofReference, 128)) ||
+		(row.AdjustmentReceivingReference != nil && !validBusinessReference(*row.AdjustmentReceivingReference, 128)) ||
 		row.AdjustmentBusinessPurpose == nil ||
 		!sourceTypePattern.MatchString(*row.AdjustmentBusinessPurpose) ||
 		row.AdjustmentPostedAt == nil ||

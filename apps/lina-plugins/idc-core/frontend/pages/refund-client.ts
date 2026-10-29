@@ -87,16 +87,8 @@ export async function reviewRefund(
   refund: RefundSummary,
   intent: RefundReviewIntent,
 ) {
-  let proofToken = "";
-  if (refund.highAmount && intent.decisionCode === "approve") {
-    const proof = await requestClient.post<{
-      proof: { expiresAt: number; proofToken: string };
-    }>(path(`/${encodeURIComponent(refund.refundNo)}/review-proofs`), intent);
-    proofToken = proof.proof.proofToken;
-  }
   const response = await requestClient.post<{ refund: RefundSummary }>(
-    path(`/${encodeURIComponent(refund.refundNo)}/reviews`),
-    { ...intent, proofToken },
+    path(`/${encodeURIComponent(refund.refundNo)}/reviews`), intent,
   );
   return response.refund;
 }

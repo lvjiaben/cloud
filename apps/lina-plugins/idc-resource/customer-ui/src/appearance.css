@@ -1,0 +1,15 @@
+html,body{height:auto!important;min-height:0!important}:root{font:14px Arial,sans-serif;color:#273349;background:#fff}body{margin:0;padding:16px 20px;box-sizing:border-box}#table{min-height:400px}.identity{display:grid;gap:7px}.subline{display:block;margin-top:7px;font-size:12px;color:#8b95a6}.status{display:inline-flex;gap:6px;align-items:center}.dot{height:6px;width:6px;background:currentColor;border-radius:50%}.success{color:#00a870}.warning{color:#e39800}.danger{color:#e34d59}.system,.note-cell{display:flex;align-items:center;gap:7px}.system img{width:18px;height:18px;flex:none}a,.link-button{color:#0052d9;cursor:pointer;text-decoration:none}.link-button{border:0;background:none;font:inherit;padding:0}#error{color:#c9353f;padding:14px;background:#fff1f0}
+/* Keep the search controls together and give the grid the remaining viewport. */
+.vxe-grid{padding:0!important}
+.vxe-toolbar{display:none!important}
+.vxe-grid--form-wrapper>div{padding:0 0 16px!important}
+.vxe-grid--form-wrapper form>div{display:flex!important;flex-direction:row!important;justify-content:flex-start;align-items:center;gap:12px;flex-wrap:wrap}
+.vxe-grid--form-wrapper [data-form-render-field]{width:min(420px,100%);padding:0!important}
+.vxe-grid--form-wrapper [data-form-render-field]>label{display:none!important}
+.vxe-grid--form-wrapper form>div>div:last-child{width:auto!important;padding:0!important;gap:12px;justify-content:flex-start}
+.vxe-grid--form-wrapper input{height:32px;font-size:14px;border-radius:3px}
+.vxe-grid--form-wrapper button{height:32px;font-size:14px;padding:0 16px;border-radius:3px;box-shadow:none}
+.vxe-grid--form-wrapper button:last-of-type{order:-1;background:#0052d9;color:#fff}
+@media(max-width:600px){body{padding:12px}.vxe-grid--form-wrapper [data-form-render-field]{width:100%}}
+
+.vxe-grid--form-wrapper .vben-link{display:none!important}

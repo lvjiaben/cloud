@@ -12,6 +12,8 @@ import (
 // ProductCopyInput identifies one exact source version and the new sales name.
 // SourceVersionNo must match SourceProductNo; PublicSlug must be unused.
 type ProductCopyInput struct {
+	// Revision creates an editable version on the same product; no level prices are copied.
+	Revision        bool
 	SourceProductNo string
 	SourceVersionNo string
 	PublicSlug      string

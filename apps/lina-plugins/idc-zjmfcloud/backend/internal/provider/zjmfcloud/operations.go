@@ -15,6 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
@@ -48,6 +49,9 @@ func (p *Provider) Execute(
 	if err := request.Validate(); err != nil {
 		return nil, err
 	}
+	if unverifiedOperation(request.Capability, request.Parameters) {
+		return nil, errUnsupported
+	}
 	if request.Capability == resourcecap.CapabilityResetPassword {
 		return p.executeResetPassword(ctx, request)
 	}
@@ -70,6 +74,21 @@ func (p *Provider) Execute(
 	body := []byte(call.form.Encode())
 	defer clear(body)
 	return p.executeOperationBody(ctx, request, call, body)
+}
+
+// Until an exact state matrix is verified, a listed snapshot cannot prove
+// readiness for restore. An IP count endpoint likewise cannot prove replacement.
+func unverifiedOperation(capability resourcecap.CapabilityCode, parameters json.RawMessage) bool {
+	if capability == resourcecap.CapabilityChangeIP {
+		return true
+	}
+	if capability != resourcecap.CapabilityManageSnapshot && capability != resourcecap.CapabilityBackup {
+		return false
+	}
+	var input struct {
+		Action string `json:"action"`
+	}
+	return json.Unmarshal(parameters, &input) == nil && input.Action == "restore"
 }
 
 func (p *Provider) executeOperationBody(
@@ -240,7 +259,9 @@ func buildOperationCall(request resourcecap.OperationRequest) (operationCall, er
 	case resourcecap.CapabilityResize:
 		return resizeCall(parameters, resourceRoute)
 	case resourcecap.CapabilityChangeIP:
-		return changeIPCall(parameters, resourceRoute)
+		// The verified endpoint changes quantity, not addresses. Never submit it
+		// for an address-replacement intent, even from an older queued task.
+		return operationCall{}, errUnsupported
 	case resourcecap.CapabilityManageSnapshot:
 		return snapshotCall(parameters, request.ResourceRef, "snap")
 	case resourcecap.CapabilityBackup:
@@ -1100,13 +1121,40 @@ func decodeParameters(raw json.RawMessage) (rawObject, error) {
 func provisionForm(parameters rawObject) (url.Values, error) {
 	allowed := map[string]struct{}{
 		"area": {}, "node": {}, "node_group": {}, "node_priority": {}, "os": {}, "cpu": {}, "memory": {},
-		"system_disk_size": {}, "data_disk_size": {}, "network_type": {}, "vpc": {}, "client": {}, "hostname": {}, "ip_group": {},
-		"ip_num": {}, "traffic_type": {}, "in_bw": {}, "out_bw": {}, "traffic_quota": {}, "backup_num": {},
+		"system_disk_size": {}, "data_disk_size": {}, "network_type": {}, "vpc": {}, "vpc_name": {}, "port": {},
+		"system_read_bytes_sec": {}, "system_write_bytes_sec": {}, "system_read_iops_sec": {}, "system_write_iops_sec": {}, "data_read_bytes_sec": {}, "data_write_bytes_sec": {}, "data_read_iops_sec": {}, "data_write_iops_sec": {}, "client": {}, "hostname": {}, "ip_group": {},
+		"ip_num": {}, "traffic_type": {}, "reset_flow_day": {}, "in_bw": {}, "out_bw": {}, "traffic_quota": {}, "backup_num": {},
 		"snap_num": {}, "nat_acl_limit": {}, "nat_web_limit": {}, "advanced_cpu": {}, "advanced_bw": {}, "num": {},
 	}
-	form, err := strictScalarForm(parameters, allowed)
+	encoded, err := json.Marshal(parameters)
+	if err != nil {
+		return nil, errInvalidConfig
+	}
+	custom, err := productfulfillmentcap.CustomParameters(encoded)
+	if err != nil {
+		return nil, errInvalidConfig
+	}
+	native := rawObject{}
+	for key, value := range parameters {
+		if key != productfulfillmentcap.CustomParametersKey {
+			native[key] = value
+		}
+	}
+	form, err := strictScalarForm(native, allowed)
 	if err != nil {
 		return nil, err
+	}
+	for key, raw := range custom {
+		// Identity and quantity come from the paid unit and resource owner.
+		root := strings.ToLower(strings.SplitN(key, "[", 2)[0])
+		if root == "client" || root == "num" || root == "hostname" {
+			return nil, errInvalidConfig
+		}
+		value, ok := formScalar(raw)
+		if !ok {
+			return nil, errInvalidConfig
+		}
+		form.Set(key, value)
 	}
 	for _, required := range []string{"cpu", "memory", "os", "client"} {
 		if !positiveDecimal(form.Get(required)) {
@@ -1128,6 +1176,17 @@ func provisionForm(parameters rawObject) (url.Values, error) {
 		if parseErr != nil || capacity > 1048576 || value != strconv.FormatUint(capacity, 10) {
 			return nil, errInvalidConfig
 		}
+	}
+	// Administrator v1 accepts data disks as nested other_data_disk entries;
+	// data_disk_size is our compiled parameter, not an upstream form field.
+	if capacity := form.Get("data_disk_size"); capacity != "" {
+		form.Del("data_disk_size")
+		if capacity != "0" {
+			form.Set("other_data_disk[0][size]", capacity)
+		}
+	}
+	if err = validateAdvancedProvisionForm(form); err != nil {
+		return nil, err
 	}
 	// These quota fields use supplier sentinel values, not capacities:
 	// -1 disables the feature, 0 is unlimited, positive integers are quotas.
@@ -1255,25 +1314,6 @@ func resizeCall(
 	}
 	route, err := routeBuilder("")
 	return operationCall{method: http.MethodPut, route: route, form: form, requiresTask: true}, err
-}
-
-func changeIPCall(
-	parameters rawObject,
-	routeBuilder func(string) (string, error),
-) (operationCall, error) {
-	form, err := strictScalarForm(parameters, map[string]struct{}{"ip_num": {}, "ip_group": {}})
-	if err != nil || !positiveDecimal(form.Get("ip_num")) {
-		return operationCall{}, errInvalidConfig
-	}
-	if group := form.Get("ip_group"); group != "" && !positiveDecimal(group) {
-		return operationCall{}, errInvalidConfig
-	}
-	form.Set("num", form.Get("ip_num"))
-	form.Del("ip_num")
-	route, err := routeBuilder("/ip")
-	return operationCall{
-		method: http.MethodPut, route: route, form: form, queryAfterSuccess: true,
-	}, err
 }
 
 func reinstallCall(

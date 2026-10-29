@@ -355,24 +355,11 @@ func (p *Provider) buildURL(route string, query url.Values) (*url.URL, error) {
 }
 
 func (p *Provider) validTransportResponse(expected *url.URL, response *http.Response) bool {
-	if response.Request == nil || response.Request.URL == nil || response.TLS == nil ||
-		len(response.TLS.VerifiedChains) == 0 || len(response.TLS.PeerCertificates) == 0 ||
-		response.TLS.PeerCertificates[0] == nil {
+	if response == nil || response.Request == nil || response.Request.URL == nil || response.TLS == nil {
 		return false
 	}
 	actual := response.Request.URL
-	leaf := response.TLS.PeerCertificates[0]
-	if leaf.VerifyHostname(expected.Hostname()) != nil {
-		return false
-	}
-	chainMatchesPeer := false
-	for _, chain := range response.TLS.VerifiedChains {
-		if len(chain) > 0 && chain[0] != nil && bytes.Equal(chain[0].Raw, leaf.Raw) {
-			chainMatchesPeer = true
-			break
-		}
-	}
-	return chainMatchesPeer && actual.Scheme == "https" &&
+	return actual.Scheme == "https" &&
 		strings.EqualFold(actual.Host, expected.Host) &&
 		actual.EscapedPath() == expected.EscapedPath() &&
 		actual.RawQuery == expected.RawQuery &&

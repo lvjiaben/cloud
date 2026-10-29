@@ -20,6 +20,9 @@ import (
 	"lina-plugin-idc-payment/backend/cap/paymentcap"
 )
 
+// paymentCredentialUsePurpose matches the existing core secret-owner grant.
+const paymentCredentialUsePurpose = "payment.channel-use"
+
 type Verify func(context.Context, paymentcap.ProviderCode, paymentcap.Credentials) error
 
 // ProviderDirectory keeps payment-channel discovery on the narrow read-only
@@ -166,15 +169,20 @@ WHERE tenant_id=0 AND channel_no=? AND deleted_at IS NULL`,
 }
 
 func (s *Service) ListAvailable(ctx context.Context, currencyCode string) ([]AvailableChannel, error) {
-	availableProviders, err := s.availableProviderCodes(ctx)
-	if err != nil {
-		return nil, err
-	}
 	currencyJSON, err := json.Marshal([]string{currencyCode})
 	if err != nil {
 		return nil, err
 	}
 	rows, err := s.database.GetAll(ctx, `SELECT channel_no,provider_code,display_name,supported_modes,supported_currencies FROM plugin_idc_payment_channel WHERE tenant_id=0 AND status_code='enabled' AND deleted_at IS NULL AND (?='' OR supported_currencies @> CAST(? AS jsonb)) ORDER BY display_name,channel_no LIMIT 100`, currencyCode, string(currencyJSON))
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return []AvailableChannel{}, nil
+	}
+	// Only discover providers when this currency actually has local channels.
+	// Existing channel results retain the same current-provider gating.
+	availableProviders, err := s.availableProviderCodes(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +345,7 @@ WHERE tenant_id=0 AND channel_no=? AND version=? AND deleted_at IS NULL`, channe
 	if err != nil {
 		return nil, err
 	}
-	purpose, err := secretcap.NewPurpose("payment.channel-verify")
+	purpose, err := secretcap.NewPurpose(paymentCredentialUsePurpose)
 	if err != nil {
 		return nil, err
 	}
@@ -467,7 +475,7 @@ func (s *Service) withCredentials(ctx context.Context, channelNo string, allowDi
 	if err != nil {
 		return err
 	}
-	purpose, err := secretcap.NewPurpose("payment.channel-use")
+	purpose, err := secretcap.NewPurpose(paymentCredentialUsePurpose)
 	if err != nil {
 		return err
 	}

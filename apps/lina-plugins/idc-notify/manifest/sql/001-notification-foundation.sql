@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_notify_channel (
     disabled_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CHECK ("channel_kind" IN ('in_app','email','sms','wechat_official','wechat_work','signed_webhook','dingtalk','feishu')),
+    CHECK ("channel_kind" IN ('in_app','email','sms','wechat_official','signed_webhook','dingtalk','feishu')),
     CHECK ("status_code" IN ('unconfigured','configuring','enabled','disabled','configuration_failed')),
     CHECK ("balance_state" IN ('unknown','sufficient','insufficient')),
     CHECK (jsonb_typeof(non_secret_configuration) = 'object'),
@@ -459,7 +459,6 @@ VALUES
     (0, 'email', 'email', 'Email', 'unconfigured', 'sufficient', '{}'::jsonb),
     (0, 'sms', 'sms', 'SMS', 'unconfigured', 'unknown', '{}'::jsonb),
     (0, 'wechat_official', 'wechat_official', 'WeChat Official Account', 'unconfigured', 'sufficient', '{}'::jsonb),
-    (0, 'wechat_work', 'wechat_work', 'WeCom', 'unconfigured', 'sufficient', '{}'::jsonb),
     (0, 'signed_webhook', 'signed_webhook', 'Signed Webhook', 'unconfigured', 'sufficient', '{}'::jsonb),
     (0, 'dingtalk', 'dingtalk', 'DingTalk', 'unconfigured', 'sufficient', '{}'::jsonb),
     (0, 'feishu', 'feishu', 'Feishu', 'unconfigured', 'sufficient', '{}'::jsonb)
@@ -468,7 +467,7 @@ ON CONFLICT ("tenant_id", "channel_code") DO NOTHING;
 UPDATE plugin_idc_notify_channel
 SET "balance_state" = 'sufficient'
 WHERE "tenant_id" = 0
-  AND "channel_code" IN ('in_app','email','wechat_official','wechat_work','signed_webhook','dingtalk','feishu')
+  AND "channel_code" IN ('in_app','email','wechat_official','signed_webhook','dingtalk','feishu')
   AND "balance_state" = 'unknown';
 
 INSERT INTO plugin_idc_notify_event_catalog

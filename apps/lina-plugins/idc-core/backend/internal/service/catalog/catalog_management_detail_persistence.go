@@ -16,6 +16,7 @@ import (
 // embeddings before matching column names; duplicate Status/CreatedAt names
 // would otherwise map a product value into its version.
 type productManagementDetailHeader struct {
+	CurrentVersionNo                                                        string
 	DirectoryNo                                                             string
 	ProductNo, CategoryNo, CategoryNameZhCN, CategoryNameEnUS               string
 	ProductStatus, PublicSlug, NameZhCN, NameEnUS, SummaryZhCN, SummaryEnUS string
@@ -26,14 +27,12 @@ type productManagementDetailHeader struct {
 	VersionNumber                                                           int
 	VersionStatus                                                           string
 	Source, SourceVersion, ChangeSummary                                    string
-	RequiresContract                                                        bool
-	ContractPolicyCode, ContractTemplateNo                                  string
-	ContractPolicyVersion                                                   int64
-	PublishedAt, RetiredAt                                                  *time.Time
-	VersionCreatedAt                                                        time.Time
-	InventoryTrackingEnabled                                                bool
-	InventorySellableQuantity                                               int64
-	InventoryVersion                                                        int64
+
+	PublishedAt, RetiredAt    *time.Time
+	VersionCreatedAt          time.Time
+	InventoryTrackingEnabled  bool
+	InventorySellableQuantity int64
+	InventoryVersion          int64
 }
 
 const (
@@ -52,8 +51,8 @@ func loadProductManagementDetail(ctx context.Context, productNo string) (*Produc
 		return nil, nil
 	}
 	detail := &ProductManagementDetail{
-		Product:      ProductManagementDetailProduct{DirectoryNo: header.DirectoryNo, ProductNo: header.ProductNo, CategoryNo: header.CategoryNo, CategoryNameZhCN: header.CategoryNameZhCN, CategoryNameEnUS: header.CategoryNameEnUS, Status: header.ProductStatus, PublicSlug: header.PublicSlug, NameZhCN: header.NameZhCN, NameEnUS: header.NameEnUS, SummaryZhCN: header.SummaryZhCN, SummaryEnUS: header.SummaryEnUS, SortOrder: header.SortOrder, DescriptionVersion: header.DescriptionVersion, CreatedAt: header.ProductCreatedAt, UpdatedAt: header.ProductUpdatedAt},
-		Version:      ProductManagementDetailVersion{VersionNo: header.VersionNo, VersionNumber: header.VersionNumber, Status: header.VersionStatus, Source: header.Source, SourceVersion: header.SourceVersion, ChangeSummary: header.ChangeSummary, RequiresContract: header.RequiresContract, ContractPolicyCode: header.ContractPolicyCode, ContractTemplateNo: header.ContractTemplateNo, ContractPolicyVersion: header.ContractPolicyVersion, PublishedAt: header.PublishedAt, RetiredAt: header.RetiredAt, CreatedAt: header.VersionCreatedAt},
+		Product:      ProductManagementDetailProduct{CurrentVersionNo: header.CurrentVersionNo, DirectoryNo: header.DirectoryNo, ProductNo: header.ProductNo, CategoryNo: header.CategoryNo, CategoryNameZhCN: header.CategoryNameZhCN, CategoryNameEnUS: header.CategoryNameEnUS, Status: header.ProductStatus, PublicSlug: header.PublicSlug, NameZhCN: header.NameZhCN, NameEnUS: header.NameEnUS, SummaryZhCN: header.SummaryZhCN, SummaryEnUS: header.SummaryEnUS, SortOrder: header.SortOrder, DescriptionVersion: header.DescriptionVersion, CreatedAt: header.ProductCreatedAt, UpdatedAt: header.ProductUpdatedAt},
+		Version:      ProductManagementDetailVersion{VersionNo: header.VersionNo, VersionNumber: header.VersionNumber, Status: header.VersionStatus, Source: header.Source, SourceVersion: header.SourceVersion, ChangeSummary: header.ChangeSummary, PublishedAt: header.PublishedAt, RetiredAt: header.RetiredAt, CreatedAt: header.VersionCreatedAt},
 		BillingRules: make([]ProductManagementDetailBillingRule, 0),
 		Prices:       make([]ProductManagementDetailPrice, 0),
 		TaxPolicies:  make([]ProductManagementDetailTaxPolicy, 0),
@@ -98,14 +97,14 @@ func loadBoundedProductDetailRows[T any](
 }
 
 const productManagementDetailHeaderSQL = `
-SELECT COALESCE(m.directory_no,'') AS directory_no, p.product_no, p.category_no, c.name_zh_cn AS category_name_zh_cn,
+SELECT p.current_version_no AS current_version_no, COALESCE(m.directory_no,'') AS directory_no, p.product_no, p.category_no, c.name_zh_cn AS category_name_zh_cn,
        c.name_en_us AS category_name_en_us, p.status_code AS product_status,
        p.public_slug, p.name_zh_cn, p.name_en_us, p.summary_zh_cn, p.summary_en_us,
        p.sort_order, p.version AS description_version, p.created_at AS product_created_at, p.updated_at AS product_updated_at,
        v.version_no, v.version_number, v.status_code AS version_status,
 	       v.source_code AS source, v.source_version, v.change_summary,
-	       v.requires_contract, v.contract_policy_code, v.contract_template_no,
-	       v.contract_policy_version, v.published_at, v.retired_at,
+
+	       v.published_at, v.retired_at,
 	       v.created_at AS version_created_at,
 	       inventory.tracking_enabled AS inventory_tracking_enabled,
 	       inventory.sellable_quantity AS inventory_sellable_quantity,
@@ -116,8 +115,8 @@ JOIN plugin_idc_core_catalog_category c
   ON c.tenant_id = p.tenant_id AND c.category_no = p.category_no AND c.deleted_at IS NULL
 JOIN LATERAL (
 	    SELECT version_no, version_number, status_code, source_code, source_version,
-	           change_summary, requires_contract, contract_policy_code,
-	           contract_template_no, contract_policy_version, published_at, retired_at, created_at
+	           change_summary,
+	           published_at, retired_at, created_at
     FROM plugin_idc_core_catalog_product_version
     WHERE tenant_id = p.tenant_id AND product_no = p.product_no
     ORDER BY version_number DESC, id DESC LIMIT 1
@@ -139,6 +138,7 @@ const productManagementDetailBillingSQL = `SELECT billing_rule_no, rule_code,
 const productManagementDetailPricesSQL = `SELECT price.price_no, price.billing_rule_no,
  price.currency_code, price.amount_minor, price.setup_fee_minor, price.renewal_amount_minor, price.minimum_quantity,
  price.maximum_quantity, price.status_code AS status, price.configuration_price_dimension_no,
+ dimension.pricing_mode_code AS configuration_pricing_mode,
  dimension.field_label_zh_cn AS configuration_field_label_zh_cn,
  dimension.field_label_en_us AS configuration_field_label_en_us,
  dimension.candidate_label_zh_cn AS configuration_candidate_label_zh_cn,

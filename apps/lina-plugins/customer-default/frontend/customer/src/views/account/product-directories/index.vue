@@ -1,105 +1,120 @@
 <script setup lang="ts">
-import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { VxeGridProps } from "#/adapter/vxe-table";
 import type {
   CustomerProductDirectory,
   DirectoryService,
-} from '#/api/idc/product-directories';
+} from "#/api/idc/product-directories";
 
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import { Page } from '@vben/common-ui';
-import { preferences } from '@vben/preferences';
+import { Page } from "@vben/common-ui";
+import { preferences } from "@vben/preferences";
 
-import { Alert, Button, Pagination, Space, Tag } from 'ant-design-vue';
+import { Alert, Button, Pagination, Space, Tag } from "ant-design-vue";
 
-import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import {
   listCustomerProductDirectories,
   listDirectoryServices,
-} from '#/api/idc/product-directories';
-import { $t } from '#/locales';
-import { refreshAccessibleState } from '#/router/access-refresh';
+} from "#/api/idc/product-directories";
+import { $t } from "#/locales";
+import { managementPreparationLabelKey } from "#/views/account/commerce/customer-fulfillment-state";
+import { serviceManagementPath } from "./service-management";
+import { refreshAccessibleState } from "#/router/access-refresh";
 
 const router = useRouter();
 const route = useRoute();
 const directories = ref<CustomerProductDirectory[]>([]);
 const selected = computed(() =>
-  String(route.params.directoryNo || route.meta.productDirectoryNo || 'all'),
+  String(route.params.directoryNo || route.meta.productDirectoryNo || "all"),
 );
 const directoryPage = ref(1);
 const directoryTotal = ref(0);
 const failed = ref(false);
-const key = 'productDirectories.';
+const key = "productDirectories.";
+const knownServiceStatuses = new Set([
+  "pending_activation",
+  "active",
+  "suspended",
+  "expired",
+  "terminated",
+  "cancelled",
+]);
+function serviceStatusKey(status: string) {
+  return knownServiceStatuses.has(status)
+    ? `${key}states.${status}`
+    : "commerce.status.unavailable";
+}
 let directoryRevision = 0;
 function name(row: CustomerProductDirectory) {
-  return preferences.app.locale === 'zh-CN'
+  return preferences.app.locale === "zh-CN"
     ? row.nameZhCn || row.nameEnUs
     : row.nameEnUs || row.nameZhCn;
 }
 function productName(row: DirectoryService) {
-  return preferences.app.locale === 'zh-CN'
+  return preferences.app.locale === "zh-CN"
     ? row.productNameZhCn || row.productNameEnUs
     : row.productNameEnUs || row.productNameZhCn;
 }
-function date(value: null | number, empty = 'noExpiry') {
+function date(value: null | number, empty = "noExpiry") {
   return value && value > 0
     ? new Date(value).toLocaleString(preferences.app.locale)
     : $t(key + empty);
 }
-function columns(): VxeGridProps<DirectoryService>['columns'] {
+function columns(): VxeGridProps<DirectoryService>["columns"] {
   return [
     {
-      field: 'product',
+      field: "product",
       title: $t(`${key}product`),
       minWidth: 200,
-      slots: { default: 'product' },
+      slots: { default: "product" },
     },
     {
-      field: 'statusCode',
+      field: "statusCode",
       title: $t(`${key}status`),
       width: 140,
-      slots: { default: 'status' },
+      slots: { default: "status" },
     },
     {
-      field: 'startedAt',
+      field: "startedAt",
       title: $t(`${key}startedAt`),
       minWidth: 170,
-      formatter: ({ cellValue }) => date(cellValue, 'notStarted'),
+      formatter: ({ cellValue }) => date(cellValue, "notStarted"),
     },
     {
-      field: 'expiresAt',
+      field: "expiresAt",
       title: $t(`${key}expiresAt`),
       minWidth: 170,
       formatter: ({ cellValue }) => date(cellValue),
     },
     {
-      field: 'action',
+      field: "action",
       title: $t(`${key}actions`),
-      width: 130,
-      fixed: 'right',
-      slots: { default: 'action' },
+      width: 200,
+      fixed: "right",
+      slots: { default: "action" },
     },
   ];
 }
 const [Grid, gridApi] = useVbenVxeGrid({
   gridOptions: {
     columns: [],
-    height: '100%',
-    rowConfig: { keyField: 'entitlementNo' },
+    height: "100%",
+    rowConfig: { keyField: "entitlementNo" },
     pagerConfig: {
       enabled: true,
       pageSize: 20,
       pageSizes: [20, 50, 100],
       layouts: [
-        'Total',
-        'Sizes',
-        'PrevJump',
-        'PrevPage',
-        'Number',
-        'NextPage',
-        'NextJump',
-        'FullJump',
+        "Total",
+        "Sizes",
+        "PrevJump",
+        "PrevPage",
+        "Number",
+        "NextPage",
+        "NextJump",
+        "FullJump",
       ],
     },
     proxyConfig: {
@@ -118,13 +133,13 @@ const [Grid, gridApi] = useVbenVxeGrid({
       },
     },
     toolbarConfig: { refresh: true, zoom: true },
-    id: 'customer-directory-services',
+    id: "customer-directory-services",
   },
 });
 async function refreshDirectories(page = directoryPage.value) {
   const revision = ++directoryRevision;
   try {
-    const result = await listCustomerProductDirectories(page, 100);
+    const result = await listCustomerProductDirectories(page, 100, "product");
     if (revision !== directoryRevision) return false;
     directories.value = result.items;
     directoryTotal.value = result.total;
@@ -138,8 +153,8 @@ async function refreshDirectories(page = directoryPage.value) {
 }
 async function selectDirectory(directoryNo: string) {
   await router.push(
-    directoryNo === 'all'
-      ? '/account/product-directories'
+    directoryNo === "all"
+      ? "/account/product-directories"
       : `/account/product-directories/${encodeURIComponent(directoryNo)}`,
   );
 }
@@ -181,7 +196,7 @@ onMounted(async () => {
   <Page auto-content-height>
     <div
       data-testid="customer-product-directories"
-      class="flex h-full flex-col gap-3"
+      class="customer-directory-services flex h-full flex-col gap-3"
     >
       <Alert v-if="failed" type="error" :message="$t(`${key}loadFailed`)">
         <template #description>
@@ -218,12 +233,32 @@ onMounted(async () => {
       <Grid class="min-h-0 flex-1">
         <template #product="{ row }">{{ productName(row) }}</template>
         <template #status="{ row }">
-          <Tag>{{ $t(`${key}states.${row.statusCode}`) }}</Tag>
+          <Tag
+            v-if="
+              row.requiresManualProcessing === true &&
+              row.statusCode === 'pending_activation'
+            "
+            color="warning"
+            >{{ $t("commerce.fulfillment.status.manual_processing") }}</Tag
+          >
+          <Tag v-else>{{ $t(serviceStatusKey(row.statusCode)) }}</Tag>
+          <small
+            v-if="managementPreparationLabelKey(row.managementPreparation)"
+            class="block mt-1"
+            data-testid="directory-management-preparation"
+            >{{
+              $t(managementPreparationLabelKey(row.managementPreparation))
+            }}</small
+          >
         </template>
         <template #action="{ row }">
-          <Button
+          <ghost-button
+            v-if="serviceManagementPath(row)"
+            :data-testid="`manage-service-${row.entitlementNo}`"
+            @click="router.push(serviceManagementPath(row))"
+          >{{ $t("nativeServers.manage") }}</ghost-button>
+          <ghost-button
             v-if="row.orderNo"
-            type="link"
             @click="
               router.push({
                 name: 'CustomerOrderDetail',
@@ -232,9 +267,28 @@ onMounted(async () => {
             "
           >
             {{ $t(`${key}viewOrder`) }}
-          </Button>
+          </ghost-button>
         </template>
       </Grid>
     </div>
   </Page>
 </template>
+
+<style scoped>
+@media (max-width: 600px) {
+  .customer-directory-services :deep(.vxe-pager) {
+    height: auto;
+    min-height: 36px;
+  }
+  .customer-directory-services :deep(.vxe-pager--wrapper) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .customer-directory-services :deep(.vxe-pager--total) {
+    white-space: nowrap;
+  }
+}
+</style>

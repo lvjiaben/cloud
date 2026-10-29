@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 
 	"lina-core/pkg/bizerr"
 	v1 "lina-plugin-idc-core/backend/api/admin/v1"
@@ -16,5 +17,16 @@ func (c *ControllerV1) ProductFulfillmentTaskDetail(ctx context.Context, req *v1
 	if err != nil {
 		return nil, err
 	}
-	return &v1.ProductFulfillmentTaskDetailRes{Task: toAPIProductFulfillmentDetail(detail)}, nil
+	response := &v1.ProductFulfillmentTaskDetailRes{Task: toAPIProductFulfillmentDetail(detail)}
+	if req.IncludeRecoveryConfiguration {
+		var selection *provisionresourcecap.RecoveryConfiguration
+		if req.RecoveryInterfaceNo != "" {
+			selection = &provisionresourcecap.RecoveryConfiguration{InterfaceInstanceNo: req.RecoveryInterfaceNo, Region: req.RecoveryRegion, Line: req.RecoveryLine, OperatingSystem: req.RecoveryOperatingSystem}
+		}
+		response.RecoveryConfiguration, err = c.productFulfillment.InspectRecoveryConfiguration(ctx, req.IntentNo, selection)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return response, nil
 }

@@ -9,7 +9,7 @@ export interface ProviderSecretFieldStatus {
   key: string;
   ready: boolean;
   required: boolean;
-  updatedAt?: string;
+  updatedAt?: number;
 }
 
 export interface ProviderChannelUsage {

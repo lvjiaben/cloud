@@ -251,6 +251,15 @@ FROM plugin_idc_core_product_automation_interface_instance WHERE interface_insta
 		t.Fatalf("historical exact read depended on current candidate state: binding=%+v err=%v", historical, err)
 	}
 	extensions.listErr = nil
+	extensions.exactErr = errors.New("historical release temporarily unavailable")
+	unverified, err := service.GetBinding(ctx, "ver_11111111111111111111111111111111")
+	if err != nil || unverified == nil || unverified.EvidenceVerified || unverified.InterfaceDisplayName != historical.InterfaceDisplayName || unverified.InterfaceNewBusinessState != InterfaceStateAccepting {
+		t.Fatalf("safe historical summary must remain readable: binding=%+v err=%v", unverified, err)
+	}
+	if _, err = service.GetFrozenFulfillmentContract(ctx, "ver_11111111111111111111111111111111"); err == nil {
+		t.Fatal("unverified summary must not authorize fulfillment")
+	}
+	extensions.exactErr = nil
 
 	second, err := service.CreateInterface(ctx, CreateInterfaceInput{DisplayName: "魔方云 B 接口", SelectionToken: "opaque-b"})
 	if err != nil {
@@ -524,14 +533,22 @@ WHERE idempotency_scope='product-automation.binding.bind'
 	const resourceOwnedInterfaceNo = "pfi_88888888888888888888888888888888"
 	if _, err = scoped.Exec(ctx, `INSERT INTO plugin_idc_core_product_automation_interface_instance
 (tenant_id,interface_instance_no,display_name,plugin_id,extension_point_code,plugin_release_version,contract_version,authorized_methods,release_digest,declaration_digest,new_business_state,interface_origin_code,resource_owner_id,resource_channel_ref,version,created_by,changed_by)
-VALUES (0,?,'服务器上游接口','server-provider','product-fulfillment','v0.1.0','v1',ARRAY[]::TEXT[],?,?,'accepting','resource','idc-resource','CHN_channel-a',1,101,101)`,
-		resourceOwnedInterfaceNo, strings.Repeat("e", 64), strings.Repeat("f", 64)); err != nil {
+VALUES (0,?,'服务器上游接口',?,'product-fulfillment','older-release','v1',ARRAY[]::TEXT[],?,?,'accepting','resource','idc-resource','CHN_channel-a',1,101,101)`,
+		resourceOwnedInterfaceNo, evidence.PluginID, strings.Repeat("e", 64), strings.Repeat("f", 64)); err != nil {
 		t.Fatal(err)
 	}
 
 	page, err := service.ListInterfaces(ctx, PageInput{Page: 1, PageSize: 1})
 	if err != nil || len(page.Items) != 1 || page.Total != 2 {
 		t.Fatalf("bounded managed interface page must exclude resource-owned server interfaces: page=%+v err=%v", page, err)
+	}
+	allBindings, err := service.ListInterfaces(ctx, PageInput{Page: 1, PageSize: 20, ForProductBinding: true})
+	if err != nil || allBindings.Total != 3 || len(allBindings.Items) != 3 {
+		t.Fatalf("direct binding selection must include resource projections without choosing a provider: page=%+v err=%v", allBindings, err)
+	}
+	bindingFiltered, err := service.ListInterfaces(ctx, PageInput{Page: 1, PageSize: 1, ForProductBinding: true, NamePrefix: "服务器", NewBusinessState: InterfaceStateAccepting})
+	if err != nil || bindingFiltered.Total != 1 || len(bindingFiltered.Items) != 1 || bindingFiltered.Items[0].InterfaceInstanceNo != resourceOwnedInterfaceNo {
+		t.Fatalf("direct binding search must preserve bounded SQL filters: page=%+v err=%v", bindingFiltered, err)
 	}
 	filtered, err := service.ListInterfaces(ctx, PageInput{Page: 1, PageSize: 20, NamePrefix: "魔方云 A", NewBusinessState: InterfaceStateAccepting})
 	if err != nil || filtered.Total != 1 || len(filtered.Items) != 1 || filtered.Items[0].DisplayName != "魔方云 A 新名称" || filtered.Items[0].CanDelete {
@@ -555,14 +572,30 @@ VALUES (0,?,'其他连接器接口','other-connector','product-fulfillment','v0.
 	selectedProvider, err := service.ListInterfaces(ctx, PageInput{
 		Page: 1, PageSize: 20, ProviderSelectionToken: "opaque-provider-selection",
 	})
-	if err != nil || selectedProvider.Total != 2 || len(selectedProvider.Items) != 2 {
-		t.Fatalf("connector selection must filter exact interface evidence in one database page: page=%+v err=%v", selectedProvider, err)
+	if err != nil || selectedProvider.Total != 3 || len(selectedProvider.Items) != 3 {
+		t.Fatalf("connector selection must include compatible resource projections across releases in one database page: page=%+v err=%v", selectedProvider, err)
 	}
 	for _, item := range selectedProvider.Items {
 		if item.InterfaceInstanceNo == otherProviderInterfaceNo {
 			t.Fatalf("connector selection leaked another provider interface: %+v", item)
 		}
 	}
+
+	resourceFound := false
+	for _, item := range selectedProvider.Items {
+		resourceFound = resourceFound || item.InterfaceInstanceNo == resourceOwnedInterfaceNo
+	}
+	if !resourceFound {
+		t.Fatal("product binding candidates omitted resource-owned interface from an older connector release")
+	}
+	if _, err = scoped.Exec(ctx, `UPDATE plugin_idc_core_product_automation_interface_instance SET new_business_state='stopped',version=version+1 WHERE interface_instance_no=?`, resourceOwnedInterfaceNo); err != nil {
+		t.Fatal(err)
+	}
+	accepting, err := service.ListInterfaces(ctx, PageInput{Page: 1, PageSize: 20, ProviderSelectionToken: "opaque-provider-selection", NewBusinessState: InterfaceStateAccepting})
+	if err != nil || accepting.Total != 2 {
+		t.Fatalf("stopped resource interface must not be offered for new binding: page=%+v err=%v", accepting, err)
+	}
+
 	projection := fmt.Sprintf("%+v", page.Items[0])
 	for _, forbidden := range []string{evidence.PluginID, evidence.ReleaseDigest, evidence.DeclarationDigest} {
 		if strings.Contains(projection, forbidden) {

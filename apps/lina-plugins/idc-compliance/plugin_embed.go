@@ -6,5 +6,5 @@ import "embed"
 
 // EmbeddedFiles contains the plugin manifest, frontend scaffold, and manifest resources.
 //
-//go:embed plugin.yaml frontend/pages frontend/vendor manifest
+//go:embed plugin.yaml frontend/pages manifest
 var EmbeddedFiles embed.FS

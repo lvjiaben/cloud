@@ -1,0 +1,48 @@
+{
+  "plugins": {
+    "idc_resource": {
+      "purchasedServices": {
+        "title": "Servers",
+        "product": "Product / Hostname",
+        "status": "Status",
+        "addresses": "IP address",
+        "expires": "Expires on",
+        "price": "Price",
+        "system": "Operating system",
+        "note": "Note",
+        "actions": "Actions",
+        "search": "Search services",
+        "refresh": "Refresh",
+        "empty": "No data",
+        "unknown": "Not confirmed",
+        "unassigned": "Not assigned",
+        "active": "Activated",
+        "suspended": "Suspended",
+        "pending_activation": "Pending activation",
+        "expired": "Expired",
+        "terminated": "Terminated",
+        "cancelled": "Cancelled",
+        "manual": "Awaiting staff",
+        "manage": "Manage",
+        "progress": "View activation",
+        "edit": "Edit note",
+        "noteTitle": "Edit service note",
+        "cancel": "Cancel",
+        "save": "Save",
+        "failure": "Service content is unavailable. Please retry.",
+        "factsFailure": "Some instance details are unavailable. Please refresh.",
+        "future": "[Expires in {days} days]",
+        "today": "[Expires today]",
+        "past": "[Expired {days} days ago]",
+        "currentPrice": "Current price",
+        "bill": "See invoice",
+        "hour": "hours",
+        "day": "days",
+        "week": "weeks",
+        "month": "months",
+        "year": "years",
+        "searchPlaceholder": "Search product, service ID or note"
+      }
+    }
+  }
+}

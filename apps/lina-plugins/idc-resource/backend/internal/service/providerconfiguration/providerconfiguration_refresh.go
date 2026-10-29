@@ -94,7 +94,11 @@ func (s *service) refreshChannelProvider(ctx context.Context, actor int, before 
 				if err = insertConfigurationRevision(txCtx, tx, revision, before.InterfaceInstanceNo, before.ChannelNo, before.Endpoint, settings, actor); err != nil {
 					return err
 				}
-				return interfaceprojection.Enqueue(txCtx, tx, projection, (expectedVersion+1)*2)
+				sequence, sequenceErr := interfaceprojection.NextSequence(txCtx, tx, projection.InterfaceInstanceNo)
+				if sequenceErr != nil {
+					return sequenceErr
+				}
+				return interfaceprojection.Enqueue(txCtx, tx, projection, sequence)
 			})
 		})
 	})

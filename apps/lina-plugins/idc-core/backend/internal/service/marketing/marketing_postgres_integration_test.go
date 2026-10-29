@@ -921,48 +921,20 @@ func verifyMarketingManagementActions(t *testing.T, ctx context.Context, databas
 		ReasonCode: "campaign_fulfillment",
 	}
 	postRequest, err := service.RequestValueGrantPosting(ctx, postInput)
-	if err != nil || postRequest == nil || postRequest.Status != string(billing.AdjustmentStatusPendingReview) ||
-		postRequest.AmountMinor != 1000 || postRequest.LedgerTransactionNo != "" {
+	if err != nil || postRequest == nil || postRequest.Status != string(billing.AdjustmentStatusPosted) ||
+		postRequest.AmountMinor != 1000 || postRequest.LedgerTransactionNo == "" {
 		t.Fatalf("request managed value-grant posting: result=%+v err=%v", postRequest, err)
 	}
 	postReplay, err := service.RequestValueGrantPosting(ctx, postInput)
 	if err != nil || postReplay == nil || !postReplay.Reused || postReplay.AdjustmentNo != postRequest.AdjustmentNo {
 		t.Fatalf("replay managed value-grant posting request: result=%+v err=%v", postReplay, err)
 	}
-	postQueue, err := service.ListValueGrantAdjustments(ctx, ValueGrantFinancialAdjustmentSearchInput{
-		Status: string(billing.AdjustmentStatusPendingReview), Limit: 25,
-	})
-	if err != nil || len(postQueue.Adjustments) != 1 ||
-		postQueue.Adjustments[0].AdjustmentNo != postRequest.AdjustmentNo ||
-		postQueue.Adjustments[0].RequestedBy != 7 {
-		t.Fatalf("list managed value-grant posting review queue: page=%+v err=%v", postQueue, err)
-	}
-	if _, err = service.ReviewValueGrantAdjustment(ctx, ValueGrantFinancialReviewInput{
-		AdjustmentNo: postRequest.AdjustmentNo, Decision: "approve", ReasonCode: "manual_correction",
-	}); !bizerr.Is(err, CodeManagementActionConflict) {
-		t.Fatalf("requester reviewed own value-grant posting: %v", err)
-	}
-	authorizer.userID = 8
-	postReview := ValueGrantFinancialReviewInput{
-		AdjustmentNo: postRequest.AdjustmentNo, Decision: "approve", ReasonCode: "manual_correction",
-	}
-	postedGrant, err := service.ReviewValueGrantAdjustment(ctx, postReview)
-	if err != nil || postedGrant == nil || postedGrant.Status != string(billing.AdjustmentStatusPosted) ||
-		postedGrant.LedgerTransactionNo == "" {
-		t.Fatalf("approve managed value-grant posting: result=%+v err=%v", postedGrant, err)
-	}
-	postedReplay, err := service.ReviewValueGrantAdjustment(ctx, postReview)
-	if err != nil || postedReplay == nil || !postedReplay.Reused ||
-		postedReplay.LedgerTransactionNo != postedGrant.LedgerTransactionNo {
-		t.Fatalf("replay managed value-grant posting review: result=%+v err=%v", postedReplay, err)
-	}
-	authorizer.userID = 7
 	reversalInput := ValueGrantFinancialRequestInput{
 		RequestNo: "managed-grant-reverse-0001", GrantNo: grant.GrantNo,
 		AmountMinor: 250, ReasonCode: "refund_correction",
 	}
 	reversalRequest, err := service.RequestValueGrantReversal(ctx, reversalInput)
-	if err != nil || reversalRequest == nil || reversalRequest.Status != string(billing.AdjustmentStatusPendingReview) ||
+	if err != nil || reversalRequest == nil || reversalRequest.Status != string(billing.AdjustmentStatusPosted) ||
 		reversalRequest.AmountMinor != 250 {
 		t.Fatalf("request managed value-grant reversal: result=%+v err=%v", reversalRequest, err)
 	}
@@ -970,20 +942,6 @@ func verifyMarketingManagementActions(t *testing.T, ctx context.Context, databas
 	if err != nil || reversalReplay == nil || !reversalReplay.Reused ||
 		reversalReplay.AdjustmentNo != reversalRequest.AdjustmentNo {
 		t.Fatalf("replay managed value-grant reversal request: result=%+v err=%v", reversalReplay, err)
-	}
-	authorizer.userID = 8
-	reversalReview := ValueGrantFinancialReviewInput{
-		AdjustmentNo: reversalRequest.AdjustmentNo, Decision: "approve", ReasonCode: "manual_correction",
-	}
-	reversedGrant, err := service.ReviewValueGrantAdjustment(ctx, reversalReview)
-	if err != nil || reversedGrant == nil || reversedGrant.Status != string(billing.AdjustmentStatusPosted) ||
-		reversedGrant.LedgerTransactionNo == "" {
-		t.Fatalf("approve managed value-grant reversal: result=%+v err=%v", reversedGrant, err)
-	}
-	reversedReplay, err := service.ReviewValueGrantAdjustment(ctx, reversalReview)
-	if err != nil || reversedReplay == nil || !reversedReplay.Reused ||
-		reversedReplay.LedgerTransactionNo != reversedGrant.LedgerTransactionNo {
-		t.Fatalf("replay managed value-grant reversal review: result=%+v err=%v", reversedReplay, err)
 	}
 	storedGrant, err := loadValueGrant(ctx, database, grant.GrantNo, "customer-b", false)
 	if err != nil || storedGrant.AvailableAmountMinor != 750 || storedGrant.ReversedAmountMinor != 250 {
@@ -1008,18 +966,14 @@ WHERE transaction.source_reference IN (?, ?)`, postRequest.AdjustmentNo, reversa
 		financialState.DebitTotal != 1250 || financialState.CreditTotal != 1250 {
 		t.Fatalf("unexpected managed value-grant ledger state: %+v err=%v", financialState, err)
 	}
-	if len(auditWriter.transitions) != 16 {
-		t.Fatalf("every successful action and replay must reach audit, got %d transitions", len(auditWriter.transitions))
+	if len(auditWriter.transitions) != 8 {
+		t.Fatalf("each committed mutation must retain its audit, got %d transitions", len(auditWriter.transitions))
 	}
 	wantPermissions := []string{
 		permissionMarketingAssetIssue, permissionMarketingAssetIssue,
 		permissionMarketingAssetRevoke, permissionMarketingAssetRevoke,
-		permissionMarketingPointsCredit, permissionMarketingPointsCredit,
-		permissionMarketingPointsReverse, permissionMarketingPointsReverse,
-		permissionMarketingGrantPost, permissionMarketingGrantPost,
-		permissionMarketingGrantReview, permissionMarketingGrantReview,
-		permissionMarketingGrantReverse, permissionMarketingGrantReverse,
-		permissionMarketingGrantReview, permissionMarketingGrantReview,
+		permissionMarketingPointsCredit, permissionMarketingPointsReverse,
+		permissionMarketingGrantPost, permissionMarketingGrantReverse,
 	}
 	for index, transition := range auditWriter.transitions {
 		if transition.RequiredPermission != wantPermissions[index] {
@@ -2171,9 +2125,11 @@ func marketingIntegrationMigrationPaths(t *testing.T) []string {
 		filepath.Join(root, "027-billing-invoice-lifecycle.sql"),
 		filepath.Join(root, "028-billing-invoice-transform.sql"),
 		filepath.Join(root, "029-billing-reviewed-adjustment.sql"),
+		filepath.Join(root, "034-credit-account-foundation.sql"),
 		filepath.Join(root, "049-marketing-financial-adjustment.sql"),
 		filepath.Join(root, "062-marketing-performance-abuse.sql"),
 		filepath.Join(root, "073-general-product-catalog.sql"),
+		filepath.Join(root, "133-direct-admin-financial-actions.sql"),
 	}
 }
 

@@ -71,6 +71,7 @@ CREATE TABLE plugin_idc_core_product_fulfillment_intent (
  product_name_zh_cn text DEFAULT '分页产品',product_name_en_us text DEFAULT 'Paged product',strategy_code text DEFAULT 'manual',
  granularity_code text DEFAULT 'per_order_item',status_code text DEFAULT 'manual_pending',quantity int DEFAULT 1,unit_sequence int DEFAULT 1,
  version bigint DEFAULT 1,financially_settled_at timestamptz DEFAULT CURRENT_TIMESTAMP,updated_at timestamptz DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE plugin_idc_core_commerce_addon_target (tenant_id int,order_no text,entitlement_no text);
 CREATE TABLE plugin_idc_core_product_fulfillment_task (tenant_id int,intent_no text,takeover_requested bool);
 CREATE TABLE plugin_idc_core_customer_subject (tenant_id int DEFAULT 0,customer_no text,customer_code bigint,display_name text);
 CREATE TABLE plugin_idc_core_customer_contact (id int,tenant_id int,customer_no text,contact_no text,status_code text,phone_country_code text,phone text);
@@ -113,6 +114,19 @@ INSERT INTO plugin_idc_core_product_fulfillment_intent (tenant_id,intent_no,orde
 	large, e := service.List(ctx, ListInput{Page: 1, Limit: 100})
 	if e != nil || large.Total != 25 || len(large.Items) != 25 {
 		t.Fatalf("size100: %+v %v", large, e)
+	}
+	manual, e := service.List(ctx, ListInput{Page: 1, Limit: 100, SafeStatus: "manual_processing"})
+	if e != nil || manual.Total != 25 || len(manual.Items) != 25 {
+		t.Fatalf("manual attention filter: %+v %v", manual, e)
+	}
+	for _, item := range manual.Items {
+		if item.StatusCode != "manual_processing" {
+			t.Fatalf("manual attention misreported as active processing: %+v", item)
+		}
+	}
+	processing, e := service.List(ctx, ListInput{Page: 1, Limit: 100, SafeStatus: "processing"})
+	if e != nil || processing.Total != 0 || len(processing.Items) != 0 {
+		t.Fatalf("processing filter included stopped/manual work: %+v %v", processing, e)
 	}
 	empty, e := service.List(ctx, ListInput{Page: 2, Limit: 10, CustomerNo: "customer-b"})
 	if e != nil || empty.Total != 0 || len(empty.Items) != 0 {

@@ -21,10 +21,10 @@ func TestMaterializationContactRequestsUseCoreContactsAndFailClosedWithoutOtherR
 			claim: notificationcap.ClaimedEvent{Request: notificationcap.EventRequest{Recipient: notificationcap.Recipient{Kind: notificationcap.RecipientStaffUser, StaffUserID: 7}}}},
 	}
 	_, requests := materializationContactRequests(candidates)
-	if len(requests) != 1 || requests[0].Channel != notificationcap.ChannelInApp {
-		t.Fatalf("customer in-app policy must use the bounded core contact lookup: %#v", requests)
+	if len(requests) != 0 {
+		t.Fatalf("removed customer channels must not request core contacts: %#v", requests)
 	}
-	want := []string{"policy_disabled", "", "staff_resolver_unavailable", "verified_destination_resolver_unavailable", ""}
+	want := []string{"policy_disabled", "channel_removed", "staff_resolver_unavailable", "verified_destination_resolver_unavailable", "channel_removed"}
 	for index := range want {
 		if candidates[index].outcome.reason != want[index] {
 			t.Fatalf("candidate %d reason=%q want=%q", index, candidates[index].outcome.reason, want[index])
@@ -32,31 +32,14 @@ func TestMaterializationContactRequestsUseCoreContactsAndFailClosedWithoutOtherR
 	}
 }
 
-func TestPrepareMaterializationInputsKeepsSignedWebhookMinimalAndRecipientIndependent(t *testing.T) {
-	request := notificationcap.EventRequest{
-		EventCode:          "support.ticket_created",
-		Recipient:          notificationcap.Recipient{Kind: notificationcap.RecipientStaffUser, StaffUserID: 7},
-		BusinessObjectType: notificationcap.BusinessObjectSupportTicket,
-		BusinessObjectNo:   "ticket-1", BusinessObjectVersion: 2,
-		Variables: map[string]string{"ticket_no": "T-1", "title": "Need help"},
-	}
-	candidates := []materializationCandidate{{
-		claim: notificationcap.ClaimedEvent{EventReceipt: notificationcap.EventReceipt{
-			SourcePlugin: "idc-core", EventNo: "event-webhook-1",
-		}, Request: request},
-		event: eventRow{EventCode: request.EventCode, TopicCode: "support", ObjectType: "support_ticket",
-			RequiredVariables: `["ticket_no","title"]`, OptionalVariables: `[]`},
-		channel: "signed_webhook", policy: eventPolicyRow{Enabled: true},
-	}}
-	marketingIndexes, marketingInputs, err := prepareMaterializationInputs(candidates)
-	if err != nil || len(marketingIndexes) != 0 || len(marketingInputs) != 0 {
-		t.Fatalf("prepare signed webhook: indexes=%v inputs=%v err=%v", marketingIndexes, marketingInputs, err)
-	}
-	input := candidates[0].outcome.input
-	if input == nil || input.ChannelCode != "signed_webhook" || input.TemplateNo != "" ||
-		input.Subject != "" || input.Body != "" || len(input.Variables) != 0 ||
-		input.CustomerNo != "" || input.ContactNo != "" || input.OwnerUserID != 0 {
-		t.Fatalf("signed webhook materialization leaked recipient or template data: %#v", input)
+// TestRemovedCustomerChannelsNeverMaterialize guards stale pre-upgrade event policies.
+func TestRemovedCustomerChannelsNeverMaterialize(t *testing.T) {
+	for _, channel := range []string{"in_app", "wechat_official", "signed_webhook", "dingtalk", "feishu", "wechat_work"} {
+		candidates := []materializationCandidate{{channel: channel, policy: eventPolicyRow{Enabled: true}, channelStatus: string(ChannelEnabled)}}
+		_, requests := materializationContactRequests(candidates)
+		if len(requests) != 0 || candidates[0].outcome.reason != "channel_removed" || candidates[0].outcome.input != nil {
+			t.Fatalf("removed channel %s reached delivery preparation: %+v", channel, candidates[0])
+		}
 	}
 }
 
@@ -78,7 +61,7 @@ func TestPrepareMaterializationInputsFreezesResolvedLocaleAndTemplate(t *testing
 		templates: map[string]templateRow{"en-US": {TemplateNo: "ntpl-1", Version: 1,
 			StatusCode: "active", SubjectTemplate: "Ticket {{ticket_no}}", BodyTemplate: "{{title}}"}},
 	}}
-	marketingIndexes, marketingInputs, err := prepareMaterializationInputs(candidates)
+	marketingIndexes, marketingInputs, err := prepareMaterializationInputs(candidates, nil)
 	if err != nil || len(marketingIndexes) != 0 || len(marketingInputs) != 0 {
 		t.Fatalf("prepare inputs: indexes=%v inputs=%v err=%v", marketingIndexes, marketingInputs, err)
 	}

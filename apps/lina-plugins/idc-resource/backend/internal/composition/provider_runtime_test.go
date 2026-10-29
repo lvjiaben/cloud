@@ -20,12 +20,13 @@ import (
 )
 
 type dynamicRegistrarFake struct {
+	current      []*capmodel.BusinessExtensionProviderEvidence
 	registration pluginhost.ConfidentialOutboundContextInput
 	invocation   pluginhost.BusinessExtensionMethodInvokeInput
 }
 
-func (*dynamicRegistrarFake) ListProviders(context.Context, plugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
-	return nil, errors.New("unused")
+func (f *dynamicRegistrarFake) ListProviders(context.Context, plugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: f.current}, nil
 }
 func (*dynamicRegistrarFake) GetProviderExact(context.Context, plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
 	return nil, errors.New("unused")
@@ -276,6 +277,7 @@ func TestProviderRuntimeInvokesFrozenDynamicProviderWithoutSerializingSecrets(t 
 			configuration channelconfig.Configuration,
 			method string,
 			_ []resourcecap.SecretBinding,
+			_ ...func(resourcecap.Evidence),
 		) (pluginhost.ConfidentialOutboundHandler, func(), error) {
 			if configuration.ReleaseVersion != "v0.2.0" || method != resourcecap.DynamicProviderMethodDiscoverCapabilities {
 				t.Fatal("dynamic outbound did not receive exact frozen evidence")
@@ -317,5 +319,62 @@ func TestProviderRuntimeInvokesFrozenDynamicProviderWithoutSerializingSecrets(t 
 		bytes.Contains(registrar.invocation.Payload, []byte("provider.invalid")) ||
 		bytes.Contains(registrar.invocation.Payload, []byte("channel_dynamic_1")) {
 		t.Fatal("dynamic invocation exposed host-only secret, endpoint, or interface evidence")
+	}
+}
+
+// ReadConfigured exposes current channel settings for explicit administrator probes.
+func (r *runtimeChannelReader) ReadConfigured(ctx context.Context, channelRef string) (channelconfig.Configuration, error) {
+	return r.ReadEnabled(ctx, channelRef)
+}
+
+func TestConfiguredProbeUsesInstalledReleaseWithoutChangingBusinessEvidence(t *testing.T) {
+	reader := &runtimeChannelReader{configuration: channelconfig.Configuration{
+		PluginID: "server-connector", ProviderID: "server-api", RuntimeType: "dynamic", ContractVersion: "v1",
+		ReleaseVersion: "v1.0.0", ReleaseDigest: strings.Repeat("a", 64), DeclarationDigest: strings.Repeat("b", 64),
+		Config: resourcecap.ProviderConfig{ChannelRef: "channel_probe_1", Endpoint: "https://supplier.example", Settings: []byte(`{}`)},
+	}}
+	evidence := &capmodel.BusinessExtensionProviderEvidence{
+		PluginID: "server-connector", ContractVersion: "v1", ReleaseVersion: "v2.0.0",
+		ReleaseDigest: strings.Repeat("c", 64), DeclarationDigest: strings.Repeat("d", 64),
+		InterfaceConfiguration: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{
+			{Key: "access_token", Type: capmodel.ConfigurationFieldSecret},
+		}},
+		ProviderMetadata: &capmodel.BusinessExtensionProviderMetadata{Type: resourcecap.DynamicProviderMetadataType, Version: "v1", Values: map[string]any{
+			"providerId": "server-api", "authenticationProfiles": map[string]any{"profiles": map[string]any{"default": map[string]any{
+				"strategy": "per_request_headers", "fields": map[string]any{"access-token": "access_token"},
+			}}},
+		}},
+	}
+	registrar := &dynamicRegistrarFake{current: []*capmodel.BusinessExtensionProviderEvidence{evidence}}
+	runtime := &ProviderRuntime{channels: reader, businessExtensions: registrar,
+		dynamicOutbound: func(context.Context, channelconfig.Configuration, string, []resourcecap.SecretBinding, ...func(resourcecap.Evidence)) (pluginhost.ConfidentialOutboundHandler, func(), error) {
+			t.Fatal("constructing a probe must not contact an upstream")
+			return nil, nil, nil
+		},
+	}
+	provider, cleanup, err := runtime.ConstructConfiguredSession(t.Context(), "channel_probe_1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cleanup()
+	if got := provider.(*dynamicProvider).configuration; got.ReleaseVersion != "v2.0.0" || got.DeclarationDigest != evidence.DeclarationDigest {
+		t.Fatalf("probe did not use current installed evidence: %+v", got)
+	}
+	business, release, err := runtime.ConstructSession(t.Context(), "channel_probe_1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	release()
+	if business.(*dynamicProvider).configuration.ReleaseVersion != "v1.0.0" || reader.configuration.ReleaseVersion != "v1.0.0" {
+		t.Fatal("probe rewrote business execution evidence")
+	}
+	for _, mutate := range []func(){func() { registrar.current = nil }, func() {
+		registrar.current = []*capmodel.BusinessExtensionProviderEvidence{evidence}
+		evidence.ContractVersion = "v2"
+	}} {
+		mutate()
+		if _, _, err := runtime.ConstructConfiguredSession(t.Context(), "channel_probe_1"); err == nil {
+			t.Fatal("unavailable or incompatible connector accepted")
+		}
 	}
 }

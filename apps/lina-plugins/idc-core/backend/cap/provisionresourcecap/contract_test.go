@@ -2,6 +2,8 @@ package provisionresourcecap
 
 import (
 	"encoding/json"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"strings"
 	"testing"
 	"time"
@@ -117,4 +119,27 @@ func validTaskRequest() TaskRequest {
 	}
 	request.RequestDigest, _ = TaskRequestDigest(request)
 	return request
+}
+
+func TestNativePurchaseRequestIsBoundToItsExactFrozenInput(t *testing.T) {
+	request := validTaskRequest()
+	original := request.RequestDigest
+	request.NativePurchaseProtocol = productfulfillmentcap.SaleImportProtocolNativeFinanceV1
+	request.NativePurchase = &channelcommercecap.Purchase{PublicSlug: "41", ConfigurationRevision: "revision", BillingTermToken: "monthly", CurrencyCode: "CNY", PurchaseCycles: 1, Quantity: 1}
+	digest, err := TaskRequestDigest(request)
+	if err != nil || digest == original {
+		t.Fatalf("native input was not fenced: %v", err)
+	}
+	request.RequestDigest = digest
+	if err = ValidateTaskRequest(request); err != nil {
+		t.Fatal(err)
+	}
+	request.NativePurchase.BillingTermToken = "annual"
+	if ValidateTaskRequest(request) == nil {
+		t.Fatal("changed native billing token reused request")
+	}
+	request.NativePurchase.PurchaseCycles = 2
+	if _, err = TaskRequestDigest(request); err == nil {
+		t.Fatal("unsupported native cycles accepted")
+	}
 }

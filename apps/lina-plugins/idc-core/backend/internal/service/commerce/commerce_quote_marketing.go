@@ -29,6 +29,12 @@ func (a *marketingQuoteAdjustmentEvaluator) EvaluateAndReserveQuote(
 	ctx context.Context,
 	input QuoteAdjustmentInput,
 ) (*QuoteAdjustmentResult, error) {
+	if input.PurchasePhase == string(quotePurposeChange) {
+		if len(input.AssetNumbers) != 0 {
+			return nil, gerror.New("purchase and renewal assets do not apply to configuration changes")
+		}
+		return &QuoteAdjustmentResult{Adjustments: []QuoteAdjustment{}}, nil
+	}
 	if (input.PurchasePhase != marketing.PurchasePhaseNewPurchase &&
 		input.PurchasePhase != marketing.PurchasePhaseRenewal) || input.CycleNumber < 1 {
 		return nil, gerror.New("marketing quote adjustment phase is invalid")

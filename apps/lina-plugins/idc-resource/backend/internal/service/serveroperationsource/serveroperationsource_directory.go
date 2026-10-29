@@ -18,9 +18,10 @@ import (
 )
 
 type capabilityMappingRow struct {
-	ServiceNo string `orm:"local_resource_no"`
-	ChannelNo string `orm:"channel_no"`
-	PoolNo    string `orm:"pool_no"`
+	ProviderPluginID string `orm:"provider_plugin_id"`
+	ServiceNo        string `orm:"local_resource_no"`
+	ChannelNo        string `orm:"channel_no"`
+	PoolNo           string `orm:"pool_no"`
 }
 
 type latestCapabilityRow struct {
@@ -85,12 +86,14 @@ func (s *Service) GetAccessories(ctx context.Context,
 		return nil, serveroperationresourcecap.ErrSourceUnavailable
 	}
 	var exact *struct {
-		MappingNo string `orm:"mapping_no"`
+		MappingNo        string `orm:"mapping_no"`
+		ProviderPluginID string `orm:"provider_plugin_id"`
 	}
-	if err := s.database.GetScan(ctx, &exact, `SELECT mapping_no
-FROM plugin_idc_resource_mapping
-WHERE tenant_id=? AND local_resource_no=? AND channel_no=? AND pool_no=?
- AND status_code='active' AND external_resource_ref<>''`, idccap.DefaultTenantID,
+	if err := s.database.GetScan(ctx, &exact, `SELECT mapping.mapping_no,channel.provider_plugin_id
+FROM plugin_idc_resource_mapping mapping
+JOIN plugin_idc_resource_channel channel ON channel.tenant_id=mapping.tenant_id AND channel.channel_no=mapping.channel_no
+WHERE mapping.tenant_id=? AND mapping.local_resource_no=? AND mapping.channel_no=? AND mapping.pool_no=?
+ AND mapping.status_code='active' AND mapping.external_resource_ref<>''`, idccap.DefaultTenantID,
 		route.ServiceNo, route.ChannelNo, route.PoolNo); err != nil {
 		return nil, gerror.Wrap(err, "read accessory resource route")
 	}
@@ -121,7 +124,7 @@ WHERE tenant_id=? AND local_resource_no=? AND channel_no=? AND pool_no=?
 	for _, item := range directory.Items {
 		result.Items = append(result.Items, serveroperationresourcecap.AccessoryItem{
 			ObjectNo: item.ObjectNo, Kind: serveroperationresourcecap.AccessoryKind(item.Kind),
-			Name: item.Name, State: serveroperationresourcecap.AccessoryState(item.State),
+			Name: item.Name, State: serveroperationresourcecap.AccessoryState(providerAccessoryState(exact.ProviderPluginID, item.Kind, item.State)),
 			Projection: append(json.RawMessage(nil), item.Projection...),
 		})
 	}
@@ -290,10 +293,11 @@ func (s *Service) ListCapabilities(ctx context.Context,
 		serviceNos = append(serviceNos, route.ServiceNo)
 	}
 	var mappings []capabilityMappingRow
-	if err := s.database.Model("plugin_idc_resource_mapping").Ctx(ctx).
-		Fields("local_resource_no,channel_no,pool_no").
-		Where("tenant_id", idccap.DefaultTenantID).Where("status_code", "active").
-		WhereIn("local_resource_no", serviceNos).Scan(&mappings); err != nil {
+	if err := s.database.Model("plugin_idc_resource_mapping").Ctx(ctx).As("mapping").
+		InnerJoin("plugin_idc_resource_channel", "channel", "channel.tenant_id=mapping.tenant_id AND channel.channel_no=mapping.channel_no").
+		Fields("mapping.local_resource_no,mapping.channel_no,mapping.pool_no,channel.provider_plugin_id").
+		Where("mapping.tenant_id", idccap.DefaultTenantID).Where("mapping.status_code", "active").
+		WhereIn("mapping.local_resource_no", serviceNos).Scan(&mappings); err != nil {
 		return nil, gerror.Wrap(err, "read server capability mappings")
 	}
 	channels := make([]string, 0, len(mappings))
@@ -352,7 +356,12 @@ func (s *Service) ListCapabilities(ctx context.Context,
 			if snapshot, ok := latestByChannel[mapping.ChannelNo]; ok && !snapshot.ObservedAt.After(now) &&
 				snapshot.ObservedAt.Add(24*time.Hour).After(now) {
 				projection.ObservedAt = snapshot.ObservedAt.UTC()
-				projection.Actions = append([]serveroperationresourcecap.Action(nil), actionsBySnapshot[snapshot.SnapshotNo]...)
+				projection.Actions = make([]serveroperationresourcecap.Action, 0, len(actionsBySnapshot[snapshot.SnapshotNo]))
+				for _, action := range actionsBySnapshot[snapshot.SnapshotNo] {
+					if !withdrawnProviderAction(mapping.ProviderPluginID, action) {
+						projection.Actions = append(projection.Actions, action)
+					}
+				}
 				sort.Slice(projection.Actions, func(i, j int) bool { return projection.Actions[i] < projection.Actions[j] })
 			}
 		}
@@ -373,6 +382,10 @@ func actionsForCapability(capability resourcecap.CapabilityCode) []serveroperati
 		return []serveroperationresourcecap.Action{serveroperationresourcecap.ActionResetPassword}
 	case resourcecap.CapabilityConsole:
 		return []serveroperationresourcecap.Action{serveroperationresourcecap.ActionConsole}
+	case resourcecap.CapabilityEnterRescue:
+		return []serveroperationresourcecap.Action{serveroperationresourcecap.ActionEnterRescue}
+	case resourcecap.CapabilityExitRescue:
+		return []serveroperationresourcecap.Action{serveroperationresourcecap.ActionExitRescue}
 	case resourcecap.CapabilityReinstall:
 		return []serveroperationresourcecap.Action{serveroperationresourcecap.ActionReinstall}
 	case resourcecap.CapabilityResize:

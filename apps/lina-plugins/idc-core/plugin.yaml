@@ -1,6 +1,6 @@
 id: idc-core
 name: LinaPro IDC Core
-version: v0.1.102
+version: v0.1.172
 type: source
 distribution: builtin
 scope_nature: platform_only
@@ -24,7 +24,7 @@ dependencies:
     - id: vben-adapter
       version: "=0.1.0"
     - id: shared-services
-      version: ">=0.1.0 <1.0.0"
+      version: ">=0.1.1 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -94,13 +94,13 @@ menus:
     type: D
     sort: 9
     remark: Notification delivery and marketing operations
-  - key: plugin:idc-core:compliance-governance
-    name: Compliance and Governance
-    path: idc-compliance-governance
+  - key: plugin:idc-core:identity-verification
+    name: Identity Verification
+    path: idc-identity-verification
     icon: lucide:shield-check
     type: D
     sort: 10
-    remark: Compliance, contracts, and governance workspaces
+    remark: Personal and enterprise identity verification
   - key: plugin:idc-core:operations-workbench
     name: Operations Data
     path: /idc/operations/workbench
@@ -218,13 +218,6 @@ menus:
     type: B
     visible: 0
     sort: 4
-  - key: plugin:idc-core:operations:contract-template-list
-    parent_key: plugin:idc-core:compliance-governance
-    name: List Selectable Contract Templates
-    perms: idc:admin:contract-policy:template:list
-    type: B
-    visible: 0
-    sort: 99
   - key: plugin:idc-core:customers
     parent_key: plugin:idc-core:customer-sales
     name: Customer Management
@@ -284,13 +277,6 @@ menus:
     type: B
     visible: 0
     sort: 5
-  - key: plugin:idc-core:customers:contract-policy-write
-    parent_key: plugin:idc-core:customers
-    name: Edit Enterprise Contract Rules
-    perms: idc:admin:customer:contract-policy:write
-    type: B
-    visible: 0
-    sort: 6
   - key: plugin:idc-core:currencies
     parent_key: plugin:idc-core:orders-finance
     name: Merchant Currencies
@@ -451,6 +437,13 @@ menus:
     type: B
     visible: 0
     sort: 8
+  - key: plugin:idc-core:catalog:product-delete
+    parent_key: plugin:idc-core:catalog
+    name: Delete Catalog Product
+    perms: idc:admin:catalog:product:delete
+    type: B
+    visible: 0
+    sort: 8
   - key: plugin:idc-core:catalog:price-write
     parent_key: plugin:idc-core:catalog
     name: Edit Catalog Prices
@@ -472,13 +465,6 @@ menus:
     type: B
     visible: 0
     sort: 11
-  - key: plugin:idc-core:catalog:contract-policy-write
-    parent_key: plugin:idc-core:catalog
-    name: Edit Product Contract Rules
-    perms: idc:admin:catalog:contract-policy:write
-    type: B
-    visible: 0
-    sort: 13
   - key: plugin:idc-core:support
     parent_key: plugin:idc-core:support-content
     name: Support Desk
@@ -688,7 +674,7 @@ menus:
     sort: 25
     remark: Support automation policy and governed support configuration
   - key: plugin:idc-core:content
-    parent_key: content
+    parent_key: setting
     name: Content Management
     path: /idc/content
     component: system/plugin/dynamic-page
@@ -696,7 +682,8 @@ menus:
     icon: lucide:newspaper
     type: M
     sort: 26
-    remark: News, announcements, knowledge, and download management
+    visible: 0
+    remark: Content management opened from Website Configuration
   - key: plugin:idc-core:marketing
     parent_key: plugin:idc-core:notification-marketing
     name: Marketing Operations
@@ -885,6 +872,27 @@ menus:
     type: M
     sort: 32
     remark: Order, invoice, inventory, review, and fulfillment operations
+  - key: plugin:idc-core:resource-customer-products
+    parent_key: plugin:idc-core:resource-operations
+    name: Server Management
+    path: /idc/resource/customer-products
+    component: system/plugin/dynamic-page
+    perms: idc:admin:customer:list
+    icon: lucide:monitor-cog
+    type: M
+    is_cache: 0
+    sort: 20
+    remark: Shortcut to the existing customer product context; no global server directory
+  - key: plugin:idc-core:accessory-renewal:handle
+    parent_key: plugin:idc-core:resource-operations
+    name: Accessory Renewal Work Items
+    path: /idc/resource/accessory-renewals
+    component: system/plugin/dynamic-page
+    perms: idc:admin:resource:accessory-renewal:handle
+    icon: lucide:alarm-clock-check
+    type: M
+    visible: 1
+    sort: 26
   - key: plugin:idc-core:product-fulfillment-tasks
     parent_key: plugin:idc-core:orders-finance
     name: Product Fulfillment Tasks
@@ -937,6 +945,13 @@ menus:
     type: B
     visible: 0
     sort: 6
+  - key: plugin:idc-core:product-fulfillment-tasks:recover
+    parent_key: plugin:idc-core:product-fulfillment-tasks
+    name: Recover Failed Provisioning Preparation
+    perms: idc:admin:product-fulfillment:recover
+    type: B
+    visible: 0
+    sort: 7
   - key: plugin:idc-core:service-entitlements:list
     parent_key: plugin:idc-core:product-fulfillment-tasks
     name: View Managed Services
@@ -993,13 +1008,6 @@ menus:
     type: B
     visible: 0
     sort: 43
-  - key: plugin:idc-core:commerce:contract-policy-write
-    parent_key: plugin:idc-core:commerce-orders
-    name: Edit Order Contract Rules
-    perms: idc:admin:commerce:contract-policy:write
-    type: B
-    visible: 0
-    sort: 44
   - key: plugin:idc-core:assisted-quotes:list
     parent_key: plugin:idc-core:customers
     name: View Assisted Order History
@@ -1080,6 +1088,13 @@ menus:
     type: B
     visible: 0
     sort: 7
+  - key: plugin:idc-core:financial-management:balance-adjustment-create
+    parent_key: plugin:idc-core:financial-management
+    name: Create Customer Balance Adjustments
+    perms: idc:admin:billing:balance-adjustment:create
+    type: B
+    visible: 0
+    sort: 17
   - key: plugin:idc-core:financial-management:invoice-waiver-create
     parent_key: plugin:idc-core:financial-management
     name: Create Reviewed Invoice Waivers

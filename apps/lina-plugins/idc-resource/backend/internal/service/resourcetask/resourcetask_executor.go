@@ -4,10 +4,12 @@ package resourcetask
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	"lina-plugin-idc-resource/backend/internal/service/providerhealth"
 )
@@ -78,12 +80,21 @@ type ResourceResolver func(
 	requests []ResourceResolutionRequest,
 ) (map[string]string, error)
 
+// WriteAdmission rechecks owner authority immediately before a provider write.
+// invoke must be called at most once with the context holding authority locks.
+// ErrAdmissionOutcomeUncertain means another durable dispatch claim may already
+// have crossed the cloud boundary. It must never become a non-acceptance proof.
+var ErrAdmissionOutcomeUncertain = errors.New("owner execution outcome remains unconfirmed")
+
+type WriteAdmission func(context.Context, ClaimedTask, resourcecap.OperationRequest, resourcecap.Provider, func(context.Context) error) error
+
 // Executor coordinates durable owner tasks with injected Provider runtime seams.
 type Executor struct {
 	tasks     Service
 	construct ProviderConstructor
 	resolve   ResourceResolver
 	health    providerhealth.Service
+	admit     WriteAdmission
 }
 
 // BatchReport summarizes one bounded worker pass without exposing task,
@@ -102,11 +113,12 @@ func NewExecutor(
 	construct ProviderConstructor,
 	resolve ResourceResolver,
 	health providerhealth.Service,
+	admit WriteAdmission,
 ) (*Executor, error) {
-	if tasks == nil || construct == nil || resolve == nil || health == nil {
+	if tasks == nil || construct == nil || resolve == nil || health == nil || admit == nil {
 		return nil, gerror.New("resource task executor dependencies are invalid")
 	}
-	return &Executor{tasks: tasks, construct: construct, resolve: resolve, health: health}, nil
+	return &Executor{tasks: tasks, construct: construct, resolve: resolve, health: health, admit: admit}, nil
 }
 
 // RunWrites claims and executes at most the requested fixed-size batch. A
@@ -317,7 +329,25 @@ func (e *Executor) executeWrite(
 		)
 	}
 	startedAt := time.Now()
-	result, callErr := construction.provider.Execute(ctx, request)
+	var result *resourcecap.OperationResult
+	invoked := false
+	callErr := e.admit(ctx, task, request, construction.provider, func(callCtx context.Context) error {
+		if invoked {
+			return &resourcecap.ProviderCallError{Code: resourcecap.ProviderCallErrorCodeUnknown, ResultUnknown: true}
+		}
+		invoked = true
+		var executeErr error
+		result, executeErr = construction.provider.Execute(callCtx, request)
+		return executeErr
+	})
+	if !invoked {
+		if errors.Is(callErr, ErrAdmissionOutcomeUncertain) {
+			return e.persistResultUnknown(ctx, lease, task.LeaseExpiresAt, "owner_execution_unconfirmed", "a durable execution claim exists without a confirmed result", nil, "", nil)
+		}
+		// Revoked entitlement, stale ownership or unavailable choices are local
+		// admission failures, not supplier failures or uncertain cloud writes.
+		return e.persistAdmissionFailure(ctx, task, lease)
+	}
 	latency := time.Since(startedAt)
 	if callErr != nil {
 		failure := resourcecap.NormalizeProviderError(callErr)
@@ -353,6 +383,20 @@ func (e *Executor) executeWrite(
 	return e.recordWriteHealth(
 		ctx, task.ChannelNo, outcomeForResult(result.Status), summaryForResult(*result), latency,
 	)
+}
+
+func (e *Executor) persistAdmissionFailure(ctx context.Context, task ClaimedTask, lease LeaseRef) error {
+	code, summary := "owner_admission_denied", "current server authority, state or operation inputs no longer permit this request"
+	var facts []resourcecap.Evidence
+	if resourcecap.CapabilityCode(task.CapabilityCode) == resourcecap.CapabilityProvision {
+		var err error
+		facts, err = localProvisionFailureFacts(task.TaskNo, code, summary)
+		if err != nil {
+			return err
+		}
+		code = provisionresourcecap.FailureRequestNotSent
+	}
+	return e.tasks.Transition(ctx, TransitionInput{Lease: lease, To: StatusFailed, Evidence: TransitionEvidence{NonAcceptanceProven: true}, FailureCode: code, FailureText: summary, ProviderFacts: facts})
 }
 
 func (e *Executor) recordWriteHealth(
@@ -406,7 +450,7 @@ func (e *Executor) executeObservation(
 		Version: task.LeaseVersion,
 	}
 	if construction.err != nil || construction.provider == nil || construction.cleanup == nil {
-		return e.rescheduleTaskObservation(ctx, task, lease)
+		return e.rescheduleTaskObservation(ctx, lease)
 	}
 	query := resourcecap.TaskQuery{
 		ExternalTaskRef: task.ExternalTaskRef,
@@ -417,7 +461,7 @@ func (e *Executor) executeObservation(
 	latency := time.Since(startedAt)
 	if callErr != nil {
 		failure := resourcecap.NormalizeProviderError(callErr)
-		if err := e.rescheduleTaskObservation(ctx, task, lease); err != nil {
+		if err := e.rescheduleTaskObservation(ctx, lease); err != nil {
 			return err
 		}
 		return e.recordQueryHealth(
@@ -426,9 +470,9 @@ func (e *Executor) executeObservation(
 	}
 	if result == nil || result.Validate() != nil ||
 		result.ExternalTaskRef != task.ExternalTaskRef ||
-		(result.ExternalResourceRef != "" &&
+		(task.ExternalResourceRef != "" && result.ExternalResourceRef != "" &&
 			result.ExternalResourceRef != task.ExternalResourceRef) {
-		if err := e.rescheduleTaskObservation(ctx, task, lease); err != nil {
+		if err := e.rescheduleTaskObservation(ctx, lease); err != nil {
 			return err
 		}
 		return e.recordQueryHealth(
@@ -436,15 +480,24 @@ func (e *Executor) executeObservation(
 			invalidProviderResponseCode, latency,
 		)
 	}
-	nextAt := (*time.Time)(nil)
-	if !result.Status.IsTerminal() {
-		next := nextObservationAt(task.TaskNo, task.ObservationAttempt, task.LeaseExpiresAt)
-		nextAt = &next
+
+	// A completed creation task alone cannot deliver a usable server or release
+	// its initial password. Confirm the exact resource through a fresh owner read.
+	if resourcecap.CapabilityCode(task.CapabilityCode) == resourcecap.CapabilityProvision && result.Status == resourcecap.TaskStatusSucceeded {
+		resourceRef := result.ExternalResourceRef
+		if resourceRef == "" {
+			resourceRef = task.ExternalResourceRef
+		}
+		snapshot, queryErr := construction.provider.QueryResource(ctx, resourcecap.ResourceQuery{ExternalResourceRef: resourceRef})
+		if queryErr != nil || !confirmedProvisionSnapshot(snapshot, resourceRef, time.Now()) {
+			return e.rescheduleTaskObservation(ctx, lease)
+		}
+		result.ExternalResourceRef = resourceRef
+		result.Resource = snapshot
 	}
 	if err := e.tasks.ObserveTask(ctx, ObservationInput{
 		Lease:  lease,
 		Result: *result,
-		NextAt: nextAt,
 	}); err != nil {
 		return err
 	}
@@ -464,11 +517,6 @@ func (e *Executor) executeResourceObservation(
 	reschedule := func() error {
 		return e.tasks.RescheduleObservation(ctx, ObservationRescheduleInput{
 			Lease: lease,
-			NextAt: nextObservationAt(
-				task.TaskNo,
-				task.ObservationAttempt,
-				task.LeaseExpiresAt,
-			),
 		})
 	}
 	if construction.err != nil || construction.provider == nil || construction.cleanup == nil {
@@ -537,12 +585,10 @@ func (e *Executor) recordQueryHealth(
 
 func (e *Executor) rescheduleTaskObservation(
 	ctx context.Context,
-	task ClaimedObservation,
 	lease ObservationLeaseRef,
 ) error {
 	return e.tasks.RescheduleObservation(ctx, ObservationRescheduleInput{
-		Lease:  lease,
-		NextAt: nextObservationAt(task.TaskNo, task.ObservationAttempt, task.LeaseExpiresAt),
+		Lease: lease,
 	})
 }
 
@@ -560,13 +606,23 @@ func (e *Executor) persistBeforeCallFailure(
 		next := task.LeaseExpiresAt
 		nextAt = &next
 	}
+	var facts []resourcecap.Evidence
+	if to == StatusFailed && resourcecap.CapabilityCode(task.CapabilityCode) == resourcecap.CapabilityProvision {
+		var err error
+		facts, err = localProvisionFailureFacts(task.TaskNo, code, summary)
+		if err != nil {
+			return err
+		}
+		code = provisionresourcecap.FailureRequestNotSent
+	}
 	return e.tasks.Transition(ctx, TransitionInput{
-		Lease:       lease,
-		To:          to,
-		Evidence:    TransitionEvidence{NonAcceptanceProven: true},
-		FailureCode: code,
-		FailureText: summary,
-		NextAt:      nextAt,
+		Lease:         lease,
+		To:            to,
+		Evidence:      TransitionEvidence{NonAcceptanceProven: true},
+		FailureCode:   code,
+		FailureText:   summary,
+		NextAt:        nextAt,
+		ProviderFacts: facts,
 	})
 }
 
@@ -638,13 +694,9 @@ func (e *Executor) persistResult(
 	case resourcecap.TaskStatusAccepted:
 		input.To = StatusAccepted
 		input.Evidence.AcceptanceProven = true
-		next := task.LeaseExpiresAt
-		input.NextAt = &next
 	case resourcecap.TaskStatusRunning:
 		input.To = StatusRunning
 		input.Evidence.AcceptanceProven = true
-		next := task.LeaseExpiresAt
-		input.NextAt = &next
 	case resourcecap.TaskStatusSucceeded:
 		input.To = StatusSucceeded
 		input.Evidence.AcceptanceProven = true
@@ -782,4 +834,11 @@ func claimedTaskChannels(tasks []ClaimedTask) []string {
 		channels = append(channels, tasks[index].ChannelNo)
 	}
 	return channels
+}
+
+func confirmedProvisionSnapshot(snapshot *resourcecap.ResourceSnapshot, reference string, now time.Time) bool {
+	if snapshot == nil || reference == "" || snapshot.Validate() != nil || snapshot.ExternalResourceRef != reference || now.Sub(snapshot.ObservedAt) > time.Minute || snapshot.ObservedAt.After(now.Add(time.Second)) {
+		return false
+	}
+	return snapshot.State == resourcecap.ResourceStateActive || snapshot.State == resourcecap.ResourceStateRunning || snapshot.State == resourcecap.ResourceStateStopped
 }

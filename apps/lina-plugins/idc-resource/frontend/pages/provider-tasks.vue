@@ -31,6 +31,8 @@ import ProviderTaskDetailDrawer from "./components/provider-task-detail-drawer.v
 import { providerTaskList } from "./provider-task-client";
 import { createResourcePage } from "./resource-page";
 
+const props = defineProps<{ serviceNo?: string; channelNo?: string }>();
+
 const queryPermission = "idc:admin:resource:task:query";
 const taskStatuses: ProviderTaskStatus[] = [
   "pending",
@@ -115,7 +117,7 @@ function searchSchema(): VbenFormProps["schema"] {
       fieldName: "status",
       label: $t("plugin.idc-resource.tasks.search.status"),
     },
-  ];
+  ].filter((field) => !props.channelNo || field.fieldName !== "channelNo");
 }
 
 function columns(): VxeGridProps["columns"] {
@@ -189,7 +191,8 @@ const [Grid, gridApi] = useVbenVxeGrid({
       ajax: {
         query: async ({ page }: {page: {currentPage: number; pageSize: number}}, values: Record<string, unknown> = {}) => {
           const filters = {
-            channelNo: String(values.channelNo || "").trim(),
+            serviceNo: props.serviceNo,
+            channelNo: props.channelNo || String(values.channelNo || "").trim(),
             status: String(values.status || "") as ProviderTaskStatus | "",
           };
           const signature = JSON.stringify(filters);
@@ -262,7 +265,7 @@ function capabilityLabel(code: string) {
 }
 
 function openDetail(row: ProviderTaskItem) {
-  taskDetailDrawerApi.setData({ taskNo: row.taskNo });
+  taskDetailDrawerApi.setData({ taskNo: row.taskNo, serviceNo: props.serviceNo, channelNo: props.channelNo });
   taskDetailDrawerApi.open();
 }
 

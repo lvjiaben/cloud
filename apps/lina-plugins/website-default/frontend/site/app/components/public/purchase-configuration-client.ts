@@ -36,6 +36,15 @@ export interface PurchaseConfigurationUploadPolicy {
 }
 
 export interface PurchaseConfigurationField {
+ groupZhCN?: string;
+ groupEnUS?: string;
+ unit?:string;
+ advanced?:boolean;
+ numericLabels?:Record<string,{zhCN:string;enUS:string}>;
+  displayControl?: 'auto' | 'input' | 'slider' | 'select' | 'radio';
+  presentation?: "operating_system" | "region";
+  quantityStep?: string;
+  numericChoices?: string[];
   acceptedFileTypes?: string[];
   descriptionEnUS: string;
   descriptionZhCN: string;
@@ -75,7 +84,16 @@ export interface PurchaseConfigurationValue {
   type: PurchaseConfigurationFieldType;
 }
 
+export interface ServerLoginPolicy {
+  hostnameEnabled: boolean;
+  passwordEnabled: boolean;
+  hostname?: {prefix?:string;length?:number;characters?:string[]};
+  password?: {length?:number;characters?:string[]};
+}
+
 export interface PurchaseConfigurationView {
+  serverLoginPolicy?: ServerLoginPolicy;
+  ready?: boolean;
   configurationRevision: string;
   fields: PurchaseConfigurationField[];
   values: PurchaseConfigurationValue[];
@@ -118,12 +136,19 @@ interface ResponseEnvelope<T> {
   data?: T;
 }
 
+import { websiteAccessToken } from "./website-commerce-client";
+
 const catalogBase = "/x/idc-core/api/v1/public/catalog/products";
 
 export async function getPurchaseConfiguration(publicSlug: string) {
-  return requestPurchaseConfiguration<PurchaseConfigurationView>(
-    `${catalogBase}/${encodeURIComponent(publicSlug)}/purchase-configuration`,
-  );
+  const url = `${catalogBase}/${encodeURIComponent(publicSlug)}/purchase-configuration`;
+  try {
+    return await requestPurchaseConfiguration<PurchaseConfigurationView>(url);
+  } catch {
+    // A read is safe to retry once after a transient connector/startup failure.
+    // Mutating checkout and cart requests never share this retry policy.
+    return requestPurchaseConfiguration<PurchaseConfigurationView>(url);
+  }
 }
 
 export async function evaluatePurchaseConfiguration(
@@ -148,7 +173,7 @@ export async function quotePurchaseConfiguration(
   values: PurchaseConfigurationValue[],
 ) {
   return requestPurchaseConfiguration<PurchaseConfigurationQuote>(
-    `${catalogBase}/${encodeURIComponent(publicSlug)}/purchase-configuration/quote`,
+    `${websiteAccessToken() ? "/x/idc-core/api/v1/account/catalog/products" : catalogBase}/${encodeURIComponent(publicSlug)}/purchase-configuration/quote`,
     {
       body: JSON.stringify({ configurationRevision, currencyCode, values }),
       headers: { "Content-Type": "application/json" },
@@ -177,6 +202,7 @@ export async function addGuestCartItem(input: {
   purchaseCycles: number;
   quantity: number;
   values: PurchaseConfigurationValue[];
+  serverLoginToken?: string;
 }) {
   return requestPurchaseConfiguration<{ cart: GuestCartReference }>(
     "/x/idc-core/api/v1/public/commerce/cart-items",
@@ -202,6 +228,7 @@ async function requestPurchaseConfiguration<T>(
       headers: {
         ...publicRequestHeaders(),
         Accept: "application/json",
+        ...(url.includes("/account/") && websiteAccessToken() ? { Authorization: `Bearer ${websiteAccessToken()}` } : {}),
         ...init.headers,
       },
       signal: controller.signal,

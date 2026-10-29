@@ -20,6 +20,8 @@ import (
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
+	"lina-plugin-idc-core/backend/cap/customerauthcap"
+	customerauthspi "lina-plugin-idc-core/backend/cap/customerauthcap/spi"
 	"lina-plugin-idc-core/backend/cap/entitlementcreatedcap"
 	entspi "lina-plugin-idc-core/backend/cap/entitlementcreatedcap/spi"
 	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
@@ -150,6 +152,7 @@ WHERE settlement.settlement_no=?`, prepared.settleNo)
 		extensions.invocationCount(resourcecap.DynamicProviderMethodExecute) != 1 {
 		t.Fatalf("cross-plugin server evidence=%+v invocations=%+v err=%v", evidence, extensions.invocations, err)
 	}
+	assertLocalManagementRepair(t, prepared, extensions, entitlementWorker)
 }
 
 func prepareCrossPluginServerScenario(t *testing.T) genericWorkerScenario {
@@ -202,7 +205,7 @@ func prepareCrossPluginServerScenario(t *testing.T) genericWorkerScenario {
 	service, err := productfulfillmentservice.NewFullConfigured(
 		scenario.database, structuredFulfillmentEvidenceValidator{files: files}, fulfillmentGateStub{},
 		fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{},
-		[]byte("0123456789abcdef0123456789abcdef"),
+		[]byte("0123456789abcdef0123456789abcdef"), nil,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -233,6 +236,18 @@ VALUES (0,'SCF_33333333333333333333333333333333','customer-commerce-service-1',1
 
 type crossPluginProjectionSink struct{}
 
+// Provisioning never uses native customer power admission. If it accidentally
+// enters that path, this fixture rejects it instead of supplying an identity.
+type crossPluginCustomerReader struct{}
+
+func (crossPluginCustomerReader) CurrentCustomer(context.Context) (*customerauthcap.Subject, error) {
+	return nil, errors.New("customer power admission is outside this provisioning test")
+}
+
+func (crossPluginCustomerReader) WithQueuedEntitlement(context.Context, string, int64, func(context.Context, *customerauthcap.Entitlement) error) error {
+	return errors.New("customer power admission is outside this provisioning test")
+}
+
 func (crossPluginProjectionSink) Upsert(context.Context, resourceinterfaceprojectioncap.Projection) error {
 	return nil
 }
@@ -253,6 +268,12 @@ func crossPluginRuntime(t *testing.T, ctx context.Context) (*crossPluginBusiness
 	t.Helper()
 	state := &crossPluginRuntimeState
 	state.once.Do(func() {
+		if err := customerauthspi.Declare(func(context.Context, capability.Services, string) (customerauthcap.Reader, error) {
+			return crossPluginCustomerReader{}, nil
+		}); err != nil {
+			state.err = err
+			return
+		}
 		if err := secretspi.Declare(func(context.Context) (secretcap.Source, error) { return state.secrets, nil }); err != nil {
 			state.err = err
 			return
@@ -330,9 +351,12 @@ func registerCrossPluginResourceJobs(t *testing.T, ctx context.Context, extensio
 }
 
 type crossPluginBusinessExtensions struct {
-	mu            sync.Mutex
-	registrations map[string]pluginhost.ConfidentialOutboundContextInput
-	invocations   map[string]int
+	rejectFirst       bool
+	unknownFirst      bool
+	unknownNoResponse bool
+	mu                sync.Mutex
+	registrations     map[string]pluginhost.ConfidentialOutboundContextInput
+	invocations       map[string]int
 }
 
 func (e *crossPluginBusinessExtensions) reset() {
@@ -340,13 +364,19 @@ func (e *crossPluginBusinessExtensions) reset() {
 	defer e.mu.Unlock()
 	e.registrations = make(map[string]pluginhost.ConfidentialOutboundContextInput)
 	e.invocations = make(map[string]int)
+	e.rejectFirst = false
+	e.unknownFirst = false
+	e.unknownNoResponse = false
 }
 
 func (*crossPluginBusinessExtensions) ListProviders(context.Context, plugincap.BusinessExtensionProviderListInput) (*capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence], error) {
-	return nil, errors.New("unused")
+	return &capmodel.PageResult[*capmodel.BusinessExtensionProviderEvidence]{Items: []*capmodel.BusinessExtensionProviderEvidence{{PluginID: "idc-zjmfcloud", Point: resourcecap.DynamicProviderPoint, ContractVersion: resourcecap.DynamicProviderContractVersion, ReleaseVersion: "v0.1.0", ReleaseDigest: strings.Repeat("a", 64), DeclarationDigest: strings.Repeat("b", 64), AuthorizedMethods: resourcecap.DynamicProviderMethods()}}}, nil
 }
-func (*crossPluginBusinessExtensions) GetProviderExact(context.Context, plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
-	return nil, errors.New("unused")
+func (*crossPluginBusinessExtensions) GetProviderExact(_ context.Context, input plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
+	if input.PluginID != "idc-zjmfcloud" || input.Point != resourcecap.DynamicProviderPoint || input.ContractVersion != resourcecap.DynamicProviderContractVersion || input.ReleaseVersion != "v0.1.0" || input.ReleaseDigest != strings.Repeat("a", 64) || input.DeclarationDigest != strings.Repeat("b", 64) {
+		return nil, errors.New("unexpected frozen resource provider evidence")
+	}
+	return &capmodel.BusinessExtensionProviderEvidence{PluginID: input.PluginID, Point: input.Point, ContractVersion: input.ContractVersion, ReleaseVersion: input.ReleaseVersion, ReleaseDigest: input.ReleaseDigest, DeclarationDigest: input.DeclarationDigest, AuthorizedMethods: resourcecap.DynamicProviderMethods()}, nil
 }
 func (*crossPluginBusinessExtensions) GetProvidersExact(context.Context, []plugincap.BusinessExtensionProviderExactInput) ([]*capmodel.BusinessExtensionProviderEvidence, error) {
 	return nil, errors.New("unused")
@@ -363,7 +393,7 @@ func (e *crossPluginBusinessExtensions) WithConfidentialOutboundContext(ctx cont
 	e.mu.Unlock()
 	return action(ctx, &capmodel.BusinessExtensionRuntimeContext{ContextID: "opaque-cross-plugin-context"})
 }
-func (e *crossPluginBusinessExtensions) InvokeProviderMethod(_ context.Context, input pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error) {
+func (e *crossPluginBusinessExtensions) InvokeProviderMethod(ctx context.Context, input pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error) {
 	e.mu.Lock()
 	if e.invocations == nil {
 		e.invocations = make(map[string]int)
@@ -379,6 +409,23 @@ func (e *crossPluginBusinessExtensions) InvokeProviderMethod(_ context.Context, 
 			"hostname": "server-cross-plugin-1",
 		})
 	case resourcecap.DynamicProviderMethodExecute:
+		if e.unknownNoResponse && e.invocationCount(input.Method) == 1 {
+			// Exercise the actual owner boundary before any login or HTTP. An
+			// ungranted secret slot must produce a durable preflight diagnostic.
+			if _, callErr := e.registrations[input.Method].Handler(ctx, &pluginhost.ConfidentialOutboundRequest{Sequence: 2, Payload: json.RawMessage(`{"kind":"request","method":"POST","path":"/clouds","useAuthentication":true,"responseFields":["data"],"secretFormBindings":[{"field":"rootpass","slot":"not_granted"}]}`)}); callErr == nil {
+				return nil, errors.New("ungranted operation slot was accepted")
+			}
+			payload, err = json.Marshal(resourcecap.OperationResult{Status: resourcecap.TaskStatusUnknown, Failure: &resourcecap.ProviderFailure{Code: "upstream_result_unknown", Message: "upstream response requires reconciliation", ResultUnknown: true}})
+			break
+		}
+		if e.unknownFirst && e.invocationCount(input.Method) == 1 {
+			payload, err = json.Marshal(resourcecap.OperationResult{Status: resourcecap.TaskStatusUnknown, Failure: &resourcecap.ProviderFailure{Code: "upstream_result_unknown", Message: "upstream response requires reconciliation", ResultUnknown: true}, Evidence: []resourcecap.Evidence{{Kind: resourcecap.EvidenceKindHTTPResponse, Summary: `{"method":"POST","route":"/clouds","httpStatus":502,"response":"Bad Gateway"}`, ObservedAt: time.Now().UTC()}}})
+			break
+		}
+		if e.rejectFirst && e.invocationCount(input.Method) == 1 {
+			payload, err = json.Marshal(resourcecap.OperationResult{Status: resourcecap.TaskStatusFailed, Failure: &resourcecap.ProviderFailure{Code: "upstream_request_rejected", Message: "Request validation rejected"}, Evidence: []resourcecap.Evidence{{Kind: resourcecap.EvidenceKindHTTPResponse, Summary: `{"method":"POST","route":"/clouds","httpStatus":200,"response":{"status":400,"msg":"镜像在当前节点未下载"}}`, ObservedAt: time.Now().UTC()}}})
+			break
+		}
 		payload, err = json.Marshal(resourcecap.OperationResult{
 			Status:              resourcecap.TaskStatusSucceeded,
 			ExternalResourceRef: "upstream-cross-plugin-server-1",
@@ -482,8 +529,22 @@ func (s *crossPluginSecretSource) Metadata(_ context.Context, handle secretcap.H
 	}
 	return secretcap.Metadata{}, errors.New("cross-plugin secret is unavailable")
 }
-func (*crossPluginSecretSource) Revoke(context.Context, secretcap.Handle, time.Time) (secretcap.Metadata, error) {
-	return secretcap.Metadata{}, errors.New("unused")
+func (s *crossPluginSecretSource) Revoke(_ context.Context, handle secretcap.Handle, expected time.Time) (secretcap.Metadata, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for key, result := range s.results {
+		if result.Handle.Equal(handle) {
+			if !result.Metadata.UpdatedAt.Equal(expected) {
+				return secretcap.Metadata{}, errors.New("secret version conflict")
+			}
+			result.Metadata.Configured = false
+			result.Metadata.UpdatedAt = time.Now().UTC()
+			s.results[key] = result
+			delete(s.values, handle.OpaqueRef())
+			return result.Metadata, nil
+		}
+	}
+	return secretcap.Metadata{}, errors.New("secret is unavailable")
 }
 func (*crossPluginSecretSource) Rotate(context.Context, int) (secretcap.RotationResult, error) {
 	return secretcap.RotationResult{}, errors.New("unused")
@@ -539,7 +600,7 @@ func applyCrossPluginCoreMigrations(t *testing.T, ctx context.Context, database 
 	if !ok {
 		t.Fatal("resolve cross-plugin core migration path")
 	}
-	for _, name := range []string{"096-resource-owned-product-fulfillment.sql", "097-resource-interface-configuration-revision.sql"} {
+	for _, name := range []string{"096-resource-owned-product-fulfillment.sql", "097-resource-interface-configuration-revision.sql", "139-rejected-fulfillment-recovery.sql", "140-fulfillment-configuration-correction.sql", "141-fulfillment-non-acceptance-verification.sql"} {
 		path := filepath.Join(filepath.Dir(file), "..", "..", "..", "..", "manifest", "sql", name)
 		content, err := os.ReadFile(path)
 		if err != nil {
@@ -553,6 +614,15 @@ func applyCrossPluginCoreMigrations(t *testing.T, ctx context.Context, database 
 
 func seedCrossPluginResourceRoute(t *testing.T, ctx context.Context, database gdb.DB) {
 	t.Helper()
+	// This simulated connector never performs network login. It still declares
+	// a valid per-request profile, so the real owner preparation boundary runs.
+	settings, settingsErr := resourcecap.CompileInterfaceSettings(json.RawMessage(`{}`), &capmodel.BusinessExtensionProviderMetadata{
+		Type: resourcecap.DynamicProviderMetadataType, Version: "v1", Values: map[string]any{
+			"providerId": "zjmfcloud-v1", "authenticationProfiles": map[string]any{"profiles": map[string]any{"default": map[string]any{"strategy": "per_request_form", "fields": map[string]any{"username": "username", "password": "password"}}}},
+		}})
+	if settingsErr != nil {
+		t.Fatal(settingsErr)
+	}
 	selector := `{"provision":{"provider":"zjmfcloud-v1","areas":{"cn-south":"1"},"nodes":{"premium":"2"},"node_groups":{},"images":{"ubuntu-2204":"3"},"defaults":{"network_type":"normal","ip_group":"4","traffic_type":3,"node_priority":1}}}`
 	statements := []struct {
 		sql  string
@@ -569,7 +639,7 @@ VALUES ('pfi_11111111111111111111111111111111','channel-provision-1',1,'rci_1111
  'idc-zjmfcloud','v0.1.0','v1',ARRAY['provision','query'],repeat('a',64),repeat('b',64))`},
 		{sql: `INSERT INTO plugin_idc_resource_interface_configuration_revision
 (revision_no,interface_instance_no,channel_no,endpoint,non_secret_settings,secret_bindings,created_by)
-VALUES ('rci_11111111111111111111111111111111','pfi_11111111111111111111111111111111','channel-provision-1','https://provider.invalid','{}','{}',101)`},
+VALUES ('rci_11111111111111111111111111111111','pfi_11111111111111111111111111111111','channel-provision-1','https://provider.invalid',?::jsonb,'{}',101)`, args: []any{string(settings)}},
 		{sql: `INSERT INTO plugin_idc_resource_pool(pool_no,channel_no,display_name,resource_kind,status_code,selector)
 VALUES ('pool-provision-1','channel-provision-1','Cross Plugin Pool','virtual_server','enabled',?::jsonb)`, args: []any{selector}},
 		{sql: `INSERT INTO plugin_idc_resource_principal_mapping

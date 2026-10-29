@@ -561,3 +561,27 @@ func clearAuditKeys(keys []audit.IntegrityKey) {
 		keys[index].ID = ""
 	}
 }
+
+// LoadCustomerLoginKeys derives independent, installation-stable index and
+// encryption keys. Envelope-key rotation does not invalidate login contacts.
+func LoadCustomerLoginKeys() ([]byte, []byte, error) {
+	raw, exists := os.LookupEnv(SecurityKeyringEnvironment)
+	if !exists {
+		return nil, nil, gerror.New("IDC core security keyring is not configured")
+	}
+	decoded, err := parseSecurityKeyring(raw)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer clearDecodedSecurityKeyring(&decoded)
+	index, err := derive(decoded.reservation, "customer/login-contact-index/v1")
+	if err != nil {
+		return nil, nil, err
+	}
+	seal, err := derive(decoded.reservation, "customer/login-contact-encryption/v1")
+	if err != nil {
+		clear(index)
+		return nil, nil, err
+	}
+	return index, seal, nil
+}

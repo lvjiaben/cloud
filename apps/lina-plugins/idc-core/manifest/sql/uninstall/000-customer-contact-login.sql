@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS plugin_idc_core_customer_login_contact;

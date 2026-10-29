@@ -65,6 +65,14 @@ func (s *serviceImpl) validateFrozenFulfillmentPolicy(
 			QueryMethod:        declaration.MethodRoles.Query,
 			DeclarationDigest:  exact.DeclarationDigest,
 		}
+		binding, bindingErr := s.loadBinding(ctx, versionNo, false)
+		if bindingErr != nil || binding == nil || !sameProviderContract(bindingEvidence(binding), exact) {
+			return bizerr.NewCode(catalog.CodeFulfillmentPolicyContractChanged)
+		}
+		// The policy digest describes the merchant's immutable business choice.
+		// Optional fields do not rewrite that choice; executable host evidence
+		// remains the current release at admission and invocation boundaries.
+		contract.DeclarationDigest = binding.DeclarationDigest
 		if err = s.applyImportedFulfillmentContract(ctx, versionNo, exact, contract); err != nil {
 			return err
 		}

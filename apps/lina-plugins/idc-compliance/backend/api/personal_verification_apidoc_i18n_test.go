@@ -23,11 +23,6 @@ func TestPersonalVerificationAPIDocChineseBundleCoversSourceMetadata(t *testing.
 	bundle := readPersonalVerificationAPIDocBundle(t, "manifest/i18n/zh-CN/apidoc")
 	root := personalVerificationAPIDocPluginRoot(t)
 	for _, name := range []string{
-		"customer_contract_types.go",
-		"customer_contract_list.go",
-		"customer_order_contract_get.go",
-		"customer_contract_signing_link_create.go",
-		"customer_contract_authoritative_state_update.go",
 		"enterprise_legal_change_create.go",
 		"enterprise_verification_types.go",
 		"enterprise_verification_get.go",
@@ -59,31 +54,6 @@ func TestEnterpriseManagementAPIDocChineseBundleCoversSourceMetadata(t *testing.
 	bundle := readPersonalVerificationAPIDocBundle(t, "manifest/i18n/zh-CN/apidoc")
 	root := personalVerificationAPIDocPluginRoot(t)
 	for _, name := range []string{
-		"electronic_contract_onboarding_types.go",
-		"electronic_contract_onboarding_get.go",
-		"electronic_contract_onboarding_link_create.go",
-		"electronic_contract_onboarding_recheck_create.go",
-		"electronic_contract_replacement_preview_create.go",
-		"electronic_contract_reissue_create.go",
-		"electronic_contract_termination_create.go",
-		"electronic_contract_template_types.go",
-		"electronic_contract_template_list.go",
-		"electronic_contract_template_get.go",
-		"electronic_contract_template_create.go",
-		"electronic_contract_template_copy_create.go",
-		"electronic_contract_template_update.go",
-		"electronic_contract_template_enablement_create.go",
-		"electronic_contract_template_disablement_create.go",
-		"electronic_contract_template_tencent_sync_create.go",
-		"electronic_contract_template_editor_get.go",
-		"electronic_contract_template_source_file_update.go",
-		"electronic_contract_template_online_source_update.go",
-		"electronic_contract_template_pdf_preview_create.go",
-		"electronic_contract_template_preview_confirmation_create.go",
-		"electronic_contract_template_field_set_create.go",
-		"electronic_contract_template_preview_content_get.go",
-		"electronic_contract_template_provider_preview_get.go",
-		"electronic_contract_template_provider_mapping_create.go",
 		"enterprise_verification_types.go",
 		"enterprise_verification_case_list.go",
 		"enterprise_verification_case_get.go",
@@ -101,6 +71,10 @@ func TestEnterpriseManagementAPIDocChineseBundleCoversSourceMetadata(t *testing.
 		"red_letter_task_get.go",
 		"red_letter_allocation_resolution_create.go",
 		"red_letter_manual_completion_create.go",
+		"privacy_retention_hold_create.go",
+		"privacy_retention_hold_release_create.go",
+		"privacy_deletion_confirm_create.go",
+		"privacy_deletion_types.go",
 	} {
 		path := filepath.Join(root, "backend", "api", "admin", "v1", name)
 		for _, key := range collectComplianceAPIDocKeys(t, path, "admin") {

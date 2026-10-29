@@ -204,7 +204,6 @@ func buildBinary(root, outputPath, packagePath string, options releaseOptions) e
 func deliverySources(root string) ([]deliverySource, error) {
 	result := []deliverySource{
 		{Source: filepath.Join(root, "deploy", "local-gateway.env.example"), Destination: filepath.Join("config", "local-gateway.env.example")},
-		{Source: filepath.Join(root, "deploy", "tencent-essbasic.json.example"), Destination: filepath.Join("config", "tencent-essbasic.json.example")},
 		{Source: filepath.Join(root, "deploy", "README.md"), Destination: filepath.Join("docs", "README.md")},
 		{Source: filepath.Join(root, "deploy", "README.zh-CN.md"), Destination: filepath.Join("docs", "README.zh-CN.md")},
 		{Source: filepath.Join(root, "deploy", "DATA-LIFECYCLE.md"), Destination: filepath.Join("docs", "DATA-LIFECYCLE.md")},

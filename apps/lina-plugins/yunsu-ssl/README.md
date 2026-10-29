@@ -28,7 +28,7 @@ The supplier endpoint must use HTTPS. The host pins every request to the configu
 
 ## Owner-governed service pages
 
-The connector declares administration and customer certificate pages. Each page can call only the exact `idc-core` service capability listed by its frozen surface manifest. The host resolves the owner namespace, checks the current session, permission, data scope, and customer ownership, and then issues a short-lived grant for one exact method and path. Service mutations run as durable, query-first tasks with bounded retries, result-unknown handling, and staff takeover.
+The connector declares a customer certificate page. Administration is embedded in the corresponding customer product management drawer and uses the existing `idc-core` entitlement APIs. The customer page can call only the exact `idc-core` service capability listed by its frozen surface manifest. The host resolves the owner namespace, checks the current session, permission, data scope, and customer ownership, and then issues a short-lived grant for one exact method and path. Service mutations run as durable, query-first tasks with bounded retries, result-unknown handling, and staff takeover.
 
 Certificate-chain download uses a host-owned, two-minute, one-use ticket. The host downloads and sanitizes the supplier archive into private temporary storage and returns only public certificates and chains. The WASM module never receives the supplier ZIP, private keys, supplier credentials, or browser token. Renewal remains unavailable in this release.
 
@@ -42,6 +42,10 @@ go run ./hack/tools/linactl test dir=apps/lina-plugins/yunsu-ssl
 pnpm --dir apps/lina-plugins/yunsu-ssl/frontend test
 ```
 
-The `build` command installs the locked frontend dependencies, builds both certificate pages, and embeds them into `temp/output/yunsu-ssl.wasm`. A clean checkout must use `build` before the low-level `wasm` packaging command; `wasm` alone requires the declared `frontend/dist` assets to exist. Upload the package in plugin management, install it, then enable it to expose the administration and customer surfaces. Supplier credentials and certificate products are configured separately; enabling the plugin does not create a supplier order.
+The `build` command installs the locked frontend dependencies, builds the customer certificate page, and embeds them into `temp/output/yunsu-ssl.wasm`. A clean checkout must use `build` before the low-level `wasm` packaging command; `wasm` alone requires the declared `frontend/dist` assets to exist. Upload the package in plugin management, install it, then enable it to expose the customer surface and product management actions. Supplier credentials and certificate products are configured separately; enabling the plugin does not create a supplier order.
 
 Production verification requires a lawful isolated Yunsu account and dedicated test certificate orders. Existing customer certificates must never be used.
+
+## Purchased-content integration
+
+The existing `certificates` customer surface also declares `purchased-services.customer.v1`. Supporting customer templates embed the same certificate page in the selected member navigation block without adding a duplicate menu. The plugin retains its own domain, validation, certificate status and action rules; server IP and operating-system columns are never imposed. The container fixes the current directory and fulfillment plugin on the owner list request, while the existing exact page grant and current-customer checks remain mandatory. Core `>=0.1.171` applies the paid-only boundary.

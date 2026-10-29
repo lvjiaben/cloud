@@ -1,0 +1,17 @@
+{
+  "error": {
+    "idc": {
+      "purchase": {
+        "server": {
+          "login": {
+            "invalid": "请检查主机名和密码后重试",
+            "not": {
+              "accessible": "无权使用该服务器登录设置，请重新填写"
+            },
+            "unavailable": "服务器登录设置暂时无法保存，请稍后重试"
+          }
+        }
+      }
+    }
+  }
+}

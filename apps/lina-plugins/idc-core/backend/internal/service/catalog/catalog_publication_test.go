@@ -148,3 +148,12 @@ func TestPublicationChecksContainOnlyGenericCommercialDimensions(t *testing.T) {
 		}
 	}
 }
+
+func (g *publicationTestAutomationAdmission) WithSaleStateAdmission(ctx context.Context, versionNo string, _ bool, action func(context.Context) error) error {
+	return g.WithPublicationAdmission(ctx, versionNo, action)
+}
+
+// AuthorizeProductSave provides ordinary editing authority in this fixture.
+func (a *publicationTestAuthorizer) AuthorizeProductSave(ctx context.Context, versionNo string) (int, error) {
+	return a.AuthorizeProductPublication(ctx, versionNo)
+}

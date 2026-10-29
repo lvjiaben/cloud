@@ -16,7 +16,7 @@ func (c *ControllerV1) CatalogConfigurationPriceCandidateList(ctx context.Contex
 	result := make([]*v1.CatalogConfigurationPriceCandidate, 0, len(items))
 	for _, item := range items {
 		result = append(result, &v1.CatalogConfigurationPriceCandidate{
-			CandidateToken: item.CandidateToken, DimensionNo: item.DimensionNo, Quantity: item.Quantity, PricingMode: string(item.PricingMode),
+			FieldToken: item.FieldToken, CandidateToken: item.CandidateToken, DimensionNo: item.DimensionNo, Quantity: item.Quantity, PricingMode: string(item.PricingMode),
 			FieldLabelZhCN: item.FieldLabel.ZhCN, FieldLabelEnUS: item.FieldLabel.EnUS,
 			CandidateLabelZhCN: item.CandidateLabel.ZhCN, CandidateLabelEnUS: item.CandidateLabel.EnUS,
 		})

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="714" viewBox="0 0 1168 714" role="img" aria-labelledby="title desc">
+ <title id="title">Security protection architecture</title>
+ <desc id="desc">Traffic passes through perimeter defense into a protected core zone.</desc>
+ <defs>
+  <linearGradient id="blue" x2="0" y2="1"><stop stop-color="#4389ff"/><stop offset="1" stop-color="#347cf5"/></linearGradient>
+  <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10z" fill="#347cf5"/></marker>
+ </defs>
+ <rect width="1168" height="714" rx="12" fill="#f7faff"/>
+ <g font-family="Arial,sans-serif" text-anchor="middle">
+  <rect x="20" y="48" width="180" height="606" rx="12" fill="#fff" stroke="#ccd7e5" stroke-width="2"/>
+  <rect x="20" y="48" width="180" height="56" rx="12" fill="#25364b"/>
+  <text x="110" y="83" font-size="18" font-weight="700" fill="#fff">Traffic Sources</text>
+  <rect x="42" y="132" width="136" height="145" rx="10" fill="#eef5ff"/>
+  <circle cx="110" cy="174" r="23" fill="url(#blue)"/>
+  <path d="M75 230c6-28 64-28 70 0v12H75z" fill="#347cf5"/>
+  <text x="110" y="265" font-size="16" fill="#26384c">Normal Traffic</text>
+  <rect x="42" y="300" width="136" height="145" rx="10" fill="#fff2f2"/>
+  <circle cx="110" cy="342" r="23" fill="#e25252"/>
+  <path d="M75 398c6-28 64-28 70 0v12H75z" fill="#e25252"/>
+  <text x="110" y="433" font-size="15" fill="#26384c">Malicious Traffic</text>
+  <rect x="34" y="485" width="152" height="128" rx="4" fill="#fff" stroke="#347cf5" stroke-width="2"/>
+  <text x="110" y="508" font-size="13" fill="#26384c">Normal Traffic</text>
+  <path d="M56 526h102" stroke="#347cf5" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="110" y="558" font-size="13" fill="#26384c">Malicious Traffic</text>
+  <path d="M56 576h102" stroke="#25364b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <rect x="225" y="48" width="356" height="606" rx="12" fill="#fff" stroke="#ccd7e5" stroke-width="2"/>
+  <rect x="225" y="48" width="356" height="56" rx="12" fill="url(#blue)"/>
+  <text x="403" y="83" font-size="18" font-weight="700" fill="#fff">Perimeter Defense</text>
+  <g fill="#edf4ff" stroke="#c9d9f0">
+   <rect x="254" y="128" width="298" height="82" rx="10"/>
+   <rect x="254" y="228" width="298" height="82" rx="10"/>
+   <rect x="254" y="328" width="298" height="82" rx="10"/>
+   <rect x="254" y="428" width="298" height="82" rx="10"/>
+  </g>
+  <g fill="#347cf5">
+   <circle cx="300" cy="169" r="24"/><circle cx="300" cy="269" r="24"/>
+   <circle cx="300" cy="369" r="24"/><circle cx="300" cy="469" r="24"/>
+  </g>
+  <g stroke="#fff" stroke-width="4" fill="none">
+   <path d="M300 152v34m-17-17h34M287 269h26m-13-13v26M289 358h22v22h-22zM288 469l8 8 16-18"/>
+  </g>
+  <g fill="#26384c" font-weight="700">
+   <text x="423" y="175" font-size="17">DDoS Protection</text>
+   <text x="423" y="275" font-size="14">Full-Stack Web Protection</text>
+   <text x="423" y="375" font-size="13">Next-Generation Cloud Firewall</text>
+   <text x="423" y="475" font-size="16">Intrusion Detection</text>
+  </g>
+
+  <path d="M200 330h25M581 330h34" stroke="#347cf5" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="620" y="48" width="426" height="606" rx="12" fill="#fff" stroke="#ccd7e5" stroke-width="2"/>
+  <rect x="620" y="48" width="426" height="56" rx="12" fill="#25364b"/>
+  <text x="833" y="83" font-size="18" font-weight="700" fill="#fff">Protected Core Zone</text>
+
+  <rect x="652" y="122" width="362" height="212" rx="10" fill="#f3f7fc" stroke="#d5deea"/>
+  <text x="833" y="151" font-size="17" font-weight="700" fill="#26384c">Applications</text>
+  <rect x="676" y="166" width="145" height="96" rx="8" fill="#fff" stroke="#d5deea"/>
+  <rect x="845" y="166" width="145" height="96" rx="8" fill="#fff" stroke="#d5deea"/>
+  <path d="M711 184h75v43h-75zM720 235h57" fill="none" stroke="#347cf5" stroke-width="4"/>
+  <text x="748" y="252" font-size="12" fill="#26384c">Web Applications</text>
+  <path d="M880 192h76m-76 18h76m-76 18h76" stroke="#347cf5" stroke-width="7"/>
+  <text x="917" y="252" font-size="13" fill="#26384c">Web Servers</text>
+  <rect x="668" y="278" width="166" height="34" rx="6" fill="#347cf5"/>
+  <text x="751" y="300" font-size="12" font-weight="700" fill="#fff">Website Security Guard</text>
+  <rect x="842" y="278" width="166" height="34" rx="6" fill="#347cf5"/>
+  <text x="925" y="300" font-size="13" font-weight="700" fill="#fff">Log Auditing</text>
+
+  <rect x="652" y="350" width="362" height="132" rx="10" fill="#f3f7fc" stroke="#d5deea"/>
+  <text x="833" y="379" font-size="17" font-weight="700" fill="#26384c">Database Services</text>
+  <rect x="676" y="394" width="145" height="70" rx="8" fill="#fff" stroke="#d5deea"/>
+  <rect x="845" y="394" width="145" height="70" rx="8" fill="#fff" stroke="#d5deea"/>
+  <path d="M704 407h54v7h-54zm0 14h54v7h-54zm0 14h54v7h-54z" fill="#347cf5"/>
+  <text x="748" y="457" font-size="12" fill="#26384c">Databases</text>
+  <text x="917" y="423" font-size="12" fill="#26384c">Enhanced Vulnerability</text>
+  <text x="917" y="444" font-size="12" fill="#26384c">Scanning</text>
+
+  <path d="M1046 330h30" stroke="#347cf5" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="1080" y="48" width="68" height="606" rx="12" fill="url(#blue)"/>
+  <text x="1114" y="353" transform="rotate(-90 1114 353)" font-size="16" font-weight="700" fill="#fff">Penetration Testing Services</text>
+ </g>
+</svg>

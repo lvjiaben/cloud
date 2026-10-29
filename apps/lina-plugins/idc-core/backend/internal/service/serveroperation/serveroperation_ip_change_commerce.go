@@ -65,7 +65,7 @@ VALUES (0,?,?,?,'ip_change','customer',?,1,?,0,?,?,?,?,?,?,?,?,?,?,0)`, quote.Qu
 		BillingRuleNo: value.BillingRuleNo, ConfigurationSnapshotNo: value.ConfigurationSnapshotNo,
 		ProductNameZhCn: value.NameZhCN, ProductNameEnUs: value.NameEnUS, PurchaseCycles: 1,
 		ChargeTypeCode: "one_time", PeriodUnitCode: "once", PeriodCount: 1,
-		RequiresContract: false, FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
+		FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: value.CapabilityEvidenceDigest,
 		TaxPolicyNo: accessoryTaxValue(value, "policy"), PriceIncludesTax: true,
 		TaxTreatmentCode: accessoryTaxValue(value, "treatment"), TaxRateBasisPoints: value.TaxRateBasisPoints,

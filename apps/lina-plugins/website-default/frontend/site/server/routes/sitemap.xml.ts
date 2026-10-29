@@ -51,6 +51,16 @@ export default defineEventHandler(async (event) => {
   const dynamic = await Promise.all(
     kinds.map(async (kind) => {
       try {
+        if (kind === 'announcements') {
+          const items: { lastmod: string; path: string }[] = [];
+          for (let pageNum = 1; ; pageNum += 1) {
+            const response = await $fetch<{ data?: { list?: { id: number; updatedAt: number }[]; total: number } }>(`${apiOrigin}/x/content-notice/api/v1/public/announcements?pageNum=${pageNum}&pageSize=100`);
+            const list = response.data?.list || [];
+            items.push(...list.map((item) => ({ lastmod: new Date(item.updatedAt).toISOString(), path: `/pages/announcements/${item.id}` })));
+            if (pageNum * 100 >= (response.data?.total || 0) || !list.length) break;
+          }
+          return items;
+        }
         const response = await $fetch<SitemapEnvelope>(
           `${apiOrigin}/x/idc-core/api/v1/public/content/items?type=${kindToType[kind]}&limit=100`,
         );

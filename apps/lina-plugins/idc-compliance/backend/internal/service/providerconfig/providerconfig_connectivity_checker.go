@@ -4,6 +4,7 @@ package providerconfig
 import (
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"net/http"
 	"time"
@@ -34,7 +35,8 @@ func NewAliyunConnectivityChecker(accessor secretcap.Accessor) (ConnectivityChec
 	return &aliyunConnectivityChecker{
 		accessor: accessor,
 		httpClient: &http.Client{
-			Timeout: connectivityProbeTimeout,
+			Timeout:   connectivityProbeTimeout,
+			Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}},
 		},
 		clock: time.Now,
 		nonce: randomProbeNonce,

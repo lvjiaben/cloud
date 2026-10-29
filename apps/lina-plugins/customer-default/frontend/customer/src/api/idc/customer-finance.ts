@@ -163,10 +163,12 @@ export function listFinancialRenewalEntitlements(
 export function payFinancialInvoiceFromBalance(
   invoiceNo: string,
   idempotencyKey: string,
+  silentErrorMessage = false,
 ) {
   return requestClient.post(
     path(`invoices/${encodeURIComponent(invoiceNo)}/balance-payments`),
     { idempotencyKey },
+    { silentErrorMessage },
   );
 }
 

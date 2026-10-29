@@ -7,15 +7,18 @@ export type FulfillmentTaskStatus =
   | "awaiting_payment"
   | "awaiting_review"
   | "processing"
+  | "manual_processing"
   | "completed"
   | "not_completed"
   | "cancelled";
 
 export type FulfillmentActionMode =
+  | "verify_non_acceptance"
   | "manual_completed"
   | "manual_unable"
   | "review_approve"
   | "review_reject"
+  | "recover_preparation"
   | "takeover";
 
 const knownModes = new Set<FulfillmentMode>([
@@ -28,6 +31,7 @@ const knownStatuses = new Set<FulfillmentTaskStatus>([
   "awaiting_payment",
   "awaiting_review",
   "processing",
+  "manual_processing",
   "completed",
   "not_completed",
   "cancelled",
@@ -36,12 +40,15 @@ const knownStatuses = new Set<FulfillmentTaskStatus>([
 const managementTaskStatuses: FulfillmentTaskStatus[] = [
   "awaiting_review",
   "processing",
+  "manual_processing",
   "completed",
   "not_completed",
   "cancelled",
 ];
 
 const knownEvents = new Set([
+  "preparation_recovered",
+  "management_repair_queued",
   "intent_created",
   "review_approved",
   "review_rejected",
@@ -57,7 +64,12 @@ const knownEvents = new Set([
 ]);
 
 export function requiresFulfillmentActionNote(mode: FulfillmentActionMode) {
-  return mode === "manual_completed" || mode === "manual_unable";
+  return (
+    mode === "verify_non_acceptance" ||
+    mode === "manual_completed" ||
+    mode === "manual_unable" ||
+    mode === "recover_preparation"
+  );
 }
 
 export function fulfillmentModeTranslationKey(value: string) {
@@ -77,6 +89,7 @@ export function fulfillmentStatusColor(value: string) {
     case "awaiting_payment":
       return "default";
     case "awaiting_review":
+    case "manual_processing":
       return "warning";
     case "processing":
       return "processing";
@@ -128,9 +141,7 @@ export function fulfillmentQuantityText(
   return t("plugin.idc-core.fulfillment.common.unavailable");
 }
 
-export function createFulfillmentActionAttempt(
-  keyFactory: () => string,
-) {
+export function createFulfillmentActionAttempt(keyFactory: () => string) {
   return Object.freeze({ idempotencyKey: keyFactory() });
 }
 
@@ -171,4 +182,51 @@ export function settlePreviousFulfillmentPage(
   succeeded: boolean,
 ) {
   return succeeded ? history.slice(0, -1) : [...history];
+}
+
+// Operator text is selected from reviewed categories; unknown codes are never
+// rendered verbatim and never enable a provisioning or financial action.
+export function fulfillmentFailureTranslationKey(execution?: {
+  failureCode?: string;
+  lastResultCode?: string;
+  statusCode: string;
+}) {
+  if (execution?.lastResultCode === "operator_non_acceptance_verified")
+    return "plugin.idc-core.fulfillment.diagnostic.reason.verifiedAbsent";
+  const categories: Record<string, string> = {
+    resource_preparation_request_invalid: "localRequest",
+    resource_preparation_lookup_failed: "localLookup",
+    resource_preparation_parameters_unavailable: "localParameters",
+    resource_preparation_credential_failed: "localCredential",
+    resource_preparation_callback_unavailable: "localCallback",
+    resource_preparation_task_input_invalid: "localTaskInput",
+    resource_preparation_task_storage_failed: "localTaskStorage",
+    provider_request_not_sent: "notSent",
+    upstream_request_rejected: "rejected",
+    upstream_task_failed: "taskFailed",
+    upstream_result_unknown: "unknown",
+    idc_resource_provider_timeout: "timeout",
+    idc_resource_provider_dns: "dns",
+    idc_resource_provider_network: "network",
+    idc_resource_provider_endpoint_not_found: "endpoint",
+    idc_resource_provider_invalid_response: "invalidResponse",
+    idc_resource_provider_auth_rejected: "authentication",
+    idc_resource_provider_local_auth_policy: "configuration",
+  };
+  const category =
+    categories[(execution?.failureCode || "").toLowerCase()] ||
+    (execution?.lastResultCode === "provider_result_unavailable"
+      ? "unavailable"
+      : "unrecorded");
+  return `plugin.idc-core.fulfillment.diagnostic.reason.${category}`;
+}
+
+export function fulfillmentPhaseTranslationKey(phase: string) {
+  const phases: Record<string, string> = {
+    pre_submit_query: "preparation",
+    submit_allowed: "submission",
+    post_submit_query: "observation",
+    frozen_unknown: "reconciliation",
+  };
+  return `plugin.idc-core.fulfillment.diagnostic.phase.${phases[phase] || "unrecorded"}`;
 }

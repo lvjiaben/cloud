@@ -10,6 +10,7 @@ import (
 	"github.com/gogf/gf/v2/frame/g"
 
 	"lina-core/pkg/plugin/capability"
+	customerloginspi "lina-plugin-idc-core/backend/cap/customerlogincap/spi"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	managementspi "lina-plugin-idc-core/backend/cap/managementcap/spi"
 	notificationspi "lina-plugin-idc-core/backend/cap/notificationcap/spi"
@@ -21,12 +22,10 @@ import (
 	supportspi "lina-plugin-idc-core/backend/cap/supportcap/spi"
 	"lina-plugin-idc-notify/backend/cap/channelcap"
 	aliyunsmsadapter "lina-plugin-idc-notify/backend/internal/adapter/aliyunsms"
-	webhookadapter "lina-plugin-idc-notify/backend/internal/adapter/signedwebhook"
 	smsbaoadapter "lina-plugin-idc-notify/backend/internal/adapter/smsbao"
 	smtpadapter "lina-plugin-idc-notify/backend/internal/adapter/smtp"
 	tencentsmsadapter "lina-plugin-idc-notify/backend/internal/adapter/tencentcloudsms"
-	wechatofficialadapter "lina-plugin-idc-notify/backend/internal/adapter/wechatofficial"
-	wecomadapter "lina-plugin-idc-notify/backend/internal/adapter/wecom"
+	"lina-plugin-idc-notify/backend/internal/service/loginprofile"
 	"lina-plugin-idc-notify/backend/internal/service/notification"
 	challengesource "lina-plugin-shared-services/backend/cap/challengecap/source"
 	inboxsource "lina-plugin-shared-services/backend/cap/inboxcap/source"
@@ -111,14 +110,23 @@ func BuildNotificationService(ctx context.Context, services capability.Services)
 	if err != nil {
 		return nil, err
 	}
-	return notification.New(g.DB(), management, services, inbox, sources, challenges, support, onboarding,
+	factory := customerloginspi.Current()
+	if factory == nil {
+		return nil, gerror.New("customer login directory factory unavailable")
+	}
+	directory, err := factory(ctx, services, notifyOwnerPluginID)
+	if err != nil {
+		return nil, err
+	}
+	profileClient := loginprofile.New()
+	return notification.New(g.DB(), profileClient, directory, profileClient, services.Auth().ExternalLogin(), management, services, inbox, sources, challenges, support, onboarding,
 		verificationAccessor, verificationHandle, runtimeConfig, bindings, descriptors)
 }
 
 func declareChannelAdapters() error {
 	declareChannelAdaptersOnce.Do(func() {
 		for _, declare := range []func() error{smtpadapter.Declare, aliyunsmsadapter.Declare, smsbaoadapter.Declare,
-			tencentsmsadapter.Declare, wechatofficialadapter.Declare, wecomadapter.Declare, webhookadapter.Declare} {
+			tencentsmsadapter.Declare} {
 			if err := declare(); err != nil {
 				errDeclareChannelAdapters = gerror.Wrap(err, "declare notification channel adapter")
 				return
@@ -192,17 +200,13 @@ func bindChannelSecrets(source secretcap.Source) (map[string]notification.Secret
 	if source == nil {
 		return nil, gerror.New("notification secret source is unavailable")
 	}
-	// DingTalk and Feishu remain adapter SPI kinds only until an implementation
-	// is installed. Bind only channels whose credential scope is actually used.
+	// Bind only the two supported external delivery channels.
 	channels := []struct {
 		code      string
 		scopeCode string
 	}{
 		{code: "email", scopeCode: "email"},
 		{code: "sms", scopeCode: "sms"},
-		{code: "wechat_official", scopeCode: "wechat-official"},
-		{code: "wechat_work", scopeCode: "wechat-work"},
-		{code: "signed_webhook", scopeCode: "signed-webhook"},
 	}
 	result := make(map[string]notification.SecretBinding, len(channels))
 	for _, channel := range channels {

@@ -70,33 +70,9 @@ func (s *serviceImpl) resolveImportedCandidates(ctx context.Context, exact *capm
 		}
 		tokens[r.FieldKey+"\x00"+r.CandidateValue] = r.OptionToken
 	}
-	purchase := make([]channelcommercecap.PurchaseValue, 0, len(values))
-	for _, v := range values {
-		// Candidate requests intentionally exclude text, secrets and files,
-		// matching the existing governed dynamic candidate protocol.
-		if v.OptionTokens == nil && v.TreeOptionTokens == nil && v.AddressOptionTokens == nil {
-			continue
-		}
-		m := mappingByField(snap.Mappings, v.FieldKey)
-		if m == nil {
-			return nil, gerror.New("import field unavailable")
-		}
-		f := fieldByKey(snap.Schema, v.FieldKey)
-		if f == nil {
-			return nil, gerror.New("import field schema unavailable")
-		}
-		out := channelcommercecap.PurchaseValue{FieldToken: m.FieldToken, Type: f.Type}
-		var err error
-		if out.OptionTokens, err = mapTokens(v.OptionTokens, tokens, v.FieldKey); err != nil {
-			return nil, err
-		}
-		if out.TreeOptionTokens, err = mapTokens(v.TreeOptionTokens, tokens, v.FieldKey); err != nil {
-			return nil, err
-		}
-		if out.AddressOptionTokens, err = mapTokens(v.AddressOptionTokens, tokens, v.FieldKey); err != nil {
-			return nil, err
-		}
-		purchase = append(purchase, out)
+	purchase, err := importedCandidatePurchaseValues(&snap, values, tokens)
+	if err != nil {
+		return nil, err
 	}
 	payload, err := json.Marshal(channelcommercecap.ImportCandidatesInput{PublicSlug: snap.Product.PublicSlug, ConfigurationRevision: snap.ConfigurationRevision, Values: purchase})
 	if err != nil {
@@ -200,7 +176,9 @@ func importedCandidateResult(ctx context.Context, db gdb.DB, version string, que
 	if err != nil {
 		return nil, err
 	}
-	resolved, err = configurationcontract.DecodeDynamicCandidateResponse(payload, queries)
+	// This locally constructed normalization envelope contains only imported
+	// choice identities; the immutable import contract owns its restrictions.
+	resolved, _, err = configurationcontract.DecodeDynamicCandidateResponse(payload, queries)
 	if err != nil {
 		return nil, err
 	}
@@ -233,4 +211,41 @@ func importedCandidateResult(ctx context.Context, db gdb.DB, version string, que
 		return nil
 	})
 	return resolved, err
+}
+
+// importedCandidatePurchaseValues maps only editable customer selections.
+// Hidden defaults are owned upstream and may not have cached tokens locally.
+func importedCandidatePurchaseValues(snapshot *channelcommercecap.ImportSnapshot, values []configurationcontract.ConfigurationValue, tokens map[string]string) ([]channelcommercecap.PurchaseValue, error) {
+	purchase := make([]channelcommercecap.PurchaseValue, 0, len(values))
+	for _, v := range values {
+		// Candidate requests intentionally exclude text, secrets and files,
+		// matching the existing governed dynamic candidate protocol.
+		if v.OptionTokens == nil && v.TreeOptionTokens == nil && v.AddressOptionTokens == nil {
+			continue
+		}
+		m := mappingByField(snapshot.Mappings, v.FieldKey)
+		if m == nil {
+			return nil, gerror.New("import field unavailable")
+		}
+		if m.CustomerVisible != nil && !*m.CustomerVisible {
+			continue
+		} // Source applies its frozen default, including uncached dynamic options.
+		f := fieldByKey(snapshot.Schema, v.FieldKey)
+		if f == nil {
+			return nil, gerror.New("import field schema unavailable")
+		}
+		out := channelcommercecap.PurchaseValue{FieldToken: m.FieldToken, Type: f.Type}
+		var err error
+		if out.OptionTokens, err = mapTokens(v.OptionTokens, tokens, v.FieldKey); err != nil {
+			return nil, err
+		}
+		if out.TreeOptionTokens, err = mapTokens(v.TreeOptionTokens, tokens, v.FieldKey); err != nil {
+			return nil, err
+		}
+		if out.AddressOptionTokens, err = mapTokens(v.AddressOptionTokens, tokens, v.FieldKey); err != nil {
+			return nil, err
+		}
+		purchase = append(purchase, out)
+	}
+	return purchase, nil
 }

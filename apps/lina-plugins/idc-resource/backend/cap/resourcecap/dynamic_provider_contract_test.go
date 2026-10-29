@@ -45,6 +45,14 @@ func TestDynamicProviderDeclarationRequiresCompleteOwnerContract(t *testing.T) {
 	if ValidateDynamicProviderDeclarations([]*capmodel.BusinessExtensionDeclaration{declaration}) == nil {
 		t.Fatal("connector catalog write capability was accepted")
 	}
+	declaration.Methods = append(DynamicProviderMethods(), DynamicProviderMethodLookupPrincipal, DynamicProviderMethodCreatePrincipal)
+	if err := ValidateDynamicProviderDeclarations([]*capmodel.BusinessExtensionDeclaration{declaration}); err != nil {
+		t.Fatal(err)
+	}
+	declaration.Methods = append(DynamicProviderMethods(), DynamicProviderMethodLookupPrincipal)
+	if ValidateDynamicProviderDeclarations([]*capmodel.BusinessExtensionDeclaration{declaration}) == nil {
+		t.Fatal("partial principal extension accepted")
+	}
 	declaration.Methods = DynamicProviderMethods()
 	declaration.Methods = declaration.Methods[:len(declaration.Methods)-1]
 	if err := ValidateDynamicProviderDeclarations([]*capmodel.BusinessExtensionDeclaration{declaration}); err == nil {

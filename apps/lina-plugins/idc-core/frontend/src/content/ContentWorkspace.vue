@@ -76,8 +76,6 @@ const editor = reactive({
   body: '',
   categoryNo: '',
   contentNo: '',
-  seoDescription: '',
-  seoTitle: '',
   summary: '',
   title: '',
   type: 'news',
@@ -129,8 +127,6 @@ const displayedUploadPercent = computed(() => {
 
 const audienceType = computed<ContentAudienceTarget['type'] | ''>(() => {
   if (editor.visibility === 'customer_group') return 'customer_group';
-  if (editor.visibility === 'specific_customers') return 'customer';
-  if (editor.visibility === 'specific_services') return 'service';
   return '';
 });
 
@@ -196,10 +192,7 @@ function normalizeUploadPolicy(policy: ContentUploadPolicy) {
 }
 
 function candidateNumber(candidate: ContentAudienceCandidate) {
-  if (audienceType.value === 'customer') return candidate.customerNo ?? '';
-  if (audienceType.value === 'service') return candidate.serviceNo ?? '';
-  if (audienceType.value === 'customer_group') return candidate.groupNo ?? '';
-  return '';
+  return candidate.groupNo ?? '';
 }
 
 function resetAudienceSelection() {
@@ -209,12 +202,6 @@ function resetAudienceSelection() {
 }
 
 function handleEditorTypeChange() {
-  if (
-    editor.type !== 'announcement' &&
-    ['specific_customers', 'specific_services'].includes(editor.visibility)
-  ) {
-    editor.visibility = 'public';
-  }
   resetAudienceSelection();
 }
 
@@ -225,12 +212,7 @@ async function searchAudience() {
   error.value = '';
   try {
     const keyword = audienceQuery.value.trim();
-    const result =
-      kind === 'customer'
-        ? await api.audienceCustomers(keyword)
-        : kind === 'service'
-          ? await api.audienceServices(keyword)
-          : await api.audienceCustomerGroups(keyword);
+    const result = await api.audienceCustomerGroups(keyword);
     audienceCandidates.value = result.items ?? [];
   } catch {
     error.value = tr('content.error.load');
@@ -547,8 +529,6 @@ function openCreate() {
     body: '',
     categoryNo: '',
     contentNo: '',
-    seoDescription: '',
-    seoTitle: '',
     summary: '',
     title: '',
     type: filters.type || 'news',
@@ -565,8 +545,6 @@ function openEdit() {
     body: selected.value.body,
     categoryNo: selected.value.categoryNo ?? '',
     contentNo: selected.value.contentNo,
-    seoDescription: selected.value.seoDescription ?? '',
-    seoTitle: selected.value.seoTitle ?? '',
     summary: selected.value.summary ?? '',
     title: selected.value.title,
     type: selected.value.type,
@@ -577,12 +555,6 @@ function openEdit() {
     selectedAudienceTargets.value = [...selected.value.targetAudiences];
   } else {
     const targets: ContentAudienceTarget[] = [];
-    for (const number of selected.value.targetCustomerNos ?? []) {
-      targets.push({ label: tr('content.audience.existing'), number, type: 'customer' });
-    }
-    for (const number of selected.value.targetServiceNos ?? []) {
-      targets.push({ label: tr('content.audience.existing'), number, type: 'service' });
-    }
     for (const number of selected.value.targetCustomerGroupNos ?? []) {
       targets.push({ label: tr('content.audience.existing'), number, type: 'customer_group' });
     }
@@ -596,23 +568,12 @@ function openEdit() {
 function writeInput(saveMode: 'draft' | 'publish'): ContentWriteInput {
   return {
     body: editor.body,
-    categoryNo:
-      editor.type === 'announcement' ? undefined : editor.categoryNo || undefined,
-    seoDescription: editor.seoDescription || undefined,
-    seoTitle: editor.seoTitle || undefined,
+    categoryNo: editor.categoryNo || undefined,
     status: saveMode === 'publish' ? 'published' : 'draft',
     summary: editor.summary || undefined,
     targetCustomerGroupNos: selectedAudienceTargets.value
       .filter((item) => item.type === 'customer_group')
       .map((item) => item.number),
-    targetCustomerNos:
-      selectedAudienceTargets.value
-        .filter((item) => item.type === 'customer')
-        .map((item) => item.number),
-    targetServiceNos:
-      selectedAudienceTargets.value
-        .filter((item) => item.type === 'service')
-        .map((item) => item.number),
     title: editor.title,
     type: editor.type,
     version: editor.contentNo ? editor.version : undefined,
@@ -731,8 +692,8 @@ onMounted(async () => {
 
     <section class="filter-panel">
       <label class="field wide"><span>{{ tr('content.field.keyword') }}</span><input :aria-label="tr('content.field.keyword')" v-model.trim="filters.keyword" type="search" @keyup.enter="applyFilters" /></label>
-      <label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="filters.type" @change="applyFilters"><option value="">{{ tr('content.filter.all') }}</option><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label>
-      <label v-if="filters.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="filters.categoryNo"><option value="">{{ tr('content.filter.all') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && (!filters.type || item.type === filters.type))" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
+      <label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="filters.type" @change="applyFilters"><option value="">{{ tr('content.filter.all') }}</option><option value="news">{{ tr('content.type.news') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label>
+      <label class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="filters.categoryNo"><option value="">{{ tr('content.filter.all') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && (!filters.type || item.type === filters.type))" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
       <label class="field"><span>{{ tr('content.field.status') }}</span><select :aria-label="tr('content.field.status')" v-model="filters.status"><option value="">{{ tr('content.filter.all') }}</option><option value="draft">{{ tr('content.status.draft') }}</option><option value="published">{{ tr('content.status.published') }}</option><option value="offline">{{ tr('content.status.offline') }}</option></select></label>
       <div class="filter-actions">
         <button class="button primary" type="button" @click="applyFilters">{{ tr('content.action.search') }}</button>
@@ -740,7 +701,7 @@ onMounted(async () => {
         <button class="button ghost" type="button" :aria-expanded="showMoreFilters" @click="showMoreFilters = !showMoreFilters">{{ tr(showMoreFilters ? 'content.action.lessFilters' : 'content.action.moreFilters') }}</button>
       </div>
       <div v-if="showMoreFilters" class="advanced-filters">
-      <label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="filters.visibility"><option value="">{{ tr('content.filter.all') }}</option><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label>
+      <label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="filters.visibility"><option value="">{{ tr('content.filter.all') }}</option><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option></select></label>
       </div>
     </section>
 
@@ -798,13 +759,11 @@ onMounted(async () => {
       <form class="modal-card modal-wide" data-testid="content-editor" @submit.prevent="save('draft')">
         <div class="modal-heading"><div><p class="panel-kicker">{{ tr('content.editor.label') }}</p><h2>{{ editor.contentNo ? tr('content.action.edit') : tr('content.action.create') }}</h2></div><button class="icon-button" type="button" @click="editorOpen = false">×</button></div>
         <div class="notice info">{{ tr('content.note.original') }}</div>
-        <div class="form-grid"><label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="editor.type" :disabled="Boolean(editor.contentNo)" @change="handleEditorTypeChange"><option value="news">{{ tr('content.type.news') }}</option><option value="announcement">{{ tr('content.type.announcement') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="editor.visibility" @change="resetAudienceSelection"><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option><option v-if="editor.type === 'announcement'" value="specific_customers">{{ tr('content.visibility.specific_customers') }}</option><option v-if="editor.type === 'announcement'" value="specific_services">{{ tr('content.visibility.specific_services') }}</option></select></label></div>
-        <label v-if="editor.type !== 'announcement'" class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="editor.categoryNo"><option value="">{{ tr('content.category.uncategorized') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && item.type === editor.type)" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
+        <div class="form-grid"><label class="field"><span>{{ tr('content.field.type') }}</span><select :aria-label="tr('content.field.type')" v-model="editor.type" :disabled="Boolean(editor.contentNo)" @change="handleEditorTypeChange"><option value="news">{{ tr('content.type.news') }}</option><option value="knowledge">{{ tr('content.type.knowledge') }}</option><option value="download">{{ tr('content.type.download') }}</option></select></label><label class="field"><span>{{ tr('content.field.visibility') }}</span><select :aria-label="tr('content.field.visibility')" v-model="editor.visibility" @change="resetAudienceSelection"><option value="public">{{ tr('content.visibility.public') }}</option><option value="all_logged_in">{{ tr('content.visibility.all_logged_in') }}</option><option value="customer_group">{{ tr('content.visibility.customer_group') }}</option><option value="internal">{{ tr('content.visibility.internal') }}</option></select></label></div>
+        <label class="field"><span>{{ tr('content.field.category') }}</span><select :aria-label="tr('content.field.category')" v-model="editor.categoryNo"><option value="">{{ tr('content.category.uncategorized') }}</option><option v-for="category in categories.filter((item) => !item.synthetic && item.type === editor.type)" :key="category.categoryNo" :value="category.categoryNo">{{ category.name }}</option></select></label>
         <label class="field wide"><span>{{ tr('content.field.title') }}</span><input :aria-label="tr('content.field.title')" v-model.trim="editor.title" required maxlength="240" /></label>
         <label class="field wide"><span>{{ tr('content.field.summary') }}</span><textarea v-model="editor.summary" rows="3" /></label>
         <label class="field wide"><span>{{ tr('content.field.body') }}</span><textarea v-model="editor.body" required rows="12" /></label>
-        <div class="notice info">{{ tr('content.note.seo') }}</div>
-        <div class="form-grid"><label class="field"><span>{{ tr('content.field.seoTitle') }}</span><input :aria-label="tr('content.field.seoTitle')" v-model="editor.seoTitle" /></label><label class="field"><span>{{ tr('content.field.seoDescription') }}</span><textarea v-model="editor.seoDescription" rows="2" /></label></div>
         <section v-if="audienceType" class="audience-picker">
           <div class="section-title compact"><h3>{{ tr('content.field.scopeTargets') }}</h3><span class="count-pill">{{ selectedAudienceTargets.length }}</span></div>
           <div class="audience-search"><label class="field"><span>{{ tr('content.audience.search') }}</span><input :aria-label="tr('content.audience.search')" v-model.trim="audienceQuery" type="search" @keyup.enter.prevent="searchAudience" /></label><button class="button secondary" :disabled="audienceLoading" type="button" @click="searchAudience">{{ audienceLoading ? tr('content.state.loading') : tr('content.action.search') }}</button></div>

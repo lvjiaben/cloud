@@ -35,13 +35,6 @@ func RegisterJobs(ctx context.Context, registrar pluginhost.JobsRegistrar, servi
 		}); err != nil {
 		return err
 	}
-	if err := registrar.AddWithMetadata(ctx, "@every 30s", "idc-notify-wecom-binding-recovery",
-		"IDC WeCom Employee Binding Recovery", "Recovers interrupted employee identity secret creation, revocation, and bounded queue cancellation.",
-		func(jobCtx context.Context) error {
-			return service.ProcessWeComBindings(jobCtx, notificationWorkerBatch)
-		}); err != nil {
-		return err
-	}
 	return registrar.AddWithMetadata(ctx, "@every 1m", "idc-notify-query",
 		"IDC Notification Result Query", "Converges externally accepted notifications using provider-authoritative query limits.",
 		func(jobCtx context.Context) error { return service.ProcessQueries(jobCtx, notificationWorkerBatch) })

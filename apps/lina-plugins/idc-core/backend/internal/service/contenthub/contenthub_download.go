@@ -96,8 +96,8 @@ func (s *serviceImpl) loadDownloadSource(ctx context.Context, contentNo, custome
 	if !account {
 		where += " AND i.visibility_code='public'"
 	} else {
-		where += ` AND (i.visibility_code IN ('public','all_logged_in') OR (i.visibility_code='customer_group' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_group_scope gs JOIN plugin_idc_core_customer_group_assignment ga ON ga.tenant_id=0 AND ga.group_no=gs.group_no AND ga.customer_no=? AND ga.status_code='active' WHERE gs.tenant_id=0 AND gs.content_no=i.content_no)) OR (i.visibility_code='specific_customers' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_customer_scope cs WHERE cs.tenant_id=0 AND cs.content_no=i.content_no AND cs.customer_no=?)) OR (i.visibility_code='specific_services' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_service_scope ss JOIN plugin_idc_core_service_entitlement entitlement ON entitlement.tenant_id=0 AND entitlement.entitlement_no=ss.service_no AND entitlement.customer_no=? WHERE ss.tenant_id=0 AND ss.content_no=i.content_no)))`
-		args = append(args, customerNo, customerNo, customerNo)
+		where += ` AND (i.visibility_code IN ('public','all_logged_in') OR (i.visibility_code='customer_group' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_group_scope gs JOIN plugin_idc_core_customer_group_assignment ga ON ga.tenant_id=0 AND ga.group_no=gs.group_no AND ga.customer_no=? AND ga.status_code='active' WHERE gs.tenant_id=0 AND gs.content_no=i.content_no)))`
+		args = append(args, customerNo)
 	}
 	var rows []downloadSource
 	if err := s.database.GetScan(ctx, &rows, `SELECT i.content_no,f.file_no,i.visibility_code AS visibility,f.object_ref,f.file_name,f.media_type,f.size_bytes,i.validity_version FROM plugin_idc_core_content_item i JOIN plugin_idc_core_content_file f ON f.tenant_id=0 AND f.content_no=i.content_no`+where+` LIMIT 1`, args...); err != nil {
@@ -138,8 +138,8 @@ func (s *serviceImpl) openDownload(ctx context.Context, token string, userID int
 		where += " AND d.visibility_code='public' AND d.user_id IS NULL AND i.visibility_code='public'"
 	} else {
 		sessionHash := sha256.Sum256([]byte(sessionID))
-		where += ` AND d.visibility_code<>'public' AND d.user_id=? AND d.session_reference_digest=? AND EXISTS (SELECT 1 FROM plugin_idc_core_content_download_authorization a WHERE a.tenant_id=0 AND a.content_no=d.content_no AND a.user_id=d.user_id AND a.revision=d.authorization_revision) AND (i.visibility_code='all_logged_in' OR (i.visibility_code='customer_group' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_group_scope gs JOIN plugin_idc_core_customer_group_assignment ga ON ga.tenant_id=0 AND ga.group_no=gs.group_no AND ga.customer_no=? AND ga.status_code='active' WHERE gs.tenant_id=0 AND gs.content_no=i.content_no)) OR (i.visibility_code='specific_customers' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_customer_scope cs WHERE cs.tenant_id=0 AND cs.content_no=i.content_no AND cs.customer_no=?)) OR (i.visibility_code='specific_services' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_service_scope ss JOIN plugin_idc_core_service_entitlement entitlement ON entitlement.tenant_id=0 AND entitlement.entitlement_no=ss.service_no AND entitlement.customer_no=? WHERE ss.tenant_id=0 AND ss.content_no=i.content_no)))`
-		args = append(args, userID, hex.EncodeToString(sessionHash[:]), customerNo, customerNo, customerNo)
+		where += ` AND d.visibility_code<>'public' AND d.user_id=? AND d.session_reference_digest=? AND EXISTS (SELECT 1 FROM plugin_idc_core_content_download_authorization a WHERE a.tenant_id=0 AND a.content_no=d.content_no AND a.user_id=d.user_id AND a.revision=d.authorization_revision) AND (i.visibility_code='all_logged_in' OR (i.visibility_code='customer_group' AND EXISTS (SELECT 1 FROM plugin_idc_core_content_group_scope gs JOIN plugin_idc_core_customer_group_assignment ga ON ga.tenant_id=0 AND ga.group_no=gs.group_no AND ga.customer_no=? AND ga.status_code='active' WHERE gs.tenant_id=0 AND gs.content_no=i.content_no)))`
+		args = append(args, userID, hex.EncodeToString(sessionHash[:]), customerNo)
 	}
 	var rows []downloadSource
 	if err := s.database.GetScan(ctx, &rows, `SELECT i.content_no,f.file_no,i.visibility_code AS visibility,f.object_ref,f.file_name,f.media_type,f.size_bytes,i.validity_version FROM plugin_idc_core_content_download_ticket d JOIN plugin_idc_core_content_item i ON i.tenant_id=0 AND i.content_no=d.content_no JOIN plugin_idc_core_content_file f ON f.tenant_id=0 AND f.file_no=d.file_no`+where+` LIMIT 1`, args...); err != nil {
@@ -184,15 +184,8 @@ func (s *serviceImpl) revalidateDownload(ctx context.Context, tokenDigest string
                           ON ga.tenant_id=0 AND ga.group_no=gs.group_no
                          AND ga.customer_no=? AND ga.status_code='active'
                         WHERE gs.tenant_id=0 AND gs.content_no=i.content_no))
-                 OR (i.visibility_code='specific_customers' AND EXISTS (
-                        SELECT 1 FROM plugin_idc_core_content_customer_scope cs
-                        WHERE cs.tenant_id=0 AND cs.content_no=i.content_no AND cs.customer_no=?))
-                 OR (i.visibility_code='specific_services' AND EXISTS (
-                        SELECT 1 FROM plugin_idc_core_content_service_scope ss
-                        JOIN plugin_idc_core_service_entitlement entitlement
-                          ON entitlement.tenant_id=0 AND entitlement.entitlement_no=ss.service_no AND entitlement.customer_no=?
-                        WHERE ss.tenant_id=0 AND ss.content_no=i.content_no)))`
-		args = append(args, userID, customerNo, customerNo, customerNo)
+)`
+		args = append(args, userID, customerNo)
 	}
 	count, err := s.database.GetValue(ctx, `SELECT COUNT(1)
         FROM plugin_idc_core_content_download_ticket d

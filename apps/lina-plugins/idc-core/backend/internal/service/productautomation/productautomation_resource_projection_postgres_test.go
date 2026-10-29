@@ -16,7 +16,12 @@ func installResourceProjectionTestColumns(t *testing.T, ctx context.Context, dat
 	if _, err := database.Exec(ctx, `ALTER TABLE plugin_idc_core_product_automation_interface_instance
  ADD COLUMN IF NOT EXISTS interface_origin_code VARCHAR(16) NOT NULL DEFAULT 'managed',
  ADD COLUMN IF NOT EXISTS resource_owner_id VARCHAR(64) NOT NULL DEFAULT '',
- ADD COLUMN IF NOT EXISTS resource_channel_ref VARCHAR(64) NOT NULL DEFAULT ''`); err != nil {
+ ADD COLUMN IF NOT EXISTS resource_channel_ref VARCHAR(64) NOT NULL DEFAULT '';
+ALTER TABLE plugin_idc_core_catalog_product_version ADD COLUMN IF NOT EXISTS product_no TEXT DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS plugin_idc_core_catalog_product_import(
+ id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,tenant_id INT,product_no TEXT,version_no TEXT,interface_instance_no TEXT,upstream_reference TEXT,source_snapshot JSONB);
+`); err != nil {
 		t.Fatalf("install resource projection test columns: %v", err)
 	}
 }

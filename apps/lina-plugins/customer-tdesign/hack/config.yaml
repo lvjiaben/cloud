@@ -1,0 +1,6 @@
+build:
+  commands:
+    - node "$(BUILD_DIR)/hack/build.mjs"
+gfcli:
+  gen:
+    dao: []

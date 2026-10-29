@@ -195,20 +195,6 @@ func (s *serviceImpl) ListDeliveries(ctx context.Context, input DeliveryListInpu
 	return s.listDeliveries(ctx, input, "")
 }
 
-func (s *serviceImpl) ListOwnDeliveries(ctx context.Context, afterTaskNo string, limit int) (*DeliveryPage, error) {
-	if _, err := s.currentUser(ctx); err != nil {
-		return nil, err
-	}
-	audience, err := s.sources.Audience.Current(ctx)
-	if err != nil {
-		return nil, publicError(err)
-	}
-	if audience.CustomerNo == "" || len(audience.CustomerNo) > 80 || audience.CustomerVersion <= 0 {
-		return nil, bizerr.NewCode(CodeNotAccessible)
-	}
-	return s.listDeliveries(ctx, DeliveryListInput{AfterTaskNo: afterTaskNo, Limit: limit}, audience.CustomerNo)
-}
-
 func (s *serviceImpl) listDeliveries(ctx context.Context, input DeliveryListInput, customerNo string) (*DeliveryPage, error) {
 	if input.Limit <= 0 {
 		input.Limit = 20
@@ -319,6 +305,9 @@ func (s *serviceImpl) processClaimed(ctx context.Context, task *deliveryRow) err
 	if task == nil {
 		return nil
 	}
+	if !validChannelCode(task.ChannelCode) && !staffInboxTask(task) {
+		return s.finishClaim(ctx, task, channelcap.Result{Class: "channel_disabled"}, DeliveryCancelled, "channel_removed")
+	}
 	channel, err := s.loadDeliveryChannel(ctx, task.ChannelCode)
 	if err != nil {
 		return err
@@ -339,9 +328,6 @@ func (s *serviceImpl) processClaimed(ctx context.Context, task *deliveryRow) err
 	}
 	if task.ChannelCode == string(notificationcap.ChannelInApp) {
 		return s.deliverInApp(ctx, task)
-	}
-	if task.ChannelCode == string(notificationcap.ChannelWeChatWork) {
-		return s.deliverWeCom(ctx, task, channel)
 	}
 	if !customerAddressChannel(task.ChannelCode) {
 		return s.deliverExternal(ctx, task, channel, nil)
@@ -367,38 +353,6 @@ func (s *serviceImpl) processClaimed(ctx context.Context, task *deliveryRow) err
 	}
 	if !called {
 		return s.finishClaim(ctx, task, channelcap.Result{Class: channelcap.ResultInvalidRecipient}, DeliveryFailed, "recipient_unavailable")
-	}
-	return nil
-}
-
-func (s *serviceImpl) deliverWeCom(ctx context.Context, task *deliveryRow, channel *deliveryChannelRow) error {
-	if task.OwnerUserID == nil || *task.OwnerUserID <= 0 {
-		return s.finishClaim(ctx, task, channelcap.Result{Class: channelcap.ResultInvalidRecipient}, DeliveryFailed, "recipient_unavailable")
-	}
-	binding, err := s.loadActiveWeComBinding(ctx, *task.OwnerUserID)
-	if err != nil {
-		return err
-	}
-	if binding == nil || binding.StaffVersion <= 0 {
-		return s.finishClaim(ctx, task, channelcap.Result{Class: channelcap.ResultInvalidRecipient}, DeliveryFailed, "employee_binding_unavailable")
-	}
-	staff, err := s.sources.StaffDirectory.ResolveActiveBatch(ctx, []notificationcap.StaffDirectoryRequest{{
-		HostUserID: *task.OwnerUserID, ExpectedVersion: binding.StaffVersion,
-	}})
-	if err != nil {
-		return err
-	}
-	if len(staff) != 1 || !staff[0].Active || staff[0].CurrentVersion != binding.StaffVersion {
-		return s.finishClaim(ctx, task, channelcap.Result{Class: channelcap.ResultInvalidRecipient}, DeliveryFailed, "employee_no_longer_active")
-	}
-	err = s.WithWeComDestination(ctx, *task.OwnerUserID, func(destination []byte) error {
-		return s.deliverExternal(ctx, task, channel, destination)
-	})
-	if err != nil {
-		// The binding may have changed after the staff fence was evaluated, or
-		// an owner-side dependency may be temporarily unavailable. Keep the
-		// lease and re-evaluate both authorities on the next bounded worker pass.
-		return err
 	}
 	return nil
 }
@@ -491,8 +445,7 @@ func (s *serviceImpl) finishClaim(ctx context.Context, task *deliveryRow, result
 	if !isDigest(result.EvidenceDigest) {
 		result.EvidenceDigest = digestText(task.TaskNo, strconv.Itoa(task.RetrySequence), string(result.Class), reason)
 	}
-	callbackPending := task.ChannelCode == "wechat_official" && status == DeliverySubmitted && result.QueryDeadlineSource == "wechat_encrypted_callback"
-	if (status == DeliverySubmitted || status == DeliveryResultUnknown) && result.QueryDeadline == nil && !callbackPending {
+	if (status == DeliverySubmitted || status == DeliveryResultUnknown) && result.QueryDeadline == nil {
 		status = DeliveryManualReview
 		reason = "query_authority_unavailable"
 	}
@@ -641,7 +594,7 @@ func projectDelivery(row deliveryRow) Delivery {
 }
 
 func validateEnqueueInput(input EnqueueInput) error {
-	if !stableCodePattern.MatchString(input.EventCode) || !stableCodePattern.MatchString(input.ChannelCode) ||
+	if !stableCodePattern.MatchString(input.EventCode) || !validChannelCode(input.ChannelCode) ||
 		!validLocale(input.Locale) || !stableCodePattern.MatchString(input.BusinessObjectType) ||
 		input.BusinessObjectNo == "" || len(input.BusinessObjectNo) > 128 || input.BusinessObjectVersion < 0 ||
 		!stableCodePattern.MatchString(input.TemplateNo) || input.TemplateVersion <= 0 ||
@@ -721,8 +674,7 @@ func safeRecipientMask(input EnqueueInput, projection notificationcap.ContactPro
 
 func customerAddressChannel(channelCode string) bool {
 	switch notificationcap.Channel(channelCode) {
-	case notificationcap.ChannelEmail, notificationcap.ChannelSMS,
-		notificationcap.ChannelWeChatOfficial:
+	case notificationcap.ChannelEmail, notificationcap.ChannelSMS:
 		return true
 	default:
 		return false
@@ -733,7 +685,7 @@ func (s *serviceImpl) materializeProviderMapping(ctx context.Context, task *deli
 	if task == nil {
 		return "", nil, nil, bizerr.NewCode(CodeInvalid)
 	}
-	if task.ChannelCode != "sms" && task.ChannelCode != "wechat_official" {
+	if task.ChannelCode != "sms" {
 		return "", nil, nil, nil
 	}
 	if task.TemplateNo == nil || task.TemplateVersion == nil {
@@ -747,25 +699,10 @@ func (s *serviceImpl) materializeProviderMapping(ctx context.Context, task *deli
 	if json.Unmarshal([]byte(task.ProviderVariables), &variables) != nil {
 		return "", nil, nil, bizerr.NewCode(CodeInvalid)
 	}
-	if task.ChannelCode == "sms" {
-		if template.ProviderCode != activeProvider {
-			return "", nil, nil, bizerr.NewCode(CodeChannelUnavailable)
-		}
-		return materializeSMSProviderMapping(template, variables)
+	if template.ProviderCode != activeProvider {
+		return "", nil, nil, bizerr.NewCode(CodeChannelUnavailable)
 	}
-	mapping := make(map[string]string)
-	if template.ProviderTemplateID == "" || json.Unmarshal([]byte(template.ProviderWeChatDataMapping), &mapping) != nil || len(mapping) == 0 || len(mapping) > MaximumVariables {
-		return "", nil, nil, bizerr.NewCode(CodeInvalid)
-	}
-	data := make(map[string]string, len(mapping))
-	for key, variable := range mapping {
-		value, exists := variables[variable]
-		if !providerDataKey(key) || !exists {
-			return "", nil, nil, bizerr.NewCode(CodeInvalid)
-		}
-		data[key] = value
-	}
-	return template.ProviderTemplateID, nil, data, nil
+	return materializeSMSProviderMapping(template, variables)
 }
 
 func nullableString(value string) any {
@@ -803,4 +740,9 @@ func (s *serviceImpl) appendDeliveryAudit(ctx context.Context, taskNo, action, a
 	}
 	_, err := s.database.Model("plugin_idc_notify_delivery_audit").Ctx(ctx).Data(data).InsertIgnore()
 	return err
+}
+
+// staffInboxTask preserves the internal employee renewal inbox delivery only.
+func staffInboxTask(task *deliveryRow) bool {
+	return task != nil && task.ChannelCode == string(notificationcap.ChannelInApp) && task.EventCode == accessoryRenewalAttentionEventCode && task.OwnerUserID != nil && *task.OwnerUserID > 0
 }

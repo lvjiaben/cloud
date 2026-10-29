@@ -1,3 +1,5 @@
+// Content API contracts cover bounded administration, simple publication, and guarded file workflows.
+
 package v1
 
 import "github.com/gogf/gf/v2/frame/g"
@@ -55,8 +57,6 @@ type ContentItem struct {
 	OfflineAt              int64               `json:"offlineAt,omitempty"`
 	CreatedAt              int64               `json:"createdAt"`
 	UpdatedAt              int64               `json:"updatedAt"`
-	TargetCustomerNos      []string            `json:"targetCustomerNos"`
-	TargetServiceNos       []string            `json:"targetServiceNos"`
 	TargetCustomerGroupNos []string            `json:"targetCustomerGroupNos"`
 	ActiveUpload           *ActiveUpload       `json:"activeUpload,omitempty"`
 	CandidateFile          *CandidateFile      `json:"candidateFile,omitempty"`
@@ -69,11 +69,20 @@ type TargetAudience struct {
 	Number string `json:"number"`
 	Label  string `json:"label"`
 }
+
+// ContentListReq supports bounded administrative pages without changing public cursor readers.
 type ContentListReq struct {
-	g.Meta                                              `path:"/admin/content/items" method:"get" tags:"IDC Content" summary:"List managed content" permission:"idc:admin:content:manage"`
-	Type, CategoryNo, Status, Visibility, Query, Cursor string
-	Limit                                               int `d:"25" v:"min:1|max:100"`
+	g.Meta     `path:"/admin/content/items" method:"get" tags:"IDC Content" summary:"List managed content" dc:"Returns managed content and its exact filtered total; page selects numbered pagination, while cursor selects keyset pagination." permission:"idc:admin:content:manage"`
+	Type       string `json:"type" dc:"Content type: news, knowledge or download; empty selects all types." eg:"news"`
+	CategoryNo string `json:"categoryNo" dc:"Optional category business number; empty selects all categories." eg:"CAT_NEWS"`
+	Status     string `json:"status" dc:"Optional publication status: draft, published or offline; empty selects all non-deleted items." eg:"draft"`
+	Visibility string `json:"visibility" dc:"Optional audience: public, all_logged_in, customer_group or internal." eg:"public"`
+	Query      string `json:"query" dc:"Optional title prefix or exact content number, up to 128 bytes." eg:"News"`
+	Cursor     string `json:"cursor" dc:"Opaque cursor for keyset pagination; must be empty when page is set." eg:""`
+	Limit      int    `json:"limit" d:"25" v:"min:1|max:100" dc:"Maximum rows per page, from 1 to 100; defaults to 25." eg:"10"`
+	Page       int    `json:"page" v:"min:0|max:1000000" dc:"One-based page number; zero uses cursor pagination." eg:"1"`
 }
+
 type ContentCategory struct {
 	CategoryNo string `json:"categoryNo"`
 	Type       string `json:"type"`
@@ -113,6 +122,7 @@ type ContentCategoryDeleteRes struct{}
 type ContentListRes struct {
 	Items      []*ContentItem `json:"items"`
 	NextCursor string         `json:"nextCursor"`
+	Total      int            `json:"total" dc:"Exact count of non-deleted content matching the same administrative filters and authorization boundary." eg:"42"`
 }
 type ContentUploadPolicyReq struct {
 	g.Meta `path:"/admin/content/upload-policy" method:"get" tags:"IDC Content" summary:"Get content upload policy" dc:"Returns the current fail-closed size and extension policy used before an administrator starts a download-file upload." permission:"idc:admin:content:manage"`
@@ -143,8 +153,6 @@ type ContentWriteFields struct {
 	SEODescription         string   `json:"seoDescription,omitempty"`
 	Status                 string   `json:"status,omitempty"`
 	Version                int64    `json:"version,omitempty"`
-	TargetCustomerNos      []string `json:"targetCustomerNos"`
-	TargetServiceNos       []string `json:"targetServiceNos"`
 	TargetCustomerGroupNos []string `json:"targetCustomerGroupNos"`
 }
 type ContentCreateReq struct {
@@ -199,25 +207,13 @@ type AudienceSearchReq struct {
 	Limit           int `d:"20" v:"min:1|max:50"`
 }
 type AudienceCandidate struct {
-	CustomerNo string `json:"customerNo,omitempty"`
-	ServiceNo  string `json:"serviceNo,omitempty"`
-	GroupNo    string `json:"groupNo,omitempty"`
-	Label      string `json:"label"`
+	GroupNo string `json:"groupNo,omitempty"`
+	Label   string `json:"label"`
 }
 type AudienceSearchRes struct {
 	Items      []AudienceCandidate `json:"items"`
 	NextCursor string              `json:"nextCursor"`
 }
-type AudienceCustomerSearchReq struct {
-	g.Meta `path:"/admin/content/audience-customers" method:"get" tags:"IDC Content" summary:"Search customer audience" permission:"idc:admin:content:manage"`
-	AudienceSearchReq
-}
-type AudienceCustomerSearchRes AudienceSearchRes
-type AudienceServiceSearchReq struct {
-	g.Meta `path:"/admin/content/audience-services" method:"get" tags:"IDC Content" summary:"Search service audience" permission:"idc:admin:content:manage"`
-	AudienceSearchReq
-}
-type AudienceServiceSearchRes AudienceSearchRes
 type AudienceCustomerGroupSearchReq struct {
 	g.Meta `path:"/admin/content/audience-customer-groups" method:"get" tags:"IDC Content" summary:"Search customer-group audience" permission:"idc:admin:content:manage"`
 	AudienceSearchReq

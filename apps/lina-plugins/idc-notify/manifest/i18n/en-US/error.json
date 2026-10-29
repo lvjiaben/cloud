@@ -9,5 +9,8 @@
   "error.idc.notify.verification.expired": "The verification code has expired. Please request a new code",
   "error.idc.notify.verification.invalid": "The verification code or human-verification proof is invalid",
   "error.idc.notify.verification.rate.limited": "Too many verification requests. Please try again later",
-  "error.idc.notify.verification.result.unknown": "The delivery result is unknown. Please wait until the shown retry time before requesting a new code"
+  "error.idc.notify.verification.result.unknown": "The delivery result is unknown. Please wait until the shown retry time before requesting a new code",
+  "error.idc.notify.contact.manual.verification": "No existing contact is available for verification; submit a support ticket",
+  "error.idc.customer.auth.invalid": "The account information or verification is incorrect",
+  "error.idc.notify.password.changed": "Your password has changed; please sign in again"
 }

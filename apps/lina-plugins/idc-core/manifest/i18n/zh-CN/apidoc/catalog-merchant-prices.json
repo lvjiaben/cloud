@@ -1,0 +1,18 @@
+{
+  "Field already visible in the authorized merchant configuration editor": "管理员已获配置权限并可见的字段",
+  "Editable choice value; empty only for a quantity target": "可编辑子项的值；数量计价目标留空",
+  "Whether this target prices a numeric quantity rather than a fixed choice": "是否按数量计费而非按固定子项收费",
+  "Existing local price dimension, or empty before its first price is saved": "已有本地价格目标；首次保存价格前为空",
+  "Existing algorithm: fixed, per_unit, band_total; empty before first save": "已有计价方式：fixed固定子项、per_unit按数量累加、band_total整档收费；首次保存前为空",
+  "Field in the customer configuration submitted in the same request": "同次请求提交的客户配置字段",
+  "Exact sellable choice value; must be empty for quantity pricing": "可售子项的准确值；数量计价时必须为空",
+  "True for a numeric quantity price, false for an individual sellable choice": "true表示数量计价，false表示单个可售子项",
+  "Fixed choice charge or per_unit quantity or band_total whole-band charge; omitted defaults to fixed for choices and per_unit for quantity": "fixed为固定子项费用、per_unit为按数量累加、band_total为整档费用；省略时子项默认fixed、数量默认per_unit",
+  "Whether the schedule is active; omitted defaults to true": "是否启用此价格；省略时默认启用",
+  "Current local price-row identity to fence concurrent updates; empty creates a schedule": "当前本地价格记录标识，用于检查并发修改；为空时新增价格",
+  "Active billing rule belonging to the edited product version": "当前编辑商品所属的有效计费规则",
+  "Explicit uppercase currency code without currency fallback": "明确的大写币种代码，不自动替代币种",
+  "Complete schedule; at most 256 tiers across all submitted price rows": "完整价格规则；同次提交的全部价格合计最多二百五十六档",
+  "At most 4096 authorized editor choices joined to existing local price dimensions; no credentials or cost data": "最多四千零九十六个有权编辑的配置子项及本地价格对应，不含凭据或成本",
+  "Optional changed configuration price schedules saved atomically with this schema; omitted or empty preserves prices. Requires independent price-write authority. Invalid or stale rows roll back configuration and prices together.": "可选的配置价格变更，与本次配置原子保存；省略或为空保留原价格。独立校验价格修改权限；无效或已被修改的记录使配置和价格整体回滚。"
+}

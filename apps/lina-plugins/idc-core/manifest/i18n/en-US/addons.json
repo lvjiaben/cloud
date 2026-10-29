@@ -21,9 +21,9 @@
   "plugin.idc-core.addons.paid": "Paid; awaiting delivery",
   "plugin.idc-core.addons.another": "Buy another",
   "plugin.idc-core.addons.failed": "Action failed; retry safely.",
-  "plugin.idc-core.addons.adminTitle": "Add-on products",
+  "plugin.idc-core.addons.adminTitle": "Optional companion products",
   "plugin.idc-core.addons.adminHint": "Choose products that can be bought for this service.",
-  "plugin.idc-core.addons.search": "Search add-ons",
-  "plugin.idc-core.addons.save": "Save add-ons",
+  "plugin.idc-core.addons.search": "Search and select companion products",
+  "plugin.idc-core.addons.save": "Save companion products",
   "plugin.idc-core.addons.saved": "Saved"
 }

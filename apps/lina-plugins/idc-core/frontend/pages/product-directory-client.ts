@@ -1,6 +1,8 @@
 // Merchant-owned customer directory API; product identifiers never imply customer access.
 import { pluginApiPath, requestClient } from "#/api/request";
 export interface ProductDirectory {
+ pagePluginIds?: string[];
+ parentDirectoryNo?: string;
  navigationType: "product" | "system" | "custom" | "plugin";
  targetUrl: string;
  icon: string;
@@ -13,6 +15,8 @@ export interface ProductDirectory {
   productCount: number;
 }
 export interface DirectoryInput {
+ pagePluginIds?: string[];
+ parentDirectoryNo?: string;
  navigationType?: ProductDirectory["navigationType"];
  targetUrl?: string;
  icon?: string;
@@ -20,10 +24,10 @@ export interface DirectoryInput {
   nameEnUs: string;
   sortOrder: number;
 }
-export function listProductDirectories(page = 1, pageSize = 20) {
-  return requestClient.get<{ items: ProductDirectory[]; total: number }>(
+export function listProductDirectories(page = 1, pageSize = 20, tree = false) {
+  return requestClient.get<{ items: ProductDirectory[]; parents?: ProductDirectory[]; total: number }>(
     pluginApiPath("idc-core", "admin/product-directories"),
-    { params: { page, pageSize } },
+    { params: { page, pageSize, tree } },
   );
 }
 // Product forms need the full candidate set rather than only the first grid page.
@@ -51,7 +55,7 @@ export function updateProductDirectory(
     statusCode: ProductDirectory["statusCode"];
   },
 ) {
-  return requestClient.put(
+  return requestClient.put<{directory:ProductDirectory}>(
     pluginApiPath(
       "idc-core",
       `admin/product-directories/${encodeURIComponent(directoryNo)}`,

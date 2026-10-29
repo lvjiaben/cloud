@@ -298,17 +298,6 @@ func NewWithQuoteAdjustments(ctx context.Context, database gdb.DB, principalRead
 	return service, nil
 }
 
-// NewWorkers constructs the trusted automatic and Provider renewal workers.
-// The returned service has no customer-principal dependency and is not exposed
-// through HTTP routes.
-func NewWorkers(ctx context.Context, database gdb.DB, catalogReader catalog.CatalogReader, owners renewalownercap.Router) (AutomaticService, ProviderService, error) {
-	evaluator, err := newDefaultQuoteAdjustments(database)
-	if err != nil {
-		return nil, nil, err
-	}
-	return NewWorkersWithQuoteAdjustments(ctx, database, catalogReader, owners, evaluator)
-}
-
 // NewWorkersWithQuoteAdjustments gives automatic renewals the customer pricing policy.
 func NewWorkersWithQuoteAdjustments(ctx context.Context, database gdb.DB, catalogReader catalog.CatalogReader, owners renewalownercap.Router, evaluator commerce.QuoteAdjustmentEvaluator) (AutomaticService, ProviderService, error) {
 	if ctx == nil || ctx.Err() != nil || database == nil || catalogReader == nil || owners == nil || evaluator == nil {

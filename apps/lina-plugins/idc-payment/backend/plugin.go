@@ -3,6 +3,7 @@ package backend
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"time"
@@ -42,6 +43,9 @@ func init() {
 		paymentcap.DynamicProviderContractVersion,
 		paymentcap.ValidateDynamicProviderDeclarations,
 	); err != nil {
+		panic(err)
+	}
+	if err := plugin.Lifecycle().RegisterBusinessImpactHandler(paymentcap.BusinessImpact); err != nil {
 		panic(err)
 	}
 	if err := plugin.HTTP().RegisterRoutes(pluginhost.ExtensionPointHTTPRouteRegister, pluginhost.CallbackExecutionModeBlocking, registerRoutes); err != nil {
@@ -218,7 +222,7 @@ func buildRuntime(ctx context.Context, services capability.Services, extensions 
 	if _, err = time.LoadLocation(timezone); err != nil {
 		return nil, errors.New("merchant timezone is invalid")
 	}
-	source, err := reconciliation.NewProviderSource(g.DB(), channels, &http.Client{Timeout: 30 * time.Second})
+	source, err := reconciliation.NewProviderSource(g.DB(), channels, &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 30 * time.Second})
 	if err != nil {
 		return nil, err
 	}

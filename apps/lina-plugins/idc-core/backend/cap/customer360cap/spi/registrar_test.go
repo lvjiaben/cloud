@@ -35,7 +35,7 @@ func TestRegistrarFreezesCompleteCoverage(t *testing.T) {
 	r := &registrar{}
 	all := []customer360cap.Code{
 		customer360cap.CodeOrders, customer360cap.CodeBills, customer360cap.CodeTransactions,
-		customer360cap.CodeServers, customer360cap.CodeContracts, customer360cap.CodeTaxInvoices,
+		customer360cap.CodeServers, customer360cap.CodeTaxInvoices,
 		customer360cap.CodeTickets, customer360cap.CodeNotifications, customer360cap.CodeAudits,
 	}
 	for _, code := range all {

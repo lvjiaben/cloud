@@ -1,12 +1,12 @@
 id: idc-notify
 name: IDC Notifications
-version: v0.1.7
+version: v0.1.11
 type: source
 distribution: builtin
 scope_nature: platform_only
 supports_multi_tenant: false
 default_install_mode: global
-description: Notification events, bilingual templates, delivery channels, retries, preferences, and delivery evidence.
+description: Email and SMS notifications, bilingual templates, delivery channels, retries, and delivery evidence.
 author: linapro
 license: Proprietary
 
@@ -21,9 +21,9 @@ i18n:
 dependencies:
   plugins:
     - id: idc-core
-      version: ">=0.1.55 <1.0.0"
+      version: ">=0.1.163 <1.0.0"
     - id: shared-services
-      version: ">=0.1.0 <1.0.0"
+      version: ">=0.1.1 <1.0.0"
 
 business_extensions:
   - point: sms-channel
@@ -32,19 +32,6 @@ business_extensions:
     owner: idc-notify
 
 menus:
-  - key: plugin:idc-notify:wecom-self-binding
-    parent_key: plugin:idc-core:notification-marketing
-    name: My WeCom Binding
-    path: /idc/notifications/wechat-work-binding
-    component: system/plugin/dynamic-page
-    query:
-      pluginAccessMode: embedded-mount
-      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
-      routePath: /idc/notifications/wechat-work-binding
-    icon: lucide:scan-qr-code
-    type: M
-    sort: 39
-    remark: Let the current direct staff member bind or remove only their own WeCom account
   - key: plugin:idc-notify:channels
     parent_key: plugin:idc-core:notification-marketing
     name: Notification Channels
@@ -52,7 +39,7 @@ menus:
     component: system/plugin/dynamic-page
     query:
       pluginAccessMode: embedded-mount
-      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      embeddedSrc: /x-assets/idc-notify/v0.1.11/mount.js
       routePath: /idc/notifications/channels
     perms: idc:admin:notification:channel:manage
     icon: lucide:send
@@ -66,7 +53,7 @@ menus:
     component: system/plugin/dynamic-page
     query:
       pluginAccessMode: embedded-mount
-      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      embeddedSrc: /x-assets/idc-notify/v0.1.11/mount.js
       routePath: /idc/notifications/templates
     perms: idc:admin:notification:channel:manage
     icon: lucide:layout-template
@@ -80,7 +67,7 @@ menus:
     component: system/plugin/dynamic-page
     query:
       pluginAccessMode: embedded-mount
-      embeddedSrc: /x-assets/idc-notify/v0.1.4/mount.js
+      embeddedSrc: /x-assets/idc-notify/v0.1.11/mount.js
       routePath: /idc/notifications/deliveries
     perms: idc:admin:notification:channel:manage
     icon: lucide:list-checks

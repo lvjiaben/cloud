@@ -44,6 +44,8 @@ const (
 	ActionResetPassword       Action = "reset_password"
 	ActionConsole             Action = "console"
 	ActionReinstall           Action = "reinstall"
+	ActionEnterRescue         Action = "enter_rescue"
+	ActionExitRescue          Action = "exit_rescue"
 	ActionResize              Action = "resize"
 	ActionChangeIP            Action = "ip_change"
 	ActionSnapshotCreate      Action = "snapshot_create"
@@ -302,7 +304,7 @@ type ReinstallDirectory interface {
 func ValidateInputSecretRequest(request InputSecretRequest) error {
 	if !validReference(request.ChannelNo, 64) || len(request.IdempotencyKey) < 8 ||
 		len(request.IdempotencyKey) > 256 || request.IdempotencyKey != strings.TrimSpace(request.IdempotencyKey) ||
-		request.BindingName != "password" || request.Produce == nil {
+		(request.BindingName != "password" && request.BindingName != "temporary_password") || request.Produce == nil {
 		return gerror.New("server operation input secret request is invalid")
 	}
 	return nil
@@ -362,6 +364,22 @@ func validateTaskRequestFields(request TaskRequest) error {
 			return gerror.New("server operation secret binding is duplicated")
 		}
 		seen[binding.Name] = struct{}{}
+	}
+	if request.Action == ActionEnterRescue || request.Action == ActionExitRescue {
+		var parameters map[string]json.RawMessage
+		if json.Unmarshal(request.Parameters, &parameters) != nil {
+			return gerror.New("rescue parameters are invalid")
+		}
+		if request.Action == ActionExitRescue {
+			if len(parameters) != 0 || len(request.SecretBindings) != 0 {
+				return gerror.New("exit rescue accepts no parameters or secrets")
+			}
+		} else {
+			var system string
+			if len(parameters) != 1 || json.Unmarshal(parameters["system"], &system) != nil || (system != "linux" && system != "windows") || len(request.SecretBindings) != 1 || request.SecretBindings[0].Name != "temporary_password" {
+				return gerror.New("enter rescue requires a verified system and temporary password binding")
+			}
+		}
 	}
 	return nil
 }
@@ -462,7 +480,7 @@ func validReference(value string, maximum int) bool {
 
 func validAction(action Action) bool {
 	switch action {
-	case ActionStart, ActionStop, ActionReboot, ActionResetPassword, ActionConsole, ActionReinstall, ActionResize, ActionChangeIP,
+	case ActionStart, ActionStop, ActionReboot, ActionResetPassword, ActionConsole, ActionReinstall, ActionEnterRescue, ActionExitRescue, ActionResize, ActionChangeIP,
 		ActionSnapshotCreate, ActionSnapshotDelete, ActionSnapshotRestore,
 		ActionBackupCreate, ActionBackupDelete, ActionBackupRestore,
 		ActionSecurityGroupAttach, ActionSecurityGroupDetach, ActionNATCreate, ActionNATDelete,

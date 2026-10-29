@@ -4,6 +4,7 @@ package smsbao
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -53,7 +54,7 @@ func Declare() error {
 				{Key: apiKeyField, LabelKey: "notification.smsbao.api_key", Secret: true, Required: true, MaxLength: 256},
 			},
 			Factory: func(accessor secretcap.Accessor) (channelcap.Adapter, error) {
-				return newAdapter(accessor, &http.Client{Timeout: 20 * time.Second})
+				return newAdapter(accessor, &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 20 * time.Second})
 			},
 		})
 	})

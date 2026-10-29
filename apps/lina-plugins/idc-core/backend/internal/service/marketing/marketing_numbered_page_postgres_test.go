@@ -141,7 +141,7 @@ INSERT INTO plugin_idc_core_marketing_abuse_case
 			return ids, r.Total, nil
 		},
 		"grant adjustments": func(page, size int) ([]string, int, error) {
-			r, e := actions.ListValueGrantAdjustments(ctx, ValueGrantFinancialAdjustmentSearchInput{Page: page, Limit: size, Status: "pending_review"})
+			r, e := actions.ListValueGrantAdjustments(ctx, ValueGrantFinancialAdjustmentSearchInput{Page: page, Limit: size, Status: "posted"})
 			if e != nil {
 				return nil, 0, e
 			}

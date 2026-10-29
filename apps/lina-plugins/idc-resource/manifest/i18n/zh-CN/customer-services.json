@@ -1,0 +1,48 @@
+{
+  "plugins": {
+    "idc_resource": {
+      "purchasedServices": {
+        "title": "服务器",
+        "product": "产品 / 主机名",
+        "status": "状态",
+        "addresses": "IP 地址",
+        "expires": "到期时间",
+        "price": "费用",
+        "system": "系统",
+        "note": "备注",
+        "actions": "操作",
+        "search": "搜索服务",
+        "refresh": "刷新",
+        "empty": "暂无数据",
+        "unknown": "尚未确认",
+        "unassigned": "暂未分配",
+        "active": "已激活",
+        "suspended": "已暂停",
+        "pending_activation": "待开通",
+        "expired": "已过期",
+        "terminated": "已终止",
+        "cancelled": "已取消",
+        "manual": "待人工处理",
+        "manage": "管理",
+        "progress": "查看开通进度",
+        "edit": "编辑备注",
+        "noteTitle": "编辑服务备注",
+        "cancel": "取消",
+        "save": "保存",
+        "failure": "服务内容暂时无法读取，请重试",
+        "factsFailure": "部分实例信息暂时无法读取，请刷新重试",
+        "future": "[{days}天后过期]",
+        "today": "[今日到期]",
+        "past": "[已过期{days}天]",
+        "currentPrice": "当前价格",
+        "bill": "以账单为准",
+        "hour": "小时",
+        "day": "天",
+        "week": "周",
+        "month": "个月",
+        "year": "年",
+        "searchPlaceholder": "搜索产品名称、服务编号或备注"
+      }
+    }
+  }
+}

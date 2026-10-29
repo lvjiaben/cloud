@@ -20,7 +20,6 @@ const (
 	CodeUnsettledFunds       Code = "unsettled_funds"
 	CodeActiveServices       Code = "active_services"
 	CodeUnsettledInvoices    Code = "unsettled_invoices"
-	CodeActiveContracts      Code = "active_contracts"
 	CodeInProgressOperations Code = "in_progress_operations"
 	CodeLegalRetention       Code = "legal_retention"
 )

@@ -1,6 +1,9 @@
 package catalog
 
-import "testing"
+import (
+	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
+	"testing"
+)
 
 func TestConfigurationPriceSelectionDigestIsOrderIndependentAndRejectsDuplicates(t *testing.T) {
 	left := []ConfigurationPriceSelection{
@@ -18,5 +21,13 @@ func TestConfigurationPriceSelectionDigestIsOrderIndependentAndRejectsDuplicates
 	}
 	if _, err = ConfigurationPriceSelectionDigest([]ConfigurationPriceSelection{left[0], left[0]}); err == nil {
 		t.Fatal("duplicate configuration price dimension was accepted")
+	}
+}
+
+func TestNumericSpecificationUsesItsFixedPriceOnce(t *testing.T) {
+	number := "8"
+	selections, err := selectConfigurationPriceDimensions([]configurationPriceDimensionIdentity{{DimensionNo: "fixed8", FieldKey: "cpu", CandidateValue: "8", PricingMode: ConfigurationPriceFixed}, {DimensionNo: "fixed4", FieldKey: "cpu", CandidateValue: "4", PricingMode: ConfigurationPriceFixed}}, []configurationcontract.ConfigurationValue{{FieldKey: "cpu", IntegerTextValue: &number}})
+	if err != nil || len(selections) != 1 || selections[0].Quantity != 1 || selections[0].DimensionNo != "fixed8" {
+		t.Fatalf("fixed specification was multiplied: %+v %v", selections, err)
 	}
 }

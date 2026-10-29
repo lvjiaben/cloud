@@ -11,14 +11,14 @@ import type { VxeGridProps } from "#/adapter/vxe-table";
 import type { ProductDirectory } from "./product-directory-client";
 import { computed, onMounted, ref, watch } from "vue";
 import { Page, useVbenModal } from "@vben/common-ui";
+import { IconifyIcon } from "@vben/icons";
 import { preferences } from "@vben/preferences";
-import { Button, Tag, Tabs, TabPane } from "ant-design-vue";
+import { Button, InputNumber, Tag } from "ant-design-vue";
 import { useVbenVxeGrid } from "#/adapter/vxe-table";
 import { $t } from "#/locales";
 import { useAccess } from "./plugin-access";
 import { fixedRightActionColumn } from "../../../vben-adapter/frontend/src";
-import { listProductDirectories } from "./product-directory-client";
-import ConfigurationSurface from "./components/configuration-surface.vue";
+import { listProductDirectories, updateProductDirectory } from "./product-directory-client";
 import DirectoryEditor from "./components/product-directory-editor.vue";
 const { hasAccessByCodes } = useAccess();
 const canCreate = computed(() =>
@@ -28,8 +28,6 @@ const canUpdate = computed(() =>
   hasAccessByCodes(["idc:admin:product-directory:update"]),
 );
 const key = "plugin.idc-core.productDirectory.";
-const activeTab = ref("products");
-const canExternal = computed(() => hasAccessByCodes(["idc:admin:portal:external-menu:view"]));
 const [Editor, editorApi] = useVbenModal({
   connectedComponent: DirectoryEditor,
 });
@@ -42,13 +40,14 @@ function columns(): VxeGridProps<ProductDirectory>["columns"] {
   return [
     {
       field: "name",
-      title: $t(key + "name"),
+      title: $t(key + "displayName"),
+      align: "left",
+      treeNode: true,
       minWidth: 220,
       slots: { default: "name" },
     },
     {field:"navigationType",title:$t(key+"navigationType"),width:140,slots:{default:"navigationType"}},
-    { field: "productCount", title: $t(key + "productCount"), width: 140 },
-    { field: "sortOrder", title: $t(key + "sortOrder"), width: 120 },
+    { field: "sortOrder", title: $t(key + "sortOrder"), width: 150, slots: {default:"sortOrder"} },
     {
       field: "statusCode",
       title: $t(key + "status"),
@@ -68,6 +67,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
     columns: [],
     height: "100%",
     rowConfig: { keyField: "directoryNo" },
+    treeConfig: {transform:true,rowField:"directoryNo",parentField:"parentDirectoryNo",expandAll:true,showLine:true},
     pagerConfig: {
       enabled: true,
       pageSize: 20,
@@ -90,13 +90,39 @@ const [Grid, gridApi] = useVbenVxeGrid({
           page,
         }: {
           page: { currentPage: number; pageSize: number };
-        }) => listProductDirectories(page.currentPage, page.pageSize),
+        }) => {
+          const result=await listProductDirectories(page.currentPage, page.pageSize, true);
+          const ids=new Set(result.items.map(row=>row.directoryNo));
+          return {...result,items:[...(result.parents || []).filter(row=>!ids.has(row.directoryNo)),...result.items]};
+        },
       },
     },
     toolbarConfig: { refresh: true, zoom: true },
     id: "customer-product-directories",
   },
 });
+const pendingSort = ref<Record<string,number|null>>({});
+const sorting = ref<Record<string,boolean>>({});
+async function saveSort(row: ProductDirectory) {
+  const value=pendingSort.value[row.directoryNo];
+  if (value === undefined || sorting.value[row.directoryNo]) return;
+  if (value === null || value === row.sortOrder) {delete pendingSort.value[row.directoryNo];return;}
+  sorting.value[row.directoryNo]=true;
+  try {
+    const result=await updateProductDirectory(row.directoryNo,{
+      navigationType:row.navigationType,targetUrl:row.targetUrl,icon:row.icon,
+      parentDirectoryNo:row.parentDirectoryNo || "",
+      nameZhCn:row.nameZhCn,nameEnUs:row.nameEnUs,sortOrder:value,
+      statusCode:row.statusCode,expectedVersion:row.version,
+    });
+    Object.assign(row,result.directory);
+    delete pendingSort.value[row.directoryNo];
+    await gridApi.query();
+  } catch {
+    // The request client reports the failure; retain the edited value for retry.
+  } finally {sorting.value[row.directoryNo]=false;}
+}
+function blurSort(event: KeyboardEvent) {(event.target as HTMLInputElement | null)?.blur();}
 function edit(row?: ProductDirectory) {
   editorApi.setData(row ? { directory: row } : {});
   editorApi.open();
@@ -117,24 +143,22 @@ const layoutRoot = useAdminGridLayout(gridApi);
       data-testid="merchant-product-directories"
       class="flex h-full flex-col gap-3"
     >
-      <Tabs v-if="canExternal" v-model:active-key="activeTab"><TabPane key="products" :tab="$t(key + 'productTab')"/><TabPane key="external" :tab="$t(key + 'externalTab')"/></Tabs>
-      <p v-if="activeTab === 'products'" class="text-muted-foreground">{{ $t(key + "note") }}</p>
-      <ConfigurationSurface v-if="activeTab === 'external' && canExternal" path="/idc/customer-external-menus" class="min-h-0 flex-1"/>
-      <Grid v-else class="min-h-0 flex-1">
+      <Grid class="min-h-0 flex-1">
         <template #toolbar-tools
           ><Button v-if="canCreate" type="primary" @click="edit()">{{
             $t(key + "create")
           }}</Button></template
         >
         <template #navigationType="{row}">{{ $t(key+"types."+(row.navigationType || "product")) }}</template>
-        <template #name="{ row }">{{ name(row) }}</template>
+        <template #name="{ row }"><span class="directory-name" :data-testid="`directory-name-${row.directoryNo}`"><IconifyIcon :icon="row.icon || 'lucide:folder'" class="size-4 shrink-0" aria-hidden="true" :data-testid="`directory-icon-${row.directoryNo}`"/><span>{{ name(row) }}</span></span></template>
+        <template #sortOrder="{row}"><InputNumber :value="pendingSort[row.directoryNo] === undefined ? row.sortOrder : pendingSort[row.directoryNo]" :min="0" :max="1000000" :precision="0" :disabled="!canUpdate || sorting[row.directoryNo]" :aria-label="`${name(row)} ${$t(key+'sortOrder')}`" :data-testid="`directory-sort-${row.directoryNo}`" class="w-full" @update:value="value=>pendingSort[row.directoryNo]=typeof value==='number'?value:null" @blur="saveSort(row)" @press-enter="blurSort"/></template>
         <template #status="{ row }"
           ><Tag :color="row.statusCode === 'enabled' ? 'green' : 'default'">{{
             $t(key + row.statusCode)
           }}</Tag></template
         >
         <template #action="{ row }"
-          ><ghost-button v-if="canUpdate" @click="edit(row)">{{
+          ><ghost-button v-if="canUpdate" :disabled="sorting[row.directoryNo]" @click="edit(row)">{{
             $t(key + "edit")
           }}</ghost-button></template
         >
@@ -143,3 +167,8 @@ const layoutRoot = useAdminGridLayout(gridApi);
     </div>
   </Page>
 </template>
+
+<style scoped>
+.directory-name {display:inline-flex;align-items:center;gap:8px;vertical-align:middle;min-width:0;}
+.directory-name>span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+</style>

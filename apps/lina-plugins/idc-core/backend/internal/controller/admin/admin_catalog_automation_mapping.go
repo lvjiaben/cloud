@@ -7,6 +7,7 @@ import (
 
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/api/admin/v1"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
 )
 
@@ -14,14 +15,14 @@ func mapAutomationInterface(item *productautomation.InterfaceInstance) *v1.Catal
 	if item == nil {
 		return nil
 	}
-	return &v1.CatalogAutomationInterfaceItem{InterfaceInstanceNo: item.InterfaceInstanceNo, DisplayName: item.DisplayName, NewBusinessState: item.NewBusinessState, Version: item.Version, CreatedAt: item.CreatedAt.UnixMilli(), ChangedAt: item.ChangedAt.UnixMilli(), CanDelete: item.CanDelete}
+	return &v1.CatalogAutomationInterfaceItem{CatalogAvailable: item.CatalogAvailable, InterfaceInstanceNo: item.InterfaceInstanceNo, DisplayName: item.DisplayName, NewBusinessState: item.NewBusinessState, Version: item.Version, CreatedAt: item.CreatedAt.UnixMilli(), ChangedAt: item.ChangedAt.UnixMilli(), CanDelete: item.CanDelete}
 }
 
 func mapAutomationBinding(item *productautomation.Binding) *v1.CatalogFulfillmentBindingSummary {
 	if item == nil {
 		return nil
 	}
-	return &v1.CatalogFulfillmentBindingSummary{InterfaceInstanceNo: item.InterfaceInstanceNo, InterfaceDisplayName: item.InterfaceDisplayName, BoundAt: item.BoundAt.UnixMilli(), EvidenceVerified: item.EvidenceVerified, InterfaceNewBusinessState: item.InterfaceNewBusinessState}
+	return &v1.CatalogFulfillmentBindingSummary{CatalogAvailable: item.CatalogAvailable, InterfaceInstanceNo: item.InterfaceInstanceNo, InterfaceDisplayName: item.InterfaceDisplayName, BoundAt: item.BoundAt.UnixMilli(), EvidenceVerified: item.EvidenceVerified, InterfaceNewBusinessState: item.InterfaceNewBusinessState}
 }
 
 func mapConfigurationValues(values []productautomation.ConfigurationValue) []*v1.CatalogStructuredConfigurationValue {
@@ -81,14 +82,42 @@ func mapProductVersionConfiguration(value *productautomation.VersionConfiguratio
 	if value == nil {
 		return nil
 	}
-	return &v1.CatalogProductVersionConfiguration{
-		CustomerConfigurableFields: value.CustomerConfigurableFields, CustomerFieldSelections: mapCustomerFieldSelectionOutput(value.CustomerFieldSelections),
-		ImportedConfiguration: value.ImportedConfiguration,
-		ProductDeclaration:    value.ProductDeclaration, CustomerDeclaration: value.CustomerDeclaration,
+	var (
+		choiceRules   = make(map[string][]*capmodel.ConfigurationRuleDeclaration)
+		pendingFields = make([]string, 0)
+	)
+	for _, selection := range value.CustomerFieldSelections {
+		if selection.AutomationMappingPending {
+			pendingFields = append(pendingFields, selection.FieldKey)
+		}
+		if len(selection.ChoiceRules) > 0 {
+			choiceRules[selection.FieldKey] = selection.ChoiceRules
+		}
+	}
+	return &v1.CatalogProductVersionConfiguration{PriceFieldTokens: value.PriceFieldTokens,
+		PendingAutomationFields: pendingFields, DirectoryRelationships: mapDirectoryRelationships(value.DirectoryRelationships), CustomerChoiceRules: choiceRules,
+		MerchantPriceTargets:  mapMerchantPriceTargets(value.MerchantPriceTargets),
+		UpstreamOptionsStatus: string(value.UpstreamOptionsStatus),
+		ProductChoiceFields:   value.ProductChoiceFields, CustomerProductFields: value.CustomerProductFields, CustomerConfigurableFields: value.CustomerConfigurableFields, CustomerFieldSelections: mapCustomerFieldSelectionOutput(value.CustomerFieldSelections),
+		ImportedPricingMode: value.ImportedPricingMode, ImportedMarkupPercent: value.ImportedMarkupPercent, ImportedManualPrices: mapImportedManualPriceOutput(value.ImportedManualPrices),
+		ImportedProductReference: value.ImportedProductReference, ImportedProductName: value.ImportedProductName, ImportedConfiguration: value.ImportedConfiguration,
+		ProductDeclaration: value.ProductDeclaration, CustomerDeclaration: value.CustomerDeclaration,
 		MerchantValues:             mapConfigurationValues(value.MerchantValues),
 		ProductResolvedCandidates:  mapResolvedCandidates(value.ProductResolvedCandidates),
 		CustomerResolvedCandidates: mapResolvedCandidates(value.CustomerResolvedCandidates), Version: value.Version,
 	}
+}
+
+func mapDirectoryRelationships(values []resourceinterfaceprojectioncap.ChoiceRelationship) []*v1.CatalogDirectoryRelationship {
+	result := make([]*v1.CatalogDirectoryRelationship, 0, len(values))
+	for _, value := range values {
+		item := &v1.CatalogDirectoryRelationship{ParentFieldKey: value.ParentFieldKey, ChildFieldKey: value.ChildFieldKey, Links: make([]*v1.CatalogDirectoryChoiceLink, 0, len(value.Links))}
+		for _, link := range value.Links {
+			item.Links = append(item.Links, &v1.CatalogDirectoryChoiceLink{ParentValue: link.ParentValue, ChildValue: link.ChildValue})
+		}
+		result = append(result, item)
+	}
+	return result
 }
 
 func mapConfigurationEvaluation(value *productautomation.ConfigurationEvaluation) *v1.CatalogConfigurationEvaluation {
@@ -124,7 +153,7 @@ func mapCustomerFieldSelections(values []*v1.CatalogCustomerFieldSelection) []pr
 	result := make([]productautomation.CustomerFieldSelection, 0, len(values))
 	for _, value := range values {
 		if value != nil {
-			result = append(result, productautomation.CustomerFieldSelection{FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues})
+			result = append(result, productautomation.CustomerFieldSelection{CustomerVisible: value.CustomerVisible, DefaultValue: value.DefaultValue, UpgradeEnabled: value.UpgradeEnabled, UpgradeMinimum: value.UpgradeMinimum, UpgradeMaximum: value.UpgradeMaximum, UpgradeCandidateValues: value.UpgradeCandidateValues, InformationOnly: value.InformationOnly, GroupZhCN: value.GroupZhCN, GroupEnUS: value.GroupEnUS, Unit: value.Unit, DescriptionZhCN: value.DescriptionZhCN, DescriptionEnUS: value.DescriptionEnUS, Advanced: value.Advanced, NumericLabels: value.NumericLabels, NumericPricing: value.NumericPricing, ProductFieldKey: value.ProductFieldKey, ProductChoiceBindings: value.ProductChoiceBindings, LocalField: value.LocalField, FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues, CandidateLabels: value.CandidateLabels, DisplayNameZhCN: value.DisplayNameZhCN, DisplayNameEnUS: value.DisplayNameEnUS, SortOrder: value.SortOrder, DisplayControl: value.DisplayControl, QuantityStep: value.QuantityStep, NumericChoices: value.NumericChoices})
 		}
 	}
 	return result
@@ -132,7 +161,15 @@ func mapCustomerFieldSelections(values []*v1.CatalogCustomerFieldSelection) []pr
 func mapCustomerFieldSelectionOutput(values []productautomation.CustomerFieldSelection) []*v1.CatalogCustomerFieldSelection {
 	result := make([]*v1.CatalogCustomerFieldSelection, 0, len(values))
 	for _, value := range values {
-		result = append(result, &v1.CatalogCustomerFieldSelection{FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues})
+		result = append(result, &v1.CatalogCustomerFieldSelection{CustomerVisible: value.CustomerVisible, DefaultValue: value.DefaultValue, UpgradeEnabled: value.UpgradeEnabled, UpgradeMinimum: value.UpgradeMinimum, UpgradeMaximum: value.UpgradeMaximum, UpgradeCandidateValues: value.UpgradeCandidateValues, GroupZhCN: value.GroupZhCN, GroupEnUS: value.GroupEnUS, Unit: value.Unit, DescriptionZhCN: value.DescriptionZhCN, DescriptionEnUS: value.DescriptionEnUS, Advanced: value.Advanced, NumericLabels: value.NumericLabels, NumericPricing: value.NumericPricing, ProductFieldKey: value.ProductFieldKey, ProductChoiceBindings: value.ProductChoiceBindings, LocalField: value.LocalField, FieldKey: value.FieldKey, Minimum: value.Minimum, Maximum: value.Maximum, CandidateValues: value.CandidateValues, CandidateLabels: value.CandidateLabels, DisplayNameZhCN: value.DisplayNameZhCN, DisplayNameEnUS: value.DisplayNameEnUS, SortOrder: value.SortOrder, DisplayControl: value.DisplayControl, QuantityStep: value.QuantityStep, NumericChoices: value.NumericChoices})
+	}
+	return result
+}
+
+func mapImportedManualPriceOutput(rows []resourceinterfaceprojectioncap.CatalogPrice) []v1.CatalogImportPrice {
+	result := make([]v1.CatalogImportPrice, len(rows))
+	for index, row := range rows {
+		result[index] = v1.CatalogImportPrice{CurrencyCode: row.CurrencyCode, Period: string(row.Period), PeriodCount: row.PeriodCount, Amount: row.Amount, SetupFee: row.SetupFee}
 	}
 	return result
 }

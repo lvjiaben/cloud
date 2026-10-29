@@ -11,7 +11,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationConsentCreateRes.fields.policyVersion.dc": "已提交的告知版本",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationConsentCreateRes.fields.occurredAt.dc": "Unix 毫秒格式的同意时间",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationConsentCreateRes.fields.reused.dc": "是否已安全复用完全相同的同意记录",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateReq.meta.tags": "IDC 合规客户端",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateReq.meta.summary": "创建企业实名认证草稿",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateReq.meta.dc": "为当前企业客户创建一个加密材料实名认证草稿。变更法定资料时，legalChangeRequestNo 引用核心域仅含变更类别的申请。",
@@ -20,7 +19,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateReq.fields.legalChangeRequestNo.dc": "关键资料变更复核所对应的可选核心不透明申请编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateReq.fields.idempotencyKey.dc": "随机重试键，其原始值永不持久化",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationCreateRes.fields.item.dc": "客户安全的企业实名认证草稿",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateReq.meta.tags": "IDC 合规客户端",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateReq.meta.summary": "预约企业认证材料上传",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateReq.meta.dc": "为一个有界企业证明材料类别创建幂等的服务端上传预约。原件通过独立接口提交，响应不包含存储路径、摘要、文件名或访问地址。",
@@ -29,7 +27,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateReq.fields.materialTypeCode.dc": "证明材料类别：营业执照、法定代表人证件、经办人证件、授权书、组织机构证或其他",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateReq.fields.idempotencyKey.dc": "仅用于预约命令且不按原文持久化的重试键",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialCreateRes.fields.item.dc": "不含存储或文档元数据的上传预约",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateReq.meta.tags": "IDC 合规客户端",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateReq.meta.summary": "上传已预约的企业认证材料原件",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateReq.meta.dc": "为服务端分配的预约流式提交一个 PDF、JPEG 或 PNG 原件。合规服务识别真实类型、加密、写入私有存储并回读确认后，返回安全元数据。",
@@ -37,7 +34,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateReq.fields.caseNo.dc": "当前企业客户所有的实名认证案件编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateReq.fields.materialNo.dc": "服务端分配的材料预约编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationMaterialContentUpdateRes.fields.item.dc": "不含私有对象引用的已确认加密材料元数据",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitReq.meta.tags": "IDC 合规客户端",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitReq.meta.summary": "提交企业实名认证审核",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitReq.meta.dc": "校验完整企业资料、加密法定资料快照、确认所选私有材料，并原子创建待人工审核投影。请求结束后清除法定资料明文。",
@@ -55,7 +51,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitReq.fields.materialNos.dc": "当前案件已确认的材料编号，不接受存储路径",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitReq.fields.idempotencyKey.dc": "随机提交重试键，其原始值永不持久化",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationSubmitRes.fields.item.dc": "企业人工审核待办投影",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationDraftItem.fields.caseNo.dc": "企业实名认证案件的不透明编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationDraftItem.fields.statusCode.dc": "案件状态；本投影固定返回草稿",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationDraftItem.fields.legalChangeRequestNo.dc": "重新认证时对应的不透明法定资料变更申请编号",

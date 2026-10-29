@@ -142,14 +142,20 @@ func ValidateDynamicProviderDeclarations(declarations []*capmodel.BusinessExtens
 	got := append([]string(nil), declaration.Methods...)
 	sort.Strings(want)
 	sort.Strings(got)
-	if len(got) == len(want)+2 {
+	// Optional groups must be complete; required v1 methods never change.
+	if containsDynamicMethod(got, DynamicProviderMethodLookupPrincipal) || containsDynamicMethod(got, DynamicProviderMethodCreatePrincipal) {
+		want = append(want, DynamicProviderMethodLookupPrincipal, DynamicProviderMethodCreatePrincipal)
+	}
+	if containsDynamicMethod(got, DynamicProviderMethodListCatalog) || containsDynamicMethod(got, DynamicProviderMethodReadCatalogProduct) {
 		want = append(want, DynamicProviderMethodListCatalog, DynamicProviderMethodReadCatalogProduct)
-		sort.Strings(want)
 	}
-	if len(got) == len(want)+4 {
-		want = append(want, DynamicProviderMethodListCatalog, DynamicProviderMethodReadCatalogProduct, DynamicProviderMethodEvaluateCatalogConfiguration, DynamicProviderMethodCatalogBillingTerms)
-		sort.Strings(want)
+	if containsDynamicMethod(got, DynamicProviderMethodEvaluateCatalogConfiguration) || containsDynamicMethod(got, DynamicProviderMethodCatalogBillingTerms) {
+		if !containsDynamicMethod(got, DynamicProviderMethodListCatalog) && !containsDynamicMethod(got, DynamicProviderMethodReadCatalogProduct) {
+			want = append(want, DynamicProviderMethodListCatalog, DynamicProviderMethodReadCatalogProduct)
+		}
+		want = append(want, DynamicProviderMethodEvaluateCatalogConfiguration, DynamicProviderMethodCatalogBillingTerms)
 	}
+	sort.Strings(want)
 	if len(got) != len(want) {
 		return gerror.New("resource dynamic Provider method declaration is incomplete")
 	}
@@ -214,4 +220,13 @@ func ProjectDynamicOperationRequest(request OperationRequest) (DynamicOperationR
 		ConfidentialInputNames: names,
 		ProviderCorrelation:    request.ProviderCorrelation,
 	}, nil
+}
+
+func containsDynamicMethod(methods []string, method string) bool {
+	for _, value := range methods {
+		if value == method {
+			return true
+		}
+	}
+	return false
 }

@@ -1,6 +1,6 @@
 id: yunsu-ssl
 name: Yunsu SSL Certificate Connector
-version: v0.3.7
+version: v0.3.8
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -22,7 +22,7 @@ dependencies:
     - id: vben-adapter
       version: "=0.1.0"
     - id: idc-core
-      version: ">=0.1.101 <1.0.0"
+      version: ">=0.1.171 <1.0.0"
 
 business_extensions:
   - point: product-fulfillment
@@ -307,19 +307,6 @@ business_extensions:
           expiresAtField: expiresAt
           validationField: validation
 
-admin_surfaces:
-  - key: certificates
-    version: v1
-    title: plugin.yunsu-ssl.certificates.title
-    icon: lucide:badge-check
-    permission: idc:admin:service-entitlement:list
-    slot: admin.resource-operations
-    route: ssl-certificates
-    entry: admin/certificates/index.html
-    bridge_capabilities:
-      - service-entitlements.admin.v1
-    status: active
-
 customer_surfaces:
   - key: certificates
     version: v1
@@ -330,6 +317,7 @@ customer_surfaces:
     entry: customer/certificates/index.html
     bridge_capabilities:
       - service-entitlements.customer.v1
+      - purchased-services.customer.v1
     status: active
 
 public_assets:

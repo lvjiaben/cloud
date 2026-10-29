@@ -18,27 +18,15 @@ import (
 	"lina-plugin-idc-compliance/backend/internal/localgatewayclient"
 	"lina-plugin-idc-compliance/backend/internal/runtimeconfig"
 	closureprechecksvc "lina-plugin-idc-compliance/backend/internal/service/closureprecheck"
-	"lina-plugin-idc-compliance/backend/internal/service/contractarchive"
-	"lina-plugin-idc-compliance/backend/internal/service/contractautosign"
-	"lina-plugin-idc-compliance/backend/internal/service/contractfailure"
-	"lina-plugin-idc-compliance/backend/internal/service/contractfulfillmentgate"
-	"lina-plugin-idc-compliance/backend/internal/service/contractlifecycle"
 	compliancecron "lina-plugin-idc-compliance/backend/internal/service/cron"
 	customer360summarysvc "lina-plugin-idc-compliance/backend/internal/service/customer360summary"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontractonboarding"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontracttemplate"
 	"lina-plugin-idc-compliance/backend/internal/service/privacygovernance"
 	"lina-plugin-idc-compliance/backend/internal/service/providerconfig"
 	"lina-plugin-idc-compliance/backend/internal/service/supplierconfig"
 	"lina-plugin-idc-compliance/backend/internal/service/taxinvoiceredletter"
-	"lina-plugin-idc-core/backend/cap/contractfulfillmentcap"
-	contractfulfillmentspi "lina-plugin-idc-core/backend/cap/contractfulfillmentcap/spi"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
-	contracttemplatespi "lina-plugin-idc-core/backend/cap/contracttemplatecap/spi"
 	customer360spi "lina-plugin-idc-core/backend/cap/customer360cap/spi"
 	closureprecheckspi "lina-plugin-idc-core/backend/cap/customerclosurecap/spi"
 	"lina-plugin-idc-core/backend/cap/idccap"
-	idcspi "lina-plugin-idc-core/backend/cap/idccap/spi"
 	"lina-plugin-idc-core/backend/cap/identitycap"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	managementspi "lina-plugin-idc-core/backend/cap/managementcap/spi"
@@ -61,16 +49,6 @@ func init() {
 		panic(err)
 	}
 	if err = closureprecheckspi.Declare(closureContributor); err != nil {
-		panic(err)
-	}
-	if err := contracttemplatespi.Declare(func(context.Context) (contracttemplatecap.Source, error) {
-		return electroniccontracttemplate.NewDirectorySource(g.DB())
-	}); err != nil {
-		panic(err)
-	}
-	if err := contractfulfillmentspi.Declare(func(context.Context) (contractfulfillmentcap.Source, error) {
-		return contractfulfillmentgate.New(g.DB())
-	}); err != nil {
 		panic(err)
 	}
 	plugin := pluginhost.NewDeclarations(pluginID)
@@ -155,7 +133,7 @@ func registerJobs(ctx context.Context, registrar pluginhost.JobsRegistrar) error
 	if err = registerTaxInvoiceRedLetterJob(ctx, registrar, identityRuntime); err != nil {
 		return err
 	}
-	return registerContractJobs(ctx, registrar, identityRuntime.SystemAudit)
+	return nil
 }
 
 // registerTaxInvoiceRedLetterJob composes the shared core runtimes for refund intake.
@@ -204,58 +182,6 @@ func registerTaxInvoiceRedLetterJob(
 	return nil
 }
 
-// registerContractJobs composes the shared installation-local gateway workers.
-func registerContractJobs(
-	ctx context.Context,
-	registrar pluginhost.JobsRegistrar,
-	systemAudit idccap.BusinessAuditWriter,
-) error {
-	contractRuntime, err := composition.LoadContractRuntime(ctx, registrar.Services())
-	if err != nil {
-		return err
-	}
-	if contractRuntime.Compensations == nil {
-		return gerror.New("core contract compensation command is unavailable")
-	}
-	localGateway, err := localgatewayclient.LoadFromEnvironment(nil)
-	if err != nil {
-		return gerror.Wrap(err, "construct contract lifecycle local gateway client")
-	}
-	lifecycle, err := contractlifecycle.New(g.DB(), localGateway, systemAudit)
-	if err != nil {
-		localGateway.Close()
-		return err
-	}
-	archive, err := contractarchive.New(
-		g.DB(), localGateway, registrar.Services().Storage(), systemAudit,
-	)
-	if err != nil {
-		localGateway.Close()
-		return err
-	}
-	if err = compliancecron.RegisterContractLifecycle(ctx, registrar, lifecycle); err != nil {
-		localGateway.Close()
-		return err
-	}
-	if err = compliancecron.RegisterContractArchive(ctx, registrar, archive); err != nil {
-		localGateway.Close()
-		return err
-	}
-	failureWorker, err := contractfailure.New(
-		g.DB(), contractRuntime.Compensations, systemAudit,
-	)
-	if err != nil {
-		localGateway.Close()
-		return err
-	}
-	if err = compliancecron.RegisterContractFailure(ctx, registrar, failureWorker); err != nil {
-		localGateway.Close()
-		return err
-	}
-	// The registered worker owns this client for the host-process lifetime.
-	return nil
-}
-
 // registerRoutes constructs one shared graph and binds customer and management routes separately.
 func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) error {
 	if ctx == nil || ctx.Err() != nil || registrar.Services() == nil {
@@ -265,10 +191,6 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	runtime, err := loadManagementRuntime(ctx, registrar)
 	if err != nil {
 		return err
-	}
-	merchantContext, err := loadMerchantContext(ctx)
-	if err != nil {
-		return gerror.Wrap(err, "construct IDC merchant context")
 	}
 	secretSource, err := composition.LoadSecretSource(ctx)
 	if err != nil {
@@ -308,30 +230,6 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	if err != nil {
 		return err
 	}
-	electronicContractService, err := electroniccontractonboarding.New(
-		merchantContext, supplierConfigurationService, localGateway,
-	)
-	if err != nil {
-		return err
-	}
-	contractTemplateSecretAccessor, contractTemplateSecretManager, err :=
-		composition.BindContractTemplateContentSecrets(secretSource)
-	if err != nil {
-		return err
-	}
-	contractTemplateConverter, err := electroniccontracttemplate.NewLibreOfficeDocumentConverter(
-		runtimeconfig.ContractTemplateLibreOfficePath(),
-	)
-	if err != nil {
-		return err
-	}
-	electronicContractTemplateService, err := electroniccontracttemplate.NewWithContent(
-		g.DB(), runtime, localGateway, services.Storage(), contractTemplateSecretAccessor,
-		contractTemplateSecretManager, contractTemplateConverter,
-	)
-	if err != nil {
-		return err
-	}
 	customerReader, privacyConsents, customerAudit, err := loadPrivacyIdentityRuntime(ctx, registrar)
 	if err != nil {
 		return err
@@ -347,32 +245,9 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	if err != nil {
 		return err
 	}
-	contractFailureService, err := loadContractFailureManagement(ctx, registrar, runtime)
-	if err != nil {
-		return err
-	}
 	personalServices, err := composition.BuildPersonalVerificationServicesWithPrivacyGate(
 		ctx, services, secretSource, privacyGovernanceService,
 	)
-	if err != nil {
-		return err
-	}
-	contractSignerService, err := composition.BuildContractSignerService(ctx, services, secretSource, runtime.Authorizer)
-	if err != nil {
-		return err
-	}
-	contractSigningReturnURL, err := runtimeconfig.LoadContractSigningReturnURL()
-	if err != nil {
-		return err
-	}
-	electronicContractPreparationService, err := composition.BuildElectronicContractPreparationService(
-		ctx, services, secretSource, runtime.Authorizer, contractSignerService, localGateway,
-		customerReader, contractSigningReturnURL, privacyGovernanceService,
-	)
-	if err != nil {
-		return err
-	}
-	contractAutoSignService, err := contractautosign.New(g.DB(), runtime, services.Sessions(), localGateway)
 	if err != nil {
 		return err
 	}
@@ -404,19 +279,15 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	}
 	accountController, err := accountcontroller.NewV1WithPrivacy(
 		personalServices.Identity, personalServices.Customer, enterpriseServices.Customer,
-		enterpriseServices.CustomerAccount, contractSignerService,
-		electronicContractPreparationService, returnURL,
+		enterpriseServices.CustomerAccount, returnURL,
 		taxInvoiceRequestService, taxInvoiceRedLetterService, privacyGovernanceService,
 	)
 	if err != nil {
 		return err
 	}
-	adminController, err := admincontroller.NewV1WithContractFailureManagement(
+	adminController, err := admincontroller.NewV1WithPrivacyGovernance(
 		configurationService, enterpriseServices.Management, supplierConfigurationService,
-		electronicContractService, electronicContractPreparationService,
-		electronicContractTemplateService, contractSignerService, contractAutoSignService,
 		taxInvoiceManagementService, taxInvoiceRedLetterService, privacyGovernanceService,
-		contractFailureService,
 	)
 	if err != nil {
 		return err
@@ -428,23 +299,6 @@ func registerRoutes(ctx context.Context, registrar pluginhost.HTTPRegistrar) err
 	// remains owned by the registered service graph after route registration.
 	localGatewayOwnedByProcess = true
 	return nil
-}
-
-func loadContractFailureManagement(
-	ctx context.Context,
-	registrar pluginhost.HTTPRegistrar,
-	runtime managementcap.Runtime,
-) (contractfailure.ManagementService, error) {
-	contractRuntime, err := composition.LoadContractRuntime(ctx, registrar.Services())
-	if err != nil {
-		return nil, err
-	}
-	if contractRuntime.Compensations == nil {
-		return nil, gerror.New("core contract compensation command is unavailable")
-	}
-	return contractfailure.NewManagement(
-		g.DB(), contractRuntime.Compensations, contractRuntime.Audit, runtime.Authorizer,
-	)
 }
 
 // loadManagementRuntime freezes and constructs the shared management runtime once.
@@ -482,22 +336,6 @@ func loadPrivacyIdentityRuntime(
 		return nil, nil, nil, gerror.New("current customer privacy consent service is unavailable")
 	}
 	return reader, consents, runtime.CustomerAudit, nil
-}
-
-func loadMerchantContext(ctx context.Context) (idccap.Service, error) {
-	snapshot, err := idcspi.Freeze()
-	if err != nil {
-		return nil, gerror.Wrap(err, "freeze IDC merchant context declaration")
-	}
-	factory := snapshot.Factory()
-	if factory == nil {
-		return nil, gerror.New("IDC merchant context factory is unavailable")
-	}
-	merchantContext, err := factory(ctx)
-	if err != nil {
-		return nil, gerror.Wrap(err, "construct IDC merchant context")
-	}
-	return merchantContext, nil
 }
 
 func bindComplianceRoutes(

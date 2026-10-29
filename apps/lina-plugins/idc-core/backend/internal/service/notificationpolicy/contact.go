@@ -30,7 +30,6 @@ type contactRow struct {
 	Phone             []byte `orm:"phone"`
 	PhoneVerified     bool   `orm:"phone_verified"`
 	ContactVersion    int64  `orm:"contact_version"`
-	HostUserID        int    `orm:"host_user_id"`
 	PreferencePresent bool   `orm:"preference_present"`
 	PreferenceEnabled bool   `orm:"preference_enabled"`
 	PreferenceVersion int64  `orm:"preference_version"`
@@ -98,7 +97,6 @@ SELECT r.ordinal,
        coalesce(contact.phone, '') AS phone,
        (contact.phone_verified_at IS NOT NULL) AS phone_verified,
        coalesce(contact.version, 0) AS contact_version,
-       coalesce(binding.sys_user_id, 0) AS host_user_id,
        (preference.id IS NOT NULL) AS preference_present,
        coalesce(preference.enabled, false) AS preference_enabled,
        coalesce(preference.version, 0) AS preference_version
@@ -113,9 +111,6 @@ LEFT JOIN plugin_idc_core_customer_contact_preference preference
   ON preference.tenant_id = 0 AND preference.customer_no = r.customer_no
  AND preference.contact_no = r.contact_no AND preference.channel_code = r.channel_code
  AND preference.topic_code = r.topic_code
-LEFT JOIN plugin_idc_core_customer_identity_binding binding
-  ON binding.tenant_id = 0 AND binding.customer_no = r.customer_no
- AND binding.status_code = 'active'
 ORDER BY r.ordinal ASC`
 	rows := make([]contactRow, 0, len(normalized))
 	if err = s.database.GetScan(ctx, &rows, query, arguments...); err != nil {
@@ -168,14 +163,6 @@ func projectContact(
 		projection.AddressOwner = notificationcap.AddressOwnerCoreContact
 		destination = append(destination, row.PhoneCountryCode...)
 		destination = append(destination, row.Phone...)
-	case notificationcap.ChannelInApp:
-		if row.HostUserID <= 0 {
-			return notificationcap.ContactProjection{}, nil, gerror.New("notification contact is unavailable")
-		}
-		projection.AddressOwner = notificationcap.AddressOwnerHostIdentity
-		projection.HostUserID = row.HostUserID
-	case notificationcap.ChannelWeChatOfficial, notificationcap.ChannelWeChatWork:
-		projection.AddressOwner = notificationcap.AddressOwnerNotifyBinding
 	default:
 		return notificationcap.ContactProjection{}, nil, gerror.New("notification contact is unavailable")
 	}
@@ -210,8 +197,7 @@ func normalizeContactRequests(
 
 func validChannel(value notificationcap.Channel) bool {
 	switch value {
-	case notificationcap.ChannelInApp, notificationcap.ChannelEmail, notificationcap.ChannelSMS,
-		notificationcap.ChannelWeChatOfficial, notificationcap.ChannelWeChatWork:
+	case notificationcap.ChannelEmail, notificationcap.ChannelSMS:
 		return true
 	default:
 		return false

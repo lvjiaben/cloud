@@ -167,13 +167,22 @@ VALUES (?,?,?,?, 'complete',?,?,?,?)`, snapshotNo, input.MappingNo, input.LocalR
 			input.ChannelNo, fingerprint, len(items), input.Snapshot.ObservedAt.UTC(), input.Snapshot.ExpiresAt.UTC()); insertErr != nil {
 			return gerror.Wrap(insertErr, "insert resource accessory directory")
 		}
-		for index := range items {
-			item := items[index]
-			if _, insertErr := tx.Exec(`INSERT INTO plugin_idc_resource_accessory_snapshot_item
+		// Bound statement size while keeping all batches in the snapshot transaction.
+		const batchSize = 500
+		for start := 0; start < len(items); start += batchSize {
+			end := min(start+batchSize, len(items))
+			values := make([]string, 0, end-start)
+			args := make([]any, 0, (end-start)*8)
+			for index := start; index < end; index++ {
+				item := items[index]
+				values = append(values, "(?,?,?,?,?,?,CAST(? AS JSONB),?)")
+				args = append(args, snapshotNo, objectNos[index], item.Kind, item.ExternalRef,
+					item.DisplayName, item.State, normalized[index], input.Snapshot.ObservedAt.UTC())
+			}
+			if _, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_resource_accessory_snapshot_item
  (snapshot_no,object_no,accessory_kind,external_ref,display_name,state_code,projection,observed_at)
-VALUES (?,?,?,?,?,?,CAST(? AS JSONB),?)`, snapshotNo, objectNos[index], item.Kind, item.ExternalRef,
-				item.DisplayName, item.State, normalized[index], input.Snapshot.ObservedAt.UTC()); insertErr != nil {
-				return gerror.Wrap(insertErr, "insert resource accessory directory item")
+VALUES `+strings.Join(values, ","), args...); insertErr != nil {
+				return gerror.Wrap(insertErr, "insert resource accessory directory items")
 			}
 		}
 		return nil

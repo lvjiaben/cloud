@@ -11,6 +11,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 
 	"lina-plugin-idc-core/backend/cap/notificationcap"
+	"lina-plugin-idc-notify/backend/cap/channelcap"
 	"lina-plugin-shared-services/backend/cap/inboxcap"
 )
 
@@ -103,7 +104,7 @@ func TestProcessClaimedRechecksMarketingBeforeInAppAndExternalDeliveryPostgreSQL
 	defer cleanup()
 	if _, err := database.Exec(t.Context(), `UPDATE plugin_idc_notify_channel
 SET status_code='enabled',provider_code=CASE WHEN channel_code='signed_webhook' THEN 'marketing-test-provider' ELSE provider_code END
-WHERE tenant_id=0 AND channel_code IN ('in_app','signed_webhook')`); err != nil {
+WHERE tenant_id=0 AND channel_code IN ('email','sms')`); err != nil {
 		t.Fatalf("enable delivery channels: %v", err)
 	}
 	mismatches := []struct {
@@ -114,9 +115,11 @@ WHERE tenant_id=0 AND channel_code IN ('in_app','signed_webhook')`); err != nil 
 		{name: "snapshot", mutate: func(value *notificationcap.MarketingSendDecision) { value.SnapshotNo = "wrong-snapshot" }},
 		{name: "customer", mutate: func(value *notificationcap.MarketingSendDecision) { value.CustomerNo = "wrong-customer" }},
 		{name: "contact", mutate: func(value *notificationcap.MarketingSendDecision) { value.ContactNo = "wrong-contact" }},
-		{name: "channel", mutate: func(value *notificationcap.MarketingSendDecision) { value.Channel = notificationcap.ChannelEmail }},
+		{name: "channel", mutate: func(value *notificationcap.MarketingSendDecision) {
+			value.Channel = notificationcap.Channel("retired_channel")
+		}},
 	}
-	for _, channelCode := range []string{string(notificationcap.ChannelInApp), "signed_webhook"} {
+	for _, channelCode := range []string{string(notificationcap.ChannelEmail), string(notificationcap.ChannelSMS)} {
 		for _, mismatch := range mismatches {
 			t.Run(channelCode+"/"+mismatch.name, func(t *testing.T) {
 				taskNo := "marketing-final-gate-" + channelCode + "-" + mismatch.name
@@ -129,7 +132,7 @@ WHERE tenant_id=0 AND channel_code IN ('in_app','signed_webhook')`); err != nil 
 				mismatch.mutate(&decision)
 				gate := &marketingSendGateStub{decisions: []notificationcap.MarketingSendDecision{decision}}
 				inbox := &marketingInboxStub{}
-				adapter := &wecomDeliveryAdapterStub{}
+				adapter := &marketingDeliveryAdapterStub{}
 				service := &serviceImpl{
 					database: database, inbox: inbox,
 					sources:  notificationcap.Runtime{Marketing: gate},
@@ -172,9 +175,7 @@ func TestEnqueueRejectsMarketingChannelsBeforeCreatingTaskPostgreSQL(t *testing.
 	defer cleanup()
 	applyMarketingDeliveryProviderMigration(t, database)
 	channels := []string{
-		string(notificationcap.ChannelInApp), string(notificationcap.ChannelEmail),
-		string(notificationcap.ChannelSMS), string(notificationcap.ChannelWeChatOfficial),
-		"signed_webhook",
+		string(notificationcap.ChannelEmail), string(notificationcap.ChannelSMS),
 	}
 	for _, channelCode := range channels {
 		t.Run(channelCode, func(t *testing.T) {
@@ -282,4 +283,19 @@ func insertMarketingDeliveryFixture(t *testing.T, database gdb.DB, taskNo, chann
 		SubjectContent: "Campaign update", BodyContent: "Campaign body",
 		ContentDigest: digestText("marketing-final-gate", taskNo), StatusCode: string(DeliverySending), Version: 1,
 	}
+}
+
+// marketingDeliveryAdapterStub records whether a rejected marketing event reached a provider.
+type marketingDeliveryAdapterStub struct{ calls int }
+
+func (*marketingDeliveryAdapterStub) ValidateConfiguration(context.Context, map[string]string, map[string][]byte) error {
+	return nil
+}
+func (*marketingDeliveryAdapterStub) ValidateDestination([]byte) error { return nil }
+func (s *marketingDeliveryAdapterStub) Deliver(context.Context, channelcap.Delivery) (channelcap.Result, error) {
+	s.calls++
+	return channelcap.Result{Class: channelcap.ResultAccepted, CrossedExternalBorder: true}, nil
+}
+func (*marketingDeliveryAdapterStub) Query(context.Context, channelcap.Query) (channelcap.Result, error) {
+	return channelcap.Result{Class: channelcap.ResultUnknown, CrossedExternalBorder: true}, nil
 }

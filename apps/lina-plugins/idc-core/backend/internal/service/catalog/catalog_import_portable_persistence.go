@@ -70,7 +70,7 @@ func (s *managementServiceImpl) portableImportRows(versionNo, markup string, sna
 		if p == nil {
 			return nil, bizerr.NewCode(CodeManagementInvalid)
 		}
-		definition := portableBillingDefinition(*p)
+		definition := portableImportedBillingDefinition(snapshot, *p)
 		if ValidateBillingRule(definition) != nil {
 			return nil, bizerr.NewCode(CodeManagementInvalid)
 		}
@@ -101,8 +101,10 @@ func (s *managementServiceImpl) portableImportRows(versionNo, markup string, sna
 			taxes[p.CurrencyCode] = p.Tax
 			rows.taxes = append(rows.taxes, do.CatalogTaxPolicy{TenantId: 0, TaxPolicyNo: taxNo, VersionNo: versionNo, CurrencyCode: p.CurrencyCode, PriceIncludesTax: p.Tax.PriceIncludesTax, TaxTreatmentCode: p.Tax.Treatment, TaxRateBasisPoints: p.Tax.RateBasisPoints, TaxCategoryCode: p.Tax.CategoryCode, RoundingScopeCode: p.Tax.RoundingScope, RoundingModeCode: p.Tax.RoundingMode, RoundingQuantumMinor: p.Tax.RoundingQuantumMinor})
 		}
-		if err := s.appendPortableBands(rows, versionNo, billingNo, p.CurrencyCode, "", ConfigurationPriceFixed, definition, p.Base); err != nil {
-			return nil, err
+		if snapshot.PricingMode != channelcommercecap.ImportPricingRemoteEvaluation || len(p.Base) > 0 {
+			if err := s.appendPortableBands(rows, versionNo, billingNo, p.CurrencyCode, "", ConfigurationPriceFixed, definition, p.Base); err != nil {
+				return nil, err
+			}
 		}
 		for _, option := range p.Options {
 			candidateValue := option.Value
@@ -110,7 +112,7 @@ func (s *managementServiceImpl) portableImportRows(versionNo, markup string, sna
 			if mode == "" {
 				mode = ConfigurationPriceFixed
 			}
-			if mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal {
+			if mode == ConfigurationPricePerUnit || mode == ConfigurationPriceBandTotal || mode == ConfigurationPriceGraduated {
 				candidateValue = "quantity"
 			}
 			key := option.FieldKey + "\x00" + candidateValue
@@ -151,6 +153,9 @@ func (s *managementServiceImpl) portableImportRows(versionNo, markup string, sna
 				return nil, err
 			}
 			whole = string(encoded)
+		}
+		if markup == "" {
+			markup = "0"
 		}
 		rows.terms = append(rows.terms, do.CatalogImportTerm{TenantId: 0, VersionNo: versionNo, BillingRuleNo: billingNo, CurrencyCode: p.CurrencyCode, UpstreamTermReference: p.TermReference, WholeItemRule: whole, MarkupPercent: markup})
 	}
@@ -225,6 +230,9 @@ func (r *portableImportRows) persist(ctx context.Context) error {
 		rows  any
 		count int
 	}{{do.CatalogBillingRule{}, r.rules, len(r.rules)}, {do.CatalogTaxPolicy{}, r.taxes, len(r.taxes)}} {
+		if batch.count == 0 {
+			continue
+		}
 		result, err := database.Model(batch.table).Ctx(ctx).Data(batch.rows).Insert()
 		if err = requireCatalogBatchInsert(result, err, batch.count, "insert portable catalog facts"); err != nil {
 			return err
@@ -241,10 +249,21 @@ func (r *portableImportRows) persist(ctx context.Context) error {
 		rows  any
 		count int
 	}{{do.CatalogPrice{}, r.prices, len(r.prices)}, {do.CatalogImportTerm{}, r.terms, len(r.terms)}} {
+		if batch.count == 0 {
+			continue
+		}
 		result, err := database.Model(batch.table).Ctx(ctx).Data(batch.rows).Insert()
 		if err = requireCatalogBatchInsert(result, err, batch.count, "insert portable catalog prices"); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func portableImportedBillingDefinition(snapshot *channelcommercecap.ImportSnapshot, price channelcommercecap.ImportPriceSchedule) BillingRuleDefinition {
+	definition := portableBillingDefinition(price)
+	if snapshot.PricingMode == channelcommercecap.ImportPricingRemoteEvaluation && snapshot.Fulfillment.RenewalMode == "unavailable" {
+		definition.PricePhase = PricePhaseNewPurchase
+	}
+	return definition
 }

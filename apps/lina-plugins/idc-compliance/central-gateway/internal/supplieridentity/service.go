@@ -412,65 +412,6 @@ WHERE subject.installation_id = $1 AND subject.provider_code = $2
 	return callback(plaintext)
 }
 
-// FindActiveBinding resolves a matching current subject to its local opaque
-// binding number. Provider plaintext is consumed and cleared before return.
-func (s *Service) FindActiveBinding(
-	ctx context.Context,
-	provider string,
-	subjectInput []byte,
-) (string, bool, error) {
-	subject := consume(subjectInput)
-	defer clearBytes(subject)
-	if !s.validContext(ctx) || !validProvider(provider) || len(subject) == 0 {
-		return "", false, ErrInvalid
-	}
-	canonicalizer := s.canonicalizers[provider]
-	if canonicalizer == nil {
-		return "", false, ErrCanonicalizerOff
-	}
-	canonical, err := canonicalizer.Canonicalize(ctx, subject)
-	if err != nil || len(canonical) == 0 || len(canonical) > maximumCanonicalBytes {
-		clearBytes(canonical)
-		return "", false, ErrInvalid
-	}
-	defer clearBytes(canonical)
-	digests, err := s.keyring.LookupDigests(provider, canonical)
-	if err != nil || len(digests) == 0 {
-		return "", false, ErrUnavailable
-	}
-	clause, digestArguments := digestPredicate(
-		digests, 2, "lookup.lookup_key_version", "lookup.subject_lookup_hmac",
-	)
-	arguments := []any{provider}
-	arguments = append(arguments, digestArguments...)
-	arguments = append(arguments, s.installationID)
-	query := `SELECT lookup.binding_no
-FROM idc_gateway_local_subject_lookup lookup
-JOIN idc_gateway_local_supplier_subject subject ON subject.binding_no = lookup.binding_no
-JOIN idc_gateway_local_supplier_instance instance ON instance.installation_id = subject.installation_id
-WHERE lookup.provider_code = $1 AND (` + clause + `)
-  AND subject.installation_id = $` + fmt.Sprintf("%d", len(arguments)) + `
-  AND subject.status_code = 'active' AND instance.status_code = 'active'
-LIMIT 2`
-	rows, err := s.database.QueryContext(ctx, query, arguments...)
-	if err != nil {
-		return "", false, ErrUnavailable
-	}
-	defer rows.Close()
-	var bindingNo string
-	count := 0
-	for rows.Next() {
-		count++
-		if err = rows.Scan(&bindingNo); err != nil {
-			return "", false, ErrUnavailable
-		}
-	}
-	if err = rows.Err(); err != nil || count > 1 {
-		return "", false, ErrUnavailable
-	}
-	return bindingNo, count == 1, nil
-}
-
 func (s *Service) writeSubject(
 	ctx context.Context,
 	provider string,

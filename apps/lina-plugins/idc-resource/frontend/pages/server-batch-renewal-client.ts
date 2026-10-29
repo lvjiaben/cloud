@@ -39,6 +39,7 @@ export interface ServerRenewalResultItem {
 }
 
 export function listServerRenewalCandidates(input: {
+	 entitlementNo?: string;
 	page?: number;
   cursor?: string;
   limit?: number;
@@ -51,6 +52,7 @@ export function listServerRenewalCandidates(input: {
 }
 
 export function previewServerRenewals(input: {
+  entitlementNo?: string;
   renewalCycles: number;
   requestKey: string;
   serverNos: string[];
@@ -62,6 +64,7 @@ export function previewServerRenewals(input: {
 }
 
 export function confirmServerRenewals(input: {
+  entitlementNo?: string;
   confirmationDigest: string;
   renewalCycles: number;
   requestKey: string;

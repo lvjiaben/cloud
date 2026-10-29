@@ -693,7 +693,7 @@ SELECT
 	}
 }
 
-func TestOnlineRefundPostgreSQLRequiresFreshLoginForHighAmountApproval(t *testing.T) {
+func TestOnlineRefundPostgreSQLHighAmountApprovalUsesCurrentAuthorizedSession(t *testing.T) {
 	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 2, false, 0)
 	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-1")
 	checkout, err := scenario.service.CheckoutAccountQuote(scenario.ctx, CheckoutRequest{
@@ -729,6 +729,7 @@ func TestOnlineRefundPostgreSQLRequiresFreshLoginForHighAmountApproval(t *testin
 	management, err := billingservice.NewManagementRefundService(
 		scenario.database, refundManagementAuthorizerStub{actor: reviewerID}, recentAuth,
 		refundBusinessAuditStub{},
+		newFinancialSettlementCreditService(t, scenario),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -787,17 +788,12 @@ WHERE invoice_no=? ORDER BY line_number LIMIT 1`, checkout.InvoiceNo); err != ni
 		ExpectedVersion: 1, Decision: billingservice.RefundReviewApprove,
 		EvidenceDigest: strings.Repeat("6", 64),
 	}
-	if _, err = management.ReviewRefund(scenario.ctx, approve, ""); !bizerr.Is(
-		err, billingservice.CodeRefundInvalid,
-	) {
-		t.Fatalf("high amount refund approved without fresh login proof: %v", err)
+	// The confirmed direct-admin policy removes extra recent-login prompts;
+	// high-value refunds still use an authorized manual decision and exact binding.
+	approved, err := management.ReviewRefund(scenario.ctx, approve, "")
+	if recentAuth.binding.Purpose != "" {
+		t.Fatal("ordinary approval issued an extra login challenge")
 	}
-	proof, err := management.IssueRefundReviewProof(scenario.ctx, approve)
-	if err != nil || proof == nil || proof.Token == "" ||
-		recentAuth.binding.Purpose != reauth.PurposeHighValueFunds {
-		t.Fatalf("issue high amount refund proof: proof=%+v err=%v", proof, err)
-	}
-	approved, err := management.ReviewRefund(scenario.ctx, approve, proof.Token)
 	if err != nil || approved == nil || approved.Status != "approved" ||
 		approved.Version != 2 || approved.ApprovedAt == nil {
 		t.Fatalf("approve high amount refund: refund=%+v err=%v", approved, err)

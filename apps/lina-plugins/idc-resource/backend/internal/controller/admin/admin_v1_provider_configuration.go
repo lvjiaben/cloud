@@ -126,7 +126,7 @@ func providerChannelItem(item providerconfiguration.Channel) (*v1.ProviderChanne
 	for index, field := range item.SecretFields {
 		status := &v1.ProviderSecretFieldStatus{Key: field.Key, Required: field.Required, Ready: field.Ready}
 		if !field.UpdatedAt.IsZero() {
-			updatedAt := field.UpdatedAt
+			updatedAt := field.UpdatedAt.UnixMilli()
 			status.UpdatedAt = &updatedAt
 		}
 		secretFields[index] = status

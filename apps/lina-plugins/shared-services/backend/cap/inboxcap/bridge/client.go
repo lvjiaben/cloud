@@ -53,3 +53,32 @@ func (c *Client) Publish(ctx context.Context, input inboxcap.PublishRequest) (*i
 	}
 	return &result, nil
 }
+
+// CurrentSync forwards only a bounded limit; recipient identity comes from the
+// authenticated host call context, never from the guest payload.
+func (c *Client) CurrentSync(ctx context.Context, limit int) (*inboxcap.CurrentSyncResult, error) {
+	if c == nil || c.invoke == nil || ctx == nil || ctx.Err() != nil {
+		return nil, gerror.New("inboxcap bridge is unavailable")
+	}
+	if limit < 0 || limit > inboxcap.MaximumCurrentSync {
+		return nil, gerror.New("inbox current sync limit is invalid")
+	}
+	payload, err := json.Marshal(inboxcap.CurrentSyncRequest{Limit: limit})
+	if err != nil {
+		return nil, gerror.Wrap(err, "encode inbox current sync request")
+	}
+	response, err := c.invoke(inboxcap.OwnerPluginID, inboxcap.ServiceName, inboxcap.ContractVersion, inboxcap.MethodCurrentSync, "", "", payload)
+	if err != nil {
+		return nil, err
+	}
+	if len(response) == 0 || len(response) > inboxcap.MaximumPayloadBytes {
+		return nil, gerror.New("inbox current sync response is invalid")
+	}
+	var result inboxcap.CurrentSyncResult
+	if err = json.Unmarshal(response, &result); err != nil {
+		return nil, gerror.Wrap(err, "decode inbox current sync response")
+	}
+	return &result, nil
+}
+
+var _ inboxcap.CurrentSyncService = (*Client)(nil)

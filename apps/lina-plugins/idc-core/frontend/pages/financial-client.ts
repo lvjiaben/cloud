@@ -305,7 +305,7 @@ async function issueProof(path: string, intent: object) {
 async function executeAdjustment(
   path: string,
   intent: object,
-  proofToken: string,
+  proofToken?: string,
 ) {
   const response = await requestClient.post<{
     adjustment: FinancialAdjustmentMutation;
@@ -316,29 +316,13 @@ async function executeAdjustment(
 export async function createFinancialManualReceipt(
   intent: FinancialManualReceiptIntent,
 ) {
-  const proof = await issueProof(
-    "admin/billing/manual-receipts/proofs",
-    intent,
-  );
-  return executeAdjustment(
-    "admin/billing/manual-receipts",
-    intent,
-    proof.proofToken,
-  );
+  return executeAdjustment("admin/billing/manual-receipts", intent);
 }
 
 export async function createFinancialInvoiceWaiver(
   intent: FinancialInvoiceWaiverIntent,
 ) {
-  const proof = await issueProof(
-    "admin/billing/invoice-waivers/proofs",
-    intent,
-  );
-  return executeAdjustment(
-    "admin/billing/invoice-waivers",
-    intent,
-    proof.proofToken,
-  );
+  return executeAdjustment("admin/billing/invoice-waivers", intent);
 }
 
 export async function reviewFinancialAdjustment(
@@ -346,14 +330,9 @@ export async function reviewFinancialAdjustment(
   intent: FinancialAdjustmentReviewIntent,
 ) {
   const target = encodeURIComponent(adjustmentNo);
-  const proof = await issueProof(
-    `admin/billing/adjustments/${target}/review-proofs`,
-    intent,
-  );
   return executeAdjustment(
     `admin/billing/adjustments/${target}/reviews`,
     intent,
-    proof.proofToken,
   );
 }
 
@@ -486,4 +465,18 @@ export function financialExportDownloadPath(token: string) {
     pluginID,
     `admin/billing/export-downloads/${encodeURIComponent(token)}`,
   );
+}
+
+export interface FinancialBalanceAdjustmentIntent {
+ requestNo: string;
+ customerNo: string;
+ currencyCode: string;
+ amountMinor: string;
+ deduct: boolean;
+ reasonCode: string;
+ evidenceDigest: string;
+}
+
+export async function createFinancialBalanceAdjustment(intent: FinancialBalanceAdjustmentIntent) {
+ return executeAdjustment('admin/billing/balance-adjustments', intent);
 }

@@ -193,6 +193,7 @@ func TestCapabilityMatrixIsCompleteAndExplicit(t *testing.T) {
 		t.Fatalf("validate capability snapshot: %v", err)
 	}
 	wantSupport := map[resourcecap.CapabilityCode]resourcecap.SupportLevel{
+		resourcecap.CapabilityChangeIP:       resourcecap.SupportLevelUnsupported,
 		resourcecap.CapabilityCost:           resourcecap.SupportLevelUnsupported,
 		resourcecap.CapabilityBalance:        resourcecap.SupportLevelUnsupported,
 		resourcecap.CapabilityExpiry:         resourcecap.SupportLevelUnsupported,
@@ -387,7 +388,7 @@ func TestSnapshotCapabilityConstraintsMatchAcceptedParameterShape(t *testing.T) 
 				t.Errorf("capability %s unexpected constraint %+v", code, constraint)
 			}
 			delete(want, constraint.Name)
-			if constraint.Name == "action" && strings.Join(constraint.AllowedValues, ",") != "create,delete,restore" {
+			if constraint.Name == "action" && strings.Join(constraint.AllowedValues, ",") != "create,delete" {
 				t.Errorf("capability %s actions=%v", code, constraint.AllowedValues)
 			}
 		}
@@ -427,7 +428,7 @@ func TestResizeCapabilityConstraintsMatchAcceptedParameterShape(t *testing.T) {
 	}
 }
 
-func TestUnverifiedTLSResponseIsRejected(t *testing.T) {
+func TestUnverifiedTLSResponseRetainsEndpointPolicy(t *testing.T) {
 	t.Parallel()
 	var loginCount int
 	var mu sync.Mutex
@@ -443,14 +444,12 @@ func TestUnverifiedTLSResponseIsRejected(t *testing.T) {
 	_, err := fixture.provider.ListProviderCapacity(context.Background(), resourcecap.ProviderCapacityRequest{
 		Kind: resourcecap.ProviderCapacityKindRegion, Limit: 10,
 	})
-	var callError *resourcecap.ProviderCallError
-	if !errors.As(err, &callError) || callError.Code != resourcecap.ProviderCallErrorCodeTransport ||
-		callError.Retryable || callError.ResultUnknown {
-		t.Fatalf("ListProviderCapacity error=%v, want non-retryable transport policy failure", err)
+	if err != nil {
+		t.Fatalf("certificate verification unexpectedly blocked configured endpoint: %v", err)
 	}
 }
 
-func TestVerifiedChainForDifferentHostnameIsRejected(t *testing.T) {
+func TestCertificateHostnameDoesNotOverrideConfiguredEndpoint(t *testing.T) {
 	t.Parallel()
 	fixture := newProviderFixture(t, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/administrator/v1/login" {
@@ -463,10 +462,8 @@ func TestVerifiedChainForDifferentHostnameIsRejected(t *testing.T) {
 	_, err := fixture.provider.ListProviderCapacity(context.Background(), resourcecap.ProviderCapacityRequest{
 		Kind: resourcecap.ProviderCapacityKindRegion, Limit: 10,
 	})
-	var callError *resourcecap.ProviderCallError
-	if !errors.As(err, &callError) || callError.Code != resourcecap.ProviderCallErrorCodeTransport ||
-		callError.Retryable || callError.ResultUnknown {
-		t.Fatalf("hostname mismatch error=%v, want non-retryable transport policy failure", err)
+	if err != nil {
+		t.Fatalf("certificate hostname unexpectedly blocked configured endpoint: %v", err)
 	}
 }
 

@@ -205,22 +205,30 @@ func openSharedServicesPostgreSQL(t *testing.T) (gdb.DB, func()) {
 		t.Fatal("resolve shared plugin path")
 	}
 	pluginRoot := filepath.Clean(filepath.Join(filepath.Dir(file), ".."))
-	content, err := os.ReadFile(filepath.Join(pluginRoot, "manifest", "sql", "001-shared-services.sql"))
-	if err != nil {
-		t.Fatalf("read shared migration: %v", err)
-	}
-	if _, err = database.Exec(t.Context(), string(content)); err != nil {
-		t.Fatalf("apply shared migration: %v", err)
-	}
-	if _, err = database.Exec(t.Context(), string(content)); err != nil {
-		t.Fatalf("reapply shared migration: %v", err)
+	for _, migration := range []string{"001-shared-services.sql", "002-inbox-host-delivery.sql"} {
+		content, err := os.ReadFile(filepath.Join(pluginRoot, "manifest", "sql", migration))
+		if err != nil {
+			t.Fatalf("read shared migration: %v", err)
+		}
+		if _, err = database.Exec(t.Context(), string(content)); err != nil {
+			t.Fatalf("apply shared migration: %v", err)
+		}
+		if _, err = database.Exec(t.Context(), string(content)); err != nil {
+			t.Fatalf("reapply shared migration: %v", err)
+		}
 	}
 	cleanup := func() {
-		_ = database.Close(context.Background())
-		if strings.HasPrefix(schema, "linapro_shared_test_") {
-			_, _ = admin.Exec(context.Background(), "DROP SCHEMA "+quoteIdentifier(schema)+" CASCADE")
+		if closeErr := database.Close(context.Background()); closeErr != nil {
+			t.Errorf("close test DB: %v", closeErr)
 		}
-		_ = admin.Close(context.Background())
+		if strings.HasPrefix(schema, "linapro_shared_test_") {
+			if _, dropErr := admin.Exec(context.Background(), "DROP SCHEMA "+quoteIdentifier(schema)+" CASCADE"); dropErr != nil {
+				t.Errorf("drop test schema: %v", dropErr)
+			}
+		}
+		if closeErr := admin.Close(context.Background()); closeErr != nil {
+			t.Errorf("close admin DB: %v", closeErr)
+		}
 	}
 	return database, cleanup
 }

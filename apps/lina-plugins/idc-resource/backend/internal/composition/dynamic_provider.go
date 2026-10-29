@@ -8,7 +8,6 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/logger"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -27,6 +26,7 @@ type DynamicOutboundFactory func(
 	configuration channelconfig.Configuration,
 	method string,
 	operationSecrets []resourcecap.SecretBinding,
+	observations ...func(resourcecap.Evidence),
 ) (pluginhost.ConfidentialOutboundHandler, func(), error)
 
 type dynamicProvider struct {
@@ -54,6 +54,11 @@ func (p *dynamicProvider) DiscoverCapabilities(ctx context.Context) (*resourceca
 func (p *dynamicProvider) ListProviderCapacity(ctx context.Context, request resourcecap.ProviderCapacityRequest) (*resourcecap.ProviderCapacityPage, error) {
 	if err := request.Validate(); err != nil {
 		return nil, err
+	}
+	// A nil RawMessage is a valid omitted filter locally, but serializes as
+	// JSON null. The governed guest requires an object when this key exists.
+	if len(request.Filters) == 0 {
+		request.Filters = json.RawMessage(`{}`)
 	}
 	var result resourcecap.ProviderCapacityPage
 	if err := p.invoke(ctx, resourcecap.DynamicProviderMethodListProviderCapacity, request, nil, &result); err != nil {
@@ -115,44 +120,27 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 	if err != nil {
 		return gerror.New("dynamic resource Provider request is invalid")
 	}
-	handler, cleanup, err := p.outbound(ctx, p.configuration, method, operationSecrets)
+	var response []byte
+	observation := &dynamicCallObservation{}
+	defer observation.finalizeProvision(method, request, target)
+	observe := observation.observe
+	ensureDiagnostic := func(stage callDiagnosticStage, failure error) {
+		ensureCallDiagnostic(&observation.mu, &observation.evidence, method, &observation.handedOff, stage, failure)
+	}
+	handler, cleanup, err := p.outbound(ctx, p.configuration, method, operationSecrets, observe)
 	if err != nil || handler == nil || cleanup == nil {
-		if safe := resourcecap.SafeProviderConnectionError(err); safe != nil {
+		ensureDiagnostic(callDiagnosticSetup, err)
+		if retainUncertainHTTPResponse(method, target, observation.evidence) {
+			return nil
+		}
+		if safe := safeConfidentialProviderError(err); safe != nil {
 			return safe
 		}
 		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
 	}
 	defer cleanup()
-
-	var (
-		response        []byte
-		failureMu       sync.Mutex
-		ownerFailure    error
-		authenticatedAt time.Time
-	)
-	// Capture only owner-reviewed codes before the WASM host sanitizes errors.
 	capture := func(callCtx context.Context, request *pluginhost.ConfidentialOutboundRequest) (*pluginhost.ConfidentialOutboundResult, error) {
-		result, callErr := handler(callCtx, request)
-		if method == resourcecap.DynamicProviderMethodVerifyConnection {
-			logger.Debugf(callCtx, "Provider owner connection check completed success=%t authenticated=%t", callErr == nil, confirmedAuthenticationStep(request, result))
-			if metadata, ok := bizerr.As(callErr); ok {
-				logger.Debugf(callCtx, "Provider owner connection check rejected code=%s", metadata.RuntimeCode())
-			}
-		}
-		// The guest clock is isolated and cannot establish wall-clock freshness.
-		// Only an owner-confirmed successful authentication in this invocation
-		// can supply the observation time for a connection proof.
-		if method == resourcecap.DynamicProviderMethodVerifyConnection && callErr == nil && confirmedAuthenticationStep(request, result) {
-			failureMu.Lock()
-			authenticatedAt = time.Now().UTC()
-			failureMu.Unlock()
-		}
-		if safe := resourcecap.SafeProviderConnectionError(callErr); safe != nil {
-			failureMu.Lock()
-			ownerFailure = safe
-			failureMu.Unlock()
-		}
-		return result, callErr
+		return observation.execute(method, handler, callCtx, request)
 	}
 	err = p.extensions.WithConfidentialOutboundContext(ctx, pluginhost.ConfidentialOutboundContextInput{
 		ProviderPluginID: p.configuration.PluginID,
@@ -162,7 +150,7 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 		DeclarationDigest:   p.configuration.DeclarationDigest,
 		InterfaceInstanceID: p.configuration.Config.ChannelRef,
 		Purpose:             capmodel.BusinessExtensionInvocationPurposeExistingBusiness,
-		ExpiresAfter:        5 * time.Second, AllowedResultFields: allowedDynamicResultFields(method),
+		ExpiresAfter:        30 * time.Second, AllowedResultFields: allowedDynamicResultFields(method),
 		Handler: capture,
 	}, func(callCtx context.Context, runtimeContext *capmodel.BusinessExtensionRuntimeContext) error {
 		result, invokeErr := p.extensions.InvokeProviderMethod(callCtx, pluginhost.BusinessExtensionMethodInvokeInput{
@@ -177,28 +165,52 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 			if metadata, ok := bizerr.As(invokeErr); ok {
 				logger.Warningf(callCtx, "Provider invocation rejected code=%s", metadata.RuntimeCode())
 			}
-			return gerror.New("dynamic resource Provider invocation failed")
+			return invokeErr
 		}
 		response = append(response[:0], result.Payload...)
 		return nil
 	})
 	if err != nil || len(response) == 0 {
-		failureMu.Lock()
-		safe := ownerFailure
-		failureMu.Unlock()
+		ensureDiagnostic(callDiagnosticResult, err)
+		observation.mu.Lock()
+		safe := observation.failure
+		observation.mu.Unlock()
+		if method == resourcecap.DynamicProviderMethodExecute && retainOperationFailure(target, safe) {
+			appendHTTPResponseEvidence(target, observation.evidence)
+			return nil
+		}
+		if retainUncertainHTTPResponse(method, target, observation.evidence) {
+			return nil
+		}
 		if safe != nil {
 			return safe
 		}
 		return gerror.New("dynamic resource Provider invocation failed")
 	}
 	if err = json.Unmarshal(response, target); err != nil {
+		ensureDiagnostic(callDiagnosticResult, err)
+		if retainUncertainHTTPResponse(method, target, observation.evidence) {
+			return nil
+		}
 		return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
+	// A guest may return an unknown result after the confidential host masked
+	// an error. Preserve the reviewed owner category without treating that
+	// error as proof of rejection or allowing another write.
+	observation.mu.Lock()
+	safe := observation.failure
+	observation.mu.Unlock()
+	retainUnknownOperationFailure(method, target, safe)
+	if hasUnconfirmedOperation(target) {
+		ensureDiagnostic(callDiagnosticResult, safe)
+	}
+	appendHTTPResponseEvidence(target, observation.evidence)
+	stampDynamicObservation(target, time.Now().UTC())
 	switch typed := target.(type) {
 	case *resourcecap.ConnectionVerification:
-		failureMu.Lock()
-		safe, observedAt := ownerFailure, authenticatedAt
-		failureMu.Unlock()
+		observation.mu.Lock()
+		safe, observedAt := observation.failure, observation.authenticatedAt
+		observation.mu.Unlock()
 		if !typed.Verified || observedAt.IsZero() {
 			if safe != nil {
 				return safe
@@ -206,6 +218,7 @@ func (p *dynamicProvider) invoke(ctx context.Context, method string, request any
 			return bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 		}
 		typed.ObservedAt = observedAt
+
 	case *resourcecap.CapabilitySnapshot:
 		// A capability declaration is observed on receipt; this does not prove
 		// that an upstream connection was attempted or authenticated.
@@ -227,6 +240,10 @@ func allowedDynamicResultFields(method string) []string {
 		return append(proxyFields, "Status", "ExternalTaskRef", "ExternalResourceRef", "Resource", "Failure", "Progress", "Evidence", "ResidualResources")
 	case resourcecap.DynamicProviderMethodQueryResource:
 		return append(proxyFields, "ExternalResourceRef", "State", "ObservedAt", "Evidence")
+	case resourcecap.DynamicProviderMethodLookupPrincipal:
+		return append(proxyFields, "Exists", "ExternalPrincipalRef", "ObservedAt", "Evidence")
+	case resourcecap.DynamicProviderMethodCreatePrincipal:
+		return append(proxyFields, "ExternalPrincipalRef", "ObservedAt", "Evidence")
 	default:
 		return nil
 	}
@@ -246,4 +263,63 @@ func confirmedAuthenticationStep(request *pluginhost.ConfidentialOutboundRequest
 		return false
 	}
 	return observed.Authenticated && observed.StatusCode >= http.StatusOK && observed.StatusCode < http.StatusMultipleChoices
+}
+
+// Isolated guest clocks cannot prove freshness. These fields describe receipt
+// of this exact governed invocation; the owner supplies their wall-clock time.
+func stampDynamicObservation(target any, now time.Time) {
+	evidence := func(items []resourcecap.Evidence) {
+		for index := range items {
+			items[index].ObservedAt = now
+		}
+	}
+	switch typed := target.(type) {
+	case *resourcecap.ResourceSnapshot:
+		typed.ObservedAt = now
+		evidence(typed.Evidence)
+	case *resourcecap.OperationResult:
+		evidence(typed.Evidence)
+		if typed.Resource != nil {
+			typed.Resource.ObservedAt = now
+			evidence(typed.Resource.Evidence)
+		}
+	case *resourcecap.PrincipalLookupResult:
+		typed.ObservedAt = now
+		evidence(typed.Evidence)
+	case *resourcecap.PrincipalCreateResult:
+		typed.ObservedAt = now
+		evidence(typed.Evidence)
+	case *resourcecap.ProviderCapacityPage:
+		evidence(typed.Evidence)
+		for index := range typed.Items {
+			typed.Items[index].ObservedAt = now
+		}
+	}
+}
+
+// retainOperationFailure copies only a host-reviewed category and fixed English
+// summary. It preserves reconciliation and never asserts non-acceptance.
+func retainOperationFailure(target any, failure error) bool {
+	operation, ok := target.(*resourcecap.OperationResult)
+	if !ok {
+		return false
+	}
+	safe := resourcecap.SafeProviderConnectionError(failure)
+	metadata, ok := bizerr.As(safe)
+	if !ok {
+		return false
+	}
+	operation.Status = resourcecap.TaskStatusUnknown
+	operation.Failure = &resourcecap.ProviderFailure{Code: metadata.RuntimeCode(), Message: metadata.Fallback(), ResultUnknown: true}
+	operation.Evidence = []resourcecap.Evidence{{Kind: "upstream_call_failed", Reference: metadata.RuntimeCode(), Summary: metadata.Fallback(), ObservedAt: time.Now().UTC()}}
+	return true
+}
+
+// retainUnknownOperationFailure leaves successful and accepted guest results
+// untouched while restoring reviewed diagnostics on an indeterminate write.
+func retainUnknownOperationFailure(method string, target any, failure error) {
+	operation, ok := target.(*resourcecap.OperationResult)
+	if method == resourcecap.DynamicProviderMethodExecute && ok && operation.Status == resourcecap.TaskStatusUnknown {
+		retainOperationFailure(target, failure)
+	}
 }

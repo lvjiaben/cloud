@@ -12,6 +12,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 	"lina-plugin-idc-core/backend/internal/service/productautomation"
@@ -22,18 +23,22 @@ func (s *serviceImpl) ConsumeFinanciallySettled(ctx context.Context, input Settl
 		return nil, errorsNew("product_fulfillment_settlement_invalid")
 	}
 	var output *SettlementResult
+	stage := "settlement"
 	err := s.database.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
 		authority, err := s.lockSettlement(txCtx, input)
 		if err != nil {
 			return err
 		}
+		stage = "frozen_items"
 		items, err := s.loadFrozenItems(txCtx, authority, nil)
 		if err != nil {
 			return err
 		}
+		stage = "configuration"
 		if err = s.validateFrozenConfigurations(txCtx, items); err != nil {
 			return err
 		}
+		stage = "existing_intents"
 		existingValue, valueErr := s.database.GetValue(txCtx, `SELECT count(*) FROM plugin_idc_core_product_fulfillment_intent WHERE tenant_id=0 AND order_no=?`, authority.OrderNo)
 		if valueErr != nil {
 			return valueErr
@@ -54,17 +59,22 @@ func (s *serviceImpl) ConsumeFinanciallySettled(ctx context.Context, input Settl
 			}
 		}
 		if len(gateItems) > 0 && s.gates != nil {
+			stage = "owner_gates"
 			ownerGatesCleared, err = evaluateOwnerGates(txCtx, s.gates, authority.OrderNo, gateItems)
 			if err != nil {
 				return err
 			}
 		}
+		stage = "materialization"
 		output, err = s.materializeAll(txCtx, authority, items, ownerGatesCleared)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
+	if err != nil {
+		logger.Warningf(ctx, "product fulfillment settlement blocked stage=%s", stage)
+	}
 	return output, err
 }
 
@@ -76,7 +86,7 @@ SELECT settlement.settlement_no, settlement.order_no,
        COALESCE(attribution.service_owner_customer_no, settlement.customer_no) AS service_owner_customer_no,
        settlement.invoice_no, settlement.currency_code,
        settlement.settled_at, orders.status_code AS order_status,orders.risk_decision_code,
-       orders.requires_contract,orders.item_count
+       orders.item_count
 FROM plugin_idc_core_financial_settlement settlement
 JOIN plugin_idc_core_commerce_order orders
   ON orders.tenant_id=settlement.tenant_id AND orders.order_no=settlement.order_no
@@ -205,6 +215,7 @@ func (s *serviceImpl) validateFrozenConfigurations(ctx context.Context, items []
 	}
 	evidence, err := s.frozen.ValidateBatch(ctx, inputs)
 	if err != nil || len(evidence) != len(inputs) {
+		logger.Warningf(ctx, "frozen fulfillment configuration validation failed reason=%s", frozenConfigurationFailureReason(err))
 		return errorsNew("product_fulfillment_exact_evidence_unavailable")
 	}
 	return nil

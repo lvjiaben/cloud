@@ -1,0 +1,18 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.fields.productNo.dc": "可见的商品业务编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.fields.sourceVersionNo.dc": "本次修改所基于的精确在售版本",
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.meta.summary": "开始修改已发布商品",
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.meta.tags": "IDC商品目录管理",
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.meta.dc": "在原商品上建立新的修改草稿，保留当前在售版本和全部历史交易。",
+  "plugins.idc_core.api.admin.v1.CatalogProductRevisionCreateReq.schema.dc": "在原商品上建立新的修改草稿，保留当前在售版本和全部历史交易。",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.fields.productNo.dc": "可见的商品业务编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.fields.versionNo.dc": "当前正式发布的版本编号",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.fields.expectedVersion.dc": "当前商品乐观锁版本号",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.fields.active.dc": "为真重新检查后上架；为假停止新购、续费与试用转正式",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.meta.summary": "调整商品销售状态",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.meta.tags": "IDC商品目录管理",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.meta.dc": "下架停止新增收费；重新上架核对价格完整性及交付准入，以乐观锁保护状态并同事务记录审计。",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateReq.schema.dc": "下架停止新增收费；重新上架核对价格完整性及交付准入，以乐观锁保护状态并同事务记录审计。",
+  "plugins.idc_core.api.admin.v1.CatalogProductSaleStateUpdateRes.fields.version.dc": "已提交的商品修订号",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.currentVersionNo.dc": "当前正式在售版本；与最新修改草稿分别投影"
+}

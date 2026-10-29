@@ -4,8 +4,9 @@ import http from 'node:http';
 import https from 'node:https';
 const backend = new URL(process.env.WEBSITE_API_ORIGIN || 'http://127.0.0.1:6030');
 const customerUrl = process.env.WEBSITE_CUSTOMER_URL || 'http://localhost:6032';
+const customer = new URL(customerUrl);
 const ssr = JSON.parse(process.env.WEBSITE_SSR_ORIGINS || '{}');
-for (const value of [backend.href, ...Object.values(ssr)]) {const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Invalid configured upstream');}
+for (const value of [backend.href, customer.href, ...Object.values(ssr)]) {const url=new URL(value);if(!['http:','https:'].includes(url.protocol)||url.username||url.password)throw new Error('Invalid configured upstream');}
 function proxy(req,res,target,anonymous=false){
  const headers={...req.headers,host:target.host};delete headers.connection;
  if(anonymous){delete headers.authorization;delete headers['x-forwarded-host'];}
@@ -17,10 +18,44 @@ const server=http.createServer(async(req,res)=>{
  try {
   const url=new URL(req.url,'http://website.invalid');const path=url.pathname;
   if(path.includes('%')||path.includes('\\')||path.includes('..')){res.writeHead(404);return res.end();}
+  if(path==='/__website/session'){
+   const cookieName='lina_website_handoff';
+   const cookieFlags='; Path=/__website/session; HttpOnly; SameSite=Lax'+(req.socket.encrypted?'; Secure':'');
+   if(req.method==='POST'){
+    if(req.headers.origin!==customer.origin){res.writeHead(403);return res.end();}
+    let body='';for await(const chunk of req){body+=chunk;if(body.length>16384){res.writeHead(413);return res.end();}}
+    const form=new URLSearchParams(body),token=form.get('accessToken')||'',returnTo=form.get('returnTo')||'/cart';
+    if(token.length>8192||/[\r\n]/.test(token)||!/^\/(?:en-US\/)?(?:$|cart|checkout|products(?:\/[^/?#]+)?|pages\/[^/?#]+)\/?(?:[?#].*)?$/.test(returnTo)){res.writeHead(400);return res.end();}
+    if(token){
+     const check=await fetch(new URL('/x/idc-core/api/v1/account/commerce/cart',backend),{headers:{authorization:'Bearer '+token},signal:AbortSignal.timeout(20000)});
+     const result=await check.json();if(!check.ok||String(result.code)!=='0'){res.writeHead(401);return res.end();}
+    }
+    res.writeHead(303,{'location':returnTo,'cache-control':'no-store','set-cookie':cookieName+'='+encodeURIComponent(JSON.stringify({accessToken:token}))+cookieFlags+'; Max-Age=30'});return res.end();
+   }
+   if(req.method==='GET'){
+    if(req.headers['sec-fetch-site']&&!['same-origin','none'].includes(req.headers['sec-fetch-site'])){res.writeHead(403);return res.end();}
+    const raw=String(req.headers.cookie||'').split(';').map(part=>part.trim()).find(part=>part.startsWith(cookieName+'='));
+    let session={checked:false,accessToken:''};
+    if(raw){try{const parsed=JSON.parse(decodeURIComponent(raw.slice(cookieName.length+1)));if(typeof parsed.accessToken==='string')session={checked:true,accessToken:parsed.accessToken};}catch{/* Invalid handoff remains unsigned. */}}
+    res.writeHead(200,{'content-type':'application/json','cache-control':'no-store','set-cookie':cookieName+'='+cookieFlags+'; Max-Age=0'});return res.end(JSON.stringify(session));
+   }
+   res.writeHead(405);return res.end();
+  }
+  if(path==='/__website/configuration'&&req.method==='GET'){res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'});return res.end(JSON.stringify({origin:'http'+(req.socket.encrypted?'s':'')+'://'+req.headers.host,customerOrigin:customer.origin}));}
+  // Login and the final invoice use the complete customer template at the same
+  // origin. Purchase configuration and checkout remain website-owned routes.
+  if (/^\/(auth(?:\/|$)|account(?:\/|$)|payment\/return\/)/u.test(path)) return proxy(req,res,new URL(req.url,customer));
+  if(path.startsWith('/api/v1/')) return proxy(req,res,new URL(req.url,backend));
   if(path.startsWith('/x/')){
+   if (/^\/x\/[a-z0-9-]+\/api\/v1\/account(?:\/|$)/u.test(path) || path.startsWith('/x/idc-portal/api/v1/public/customer-center')) return proxy(req,res,new URL(req.url,backend));
+   // Public announcements are owned by content-notice; management and read-state routes stay private.
+   if(/^\/x\/content-notice\/api\/v1\/public\/announcements(?:\/[1-9][0-9]*)?$/u.test(path)){
+    if(req.method!=='GET'){res.writeHead(405,{allow:'GET'});return res.end();}
+    return proxy(req,res,new URL(req.url,backend),true);
+   }
    const allowed=path==='/x/idc-portal/api/v1/public/brand'||/^\/x\/idc-core\/api\/v1\/public\/(catalog|content|commerce)(\/|$)/u.test(path);
    const action=/^\/x\/idc-core\/api\/v1\/public\/(commerce\/(carts|cart-items)|catalog\/products\/[^/]+\/(purchase-configuration\/(evaluate|quote)|campaign-exposures)|content\/items\/[^/]+\/download-tickets)$/u.test(path);
-   if(!allowed){res.writeHead(404);return res.end();}if(!['GET','HEAD'].includes(req.method)&&!(req.method==='POST'&&action)){res.writeHead(405);return res.end();}return proxy(req,res,new URL(req.url,backend),true);
+   if(!allowed){res.writeHead(404);return res.end();}if(!['GET','HEAD'].includes(req.method)&&!(req.method==='POST'&&action)&&!(req.method==='DELETE'&&/^\/x\/idc-core\/api\/v1\/public\/commerce\/cart-items\/[^/]+$/u.test(path))){res.writeHead(405);return res.end();}return proxy(req,res,new URL(req.url,backend),true);
   }
   if(path.startsWith('/x-assets/')){if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}return proxy(req,res,new URL(req.url,backend),true);}
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}

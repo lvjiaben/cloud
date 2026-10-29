@@ -14,7 +14,9 @@ export function appendProductDirectoryRoutes(
     const insertAt = children.findIndex(
       (child) => child.name === 'CustomerProductDirectories',
     );
-    const entries: RouteRecordRaw[] = directories.map((directory, index) => ({
+    const entries: RouteRecordRaw[] = directories
+      .filter(directory=>!directory.navigationType || directory.navigationType==='product')
+      .map((directory, index) => ({
       component: () => import('#/views/account/product-directories/index.vue'),
       meta: {
         icon: 'lucide:folder',

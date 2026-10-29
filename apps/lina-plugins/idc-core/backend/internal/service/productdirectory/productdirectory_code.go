@@ -7,6 +7,7 @@ import (
 )
 
 var (
+	CodeNoteConflict  = bizerr.MustDefine("IDC_SERVICE_NOTE_CONFLICT", "The service note changed elsewhere; reopen it and review the current note before saving", gcode.CodeInvalidOperation)
 	CodeHasProducts   = bizerr.MustDefine("IDC_PRODUCT_DIRECTORY_HAS_PRODUCTS", "This menu still has products; move or remove their menu assignment in product editing before changing its type", gcode.CodeInvalidOperation)
 	CodeUnavailable   = bizerr.MustDefine("IDC_PRODUCT_DIRECTORY_UNAVAILABLE", "The product directory operation is temporarily unavailable", gcode.CodeInternalError)
 	CodeInvalid       = bizerr.MustDefine("IDC_PRODUCT_DIRECTORY_INVALID", "The product directory configuration is invalid", gcode.CodeInvalidParameter)

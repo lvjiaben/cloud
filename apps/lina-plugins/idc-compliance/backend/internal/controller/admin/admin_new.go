@@ -12,12 +12,6 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-plugin-idc-compliance/backend/api/admin"
-	"lina-plugin-idc-compliance/backend/internal/service/contractautosign"
-	"lina-plugin-idc-compliance/backend/internal/service/contractfailure"
-	"lina-plugin-idc-compliance/backend/internal/service/contractsigner"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontractonboarding"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontractpreparation"
-	"lina-plugin-idc-compliance/backend/internal/service/electroniccontracttemplate"
 	"lina-plugin-idc-compliance/backend/internal/service/enterpriseverification"
 	"lina-plugin-idc-compliance/backend/internal/service/privacygovernance"
 	"lina-plugin-idc-compliance/backend/internal/service/providerconfig"
@@ -28,51 +22,12 @@ import (
 
 // ControllerV1 serves the compliance plugin's version-one management routes.
 type ControllerV1 struct {
-	providerConfiguration         providerconfig.Service
-	enterpriseVerification        enterpriseverification.ManagementService
-	supplierConfiguration         supplierconfig.Service
-	electronicContract            electroniccontractonboarding.Service
-	electronicContractPreparation electroniccontractpreparation.Service
-	electronicContractTemplates   electroniccontracttemplate.Service
-	contractSigners               contractsigner.Service
-	contractAutoSign              contractautosign.Service
-	contractFailures              contractfailure.ManagementService
-	taxInvoiceManagement          taxinvoicemanagement.Service
-	taxInvoiceRedLetters          taxinvoiceredletter.Service
-	privacyGovernance             privacygovernance.Service
-}
-
-// NewV1WithContractFailureManagement adds the versioned handling policy and
-// explicit immediate-cancellation command without changing older test graphs.
-func NewV1WithContractFailureManagement(
-	providerConfiguration providerconfig.Service,
-	enterpriseVerification enterpriseverification.ManagementService,
-	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-	contractAutoSign contractautosign.Service,
-	taxInvoiceManagement taxinvoicemanagement.Service,
-	taxInvoiceRedLetters taxinvoiceredletter.Service,
-	privacyGovernance privacygovernance.Service,
-	contractFailures contractfailure.ManagementService,
-) (admin.IAdminV1, error) {
-	controller, err := NewV1WithPrivacyGovernance(
-		providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates,
-		contractSigners, contractAutoSign, taxInvoiceManagement, taxInvoiceRedLetters,
-		privacyGovernance,
-	)
-	if err != nil {
-		return nil, err
-	}
-	implementation, ok := controller.(*ControllerV1)
-	if !ok || nilControllerDependency(contractFailures) {
-		return nil, gerror.New("contract failure management dependency is invalid")
-	}
-	implementation.contractFailures = contractFailures
-	return implementation, nil
+	providerConfiguration  providerconfig.Service
+	enterpriseVerification enterpriseverification.ManagementService
+	supplierConfiguration  supplierconfig.Service
+	taxInvoiceManagement   taxinvoicemanagement.Service
+	taxInvoiceRedLetters   taxinvoiceredletter.Service
+	privacyGovernance      privacygovernance.Service
 }
 
 // NewV1WithPrivacyGovernance adds the independently permissioned privacy
@@ -81,19 +36,12 @@ func NewV1WithPrivacyGovernance(
 	providerConfiguration providerconfig.Service,
 	enterpriseVerification enterpriseverification.ManagementService,
 	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-	contractAutoSign contractautosign.Service,
 	taxInvoiceManagement taxinvoicemanagement.Service,
 	taxInvoiceRedLetters taxinvoiceredletter.Service,
 	privacyGovernance privacygovernance.Service,
 ) (admin.IAdminV1, error) {
 	controller, err := NewV1WithTaxInvoiceRedLetters(
-		providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates,
-		contractSigners, contractAutoSign, taxInvoiceManagement, taxInvoiceRedLetters,
+		providerConfiguration, enterpriseVerification, supplierConfiguration, taxInvoiceManagement, taxInvoiceRedLetters,
 	)
 	if err != nil {
 		return nil, err
@@ -112,18 +60,11 @@ func NewV1WithTaxInvoiceRedLetters(
 	providerConfiguration providerconfig.Service,
 	enterpriseVerification enterpriseverification.ManagementService,
 	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-	contractAutoSign contractautosign.Service,
 	taxInvoiceManagement taxinvoicemanagement.Service,
 	taxInvoiceRedLetters taxinvoiceredletter.Service,
 ) (admin.IAdminV1, error) {
 	controller, err := NewV1WithTaxInvoiceManagement(
-		providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates,
-		contractSigners, contractAutoSign, taxInvoiceManagement,
+		providerConfiguration, enterpriseVerification, supplierConfiguration, taxInvoiceManagement,
 	)
 	if err != nil {
 		return nil, err
@@ -142,17 +83,10 @@ func NewV1WithTaxInvoiceManagement(
 	providerConfiguration providerconfig.Service,
 	enterpriseVerification enterpriseverification.ManagementService,
 	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-	contractAutoSign contractautosign.Service,
 	taxInvoiceManagement taxinvoicemanagement.Service,
 ) (admin.IAdminV1, error) {
-	controller, err := NewV1WithContractSignersAndAutoSign(
+	controller, err := NewV1(
 		providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates,
-		contractSigners, contractAutoSign,
 	)
 	if err != nil {
 		return nil, err
@@ -165,82 +99,21 @@ func NewV1WithTaxInvoiceManagement(
 	return implementation, nil
 }
 
-// NewV1WithContractSignersAndAutoSign adds the independently permissioned
-// enterprise auto-sign manager without changing the stable base constructor.
-func NewV1WithContractSignersAndAutoSign(
-	providerConfiguration providerconfig.Service,
-	enterpriseVerification enterpriseverification.ManagementService,
-	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-	contractAutoSign contractautosign.Service,
-) (admin.IAdminV1, error) {
-	controller, err := NewV1WithContractSigners(
-		providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates, contractSigners,
-	)
-	if err != nil {
-		return nil, err
-	}
-	implementation, ok := controller.(*ControllerV1)
-	if !ok || nilControllerDependency(contractAutoSign) {
-		return nil, gerror.New("contract auto-sign administration dependency is invalid")
-	}
-	implementation.contractAutoSign = contractAutoSign
-	return implementation, nil
-}
-
-// NewV1WithContractSigners adds the enterprise signer directory used only by
-// contract creation. Keeping the base constructor stable avoids coupling
-// unrelated administration services to this optional feature graph.
-func NewV1WithContractSigners(
-	providerConfiguration providerconfig.Service,
-	enterpriseVerification enterpriseverification.ManagementService,
-	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
-	contractSigners contractsigner.Service,
-) (admin.IAdminV1, error) {
-	controller, err := NewV1(providerConfiguration, enterpriseVerification, supplierConfiguration,
-		electronicContract, electronicContractPreparation, electronicContractTemplates)
-	if err != nil {
-		return nil, err
-	}
-	implementation, ok := controller.(*ControllerV1)
-	if !ok || nilControllerDependency(contractSigners) {
-		return nil, gerror.New("contract signer administration dependency is invalid")
-	}
-	implementation.contractSigners = contractSigners
-	return implementation, nil
-}
-
 // NewV1 injects the installation-wide compliance management services.
 func NewV1(
 	providerConfiguration providerconfig.Service,
 	enterpriseVerification enterpriseverification.ManagementService,
 	supplierConfiguration supplierconfig.Service,
-	electronicContract electroniccontractonboarding.Service,
-	electronicContractPreparation electroniccontractpreparation.Service,
-	electronicContractTemplates electroniccontracttemplate.Service,
 ) (admin.IAdminV1, error) {
 	if nilControllerDependency(providerConfiguration) ||
 		nilControllerDependency(enterpriseVerification) ||
-		nilControllerDependency(supplierConfiguration) ||
-		nilControllerDependency(electronicContract) ||
-		nilControllerDependency(electronicContractPreparation) ||
-		nilControllerDependency(electronicContractTemplates) {
+		nilControllerDependency(supplierConfiguration) {
 		return nil, gerror.New("compliance administration controller dependency is invalid")
 	}
 	return &ControllerV1{
-		providerConfiguration:         providerConfiguration,
-		enterpriseVerification:        enterpriseVerification,
-		supplierConfiguration:         supplierConfiguration,
-		electronicContract:            electronicContract,
-		electronicContractPreparation: electronicContractPreparation,
-		electronicContractTemplates:   electronicContractTemplates,
+		providerConfiguration:  providerConfiguration,
+		enterpriseVerification: enterpriseVerification,
+		supplierConfiguration:  supplierConfiguration,
 	}, nil
 }
 

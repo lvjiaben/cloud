@@ -1,0 +1,31 @@
+import {test,expect} from '../support/source-site';
+import {readFile} from 'node:fs/promises';
+import {GameSolutionPage} from '../pages/GameSolutionPage';
+test.use({baseURL:'http://localhost:6680',headless:true});
+test.describe('TC-120 游戏解决方案',()=>{
+ for(const mobile of [false,true])test(mobile?'TC-120b: 手机原文与锚点':'TC-120a: 桌面原文、品牌与失败恢复',async({page},info)=>{
+  if(mobile)await page.setViewportSize({width:390,height:844});
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  let failed=false;
+  await page.route('**/x/**',r=>r.fulfill({json:{code:0,data:{items:[],categories:[],products:[]}}}));
+  await page.route('**/x/idc-portal/api/v1/public/brand',r=>failed?r.fulfill({status:503,json:{code:50}}):r.fulfill({json:{code:0,data:{brand:{siteName:{zhCN:'本方站点'},footer:{zhCN:'本方公司'},contactPhone:'400-1234567',icpNumber:'本方备案',navigation:[]}}}}));
+  const site=new GameSolutionPage(page);await site.open();
+  await expect(page.locator('.pagebanner-title')).toHaveText('游戏解决方案');
+  const expected=JSON.parse(await readFile(new URL('../support/game-reference.json',import.meta.url),'utf8'));
+  const actual=await page.locator('[data-game] main').evaluate(main=>Array.from(main.querySelectorAll('h1,h2,h3,h5,p,li,.problem-item-title,.problem-item-content,.more-item-title')).filter(e=>!e.querySelector('h1,h2,h3,h5,p,li')).map(e=>e.textContent!.trim()));
+  expect(actual).toEqual(expected);
+  await expect(page.locator('[data-footer-contact=phone] a')).toHaveText('400-1234567');
+  await expect(page.locator('[data-game-contact]').first()).toHaveAttribute('href','http://localhost:6680/contact.html');
+  expect(await page.locator('body').innerText()).not.toMatch(/江苏白猿|1531335070|400-8876675|苏ICP备/);
+  await page.screenshot({path:info.outputPath('game-initial.png')});
+  await site.architecture();
+  await expect(page).toHaveURL(/#game-architecture$/);
+  await expect.poll(()=>page.locator('#game-architecture').evaluate(e=>Math.abs(e.getBoundingClientRect().top))).toBeLessThan(100);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.screenshot({path:info.outputPath('game-architecture.png')});
+  failed=true;await site.reload();await expect(page.locator('[data-brand-retry]')).toBeVisible();
+  await expect(page.locator('.architecture-left-desc')).toContainText('服务服务涵盖');
+  await page.screenshot({path:info.outputPath('game-brand-error.png')});
+  expect(errors).toEqual([]);
+ });
+});

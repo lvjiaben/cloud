@@ -17,7 +17,7 @@ func TestGenericCatalogCreateRequestsAreBounded(t *testing.T) {
 	if err := g.Validator().Data(category).Run(context.Background()); err == nil {
 		t.Fatal("overlong category accepted")
 	}
-	product := &CatalogProductCreateReq{CategoryNo: "ctg_0123456789abcdef0123456789abcdef", PublicSlug: "managed-ssl", NameZhCn: "托管 SSL 证书", NameEnUs: "Managed SSL", SummaryZhCn: strings.Repeat("证", 1024), ContractPolicyCode: "inherit"}
+	product := &CatalogProductCreateReq{CategoryNo: "ctg_0123456789abcdef0123456789abcdef", PublicSlug: "managed-ssl", NameZhCn: "托管 SSL 证书", NameEnUs: "Managed SSL", SummaryZhCn: strings.Repeat("证", 1024)}
 	if err := g.Validator().Data(product).Run(context.Background()); err != nil {
 		t.Fatal(err)
 	}

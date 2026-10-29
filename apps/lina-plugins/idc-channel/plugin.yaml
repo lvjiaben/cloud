@@ -1,6 +1,6 @@
 id: idc-channel
 name: IDC Downstream Channel
-version: v0.1.2
+version: v0.1.3
 type: source
 distribution: builtin
 scope_nature: platform_only

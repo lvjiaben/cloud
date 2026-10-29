@@ -84,7 +84,7 @@
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetReq.meta.summary": "查询商家本地供应商配置",
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetReq.meta.dc": "返回当前安装的腾讯电子签基础版或诺诺配置，不返回秘密引用、凭据、密文、外部标识或供应商载荷。",
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetReq.schema.dc": "返回当前安装的腾讯电子签基础版或诺诺配置，不返回秘密引用、凭据、密文、外部标识或供应商载荷。",
-  "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetReq.fields.providerCode.dc": "本地供应商编码：tencent_essbasic 或 nuonuo_invoice",
+  "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetReq.fields.providerCode.dc": "本地开票供应商编码：nuonuo_invoice",
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationGetRes.fields.item.dc": "不含秘密的当前安装供应商配置",
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationItem.fields.providerCode.dc": "本地供应商编码",
   "plugins.idc_compliance.api.admin.v1.SupplierConfigurationItem.fields.credentialStatus.dc": "凭据状态：未配置、更新中、已配置或可重试失败",

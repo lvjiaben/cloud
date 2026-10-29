@@ -1035,7 +1035,7 @@ onMounted(load);
             </DescriptionsItem>
           </Descriptions>
         </Card>
-        <Card data-testid="customer-server-list">
+        <Card v-if="items.length" data-testid="customer-server-list">
           <ServerGrid>
             <template #product="{ row }">{{ serverDisplayName(row) }}</template>
             <template #runtimeStatus="{ row }"

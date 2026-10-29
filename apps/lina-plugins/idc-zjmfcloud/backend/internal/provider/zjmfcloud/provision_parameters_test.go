@@ -78,10 +78,10 @@ func TestBuildProvisionDataDiskCapacity(t *testing.T) {
 				t.Fatal(err)
 			}
 			if capacity == 0 {
-				if form.Has("data_disk_size") {
+				if form.Has("other_data_disk[0][size]") || form.Has("data_disk_size") {
 					t.Fatal("zero capacity created an upstream disk parameter")
 				}
-			} else if form.Get("data_disk_size") != fmt.Sprint(capacity) {
+			} else if form.Get("other_data_disk[0][size]") != fmt.Sprint(capacity) {
 				t.Fatalf("capacity was lost: %v", form)
 			}
 		})
@@ -232,6 +232,112 @@ func TestProvisionAccessoryQuotaSemantics(t *testing.T) {
 	for _, key := range []string{"snap_num", "nat_acl_limit", "nat_web_limit"} {
 		if _, exists := object[key]; exists {
 			t.Fatalf("legacy plan gained implicit quota %s", key)
+		}
+	}
+}
+
+// TestDirectProvisioningUsesFrozenUpstreamIdentifiers rejects guessed or mixed mappings.
+func TestDirectProvisioningUsesFrozenUpstreamIdentifiers(t *testing.T) {
+	plan := zjmfProvisionTestPlan()
+	plan.Selector = json.RawMessage(`{"provision":{"mode":"direct"}}`)
+	for i := range plan.Components {
+		switch plan.Components[i].Type {
+		case resourcecap.ServerProvisionComponentRegion:
+			plan.Components[i].Code = "11"
+		case resourcecap.ServerProvisionComponentLine:
+			plan.Components[i].Code = "22"
+		case resourcecap.ServerProvisionComponentImage:
+			plan.Components[i].Code = "33"
+		}
+	}
+	raw, err := BuildProvisionParameters(context.Background(), plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result map[string]any
+	if err = json.Unmarshal(raw, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result["area"] != "11" || result["node"] != "22" || result["os"] != "33" {
+		t.Fatalf("frozen IDs were not preserved: %s", raw)
+	}
+	bad := plan
+	bad.Selector = json.RawMessage(`{"provision":{"mode":"direct","images":{"33":"44"}}}`)
+	if _, err = BuildProvisionParameters(context.Background(), bad); err == nil {
+		t.Fatal("mixed direct and manual mapping accepted")
+	}
+	for i := range plan.Components {
+		if plan.Components[i].Type == resourcecap.ServerProvisionComponentImage {
+			plan.Components[i].Code = "ubuntu-guessed"
+		}
+	}
+	if _, err = BuildProvisionParameters(context.Background(), plan); err == nil {
+		t.Fatal("non-numeric image guessed")
+	}
+}
+
+// TestFrozenNetworkSelectionsReachSupplierForm checks precedence and exact
+// units at the final transport boundary, including an explicit zero address.
+func TestFrozenNetworkSelectionsReachSupplierForm(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name, product, customer, ip, inbound, outbound string
+	}{
+		{"package", `{"ip_count":2,"inbound_bandwidth":300,"outbound_bandwidth":80}`, `{}`, "2", "300", "80"},
+		{"purchase", `{"ip_count":2,"inbound_bandwidth":300,"outbound_bandwidth":80}`, `{"ip_count":0,"inbound_bandwidth":500,"outbound_bandwidth":60}`, "0", "500", "60"},
+		{"partial purchase", `{"ip_count":2,"inbound_bandwidth":300,"outbound_bandwidth":80}`, `{"outbound_bandwidth":40}`, "2", "300", "40"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			plan := zjmfProvisionTestPlan()
+			plan.ProductConfiguration, plan.CustomerConfiguration = json.RawMessage(test.product), json.RawMessage(test.customer)
+			parameters, err := resourcecap.BuildProvisionParameters(context.Background(), BuildProvisionParameters, plan)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object, err := decodeParameters(parameters)
+			if err != nil {
+				t.Fatal(err)
+			}
+			form, err := provisionForm(object)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if form.Get("ip_num") != test.ip || form.Get("in_bw") != test.inbound || form.Get("out_bw") != test.outbound || form.Get("memory") != "4096" {
+				t.Fatalf("frozen selections changed at transport: %v", form)
+			}
+		})
+	}
+	for _, invalid := range []string{`{"ip_count":-1}`, `{"ip_count":1025}`, `{"inbound_bandwidth":0}`, `{"outbound_bandwidth":1000001}`, `{"ip_count":1.5}`, `{"inbound_bandwidth":"01"}`, `{"outbound_bandwidth":null} trailing`} {
+		plan := zjmfProvisionTestPlan()
+		plan.CustomerConfiguration = json.RawMessage(invalid)
+		if _, err := BuildProvisionParameters(context.Background(), plan); err == nil {
+			t.Fatalf("invalid frozen network accepted: %s", invalid)
+		}
+	}
+}
+
+func TestCustomProvisionParametersSurviveBuilderAndNativeForm(t *testing.T) {
+	plan := zjmfProvisionTestPlan()
+	plan.ProductConfiguration = json.RawMessage(`{"custom_parameters":{"Vendor_Size":"4","other_data_disk[1][size]":80}}`)
+	raw, err := resourcecap.BuildProvisionParameters(context.Background(), BuildProvisionParameters, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	object, err := decodeObject(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form, err := provisionForm(object)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if form.Get("Vendor_Size") != "4" || form.Get("other_data_disk[1][size]") != "80" {
+		t.Fatalf("native custom fields missing: %v", form)
+	}
+	for _, key := range []string{"client", "client[0]", "Client", "num", "num[units]", "hostname", "access_token", "password"} {
+		object["custom_parameters"] = json.RawMessage(`{"` + key + `":"1"}`)
+		if _, err = provisionForm(object); err == nil {
+			t.Fatalf("protected field accepted: %s", key)
 		}
 	}
 }

@@ -42,7 +42,6 @@ type materializationReadRow struct {
 	ProviderTemplateID        string `orm:"provider_template_id"`
 	ProviderSMSVariableOrder  string `orm:"provider_sms_variable_order"`
 	ProviderSMSDataMapping    string `orm:"provider_sms_data_mapping"`
-	ProviderWeChatDataMapping string `orm:"provider_wechat_data_mapping"`
 	ExistingMaterializationNo string `orm:"existing_materialization_no"`
 }
 
@@ -107,7 +106,7 @@ func (s *serviceImpl) materializeEventBatch(ctx context.Context, claimed []notif
 			}
 		}
 	}
-	marketingIndexes, marketingInputs, err := prepareMaterializationInputs(candidates)
+	marketingIndexes, marketingInputs, err := prepareMaterializationInputs(candidates, s.renewalPeriods)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +158,6 @@ SELECT requested.ordinal,requested.source_plugin,requested.source_event_no,
        coalesce(template.provider_template_id,'') AS provider_template_id,
 	   coalesce(template.provider_sms_variable_order,'[]'::jsonb)::text AS provider_sms_variable_order,
 	   coalesce(template.provider_sms_data_mapping,'{}'::jsonb)::text AS provider_sms_data_mapping,
-       coalesce(template.provider_wechat_data_mapping,'{}'::jsonb)::text AS provider_wechat_data_mapping,
        coalesce(materialization.materialization_no,'') AS existing_materialization_no
 FROM requested
 JOIN plugin_idc_notify_event_catalog event
@@ -214,7 +212,8 @@ func buildMaterializationCandidates(claimed []notificationcap.ClaimedEvent, rows
 				LocaleCode: row.LocaleCode, SubjectTemplate: row.SubjectTemplate, BodyTemplate: row.BodyTemplate,
 				ProviderCode: row.TemplateProviderCode, ProviderTemplateID: row.ProviderTemplateID,
 				ProviderSMSVariableOrder: row.ProviderSMSVariableOrder, ProviderSMSDataMapping: row.ProviderSMSDataMapping,
-				ProviderWeChatDataMapping: row.ProviderWeChatDataMapping, StatusCode: "active"}
+				StatusCode: "active",
+			}
 		}
 	}
 	for _, seen := range seenClaim {
@@ -240,19 +239,31 @@ func materializationContactRequests(candidates []materializationCandidate) ([][]
 		if candidate.completed {
 			continue
 		}
+		if !validChannelCode(candidate.channel) && !staffInboxCandidate(candidate) {
+			candidate.outcome = materializationOutcome{status: "skipped", reason: "channel_removed"}
+			continue
+		}
 		if !candidate.policy.Enabled {
 			candidate.outcome = materializationOutcome{status: "skipped", reason: "policy_disabled"}
 			continue
 		}
-		if candidate.channel == "signed_webhook" {
-			if ChannelStatus(candidate.channelStatus) != ChannelEnabled {
-				candidate.outcome = materializationOutcome{status: "skipped", reason: "channel_unavailable"}
-			}
-			continue
-		}
 		switch candidate.claim.Request.Recipient.Kind {
 		case notificationcap.RecipientStaffUser:
-			candidate.outcome = materializationOutcome{status: "skipped", reason: "staff_resolver_unavailable"}
+			// Only the core current-staff sync boundary can authorize this inbox
+			// summary. No employee contact lookup or retired WeCom binding is used.
+			if candidate.claim.SourcePlugin != accessoryRenewalSourcePlugin || candidate.claim.Request.EventCode != accessoryRenewalAttentionEventCode || candidate.channel != string(notificationcap.ChannelInApp) {
+				candidate.outcome = materializationOutcome{status: "skipped", reason: "staff_resolver_unavailable"}
+				continue
+			}
+			if ChannelStatus(candidate.channelStatus) != ChannelEnabled {
+				candidate.outcome = materializationOutcome{status: "failed", reason: "channel_unavailable"}
+				continue
+			}
+			locale := candidate.claim.Request.Variables["locale_code"]
+			if locale == "" {
+				locale = "en-US"
+			}
+			candidate.projection = notificationcap.ContactProjection{HostUserID: candidate.claim.Request.Recipient.StaffUserID, PreferredLocale: locale}
 			continue
 		case notificationcap.RecipientVerifiedDestination:
 			candidate.outcome = materializationOutcome{status: "skipped", reason: "verified_destination_resolver_unavailable"}
@@ -282,7 +293,7 @@ func materializationContactRequests(candidates []materializationCandidate) ([][]
 	return indexes, requests
 }
 
-func prepareMaterializationInputs(candidates []materializationCandidate) ([]int, []notificationcap.MarketingSendInput, error) {
+func prepareMaterializationInputs(candidates []materializationCandidate, labels renewalPeriodLabels) ([]int, []notificationcap.MarketingSendInput, error) {
 	marketingIndexes := make([]int, 0)
 	marketingInputs := make([]notificationcap.MarketingSendInput, 0)
 	for index := range candidates {
@@ -299,15 +310,6 @@ func prepareMaterializationInputs(candidates []materializationCandidate) ([]int,
 			candidate.outcome = materializationOutcome{status: "failed", reason: "event_variables_invalid"}
 			continue
 		}
-		if candidate.channel == "signed_webhook" {
-			candidate.outcome.input = &EnqueueInput{
-				EventCode: request.EventCode, ChannelCode: candidate.channel, Locale: "en-US",
-				BusinessObjectType: string(request.BusinessObjectType), BusinessObjectNo: request.BusinessObjectNo,
-				BusinessObjectVersion: request.BusinessObjectVersion,
-				IdempotencyKey:        stableNumber("nevent_", candidate.claim.SourcePlugin, candidate.claim.EventNo, candidate.channel),
-			}
-			continue
-		}
 		if !candidate.event.SecurityRequired && candidate.projection.PreferencePresent && !candidate.projection.PreferenceEnabled {
 			candidate.outcome = materializationOutcome{status: "skipped", reason: "preference_blocked"}
 			continue
@@ -322,12 +324,16 @@ func prepareMaterializationInputs(candidates []materializationCandidate) ([]int,
 			candidate.outcome = materializationOutcome{status: "failed", reason: "template_unavailable"}
 			continue
 		}
-		subject, err := renderTemplate(template.SubjectTemplate, request.Variables)
+		renderVariables, err := renewalTemplateVariables(request.EventCode, locale, request.Variables, labels)
+		if err != nil {
+			return nil, nil, bizerr.WrapCode(err, CodeUnavailable)
+		}
+		subject, err := renderTemplate(template.SubjectTemplate, renderVariables)
 		if err != nil {
 			candidate.outcome = materializationOutcome{status: "failed", reason: "template_invalid"}
 			continue
 		}
-		body, err := renderTemplate(template.BodyTemplate, request.Variables)
+		body, err := renderTemplate(template.BodyTemplate, renderVariables)
 		if err != nil {
 			candidate.outcome = materializationOutcome{status: "failed", reason: "template_invalid"}
 			continue
@@ -390,10 +396,6 @@ func materializationTemplateReady(channel, activeProvider string, template templ
 		default:
 			return false
 		}
-	case string(notificationcap.ChannelWeChatOfficial):
-		mapping := make(map[string]string)
-		return template.ProviderTemplateID != "" &&
-			json.Unmarshal([]byte(template.ProviderWeChatDataMapping), &mapping) == nil && len(mapping) > 0 && len(mapping) <= MaximumVariables
 	default:
 		return true
 	}
@@ -474,10 +476,6 @@ func (s *serviceImpl) persistMaterializationBatch(ctx context.Context, candidate
 				RootTaskNo: taskNo, TailTaskNo: taskNo}
 			templateNo, templateVersion := any(input.TemplateNo), any(input.TemplateVersion)
 			recipientMask := "contact"
-			if candidate.channel == "signed_webhook" {
-				templateNo, templateVersion = nil, nil
-				recipientMask = "configured_endpoint"
-			}
 			task := modeldo.DeliveryTask{
 				TenantId: notificationTenantID, TaskNo: taskNo, ChainNo: chainNo,
 				EventCode: input.EventCode, TopicCode: candidate.event.TopicCode, ChannelCode: input.ChannelCode,
@@ -591,4 +589,9 @@ FOR UPDATE OF policy,channel`
 		}
 	}
 	return nil
+}
+
+// staffInboxCandidate retains the existing employee renewal summary pipeline.
+func staffInboxCandidate(candidate *materializationCandidate) bool {
+	return candidate != nil && candidate.channel == string(notificationcap.ChannelInApp) && candidate.claim.SourcePlugin == accessoryRenewalSourcePlugin && candidate.claim.Request.EventCode == accessoryRenewalAttentionEventCode && candidate.claim.Request.Recipient.Kind == notificationcap.RecipientStaffUser
 }

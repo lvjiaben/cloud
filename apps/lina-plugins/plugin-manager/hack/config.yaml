@@ -1,0 +1,5 @@
+gfcli:
+  gen:
+    ctrl:
+      srcFolder: api
+      dstFolder: internal/controller

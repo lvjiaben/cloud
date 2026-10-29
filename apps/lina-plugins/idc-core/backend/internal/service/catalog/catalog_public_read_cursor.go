@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 )
@@ -109,6 +110,10 @@ func (c *publicCatalogCursorCodec) decode(
 }
 
 func publicCatalogCursorFilterDigest(input normalizedPublicCatalogSearch) [sha256.Size]byte {
-	return sha256.Sum256([]byte(input.namePrefix + "\x00" + input.categoryNo + "\x00" +
-		input.currency + "\x00" + strconv.Itoa(input.limit)))
+	filters := input.namePrefix + "\x00" + input.categoryNo + "\x00" +
+		input.currency + "\x00" + strconv.Itoa(input.limit)
+	if len(input.publicSlugs) > 0 {
+		filters += "\x00" + strings.Join(input.publicSlugs, "\x00")
+	}
+	return sha256.Sum256([]byte(filters))
 }

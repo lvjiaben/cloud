@@ -47,14 +47,35 @@ func (s *serviceImpl) Save(ctx context.Context, input SaveInput) (out *Directory
 	if err != nil {
 		return nil, err
 	}
+	if err = validatePagePlugins(input); err != nil {
+		return nil, err
+	}
 	var result *Directory
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
-		var before *Directory
-		var beforeSnapshot any = struct{}{}
-		if !creating {
-			if loadErr := s.database.Model(do.ProductDirectory{}).Ctx(ctx).Where(do.ProductDirectory{TenantId: 0, DirectoryNo: input.DirectoryNo}).Fields(directoryFields).LockUpdate().Scan(&before); loadErr != nil {
-				return loadErr
+		var (
+			before         *Directory
+			beforeSnapshot any = struct{}{}
+			locked         []Directory
+			keys           = []string{input.DirectoryNo}
+		)
+		if input.ParentDirectoryNo != "" {
+			keys = append(keys, input.ParentDirectoryNo)
+		}
+		// Deterministic row locks serialize attaching children and moving a parent.
+		if loadErr := s.database.Model(do.ProductDirectory{}).Ctx(ctx).Where(do.ProductDirectory{TenantId: 0}).WhereIn("directory_no", keys).Fields(directoryFields).OrderAsc("directory_no").LockUpdate().Scan(&locked); loadErr != nil {
+			return loadErr
+		}
+		var parent *Directory
+		for i := range locked {
+			item := &locked[i]
+			if item.DirectoryNo == input.DirectoryNo {
+				before = item
 			}
+			if item.DirectoryNo == input.ParentDirectoryNo {
+				parent = item
+			}
+		}
+		if !creating {
 			if before == nil {
 				return bizerr.NewCode(CodeNotAccessible)
 			}
@@ -65,12 +86,27 @@ func (s *serviceImpl) Save(ctx context.Context, input SaveInput) (out *Directory
 			if err != nil {
 				return err
 			}
+			if err = s.attachPagePlugins(ctx, []*Directory{before}); err != nil {
+				return err
+			}
 			beforeSnapshot = before
+		}
+		if input.ParentDirectoryNo != "" {
+			if parent == nil || parent.ParentDirectoryNo != "" {
+				return bizerr.NewCode(CodeInvalid)
+			}
+			children, countErr := s.database.Model(do.ProductDirectory{}).Ctx(ctx).Where(do.ProductDirectory{TenantId: 0, ParentDirectoryNo: input.DirectoryNo}).Count()
+			if countErr != nil {
+				return countErr
+			}
+			if children > 0 {
+				return bizerr.NewCode(CodeInvalid)
+			}
 		}
 		if before != nil && before.ProductCount > 0 && input.NavigationType != NavigationProduct {
 			return bizerr.NewCode(CodeHasProducts)
 		}
-		data := do.ProductDirectory{TenantId: 0, DirectoryNo: input.DirectoryNo, NameZhCn: input.NameZhCn, NameEnUs: input.NameEnUs, SortOrder: input.SortOrder, StatusCode: input.StatusCode, NavigationType: string(input.NavigationType), TargetUrl: input.TargetURL, Icon: input.Icon, UpdatedBy: actor}
+		data := do.ProductDirectory{TenantId: 0, DirectoryNo: input.DirectoryNo, NameZhCn: input.NameZhCn, NameEnUs: input.NameEnUs, SortOrder: input.SortOrder, StatusCode: input.StatusCode, NavigationType: string(input.NavigationType), TargetUrl: input.TargetURL, Icon: input.Icon, ParentDirectoryNo: input.ParentDirectoryNo, UpdatedBy: actor}
 		version := int64(1)
 		if creating {
 			data.CreatedBy = actor
@@ -89,7 +125,21 @@ func (s *serviceImpl) Save(ctx context.Context, input SaveInput) (out *Directory
 		if before != nil {
 			productCount = before.ProductCount
 		}
-		result = &Directory{NavigationType: input.NavigationType, TargetURL: input.TargetURL, Icon: input.Icon, DirectoryNo: input.DirectoryNo, NameZhCn: input.NameZhCn, NameEnUs: input.NameEnUs, SortOrder: input.SortOrder, StatusCode: input.StatusCode, Version: version, ProductCount: productCount}
+		result = &Directory{NavigationType: input.NavigationType, TargetURL: input.TargetURL, Icon: input.Icon, ParentDirectoryNo: input.ParentDirectoryNo, DirectoryNo: input.DirectoryNo, NameZhCn: input.NameZhCn, NameEnUs: input.NameEnUs, SortOrder: input.SortOrder, StatusCode: input.StatusCode, Version: version, ProductCount: productCount}
+		ids := []string{}
+		if before != nil {
+			ids = before.PagePluginIDs
+		}
+		if input.PagePluginIDs != nil {
+			ids = *input.PagePluginIDs
+		}
+		if input.NavigationType != NavigationProduct {
+			ids = []string{}
+		}
+		if err = s.savePagePlugins(ctx, input.DirectoryNo, ids); err != nil {
+			return err
+		}
+		result.PagePluginIDs = ids
 		auditErr := s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: operationSave, IdempotencyKey: input.DirectoryNo + ":" + string(input.StatusCode) + ":" + strconv.FormatInt(version, 10), OperationCode: operationSave, TargetType: targetDirectory, TargetNo: input.DirectoryNo, ResultCode: string(audit.ResultSucceeded), RiskCode: string(audit.RiskLow), RequiredPermission: permission, BeforeSnapshot: beforeSnapshot, AfterSnapshot: result})
 		return auditErr
 	})
@@ -102,6 +152,9 @@ func prepareSave(input SaveInput, creating bool) (SaveInput, error) {
 	input, err = prepareNavigation(input)
 	if err != nil {
 		return input, err
+	}
+	if input.ParentDirectoryNo != "" && (!referencePattern.MatchString(input.ParentDirectoryNo) || input.ParentDirectoryNo == input.DirectoryNo || input.ParentDirectoryNo == AllDirectory) {
+		return input, bizerr.NewCode(CodeInvalid)
 	}
 	if !validName(input.NameZhCn) || !validName(input.NameEnUs) || input.SortOrder < 0 || input.SortOrder > 1000000 || !creating && (!referencePattern.MatchString(input.DirectoryNo) || input.DirectoryNo == AllDirectory || input.ExpectedVersion < 1) {
 		return input, bizerr.NewCode(CodeInvalid)
@@ -136,7 +189,7 @@ func prepareNavigation(input SaveInput) (SaveInput, error) {
 		input.TargetURL = ""
 	case NavigationSystem, NavigationPlugin:
 		parsed, err := url.ParseRequestURI(input.TargetURL)
-		if err != nil || parsed.IsAbs() || !strings.HasPrefix(input.TargetURL, "/") || strings.HasPrefix(input.TargetURL, "//") {
+		if err != nil || parsed.IsAbs() || !strings.HasPrefix(input.TargetURL, "/") || strings.HasPrefix(input.TargetURL, "//") || strings.TrimRight(parsed.Path, "/") == "/account/notifications" {
 			return input, bizerr.NewCode(CodeInvalid)
 		}
 	case NavigationCustom:

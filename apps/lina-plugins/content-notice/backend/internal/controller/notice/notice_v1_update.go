@@ -13,13 +13,11 @@ import (
 // Update updates a notice
 func (c *ControllerV1) Update(ctx context.Context, req *v1.UpdateReq) (res *v1.UpdateRes, err error) {
 	err = c.noticeSvc.Update(ctx, noticesvc.UpdateInput{
-		Id:      req.Id,
-		Title:   req.Title,
-		Type:    req.Type,
-		Content: req.Content,
-		FileIds: req.FileIds,
-		Status:  req.Status,
-		Remark:  req.Remark,
+		Id:        req.Id,
+		Title:     req.Title,
+		SortOrder: req.SortOrder,
+		Content:   req.Content,
+		Status:    req.Status,
 	})
 	if err != nil {
 		return nil, err

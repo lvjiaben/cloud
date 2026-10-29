@@ -92,6 +92,7 @@ func (s *activationNotifications) Enqueue(_ context.Context, request notificatio
 }
 
 type activationUsers struct {
+	created      *usercap.CreateInput
 	resolved     map[usercap.ResolveKey]*usercap.UserInfo
 	resetContext *bizctxcap.CurrentContext
 	resetCalls   *int
@@ -111,7 +112,10 @@ func (activationUsers) List(context.Context, usercap.ListInput) (*capmodel.PageR
 	return nil, nil
 }
 func (activationUsers) EnsureVisible(context.Context, []usercap.UserID) error { return nil }
-func (activationUsers) Create(context.Context, usercap.CreateInput) (usercap.UserID, error) {
+func (s activationUsers) Create(_ context.Context, input usercap.CreateInput) (usercap.UserID, error) {
+	if s.created != nil {
+		*s.created = input
+	}
 	return "99", nil
 }
 func (activationUsers) CreateFromExternal(context.Context, usercap.CreateFromExternalInput) (usercap.UserID, error) {
@@ -143,7 +147,7 @@ func TestCustomerActivationLifecyclePostgreSQL(t *testing.T) {
 	principals := &activationPrincipal{staffID: 71}
 	audit := &activationAudit{}
 	notifications := &activationNotifications{}
-	service, err := New(database, current, principalByBizCtx{current: current, source: principals}, activationAuthz{staffID: 71, current: current}, activationUsers{}, audit, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+	service, err := New(database, current, principalByBizCtx{current: current, source: principals}, activationAuthz{staffID: 71, current: current}, activationUsers{}, activationLoginRecorder{}, audit, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +201,7 @@ func TestCustomerDirectAccountCreatePostgreSQL(t *testing.T) {
 	current := &activationBizCtx{userID: 71}
 	audit := &activationAudit{}
 	notifications := &activationNotifications{}
-	service, err := New(database, current, principalByBizCtx{current: current, source: &activationPrincipal{staffID: 71}}, activationAuthz{staffID: 71, current: current}, activationUsers{}, audit, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+	service, err := New(database, current, principalByBizCtx{current: current, source: &activationPrincipal{staffID: 71}}, activationAuthz{staffID: 71, current: current}, activationUsers{}, activationLoginRecorder{}, audit, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +228,7 @@ func TestCustomerInitialPasswordConfirmsPluginGateWithoutHostResetPostgreSQL(t *
 	resetCalls := 0
 	users := activationUsers{resetContext: &captured, resetCalls: &resetCalls}
 	staffPrincipal := principalByBizCtx{current: current, source: &activationPrincipal{staffID: 71}}
-	service, err := New(database, current, staffPrincipal, activationAuthz{staffID: 71, current: current}, users, audit, &activationNotifications{}, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+	service, err := New(database, current, staffPrincipal, activationAuthz{staffID: 71, current: current}, users, activationLoginRecorder{}, audit, &activationNotifications{}, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -236,7 +240,7 @@ func TestCustomerInitialPasswordConfirmsPluginGateWithoutHostResetPostgreSQL(t *
 		t.Fatal(err)
 	}
 	current.userID = created.UserID
-	customerService, err := New(database, current, activationCustomerPrincipal{userID: created.UserID, customerNo: created.CustomerNo}, activationAuthz{}, users, audit, &activationNotifications{}, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+	customerService, err := New(database, current, activationCustomerPrincipal{userID: created.UserID, customerNo: created.CustomerNo}, activationAuthz{}, users, activationLoginRecorder{}, audit, &activationNotifications{}, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +270,7 @@ func TestCustomerActivationBindsExactExistingIdentityPostgreSQL(t *testing.T) {
 	users := activationUsers{resolved: map[usercap.ResolveKey]*usercap.UserInfo{
 		usercap.ResolveKey("existing@example.test"): {ID: "88", Username: "existing-customer", Status: statusflag.Enabled(1)},
 	}}
-	service, err := New(database, current, principalByBizCtx{current: current, source: principals}, activationAuthz{staffID: 71, current: current}, users, &activationAudit{}, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+	service, err := New(database, current, principalByBizCtx{current: current, source: principals}, activationAuthz{staffID: 71, current: current}, users, activationLoginRecorder{}, &activationAudit{}, notifications, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -307,7 +311,7 @@ func TestNormalizeCreateRejectsMalformedCountryAndPhone(t *testing.T) {
 	}
 }
 
-func TestDirectLoginNameKeepsEnteredPhoneWithoutCallingCode(t *testing.T) {
+func TestDirectLoginNameSeparatesPhoneAliasFromUsername(t *testing.T) {
 	value, err := normalizeCreate(CreateInput{
 		CustomerType: "individual", DisplayName: "Phone Customer", CountryCode: "CN",
 		PreferredLocale: "zh-CN", PhoneCountryCode: "+86", Phone: "13333333333",
@@ -316,8 +320,13 @@ func TestDirectLoginNameKeepsEnteredPhoneWithoutCallingCode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := directLoginName(value); got != "13333333333" {
-		t.Fatalf("direct phone login name=%q", got)
+	if got := directLoginName(value); strings.Trim(got, "0123456789") == "" || strings.Contains(got, "@") || got == value.Phone || got == value.contactValue || len(got) < 2 || len(got) > 64 || got != directLoginName(value) {
+		t.Fatalf("direct account username is not an independent stable identifier: %q", got)
+	}
+	email := value
+	email.contactKind, email.contactValue = "email", "current@example.test"
+	if got := directLoginName(email); strings.Contains(got, "@") || strings.Trim(got, "0123456789") == "" || got == directLoginName(value) {
+		t.Fatalf("email and phone namespaces leaked into usernames: %q", got)
 	}
 	if value.contactValue != "+8613333333333" {
 		t.Fatalf("structured contact value=%q", value.contactValue)
@@ -448,5 +457,56 @@ func assertActivationCount(t *testing.T, database gdb.DB, query string, want int
 	value, err := database.GetValue(context.Background(), query, args...)
 	if err != nil || value.Int64() != want {
 		t.Fatalf("count=%d want=%d err=%v", value.Int64(), want, err)
+	}
+}
+
+type activationLoginRecorder struct{ username, phone *string }
+
+func (s activationLoginRecorder) RecordProvisioned(_ context.Context, _ int, username, _ string, phone string) error {
+	if s.username != nil {
+		*s.username = username
+	}
+	if s.phone != nil {
+		*s.phone = phone
+	}
+	return nil
+}
+
+func (activationLoginRecorder) DefaultRoleID(context.Context) (int, error) { return 2, nil }
+
+func TestDirectPhoneLoginAliasMatchesHostPostgreSQL(t *testing.T) {
+	for _, tc := range []struct{ name, country, callingCode, phone, want string }{
+		{"China", "CN", "+86", "13800138000", "+8613800138000"},
+		{"US", "US", "+1", "2025550123", "+12025550123"},
+		{"too long", "US", "+1", "2025550123456789", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			database := newActivationDatabase(t, true)
+			current := &activationBizCtx{userID: 71}
+			var (
+				created                         usercap.CreateInput
+				recordedUsername, recordedPhone string
+			)
+			service, err := New(database, current, principalByBizCtx{current: current, source: &activationPrincipal{staffID: 71}}, activationAuthz{staffID: 71, current: current}, activationUsers{created: &created}, activationLoginRecorder{username: &recordedUsername, phone: &recordedPhone}, &activationAudit{}, &activationNotifications{}, []byte(strings.Repeat("k", 32)), func(path string) (string, error) { return "https://customer.example.test" + path, nil })
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := service.CreateDirect(context.Background(), DirectCreateInput{CustomerType: "individual", DisplayName: "Phone customer", CountryCode: tc.country, PreferredLocale: "en-US", PhoneCountryCode: tc.callingCode, Phone: tc.phone, InitialPassword: "initial-password-123", Reason: "Create a phone login without an independent numeric username.", IdempotencyKey: "phone-login-alias-000001"})
+			if tc.want == "" {
+				if err == nil || created.Username != "" || recordedPhone != "" {
+					t.Fatal("non-login phone created an account")
+				}
+				count, readErr := database.GetValue(context.Background(), `SELECT count(*) FROM plugin_idc_core_customer_identity_binding`)
+				if readErr != nil || count.Int() != 0 {
+					t.Fatal("invalid phone left a customer binding")
+				}
+				return
+			}
+			if err != nil || result == nil || created.Phone != tc.want || recordedPhone != tc.want || recordedUsername != created.Username || strings.Trim(created.Username, "0123456789") == "" || strings.Contains(created.Username, "@") {
+				t.Fatalf("host/projection login identifiers differ: createdPhone=%q indexedPhone=%q err=%v", created.Phone, recordedPhone, err)
+			}
+			assertActivationValue(t, database, `SELECT phone FROM plugin_idc_core_customer_contact WHERE customer_no=?`, result.CustomerNo, tc.phone)
+			assertActivationValue(t, database, `SELECT phone_country_code FROM plugin_idc_core_customer_contact WHERE customer_no=?`, result.CustomerNo, tc.callingCode)
+		})
 	}
 }

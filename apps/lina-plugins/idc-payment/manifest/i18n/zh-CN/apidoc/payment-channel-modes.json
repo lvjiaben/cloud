@@ -1,0 +1,10 @@
+{
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.meta.tags": "支付渠道",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.meta.summary": "修改渠道支持的支付场景",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.meta.dc": "仅修改当前已安装支付插件支持的场景，核对直接员工身份和当前版本；保留凭据、连接验证和历史资金事实。",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.schema.dc": "仅修改当前已安装支付插件支持的场景，核对直接员工身份和当前版本；保留凭据、连接验证和历史资金事实。",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.fields.channelNo.dc": "精确支付渠道编号",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.fields.enabledModes.dc": "当前已安装插件支持的非空且不重复的支付场景",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveReq.fields.expectedVersion.dc": "编辑前读取的渠道版本",
+  "plugins.idc_payment.api.admin.v1.PaymentChannelModesSaveRes.fields.channel.dc": "更新后的渠道，不包含商户凭据"
+}

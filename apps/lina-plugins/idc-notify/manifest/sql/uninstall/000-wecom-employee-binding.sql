@@ -1,3 +1,0 @@
-DROP TABLE IF EXISTS plugin_idc_notify_wecom_binding_audit;
-DROP TABLE IF EXISTS plugin_idc_notify_wecom_employee_binding;
-DROP TABLE IF EXISTS plugin_idc_notify_wecom_oauth_intent;

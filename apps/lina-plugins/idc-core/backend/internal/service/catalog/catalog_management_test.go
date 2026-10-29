@@ -20,7 +20,7 @@ func newManagementService(
 	authorizer ManagementAuthorizer,
 	random io.Reader,
 ) (*managementServiceImpl, error) {
-	return newManagementServiceWithSources(auditWriter, authorizer, nil, random)
+	return newManagementServiceWithSources(auditWriter, authorizer, random)
 }
 
 type managementTestAuthorizer struct {
@@ -67,6 +67,10 @@ func (a *managementTestAuthorizer) AuthorizeCategoryRestore(context.Context, str
 func (a *managementTestAuthorizer) AuthorizeProductCreate(context.Context) (int, error) {
 	a.calls.Add(1)
 	return a.actor, a.err
+}
+
+func (a *managementTestAuthorizer) AuthorizeProductDelete(ctx context.Context, no string) (int, error) {
+	return a.AuthorizeProductUpdate(ctx, no)
 }
 
 func (a *managementTestAuthorizer) AuthorizeProductUpdate(context.Context, string) (int, error) {

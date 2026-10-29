@@ -1,5 +1,19 @@
 import { CustomerManagementPage } from "./CustomerManagementPage";
 export class CustomerWorkspacePage extends CustomerManagementPage {
+  async openResourceShortcut() {
+    await this.goto();
+    await this.openResourcesMenu();
+    await this.clickResourceShortcut("服务器管理");
+    await this.page.getByTestId("resource-customer-shortcut-hint").waitFor();
+  }
+  async openResourcesMenu() {
+    const menu = this.page.getByRole("menu");
+    if (!await menu.getByText("供应商运维", { exact: true }).isVisible())
+      await menu.getByText("服务器与资源", { exact: true }).click();
+  }
+  async clickResourceShortcut(name: string) {
+    await this.page.getByRole("menu").getByText(name, { exact: true }).click();
+  }
   async showProductStatistics() {
     await this.page.getByTestId("customer-product-statistics").scrollIntoViewIfNeeded();
   }
@@ -57,6 +71,16 @@ export class CustomerWorkspacePage extends CustomerManagementPage {
   async editServer() {
     await this.products.getByTestId("customer-product-edit-SVC_SERVER").click();
     await this.editor.waitFor({ state: "visible" });
+  }
+  get management() {
+    return this.page.getByTestId("customer-product-management");
+  }
+  async manageProduct(number: string) {
+    await this.products.getByTestId(`customer-product-manage-${number}`).click();
+    await this.management.waitFor({ state: "visible" });
+  }
+  async managementTab(name: string) {
+    await this.management.getByRole("tab", { name, exact: true }).click();
   }
   async saveNote(note: string) {
     await this.editor.getByRole("textbox").last().fill(note);

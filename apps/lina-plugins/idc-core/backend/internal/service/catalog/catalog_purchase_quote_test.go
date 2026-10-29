@@ -44,6 +44,11 @@ func TestBuildPurchaseQuoteFreezesExactPriceTaxPolicyAndInventory(t *testing.T) 
 	if err != nil || len(result) != 1 {
 		t.Fatalf("build purchase quote result=%+v err=%v", result, err)
 	}
+	productRows[0].Deleted = true
+	if _, deletedErr := buildPurchaseQuoteWithSimpleInventory(input, productRows, rules, prices, taxes, inventory); !bizerr.Is(deletedErr, CodePublicQuoteNotAvailable) {
+		t.Fatalf("deleted product accepted new purchase: %v", deletedErr)
+	}
+	productRows[0].Deleted = false
 	line := result[0]
 	if line.CategoryNo != "category-service" || line.Quantity != 2 || line.InventoryDecisionCode != "available" ||
 		line.FulfillmentModeCode != "automatic" || line.RiskDecisionCode != "approved" || len(line.Charges) != 1 {
@@ -309,6 +314,20 @@ func TestConfigurationQuantityPurchaseAndRenewalCharge(t *testing.T) {
 		if err != nil || renewed.ChargeAmountMinor != test.renewal || renewed.SetupFeeMinor != 0 {
 			t.Fatalf("renewal %+v got=%+v err=%v", test, renewed, err)
 		}
+	}
+	// Graduated quantity keeps the ordered product count and cycle multiplier
+	// separate from configuration quantities, including the renewal path.
+	graduatedPrices := map[string][]entity.CatalogPrice{purchaseQuotePriceKey(line.VersionNo, line.BillingRuleNo, "cpd_graduated"): {
+		{AmountMinor: 0, SetupFeeMinor: 5, RenewalAmountMinor: int64Pointer(0), MaximumQuantity: int64Pointer(10)},
+		{MinimumQuantity: 10, AmountMinor: 200, RenewalAmountMinor: int64Pointer(300)},
+	}}
+	graduated, err := purchaseQuoteCharge(line, definition, "cpd_graduated", true, ConfigurationPriceGraduated, 15, graduatedPrices, nil)
+	if err != nil || graduated.ChargeAmountMinor != 6000 || graduated.SetupFeeMinor != 10 || graduated.Quantity != 15 {
+		t.Fatalf("graduated purchase charge=%+v err=%v", graduated, err)
+	}
+	graduatedRenewal, err := renewalQuoteCharge(RenewalQuoteLineInput{VersionNo: line.VersionNo, BillingRuleNo: line.BillingRuleNo, Quantity: 2, PurchaseCycles: 3}, definition, "cpd_graduated", true, ConfigurationPriceGraduated, 15, graduatedPrices)
+	if err != nil || graduatedRenewal.ChargeAmountMinor != 9000 || graduatedRenewal.SetupFeeMinor != 0 {
+		t.Fatalf("graduated renewal charge=%+v err=%v", graduatedRenewal, err)
 	}
 	prices[purchaseQuotePriceKey(line.VersionNo, line.BillingRuleNo, "")] = []entity.CatalogPrice{{AmountMinor: 2, RenewalAmountMinor: &renewal}}
 	fixed, err := purchaseQuoteCharge(line, definition, "", false, ConfigurationPriceFixed, 1, prices, nil)

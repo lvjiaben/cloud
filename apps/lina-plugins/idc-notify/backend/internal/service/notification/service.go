@@ -10,15 +10,20 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/plugin/capability"
+	"lina-core/pkg/plugin/capability/authcap/extlogin"
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/sessioncap"
+	"lina-plugin-idc-core/backend/cap/customerlogincap"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/managementcap"
 	"lina-plugin-idc-core/backend/cap/notificationcap"
 	"lina-plugin-idc-core/backend/cap/onboardingcap"
+	"lina-plugin-idc-core/backend/cap/profilechangecap"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-core/backend/cap/supportcap"
+	idcnotify "lina-plugin-idc-notify"
 	"lina-plugin-idc-notify/backend/cap/channelcap"
+	"lina-plugin-idc-notify/backend/internal/service/loginprofile"
 	"lina-plugin-shared-services/backend/cap/challengecap"
 	"lina-plugin-shared-services/backend/cap/inboxcap"
 )
@@ -29,6 +34,28 @@ const (
 )
 
 type Service interface {
+	profilechangecap.Provider
+	profilechangecap.RecoveryProvider
+	// CustomerPasswordLogin authenticates an explicit username or contact method.
+	CustomerPasswordLogin(context.Context, CustomerLoginInput) (*loginprofile.Session, error)
+	// CreateRecoveryHumanChallenge binds a challenge to the current contact.
+	CreateRecoveryHumanChallenge(context.Context, RecoveryChallengeInput) (*PresalesHumanChallenge, error)
+	// CompleteRecoveryHumanChallenge returns single-use authorization to send.
+	CompleteRecoveryHumanChallenge(context.Context, RecoveryCompletionInput) (*PresalesHumanProof, error)
+	// SendRecoveryCode sends a bounded, purpose-bound password recovery OTP.
+	SendRecoveryCode(context.Context, RecoveryCodeInput) (*PresalesVerification, error)
+	// ResetCustomerPassword changes the verified account password automatically.
+	ResetCustomerPassword(context.Context, RecoveryResetInput) (*RecoveryResult, error)
+	// CheckRecoverySession rejects exact sessions captured by a completed reset.
+	CheckRecoverySession(context.Context) error
+	// RetryRecoveryCleanup retries revocation using a separate post-reset grant.
+	RetryRecoveryCleanup(context.Context, RecoveryCleanupInput) (bool, error)
+	// CleanupRecoverySessions retries bounded revocation for the actual current user.
+	CleanupRecoverySessions(context.Context, string) (bool, error)
+	// SendLoginContactCode sends a rate-limited code to the authoritative old or verified new contact.
+	SendLoginContactCode(context.Context, LoginContactInput) (*PresalesVerification, error)
+	// VerifyLoginContactCode verifies one session-bound code without changing the host profile.
+	VerifyLoginContactCode(context.Context, LoginContactVerifyInput) error
 	// ListChannels returns the bounded installed notification-channel registry.
 	ListChannels(context.Context) ([]Channel, error)
 	// ConfigureChannel validates and stores one external channel configuration.
@@ -41,26 +68,8 @@ type Service interface {
 	ConfigureSMSBao(context.Context, SMSBaoConfigurationInput) (*Channel, error)
 	// ConfigureTencentSMS stores one installation-owned Tencent Cloud SMS account.
 	ConfigureTencentSMS(context.Context, TencentSMSConfigurationInput) (*Channel, error)
-	// ConfigureWeChatOfficial stores one installation-owned verified service account.
-	ConfigureWeChatOfficial(context.Context, WeChatOfficialConfigurationInput) (*Channel, error)
-	// ConfigureWeCom stores one installation-owned WeCom custom application.
-	ConfigureWeCom(context.Context, WeComConfigurationInput) (*Channel, error)
-	// StartOwnWeComBinding issues one short-lived current-staff OAuth authorization.
-	StartOwnWeComBinding(context.Context, WeComBindingAuthorizationInput) (*WeComBindingAuthorization, error)
-	// CompleteOwnWeComBinding consumes the official code for the same current staff session.
-	CompleteOwnWeComBinding(context.Context, WeComBindingCompletionInput) (*WeComBindingStatus, error)
-	// GetOwnWeComBinding returns only the current staff member's binding state.
-	GetOwnWeComBinding(context.Context) (*WeComBindingStatus, error)
-	// RemoveOwnWeComBinding starts recoverable secret revocation and queue cancellation.
-	RemoveOwnWeComBinding(context.Context, WeComBindingRemovalInput) (*WeComBindingStatus, error)
-	// ProcessWeComBindings recovers bounded binding secret lifecycle work.
-	ProcessWeComBindings(context.Context, int) error
-	VerifyWeChatCallback(context.Context, EncryptedCallbackInput) (string, error)
-	AcceptWeChatCallback(context.Context, EncryptedCallbackInput) error
 	// TestChannel sends once to an administrator-entered target without retaining the raw target.
 	TestChannel(context.Context, ChannelTestInput) (*ChannelTestResult, error)
-	// TestOwnWeCom sends once to the authorized operator's current active WeCom binding.
-	TestOwnWeCom(context.Context, ChannelTestInput) (*ChannelTestResult, error)
 	// DisableChannel stops new sends and cancels not-yet-sent queued work.
 	DisableChannel(context.Context, ChannelLifecycleInput) (*Channel, error)
 	// EnableChannel enables one safely configured notification channel.
@@ -79,10 +88,6 @@ type Service interface {
 	SaveTemplate(context.Context, TemplateWriteInput) (*Template, error)
 	// PreviewTemplate renders one template version without sending it.
 	PreviewTemplate(context.Context, TemplatePreviewInput) (*TemplatePreview, error)
-	// GetOwnPreferences returns the core-owned current-customer preference projection.
-	GetOwnPreferences(context.Context) (*PreferenceSnapshot, error)
-	// SaveOwnPreference applies one current-customer preference command through core.
-	SaveOwnPreference(context.Context, PreferenceWriteInput) (*PreferenceWriteResult, error)
 	// ListDeliveries returns a bounded administrator delivery page.
 	ListDeliveries(context.Context, DeliveryListInput) (*DeliveryPage, error)
 	// GetDelivery returns one authorized delivery projection.
@@ -93,8 +98,6 @@ type Service interface {
 	ManualResend(context.Context, ManualResendInput) (*Delivery, error)
 	// ManualCloseUnknown closes one manual-review task without inventing a result.
 	ManualCloseUnknown(context.Context, ManualClosureInput) (*Delivery, error)
-	// ListOwnDeliveries returns deliveries owned by the authoritative current customer.
-	ListOwnDeliveries(context.Context, string, int) (*DeliveryPage, error)
 	// Enqueue freezes one validated notification into the durable delivery queue.
 	Enqueue(context.Context, EnqueueInput) (*Delivery, error)
 	// ProcessEvents materializes a bounded batch from the core-owned event feed.
@@ -125,7 +128,12 @@ type SecretBinding struct {
 }
 
 type serviceImpl struct {
+	renewalPeriods       renewalPeriodLabels
+	loginDirectory       customerlogincap.Directory
+	loginAuth            loginprofile.AuthClient
+	externalLogin        extlogin.Service
 	database             gdb.DB
+	loginProfiles        loginprofile.Reader
 	management           managementcap.Runtime
 	sessions             sessioncap.Service
 	bizctx               bizctxcap.Service
@@ -146,6 +154,10 @@ var _ Service = (*serviceImpl)(nil)
 
 func New(
 	database gdb.DB,
+	loginProfiles loginprofile.Reader,
+	loginDirectory customerlogincap.Directory,
+	loginAuth loginprofile.AuthClient,
+	externalLogin extlogin.Service,
 	management managementcap.Runtime,
 	services capability.Services,
 	inbox inboxcap.Service,
@@ -159,18 +171,22 @@ func New(
 	secrets map[string]SecretBinding,
 	descriptors []channelcap.Descriptor,
 ) (Service, error) {
-	if database == nil || managementcap.ValidateRuntime(management) != nil || services == nil ||
+	if database == nil || nilDependency(loginDirectory) || nilDependency(loginAuth) || nilDependency(externalLogin) || nilDependency(loginProfiles) || managementcap.ValidateRuntime(management) != nil || services == nil ||
 		nilDependency(services.Sessions()) || nilDependency(services.BizCtx()) ||
 		nilDependency(inbox) || notificationcap.ValidateRuntime(sources) != nil || nilDependency(challenges) ||
 		nilDependency(support) || nilDependency(onboarding) || nilDependency(verificationAccessor) || verificationHandle.IsZero() ||
 		runtimeConfig.SMSVerificationDailyLimit < 1 || runtimeConfig.SMSVerificationDailyLimit > 100000 || len(secrets) == 0 {
 		return nil, gerror.New("notification service dependencies are invalid")
 	}
-	for _, channel := range []string{"email", "sms", "wechat_official", "wechat_work"} {
+	for _, channel := range []string{"email", "sms"} {
 		binding, exists := secrets[channel]
 		if !exists || nilDependency(binding.Manager) || nilDependency(binding.Accessor) {
 			return nil, gerror.New("notification channel secret binding is invalid")
 		}
+	}
+	renewalPeriods, err := loadRenewalPeriodLabels(idcnotify.EmbeddedFiles)
+	if err != nil {
+		return nil, err
 	}
 	adapters := make(map[string]adapterBinding, len(descriptors))
 	for _, descriptor := range descriptors {
@@ -191,10 +207,10 @@ func New(
 		adapters[descriptor.ProviderCode] = adapterBinding{descriptor: descriptor, adapter: adapter}
 	}
 	return &serviceImpl{
-		database: database, management: management, sessions: services.Sessions(),
+		database: database, loginProfiles: loginProfiles, loginDirectory: loginDirectory, loginAuth: loginAuth, externalLogin: externalLogin, management: management, sessions: services.Sessions(),
 		bizctx: services.BizCtx(), inbox: inbox, sources: sources, challenges: challenges, support: support, onboarding: onboarding,
 		verificationAccessor: verificationAccessor, verificationHandle: verificationHandle, runtimeConfig: runtimeConfig,
-		secrets: secrets, adapters: adapters, now: time.Now,
+		secrets: secrets, adapters: adapters, now: time.Now, renewalPeriods: renewalPeriods,
 	}, nil
 }
 

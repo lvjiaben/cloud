@@ -30,11 +30,12 @@ const (
 )
 
 var (
-	CodeInvalid       = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_INVALID", "The server renewal request is invalid", gcode.CodeInvalidParameter)
-	CodeNotAccessible = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_NOT_ACCESSIBLE", "The server renewal operation is not accessible", gcode.CodeNotAuthorized)
-	CodeConflict      = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_CONFLICT", "The server renewal preview has changed", gcode.CodeInvalidOperation)
-	CodeUnavailable   = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_UNAVAILABLE", "The server renewal operation is temporarily unavailable", gcode.CodeInternalError)
-	serverNoPattern   = regexp.MustCompile(`^SVR-[0-9A-F]{32}$`)
+	CodeInvalid          = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_INVALID", "The server renewal request is invalid", gcode.CodeInvalidParameter)
+	CodeNotAccessible    = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_NOT_ACCESSIBLE", "The server renewal operation is not accessible", gcode.CodeNotAuthorized)
+	CodeConflict         = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_CONFLICT", "The server renewal preview has changed", gcode.CodeInvalidOperation)
+	CodeUnavailable      = bizerr.MustDefine("IDC_RESOURCE_BATCH_RENEWAL_UNAVAILABLE", "The server renewal operation is temporarily unavailable", gcode.CodeInternalError)
+	serverNoPattern      = regexp.MustCompile(`^SVR-[0-9A-F]{32}$`)
+	entitlementNoPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.:-]{0,39}$`)
 )
 
 type Candidate struct {
@@ -54,9 +55,10 @@ type CandidatePage struct {
 
 // ListInput bounds the local candidate directory without changing renewal eligibility.
 type ListInput struct {
-	Cursor string
-	Limit  int
-	Page   int
+	EntitlementNo string
+	Cursor        string
+	Limit         int
+	Page          int
 }
 
 type Store interface {
@@ -92,8 +94,8 @@ type Confirmation struct {
 
 type Service interface {
 	List(context.Context, ListInput) (*CandidatePage, error)
-	Preview(context.Context, string, int, []string) (*Preview, error)
-	Confirm(context.Context, string, int, []string, string) (*Confirmation, error)
+	Preview(context.Context, string, int, []string, ...string) (*Preview, error)
+	Confirm(context.Context, string, int, []string, string, ...string) (*Confirmation, error)
 }
 
 type serviceImpl struct {
@@ -118,7 +120,7 @@ func NewWithStore(store Store, runtime managementcap.Runtime) (Service, error) {
 
 // List returns one staff-authorized local server projection page and an exact count.
 func (s *serviceImpl) List(ctx context.Context, input ListInput) (*CandidatePage, error) {
-	if !validContext(ctx) || (input.Cursor != "" && !serverNoPattern.MatchString(input.Cursor)) {
+	if !validContext(ctx) || (input.Cursor != "" && !serverNoPattern.MatchString(input.Cursor)) || (input.EntitlementNo != "" && !entitlementNoPattern.MatchString(input.EntitlementNo)) {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	if input.Limit == 0 {
@@ -141,17 +143,17 @@ func (s *serviceImpl) List(ctx context.Context, input ListInput) (*CandidatePage
 	return page, nil
 }
 
-func (s *serviceImpl) Preview(ctx context.Context, requestKey string, cycles int, serverNos []string) (*Preview, error) {
+func (s *serviceImpl) Preview(ctx context.Context, requestKey string, cycles int, serverNos []string, entitlements ...string) (*Preview, error) {
 	if !validContext(ctx) || !validBatch(requestKey, cycles, serverNos) {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	if !s.authorize(ctx, PermissionView) || !s.authorize(ctx, PermissionSafe) {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
-	return s.preview(ctx, requestKey, cycles, serverNos)
+	return s.previewAuthorized(ctx, requestKey, cycles, serverNos, entitlements...)
 }
 
-func (s *serviceImpl) Confirm(ctx context.Context, requestKey string, cycles int, serverNos []string, digest string) (*Confirmation, error) {
+func (s *serviceImpl) Confirm(ctx context.Context, requestKey string, cycles int, serverNos []string, digest string, entitlements ...string) (*Confirmation, error) {
 	if !validContext(ctx) || !validBatch(requestKey, cycles, serverNos) || len(digest) != sha256.Size*2 {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
@@ -162,7 +164,7 @@ func (s *serviceImpl) Confirm(ctx context.Context, requestKey string, cycles int
 	if err != nil || actor <= 0 {
 		return nil, bizerr.NewCode(CodeNotAccessible)
 	}
-	preview, err := s.previewAuthorized(ctx, requestKey, cycles, serverNos)
+	preview, err := s.previewAuthorized(ctx, requestKey, cycles, serverNos, entitlements...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,17 +197,19 @@ func (s *serviceImpl) Confirm(ctx context.Context, requestKey string, cycles int
 	return result, nil
 }
 
-func (s *serviceImpl) preview(ctx context.Context, requestKey string, cycles int, serverNos []string) (*Preview, error) {
-	return s.previewAuthorized(ctx, requestKey, cycles, serverNos)
-}
-
-func (s *serviceImpl) previewAuthorized(ctx context.Context, requestKey string, cycles int, serverNos []string) (*Preview, error) {
+func (s *serviceImpl) previewAuthorized(ctx context.Context, requestKey string, cycles int, serverNos []string, entitlements ...string) (*Preview, error) {
+	if len(entitlements) > 1 || len(entitlements) == 1 && entitlements[0] != "" && !entitlementNoPattern.MatchString(entitlements[0]) {
+		return nil, bizerr.NewCode(CodeInvalid)
+	}
 	rows, err := s.store.Load(ctx, serverNos)
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
 	}
 	byNo := make(map[string]Candidate, len(rows))
 	for _, row := range rows {
+		if len(entitlements) == 1 && entitlements[0] != "" && row.EntitlementNo != entitlements[0] {
+			return nil, bizerr.NewCode(CodeNotAccessible)
+		}
 		byNo[row.ServerNo] = row
 	}
 	result := &Preview{RequestKey: requestKey, RenewalCycles: cycles, Items: make([]PreviewItem, len(serverNos))}
@@ -331,6 +335,9 @@ type sqlStore struct{ database gdb.DB }
 func (s *sqlStore) List(ctx context.Context, input ListInput) (*CandidatePage, error) {
 	model := s.database.Model("plugin_idc_resource_server_entitlement_projection").Safe().Ctx(ctx).
 		Where("tenant_id", idccap.DefaultTenantID)
+	if input.EntitlementNo != "" {
+		model = model.Where("entitlement_no", input.EntitlementNo)
+	}
 	total, err := model.Clone().Count()
 	if err != nil {
 		return nil, err

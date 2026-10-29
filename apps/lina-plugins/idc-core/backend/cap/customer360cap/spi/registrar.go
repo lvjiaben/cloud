@@ -67,13 +67,13 @@ func (r *registrar) freeze() ([]customer360cap.Contributor, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.frozen = true
-	covered := make(map[customer360cap.Code]struct{}, 9)
+	covered := make(map[customer360cap.Code]struct{}, 8)
 	for _, contributor := range r.contributors {
 		for _, code := range contributor.Codes() {
 			covered[code] = struct{}{}
 		}
 	}
-	if len(covered) != 9 {
+	if len(covered) != 8 {
 		return nil, gerror.New("customer 360 contributors do not cover every required summary")
 	}
 	result := append([]customer360cap.Contributor(nil), r.contributors...)
@@ -85,7 +85,7 @@ func validCode(code customer360cap.Code) bool {
 	switch code {
 	case customer360cap.CodeOrders, customer360cap.CodeBills,
 		customer360cap.CodeTransactions, customer360cap.CodeServers,
-		customer360cap.CodeContracts, customer360cap.CodeTaxInvoices,
+		customer360cap.CodeTaxInvoices,
 		customer360cap.CodeTickets, customer360cap.CodeNotifications,
 		customer360cap.CodeAudits:
 		return true

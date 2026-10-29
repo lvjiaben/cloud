@@ -6,17 +6,19 @@ import { Button, Popconfirm, Radio, RadioGroup, message } from 'ant-design-vue';
 import { useVbenForm, z } from '#/adapter/form';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
+import { usePortalMountContext } from './source-context';
 
 const props = defineProps<{ modelValue: WebsiteNavigation; pages: WebsitePage[]; disabled?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [value: WebsiteNavigation] }>();
 const tr = (key: string) => $t(`plugin.idc-portal.website.nav.${key}`);
+const context = usePortalMountContext();
 const position = ref<'header' | 'footer'>('header');
 const editing = ref<WebsiteNavigationItem>();
 const items = computed(() => props.modelValue[position.value] ?? []);
-const destinations = computed(() => [{ label: tr('group'), value: '__group' }, ...props.pages.map(page => ({ label: `${page.nameZh} (${page.path})`, value: page.id })), { label: tr('login'), value: 'customer-login' }, { label: tr('register'), value: 'customer-register' }, { label: tr('external'), value: '__url' }]);
+const destinations = computed(() => [{ label: tr('group'), value: '__group' }, ...props.pages.map(page => ({ label: `${context.value.locale.startsWith('zh') ? page.nameZh : page.nameEn} (${page.path})`, value: page.id })), { label: tr('login'), value: 'customer-login' }, { label: tr('register'), value: 'customer-register' }, { label: tr('external'), value: '__url' }]);
 const [Grid, gridApi] = useVbenVxeGrid({ gridOptions: {
  columns: [
-  { field: 'nameZh', title: tr('name'), minWidth: 150 },
+  { field: 'nameZh', title: tr('name'), minWidth: 150, slots: { default: 'name' } },
   { field: 'destination', title: tr('destination'), minWidth: 180, slots: { default: 'destination' } },
   { field: 'parentId', title: tr('parent'), minWidth: 130, slots: { default: 'parent' } },
   { field: 'sortOrder', title: tr('order'), width: 90 },
@@ -34,7 +36,7 @@ function parentOptions() {
   excluded.add(editing.value.id);
   for (let pass=0;pass<3;pass++) for (const item of items.value) if (excluded.has(item.parentId)) excluded.add(item.id);
  }
- return [{ label: tr('root'), value: '' }, ...items.value.filter(item => !excluded.has(item.id)).map(item => ({ label: item.nameZh, value: item.id }))];
+ return [{ label: tr('root'), value: '' }, ...items.value.filter(item => !excluded.has(item.id)).map(item => ({ label: label(item), value: item.id }))];
 }
 async function initialize(open: boolean) {
  if (!open) return;
@@ -66,6 +68,7 @@ async function save() {
  for (const row of next) { let parent = row.parentId; let depth=0; const seen = new Set([row.id]); while (parent) { if (seen.has(parent) || !byId.has(parent) || ++depth > 2) { message.error(tr('depth')); return; } seen.add(parent); parent = byId.get(parent)!.parentId; } }
  saveItems(next); modalApi.close();
 }
+function label(item?: WebsiteNavigationItem) { return item ? (context.value.locale.startsWith('zh') ? item.nameZh : item.nameEn) : tr('root'); }
 function destination(item: WebsiteNavigationItem) { return item.group ? tr('group') : item.pageId ? destinations.value.find(row => row.value === item.pageId)?.label ?? tr('unavailable') : item.url; }
 </script>
 
@@ -77,8 +80,9 @@ function destination(item: WebsiteNavigationItem) { return item.group ? tr('grou
   </div>
   <p class="mb-3 text-muted-foreground">{{ tr('hint') }}</p>
   <Grid>
+   <template #name="{ row }">{{ label(row) }}</template>
    <template #destination="{ row }">{{ destination(row) }}</template>
-   <template #parent="{ row }">{{ items.find(item => item.id === row.parentId)?.nameZh ?? tr('root') }}</template>
+   <template #parent="{ row }">{{ label(items.find(item => item.id === row.parentId)) }}</template>
    <template #action="{ row }"><ghost-button :disabled="disabled" @click="open(row)">{{ tr('edit') }}</ghost-button><Popconfirm :title="tr('confirmDelete')" @confirm="remove(row)"><ghost-button danger :disabled="disabled">{{ tr('delete') }}</ghost-button></Popconfirm></template>
   </Grid>
   <Editor class="w-[480px]"><Form /></Editor>

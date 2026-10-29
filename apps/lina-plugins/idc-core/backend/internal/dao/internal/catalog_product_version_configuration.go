@@ -37,6 +37,7 @@ type CatalogProductVersionConfigurationColumns struct {
 	ChangedBy                      string //
 	CreatedAt                      string //
 	ChangedAt                      string //
+	CustomerPresentationSnapshot   string //
 }
 
 // catalogProductVersionConfigurationColumns holds the columns for the table plugin_idc_core_catalog_product_version_configuration.
@@ -57,6 +58,7 @@ var catalogProductVersionConfigurationColumns = CatalogProductVersionConfigurati
 	ChangedBy:                      "changed_by",
 	CreatedAt:                      "created_at",
 	ChangedAt:                      "changed_at",
+	CustomerPresentationSnapshot:   "customer_presentation_snapshot",
 }
 
 // NewCatalogProductVersionConfigurationDao creates and returns a new DAO object for table data access.

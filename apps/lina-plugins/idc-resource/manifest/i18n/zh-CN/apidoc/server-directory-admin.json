@@ -1,5 +1,6 @@
 {
   "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.tags": "IDC 服务器目录",
+  "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.fields.entitlementNo.dc": "可选的完整已交付产品编号；记录与总数均仅包含该产品",
   "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.summary": "查询魔方云服务器",
   "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.meta.dc": "在当前员工授权范围内返回有界的魔方云本地服务器目录，不返回凭据或供应商原始信息。",
   "plugins.idc_resource.api.adminserver.v1.CloudServerListReq.schema.dc": "在当前员工授权范围内返回有界的魔方云本地服务器目录，不返回凭据或供应商原始信息。",

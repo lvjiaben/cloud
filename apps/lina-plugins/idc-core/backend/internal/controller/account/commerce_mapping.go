@@ -1,3 +1,6 @@
+// This file maps authoritative commerce facts to the existing public customer contract,
+// preserving exact money, timestamps and manual fulfillment without private evidence.
+
 package account
 
 import (
@@ -27,12 +30,18 @@ func toAPICommerceCart(cart *commerce.Cart) *v1.CommerceCart {
 	}
 	for _, item := range cart.Items {
 		mapped := &v1.CommerceCartItem{
-			CartItemNo: item.CartItemNo, ProductNameZhCN: item.ProductNameZhCN,
+			Configuration:  make([]*v1.CommerceCartConfiguration, 0, len(item.Configuration)),
+			ChargeTypeCode: item.ChargeTypeCode, PeriodUnitCode: item.PeriodUnitCode, PeriodCount: item.PeriodCount,
+			HasServerLogin: item.HasServerLogin, ServerLoginToken: item.ServerLoginToken, ServerLoginHostname: item.ServerLoginHostname, ServerLoginPasswordConfigured: item.ServerLoginPasswordConfigured,
+			CartItemNo: item.CartItemNo, ConfigurationReference: item.ConfigurationReference, ProductNameZhCN: item.ProductNameZhCN,
 			ProductNameEnUS: item.ProductNameEnUS, PublicSlug: item.PublicSlug,
 			ConfigurationRequired: item.ConfigurationRequired, ConfigurationFrozen: item.ConfigurationFrozen,
 			ConfigurationRevision: item.ConfigurationRevision, Quantity: item.Quantity,
 			PurchaseCycles: item.PurchaseCycles, StatusCode: item.StatusCode,
 			IssueCode: item.IssueCode, RepairAction: item.RepairAction, Version: item.Version,
+		}
+		for _, field := range item.Configuration {
+			mapped.Configuration = append(mapped.Configuration, &v1.CommerceCartConfiguration{LabelZhCN: field.LabelZhCN, LabelEnUS: field.LabelEnUS, ValueZhCN: field.ValueZhCN, ValueEnUS: field.ValueEnUS})
 		}
 		result.Items = append(result.Items, mapped)
 	}
@@ -85,8 +94,8 @@ func toAPICommerceCheckout(checkout *commerce.Checkout) *v1.CommerceCheckout {
 	return &v1.CommerceCheckout{
 		OrderNo: checkout.OrderNo, InvoiceNo: checkout.InvoiceNo, QuoteNo: checkout.QuoteNo,
 		StatusCode: checkout.StatusCode, CurrencyCode: checkout.CurrencyCode, ItemCount: checkout.ItemCount,
-		TotalAmountMinor: amount(checkout.TotalAmountMinor), RequiresContract: checkout.RequiresContract,
-		PaymentDueAt: checkout.PaymentDueAt.UnixMilli(), Reused: checkout.Reused,
+		TotalAmountMinor: amount(checkout.TotalAmountMinor),
+		PaymentDueAt:     checkout.PaymentDueAt.UnixMilli(), Reused: checkout.Reused,
 	}
 }
 
@@ -99,7 +108,7 @@ func toAPICommercePaymentPreparation(value *commerce.PaymentPreparation) *v1.Com
 		CustomerTypeCode: value.CustomerTypeCode, StatusCode: value.StatusCode,
 		ReasonCode: value.ReasonCode, IdentityStatusCode: value.IdentityStatusCode,
 		CurrencyCode: value.CurrencyCode, AmountDueMinor: amount(value.AmountDueMinor),
-		RequiresContract: value.RequiresContract, PaymentDueAt: value.PaymentDueAt.UnixMilli(),
+		PaymentDueAt:    value.PaymentDueAt.UnixMilli(),
 		LastEvaluatedAt: value.LastEvaluatedAt.UnixMilli(), Ready: value.Ready, Reused: value.Reused,
 	}
 }
@@ -133,8 +142,8 @@ func toAPICommerceOrderSummary(value commerce.OrderSummary) *v1.CommerceOrderSum
 		CustomerTypeCode: value.CustomerTypeCode, StatusCode: value.StatusCode,
 		RiskDecisionCode: value.RiskDecisionCode, CurrencyCode: value.CurrencyCode,
 		ItemCount: value.ItemCount, TotalAmountMinor: amount(value.TotalAmountMinor),
-		RequiresContract: value.RequiresContract, PaymentDueAt: unixMillis(value.PaymentDueAt),
-		CreatedAt: value.CreatedAt.UnixMilli(), CanCancel: value.CanCancel,
+		PaymentDueAt: unixMillis(value.PaymentDueAt),
+		CreatedAt:    value.CreatedAt.UnixMilli(), CanCancel: value.CanCancel,
 		CanPreparePayment: value.CanPreparePayment, AssistedRequestNo: value.AssistedRequestNo,
 		PaymentTermCode: value.PaymentTermCode,
 	}
@@ -172,8 +181,8 @@ func ToAPICommerceOrderDetail(value *commerce.OrderDetail) *v1.CommerceOrderDeta
 			ProductNameZhCN: item.ProductNameZhCN, ProductNameEnUS: item.ProductNameEnUS,
 			Quantity: item.Quantity, PurchaseCycles: item.PurchaseCycles,
 			ChargeTypeCode: item.ChargeTypeCode, PeriodUnitCode: item.PeriodUnitCode, PeriodCount: item.PeriodCount,
-			RequiresContract: item.RequiresContract, FulfillmentModeCode: item.FulfillmentModeCode,
-			RiskDecisionCode: item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
+			FulfillmentModeCode: item.FulfillmentModeCode,
+			RiskDecisionCode:    item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
 			SetupSubtotalMinor: amount(item.SetupSubtotalMinor), PeriodSubtotalMinor: amount(item.PeriodSubtotalMinor),
 			SubtotalMinor: amount(item.SubtotalMinor), DiscountMinor: amount(item.DiscountMinor),
 			NetAmountMinor: amount(item.NetAmountMinor), TaxAmountMinor: amount(item.TaxAmountMinor),
@@ -196,7 +205,7 @@ func ToAPICommerceOrderDetail(value *commerce.OrderDetail) *v1.CommerceOrderDeta
 	for _, entitlement := range value.ServiceEntitlements {
 		names := productNames[entitlement.OrderItemNo]
 		result.ServiceEntitlements = append(result.ServiceEntitlements, &v1.CommerceServiceEntitlement{
-			EntitlementNo: entitlement.EntitlementNo, OrderItemNo: entitlement.OrderItemNo,
+			EntitlementOwnerID: entitlement.EntitlementOwnerID, ManagementPreparation: entitlement.ManagementPreparation, EntitlementNo: entitlement.EntitlementNo, OrderItemNo: entitlement.OrderItemNo,
 			ProductNameZhCN: names[0], ProductNameEnUS: names[1], StatusCode: entitlement.StatusCode,
 			StartedAt: entitlement.StartedAt.UnixMilli(), ExpiresAt: unixMillis(entitlement.ExpiresAt),
 		})
@@ -229,12 +238,25 @@ func ToAPICommerceOrderDetail(value *commerce.OrderDetail) *v1.CommerceOrderDeta
 	return result
 }
 
+// customerDeliveryStatus is the existing published, provider-neutral order progress contract.
+type customerDeliveryStatus string
+
+const (
+	customerDeliveryAwaitingPayment  customerDeliveryStatus = "awaiting_payment"
+	customerDeliveryAwaitingReview   customerDeliveryStatus = "awaiting_review"
+	customerDeliveryProcessing       customerDeliveryStatus = "processing"
+	customerDeliveryManualProcessing customerDeliveryStatus = "manual_processing"
+	customerDeliveryCompleted        customerDeliveryStatus = "completed"
+	customerDeliveryNotCompleted     customerDeliveryStatus = "not_completed"
+	customerDeliveryCancelled        customerDeliveryStatus = "cancelled"
+)
+
 func safeAPIDeliveryStatus(value string) string {
-	switch value {
-	case "awaiting_payment", "awaiting_review", "completed", "not_completed", "cancelled":
+	switch customerDeliveryStatus(value) {
+	case customerDeliveryAwaitingPayment, customerDeliveryAwaitingReview, customerDeliveryProcessing, customerDeliveryManualProcessing, customerDeliveryCompleted, customerDeliveryNotCompleted, customerDeliveryCancelled:
 		return value
 	default:
-		return "processing"
+		return string(customerDeliveryProcessing)
 	}
 }
 

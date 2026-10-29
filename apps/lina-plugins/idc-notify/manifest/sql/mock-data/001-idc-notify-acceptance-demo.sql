@@ -6,8 +6,7 @@ INSERT INTO plugin_idc_notify_channel
 VALUES
   ('demo_email_disabled', 'email', '', '演示 · 邮件（已停用）', 'disabled', 'sufficient', 1, '{"environment":"demo"}'::jsonb),
   ('demo_sms_configuring', 'sms', 'aliyun_sms_v20170525', '演示 · 短信（配置中）', 'configuring', 'unknown', 1, '{"environment":"demo"}'::jsonb),
-  ('demo_webhook_failed', 'signed_webhook', '', '演示 · Webhook（配置失败）', 'configuration_failed', 'sufficient', 1, '{"environment":"demo"}'::jsonb),
-  ('demo_wecom_unconfigured', 'wechat_work', '', '演示 · 企业微信（未配置）', 'unconfigured', 'sufficient', 0, '{"environment":"demo"}'::jsonb)
+  ('demo_webhook_failed', 'signed_webhook', '', '演示 · Webhook（配置失败）', 'configuration_failed', 'sufficient', 1, '{"environment":"demo"}'::jsonb)
 ON CONFLICT ("tenant_id", "channel_code") DO NOTHING;
 
 INSERT INTO plugin_idc_notify_template_version

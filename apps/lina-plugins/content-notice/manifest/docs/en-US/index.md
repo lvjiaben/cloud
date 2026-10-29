@@ -1,10 +1,10 @@
-# Content - Notices
+# Content - Announcements
 
 This document is bundled under the plugin manifest and is intended for plugin-market display. Runtime behavior is unchanged by the documentation resource.
 
 ## Summary
 
-Built-in source plugin for notice management, publication, and inbox delivery.
+Built-in source plugin for announcement management, publication, and per-user read state.
 
 ## Documents
 
@@ -13,27 +13,27 @@ Built-in source plugin for notice management, publication, and inbox delivery.
 
 ## Feature Highlights
 
-- Queries, creates, edits, previews, publishes, and deletes notices.
-- Drafts do not notify users; publication sends an inbox message.
+- Queries, creates, edits, previews, publishes, sorts, and deletes announcements.
+- Drafts stay private to management; published content is shared by the customer center and public website.
 - The page and backend ship with the host, are enforced at startup, and stay hidden from plugin management.
-- Supports tenant-aware usage scenarios.
+- Supports inline images and persistent user read state without type, attachment, or audience settings.
 
 ## Where It Fits
 
-Use it to manage tenant-aware notices and announcements inside the content workspace.
+Use it to manage announcements inside the content workspace.
 
 ## Entry Points
 
 | Name | Path |
 | --- | --- |
-| Notices | `/system/notice` |
+| Announcements | `/system/notice` |
 
 ## Metadata
 
 | Field | Description |
 | --- | --- |
 | Plugin ID | `content-notice` |
-| Version | `v0.3.0` |
+| Version | `v0.3.1` |
 | Type | `source` |
 | Distribution | `builtin` |
 | Scope | `tenant_aware` |

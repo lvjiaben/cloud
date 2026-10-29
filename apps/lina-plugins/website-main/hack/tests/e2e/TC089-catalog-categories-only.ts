@@ -1,0 +1,108 @@
+import {readFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+import {test,expect} from '@playwright/test';
+import {WebsitePage} from '../pages/SourceWebsitePage';
+import {CommerceNavigationPage} from '../pages/CommerceNavigationPage';
+import {NavigationPage} from '../pages/NavigationPage';
+
+test.use({baseURL:'http://127.0.0.1:6680',viewport:{width:1440,height:900}});
+test.describe('TC-89 商品侧栏仅显示实际分类',()=>{
+ test.beforeEach(async({page})=>{
+  if(process.env.CATALOG_SOURCE_CHECK==='1')for(const name of ['catalog-page.js','navigation.js','site.js','catalog-search.js'])await page.route('**/lina/'+name,async route=>route.fulfill({contentType:'application/javascript',body:await readFile(resolve(import.meta.dirname,'../../../frontend/public/lina',name))}));
+ });
+ test('TC-89a: 删除全部商品入口，保留真实分类、商品及筛选',async({page})=>{
+  const site=new WebsitePage(page),errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  const response=await page.request.get('/x/idc-core/api/v1/public/catalog/products?limit=12');
+  expect(response.ok()).toBe(true);
+  const {data}=await response.json();expect(data.products.length).toBeGreaterThan(0);
+  await site.open('/products.html');
+  const menu=page.locator('[data-categories]');
+  const firstCategory=data.categories.find((item:any)=>item.categoryNo);
+  await expect(page).toHaveURL(new RegExp('categoryNo='+firstCategory.categoryNo));
+  const firstResponse=await page.request.get('/x/idc-core/api/v1/public/catalog/products?limit=12&categoryNo='+encodeURIComponent(firstCategory.categoryNo));
+  const firstProducts=(await firstResponse.json()).data.products;
+  await expect(page.locator('[data-products] [data-product]')).toHaveCount(firstProducts.length);
+  for(const item of firstProducts)await expect(page.locator('[data-products] [data-product="'+item.publicSlug+'"]')).toHaveCount(1);
+  for(const item of data.products.filter((item:any)=>item.categoryNo!==firstCategory.categoryNo))await expect(page.locator('[data-products] [data-product="'+item.publicSlug+'"]')).toHaveCount(0);
+  await expect(menu.getByRole('link',{name:'全部商品',exact:true})).toHaveCount(0);
+  await expect(menu.locator('[data-catalog-category=""]')).toHaveCount(0);
+  for(const category of data.categories)await expect(menu.locator('[data-catalog-category="'+category.categoryNo+'"]').first()).toHaveText(category.nameZhCN||category.nameEnUS);
+  console.log('TC089 screenshot: '+await site.capture('tc089-catalog-categories-only',false));
+  const category=data.categories.find((c:any)=>c.categoryNo===data.products[0].categoryNo);
+  expect(category).toBeTruthy();
+  await site.open('/products.html?categoryNo='+encodeURIComponent(category.categoryNo));
+  await expect(menu.locator('[data-catalog-group="'+category.categoryNo+'"]')).toHaveAttribute('aria-expanded','true');
+  await expect(page.locator('[data-catalog-title]')).toHaveText('区域（'+(category.nameZhCN||category.nameEnUS)+'）');
+  const filtered=await page.request.get('/x/idc-core/api/v1/public/catalog/products?limit=12&categoryNo='+encodeURIComponent(category.categoryNo));
+  const expected=(await filtered.json()).data.products;
+  await expect(page.locator('[data-products] [data-product]')).toHaveCount(expected.length);
+  for(const product of expected)await expect(page.locator('[data-product="'+product.publicSlug+'"] h5')).toHaveText(product.nameZhCN||product.nameEnUS);
+  await expect(menu.getByRole('link',{name:'全部商品',exact:true})).toHaveCount(0);
+  console.log('TC089 screenshot: '+await site.capture('tc089-catalog-filtered',false));
+  expect(errors).toEqual([]);
+ });
+ test('TC-89d: 顶部产品与服务只显示真实分类及当前分类商品',async({page})=>{
+  const site=new NavigationPage(page);await site.open('/products.html');await site.hoverTitle('产品与服务');
+  const panel=site.panel();await expect(panel.locator('.lina-nav-category').first()).toBeVisible();
+  await expect(panel.getByRole('button',{name:'全部商品',exact:true})).toHaveCount(0);
+  await expect(panel.locator('.lina-nav-category[aria-pressed="true"]')).toHaveCount(1);
+  const link=panel.getByRole('link',{name:'查看此分类',exact:true});
+  await expect(link).toHaveAttribute('href',/categoryNo=.+/);
+  const category=new URL((await link.getAttribute('href'))!,page.url()).searchParams.get('categoryNo');
+  const response=await page.request.get('/x/idc-core/api/v1/public/catalog/products?limit=12&categoryNo='+encodeURIComponent(category!));
+  const expected=(await response.json()).data.products;
+  await expect(panel.locator('.Submenu-item')).toHaveCount(expected.length);
+  for(const product of expected)await expect(panel.locator('.Submenu-item[href$="product='+product.publicSlug+'"]')).toHaveCount(1);
+  console.log('TC089 navigation: '+await site.capture('tc089-navigation-category-only',false));
+ });
+ test('TC-89c: 配置视图及刷新后不重新生成全部商品分类',async({page})=>{
+  const site=new CommerceNavigationPage(page);
+  const response=await page.request.get('/x/idc-core/api/v1/public/catalog/products?limit=12');
+  expect(response.ok()).toBe(true);
+  const {data}=await response.json(),product=data.products.find((item:any)=>item.availability==='available');
+  expect(product).toBeTruthy();
+  await site.open('/products.html?product='+encodeURIComponent(product.publicSlug)+'&action=configureproduct');
+  await expect(page.locator('.allocation-header-title h1')).toHaveText(product.nameZhCN||product.nameEnUS);
+  const menu=page.locator('[data-categories]');
+  await expect(menu.locator('[data-catalog-category]')).not.toHaveCount(0);
+  await expect(menu.getByRole('link',{name:'全部商品',exact:true})).toHaveCount(0);
+  await expect(menu.locator('[data-catalog-category=""]')).toHaveCount(0);
+  await expect(page.locator('[data-quote] button')).not.toHaveCount(0);
+  await site.reload();
+  await expect(page.locator('.allocation-header-title h1')).toHaveText(product.nameZhCN||product.nameEnUS);
+  await expect(menu.locator('[data-catalog-category]')).not.toHaveCount(0);
+  await expect(menu.getByRole('link',{name:'全部商品',exact:true})).toHaveCount(0);
+  console.log('TC089 screenshot: '+await site.capture('tc089-configure-categories-only',false));
+ });
+ test('TC-89e: 搜索和清空保留当前分类，不生成跨分类搜索入口',async({page})=>{
+  const site=new WebsitePage(page);await site.open('/products.html');
+  await expect(page.locator('[data-products] [data-product]').first()).toBeVisible();
+  const category=new URL(page.url()).searchParams.get('categoryNo');expect(category).toBeTruthy();
+  await page.locator('#search-input').fill('不存在的测试服务器');
+  const results=page.locator('.lina-catalog-search-results');
+  await expect(results).not.toContainText('在全部分类中搜索');
+  const search=results.getByRole('link',{name:'在当前分类中搜索以“'+'不存在的测试服务器'+'”开头的商品',exact:true});
+  await expect(search).toHaveAttribute('href',new RegExp('categoryNo='+category));
+  await search.click();await expect(page.locator('[data-status]')).toHaveText('暂无可订购商品。');
+  expect(new URL(page.url()).searchParams.get('categoryNo')).toBe(category);
+  await page.getByRole('button',{name:'清空商品搜索'}).click();
+  await expect(page.locator('[data-products] [data-product]').first()).toBeVisible();
+  expect(new URL(page.url()).searchParams.get('categoryNo')).toBe(category);
+  console.log('TC089 search: '+await site.capture('tc089-search-category-only',false));
+ });
+ test('TC-89b: 商品读取失败后重试仍只显示真实分类',async({page})=>{
+  let failed=true;
+  await page.route('**/x/idc-core/api/v1/public/catalog/products?**',async route=>{
+   if(failed)return route.fulfill({status:503,json:{code:1,message:'Unavailable'}});
+   return route.continue();
+  });
+  const site=new WebsitePage(page);await site.open('/products.html');
+  await expect(page.locator('[data-status]')).toContainText('商品加载失败，请重试。');
+  failed=false;await site.retry();
+  await expect(page.locator('[data-products] [data-product]').first()).toBeVisible();
+  await expect(page.locator('[data-categories] [data-catalog-category]')).not.toHaveCount(0);
+  await expect(page.locator('[data-categories]').getByRole('link',{name:'全部商品',exact:true})).toHaveCount(0);
+  console.log('TC089 screenshot: '+await site.capture('tc089-catalog-recovered',false));
+ });
+});

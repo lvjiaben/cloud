@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
@@ -26,6 +27,7 @@ var dynamicSafeResponseFields = []string{
 	"area", "area_id", "node_id", "node_group", "node_group_id", "type", "cpu_total", "cpu_used",
 	"memory_total", "memory_used", "disk_total", "disk_used", "group", "group_id", "boot_mode", "os_type", "arch",
 	"node_type", "node", "store", "show_name",
+	"hostid", "host_id", "ip_num", "ip", "ipaddress",
 }
 
 // ExecuteDynamicResource runs the managed connector protocol using only the
@@ -44,7 +46,7 @@ func ExecuteDynamicResource(
 		return json.Marshal(resourcecap.ConnectionVerification{Verified: true, ObservedAt: time.Now().UTC()})
 	}
 	if method == resourcecap.DynamicProviderMethodDiscoverCapabilities {
-		return json.Marshal(DeclaredCapabilitySnapshot(time.Now().UTC()))
+		return json.Marshal(managedCapabilitySnapshot(time.Now().UTC()))
 	}
 	if method == resourcecap.DynamicProviderMethodBuildProvisionParameters {
 		var plan resourcecap.ServerProvisionPlan
@@ -53,10 +55,23 @@ func ExecuteDynamicResource(
 		}
 		return BuildProvisionParameters(context.Background(), plan)
 	}
+	// Old queued invocations may outlive a capability snapshot. Quantity change
+	// is not address replacement, so refuse it before even authenticating.
+	if method == resourcecap.DynamicProviderMethodExecute {
+		var request resourcecap.DynamicOperationRequest
+		if json.Unmarshal(payload, &request) != nil {
+			return nil, errInvalidConfig
+		}
+		if unverifiedOperation(request.Capability, request.Parameters) {
+			return nil, errUnsupported
+		}
+	}
 	if err := dynamicAuthenticate(executor, contextID); err != nil {
 		return nil, err
 	}
 	switch method {
+	case resourcecap.DynamicProviderMethodLookupPrincipal, resourcecap.DynamicProviderMethodCreatePrincipal:
+		return dynamicPrincipal(executor, contextID, method, payload)
 	case resourcecap.DynamicProviderMethodConfigurationCandidates:
 		return dynamicConfigurationCandidates(executor, contextID, payload)
 	case resourcecap.DynamicProviderMethodListProviderCapacity:
@@ -91,16 +106,32 @@ func dynamicAuthenticate(executor confidentialoutboundcap.Service, contextID str
 	return nil
 }
 
+// Guest connection facts belong only to an exact instance-detail read, not
+// to product candidate requests or arbitrary supplier response shapes.
+func dynamicResponseFields(path string) []string {
+	if reference, ok := strings.CutPrefix(path, "/clouds/"); ok && validNumericReference(reference) {
+		fields := append([]string(nil), dynamicSafeResponseFields...)
+		return append(fields, "hostname", "os_name", "osuser", "port", "cpu", "memory", "rescue", "network_type", "bootorder")
+	}
+	return dynamicSafeResponseFields
+}
+
 func dynamicCall(executor confidentialoutboundcap.Service, contextID string, sequence uint8, method, path string, query url.Values, form url.Values, secretFormFields ...map[string]string) (dynamicHTTPResponse, error) {
 	request := resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindRequest, Method: method, Path: path,
-		Query: map[string][]string(query), Form: firstFormValues(form), ResponseFields: dynamicSafeResponseFields, UseAuthentication: true,
+		Query: map[string][]string(query), FormFields: resourcecap.NewConfidentialFormFields(firstFormValues(form)), ResponseFields: dynamicSafeResponseFields, UseAuthentication: true,
 	}
 	if len(secretFormFields) == 1 {
 		request.SecretFormBindings = resourcecap.NewConfidentialSecretFormBindings(secretFormFields[0])
 	} else if len(secretFormFields) > 1 {
 		return dynamicHTTPResponse{}, errInvalidConfig
 	}
+	return executeDynamicHTTP(executor, contextID, sequence, request)
+}
+
+// executeDynamicHTTP preserves the same governed wire for ordinary calls and
+// the separately scoped resource-detail read; credentials stay with the owner.
+func executeDynamicHTTP(executor confidentialoutboundcap.Service, contextID string, sequence uint8, request resourcecap.ConfidentialHTTPRequest) (dynamicHTTPResponse, error) {
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return dynamicHTTPResponse{}, errInvalidConfig
@@ -241,6 +272,7 @@ func dynamicQueryTask(executor confidentialoutboundcap.Service, contextID string
 		return nil, errInvalidResponse
 	}
 	object = unwrapObject(object)
+	defer clearRawObject(object)
 	status, ok := metaInteger(object, "status")
 	if !ok {
 		return nil, errInvalidResponse
@@ -250,7 +282,18 @@ func dynamicQueryTask(executor confidentialoutboundcap.Service, contextID string
 	if !ok {
 		state = resourcecap.TaskStatusUnknown
 	}
-	result := resourcecap.OperationResult{Status: state, ExternalTaskRef: query.ExternalTaskRef, ExternalResourceRef: query.ResourceRef, Evidence: []resourcecap.Evidence{{Kind: "upstream_task", Reference: query.ExternalTaskRef, Summary: "numeric upstream task status observed", ObservedAt: time.Now().UTC()}}}
+	resourceRef := query.ResourceRef
+	if observedTask, exists := firstReference(object, "id"); exists && observedTask != query.ExternalTaskRef {
+		state = resourcecap.TaskStatusUnknown
+	}
+	if observedResource, exists := firstReference(object, "hostid", "host_id", "cloud_id"); exists {
+		if resourceRef != "" && resourceRef != observedResource {
+			state = resourcecap.TaskStatusUnknown
+		} else {
+			resourceRef = observedResource
+		}
+	}
+	result := resourcecap.OperationResult{Status: state, ExternalTaskRef: query.ExternalTaskRef, ExternalResourceRef: resourceRef, Evidence: []resourcecap.Evidence{{Kind: "upstream_task", Reference: query.ExternalTaskRef, Summary: "numeric upstream task status observed", ObservedAt: time.Now().UTC()}}}
 	if state == resourcecap.TaskStatusFailed || state == resourcecap.TaskStatusUnknown {
 		result.Failure = &resourcecap.ProviderFailure{Code: "UPSTREAM_TASK_FAILED", Message: "upstream task requires reconciliation", ResultUnknown: state == resourcecap.TaskStatusUnknown}
 	}
@@ -262,7 +305,8 @@ func dynamicQueryResource(executor confidentialoutboundcap.Service, contextID st
 	if json.Unmarshal(payload, &query) != nil || query.Validate() != nil || !validNumericReference(query.ExternalResourceRef) {
 		return nil, errInvalidConfig
 	}
-	response, err := dynamicCall(executor, contextID, 2, http.MethodGet, "/clouds/"+query.ExternalResourceRef, nil, nil)
+	path := "/clouds/" + query.ExternalResourceRef
+	response, err := executeDynamicHTTP(executor, contextID, 2, resourcecap.ConfidentialHTTPRequest{Kind: resourcecap.ConfidentialHTTPKindRequest, Method: http.MethodGet, Path: path, ResponseFields: dynamicResponseFields(path), UseAuthentication: true})
 	if err != nil || response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, readStatusError(response.StatusCode)
 	}
@@ -271,15 +315,13 @@ func dynamicQueryResource(executor confidentialoutboundcap.Service, contextID st
 		return nil, errInvalidResponse
 	}
 	object = unwrapObject(object)
+	defer clearRawObject(object)
 	status, ok := stringScalar(object["status"])
 	if !ok {
 		status = "unknown"
 	}
 	state, normalized := normalizeUpstreamResourceState(status)
-	data, err := json.Marshal(struct {
-		Observed       bool   `json:"observed"`
-		UpstreamStatus string `json:"upstream_status"`
-	}{Observed: true, UpstreamStatus: normalized})
+	data, err := json.Marshal(resourceObservationData(object, normalized))
 	if err != nil {
 		return nil, errInvalidResponse
 	}
@@ -291,6 +333,11 @@ func dynamicExecute(executor confidentialoutboundcap.Service, contextID string, 
 	var request resourcecap.DynamicOperationRequest
 	if json.Unmarshal(payload, &request) != nil || request.Validate() != nil {
 		return nil, errInvalidConfig
+	}
+	// These actions return confidential output. Until that output has an
+	// owner-side sealed delivery path, reject before sending an upstream write.
+	if request.Capability == resourcecap.CapabilityConsole || request.Capability == resourcecap.CapabilityReinstall {
+		return nil, errUnsupported
 	}
 	operation := resourcecap.OperationRequest{RequestID: request.RequestID, Capability: request.Capability, ResourceRef: request.ResourceRef, Parameters: request.Parameters}
 	call, secretFields, err := dynamicOperationCall(operation, request.ConfidentialInputNames)
@@ -312,17 +359,60 @@ func dynamicExecute(executor confidentialoutboundcap.Service, contextID string, 
 	if err != nil {
 		return json.Marshal(dynamicUnknownOperationResult(request))
 	}
+	if response.StatusCode == http.StatusBadRequest || response.StatusCode == http.StatusUnprocessableEntity {
+		// A typed result retains the rejection across the isolated guest wire;
+		// a returned Go error would lose this classification during execution.
+		return json.Marshal(resourcecap.OperationResult{
+			Status: resourcecap.TaskStatusFailed, ExternalResourceRef: request.ResourceRef,
+			Failure: &resourcecap.ProviderFailure{Code: "upstream_request_rejected", Message: "upstream request was rejected"},
+			Evidence: []resourcecap.Evidence{{Kind: "upstream_rejection", Reference: request.RequestID,
+				Summary: "upstream rejected the operation before acceptance", ObservedAt: time.Now().UTC()}},
+		})
+	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, readStatusError(response.StatusCode)
 	}
-	object, _ := decodeObject(response.Data)
+	object, decodeErr := decodeObject(response.Data)
+	if decodeErr != nil {
+		return json.Marshal(dynamicUnknownOperationResult(request))
+	}
+	businessStatus, _ := metaInteger(object, "status")
+	_, rootAcknowledgement := firstReference(object, "id", "hostid", "host_id", "taskid", "task_id")
 	object = unwrapObject(object)
-	taskRef, _ := firstReference(object, "taskid", "task_id", "id")
+	defer clearRawObject(object)
+	taskRef, hasTask := firstReference(object, "taskid", "task_id")
+	resourceRef := request.ResourceRef
+	hasResource := resourceRef != ""
+	if request.Capability == resourcecap.CapabilityProvision {
+		resourceRef, hasResource = firstReference(object, "id", "hostid", "host_id")
+	}
+	unknown := func() (json.RawMessage, error) {
+		result := dynamicUnknownOperationResult(request)
+		result.ExternalTaskRef = taskRef
+		result.ExternalResourceRef = resourceRef
+		return json.Marshal(result)
+	}
+	if businessStatus == http.StatusBadRequest || businessStatus == http.StatusUnprocessableEntity {
+		if rootAcknowledgement || hasTask || (request.Capability == resourcecap.CapabilityProvision && hasResource) {
+			return unknown()
+		}
+		return json.Marshal(resourcecap.OperationResult{
+			Status: resourcecap.TaskStatusFailed, ExternalResourceRef: request.ResourceRef,
+			Failure:  &resourcecap.ProviderFailure{Code: "upstream_request_rejected", Message: "upstream request was rejected"},
+			Evidence: []resourcecap.Evidence{{Kind: "upstream_rejection", Reference: request.RequestID, Summary: "upstream rejected the operation before acceptance", ObservedAt: time.Now().UTC()}},
+		})
+	}
+	// Known ids are retained for query-only reconciliation. A cloud id is
+	// never interpreted as a task id, and missing acknowledgement is unknown.
+	if request.Capability == resourcecap.CapabilityProvision && !hasResource || call.queryAfterSuccess || call.requiresTask && !hasTask || call.postconditionKind != "" && !hasTask || request.Capability == resourcecap.CapabilityConsole || request.Capability == resourcecap.CapabilityReinstall {
+		return unknown()
+	}
+
 	status := resourcecap.TaskStatusSucceeded
-	if taskRef != "" {
+	if hasTask {
 		status = resourcecap.TaskStatusAccepted
 	}
-	result := resourcecap.OperationResult{Status: status, ExternalTaskRef: taskRef, ExternalResourceRef: request.ResourceRef, Evidence: []resourcecap.Evidence{{Kind: "upstream_response", Reference: request.RequestID, Summary: "field-whitelisted operation acknowledgement observed", ObservedAt: time.Now().UTC()}}}
+	result := resourcecap.OperationResult{Status: status, ExternalTaskRef: taskRef, ExternalResourceRef: resourceRef, Evidence: []resourcecap.Evidence{{Kind: "upstream_acceptance", Reference: request.RequestID, Summary: "upstream acceptance identifiers were field-whitelisted", ObservedAt: time.Now().UTC()}}}
 	return json.Marshal(result)
 }
 
@@ -394,4 +484,14 @@ func firstFormValues(values url.Values) map[string]string {
 		result[key] = values.Get(key)
 	}
 	return result
+}
+
+func managedCapabilitySnapshot(observedAt time.Time) *resourcecap.CapabilitySnapshot {
+	snapshot := DeclaredCapabilitySnapshot(observedAt)
+	for index, item := range snapshot.Capabilities {
+		if item.Code == resourcecap.CapabilityConsole || item.Code == resourcecap.CapabilityReinstall {
+			snapshot.Capabilities[index] = unsupported(item.Code, "managed confidential output delivery is unavailable")
+		}
+	}
+	return snapshot
 }

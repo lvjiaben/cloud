@@ -150,6 +150,9 @@ func prepareAccessoryOriginalServer(t *testing.T, fixture accessoryCheckoutFixtu
 			}
 		}
 	}
+	for _, name := range []string{"087-generic-refund-entitlement.sql", "088-generic-entitlement-renewal.sql", "151-native-server-accessory-lifecycle.sql"} {
+		nativeLifecycleMigration(t, fixture.database, name)
+	}
 	priceNo, err := deterministicReference("aps_", fixture.row.QuoteNo)
 	if err != nil {
 		t.Fatal(err)

@@ -9,15 +9,21 @@ import (
 	"io"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
+
+// directProvisionMode identifies the owner-created route using frozen upstream IDs.
+const directProvisionMode = "direct"
 
 var selectorValuePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 
 type provisionSelector struct {
+	Mode       string            `json:"mode,omitempty"`
 	Provider   string            `json:"provider"`
 	Areas      map[string]string `json:"areas"`
 	Nodes      map[string]string `json:"nodes"`
@@ -62,6 +68,12 @@ func BuildProvisionParameters(
 	if err != nil || values.cpu == 0 || values.memory == 0 || values.image == "" {
 		return nil, errInvalidConfig
 	}
+	if selector.Mode == directProvisionMode {
+		selector.Areas = map[string]string{values.region: values.region}
+		selector.Nodes = map[string]string{values.line: values.line}
+		selector.Images = map[string]string{values.image: values.image}
+		selector.NodeGroups = map[string]string{values.datacenter: values.datacenter}
+	}
 	parameters := map[string]any{
 		"num": 1, "cpu": values.cpu, "memory": values.memory,
 		"os":     lookupNumeric(selector.Images, values.image),
@@ -79,23 +91,8 @@ func BuildProvisionParameters(
 	if err = putMappedParameter(parameters, "node_group", selector.NodeGroups, values.datacenter); err != nil {
 		return nil, err
 	}
-	if selector.Defaults.NetworkType != "" {
-		if !selectorValuePattern.MatchString(selector.Defaults.NetworkType) {
-			return nil, errInvalidConfig
-		}
-		parameters["network_type"] = selector.Defaults.NetworkType
-	}
-	if selector.Defaults.IPGroup != "" {
-		if !strictPositiveDecimal(selector.Defaults.IPGroup) {
-			return nil, errInvalidConfig
-		}
-		parameters["ip_group"] = selector.Defaults.IPGroup
-	}
-	if selector.Defaults.NodePriority != 0 {
-		if selector.Defaults.NodePriority < 1 {
-			return nil, errInvalidConfig
-		}
-		parameters["node_priority"] = selector.Defaults.NodePriority
+	if err = appendProvisionDefaults(parameters, selector.Defaults); err != nil {
+		return nil, err
 	}
 	if values.systemDisk > 0 {
 		parameters["system_disk_size"] = values.systemDisk
@@ -123,6 +120,25 @@ func BuildProvisionParameters(
 		}
 		parameters["traffic_type"] = trafficType
 		parameters["traffic_quota"] = values.traffic
+	}
+	if err = appendFrozenNetworkParameters(parameters, plan); err != nil {
+		return nil, err
+	}
+	if err = appendFrozenAdvancedParameters(parameters, plan); err != nil {
+		return nil, err
+	}
+	// Match the documented finance connector: choose the reset day when
+	// preparing the create request. The resource owner freezes the resulting
+	// native parameters before outbound submission and retry handling.
+	if err = appendTrafficResetDay(parameters, time.Now().Day()); err != nil {
+		return nil, err
+	}
+	custom, err := productfulfillmentcap.CustomParameters(plan.ProductConfiguration)
+	if err != nil {
+		return nil, errInvalidConfig
+	}
+	if len(custom) > 0 {
+		parameters[productfulfillmentcap.CustomParametersKey] = custom
 	}
 	encoded, err := json.Marshal(parameters)
 	if err != nil {
@@ -152,7 +168,23 @@ func decodeProvisionSelector(payload json.RawMessage) (provisionSelector, error)
 	if err := strict.Decode(&struct{}{}); err != io.EOF {
 		return provisionSelector{}, errInvalidConfig
 	}
-	return selector, nil
+	return normalizeProvisionSelectorMode(selector)
+}
+
+// normalizeProvisionSelectorMode keeps direct routing exclusive of merchant mappings.
+func normalizeProvisionSelectorMode(selector provisionSelector) (provisionSelector, error) {
+	switch selector.Mode {
+	case "":
+		return selector, nil
+	case directProvisionMode:
+		if selector.Provider != "" || len(selector.Areas) > 0 || len(selector.Nodes) > 0 || len(selector.NodeGroups) > 0 || len(selector.Images) > 0 || selector.Defaults != (provisionDefaults{}) {
+			return provisionSelector{}, errInvalidConfig
+		}
+		selector.Provider = ProviderID
+		return selector, nil
+	default:
+		return provisionSelector{}, errInvalidConfig
+	}
 }
 
 func collectProvisionValues(components []resourcecap.ServerProvisionComponent) (provisionValues, error) {
@@ -298,4 +330,68 @@ func appendProvisionQuotas(parameters map[string]any, quotas map[resourcecap.Ser
 			parameters[key] = component.Count
 		}
 	}
+}
+
+// appendFrozenNetworkParameters applies optional connector-owned network fields
+// from the frozen package, then the frozen purchase. Explicit zero IPv4 is
+// preserved; it must never fall back to the supplier's default address count.
+func appendFrozenNetworkParameters(parameters map[string]any, plan resourcecap.ServerProvisionPlan) error {
+	for _, payload := range []json.RawMessage{plan.ProductConfiguration, plan.CustomerConfiguration} {
+		if len(bytes.TrimSpace(payload)) == 0 {
+			continue
+		}
+		var network struct {
+			IPCount  json.Number `json:"ip_count"`
+			Inbound  json.Number `json:"inbound_bandwidth"`
+			Outbound json.Number `json:"outbound_bandwidth"`
+		}
+		decoder := json.NewDecoder(bytes.NewReader(payload))
+		decoder.UseNumber()
+		if decoder.Decode(&network) != nil || decoder.Decode(&struct{}{}) != io.EOF {
+			return errInvalidConfig
+		}
+		for _, field := range []struct {
+			key              string
+			value            json.Number
+			minimum, maximum int64
+		}{
+			{"ip_num", network.IPCount, 0, 1024},
+			{"in_bw", network.Inbound, 1, 1000000},
+			{"out_bw", network.Outbound, 1, 1000000},
+		} {
+			if field.value == "" {
+				continue
+			}
+			value, parseErr := field.value.Int64()
+			if parseErr != nil || field.value.String() != strconv.FormatInt(value, 10) || value < field.minimum || value > field.maximum {
+				return errInvalidConfig
+			}
+			parameters[field.key] = value
+		}
+	}
+	return nil
+}
+
+// appendProvisionDefaults checks the configured selector's optional native
+// defaults before adding them; customer choices are applied separately later.
+func appendProvisionDefaults(parameters map[string]any, defaults provisionDefaults) error {
+	if defaults.NetworkType != "" {
+		if !selectorValuePattern.MatchString(defaults.NetworkType) {
+			return errInvalidConfig
+		}
+		parameters["network_type"] = defaults.NetworkType
+	}
+	if defaults.IPGroup != "" {
+		if !strictPositiveDecimal(defaults.IPGroup) {
+			return errInvalidConfig
+		}
+		parameters["ip_group"] = defaults.IPGroup
+	}
+	if defaults.NodePriority != 0 {
+		if defaults.NodePriority < 1 || defaults.NodePriority > 4 {
+			return errInvalidConfig
+		}
+		parameters["node_priority"] = defaults.NodePriority
+	}
+	return nil
 }

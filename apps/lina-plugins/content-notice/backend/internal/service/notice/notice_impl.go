@@ -13,9 +13,7 @@ import (
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/errors/gerror"
 
-	usermsgv1 "lina-core/api/usermsg/v1"
 	"lina-core/pkg/bizerr"
-	"lina-core/pkg/logger"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/tenantcap"
 	"lina-core/pkg/plugin/capability/tenantcap/tenantspi"
@@ -47,9 +45,6 @@ func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, erro
 	if title := strings.TrimSpace(in.Title); title != "" {
 		query = query.WhereLike(columns.Title, "%"+title+"%")
 	}
-	if in.Type > 0 {
-		query = query.Where(columns.Type, in.Type)
-	}
 	if createdBy := strings.TrimSpace(in.CreatedBy); createdBy != "" {
 		creatorIDs, err := s.searchCreatorUserIDs(ctx, createdBy)
 		if err != nil {
@@ -66,7 +61,7 @@ func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, erro
 	}
 	list := make([]*NoticeEntity, 0, in.PageSize)
 	if total > 0 {
-		err = query.OrderDesc(columns.Id).Page(in.PageNum, in.PageSize).Scan(&list)
+		err = query.OrderAsc(columns.SortOrder).OrderDesc(columns.Id).Page(in.PageNum, in.PageSize).Scan(&list)
 		if err != nil {
 			return nil, err
 		}
@@ -80,6 +75,7 @@ func (s *serviceImpl) List(ctx context.Context, in ListInput) (*ListOutput, erro
 	// Build result
 	items := make([]*ListItem, 0, len(list))
 	for _, n := range list {
+		n.Content = sanitizeContent(n.Content)
 		items = append(items, &ListItem{
 			NoticeEntity:  n,
 			CreatedByName: userNameMap[n.CreatedBy],
@@ -98,7 +94,7 @@ func (s *serviceImpl) GetById(ctx context.Context, id int64) (*ListItem, error) 
 	if err != nil {
 		return nil, err
 	}
-	if notice == nil {
+	if notice == nil || notice.Id == 0 {
 		return nil, bizerr.NewCode(CodeNoticeNotFound)
 	}
 
@@ -132,23 +128,14 @@ func (s *serviceImpl) Create(ctx context.Context, in CreateInput) (int64, error)
 	id, err := dao.Notice.Ctx(ctx).Data(do.Notice{
 		TenantId:  tenantID,
 		Title:     in.Title,
-		Type:      in.Type,
-		Content:   in.Content,
-		FileIds:   in.FileIds,
+		SortOrder: in.SortOrder,
+		Content:   sanitizeContent(in.Content),
 		Status:    in.Status,
-		Remark:    in.Remark,
 		CreatedBy: createdBy,
 		UpdatedBy: createdBy,
 	}).InsertAndGetId()
 	if err != nil {
 		return 0, err
-	}
-
-	// If published, dispatch inbox notifications through the unified notify domain.
-	if in.Status == noticeStatusPublished {
-		if dispatchErr := s.dispatchPublishedNotice(ctx, id, in.Title, in.Content, in.Type, createdBy); dispatchErr != nil {
-			s.logWarning(ctx, "dispatch published notice failed", id, dispatchErr)
-		}
 	}
 
 	return id, nil
@@ -159,29 +146,23 @@ func (s *serviceImpl) Update(ctx context.Context, in UpdateInput) error {
 	if s == nil || s.bizCtxSvc == nil || s.pluginTableFilter() == nil {
 		return gerror.New("content-notice host services are unavailable")
 	}
-	oldNotice, err := s.getScopedByID(ctx, in.Id)
+	_, err := s.getScopedByID(ctx, in.Id)
 	if err != nil {
 		return err
 	}
 	updatedBy := int64(s.bizCtxSvc.Current(ctx).UserID)
 	data := do.Notice{UpdatedBy: updatedBy}
+	if in.SortOrder != nil {
+		data.SortOrder = *in.SortOrder
+	}
 	if in.Title != nil {
 		data.Title = *in.Title
 	}
-	if in.Type != nil {
-		data.Type = *in.Type
-	}
 	if in.Content != nil {
-		data.Content = *in.Content
-	}
-	if in.FileIds != nil {
-		data.FileIds = *in.FileIds
+		data.Content = sanitizeContent(*in.Content)
 	}
 	if in.Status != nil {
 		data.Status = *in.Status
-	}
-	if in.Remark != nil {
-		data.Remark = *in.Remark
 	}
 	result, err := s.scopedQuery(ctx).
 		OmitNilData().
@@ -199,29 +180,10 @@ func (s *serviceImpl) Update(ctx context.Context, in UpdateInput) error {
 		return bizerr.NewCode(CodeNoticeNotFound)
 	}
 
-	// If status changed from draft(0) to published(1), dispatch inbox notifications.
-	if in.Status != nil && *in.Status == noticeStatusPublished && oldNotice.Status == noticeStatusDraft {
-		title := oldNotice.Title
-		if in.Title != nil {
-			title = *in.Title
-		}
-		content := oldNotice.Content
-		if in.Content != nil {
-			content = *in.Content
-		}
-		noticeType := oldNotice.Type
-		if in.Type != nil {
-			noticeType = *in.Type
-		}
-		if dispatchErr := s.dispatchPublishedNotice(ctx, in.Id, title, content, noticeType, oldNotice.CreatedBy); dispatchErr != nil {
-			s.logWarning(ctx, "dispatch published notice failed", in.Id, dispatchErr)
-		}
-	}
-
 	return nil
 }
 
-// Delete removes tenant-visible notices and cascades to notify deliveries.
+// Delete removes the complete requested announcement set after checking ownership.
 func (s *serviceImpl) Delete(ctx context.Context, ids []int64) error {
 	idList := normalizePositiveInt64IDs(ids)
 	if len(idList) == 0 {
@@ -233,31 +195,20 @@ func (s *serviceImpl) Delete(ctx context.Context, ids []int64) error {
 	if s == nil || s.pluginTableFilter() == nil {
 		return gerror.New("content-notice tenant filter service is unavailable")
 	}
-	allowedIDs := make([]int64, 0, len(idList))
-	err := s.scopedQuery(ctx).
-		Fields(dao.Notice.Columns().Id).
-		WhereIn(dao.Notice.Columns().Id, idList).
-		Scan(&allowedIDs)
+	count, err := s.scopedQuery(ctx).WhereIn(dao.Notice.Columns().Id, idList).Count()
 	if err != nil {
 		return err
 	}
-	if len(allowedIDs) == 0 {
+	if count != len(idList) {
 		return bizerr.NewCode(CodeNoticeNotFound)
 	}
 	_, err = s.scopedQuery(ctx).
-		WhereIn(dao.Notice.Columns().Id, allowedIDs).
+		WhereIn(dao.Notice.Columns().Id, idList).
 		Delete()
 	if err != nil {
 		return err
 	}
 
-	sourceIDs := make([]string, 0, len(allowedIDs))
-	for _, id := range allowedIDs {
-		sourceIDs = append(sourceIDs, strconv.FormatInt(id, 10))
-	}
-	if cascadeErr := s.notifySvc.DeleteBySource(ctx, usermsgv1.SourceTypeNotice, sourceIDs); cascadeErr != nil {
-		s.logWarning(ctx, "cascade delete notify deliveries failed", allowedIDs[0], cascadeErr)
-	}
 	return nil
 }
 
@@ -298,17 +249,11 @@ func (s *serviceImpl) getScopedByID(ctx context.Context, id int64) (*NoticeEntit
 	if err != nil {
 		return nil, err
 	}
-	if notice == nil {
+	if notice == nil || notice.Id == 0 {
 		return nil, bizerr.NewCode(CodeNoticeNotFound)
 	}
+	notice.Content = sanitizeContent(notice.Content)
 	return notice, nil
-}
-
-func (s *serviceImpl) logWarning(ctx context.Context, message string, noticeID int64, err error) {
-	if err == nil {
-		return
-	}
-	logger.Warningf(ctx, "%s plugin=%s noticeId=%d err=%v", message, pluginID, noticeID, err)
 }
 
 // pluginTableFilter returns the tenant table-filter slice from the injected tenant service.

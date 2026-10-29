@@ -20,6 +20,7 @@ type accessorySettlementRow struct {
 	CustomerSubjectVersion, CurrentCustomerVersion                                int64
 	FinanciallySettledAt                                                          *time.Time
 	TrafficSuspended, FrozenValid                                                 bool
+	SubjectTypeCode, SubjectNo, NativeTargetSnapshot                              string
 }
 
 // accessorySettlementClassificationSQL retains both independent durable signals.
@@ -48,8 +49,19 @@ func (s *accessorySettlementConsumer) lockAccessorySettlement(ctx context.Contex
 WHERE tenant_id=0 AND invoice_no=? AND order_no=? FOR UPDATE`, input.InvoiceNo, input.OrderNo); err != nil {
 		return nil, err
 	}
+	native, err := isNativeAccessoryOrder(ctx, s.database, input.OrderNo)
+	if err != nil {
+		return nil, err
+	}
+	query := accessorySettlementEvidenceSQL
+	if native {
+		if err = lockNativeAccessoryParent(ctx, s.database, input.OrderNo); err != nil {
+			return nil, err
+		}
+		query = nativeAccessorySettlementEvidenceSQL
+	}
 	var rows []accessorySettlementRow
-	err = s.database.GetScan(ctx, &rows, accessorySettlementEvidenceSQL, input.OrderNo,
+	err = s.database.GetScan(ctx, &rows, query, input.OrderNo,
 		input.SettlementNo, input.InvoiceNo, input.CustomerNo, input.CurrencyCode, input.TotalAmountMinor,
 		input.EventNo, fulfillment.FinanciallySettledEventType, input.SettlementNo, string(payload), string(metadata))
 	if err != nil {
@@ -77,7 +89,7 @@ service.provider_task_status_code AS provider_task_status,
 EXISTS(SELECT 1 FROM plugin_idc_core_service_traffic_suspension suspension
  WHERE suspension.tenant_id=0 AND suspension.service_no=service.service_no AND suspension.active) AS traffic_suspended,
 (op.financial_settlement_required AND op.resource_owner_code='idc-resource' AND op.execution_mode_code='unresolved'
- AND orders.item_count=1 AND orders.requires_contract=FALSE AND orders.risk_decision_code='approved'
+ AND orders.item_count=1 AND orders.risk_decision_code='approved'
  AND orders.customer_no=op.customer_no AND orders.currency_code=op.currency_code AND orders.quote_no=op.quote_no
  AND orders.total_amount_minor=quote.total_amount_minor AND orders.subtotal_minor=quote.subtotal_minor
  AND orders.discount_minor=0 AND orders.net_amount_minor=quote.net_amount_minor AND orders.tax_amount_minor=quote.tax_amount_minor

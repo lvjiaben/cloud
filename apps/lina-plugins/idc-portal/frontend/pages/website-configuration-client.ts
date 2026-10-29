@@ -18,6 +18,21 @@ export type WebsitePlugin = {
   schema: { version: string; fields: WebsiteField[] };
 };
 export type WebsiteCommon = {
+  headerLogoUrl: string;
+  footerLogoUrl: string;
+  copyright: string;
+  businessQq: string;
+  companyAddress: string;
+  enterpriseWechatQrCodeUrl: string;
+  wechatOfficialQrCodeUrl: string;
+  telecomLicenseNumber: string;
+  telecomLicenseUrl: string;
+
+  icpNumber: string;
+  icpUrl: string;
+  policeNumber: string;
+  policeUrl: string;
+
   siteName: string;
   siteTitle: string;
   companyName: string;

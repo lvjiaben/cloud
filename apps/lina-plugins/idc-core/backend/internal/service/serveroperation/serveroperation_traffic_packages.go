@@ -187,7 +187,8 @@ func (s *accessoryPricingImpl) trafficPackageOccupancy(ctx context.Context, numb
 	return s.database.Model(dao.ServerAccessoryQuote.Table()+" quote").Ctx(ctx).
 		InnerJoin(dao.BusinessOperation.Table()+" operation", "operation.tenant_id=quote.tenant_id AND operation.quote_no=quote.quote_no").
 		Where("quote.tenant_id", 0).WhereIn("quote.policy_no", numbers).
-		Where("operation.operation_type_code", "addon").WhereNot("operation.status_code", "cancelled").
+		Where("operation.operation_type_code", "addon").
+		Where("(operation.status_code <> ? OR operation.financially_settled_at IS NOT NULL)", "cancelled").
 		Fields("quote.policy_no,COUNT(*) AS quantity").Group("quote.policy_no")
 }
 

@@ -87,7 +87,7 @@ test.describe("TC-4 后台订单处置", () => {
     adminPage,
     mainLayout,
   }) => {
-    const state = await installCommerceOrderMock(adminPage);
+    const state = await installCommerceOrderMock(adminPage,{deliveryStatus:"manual_processing"});
     const orders = new CommerceOrdersPage(adminPage);
     await orders.goto();
     await orders.openDetail(commerceAdminOrderNo);
@@ -98,6 +98,7 @@ test.describe("TC-4 后台订单处置", () => {
     await expect(drawer).not.toContainText("extended_prepay");
     await expect(drawer).not.toContainText("CUS_admin_customer_0001");
     await expect(drawer).toContainText("商品交付");
+    await expect(drawer).toContainText("待人工处理");
     await expect(drawer).toContainText("通配符 SSL 证书");
     await expect(drawer).toContainText("商务手机");
     await expect(drawer).toContainText("包含持续服务");
@@ -125,6 +126,7 @@ test.describe("TC-4 后台订单处置", () => {
     await orders.openDetail(commerceAdminOrderNo);
     const englishDrawer = adminPage.getByRole("dialog");
     await expect(englishDrawer).toContainText("Product delivery");
+    await expect(englishDrawer).toContainText("Needs staff attention");
     await expect(englishDrawer).toContainText("Extended prepayment deadline");
     await expect(englishDrawer).not.toContainText("extended_prepay");
     await expect(englishDrawer).toContainText("Wildcard SSL certificate");
@@ -143,63 +145,23 @@ test.describe("TC-4 后台订单处置", () => {
     );
   });
 
-  test("TC-4c: 企业可选合同先冻结已验证经办人，再由独立按钮提交签署", async ({ adminPage }) => {
+  test("TC-4c: 企业订单无合同入口或后台签约依赖，正常展示交付", async ({ adminPage }) => {
     const state = await installCommerceOrderMock(adminPage);
     const orders = new CommerceOrdersPage(adminPage);
     await orders.goto();
     await orders.openDetail(commerceAdminOrderNo);
-
-    await expect(orders.optionalContractSection).toContainText("张* · 138****8000");
-    expect(state.contractSignerCandidateRequests).toHaveLength(1);
-    expect(state.contractSubmissionRequests).toHaveLength(0);
-    await orders.generateOptionalContractPreview();
-    expect(state.contractCreateRequests).toHaveLength(1);
-    expect(state.contractCreateRequests[0]).toMatchObject({
-      orderNo: commerceAdminOrderNo,
-      signerNo: "csgn_admin_enterprise_0001",
-      templateNo: "ctpl_admin_enterprise_0001",
-    });
-    await expect(orders.optionalContractSection).toContainText("张三 · 138****8000");
-    await expect(orders.optionalContractSection).toContainText("待提交签署");
-    expect(state.contractSubmissionRequests).toHaveLength(0);
-
-    await orders.submitOptionalContract();
-    expect(state.contractSubmissionRequests).toHaveLength(1);
-    expect(state.contractSubmissionRequests[0]).toMatchObject({ expectedVersion: 1 });
-    expect(state.contractSubmissionRequests[0]?.idempotencyKey).toEqual(
-      expect.stringMatching(/^contract-submit-/),
-    );
-    await expect(orders.optionalContractSection).toContainText("签署中");
-    await expect(orders.optionalContractSection).toContainText(
-      "不会暴露腾讯外部流程号",
-    );
-    await expect(orders.optionalContractSection).not.toContainText(
-      "CFW_ADMIN_LOCAL_0001",
-    );
-    await orders.optionalContractSection.scrollIntoViewIfNeeded();
-    await orders.screenshot("idc-admin-optional-contract-submitted");
+    const drawer = adminPage.getByRole("dialog");
+    await expect(drawer).toContainText("订单测试客户 · 138****8008 · #10008");
+    await expect(drawer).toContainText("通配符 SSL 证书");
+    await expect(drawer).toContainText("商品交付");
+    await expect(orders.optionalContractSection).toHaveCount(0);
+    await expect(drawer.getByTestId("contract-policy-editor")).toHaveCount(0);
+    expect(state.retiredContractRequests).toHaveLength(0);
+    expect(state.detailRequests).toHaveLength(1);
+    await orders.screenshot("order-contract-retired");
   });
 
-  test("TC-4d: 腾讯提交结果不明时不自动重复发起", async ({ adminPage }) => {
-    const state = await installCommerceOrderMock(adminPage, {
-      submissionStatus: "result_unknown",
-    });
-    const orders = new CommerceOrdersPage(adminPage);
-    await orders.goto();
-    await orders.openDetail(commerceAdminOrderNo);
-    await orders.generateOptionalContractPreview();
-    await orders.submitOptionalContract();
-
-    await expect(orders.optionalContractSection).toContainText("提交结果待核对");
-    await expect(orders.optionalContractSection).toContainText("不会自动重复发起");
-    await expect(orders.optionalContractSection).not.toContainText(
-      "CFW_ADMIN_LOCAL_0001",
-    );
-    await expect(orders.optionalContractSection.getByTestId("optional-contract-submit")).toHaveCount(0);
-    expect(state.contractSubmissionRequests).toHaveLength(1);
-  });
-
-  test("TC-4e: 缺少明细的旧订单仍可查看且不触发可选合同装配", async ({ adminPage }) => {
+  test("TC-4e: 缺少明细的订单仍可查看且不依赖已删除合同接口", async ({ adminPage }) => {
     const state = await installCommerceOrderMock(adminPage, { emptyItems: true });
     const orders = new CommerceOrdersPage(adminPage);
     await orders.goto();
@@ -209,8 +171,7 @@ test.describe("TC-4 后台订单处置", () => {
     await expect(drawer).toContainText("订单测试客户 · 138****8008 · #10008");
     await expect(orders.optionalContractSection).toHaveCount(0);
     expect(state.detailRequests).toHaveLength(1);
-    expect(state.contractTemplateCandidateRequests).toHaveLength(0);
-    expect(state.contractSignerCandidateRequests).toHaveLength(0);
+    expect(state.retiredContractRequests).toHaveLength(0);
   });
 
   test("TC-4f: 桌面和窄屏将横向滚动限制在订单表内且保持多行与分页", async ({ adminPage }) => {

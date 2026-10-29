@@ -12,6 +12,7 @@ import (
 
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/pluginhost"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/cap/supplierinterfacecap"
 	"lina-plugin-idc-core/backend/internal/service/configurationcontract"
 )
@@ -36,7 +37,7 @@ func TestDynamicCandidatesBatchCacheAndExactEvidence(t *testing.T) {
 				{Value: query.FieldKey + "-a", Label: &capmodel.LocalizedText{ZhCN: "选项", EnUS: "Option"}},
 			}})
 		}
-		payload, _ := json.Marshal(configurationcontract.DynamicCandidateResponse{SchemaVersion: "v1", Items: items})
+		payload, _ := json.Marshal(configurationcontract.DynamicCandidateResponse{SchemaVersion: "v1", Items: items, Relationships: []resourceinterfaceprojectioncap.ChoiceRelationship{{ParentFieldKey: "region", ChildFieldKey: "model", Links: []resourceinterfaceprojectioncap.ChoiceLink{{ParentValue: "region-a", ChildValue: "model-a"}}}}})
 		return &capmodel.BusinessExtensionMethodResult{Version: "v1", Payload: payload}, nil
 	}
 	cache := newDynamicCandidateCache()
@@ -44,14 +45,23 @@ func TestDynamicCandidatesBatchCacheAndExactEvidence(t *testing.T) {
 	service := &serviceImpl{extensions: extensions, dynamicCandidates: cache, runtimeContexts: newSupplierRuntimeContextStore(rand.Reader)}
 	exact := dynamicCandidateEvidence("1.0.0")
 	schema := exact.CustomerConfiguration
-	scope := dynamicCandidateScope{interfaceInstanceNo: "pfi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", configurationRevision: 1}
+	var relationships []resourceinterfaceprojectioncap.ChoiceRelationship
+	scope := dynamicCandidateScope{interfaceInstanceNo: "pfi_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", configurationRevision: 1, candidateRelationships: &relationships}
 
 	resolved, err := service.resolveDynamicCandidates(context.Background(), exact, schema, nil, configurationSurfaceCustomer, scope)
 	if err != nil || len(resolved) != 2 || extensions.invokeCalls != 1 {
 		t.Fatalf("first batch resolve failed: resolved=%#v calls=%d err=%v", resolved, extensions.invokeCalls, err)
 	}
+	if len(relationships) != 1 {
+		t.Fatal("generic provider relationship was lost")
+	}
+	relationships[0].Links[0].ParentValue = "caller-mutation"
+	relationships = nil
 	if _, err = service.resolveDynamicCandidates(context.Background(), exact, schema, nil, configurationSurfaceCustomer, scope); err != nil || extensions.invokeCalls != 1 {
 		t.Fatalf("same exact input missed cache: calls=%d err=%v", extensions.invokeCalls, err)
+	}
+	if len(relationships) != 1 || relationships[0].Links[0].ParentValue != "region-a" {
+		t.Fatal("cache hit lost or mutated eligibility facts")
 	}
 	selected := []ConfigurationValue{{FieldKey: "region", OptionTokens: []string{"region-a"}}}
 	if _, err = service.resolveDynamicCandidates(context.Background(), exact, schema, selected, configurationSurfaceCustomer, scope); err != nil || extensions.invokeCalls != 2 {
@@ -115,7 +125,7 @@ func TestDynamicCandidateCacheIsBoundedAndReturnsCopies(t *testing.T) {
 	cache := newDynamicCandidateCache()
 	for index := 0; index <= dynamicCandidateCacheEntries; index++ {
 		key := time.Unix(int64(index), 0).String()
-		cache.put(key, configurationcontract.ResolvedCandidates{"field": {{Value: key, Label: &capmodel.LocalizedText{ZhCN: "值", EnUS: "Value"}}}})
+		cache.put(key, dynamicCandidateProjection{candidates: configurationcontract.ResolvedCandidates{"field": {{Value: key, Label: &capmodel.LocalizedText{ZhCN: "值", EnUS: "Value"}}}}})
 	}
 	if cache.order.Len() != dynamicCandidateCacheEntries || len(cache.entries) != dynamicCandidateCacheEntries {
 		t.Fatalf("cache exceeded bound: order=%d entries=%d", cache.order.Len(), len(cache.entries))
@@ -124,9 +134,9 @@ func TestDynamicCandidateCacheIsBoundedAndReturnsCopies(t *testing.T) {
 	if !ok {
 		t.Fatal("newest cache entry missing")
 	}
-	value["field"][0].Value = "mutated"
+	value.candidates["field"][0].Value = "mutated"
 	again, ok := cache.get(time.Unix(int64(dynamicCandidateCacheEntries), 0).String())
-	if !ok || again["field"][0].Value == "mutated" {
+	if !ok || again.candidates["field"][0].Value == "mutated" {
 		t.Fatal("caller mutated cached candidate state")
 	}
 }
@@ -136,7 +146,7 @@ func TestDynamicCandidateCacheReleasesWaitersAfterLoaderPanic(t *testing.T) {
 	started := make(chan struct{})
 	release := make(chan struct{})
 	results := make(chan error, 2)
-	loader := func() (configurationcontract.ResolvedCandidates, error) {
+	loader := func() (dynamicCandidateProjection, error) {
 		close(started)
 		<-release
 		panic("sensitive candidate panic")
@@ -149,8 +159,8 @@ func TestDynamicCandidateCacheReleasesWaitersAfterLoaderPanic(t *testing.T) {
 	waiterStarted := make(chan struct{})
 	go func() {
 		close(waiterStarted)
-		_, err := cache.load(context.Background(), "panic-key", func() (configurationcontract.ResolvedCandidates, error) {
-			return nil, errors.New("concurrent waiter unexpectedly became the loader")
+		_, err := cache.load(context.Background(), "panic-key", func() (dynamicCandidateProjection, error) {
+			return dynamicCandidateProjection{}, errors.New("concurrent waiter unexpectedly became the loader")
 		})
 		results <- err
 	}()
@@ -180,10 +190,10 @@ func TestDynamicCandidateCacheReleasesWaitersAfterLoaderPanic(t *testing.T) {
 			t.Fatal("candidate cache waiter remained blocked after panic")
 		}
 	}
-	value, err := cache.load(context.Background(), "panic-key", func() (configurationcontract.ResolvedCandidates, error) {
-		return configurationcontract.ResolvedCandidates{"field": {{Value: "reloaded"}}}, nil
+	value, err := cache.load(context.Background(), "panic-key", func() (dynamicCandidateProjection, error) {
+		return dynamicCandidateProjection{candidates: configurationcontract.ResolvedCandidates{"field": {{Value: "reloaded"}}}}, nil
 	})
-	if err != nil || len(value["field"]) != 1 || value["field"][0].Value != "reloaded" {
+	if err != nil || len(value.candidates["field"]) != 1 || value.candidates["field"][0].Value != "reloaded" {
 		t.Fatalf("candidate cache did not reload after panic: value=%#v err=%v", value, err)
 	}
 }
@@ -292,4 +302,13 @@ func dynamicCandidateEvidence(release string) *capmodel.BusinessExtensionProvide
 
 func dynamicCandidateLabel(zhCN, enUS string) *capmodel.LocalizedText {
 	return &capmodel.LocalizedText{ZhCN: zhCN, EnUS: enUS}
+}
+
+func TestCandidateFailureDiagnosticNeverCopiesUnknownText(t *testing.T) {
+	if got := safeCandidateFailureReason(errors.New("credential-and-address-must-not-be-logged")); got != "unclassified" {
+		t.Fatal(got)
+	}
+	if got := safeCandidateFailureReason(errors.New("resolve: resource interface candidate result is invalid")); got != "candidate result is invalid" {
+		t.Fatal(got)
+	}
 }

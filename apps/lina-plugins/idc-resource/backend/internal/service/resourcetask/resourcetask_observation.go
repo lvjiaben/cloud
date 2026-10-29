@@ -47,6 +47,7 @@ type ObservationLeaseRef struct {
 // one read-only Provider query. It never contains task input secret handles.
 type ClaimedObservation struct {
 	TaskNo                string
+	CapabilityCode        string
 	ChannelNo             string
 	ConfigurationRevision string
 	LocalResourceNo       string
@@ -60,7 +61,8 @@ type ClaimedObservation struct {
 }
 
 // ObservationInput applies one validated QueryTask result while the exact
-// observation lease remains live. NextAt is required for non-terminal results.
+// observation lease remains live. Nil NextAt on non-terminal results requests
+// the existing bounded backoff from current owner database time.
 type ObservationInput struct {
 	Lease  ObservationLeaseRef
 	Result resourcecap.OperationResult
@@ -68,7 +70,8 @@ type ObservationInput struct {
 }
 
 // ObservationRescheduleInput releases a read-only query lease after a
-// normalized call failure without changing the last known task state.
+// normalized call failure without changing the last known task state. Zero
+// NextAt uses the existing bounded backoff from current owner database time.
 type ObservationRescheduleInput struct {
 	Lease  ObservationLeaseRef
 	NextAt time.Time
@@ -150,6 +153,7 @@ func (s *Store) ClaimObservations(
 			}
 			claimed = append(claimed, ClaimedObservation{
 				TaskNo:                rows[index].TaskNo,
+				CapabilityCode:        rows[index].CapabilityCode,
 				ChannelNo:             rows[index].ChannelNo,
 				ConfigurationRevision: taskConfigurationRevision(rows[index].OwnerMetadata),
 				LocalResourceNo:       rows[index].LocalResourceNo,
@@ -200,6 +204,10 @@ func (s *Store) ObserveTask(ctx context.Context, input ObservationInput) error {
 		if !exists {
 			return gerror.New("resource task observation binding is unavailable")
 		}
+		if input.NextAt == nil && !input.Result.Status.IsTerminal() {
+			next := nextObservationAt(row.TaskNo, row.ObservationAttemptCount, now)
+			input.NextAt = &next
+		}
 		to, err := validateObservationResult(input, row, &binding, now)
 		if err != nil {
 			return err
@@ -249,16 +257,19 @@ func (s *Store) RescheduleObservation(
 		if err != nil {
 			return err
 		}
-		next := input.NextAt.UTC()
-		if !next.After(now) || next.After(now.Add(maximumTransitionScheduleDelay)) {
-			return gerror.New("resource task observation schedule is invalid")
-		}
 		row, err := loadLiveObservedTask(ctx, tx, input.Lease, now)
 		if err != nil {
 			return err
 		}
 		if row == nil {
 			return gerror.New("resource task observation lease is unavailable")
+		}
+		next := input.NextAt.UTC()
+		if input.NextAt.IsZero() {
+			next = nextObservationAt(row.TaskNo, row.ObservationAttemptCount, now)
+		}
+		if !next.After(now) || next.After(now.Add(maximumTransitionScheduleDelay)) {
+			return gerror.New("resource task observation schedule is invalid")
 		}
 		columns := dao.Task.Columns()
 		result, err := tx.Model(dao.Task.Table()).Safe().Ctx(ctx).
@@ -331,6 +342,7 @@ func loadDueObservationTasks(
 			"task."+taskColumns.Id,
 			"task."+taskColumns.TaskNo,
 			"task."+taskColumns.LocalResourceNo,
+			"task."+taskColumns.CapabilityCode,
 			"task."+taskColumns.ChannelNo,
 			"task."+taskColumns.OwnerMetadata,
 			"task."+taskColumns.StatusCode,
@@ -414,6 +426,7 @@ func loadLiveObservedTask(
 			columns.LocalResourceNo,
 			columns.ChannelNo,
 			columns.PoolNo,
+			columns.OwnerMetadata,
 			columns.StatusCode,
 			columns.SanitizedParameters,
 			columns.AcceptedAt,

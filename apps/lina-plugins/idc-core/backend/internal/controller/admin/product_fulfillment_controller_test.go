@@ -1,3 +1,4 @@
+// These tests verify staff fulfillment controller delegation and safe projections.
 package admin
 
 import (
@@ -7,10 +8,12 @@ import (
 	"time"
 
 	v1 "lina-plugin-idc-core/backend/api/admin/v1"
+	"lina-plugin-idc-core/backend/cap/provisionresourcecap"
 	"lina-plugin-idc-core/backend/internal/service/productfulfillment"
 )
 
 type productFulfillmentManagementStub struct {
+	repair     productfulfillment.ManagementRepairInput
 	lastMethod string
 	listInput  productfulfillment.ListInput
 	action     productfulfillment.ActionInput
@@ -44,6 +47,16 @@ func (s *productFulfillmentManagementStub) Takeover(_ context.Context, input pro
 	return s.detail, nil
 }
 
+func (s *productFulfillmentManagementStub) RecoverPreparation(_ context.Context, input productfulfillment.ActionInput) (*productfulfillment.IntentDetail, error) {
+	s.lastMethod, s.action = "recover", input
+	return s.detail, nil
+}
+
+func (s *productFulfillmentManagementStub) RepairManagement(_ context.Context, input productfulfillment.ManagementRepairInput) (*productfulfillment.IntentDetail, error) {
+	s.lastMethod, s.repair = "repair_management", input
+	return s.detail, nil
+}
+
 func (s *productFulfillmentManagementStub) ConcludeManual(_ context.Context, input productfulfillment.ManualConclusionInput) (*productfulfillment.IntentDetail, error) {
 	s.lastMethod, s.action, s.outcome = "conclude", input.ActionInput, input.Outcome
 	return s.detail, nil
@@ -57,6 +70,7 @@ func TestProductFulfillmentControllersUseOnlyManagementService(t *testing.T) {
 		ProductNameZhCN: "证书", ProductNameEnUS: "Certificate",
 		StrategyCode: "approval_then_plugin", GranularityCode: "per_quantity_unit", StatusCode: "awaiting_review",
 		Quantity: 3, UnitSequence: 2, Version: 3, FinanciallySettledAt: now, UpdatedAt: now,
+		Execution: &productfulfillment.ExecutionDiagnostic{ResourceTaskNo: "task_0123456789abcdef0123456789abcdef", StatusCode: "processing", PhaseCode: "query", LastResultCode: "upstream_result_unknown", AttemptCount: 2},
 		ReasonOptions: map[string][]productfulfillment.ReasonOption{
 			fulfillmentReasonReviewApprove: {{Code: "verified", LabelZhCN: "已核对", LabelEnUS: "Verified"}},
 		},
@@ -91,10 +105,18 @@ func TestProductFulfillmentControllersUseOnlyManagementService(t *testing.T) {
 		t.Fatalf("detail mapping failed: detail=%+v err=%v", detail, err)
 	}
 	event := detail.Task.Events[0]
+	if detail.Task.Execution == nil || detail.Task.Execution.ResourceTaskNo != stub.detail.Execution.ResourceTaskNo || detail.Task.Execution.LastResultCode != "upstream_result_unknown" || detail.Task.Execution.AttemptCount != 2 {
+		t.Fatalf("local execution facts missing: %+v", detail.Task.Execution)
+	}
 	if event.OperatorDisplayName != "运营甲" || event.SafeNote != "已核对付款凭据" ||
 		event.ReasonLabelZhCN != "当时已核对" || event.ReasonLabelEnUS != "Verified then" ||
 		len(detail.Task.ReviewApprovalReasons) != 1 || len(detail.Task.ReviewRejectionReasons) != 0 {
 		t.Fatalf("safe detail fields were not preserved: %+v", detail.Task)
+	}
+
+	repair, err := controller.ProductFulfillmentManagementRepair(context.Background(), &v1.ProductFulfillmentManagementRepairReq{IntentNo: "PFI_1", ExpectedVersion: 3, IdempotencyKey: "local-repair-controller-0001"})
+	if err != nil || repair.Task.IntentNo != stub.detail.IntentNo || stub.lastMethod != "repair_management" || stub.repair.IdempotencyKey != "local-repair-controller-0001" {
+		t.Fatalf("repair delegation failed: %v", err)
 	}
 
 	action := v1.ProductFulfillmentActionReq{IntentNo: "PFI_1", ExpectedVersion: 3, IdempotencyKey: "attempt-fixed", ReasonCode: "verified", Note: "已核对付款凭据"}
@@ -122,4 +144,15 @@ func TestProductFulfillmentControllersUseOnlyManagementService(t *testing.T) {
 	if stub.outcome != "unable_to_complete" {
 		t.Fatalf("manual outcome changed: %q", stub.outcome)
 	}
+}
+
+func (s *productFulfillmentManagementStub) InspectRecoveryConfiguration(_ context.Context, intentNo string, selection *provisionresourcecap.RecoveryConfiguration) (*provisionresourcecap.RecoveryEditor, error) {
+	s.lastMethod = "inspect_recovery"
+	s.action.IntentNo = intentNo
+	return &provisionresourcecap.RecoveryEditor{}, nil
+}
+
+func (s *productFulfillmentManagementStub) VerifyNonAcceptance(_ context.Context, input productfulfillment.NonAcceptanceInput) (*productfulfillment.IntentDetail, error) {
+	s.lastMethod, s.action = "verify_non_acceptance", input.ActionInput
+	return s.detail, nil
 }

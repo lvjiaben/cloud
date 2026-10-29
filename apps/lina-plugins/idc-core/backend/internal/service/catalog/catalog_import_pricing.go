@@ -6,8 +6,10 @@ package catalog
 
 import (
 	"encoding/json"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"math/big"
 	"regexp"
+	"strconv"
 
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
@@ -19,6 +21,9 @@ import (
 func calculatePortableImportPrices(snapshot *channelcommercecap.ImportSnapshot, percent string) ([]importPrice, error) {
 	if snapshot == nil || snapshot.Validate() != nil {
 		return nil, bizerr.NewCode(CodeManagementInvalid)
+	}
+	if err := validateImportCurrencyPrecision(snapshot); err != nil {
+		return nil, err
 	}
 	encoded, err := json.Marshal(snapshot.Prices)
 	if err != nil {
@@ -169,4 +174,66 @@ func roundImportPriceMinor(amount *big.Rat, minorUnit int) (int64, error) {
 		return 0, bizerr.NewCode(CodeManagementInvalid)
 	}
 	return quotient.Int64(), nil
+}
+
+// calculatePortableManualPrices keeps the source configuration immutable and
+// creates only merchant whole-item replacements for exact currency periods.
+func calculatePortableManualPrices(snapshot *channelcommercecap.ImportSnapshot, inputs []resourceinterfaceprojectioncap.CatalogPrice) ([]importPrice, error) {
+	if snapshot == nil || snapshot.Validate() != nil || len(inputs) != len(snapshot.Prices) {
+		return nil, bizerr.NewCode(CodeManagementInvalid)
+	}
+	if err := validateImportCurrencyPrecision(snapshot); err != nil {
+		return nil, err
+	}
+	source := map[string]channelcommercecap.ImportPriceSchedule{}
+	key := func(currency, period string, count int) string {
+		return currency + "\x00" + period + "\x00" + strconv.Itoa(count)
+	}
+	for _, schedule := range snapshot.Prices {
+		id := key(schedule.CurrencyCode, schedule.PeriodUnit, schedule.PeriodCount)
+		if _, exists := source[id]; exists {
+			return nil, bizerr.NewCode(CodeManagementInvalid)
+		}
+		source[id] = schedule
+	}
+	result := make([]importPrice, 0, len(inputs))
+	seen := map[string]bool{}
+	for _, input := range inputs {
+		id := key(input.CurrencyCode, string(input.Period), input.PeriodCount)
+		schedule, exists := source[id]
+		if !exists || seen[id] {
+			return nil, bizerr.NewCode(CodeManagementInvalid)
+		}
+		seen[id] = true
+		unit, err := importCurrencyMinorUnit(input.CurrencyCode)
+		if err != nil {
+			return nil, err
+		}
+		amount, err := importFinalPriceMinor(input.Amount, unit)
+		if err != nil {
+			return nil, err
+		}
+		setup, err := importFinalPriceMinor(input.SetupFee, unit)
+		if err != nil {
+			return nil, err
+		}
+		schedule.WholeItemRule = &channelcommercecap.ImportWholeItemRule{Kind: "fixed", FixedAmountMinor: &amount}
+		var renewal *int64
+		if len(schedule.Base) == 1 {
+			renewal = cloneInt64Pointer(schedule.Base[0].RenewalAmountMinor)
+		}
+		schedule.Base = []channelcommercecap.ImportPriceBand{{AmountMinor: amount, SetupAmountMinor: setup, RenewalAmountMinor: renewal}}
+		result = append(result, importPrice{portable: &schedule})
+	}
+	return result, nil
+}
+
+func validateImportCurrencyPrecision(snapshot *channelcommercecap.ImportSnapshot) error {
+	for _, currency := range snapshot.Currencies {
+		precision, err := importCurrencyMinorUnit(currency.CurrencyCode)
+		if err != nil || precision != currency.Precision {
+			return bizerr.NewCode(CodeManagementInvalid)
+		}
+	}
+	return nil
 }

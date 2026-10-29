@@ -63,7 +63,7 @@ WHERE order_no = ?`, checkout.OrderNo)
 	if err != nil || ready == nil || !ready.Ready || ready.StatusCode != PaymentPreparationReady ||
 		ready.ReasonCode != PaymentPreparationPaymentReady || ready.OrderNo != checkout.OrderNo ||
 		ready.InvoiceNo != checkout.InvoiceNo || ready.CurrencyCode != "CNY" ||
-		ready.AmountDueMinor != checkout.TotalAmountMinor || ready.RequiresContract {
+		ready.AmountDueMinor != checkout.TotalAmountMinor {
 		t.Fatalf("recovered payment preparation=%+v err=%v", ready, err)
 	}
 	if _, err = scenario.database.Exec(scenario.ctx, `
@@ -100,16 +100,8 @@ WHERE context_no = ?`, contextNo)
 	}
 }
 
-func TestPaymentPreparationContractAndOrderReviewAreIndependentPostgreSQL(t *testing.T) {
+func TestPaymentPreparationOrderReviewBlocksPaymentPostgreSQL(t *testing.T) {
 	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
-	if _, err := scenario.database.Exec(scenario.ctx, `
-UPDATE plugin_idc_core_catalog_product_version
-	SET requires_contract = TRUE,
-	    contract_policy_code = 'required',
-	    contract_template_no = ?
-	WHERE version_no = 'version-commerce-service-1'`, checkoutContractTemplateNo); err != nil {
-		t.Fatalf("enable contract requirement fixture: %v", err)
-	}
 	cart, err := scenario.service.GetAccountCart(scenario.ctx)
 	if err != nil {
 		t.Fatalf("reload account cart: %v", err)
@@ -118,13 +110,13 @@ UPDATE plugin_idc_core_catalog_product_version
 		scenario.ctx, QuoteRequest{ExpectedCartVersion: cart.Version},
 	)
 	if err != nil {
-		t.Fatalf("requote contract order: %v", err)
+		t.Fatalf("requote order: %v", err)
 	}
 	checkout, err := scenario.service.CheckoutAccountQuote(scenario.ctx, CheckoutRequest{
 		QuoteNo: requote.QuoteNo, IdempotencyKey: "checkout-contract-identity-0001",
 	})
-	if err != nil || !checkout.RequiresContract {
-		t.Fatalf("checkout contract order=%+v err=%v", checkout, err)
+	if err != nil {
+		t.Fatalf("checkout order=%+v err=%v", checkout, err)
 	}
 	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-1")
 	service, err := NewPaymentPreparationService(scenario.database, scenario.service.principal)
@@ -132,8 +124,8 @@ UPDATE plugin_idc_core_catalog_product_version
 		t.Fatal(err)
 	}
 	ready, err := service.PrepareAccountOrderPayment(scenario.ctx, checkout.OrderNo)
-	if err != nil || ready == nil || !ready.Ready || !ready.RequiresContract {
-		t.Fatalf("contract must not block payment preparation=%+v err=%v", ready, err)
+	if err != nil || ready == nil || !ready.Ready {
+		t.Fatalf("approved order must permit payment preparation=%+v err=%v", ready, err)
 	}
 	if _, err = scenario.database.Exec(scenario.ctx, `
 UPDATE plugin_idc_core_commerce_order

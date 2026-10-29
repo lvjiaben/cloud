@@ -1,0 +1,46 @@
+const copy=(zhCN,enUS)=>({zhCN,enUS});
+export const webmasterContent={
+ title:copy('百站赞助公益计划','Website sponsorship program'),
+ description:copy('我们致力于通过赞助百个精选站点的服务器资源，推动科技前沿探索，促进知识共享和网络创新，共建一个更开放、多元的互联网生态。','We are committed to sponsoring server resources for 100 selected websites to advance technology, promote knowledge sharing and online innovation, and build a more open and diverse internet.'),
+ cards:[
+  {accent:copy('支持','Support'),title:copy('技术支持与协作','Technical Support and Collaboration'),description:copy('为赞助站点提供全面的技术支持和优化建议，确保网站运行稳定，加速内容加载，促进网站与用户间的高效互动。','We provide sponsored websites with technical support and optimization advice to ensure stable operation, accelerate content loading, and improve interaction between websites and users.'),link:copy('了解详情','Learn more'),target:'#wm-application'},
+  {accent:copy('共享','Share'),title:copy('资源共享网络','Resource Sharing Network'),description:copy('建立资源共享平台，允许赞助站点之间互通有无，分享流量、内容与数据，激发网络社群的协同增长。','We build a resource sharing platform where sponsored websites can share traffic, content, and data to encourage collaborative growth in online communities.'),link:copy('加入我们','Join us'),target:'#wm-application'},
+  {accent:copy('创新','Innovation'),title:copy('创新激励计划','Innovation Incentive Program'),description:copy('通过定期的技术创新激励计划，鼓励站点开发新功能、探索新技术，不断提升网站价值和用户体验。','Regular technology innovation incentives encourage websites to develop features, explore new technologies, and improve their value and user experience.'),link:copy('申请赞助','Apply for sponsorship'),target:'#wm-application'},
+ ],
+ applicationTitle:copy('申请要求说明','Application Requirements'),
+ applicationHeading:copy('如何申请百站赞助公益计划？','How to apply for the 100 Websites Sponsorship Program?'),
+ applicationDescription:copy('确认申请的项目满足赞助要求，并准备项目内容说明和流量情况报表。','Confirm that your project meets the sponsorship requirements, and prepare a project description and traffic report.'),
+ apply:copy('立即申请','Apply now'),
+ requirements:[
+  {icon:'identity',title:copy('资格条件','Eligibility'),description:copy('注册账户并完成实名认证，确保申请者是网站或项目的正式拥有者。实名认证旨在验证身份，保障赞助流程的公正性和透明度。','Register an account and complete identity verification to ensure the applicant is the official owner of the website or project. Verification helps ensure a fair and transparent sponsorship process.')},
+  {icon:'materials',title:copy('所需材料','Required Materials'),description:copy('请通过官方渠道提交申请工单或联系客服。申请中需要包括网站详情、目标用户群以及预期使用赞助资源的计划。','Submit an application ticket through official channels or contact customer service. Include website details, target audience, and a plan for using the sponsored resources.')},
+  {icon:'process',title:copy('申请流程','Application Process'),description:copy('提交申请后，我们将进行审核。一旦审核通过，客服将与您确认具体的赞助详情，并将赞助资源直接分配到您的账户中。','After submission, we will review your application. If approved, customer service will confirm the sponsorship details and assign the resources directly to your account.')},
+ ],
+ plansTitle:copy('定制化服务器赞助方案','Customized Server Sponsorship Plans'),
+ plansDescription:copy('根据站长的不同需求及资质，提供多种机型的服务器赞助。','We provide server sponsorship plans with different configurations to meet website owners’ needs and qualifications.'),
+ plans:[
+  {title:copy('通用型服务器赞助','General-purpose Server Sponsorship'),configuration:copy('2核2G/50G数据盘/3M带宽','2 vCPU/2 GB RAM/50 GB data disk/3 Mbps bandwidth'),duration:copy('365 天','365 days'),durationDescription:copy('到期需重新申请','Reapplication required upon expiration'),region:copy('海外服务器，国内服务器（特殊商品除外）','Overseas and domestic servers (excluding special products)'),usage:copy('自领取之日起，1年内有效。','Valid for one year from the date of receipt.')},
+  {title:copy('计算型服务器赞助','Compute Server Sponsorship'),configuration:copy('4核4G/50G数据盘/5M带宽','4 vCPU/4 GB RAM/50 GB data disk/5 Mbps bandwidth'),duration:copy('365 天','365 days'),durationDescription:copy('到期需重新申请','Reapplication required upon expiration'),region:copy('海外服务器，国内服务器（特殊商品除外）','Overseas and domestic servers (excluding special products)'),usage:copy('自领取之日起，1年内有效。','Valid for one year from the date of receipt.')},
+ ],
+ submit:copy('前往提交申请资料','Submit Application Materials'),
+ regionLabel:copy('可选区域：','Available Regions: '),usageLabel:copy('使用说明：','Instructions: '),
+ rulesTitle:copy('申请百站赞助公益计划须知','Important Information About the 100 Websites Sponsorship Program'),
+ rulesHeading:copy('赞助公益计划规则','Sponsorship Program Rules'),
+ rules:[
+  copy('申请的项目必须是互联网方面的公益或半公益项目，且不违反《中华人民共和国法律》及我司相关规定；','The project must be a public-interest or semi-public-interest internet project and comply with the laws of the People’s Republic of China and our relevant policies;'),
+  copy('项目已正常运行半年或以上，具有一定网络流量，例如网站项目权重、GitHub项目的Star数量、同类项目中知名度较高；','The project must have been operating normally for at least six months and have a certain level of online traffic, such as website ranking, GitHub stars, or recognition among similar projects;'),
+  copy('申请方应仔细阅读并确保己完全理解并同意遵守我司服务的各项内容，包括但不限于协议、规则和使用规范等，否则请勿申请我司相关服务;','Applicants should carefully read and ensure they fully understand and agree to comply with all aspects of our services, including agreements, rules, and usage policies. Otherwise, please do not apply for our services;'),
+  {text:copy('申请方可能存在无法申请到相应支持的情况，包括但不限于：','Applicants may not receive the requested support in situations including, but not limited to:'),children:[
+   copy('申请方未按要求完成注册和实名认证、或账户存在安全风险;','The applicant has not completed registration and identity verification as required, or the account has security risks;'),
+   copy('申请方申请的赞助配置与项目所能提供的流量差距较大；','The requested sponsorship configuration is disproportionate to the traffic the project can provide;'),
+   copy('在申请和使用服务过程中，有任何违反诚实信用、公平公正等原则;','The applicant violates the principles of honesty, fairness, or impartiality during application or use of the service;'),
+   copy('公益计划可供赞助资源不足;','Insufficient sponsorship resources are available in the program;'),
+  ]},
+  copy('申请方如获得赞助，不得转赠他人或用于与赞助项目无关的业务（特殊情况请说明报备），否则我司将立即暂停该服务内容；','If sponsorship is granted, the applicant must not transfer it to others or use it for business unrelated to the sponsored project (please report and explain special circumstances); otherwise, we will immediately suspend the service;'),
+  copy('因不可抗力原因（包括但不限于重大自然灾害事件、政府主管部门指令停止或调整、平台遭受严重网络攻击或社会公共性系统故障、公司业务重大调整等）导致平台服务无法继续开展的，我司有权单方面决定暂停或终止服务。','If force majeure (including major natural disasters, government orders to stop or adjust services, serious cyberattacks or public system failures, or major business adjustments) prevents the platform service from continuing, we reserve the right to suspend or terminate the service unilaterally.'),
+  copy('因项目特殊性，需要取得相关资质证书的，需在申请材料中提交相关资质证明文件；','If the project requires specific qualifications due to its nature, the relevant proof must be included with the application;'),
+ ],
+ casesTitle:copy('公益赞助案例','Sponsorship Cases'),
+ casesDescription:copy('为站长提供服务器赞助，支持内容创新和建设，促进信息共享和交流。','We provide server sponsorship to website owners to support content innovation and development, and promote information sharing and communication.'),
+ cases:[],
+};

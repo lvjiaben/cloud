@@ -1,0 +1,82 @@
+{
+  "attachment": "C:\\Users\\ywj\\.codex\\attachments\\dc998178-85c4-46f8-9091-c12ccb9753a0\\已粘贴的文本.txt",
+  "attachmentSha256": "0bbb7378185c70a1ed8eaf986e4c61cc8f1226a363c5404c47a1bccdceb0d585",
+  "heading": "为什么选择我们",
+  "description": "提供极致体验的企业上云服务，拥有安全有效的解决方案，为您云上旅程保驾护航",
+  "cards": [
+    {
+      "title": "弹性计算",
+      "description": "您可以在几分钟之内快速根据业务需求，可弹性创建与释放云服务器，轻松应对业务的快速变化。",
+      "labels": [
+        "快速部署",
+        "成本优化",
+        "业务弹性"
+      ],
+      "image": "remoteL17140335196703.png",
+      "currentSha256": "03c7d7cabd2766aff43af4737dbae89674456c942b09232a0a378d68825c60f5",
+      "size": [
+        200,
+        200
+      ],
+      "visualReview": "full native image inspected; no original website name or URL watermark observed"
+    },
+    {
+      "title": "多样化配置",
+      "description": "提供多种类型的实例、操作系统和软件包。各实例中的 CPU、内存、硬盘和带宽可以灵活调整。",
+      "labels": [
+        "灵活选择",
+        "定制化服务",
+        "多系统支持"
+      ],
+      "image": "remoteL17140335436547.png",
+      "currentSha256": "d1c2603856d4844260145cac858cf72c43352df4d192d7741478eeeb612a9990",
+      "size": [
+        200,
+        200
+      ],
+      "visualReview": "full native image inspected; no original website name or URL watermark observed"
+    },
+    {
+      "title": "安全的网络",
+      "description": "通过云控制台，切实保证您云上资源的安全性。您还可以完全掌控您的私有网络环境配置等。",
+      "labels": [
+        "数据保护",
+        "网络隔离",
+        "访问管理",
+        "安全加固"
+      ],
+      "image": "remoteL17140335582829.png",
+      "currentSha256": "2ba9c1b75ac205ba4f67d28cb3910844f433732fe9ebfa7072b336b7b9d5a09f",
+      "size": [
+        200,
+        200
+      ],
+      "visualReview": "full native image inspected; no original website name or URL watermark observed"
+    },
+    {
+      "title": "管理简单",
+      "description": "可以使用云控制台、进行重启等重要操作，这样管理实例就像管理操作您的计算机一样简单方便。",
+      "labels": [
+        "一键操作",
+        "直观界面",
+        "管理便捷",
+        "高效运维",
+        "实时监控"
+      ],
+      "image": "remoteL17140335823614.png",
+      "currentSha256": "a61a721391e4b9a82e785c938078ee283b6d8a3d1676af55017fa7bdc0cba921",
+      "size": [
+        200,
+        200
+      ],
+      "visualReview": "full native image inspected; no original website name or URL watermark observed"
+    }
+  ],
+  "labelCounts": [
+    3,
+    3,
+    4,
+    5
+  ],
+  "scope": "Attachment inventory and existing image review only; implementation/browser/release not reviewed yet"
+}

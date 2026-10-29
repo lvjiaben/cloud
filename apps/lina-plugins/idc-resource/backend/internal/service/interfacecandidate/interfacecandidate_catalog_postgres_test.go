@@ -27,8 +27,9 @@ import (
 
 type catalogReadExtensions struct {
 	pluginhost.BusinessExtensionRegistrar
-	evidence  *capmodel.BusinessExtensionProviderEvidence
-	afterRead func() error
+	evidence       *capmodel.BusinessExtensionProviderEvidence
+	afterRead      func() error
+	lastInvocation pluginhost.BusinessExtensionMethodInvokeInput
 }
 
 func (s *catalogReadExtensions) GetProviderExact(context.Context, plugincap.BusinessExtensionProviderExactInput) (*capmodel.BusinessExtensionProviderEvidence, error) {
@@ -37,7 +38,8 @@ func (s *catalogReadExtensions) GetProviderExact(context.Context, plugincap.Busi
 func (s *catalogReadExtensions) WithConfidentialOutboundContext(ctx context.Context, _ pluginhost.ConfidentialOutboundContextInput, action pluginhost.ConfidentialOutboundAction) error {
 	return action(ctx, &capmodel.BusinessExtensionRuntimeContext{ContextID: "test"})
 }
-func (s *catalogReadExtensions) InvokeProviderMethod(context.Context, pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error) {
+func (s *catalogReadExtensions) InvokeProviderMethod(_ context.Context, input pluginhost.BusinessExtensionMethodInvokeInput) (*capmodel.BusinessExtensionMethodResult, error) {
+	s.lastInvocation = input
 	if s.afterRead != nil {
 		if err := s.afterRead(); err != nil {
 			return nil, err
@@ -133,6 +135,46 @@ func TestCatalogReadPinsOwnerConfigurationPostgreSQL(t *testing.T) {
 	encoded, err := json.Marshal(detail)
 	if err != nil || strings.Contains(string(encoded), revision) || strings.Contains(string(encoded), "ReadEvidence") {
 		t.Fatal("internal read evidence reached browser JSON")
+	}
+	t.Run("identical resource revisions compare inside owner", func(t *testing.T) {
+		const duplicate = "rci_33333333333333333333333333333333"
+		if _, copyErr := database.Exec(ctx, `INSERT INTO plugin_idc_resource_interface_configuration_revision SELECT tenant_id,?,interface_instance_no,channel_no,endpoint,non_secret_settings,secret_bindings FROM plugin_idc_resource_interface_configuration_revision WHERE revision_no=?`, duplicate, revision); copyErr != nil {
+			t.Fatal(copyErr)
+		}
+		if _, updateErr := database.Exec(ctx, `UPDATE plugin_idc_resource_interface_channel_binding SET current_configuration_revision=?`, duplicate); updateErr != nil {
+			t.Fatal(updateErr)
+		}
+		defer func() {
+			if _, restoreErr := database.Exec(ctx, `UPDATE plugin_idc_resource_interface_channel_binding SET current_configuration_revision=?`, revision); restoreErr != nil {
+				t.Error(restoreErr)
+			}
+		}()
+		equal, compareErr := reader.EquivalentConfigurationRevisions(ctx, interfaceNo, revision, duplicate)
+		if compareErr != nil || !equal {
+			t.Fatalf("identical connection rejected: %v", compareErr)
+		}
+		if _, updateErr := database.Exec(ctx, `UPDATE plugin_idc_resource_interface_configuration_revision SET endpoint='https://changed.example' WHERE revision_no=?`, duplicate); updateErr != nil {
+			t.Fatal(updateErr)
+		}
+		equal, compareErr = reader.EquivalentConfigurationRevisions(ctx, interfaceNo, revision, duplicate)
+		if compareErr != nil || equal {
+			t.Fatalf("changed connection accepted: %v", compareErr)
+		}
+		equal, compareErr = reader.EquivalentConfigurationRevisions(ctx, "pfi_44444444444444444444444444444444", revision, duplicate)
+		if compareErr == nil && equal {
+			t.Fatal("foreign interface revisions compared equal")
+		}
+	})
+	// A compatible rebuild changes executable identity, never the pinned
+	// endpoint, credentials, interface revision or original read receipt.
+	extensions.evidence.ReleaseVersion = "v1.1.0"
+	extensions.evidence.ReleaseDigest = strings.Repeat("c", 64)
+	rebuilt, readErr := source.ReadCatalogProduct(ctx, interfaceNo, resourceinterfaceprojectioncap.CatalogProductQuery{Reference: "101"})
+	if readErr != nil || rebuilt.ReadEvidence == nil || rebuilt.ReadEvidence.ReleaseDigest != digestA || captured.Config.Endpoint != "https://snapshot.example" {
+		t.Fatalf("compatible rebuild lost pinned business configuration: %v", readErr)
+	}
+	if extensions.lastInvocation.ReleaseVersion != "v1.1.0" || extensions.lastInvocation.ReleaseDigest != extensions.evidence.ReleaseDigest {
+		t.Fatal("catalog read invoked the missing historical package")
 	}
 	extensions.afterRead = func() error {
 		_, writeErr := database.Exec(ctx, `UPDATE plugin_idc_resource_interface_channel_binding SET current_configuration_revision=?`, newerRevision)

@@ -1,0 +1,12 @@
+{
+  "title": "Renew service",
+  "cycles": "Billing cycles",
+  "help": "Use current product prices while retaining your server specifications.",
+  "quote": "Calculate renewal price",
+  "confirm": "Confirm and pay",
+  "cancel": "Cancel",
+  "failed": "Renewal could not be confirmed. Retry, or request a new price if the quote expired.",
+  "amount": "Amount due",
+  "expiry": "Expiry after payment",
+  "payment": "Confirmation creates an invoice. Your service is extended only after successful payment."
+}

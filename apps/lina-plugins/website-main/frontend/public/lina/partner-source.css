@@ -1,0 +1,286 @@
+@charset "UTF-8";
+.introduce {
+  padding: var(--pcspacing);
+}
+.introduce .introduce-row {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 12px;
+}
+.introduce .introduce-row .introduce-section {
+  overflow: hidden;
+  color: #141625;
+  border-radius: 1px;
+  cursor: pointer;
+  transition: all 0.36s ease-in-out;
+}
+.introduce .introduce-row .introduce-section .introduce-section-title {
+  padding-left: 36px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txtcl);
+  position: relative;
+}
+.introduce .introduce-row .introduce-section .introduce-section-title:before {
+  content: "+";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  background: var(--gradient1);
+  border-radius: 50%;
+  text-align: center;
+  line-height: 21px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: "微软雅黑";
+  color: #fff;
+  transition: all 0.36s ease-in-out;
+}
+.introduce .introduce-row .introduce-section .introduce-section-desc {
+  padding-left: 36px;
+  display: none;
+  margin-top: 12px;
+}
+.introduce .introduce-row .introduce-section .introduce-section-desc p {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 400;
+}
+.introduce .introduce-row .introduce-section-img {
+  height: 64px;
+  background-color: rgba(180, 183, 193, 0.12);
+  background-repeat: no-repeat;
+  background-size: 0 0;
+  transition: all 0.36s ease-in-out;
+  background-image: url(/lina/partner-assets/remoteL17130183791832.png);
+}
+.introduce .introduce-row .introduce-section-container {
+  height: 100%;
+  padding: 20px;
+}
+.introduce .introduce-row .introduce-section.active {
+  height: fit-content;
+}
+.introduce .introduce-row .introduce-section.active .introduce-section-img {
+  height: 162px;
+  background-size: cover;
+}
+.introduce .introduce-row .introduce-section.active .introduce-section-container {
+  background: linear-gradient(180deg, rgba(20, 22, 37, 0.8), rgba(20, 22, 37, 0.12));
+}
+.introduce .introduce-row .introduce-section.active .introduce-section-title {
+  color: #fff;
+}
+.introduce .introduce-row .introduce-section.active .introduce-section-title:before {
+  background: rgba(172, 172, 172, 0.2);
+  content: "-";
+}
+.introduce .introduce-row .introduce-section.active .introduce-section-desc {
+  display: block;
+}
+
+.grade {
+  padding: var(--pcspacing);
+}
+.grade .grade-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+.grade .grade-table-header, .grade .grade-table-row {
+  display: table-row;
+}
+.grade .grade-table-header-cell, .grade .grade-table-cell {
+  border: 1px solid #e5e5e5;
+  padding: 14px 20px;
+  text-align: center;
+}
+.grade .grade-table-header-cell {
+  background: #f0f2f5;
+  font-weight: bold;
+}
+.grade .grade-table .grade-category {
+  text-align: center;
+  font-weight: bold;
+}
+.grade .grade-table .grade-subcategory {
+  text-align: left;
+  padding-left: 20px;
+  font-size: 14px;
+}
+.grade .grade-table .grade-status {
+  position: relative;
+}
+.grade .grade-table .grade-status-yes:before {
+  position: absolute;
+  content: "";
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  background: url(/lina/partner-assets/correct.svg) no-repeat;
+  background-size: 100% 100%;
+}
+.grade .grade-table .grade-status-no:before {
+  position: absolute;
+  content: "";
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  background: url(/lina/partner-assets/error.svg) no-repeat;
+  background-size: 100% 100%;
+}
+
+.requirement {
+  padding: var(--pcspacing);
+}
+.requirement .partner_table {
+  display: table;
+  width: 100%;
+  margin-top: 20px;
+}
+.requirement .partner_table * {
+  font-family: codeB;
+}
+.requirement .partner_table .partner_row {
+  display: table-row;
+}
+.requirement .partner_table .partner_row:last-child .partner_cell {
+  border-bottom: 1px solid #e5e5e5;
+}
+.requirement .partner_table .partner_row:first-child .partner_cell {
+  border-top: 1px solid #e5e5e5;
+}
+.requirement .partner_table .partner_row .partner_cell {
+  display: table-cell;
+  padding: 24px 20px;
+  border: 1px solid #e5e5e5;
+  border-bottom: none;
+  border-right: none;
+  text-align: center;
+  background: #fff;
+}
+.requirement .partner_table .partner_row .partner_cell:last-child {
+  border-right: 1px solid #e5e5e5;
+}
+.requirement .partner_table .partner_row .partner_cell:nth-child(1) {
+  font-weight: bold;
+  color: #000;
+}
+.requirement .partner_table .partner_header .partner_cell {
+  background: #f0f2f5;
+  font-weight: 400;
+  padding: 14px 20px;
+  color: #000 !important;
+}
+
+.flow {
+  padding: var(--pcspacing);
+}
+.flow .flow-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-direction: column;
+  gap: 28px;
+}
+.flow .flow-content .flow-img {
+  width: 100%;
+  height: auto;
+}
+.flow .flow-content .flow-img img {
+  width: 100%;
+  height: 106px;
+}
+.flow .flow-content .cooperate-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0 20px;
+}
+.flow .flow-content .cooperate-content .cooperate-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--txtcl);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 22px;
+  font-family: codeB;
+}
+.flow .flow-content .flow-btn {
+  margin-top: 40px;
+}
+
+.problem_bg {
+  background: url(/lina/partner-assets/remoteL17075794763815.png) no-repeat calc(100% - 120px) 340px, url(/lina/partner-assets/remoteL17075795114472.png) no-repeat calc(100% + 40px) 200px;
+  background-size: 144px 144px, 262px 262px;
+  background-color: #fafbfe;
+}
+
+.problem {
+  padding: var(--pcspacing);
+}
+.problem .problem-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+.problem .problem-content-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.problem .problem-content-item .problem-content-item-title {
+  position: relative;
+  margin-bottom: 20px;
+}
+.problem .problem-content-item .problem-content-item-title h3 {
+  padding-left: 40px;
+  height: 24px;
+  line-height: 24px;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--txtcl);
+}
+.problem .problem-content-item .problem-content-item-title:after {
+  position: absolute;
+  content: "Q";
+  width: 26px;
+  height: 26px;
+  background: #0056ff;
+  border-radius: 0;
+  text-align: center;
+  line-height: 26px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: "微软雅黑";
+  color: #fff;
+  top: 0;
+}
+.problem .problem-content-item .problem-content-item-content {
+  width: 100%;
+  background: #fff;
+  padding: 20px;
+}
+.problem .problem-content-item .problem-content-item-content p {
+  line-height: 28px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--txtdesc);
+}
+
+/*# sourceMappingURL=partner.css.map */

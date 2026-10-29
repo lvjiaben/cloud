@@ -5,9 +5,13 @@ import { workspacePath } from "../../../../../../hack/tests/fixtures/config";
 
 export class ResourceWorkspacePage extends ResourceOverviewPage {
   constructor(page: Page) { super(page); }
-  async open(workspace: "providers" | "servers") {
-    await this.page.goto(workspacePath(`/idc/resource/${workspace}`), { waitUntil: "domcontentloaded" });
-    await this.page.getByTestId(workspace === "providers" ? "provider-operations-page" : "server-management-page").waitFor();
+  async open(_workspace: "providers") {
+    await this.page.goto(workspacePath("/idc/resource/provider-configuration"), { waitUntil: "domcontentloaded" });
+    await this.page.getByTestId("provider-operations-page").waitFor();
+  }
+  async openShortcut() {
+    await this.page.goto(workspacePath("/idc/resource/provider-tools"));
+    await this.page.getByTestId("provider-operations-page").waitFor();
   }
   async expectGridFits(testId: string) {
     const panel = this.page.getByTestId(testId);
@@ -36,6 +40,5 @@ export class ResourceWorkspacePage extends ResourceOverviewPage {
   tab(name: string) { return this.page.getByRole("tab", { name, exact: true }); }
   async selectTab(name: string) { await this.tab(name).click(); }
   async expandMenu() { await this.page.getByRole("menu").getByText("服务器与资源", { exact: true }).click(); }
-  async openLegacyRenewals() { await this.page.goto(workspacePath("/idc/resource/server-renewals"), { waitUntil: "domcontentloaded" }); }
   async refreshOverview() { await this.page.getByTestId("resource-overview-page").getByRole("button", { name: /刷\s*新/ }).click(); }
 }

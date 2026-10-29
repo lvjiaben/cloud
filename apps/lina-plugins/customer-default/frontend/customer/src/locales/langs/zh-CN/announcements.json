@@ -1,0 +1,11 @@
+{
+  "title": "公告",
+  "detail": "公告详情",
+  "empty": "暂无公告",
+  "read": "已读",
+  "unread": "未读",
+  "loadFailed": "公告加载失败，请重试。",
+  "readFailed": "已读状态保存失败，请关闭后重试。",
+  "retry": "重试",
+  "total": "共 {count} 条"
+}

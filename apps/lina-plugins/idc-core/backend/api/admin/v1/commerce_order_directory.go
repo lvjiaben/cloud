@@ -30,6 +30,5 @@ type CommerceOrderDetailReq struct {
 }
 
 type CommerceOrderDetailRes struct {
-	Order        *accountv1.CommerceOrderDetail `json:"order" dc:"Bounded order, invoice, inventory, fulfillment, cancellation and review aggregate"`
-	ContractRule *ContractPolicyOrderRule       `json:"contractRule" dc:"Current editable order override and frozen final contract decision"`
+	Order *accountv1.CommerceOrderDetail `json:"order" dc:"Bounded order, invoice, inventory, fulfillment, cancellation and review aggregate"`
 }

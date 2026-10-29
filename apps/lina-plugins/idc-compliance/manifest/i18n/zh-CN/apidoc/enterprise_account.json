@@ -9,7 +9,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeCreateReq.fields.expectedProfileVersion.dc": "当前展示给客户的企业法定资料版本",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeCreateReq.fields.idempotencyKey.dc": "随机重试键，其原始值永不持久化",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeCreateRes.fields.item.dc": "只包含变更类别的企业法定资料变更申请",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.caseNo.dc": "最近一个企业实名认证案件的不透明编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.statusCode.dc": "最近案件状态：草稿、待审核、审核中、需复核、已认证、已驳回、已过期或已取消",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.decisionReasonCode.dc": "稳定且客户可操作的决定原因，决定前为空",
@@ -21,7 +20,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.expiresAt.dc": "Unix 毫秒格式的过期时间，未安排时为零",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.updatedAt.dc": "Unix 毫秒格式的案件最后更新时间",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountCaseItem.fields.version.dc": "当前案件乐观并发版本",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.verificationCaseNo.dc": "支撑当前核心法定投影的不透明案件编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.verificationStatusCode.dc": "当前企业实名状态：未认证、待审核、已认证、已驳回、已过期或已撤销",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.legalName.dc": "当前企业客户自己的法定名称，认证前为空",
@@ -31,7 +29,6 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.verifiedAt.dc": "Unix 毫秒格式的当前投影认证时间",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.expiresAt.dc": "Unix 毫秒格式的当前投影过期时间，未安排时为零",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountProfileItem.fields.profileVersion.dc": "当前企业法定资料版本",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.requestNo.dc": "不透明的企业法定资料变更申请编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.statusCode.dc": "法定资料变更状态：已提交、复核中、已批准、已驳回或已取消",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.reasonCode.dc": "封闭的法定资料变更原因码",
@@ -39,12 +36,10 @@
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.verificationCaseNo.dc": "复核期间继续保留的不透明已认证案件编号",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.currentProfileVersion.dc": "申请创建时的已认证法定资料版本",
   "plugins.idc_compliance.api.account.v1.EnterpriseLegalChangeItem.fields.submittedAt.dc": "Unix 毫秒格式的法定资料变更提交时间",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountStateItem.fields.policyVersion.dc": "当前企业实名认证告知版本",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountStateItem.fields.case.dc": "最近的合规案件，首次创建草稿前为空",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountStateItem.fields.profile.dc": "当前由核心域持有的企业法定投影",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationAccountStateItem.fields.activeLegalChange.dc": "一个活动的仅含类别法定资料变更申请，无活动申请时为空",
-
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationGetReq.meta.tags": "IDC 合规客户中心",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationGetReq.meta.summary": "查询我的企业实名认证",
   "plugins.idc_compliance.api.account.v1.EnterpriseVerificationGetReq.meta.dc": "在不接收客户编号且不暴露私有存储元数据的前提下，返回当前企业客户的核心法定投影、最近合规案件、活动的仅含类别法定资料变更申请和告知版本。",

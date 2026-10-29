@@ -89,6 +89,7 @@ export interface ProviderTaskListResult {
 
 export function providerTaskList(params?: {
 	page?: number;
+  serviceNo?: string;
   channelNo?: string;
   cursor?: string;
   limit?: number;
@@ -100,18 +101,21 @@ export function providerTaskList(params?: {
   );
 }
 
-export function providerTaskDetail(taskNo: string) {
+export function providerTaskDetail(taskNo: string, scope: { serviceNo?: string; channelNo?: string } = {}) {
   return requestClient.get<{ item: ProviderTaskDetail }>(
     pluginApiPath(
       pluginID,
       `admin/resource/tasks/${encodeURIComponent(taskNo)}`,
     ),
+    { params: scope },
   );
 }
 
 export function providerTaskManualTakeover(
   taskNo: string,
   input: {
+    serviceNo?: string;
+    channelNo?: string;
     evidenceNos: string[];
     expectedVersion: number;
     reasonCode: ProviderTaskTakeoverReason;

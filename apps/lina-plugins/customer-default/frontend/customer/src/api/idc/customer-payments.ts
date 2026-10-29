@@ -1,5 +1,7 @@
 import { pluginApiPath, requestClient } from '#/api/request';
 
+import { requestWithHttpStatus } from './request-with-http-status';
+
 const pluginID = 'idc-payment';
 
 export interface CustomerPaymentChannel {
@@ -20,6 +22,8 @@ export interface CustomerPaymentCreated {
 }
 
 export interface CustomerPaymentStatus {
+  invoiceNo?: string;
+  orderNo?: string;
   attemptNo: string;
   balanceAmountMinor: string;
   channelAmountMinor: string;
@@ -39,10 +43,10 @@ function path(pathName: string) {
   return pluginApiPath(pluginID, `account/${pathName}`);
 }
 
-export function listCustomerPaymentChannels(currencyCode?: string) {
-  return requestClient.get<{ channels: CustomerPaymentChannel[] }>(
-    path('payment-channels'),
-    { params: { currencyCode: currencyCode || undefined } },
+export function listCustomerPaymentChannels(currencyCode?: string, silentErrorMessage = false) {
+  return requestWithHttpStatus<{ channels: CustomerPaymentChannel[] }>(
+    requestClient, path('payment-channels'),
+    { method: 'GET', silentErrorMessage, params: { currencyCode: currencyCode || undefined } },
   );
 }
 
@@ -62,5 +66,16 @@ export function createCustomerBalanceRecharge(input: {
 export function getCustomerPaymentStatus(attemptNo: string) {
   return requestClient.get<CustomerPaymentStatus>(
     path(`payments/${encodeURIComponent(attemptNo)}`),
+    { silentErrorMessage: true },
   );
+}
+
+/** Create a channel payment against the server-owned order payment context. */
+export function createCustomerOrderPayment(input: {
+  paymentContextNo: string;
+  channelNo: string;
+  modeCode: string;
+  balanceAmountMinor: string;
+}) {
+  return requestClient.post<CustomerPaymentCreated>(path('payments'), input);
 }

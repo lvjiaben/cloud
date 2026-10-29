@@ -7,6 +7,7 @@ require (
 	github.com/gogf/gf/contrib/drivers/pgsql/v2 v2.10.0
 	github.com/gogf/gf/v2 v2.10.1
 	github.com/xuri/excelize/v2 v2.10.1
+	golang.org/x/image v0.25.0
 	golang.org/x/text v0.40.0
 	lina-core v0.0.0
 	lina-plugin-idc-resource v0.1.0
@@ -58,6 +59,7 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	lina-plugin-shared-services v0.0.0
 )
 
 replace lina-core => ../../lina-core
@@ -65,6 +67,5 @@ replace lina-core => ../../lina-core
 replace lina-plugin-shared-services => ../shared-services
 
 replace lina-plugin-idc-resource => ../idc-resource
-
 
 replace lina-plugin-yunsu-ssl => ../yunsu-ssl

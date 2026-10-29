@@ -45,7 +45,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
     await catalog.openMerchantConfiguration();
-    const dialog = catalog.merchantConfigurationDialog();
+    const dialog = catalog.merchantConfigurationForm();
     await expect(dialog).toContainText("供应商证书产品");
     await expect(dialog).toContainText(hint);
     await expect.poll(() => evaluations).toBeGreaterThan(0);
@@ -68,7 +68,7 @@ test.describe("TC-14 模拟数据：商品自动化前端契约", () => {
     await catalog.goto();
     await catalog.openProductDetail("product-manual-service");
     await catalog.openMerchantConfiguration();
-    const dialog = catalog.merchantConfigurationDialog();
+    const dialog = catalog.merchantConfigurationForm();
     await expect(dialog).toContainText("主机名总长度");
     await expect(dialog).toContainText("自动生成密码长度");
     await catalog.fillMerchantField("商品整数", "1");

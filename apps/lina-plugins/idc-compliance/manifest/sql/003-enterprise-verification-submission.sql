@@ -144,8 +144,11 @@ ALTER TABLE plugin_idc_compliance_verification_case
     DROP CONSTRAINT IF EXISTS ck_plugin_idc_compliance_verification_snapshot_size;
 ALTER TABLE plugin_idc_compliance_verification_case
     ADD CONSTRAINT ck_plugin_idc_compliance_verification_snapshot_size CHECK (
-        ("legal_profile_snapshot_ref" IS NULL AND "snapshot_stored_byte_size" = 0) OR
-        ("legal_profile_snapshot_ref" IS NOT NULL AND "snapshot_stored_byte_size" > 0)
+        ("subject_type_code" = 'personal' AND "snapshot_stored_byte_size" = 0) OR
+        ("subject_type_code" = 'enterprise' AND (
+            ("legal_profile_snapshot_ref" IS NULL AND "snapshot_stored_byte_size" = 0) OR
+            ("legal_profile_snapshot_ref" IS NOT NULL AND "snapshot_stored_byte_size" > 0)
+        ))
     );
 
 ALTER TABLE plugin_idc_compliance_verification_case

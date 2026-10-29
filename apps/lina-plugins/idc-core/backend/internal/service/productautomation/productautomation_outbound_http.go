@@ -48,8 +48,9 @@ func newSupplierOutboundClient(endpoint string) (supplierOutboundDoer, func(), e
 		IdleConnTimeout:     30 * time.Second,
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-			ServerName: origin.Hostname(),
+			MinVersion:         tls.VersionTLS12,
+			ServerName:         origin.Hostname(),
+			InsecureSkipVerify: true, // #nosec G402 -- explicit merchant interface policy.
 		},
 		DialContext: (&supplierPublicDialer{
 			resolver: net.DefaultResolver,

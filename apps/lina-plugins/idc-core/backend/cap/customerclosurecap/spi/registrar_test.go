@@ -24,7 +24,6 @@ func TestRegistrarRequiresCompleteUniqueCoverage(t *testing.T) {
 		customerclosurecap.CodeInProgressOperations,
 	}
 	complianceCodes := []customerclosurecap.Code{
-		customerclosurecap.CodeActiveContracts,
 		customerclosurecap.CodeLegalRetention,
 	}
 	if err := r.declare(testContributor{codes: coreCodes}); err != nil {

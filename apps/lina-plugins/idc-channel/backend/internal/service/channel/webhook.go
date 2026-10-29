@@ -1,3 +1,6 @@
+// This file owns signed webhook events and bounded, atomically leased delivery.
+// Claiming uses set operations while retaining per-event unpredictable leases.
+
 package channel
 
 import (
@@ -14,6 +17,7 @@ import (
 
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/database/gdb"
+	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 	"lina-core/pkg/bizerr"
 )
@@ -203,47 +207,67 @@ func (s *service) ClaimWebhookDeliveries(ctx context.Context, limit int, lease t
 		return nil, errors.New("webhook lease duration is invalid")
 	}
 	var out []WebhookDelivery
-	err := s.db.Transaction(ctx, func(txCtx context.Context, tx gdb.TX) error {
+	err := s.db.Transaction(ctx, func(txCtx context.Context, _ gdb.TX) error {
 		// A worker that disappeared must not strand the event forever. Requeue
 		// only an expired lease; the event id makes any late delivery harmless
 		// for a downstream consumer that deduplicates correctly.
-		if _, err := tx.Model("plugin_idc_channel_webhook").Ctx(txCtx).Data(g.Map{
-			"status": WebhookStatusRetryWait, "next_attempt_at": gdb.Raw("CURRENT_TIMESTAMP"), "lease_token": "", "lease_expires_at": nil,
-			"updated_at": gdb.Raw("CURRENT_TIMESTAMP"),
-		}).Where("status=? AND lease_expires_at IS NOT NULL AND lease_expires_at<=CURRENT_TIMESTAMP AND attempts<?", WebhookStatusDelivering, WebhookMaxAttempts).Update(); err != nil {
+		if _, err := s.db.Model("plugin_idc_channel_webhook").Ctx(txCtx).
+			Data("status=?,next_attempt_at=CURRENT_TIMESTAMP,lease_token=?,lease_expires_at=NULL", WebhookStatusRetryWait, "").
+			Where("status=? AND lease_expires_at IS NOT NULL AND lease_expires_at<=CURRENT_TIMESTAMP AND attempts<?", WebhookStatusDelivering, WebhookMaxAttempts).Update(); err != nil {
 			return err
 		}
-		if _, err := tx.Model("plugin_idc_channel_webhook").Ctx(txCtx).Data(g.Map{
-			"status": WebhookStatusFailed, "lease_token": "", "lease_expires_at": nil, "last_error": "delivery lease expired after retry budget",
-			"updated_at": gdb.Raw("CURRENT_TIMESTAMP"),
-		}).Where("status=? AND lease_expires_at IS NOT NULL AND lease_expires_at<=CURRENT_TIMESTAMP AND attempts>=?", WebhookStatusDelivering, WebhookMaxAttempts).Update(); err != nil {
+		if _, err := s.db.Model("plugin_idc_channel_webhook").Ctx(txCtx).
+			Data("status=?,lease_token=?,lease_expires_at=NULL,last_error=?", WebhookStatusFailed, "", "delivery lease expired after retry budget").
+			Where("status=? AND lease_expires_at IS NOT NULL AND lease_expires_at<=CURRENT_TIMESTAMP AND attempts>=?", WebhookStatusDelivering, WebhookMaxAttempts).Update(); err != nil {
 			return err
 		}
 		var rows []gdb.Record
-		if err := tx.Model("plugin_idc_channel_webhook").Ctx(txCtx).
+		if err := s.db.Model("plugin_idc_channel_webhook").Ctx(txCtx).
 			Where("status IN (?,?) AND (next_attempt_at IS NULL OR next_attempt_at<=CURRENT_TIMESTAMP) AND (lease_expires_at IS NULL OR lease_expires_at<=CURRENT_TIMESTAMP)", WebhookStatusPending, WebhookStatusRetryWait).
-			Order("next_attempt_at ASC,id ASC").Limit(limit).LockUpdateSkipLocked().Scan(&rows); err != nil {
+			OrderAsc("next_attempt_at").OrderAsc("id").Limit(limit).LockUpdateSkipLocked().Scan(&rows); err != nil {
 			return err
 		}
+		if len(rows) == 0 {
+			return nil
+		}
+		var (
+			ids       = make([]int64, 0, len(rows))
+			branches  = make([]string, 0, len(rows))
+			arguments = []any{WebhookStatusDelivering}
+		)
 		for _, row := range rows {
 			token, tokenErr := newWebhookLeaseToken()
 			if tokenErr != nil {
 				return tokenErr
 			}
-			if _, err := tx.Model("plugin_idc_channel_webhook").Ctx(txCtx).Data(g.Map{
-				"status": WebhookStatusDelivering, "attempts": row["attempts"].Int() + 1,
-				"lease_token": token, "lease_expires_at": gdb.Raw(fmt.Sprintf("CURRENT_TIMESTAMP + INTERVAL '%d milliseconds'", lease.Milliseconds())),
-				"updated_at": gdb.Raw("CURRENT_TIMESTAMP"),
-			}).Where("id=? AND status IN (?,?)", row["id"].Int64(), WebhookStatusPending, WebhookStatusRetryWait).Update(); err != nil {
-				return err
-			}
-			updated, err := tx.Model("plugin_idc_channel_webhook").Ctx(txCtx).Where("id=?", row["id"].Int64()).One()
-			if err != nil {
-				return err
-			}
-			if updated != nil {
-				out = append(out, webhookDeliveryFromRecord(updated))
-			}
+			ids = append(ids, row["id"].Int64())
+			branches = append(branches, "WHEN ? THEN ?")
+			arguments = append(arguments, row["id"].Int64(), token)
+		}
+		// CASE is portable and lets every event retain its own random token.
+		// The same locked row set is updated and read once, independent of N.
+		assignment := "status=?,attempts=attempts+1,lease_token=CASE id " + strings.Join(branches, " ") + " ELSE lease_token END,lease_expires_at=" + fmt.Sprintf("CURRENT_TIMESTAMP + INTERVAL '%d milliseconds'", lease.Milliseconds())
+		data := append([]any{assignment}, arguments...)
+		updated, updateErr := s.db.Model("plugin_idc_channel_webhook").Ctx(txCtx).Data(data...).WhereIn("id", ids).Where("status IN (?,?)", WebhookStatusPending, WebhookStatusRetryWait).Update()
+		if updateErr != nil {
+			return updateErr
+		}
+		affected, countErr := updated.RowsAffected()
+		if countErr != nil {
+			return countErr
+		}
+		if affected != int64(len(rows)) {
+			return gerror.New("webhook batch lease changed")
+		}
+		var claimed []gdb.Record
+		if readErr := s.db.Model("plugin_idc_channel_webhook").Ctx(txCtx).WhereIn("id", ids).Where("status", WebhookStatusDelivering).OrderAsc("next_attempt_at").OrderAsc("id").Scan(&claimed); readErr != nil {
+			return readErr
+		}
+		if len(claimed) != len(rows) {
+			return gerror.New("webhook batch lease projection changed")
+		}
+		for _, row := range claimed {
+			out = append(out, webhookDeliveryFromRecord(row))
 		}
 		return nil
 	})

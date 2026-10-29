@@ -16,10 +16,10 @@ func TestBindChannelSecretsUsesValidStableScopeSegments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bind channel secrets: %v", err)
 	}
-	if len(bindings) != 5 || len(source.scopes) != 10 {
+	if len(bindings) != 2 || len(source.scopes) != 4 {
 		t.Fatalf("unexpected binding counts: bindings=%d scopes=%d", len(bindings), len(source.scopes))
 	}
-	valid := regexp.MustCompile(`^notify\.channel\.(email|sms|wechat-official|wechat-work|signed-webhook)\.c[0-9a-f]{32}$`)
+	valid := regexp.MustCompile(`^notify\.channel\.(email|sms)\.c[0-9a-f]{32}$`)
 	for _, scope := range source.scopes {
 		if scope.TenantID != 0 || scope.OwnerPluginID != notifyOwnerPluginID || !valid.MatchString(scope.CallerScope) {
 			t.Fatalf("channel secret scope escaped the contract: %+v", scope)

@@ -447,44 +447,14 @@ test.describe("TC-2 通用商品目录", () => {
     });
   });
 
-  test("TC-2e: 发布预览只检查通用目录门禁且不出现旧服务器门禁", async ({
-    adminPage,
-  }) => {
-    const state = await installCatalogManagementMock(adminPage, {
-      publicationReady: false,
-    });
-    const catalog = new CatalogManagementPage(adminPage);
-    await catalog.goto();
-    await catalog.openPublicationPreview("product-manual-service");
-
-    await expect(
-      catalog.publicationPreview.getByTestId(
-        "catalog-publication-check-category",
-      ),
-    ).toContainText("商品分类");
-    await expect(
-      catalog.publicationPreview.getByTestId(
-        "catalog-publication-check-pricing",
-      ),
-    ).toContainText("需补齐");
-    await expect(
-      catalog.publicationPreview.locator(
-        '[data-testid="catalog-publication-check-configuration"]',
-      ),
-    ).toHaveCount(0);
-    await expect(
-      catalog.publicationPreview.locator(
-        '[data-testid="catalog-publication-check-fulfillment"]',
-      ),
-    ).toHaveCount(0);
-    await expect(catalog.publicationPreview).not.toContainText(
-      forbiddenServerText,
-    );
-    await expect(
-      adminPage.getByRole("button", { name: "确认发布" }),
-    ).toBeDisabled();
-    expect(state.previewRequests).toHaveLength(1);
-    expect(state.publishRequests).toHaveLength(0);
+  test("TC-2e: 商品设置没有独立发布与预览步骤", async ({adminPage}) => {
+    const state=await installCatalogManagementMock(adminPage,{publicationReady:false});
+    const catalog=new CatalogManagementPage(adminPage);await catalog.goto();
+    await expect(adminPage.getByTestId('catalog-product-publish-product-manual-service')).toHaveCount(0);
+    await catalog.openProductDetail('product-manual-service');
+    await expect(catalog.detailDrawer).toContainText('每项设置保存后立即生效');
+    await expect(adminPage.getByTestId('catalog-editor-step-publication')).toHaveCount(0);
+    expect(state.previewRequests).toHaveLength(0);expect(state.publishRequests).toHaveLength(0);
   });
 
   test("TC-2f: 英文页面完整显示通用商品文案", async ({

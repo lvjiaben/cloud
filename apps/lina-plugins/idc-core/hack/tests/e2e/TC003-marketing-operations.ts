@@ -335,7 +335,7 @@ test.describe("TC-3 营销运营工作台", () => {
     });
   });
 
-  test("TC-3g: 赠送权益入账与冲正必须先申请并由另一位员工复核", async ({
+  test("TC-3g: 赠送权益有权限即可入账与冲正并允许处理历史待办", async ({
     adminPage,
   }) => {
     const state = await installMarketingOperationsMock(adminPage, {
@@ -344,6 +344,7 @@ test.describe("TC-3 营销运营工作台", () => {
     const marketing = new MarketingOperationsPage(adminPage);
     await marketing.goto();
     await marketing.openTab("权益与积分");
+    await expect(adminPage.getByText("有对应权限即可入账或冲正，系统保留完整流水。", {exact:true})).toBeVisible();
 
     await marketing
       .valueGrantDirectoryRow("grant-pending-002")

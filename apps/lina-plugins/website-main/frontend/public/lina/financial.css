@@ -1,0 +1,110 @@
+body[data-page=financial]{--banner_height:420px;--banner_background:url('/lina/financial-assets/remoteL17139316863477.jpg');--partner_background:url('/lina/financial-assets/remoteL17138735335796.png');--advantage_max:3;--problem_max:2;--correlation_max:3;--partner_max:6}
+body[data-page=financial]>.sky-footer-container.footer_deep{display:block!important}
+body[data-page=financial]{--navleft_banner:url('/lina/financial-assets/remoteL17017764609130.png');--footer_filter:brightness(0) invert(1)}
+[data-financial] .problem-Content-left{background-image:url('/lina/financial-assets/remoteL17063678634493.jpg')}
+[data-financial] .problem-left-ul li:before{background-image:url('/lina/financial-assets/a_select.png')}
+[data-financial] .problem-item{background:#fff url('/lina/financial-assets/remoteL17063679119861.png') center/cover no-repeat}
+[data-financial] .architecture-left-ul li:before{background:url('/lina/financial-assets/remoteL17128148186845.png') 2px 2px no-repeat}
+[data-financial] .globalBanner{background-size:cover;background-position:center}
+[data-financial] .globalBanner>.comp_container{height:100%}
+[data-financial] .pagebanner-title{font-size:44px!important}
+[data-financial] .pagebanner-description{max-width:670px;display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;max-height:none!important}
+[data-financial] .et-container{position:sticky;top:0;z-index:1000;background:#fff}
+[data-financial] .et-container.is-stuck{box-shadow:0 2px 8px #182e5814}
+[data-financial] .et-hero-tabs-container{position:relative}
+[data-financial] .et-slide{scroll-margin-top:var(--financial-anchor-height,77px)}
+body.web-reading>.nav-layoutcontainer{transform:translateY(-100%);pointer-events:none}
+[data-financial] .web-policy-note{font-size:14px;line-height:1.8;color:#5e6979;margin:12px 0 24px;max-width:100%;overflow-wrap:anywhere}
+[data-financial] .web-pending{display:block;font-size:12px;line-height:24px;margin-top:8px;color:#665329;background:#fff6dc;padding:0 10px;width:max-content}
+[data-financial] .advantage-Content-list-item{min-height:286px;transition:box-shadow .2s ease}
+[data-financial] .advantage-Content-list-item-content p{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;max-height:none!important}
+[data-financial] .architecture-item-img img{object-fit:contain!important}
+[data-financial] .architecture-Content-left{height:auto;min-height:500px}
+[data-financial] .architecture-Content-btn-title{min-height:260px;justify-content:space-between}
+[data-financial] .architecture-Content-right{min-width:0}
+[data-financial] .partner_bg:before{background:var(--partner_background) center/cover no-repeat}
+[data-financial] .partner-Content{min-height:340px}
+[data-financial] .more-Content-row{background-image:url('/lina/financial-assets/remoteL17063678634493.jpg');background-color:#f5f8fd}
+[data-financial] .web-product{padding:28px;min-width:0;display:flex;flex-direction:column;background:#fff;border:1px solid #e6e9ec;transition:box-shadow .2s}
+[data-financial] .web-product h3{overflow-wrap:anywhere;font-size:20px;line-height:1.5}
+[data-financial] .web-product .correlation-item-desc{flex:1;margin:18px 0;line-height:1.9;color:#596578;overflow-wrap:anywhere}
+[data-financial] .web-product-price{font-size:16px;margin-bottom:16px;color:#1c344f}
+[data-financial] .web-product-link{color:var(--Original);display:block;padding:8px 0;font-weight:600}
+[data-financial] .web-product-state{grid-column:1/-1;padding:32px 0;color:#596578;line-height:2}
+[data-financial] .web-retry{border:1px solid var(--Original);color:var(--Original);padding:8px 18px;margin-top:12px;background:#fff;cursor:pointer}
+[data-financial] .web-reveal{opacity:0;translate:0 16px;transition:opacity .5s ease,translate .5s ease,box-shadow .2s}
+[data-financial] .web-reveal.is-visible{opacity:1;translate:0 0}
+[data-financial] :is(a,button):focus-visible{outline:2px solid var(--Original);outline-offset:4px}
+body[data-page=financial]>.lina-brand-error{position:fixed;right:24px;bottom:24px;z-index:10001;max-width:calc(100vw - 48px)}
+@media(max-width:1023px){
+ [data-financial] .architecture-Content-row{flex-direction:column;align-items:stretch}
+ [data-financial] .architecture-Content-left{min-width:0;max-width:none;width:100%;min-height:0}
+ [data-financial] .architecture-Content-btn-title{min-height:180px}
+ [data-financial] .problem-Content-left{height:auto!important}
+}
+@media(max-width:767px){
+ body[data-page=financial]{--banner_height:440px;--advantage_max:1;--correlation_max:1}
+ [data-financial] .globalBanner{min-height:440px}
+ [data-financial] .pagebanner-text{width:100%!important}
+ [data-financial] .pagebanner-title{font-size:30px!important;margin-top:80px!important}
+ [data-financial] .pagebanner-description{font-size:15px!important;max-width:85%}
+ [data-financial] .globalBanner{background-position:65% center}
+ [data-financial] .et-container .comp_container{padding:0!important}
+ [data-financial] .et-hero-tabs-container{display:flex;overflow-x:auto;width:100%;max-width:100vw;justify-content:flex-start!important;flex-wrap:nowrap;scrollbar-width:none}
+ [data-financial] .et-hero-tab{display:block;flex:0 0 auto;margin:0 12px}
+ [data-financial] .et-hero-tab a{line-height:60px;font-size:14px;white-space:nowrap}
+ [data-financial] .et-hero-tab:after{display:none}
+ [data-financial] .problem-item-row{grid-template-columns:1fr!important}
+ [data-financial] .problem-Content-left{padding:24px!important}
+ [data-financial] .problem-left-ul{flex-wrap:wrap}
+ [data-financial] .problem-left-Content{flex-direction:column;align-items:flex-start!important;gap:20px!important}
+ [data-financial] .problem-Content-btn-title{gap:16px!important;flex-wrap:wrap}
+ [data-financial] .problem-item{padding:24px!important}
+ [data-financial] .architecture-item-img{height:300px!important}
+ [data-financial] .more-Content-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));height:auto;gap:12px;padding:16px}
+ [data-financial] .more-Content-item{width:auto!important;margin:0!important}
+ [data-financial] .more-item-title h3{font-size:16px!important;overflow-wrap:anywhere}
+ [data-financial] .et-main>.et-slide>.comp_container{padding-right:60px}
+}
+@media(prefers-reduced-motion:reduce){
+ [data-financial] *,[data-financial] *:before,[data-financial] *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ [data-financial] .web-reveal{opacity:1;translate:none}
+}
+
+[data-financial] .globalBanner{background-image:var(--banner_background);background-color:#f1f6fc}
+[data-financial] .advantage-Content-list-item-icon{display:block;position:static!important;transform:none!important;flex:none;width:60px!important;height:60px!important;margin-bottom:20px}
+[data-financial] .advantage-Content-list-item-icon img{width:100%;height:100%;object-fit:contain}
+[data-financial] .architecture-Content-right{display:block;min-height:360px;background:#fff}
+[data-financial] .architecture-Content-left{max-width:50%;width:50%}
+[data-financial] .partner-Content-row{min-height:80px;display:block}
+[data-financial] .financial-partner-image-slot{height:72px;background:#fff;display:flex;align-items:center;justify-content:center;min-width:0}
+[data-financial] .financial-partner-image-slot img{width:100%;height:100%;object-fit:contain}
+[data-financial] .more-item-img{display:block}
+[data-financial] .advantage-Content-list-item{padding:24px!important}
+[data-financial] .advantage-Content-list-item-title,[data-financial] .advantage-Content-list-item-content{margin-left:0!important;padding-left:0!important}
+[data-financial] .et-hero-tab-slider{transition:none}
+[data-financial] .et-hero-tab-slider{display:none!important}
+[data-financial] .et-hero-tab{border-bottom:3px solid transparent}
+[data-financial] .et-hero-tab.active{border-bottom-color:var(--Original)}
+body[data-page=financial] .financial-promotion-image-slot{width:100%;min-height:220px;background:#f1f6fc url('/lina/financial-assets/local6624afb6bf492.png') center/cover no-repeat}
+body[data-page=financial] .sky-footer-top-item{min-height:72px}
+body[data-page=financial] .horizontal-menu-navbar-logo{min-width:96px}
+@media(max-width:1023px){
+ [data-financial] .architecture-Content-left{width:100%;max-width:none}
+ [data-financial] .architecture-Content-right{min-height:240px;width:100%}
+}
+@media(max-width:767px){
+ [data-financial] .financial-partner-image-slot{height:54px}
+ [data-financial] .pagebanner-text{background:#f1f6fce6;padding:12px;border-radius:4px}
+}
+
+[data-financial] .advantage-Content-list-item{display:flex;flex-direction:column;align-items:center;justify-content:center}
+[data-financial] .advantage-Content-list-item-content{width:100%}
+[data-financial] .problem-Content-left{height:auto!important}
+[data-financial] .problem-item-content{display:block!important;-webkit-line-clamp:unset!important;overflow:visible!important;max-height:none!important;height:auto!important}
+@media(max-width:767px){[data-financial] .globalBanner{min-height:480px}[data-financial] .pagebanner-title{margin-top:45px!important}[data-financial] .pagebanner-description{max-width:100%}[data-financial] .pagebanner-text{padding:0}}
+
+[data-financial] .architecture-item-img img{width:100%;height:100%;object-fit:contain}
+[data-financial] .partner-Content-logo-item{min-width:0}
+[data-financial] .partner-Content-logo-item img{max-width:100%;object-fit:contain}
+[data-financial] .more-item-img img{max-width:100%;object-fit:contain}

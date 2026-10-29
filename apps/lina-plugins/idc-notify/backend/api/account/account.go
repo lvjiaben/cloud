@@ -11,7 +11,7 @@ import (
 )
 
 type IAccountV1 interface {
-	DeliveryList(ctx context.Context, req *v1.DeliveryListReq) (res *v1.DeliveryListRes, err error)
-	PreferenceGet(ctx context.Context, req *v1.PreferenceGetReq) (res *v1.PreferenceGetRes, err error)
-	PreferenceUpdate(ctx context.Context, req *v1.PreferenceUpdateReq) (res *v1.PreferenceUpdateRes, err error)
+	LoginContactCodeCreate(ctx context.Context, req *v1.LoginContactCodeCreateReq) (res *v1.LoginContactCodeCreateRes, err error)
+	LoginContactCodeVerify(ctx context.Context, req *v1.LoginContactCodeVerifyReq) (res *v1.LoginContactCodeVerifyRes, err error)
+	RecoverySessionCleanup(ctx context.Context, req *v1.RecoverySessionCleanupReq) (res *v1.RecoverySessionCleanupRes, err error)
 }

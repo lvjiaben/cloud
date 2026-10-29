@@ -202,9 +202,7 @@ export function useCreditWorkspace(props: { context: PluginHostMountContext }) {
 
   async function submitReview() {
     if (
-      !selected.value ||
-      !reviewForm.comment.trim() ||
-      !reviewForm.evidence.trim()
+      !selected.value
     ) {
       notice.value = tr("finance.credit.invalid");
       return;

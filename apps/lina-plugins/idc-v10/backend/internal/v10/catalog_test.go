@@ -89,10 +89,10 @@ func TestCatalogDetailDoesNotPromoteV10StartingPriceToCompleteSchedule(t *testin
 		detail.ProductConfiguration[0].OptionValue == nil || *detail.ProductConfiguration[0].OptionValue != "101" {
 		t.Fatalf("declared upstream product selection was not preserved: %s", raw)
 	}
-	if len(executor.steps) != 2 || executor.steps[1].request.Path != "/api/v1/product/101" || executor.steps[1].request.Method != http.MethodGet {
+	if len(executor.steps) != 3 || executor.steps[2].request.Path != "/api/v1/product/101/resource" || executor.steps[1].request.Path != "/api/v1/product/101" || executor.steps[1].request.Method != http.MethodGet {
 		t.Fatalf("detail fetched additional/module/write endpoints: %+v", executor.steps)
 	}
-	if !slices.Equal(executor.steps[1].request.ResponseFields, []string{"status", "data", "product", "id", "name", "description"}) {
+	if !slices.Equal(executor.steps[1].request.ResponseFields, commonProductResponseFields) {
 		t.Fatalf("detail response allowlist expanded: %v", executor.steps[1].request.ResponseFields)
 	}
 	for _, forbidden := range []string{"12.345", "private-password", "hidden-secret", "config_groups", "cpu"} {

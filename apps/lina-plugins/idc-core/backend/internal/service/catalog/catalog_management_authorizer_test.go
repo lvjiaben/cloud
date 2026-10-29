@@ -169,6 +169,19 @@ func TestManagementAuthorizerUsesDistinctDirectStaffPermissions(t *testing.T) {
 	if _, err = updateAuthorizer.AuthorizeProductCreate(context.Background()); !bizerr.Is(err, CodeManagementNotAccessible) {
 		t.Fatal("metadata update authorized product creation")
 	}
+	if _, err = updateAuthorizer.AuthorizeProductDelete(context.Background(), "product-route"); !bizerr.Is(err, CodeManagementNotAccessible) {
+		t.Fatal("metadata update authorized product deletion")
+	}
+	deleteAuthorizer, err := NewManagementAuthorizer(managementTestBizCtx{current: current}, newPrincipal(), &managementTestAuthz{grants: map[authz.PermissionKey]bool{authz.PermissionKey(permissionCatalogProductDelete): true}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actor, err = deleteAuthorizer.AuthorizeProductDelete(context.Background(), "product-route"); err != nil || actor != 7 {
+		t.Fatalf("product delete actor=%d err=%v", actor, err)
+	}
+	if _, err = deleteAuthorizer.AuthorizeProductUpdate(context.Background(), "product-route"); !bizerr.Is(err, CodeManagementNotAccessible) {
+		t.Fatal("delete permission authorized metadata update")
+	}
 	billingAuthorizer, err := NewManagementAuthorizer(
 		managementTestBizCtx{current: current}, newPrincipal(),
 		&managementTestAuthz{grants: map[authz.PermissionKey]bool{
@@ -304,6 +317,9 @@ func TestManagementAuthorizerRejectsUnsafeIdentityBeforePermissionRead(t *testin
 			}
 			if _, err = authorizer.AuthorizeCategoryCreate(context.Background()); !bizerr.Is(err, CodeManagementNotAccessible) {
 				t.Fatalf("unsafe identity returned %v", err)
+			}
+			if _, err = authorizer.AuthorizeProductDelete(context.Background(), "product-route"); !bizerr.Is(err, CodeManagementNotAccessible) {
+				t.Fatalf("unsafe identity authorized deletion: %v", err)
 			}
 			if principalReader.calls != 0 || authorization.batchCalls != 0 {
 				t.Fatalf("unsafe identity reached dependencies: principal=%d authz=%d",

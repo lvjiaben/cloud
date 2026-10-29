@@ -326,6 +326,15 @@ func applyRefundApprovalPolicy(preview *RefundPreview, policy *refundPolicyRow) 
 func (s *onlineRefundService) loadRefundInvoice(
 	ctx context.Context, customerNo, orderNo string, lock bool,
 ) (*refundInvoiceRow, error) {
+	if lock {
+		// Settlement and native execution lock order before invoice. Acquiring
+		// the parent here also prevents the later refund-order FK check from
+		// creating an invoice -> order deadlock against those owners.
+		if _, err := s.database.GetValue(ctx, `SELECT order_no FROM plugin_idc_core_commerce_order
+WHERE tenant_id=0 AND order_no=? AND customer_no=? FOR UPDATE`, orderNo, customerNo); err != nil {
+			return nil, err
+		}
+	}
 	query := `
 SELECT invoice_no,order_no,customer_no,currency_code,status_code,total_amount_minor,
        credit_amount_minor,

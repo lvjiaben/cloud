@@ -1,0 +1,630 @@
+{
+  "source": "https://www.xiaobaiyun.cn/plan/government.html",
+  "copy": [
+    {
+      "section": "hero",
+      "order": 0,
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/h1.pagebanner-title[1]",
+      "tag": "h1",
+      "headingLevel": 1,
+      "text": "政企解决方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "hero",
+      "order": 1,
+      "parent": "hero/div.comp_container.comp_container_auto.comp_container_100[1]/div.pagebanner-relative[1]/div.pagebanner.center-content[1]/div.pagebanner-text[1]/p.pagebanner-description[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "凭借丰富的政企云建设经验，打造多种“政务云”建设模式，为政府部门在实现资源集约化建设、促进业务协同方面发挥重要作用，积极推进“互联网+政务”发展，创新政府管理和服务模式，助力政务服务新局面。",
+      "interaction": "visible"
+    },
+    {
+      "section": "anchors",
+      "order": 2,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab.active[1]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "我们的优势",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 3,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[3]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "面临的问题",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 4,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[5]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "解决方案架构",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 5,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[7]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "相关产品",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 6,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[9]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "合作伙伴",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "anchors",
+      "order": 7,
+      "parent": "anchors/div.comp_container.comp_container_auto.overflow_tab[1]/div.et-hero-tabs[1]/ul.et-hero-tabs-container[1]/li.et-hero-tab[11]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "更多方案",
+      "interaction": "anchor-navigation"
+    },
+    {
+      "section": "advantages",
+      "order": 8,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        我们的优势",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 9,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        创新技术、高品质产品、卓越服务",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 10,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[1]/div.advantage-Content-list-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "提升电子政务效率",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 11,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[1]/div.advantage-Content-list-item-content[5]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "由粗放式、离散化的建设模式，向集约化、整体化的模式转变，不断整合服务资源、优化政府服务品质，提高政府服务效能。",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 12,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[3]/div.advantage-Content-list-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "建立全方位安全体系",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 13,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[3]/div.advantage-Content-list-item-content[5]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "使用国产自主化云技术及可控的安全防护体系，符合国家法律法规及行业监管中对信息安全的要求。",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 14,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[5]/div.advantage-Content-list-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "提高服务供给质量",
+      "interaction": "visible"
+    },
+    {
+      "section": "advantages",
+      "order": 15,
+      "parent": "advantages/div.comp_container.comp_container_auto[1]/div.advantage-Content[1]/div.advantage-Content-list[3]/div.advantage-Content-list-item[5]/div.advantage-Content-list-item-content[5]/p[1]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "培育壮大社会服务新产品新产业新业态，推进大数据、云计算、人工智能、物联网等新一代信息技术在社会服务领域集成应用。",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 16,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/h3.problem-left-title[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "\n                                    面临的问题",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 17,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/h5.problem-left-desc[3]",
+      "tag": "h5",
+      "headingLevel": 5,
+      "text": "\n                                    面临数据安全风险、合规性挑战、性能稳定性、服务可靠性、数据隐私保护、技术兼容性和服务可扩展性等。",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 18,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/ul.problem-left-ul[5]/li[1]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "数据安全风险",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 19,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/ul.problem-left-ul[5]/li[3]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "性能稳定性",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 20,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/ul.problem-left-ul[5]/li[5]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "服务可靠性",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 21,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-left-Content-title[1]/ul.problem-left-ul[5]/li[7]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "服务可扩展性",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 22,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-Content-btn-title[3]/a.problem-Content-btn[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "1V1 咨询",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 23,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-left[1]/div.problem-left-Content[1]/div.problem-Content-btn-title[3]/a.problem-Content-btn.btnshow[3]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "方案定制",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 24,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[1]/div.problem-class-name[1]/div.problem-item-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        数据安全风险                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 25,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[1]/div.problem-class-name[1]/div.problem-item-content[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        可能面临数据泄露、未经授权访问和网络攻击等安全风险，特别是涉及敏感政府和企业数据时，安全性至关重要。                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 26,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[3]/div.problem-class-name[1]/div.problem-item-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        性能稳定性                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 27,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[3]/div.problem-class-name[1]/div.problem-item-content[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        需要提供稳定高效的性能，以满足政府和企业对于系统稳定性和响应速度的要求，任何性能故障或中断都可能影响业务运营。                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 28,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[5]/div.problem-class-name[1]/div.problem-item-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        服务可靠性                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 29,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[5]/div.problem-class-name[1]/div.problem-item-content[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        需要保证服务的可靠性和可用性，以确保政府和企业的业务连续性和稳定运行，任何服务中断都可能导致严重后果。                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 30,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[7]/div.problem-class-name[1]/div.problem-item-title[1]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        服务可扩展性                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "problems",
+      "order": 31,
+      "parent": "problems/div.comp_container.comp_container_auto[1]/div.problem-Content[1]/div.problem-Content-row[1]/div.problem-Content-right[3]/div.problem-item-row[1]/div.problem-item[7]/div.problem-class-name[1]/div.problem-item-content[3]",
+      "tag": "div",
+      "headingLevel": null,
+      "text": "\n                                        具备良好的可扩展性，能够根据用户需求和业务规模进行灵活扩展，以应对未来业务增长和需求变化，确保持续提供优质的服务。                                    ",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 32,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        解决方案架构",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 33,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        提供高效解决方案，满足不同需求。",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 34,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-left-Content-title[1]/h3.architecture-left-title[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "\n                                    方案架构",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 35,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-left-Content-title[1]/h5.architecture-left-desc[3]",
+      "tag": "h5",
+      "headingLevel": 5,
+      "text": "\n                                    覆盖全国的互联网接入能力、高品质的IDC机房环境、多个省市的政务外网建设经验，为政府客户提供迅速、稳定、优质的入云环境。 ",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 36,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-Content-btn-title[3]/div.architecture-advantage[1]/h1[1]",
+      "tag": "h1",
+      "headingLevel": 1,
+      "text": "架构优势",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 37,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-Content-btn-title[3]/div.architecture-advantage[1]/ul.architecture-left-ul[3]/li[1]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "丰富基础设施",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 38,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-Content-btn-title[3]/div.architecture-advantage[1]/ul.architecture-left-ul[3]/li[3]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "信创产业支持",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 39,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-Content-btn-title[3]/div.architecture-advantage[1]/ul.architecture-left-ul[3]/li[5]",
+      "tag": "li",
+      "headingLevel": null,
+      "text": "全栈产品能力",
+      "interaction": "visible"
+    },
+    {
+      "section": "architecture",
+      "order": 40,
+      "parent": "architecture/div.comp_container.comp_container_auto[1]/div.architecture-Content[1]/div.architecture-Content-row[3]/div.architecture-Content-left[1]/div.architecture-left-Content[1]/div.architecture-Content-btn-title[3]/div.architecture-Content-btn[3]/a[1]",
+      "tag": "a",
+      "headingLevel": null,
+      "text": "服务咨询 →",
+      "interaction": "visible"
+    },
+    {
+      "section": "products",
+      "order": 41,
+      "parent": "products/div.comp_container.comp_container_auto[1]/div.correlation-Content[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        相关产品",
+      "interaction": "visible"
+    },
+    {
+      "section": "products",
+      "order": 42,
+      "parent": "products/div.comp_container.comp_container_auto[1]/div.correlation-Content[1]/div.currency-title[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        根据您的业务为您推荐相关产品",
+      "interaction": "visible"
+    },
+    {
+      "section": "partners",
+      "order": 43,
+      "parent": "partners/div.comp_container.comp_container_auto.partner_bg_zindex[1]/div.partner-Content[1]/div.currency-title.flex-end[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "\n                        合作伙伴",
+      "interaction": "visible"
+    },
+    {
+      "section": "partners",
+      "order": 44,
+      "parent": "partners/div.comp_container.comp_container_auto.partner_bg_zindex[1]/div.partner-Content[1]/div.currency-title.flex-end[1]/p.currency-title-a-content[3]",
+      "tag": "p",
+      "headingLevel": null,
+      "text": "\n                        他们正使用我们的产品和服务",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 45,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.currency-title[1]/h2.currency-title-a[1]",
+      "tag": "h2",
+      "headingLevel": 2,
+      "text": "更多方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 46,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.more-Content-row[3]/a.more-Content-item[1]/div.more-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "电商云解决方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 47,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.more-Content-row[3]/a.more-Content-item[3]/div.more-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "网站云解决方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 48,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.more-Content-row[3]/a.more-Content-item[5]/div.more-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "游戏云解决方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 49,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.more-Content-row[3]/a.more-Content-item[7]/div.more-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "移动云解决方案",
+      "interaction": "visible"
+    },
+    {
+      "section": "more",
+      "order": 50,
+      "parent": "more/div.comp_container.comp_container_auto[1]/div.more-Content[1]/div.more-Content-row[3]/a.more-Content-item[9]/div.more-item-title[3]/h3[1]",
+      "tag": "h3",
+      "headingLevel": 3,
+      "text": "安全解决方案",
+      "interaction": "visible"
+    }
+  ],
+  "navigation": [
+    {
+      "label": "产品与服务",
+      "description": "",
+      "headingTag": "h1",
+      "href": "/products.html"
+    },
+    {
+      "label": "解决方案",
+      "description": "特殊需求定制，适配千万行业应用场景",
+      "headingTag": "h1",
+      "group": true,
+      "children": [
+        {
+          "label": "行业解决方案",
+          "group": true,
+          "children": [
+            {
+              "label": "电商解决方案",
+              "description": "全新电商云解决方案，助您轻松打造线上商城，实现全面数字化经营。",
+              "href": "/plan/electricity.html"
+            },
+            {
+              "label": "网站解决方案",
+              "description": "提供全面的网站解决方案，助您轻松打造专业网站。",
+              "href": "/plan/web.html"
+            },
+            {
+              "label": "游戏解决方案",
+              "description": "高效、稳定的游戏解决方案，提升玩家体验，驱动业务增长。",
+              "href": "/plan/game.html"
+            },
+            {
+              "label": "安全解决方案",
+              "description": "探索我们的云安全解决方案，保护您的数据，确保业务连续性。",
+              "href": "/plan/safety.html"
+            },
+            {
+              "label": "出海解决方案",
+              "description": "一站式出海解决方案，助力企业无缝拓展海外市场。",
+              "href": "/plan/Goingtosea.html"
+            },
+            {
+              "label": "金融解决方案",
+              "description": "助力您的业务实现财务优化和增长。",
+              "href": "/plan/financial.html"
+            },
+            {
+              "label": "政企解决方案",
+              "description": "为政企提供的全面、高效、安全的云解决方案。",
+              "href": "/plan/government.html"
+            }
+          ]
+        },
+        {
+          "label": "通用解决方案",
+          "group": true,
+          "children": [
+            {
+              "label": "工业解决方案",
+              "description": "提升工业效率，实现无缝的数字化转型。",
+              "href": "/404.html"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "生态合作",
+      "description": "携手合作伙伴，实现业务上的双向合作共赢",
+      "headingTag": "h1",
+      "group": true,
+      "children": [
+        {
+          "label": "百站赞助公益计划",
+          "description": "赞助百个站点服务器资源，支持网络内容的健康持续发展。",
+          "href": "/webmaster.html",
+          "badge": "赞助"
+        },
+        {
+          "label": "推广返利",
+          "description": "享受推广优惠，轻松赚取额外收益",
+          "href": "/aff.html"
+        },
+        {
+          "label": "合作伙伴",
+          "description": "共同发展，实现互利共赢的合作伙伴关系",
+          "href": "/404.html"
+        }
+      ],
+      "promotionCopy": {
+        "title": "\r\n                推荐最高返佣30%            ",
+        "description": "\r\n                携手合作伙伴，实现业务上的双向合作共赢            "
+      }
+    },
+    {
+      "label": "应用市场",
+      "href": "/404.html"
+    },
+    {
+      "label": "支持与服务",
+      "description": "我们为您提供全方位的支持与服务，确保您在使用我们的云服务时无忧无虑。",
+      "headingTag": "h1",
+      "group": true,
+      "children": [
+        {
+          "label": "联系我们",
+          "description": "欢迎随时联系我们，期待与您沟通合作！",
+          "href": "/contact.html"
+        },
+        {
+          "label": "服务保障",
+          "description": "全方位保障，确保您的服务安全可靠。",
+          "href": "/404.html"
+        },
+        {
+          "label": "帮助文档",
+          "description": "解答疑问，提供详细的使用指南和常见问题解答",
+          "href": "/help.html"
+        },
+        {
+          "label": "服务条款",
+          "description": "查看我们的服务条款，了解我们的服务范围和使用规则。",
+          "href": "/404.html"
+        },
+        {
+          "label": "下载中心",
+          "description": "获取各类文件下载，便捷高速，满足您的需求。",
+          "href": "/downloads.html"
+        },
+        {
+          "label": "宝塔面板",
+          "description": "提供全面的宝塔面板安装及挂载脚本",
+          "href": "/404.html"
+        }
+      ]
+    },
+    {
+      "label": "了解我们",
+      "description": "10+年商誉沉淀，深耕中国香港及海外高端资源",
+      "headingTag": "h1",
+      "group": true,
+      "children": [
+        {
+          "label": "公司简介",
+          "description": "发现我们的公司的历史、使命和价值观。",
+          "href": "/about.html"
+        },
+        {
+          "label": "新闻动态",
+          "description": "浏览最新热门新闻和实时资讯，紧跟时事动态。",
+          "href": "/news.html"
+        },
+        {
+          "label": "资质荣誉",
+          "description": "展示我们的资质荣誉，证明我们的专业能力。",
+          "href": "/404.html"
+        },
+        {
+          "label": "增值许可证查询",
+          "description": "合法的增值业务经营资质，为您提供放心的选择",
+          "href": "/404.html"
+        }
+      ]
+    }
+  ]
+}

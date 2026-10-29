@@ -10,11 +10,9 @@ type NoticeEntity struct {
 	Id        int64      `json:"id"`
 	TenantId  int        `json:"tenantId"`
 	Title     string     `json:"title"`
-	Type      int        `json:"type"`
 	Content   string     `json:"content"`
-	FileIds   string     `json:"fileIds"`
+	SortOrder int        `json:"sortOrder"`
 	Status    int        `json:"status"`
-	Remark    string     `json:"remark"`
 	CreatedBy int64      `json:"createdBy"`
 	UpdatedBy int64      `json:"updatedBy"`
 	CreatedAt *time.Time `json:"createdAt"`

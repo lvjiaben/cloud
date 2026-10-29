@@ -15,7 +15,7 @@ func (c *ControllerV1) CommerceGuestCartMerge(ctx context.Context, _ *v1.Commerc
 		return nil, err
 	}
 	if token == "" {
-		return &v1.CommerceGuestCartMergeRes{Merged: false}, nil
+		return c.unmergedAccountCart(ctx)
 	}
 	cart, err := c.commerce.MergeGuestCart(ctx, token)
 	if err != nil {
@@ -25,10 +25,20 @@ func (c *ControllerV1) CommerceGuestCartMerge(ctx context.Context, _ *v1.Commerc
 		if clearErr := cartcookie.Clear(ctx); clearErr != nil {
 			return nil, clearErr
 		}
-		return &v1.CommerceGuestCartMergeRes{Merged: false}, nil
+		return c.unmergedAccountCart(ctx)
 	}
 	if err = cartcookie.Clear(ctx); err != nil {
 		return nil, err
 	}
 	return &v1.CommerceGuestCartMergeRes{Merged: true, Cart: toAPICommerceCart(cart)}, nil
+}
+
+// unmergedAccountCart returns the current owner projection in the same request,
+// including an explicit nil cart, without issuing another browser round trip.
+func (c *ControllerV1) unmergedAccountCart(ctx context.Context) (*v1.CommerceGuestCartMergeRes, error) {
+	cart, err := c.commerce.GetAccountCart(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.CommerceGuestCartMergeRes{Merged: false, Cart: toAPICommerceCart(cart)}, nil
 }

@@ -25,18 +25,6 @@ func LoadPersonalVerificationReturnURL() (string, error) {
 	}).String(), nil
 }
 
-// LoadContractSigningReturnURL builds the only Tencent signing browser return URL.
-func LoadContractSigningReturnURL() (string, error) {
-	parsed, err := loadCustomerPublicOrigin()
-	if err != nil || !validCustomerPublicOrigin(parsed) {
-		return "", gerror.New("contract signing customer public origin is invalid")
-	}
-	return (&url.URL{
-		Scheme: parsed.Scheme, Host: parsed.Host, Path: "/account/contracts",
-		RawQuery: "signing_return=1",
-	}).String(), nil
-}
-
 func loadCustomerPublicOrigin() (*url.URL, error) {
 	return url.Parse(strings.TrimSpace(os.Getenv(customerPublicOriginEnvironment)))
 }

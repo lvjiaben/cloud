@@ -121,14 +121,6 @@ func validAdapterGate(row *entity.SupplierConfiguration) bool {
 	if row == nil {
 		return false
 	}
-	if row.ProviderCode == ProviderTencentESSBasic {
-		if row.AdapterEnabled {
-			return row.CapabilityEvidenceCode == EvidenceOfficialPublicContract &&
-				SubjectStatus(row.SubjectStatusCode) == SubjectActive
-		}
-		return row.CapabilityEvidenceCode == EvidenceExternalConfirmationRequired ||
-			row.CapabilityEvidenceCode == EvidenceOfficialPublicContract
-	}
 	return row.ProviderCode == ProviderNuonuoInvoice && !row.AdapterEnabled &&
 		row.CapabilityEvidenceCode == EvidenceExternalConfirmationRequired
 }

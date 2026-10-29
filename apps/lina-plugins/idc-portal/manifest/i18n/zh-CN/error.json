@@ -25,6 +25,7 @@
     "customerconfigurationcolorinvalid": "颜色格式如 #1677ff",
     "customerconfigurationfieldschanged": "用户中心配置已更新，请刷新页面后重试",
     "customerconfigurationfailure": "用户中心配置暂时不可用，请重试",
-    "customerconfigurationnavigationinvalid": "请检查导航名称、页面、网址和上级导航。"
+    "customerconfigurationnavigationinvalid": "请检查导航名称、页面、网址和上级导航。",
+    "websiteconfigurationfilinginvalid": "请检查备案编号，查询链接仅支持 HTTP 或 HTTPS。"
   }
 }

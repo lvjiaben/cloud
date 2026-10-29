@@ -146,6 +146,9 @@ func (s *accessorySettlementConsumer) validateAccessorySettlementReplay(ctx cont
 		receipt.ReadyCount != 0 || receipt.WaitingGateCount != 0 || receipt.ManualReviewCount != 0 {
 		return ErrOperationConflict
 	}
+	if row.SubjectTypeCode == nativeAccessorySubject {
+		return s.validateNativeAccessorySettlementReplay(ctx, row, receipt.EvidenceDigest)
+	}
 	var execution *entity.ServerOperationExecution
 	if err = s.database.GetScan(ctx, &execution, `SELECT execution_no,operation_no,service_no,action_code,
 resource_owner_code,channel_no,pool_no,expected_service_version,parameters::TEXT AS parameters,
@@ -198,6 +201,9 @@ func accessorySettlementAction(action, kind string) bool {
 
 // accessorySettlementIntentDigest reproduces the immutable checkout intent exactly.
 func accessorySettlementIntentDigest(row *accessorySettlementRow) (string, error) {
+	if row.SubjectTypeCode == nativeAccessorySubject {
+		return nativeAccessorySettlementIntentDigest(row)
+	}
 	return digestValue(struct {
 		OperationNo, QuoteNo, OrderNo, InvoiceNo, ServiceNo, Action, Parameters string
 		Financial                                                               bool
@@ -207,6 +213,9 @@ func accessorySettlementIntentDigest(row *accessorySettlementRow) (string, error
 
 // validateAccessorySettlementReady fences current ownership, state and task exclusivity.
 func (s *accessorySettlementConsumer) validateAccessorySettlementReady(ctx context.Context, row *accessorySettlementRow) error {
+	if row.SubjectTypeCode == nativeAccessorySubject {
+		return s.validateNativeAccessorySettlementReady(ctx, row)
+	}
 	if accessoryOperationStatus(row.StatusCode) != accessoryAwaitingSettlement || row.SettlementNo != "" || row.FinanciallySettledAt != nil ||
 		row.CurrentServiceVersion != row.ExpectedServiceVersion || row.QuoteServiceVersion+1 != row.ExpectedServiceVersion ||
 		row.CustomerSubjectVersion != row.CurrentCustomerVersion || customer.Status(row.CustomerStatus) != customer.StatusActive ||
@@ -235,25 +244,27 @@ SELECT 1 FROM plugin_idc_core_server_operation_execution WHERE tenant_id=0
 // persistAccessorySettlement atomically appends the execution, operation event and receipt.
 func (s *accessorySettlementConsumer) persistAccessorySettlement(ctx context.Context, input fulfillment.SettlementEvent,
 	row *accessorySettlementRow, evidence string, settledAt, now time.Time) (*fulfillment.Delivery, error) {
-	request := serveroperationresourcecap.TaskRequest{OperationNo: row.OperationNo, ServiceNo: row.ServiceNo,
-		ChannelNo: row.ChannelNo, PoolNo: row.PoolNo, Action: serveroperationresourcecap.Action(row.ActionCode),
-		ExpectedServiceVersion: row.ExpectedServiceVersion, Parameters: json.RawMessage(row.Parameters)}
-	requestDigest, err := serveroperationresourcecap.TaskRequestDigest(request)
-	if err != nil {
-		return nil, err
-	}
-	executionNo, err := deterministicReference("aox_", row.OperationNo)
-	if err != nil {
-		return nil, err
-	}
-	if _, err = s.database.Model(dao.ServerOperationExecution.Table()).Ctx(ctx).Data(do.ServerOperationExecution{
-		TenantId: 0, ExecutionNo: executionNo, OperationNo: row.OperationNo, ServiceNo: row.ServiceNo,
-		ActionCode: row.ActionCode, ResourceOwnerCode: provisionresourcecap.OwnerID, ChannelNo: row.ChannelNo, PoolNo: row.PoolNo,
-		ExpectedServiceVersion: row.ExpectedServiceVersion, OriginalRuntimeStatusCode: row.RuntimeStatusCode,
-		Parameters: row.Parameters, SecretBindings: "[]", StatusCode: string(accessoryExecutionReady),
-		RequestDigest: requestDigest, Version: 1,
-	}).Insert(); err != nil {
-		return nil, err
+	if row.SubjectTypeCode != nativeAccessorySubject {
+		request := serveroperationresourcecap.TaskRequest{OperationNo: row.OperationNo, ServiceNo: row.ServiceNo,
+			ChannelNo: row.ChannelNo, PoolNo: row.PoolNo, Action: serveroperationresourcecap.Action(row.ActionCode),
+			ExpectedServiceVersion: row.ExpectedServiceVersion, Parameters: json.RawMessage(row.Parameters)}
+		requestDigest, err := serveroperationresourcecap.TaskRequestDigest(request)
+		if err != nil {
+			return nil, err
+		}
+		executionNo, err := deterministicReference("aox_", row.OperationNo)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = s.database.Model(dao.ServerOperationExecution.Table()).Ctx(ctx).Data(do.ServerOperationExecution{
+			TenantId: 0, ExecutionNo: executionNo, OperationNo: row.OperationNo, ServiceNo: row.ServiceNo,
+			ActionCode: row.ActionCode, ResourceOwnerCode: provisionresourcecap.OwnerID, ChannelNo: row.ChannelNo, PoolNo: row.PoolNo,
+			ExpectedServiceVersion: row.ExpectedServiceVersion, OriginalRuntimeStatusCode: row.RuntimeStatusCode,
+			Parameters: row.Parameters, SecretBindings: "[]", StatusCode: string(accessoryExecutionReady),
+			RequestDigest: requestDigest, Version: 1,
+		}).Insert(); err != nil {
+			return nil, err
+		}
 	}
 	updated, err := s.database.Model(dao.BusinessOperation.Table()).Ctx(ctx).
 		Where(do.BusinessOperation{TenantId: 0, OperationNo: row.OperationNo, Version: row.Version, StatusCode: accessoryAwaitingSettlement}).
@@ -271,8 +282,14 @@ func (s *accessorySettlementConsumer) persistAccessorySettlement(ctx context.Con
 		return nil, ErrOperationConflict
 	}
 	from := string(accessoryAwaitingSettlement)
-	if err = insertEvent(ctx, s.database, row.OperationNo, row.ServiceNo, int(row.Version+1), &from,
-		string(accessoryExecutionReady), string(accessorySettlementReason), string(audit.ActorSystem), input.SettlementNo, evidence, now); err != nil {
+	if row.SubjectTypeCode == nativeAccessorySubject {
+		err = appendNativeAccessoryEvent(ctx, s.database, row.OperationNo, row.SubjectNo, row.Version+1,
+			from, string(accessoryExecutionReady), string(accessorySettlementReason), input.SettlementNo, evidence)
+	} else {
+		err = insertEvent(ctx, s.database, row.OperationNo, row.ServiceNo, int(row.Version+1), &from,
+			string(accessoryExecutionReady), string(accessorySettlementReason), string(audit.ActorSystem), input.SettlementNo, evidence, now)
+	}
+	if err != nil {
 		return nil, err
 	}
 	deliveryNo, err := deterministicReference("afd_", input.SettlementNo)

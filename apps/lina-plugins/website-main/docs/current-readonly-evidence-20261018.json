@@ -1,0 +1,92 @@
+{
+  "checkedAt": "2026-10-18T04:34:55.760Z",
+  "origin": "http://127.0.0.1:6030",
+  "readOnly": true,
+  "content": [
+    {
+      "type": "news",
+      "query": "",
+      "httpStatus": 200,
+      "code": 0,
+      "message": "OK",
+      "itemCount": 0
+    },
+    {
+      "type": "news",
+      "query": "readonly-contract-20261018",
+      "httpStatus": 200,
+      "code": 50,
+      "errorCode": "IDC_CONTENT_UNAVAILABLE",
+      "message": "内容服务暂时不可用",
+      "itemCount": null
+    },
+    {
+      "type": "announcement",
+      "query": "",
+      "httpStatus": 200,
+      "code": 0,
+      "message": "OK",
+      "itemCount": 0
+    },
+    {
+      "type": "announcement",
+      "query": "readonly-contract-20261018",
+      "httpStatus": 200,
+      "code": 50,
+      "errorCode": "IDC_CONTENT_UNAVAILABLE",
+      "message": "内容服务暂时不可用",
+      "itemCount": null
+    },
+    {
+      "type": "knowledge",
+      "query": "",
+      "httpStatus": 200,
+      "code": 0,
+      "message": "OK",
+      "itemCount": 0
+    },
+    {
+      "type": "knowledge",
+      "query": "readonly-contract-20261018",
+      "httpStatus": 200,
+      "code": 50,
+      "errorCode": "IDC_CONTENT_UNAVAILABLE",
+      "message": "内容服务暂时不可用",
+      "itemCount": null
+    },
+    {
+      "type": "download",
+      "query": "",
+      "httpStatus": 200,
+      "code": 0,
+      "message": "OK",
+      "itemCount": 0
+    },
+    {
+      "type": "download",
+      "query": "readonly-contract-20261018",
+      "httpStatus": 200,
+      "code": 50,
+      "errorCode": "IDC_CONTENT_UNAVAILABLE",
+      "message": "内容服务暂时不可用",
+      "itemCount": null
+    }
+  ],
+  "published": {
+    "path": "/x-assets/website-main/v0.1.9/lina/site.js",
+    "httpStatus": 200,
+    "bytes": 27637,
+    "sha256": "5dc5e34db348af5683006d86dbc68c7a098c9e9fb09f5b21e97d72d0ae8a8c50"
+  },
+  "source": {
+    "bytes": 30110,
+    "sha256": "8c2163766c22f89b50d85487369ef3a2cf258d9ee86f6616b48e5b9d5982ac17",
+    "matchesPublished": false
+  },
+  "candidate": {
+    "version": "v0.1.10",
+    "bytes": 27177578,
+    "sha256": "17e771528d45898cd4e927f7abfcb561ae938f524a53940c2504b02f36131e53",
+    "installed": false
+  }
+}

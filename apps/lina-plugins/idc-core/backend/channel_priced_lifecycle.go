@@ -6,8 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
-	"net"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -27,8 +25,6 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/commerce"
 	"lina-plugin-idc-core/backend/internal/service/serveroperation"
 )
-
-const channelPricedQuoteTTL = 15 * time.Minute
 
 const channelPricedBusinessOperationInsertSQL = `INSERT INTO plugin_idc_core_business_operation(
 tenant_id,operation_no,operation_type_code,customer_no,payer_customer_no,
@@ -239,120 +235,53 @@ func (runtime *channelCommerceRuntime) previewChannelResize(
 	if err != nil {
 		return nil, err
 	}
-	publicQuote, err := runtime.catalog.QuoteConfiguration(ctx, catalog.PublicConfigurationQuoteInput{
-		PublicSlug: contextRow.PublicSlug, Revision: parameters.Revision,
-		CurrencyCode: parameters.CurrencyCode, Selections: parameters.Selections,
-	})
-	if err != nil || publicQuote == nil {
+	if runtime.priced == nil {
 		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	term := selectChannelResizeTerm(publicQuote.Terms, parameters.TermNo,
-		contextRow.PeriodUnitCode, contextRow.PeriodCount)
-	if term == nil || term.TotalAmountMinor == nil || term.NetAmountMinor == nil ||
-		term.TaxAmountMinor == nil || term.Status != catalog.PublicQuoteFinal {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	resolver, err := catalog.ServerResizeResolverFromPublicReader(runtime.catalog)
-	if err != nil {
-		return nil, err
-	}
-	resolved, err := resolver.ResolveServerResizeConfiguration(ctx,
-		catalog.ServerResizeConfigurationInput{PublicSlug: contextRow.PublicSlug,
-			Revision: parameters.Revision, TermNo: term.TermNo,
-			CurrencyCode: parameters.CurrencyCode, PurchaseCycles: 1,
-			Selections: parameters.Selections})
-	if err != nil || resolved == nil || resolved.ProductNo != contextRow.ProductNo {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	var currentItems []catalog.PurchaseConfigurationItem
-	if err = runtime.database.GetScan(ctx, &currentItems, `SELECT group_no,option_no,group_code,option_code,
-component_type_code,group_name_zh_cn,group_name_en_us,option_name_zh_cn,option_name_en_us,
-normalized_value::TEXT AS normalized_value,quantity,sort_order
-FROM plugin_idc_core_commerce_configuration_snapshot_item
-WHERE tenant_id=0 AND configuration_snapshot_no=? ORDER BY sort_order,id`, contextRow.PriceConfigurationNo); err != nil {
-		return nil, err
-	}
-	providerParameters, err := serveroperation.PrepareChannelResize(currentItems, resolved.Items)
-	if err != nil {
-		return nil, bizerr.NewCode(commerce.CodeConflict)
-	}
-	validator, ok := runtime.serverSource.(serveroperationresourcecap.ParameterValidator)
-	if !ok || validator.ValidateParameters(ctx, serveroperationresourcecap.CapabilityRoute{
-		ServiceNo: service.ServiceNo, ChannelNo: route.ChannelNo, PoolNo: route.PoolNo,
-	}, serveroperationresourcecap.ActionResize, providerParameters) != nil {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	currentRecurring, err := runtime.currentChannelRecurringAmount(ctx, contextRow)
-	if err != nil {
-		return nil, err
-	}
-	targetRecurring := *term.TotalAmountMinor
-	direction := "upgrade"
-	if targetRecurring < currentRecurring {
-		direction = "downgrade"
-	} else if targetRecurring == currentRecurring {
-		return nil, bizerr.NewCode(commerce.CodeConflict)
 	}
 	now, err := channelDatabaseNow(ctx, runtime.database)
 	if err != nil {
 		return nil, err
 	}
-	amount, effectiveAt := int64(0), contextRow.ExpiresAt.UTC()
-	if direction == "upgrade" {
-		amount, err = serveroperation.ProrateChannelResize(targetRecurring-currentRecurring,
-			contextRow.StartedAt, contextRow.ExpiresAt.UTC(), now)
-		if err != nil {
-			return nil, bizerr.NewCode(commerce.CodeConflict)
-		}
-		effectiveAt = now
-	}
-	amounts, err := commerce.CalculatePricingAmounts(catalog.PurchaseQuoteLine{
-		PeriodUnitCode: string(term.PeriodUnit), PriceIncludesTax: publicQuote.Tax.PriceIncludesTax,
-		TaxTreatmentCode:     string(publicQuote.Tax.TaxTreatment),
-		TaxRateBasisPoints:   publicQuote.Tax.TaxRateBasisPoints,
-		TaxCategoryCode:      publicQuote.Tax.TaxCategoryCode,
-		RoundingScopeCode:    string(publicQuote.Tax.RoundingScope),
-		RoundingModeCode:     string(publicQuote.Tax.RoundingMode),
-		RoundingQuantumMinor: publicQuote.Tax.RoundingQuantumMinor,
-		Charges: []catalog.PurchaseQuoteCharge{{KindCode: "base", Quantity: 1,
-			ChargeAmountMinor: amount, PricedAmountMinor: amount}},
-	}, 0)
+	prepared, err := runtime.priced.PrepareResize(ctx, channelNativePriceContext(contextRow, route),
+		serveroperation.NativePriceResizeInput{Revision: parameters.Revision, TermNo: parameters.TermNo,
+			CurrencyCode: parameters.CurrencyCode, Selections: parameters.Selections}, now)
 	if err != nil {
 		return nil, err
 	}
+	resolved := prepared.ResolvedConfiguration
 	quoteNo := channelPricedReference("CQS_", input.ChannelID, input.Operation, input.IdempotencyKey)
 	targetConfigurationNo := channelPricedReference("CFG_", quoteNo, "target")
 	pricingDigest := channelHash(contextRow.PriceConfigurationNo, targetConfigurationNo,
-		contextRow.BillingRuleNo, resolved.BillingRuleNo, direction)
+		contextRow.BillingRuleNo, resolved.BillingRuleNo, prepared.Direction)
 	contentDigest, err := channelDigest(struct {
 		QuoteNo, RequestDigest, PricingDigest, Parameters string
 		Current, Target, Charge                           int64
-	}{quoteNo, requestDigest, pricingDigest, string(providerParameters),
-		currentRecurring, targetRecurring, amount})
+	}{quoteNo, requestDigest, pricingDigest, string(prepared.Parameters),
+		prepared.CurrentRecurringMinor, prepared.TargetRecurringMinor, prepared.CatalogChargeMinor})
 	if err != nil {
 		return nil, err
 	}
 	quoteRow := &channelPricedQuoteRow{
 		QuoteNo: quoteNo, ChannelID: input.ChannelID, PayerCustomerNo: contextRow.PayerCustomerNo,
 		OwnerCustomerNo: contextRow.OwnerCustomerNo, ServiceNo: service.ServiceNo,
-		ActionCode: "resize", CurrencyCode: contextRow.CurrencyCode, Direction: direction,
+		ActionCode: "resize", CurrencyCode: contextRow.CurrencyCode, Direction: prepared.Direction,
 		CurrentConfigurationNo: contextRow.PriceConfigurationNo,
 		TargetConfigurationNo:  targetConfigurationNo, TargetVersionNo: resolved.VersionNo,
-		TargetBillingRuleNo: resolved.BillingRuleNo, ProviderParameters: string(providerParameters),
+		TargetBillingRuleNo: resolved.BillingRuleNo, ProviderParameters: string(prepared.Parameters),
 		ResourceChannelNo: route.ChannelNo, ResourcePoolNo: route.PoolNo,
 		ResourceSnapshotNo: channelPricedReference("CRS_", quoteNo, parameters.Revision),
 		IdempotencyDigest:  idempotencyDigest, RequestDigest: requestDigest,
 		PricingRuleDigest: pricingDigest, ContentDigest: contentDigest,
-		CurrentRecurringMinor: currentRecurring, TargetRecurringMinor: targetRecurring,
-		TargetSubtotalMinor: *term.NetAmountMinor, TargetNetMinor: *term.NetAmountMinor,
-		TargetTaxMinor: *term.TaxAmountMinor,
-		SubtotalMinor:  amounts.SubtotalMinor, NetAmountMinor: amounts.NetAmountMinor,
-		TaxAmountMinor: amounts.TaxAmountMinor, AmountMinor: amounts.TotalAmountMinor,
+		CurrentRecurringMinor: prepared.CurrentRecurringMinor, TargetRecurringMinor: prepared.TargetRecurringMinor,
+		TargetSubtotalMinor: prepared.TargetNetMinor, TargetNetMinor: prepared.TargetNetMinor,
+		TargetTaxMinor: prepared.TargetTaxMinor,
+		SubtotalMinor:  prepared.SubtotalMinor, NetAmountMinor: prepared.NetAmountMinor,
+		TaxAmountMinor: prepared.TaxAmountMinor, AmountMinor: prepared.TotalAmountMinor,
 		ExpectedServiceVersion: contextRow.ServiceVersion, CustomerVersion: contextRow.CustomerVersion,
 		PayerCustomerVersion: contextRow.PayerCustomerVersion,
-		EffectiveAt:          effectiveAt, IssuedAt: now, ExpiresAt: now.Add(channelPricedQuoteTTL),
+		EffectiveAt:          prepared.EffectiveAt, IssuedAt: prepared.IssuedAt, ExpiresAt: prepared.ExpiresAt,
 	}
-	if err = runtime.persistChannelPricedQuote(ctx, quoteRow, contextRow, resolved, publicQuote.Tax); err != nil {
+	if err = runtime.persistChannelPricedQuoteWithTax(ctx, quoteRow, contextRow, resolved, channelNativePriceTax(prepared.Tax)); err != nil {
 		if replay, replayErr := runtime.loadChannelPricedQuoteReplay(ctx, input.ChannelID,
 			idempotencyDigest, requestDigest); replayErr == nil && replay != nil {
 			return projectChannelPricedQuote(replay, true), nil
@@ -360,47 +289,6 @@ WHERE tenant_id=0 AND configuration_snapshot_no=? ORDER BY sort_order,id`, conte
 		return nil, err
 	}
 	return projectChannelPricedQuote(quoteRow, false), nil
-}
-
-func selectChannelResizeTerm(terms []catalog.PublicQuoteTerm, requested, unit string, count int) *catalog.PublicQuoteTerm {
-	for index := range terms {
-		term := &terms[index]
-		if (requested != "" && term.TermNo == requested) ||
-			(requested == "" && string(term.PeriodUnit) == unit && term.PeriodCount == count) {
-			return term
-		}
-	}
-	return nil
-}
-
-func (runtime *channelCommerceRuntime) currentChannelRecurringAmount(
-	ctx context.Context,
-	service *channelPricedContext,
-) (int64, error) {
-	selections, err := runtime.catalog.LoadConfigurationPriceSelections(ctx,
-		[]string{service.PriceConfigurationNo})
-	if err != nil {
-		return 0, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	assembler, err := catalog.RenewalQuoteAssemblerFromPublicReader(runtime.catalog)
-	if err != nil {
-		return 0, err
-	}
-	lines, err := assembler.AssembleRenewalQuote(ctx, catalog.RenewalQuoteInput{
-		CurrencyCode: service.CurrencyCode,
-		Lines: []catalog.RenewalQuoteLineInput{{ReferenceNo: service.ServiceNo,
-			ProductNo: service.ProductNo, VersionNo: service.VersionNo,
-			BillingRuleNo: service.BillingRuleNo, Quantity: 1, PurchaseCycles: 1,
-			PriceSelections: selections[service.PriceConfigurationNo]}},
-	})
-	if err != nil || len(lines) != 1 {
-		return 0, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	amounts, err := commerce.CalculatePricingAmounts(lines[0], 0)
-	if err != nil || amounts.SetupSubtotalMinor != 0 || amounts.TotalAmountMinor < 0 {
-		return 0, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	return amounts.TotalAmountMinor, nil
 }
 
 func channelDatabaseNow(ctx context.Context, database gdb.DB) (time.Time, error) {
@@ -434,31 +322,6 @@ func projectChannelPricedQuote(row *channelPricedQuoteRow, reused bool) *channel
 		Reused: reused}
 }
 
-func validateChannelIPProjection(
-	projection *serveroperationresourcecap.AccessoryProjection,
-	serviceNo string,
-) error {
-	if projection == nil || projection.ServiceNo != serviceNo || projection.SnapshotNo == "" ||
-		projection.ExpiresAt.Before(time.Now().UTC()) ||
-		!channelContainsAction(projection.Actions, serveroperationresourcecap.ActionChangeIP) {
-		return serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	return nil
-}
-
-func validateChannelIPReservation(
-	reservation *serveroperationresourcecap.IPReservation,
-	quantity int,
-	expiresAt time.Time,
-) error {
-	if reservation == nil || serveroperationresourcecap.ValidateIPReservation(*reservation) != nil ||
-		reservation.Status != serveroperationresourcecap.IPReservationReserved ||
-		reservation.Quantity != quantity || reservation.ExpiresAt.Before(expiresAt) {
-		return serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	return nil
-}
-
 func (runtime *channelCommerceRuntime) previewChannelIPChange(
 	ctx context.Context,
 	input channelcommercecap.LifecycleInput,
@@ -486,122 +349,32 @@ func (runtime *channelCommerceRuntime) previewChannelIPChange(
 	if err != nil {
 		return nil, err
 	}
-	directory, directoryOK := runtime.serverSource.(serveroperationresourcecap.AccessoryDirectory)
-	capacity, capacityOK := runtime.serverSource.(serveroperationresourcecap.IPCapacity)
-	if !directoryOK || !capacityOK {
+	if runtime.priced == nil {
 		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	projection, err := directory.GetAccessories(ctx, serveroperationresourcecap.CapabilityRoute{
-		ServiceNo: service.ServiceNo, ChannelNo: route.ChannelNo, PoolNo: route.PoolNo,
-	})
-	if err != nil || validateChannelIPProjection(projection, service.ServiceNo) != nil {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	addresses, err := channelCurrentIPAddresses(projection.Items)
-	if err != nil {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	var policy *struct {
-		PolicyNo                                    string
-		PolicyVersion                               int64
-		Enabled                                     bool
-		FreeChangesPerWindow, WindowDays, MaxPerDay int
-		AmountMinor                                 int64
-		MaximumSnapshotAgeSeconds                   int
-	}
-	if err = runtime.database.GetScan(ctx, &policy, `SELECT policy.policy_no,
- version.policy_version,version.enabled,version.free_changes_per_window,
- version.window_days,version.max_changes_per_day AS max_per_day,version.amount_minor,
- version.maximum_snapshot_age_seconds
-FROM plugin_idc_core_server_ip_change_policy policy
-JOIN plugin_idc_core_server_ip_change_policy_version version
- ON version.tenant_id=policy.tenant_id AND version.policy_no=policy.policy_no
- AND version.policy_version=policy.current_version
-WHERE policy.tenant_id=0 AND policy.currency_code=?`, contextRow.CurrencyCode); err != nil {
-		return nil, err
-	}
-	if policy == nil || !policy.Enabled || policy.PolicyVersion < 1 {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	var frequency struct{ WindowCount, DayCount int }
-	if err = runtime.database.GetScan(ctx, &frequency, `SELECT
- COUNT(*) FILTER (WHERE created_at>=CURRENT_TIMESTAMP-(?*INTERVAL '1 day'))::INT AS window_count,
- COUNT(*) FILTER (WHERE created_at>=date_trunc('day',CURRENT_TIMESTAMP))::INT AS day_count
-FROM plugin_idc_core_business_operation
-WHERE tenant_id=0 AND subject_type_code='entitlement' AND subject_no=?
- AND operation_type_code='ip_change'`, policy.WindowDays, service.ServiceNo); err != nil {
-		return nil, err
-	}
-	if frequency.DayCount >= policy.MaxPerDay {
-		return nil, bizerr.NewCode(commerce.CodeConflict)
-	}
-	amount := policy.AmountMinor
-	if frequency.WindowCount < policy.FreeChangesPerWindow {
-		amount = 0
 	}
 	now, err := channelDatabaseNow(ctx, runtime.database)
 	if err != nil {
 		return nil, err
 	}
-	expiresAt := now.Add(channelPricedQuoteTTL)
-	reservationRequest := serveroperationresourcecap.IPReservationRequest{
-		Route: serveroperationresourcecap.CapabilityRoute{ServiceNo: service.ServiceNo,
-			ChannelNo: route.ChannelNo, PoolNo: route.PoolNo},
-		Quantity: len(addresses), MaximumCapacityAgeSeconds: policy.MaximumSnapshotAgeSeconds,
-		ExpiresAt: expiresAt, IdempotencyKey: "channel-ip:" + idempotencyDigest,
-	}
-	reservationRequest.RequestDigest, err = serveroperationresourcecap.IPReservationRequestDigest(reservationRequest)
-	if err != nil {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	reservation, err := capacity.ReserveIP(ctx, reservationRequest)
-	if err != nil || validateChannelIPReservation(reservation, len(addresses), expiresAt) != nil {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	providerParameters, err := json.Marshal(map[string]int{"ip_num": len(addresses)})
+	prepared, err := runtime.priced.PrepareIPChange(ctx, channelNativePriceContext(contextRow, route),
+		"channel-ip:"+idempotencyDigest, now)
 	if err != nil {
 		return nil, err
 	}
-	validator, ok := runtime.serverSource.(serveroperationresourcecap.ParameterValidator)
-	if !ok || validator.ValidateParameters(ctx, serveroperationresourcecap.CapabilityRoute{
-		ServiceNo: service.ServiceNo, ChannelNo: route.ChannelNo, PoolNo: route.PoolNo,
-	}, serveroperationresourcecap.ActionChangeIP, providerParameters) != nil {
-		_, _ = capacity.ReleaseIP(ctx, serveroperationresourcecap.IPReservationReleaseRequest{
-			ReservationNo: reservation.ReservationNo, ReasonCode: "core_quote_invalid"})
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	tax, err := runtime.loadChannelTaxContext(ctx, contextRow.VersionNo, contextRow.CurrencyCode)
-	if err != nil {
-		_, _ = capacity.ReleaseIP(ctx, serveroperationresourcecap.IPReservationReleaseRequest{
-			ReservationNo: reservation.ReservationNo, ReasonCode: "core_quote_failed"})
-		return nil, err
-	}
-	amounts, err := commerce.CalculatePricingAmounts(catalog.PurchaseQuoteLine{
-		PeriodUnitCode: string(catalog.PeriodUnitOnce), PriceIncludesTax: true,
-		TaxTreatmentCode: tax.Treatment, TaxRateBasisPoints: tax.Rate,
-		TaxCategoryCode: tax.Category, RoundingScopeCode: tax.Scope,
-		RoundingModeCode: tax.Mode, RoundingQuantumMinor: tax.Quantum,
-		Charges: []catalog.PurchaseQuoteCharge{{KindCode: "base", Quantity: 1,
-			ChargeAmountMinor: amount, PricedAmountMinor: amount}},
-	}, 0)
-	if err != nil || amounts.TotalAmountMinor != amount {
-		_, _ = capacity.ReleaseIP(ctx, serveroperationresourcecap.IPReservationReleaseRequest{
-			ReservationNo: reservation.ReservationNo, ReasonCode: "core_quote_failed"})
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	oldDigest := channelHash("channel-ip-old/v1", service.ServiceNo, strings.Join(addresses, ","))
+	reservation := prepared.Reservation
 	quoteNo := channelPricedReference("CQS_", input.ChannelID, input.Operation, input.IdempotencyKey)
-	pricingDigest := channelHash(policy.PolicyNo, strconv.FormatInt(policy.PolicyVersion, 10),
-		contextRow.CurrencyCode, strconv.FormatInt(amount, 10))
+	pricingDigest := channelHash(prepared.PolicyNo, strconv.FormatInt(prepared.PolicyVersion, 10),
+		contextRow.CurrencyCode, strconv.FormatInt(prepared.TotalAmountMinor, 10))
 	contentDigest, err := channelDigest(struct {
 		QuoteNo, RequestDigest, ReservationNo, SnapshotNo, OldDigest string
 		Quantity                                                     int
 		Amount, PolicyVersion                                        int64
 	}{quoteNo, requestDigest, reservation.ReservationNo,
-		reservation.CapacityObservationNo, oldDigest, len(addresses), amount, policy.PolicyVersion})
+		reservation.CapacityObservationNo, prepared.OldIPSetDigest, prepared.IPQuantity, prepared.TotalAmountMinor, prepared.PolicyVersion})
 	if err != nil {
-		_, _ = capacity.ReleaseIP(ctx, serveroperationresourcecap.IPReservationReleaseRequest{
-			ReservationNo: reservation.ReservationNo, ReasonCode: "core_quote_failed"})
+		if releaseErr := runtime.priced.ReleaseIP(ctx, prepared, "core_quote_failed"); releaseErr != nil {
+			return nil, gerror.Wrap(releaseErr, "release failed channel quote reservation")
+		}
 		return nil, err
 	}
 	quoteRow := &channelPricedQuoteRow{
@@ -611,21 +384,22 @@ WHERE tenant_id=0 AND subject_type_code='entitlement' AND subject_no=?
 		CurrentConfigurationNo: contextRow.PriceConfigurationNo,
 		TargetConfigurationNo:  contextRow.PriceConfigurationNo,
 		TargetVersionNo:        contextRow.VersionNo, TargetBillingRuleNo: contextRow.BillingRuleNo,
-		ProviderParameters: string(providerParameters), ResourceChannelNo: route.ChannelNo,
+		ProviderParameters: string(prepared.Parameters), ResourceChannelNo: route.ChannelNo,
 		ResourcePoolNo: route.PoolNo, ReservationNo: reservation.ReservationNo,
-		ResourceSnapshotNo: reservation.CapacityObservationNo, PolicyNo: policy.PolicyNo,
-		OldIPSetDigest: oldDigest, IdempotencyDigest: idempotencyDigest,
+		ResourceSnapshotNo: reservation.CapacityObservationNo, PolicyNo: prepared.PolicyNo,
+		OldIPSetDigest: prepared.OldIPSetDigest, IdempotencyDigest: idempotencyDigest,
 		RequestDigest: requestDigest, PricingRuleDigest: pricingDigest, ContentDigest: contentDigest,
-		SubtotalMinor: amounts.SubtotalMinor, NetAmountMinor: amounts.NetAmountMinor,
-		TaxAmountMinor: amounts.TaxAmountMinor, AmountMinor: amount, IPQuantity: len(addresses),
-		MaximumSnapshotAgeSeconds: policy.MaximumSnapshotAgeSeconds,
-		PolicyVersion:             policy.PolicyVersion, ExpectedServiceVersion: contextRow.ServiceVersion,
+		SubtotalMinor: prepared.SubtotalMinor, NetAmountMinor: prepared.NetAmountMinor,
+		TaxAmountMinor: prepared.TaxAmountMinor, AmountMinor: prepared.TotalAmountMinor, IPQuantity: prepared.IPQuantity,
+		MaximumSnapshotAgeSeconds: prepared.MaximumSnapshotAgeSeconds,
+		PolicyVersion:             prepared.PolicyVersion, ExpectedServiceVersion: contextRow.ServiceVersion,
 		CustomerVersion: contextRow.CustomerVersion, PayerCustomerVersion: contextRow.PayerCustomerVersion,
-		EffectiveAt: now, IssuedAt: now, ExpiresAt: expiresAt,
+		EffectiveAt: prepared.EffectiveAt, IssuedAt: prepared.IssuedAt, ExpiresAt: prepared.ExpiresAt,
 	}
-	if err = runtime.persistChannelPricedQuoteWithTax(ctx, quoteRow, contextRow, nil, tax); err != nil {
-		_, _ = capacity.ReleaseIP(ctx, serveroperationresourcecap.IPReservationReleaseRequest{
-			ReservationNo: reservation.ReservationNo, ReasonCode: "core_quote_failed"})
+	if err = runtime.persistChannelPricedQuoteWithTax(ctx, quoteRow, contextRow, nil, channelNativePriceTax(prepared.Tax)); err != nil {
+		if releaseErr := runtime.priced.ReleaseIP(ctx, prepared, "core_quote_failed"); releaseErr != nil {
+			return nil, gerror.Wrap(releaseErr, "release failed channel quote reservation")
+		}
 		if replay, replayErr := runtime.loadChannelPricedQuoteReplay(ctx, input.ChannelID,
 			idempotencyDigest, requestDigest); replayErr == nil && replay != nil {
 			return projectChannelPricedQuote(replay, true), nil
@@ -635,92 +409,20 @@ WHERE tenant_id=0 AND subject_type_code='entitlement' AND subject_no=?
 	return projectChannelPricedQuote(quoteRow, false), nil
 }
 
-func channelContainsAction(actions []serveroperationresourcecap.Action, target serveroperationresourcecap.Action) bool {
-	for _, action := range actions {
-		if action == target {
-			return true
-		}
-	}
-	return false
+// channelNativePriceContext retains actual channel admission ownership while
+// sharing only the identity-neutral price algorithm with native entitlements.
+func channelNativePriceContext(row *channelPricedContext, route *serveroperationresourcecap.EntitlementRoute) serveroperation.NativePriceContext {
+	return serveroperation.NativePriceContext{EntitlementNo: row.ServiceNo, CustomerNo: row.OwnerCustomerNo,
+		CurrencyCode: row.CurrencyCode, ProductNo: row.ProductNo, VersionNo: row.VersionNo,
+		BillingRuleNo: row.BillingRuleNo, PriceConfigurationNo: row.PriceConfigurationNo,
+		StructuredConfigurationNo: row.StructuredConfigurationNo, PublicSlug: row.PublicSlug,
+		PeriodUnitCode: row.PeriodUnitCode, PeriodCount: row.PeriodCount, LocalResourceNo: route.ServiceNo, ChannelNo: route.ChannelNo, PoolNo: route.PoolNo,
+		EntitlementVersion: row.ServiceVersion, CustomerVersion: row.CustomerVersion, StartedAt: row.StartedAt, ExpiresAt: row.ExpiresAt}
 }
 
-func channelCurrentIPAddresses(items []serveroperationresourcecap.AccessoryItem) ([]string, error) {
-	addresses := make([]string, 0, len(items))
-	seen := make(map[string]struct{}, len(items))
-	for _, item := range items {
-		if item.Kind != serveroperationresourcecap.AccessoryKindIP || item.State != "active" {
-			continue
-		}
-		var projection struct {
-			Address string `json:"address"`
-		}
-		if json.Unmarshal(item.Projection, &projection) != nil {
-			return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-		}
-		address := net.ParseIP(strings.TrimSpace(projection.Address))
-		if address == nil {
-			return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-		}
-		normalized := address.String()
-		if _, exists := seen[normalized]; exists {
-			return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-		}
-		seen[normalized] = struct{}{}
-		addresses = append(addresses, normalized)
-	}
-	if len(addresses) < 1 || len(addresses) > 64 {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	sort.Strings(addresses)
-	return addresses, nil
-}
-
-func (runtime *channelCommerceRuntime) loadChannelTaxContext(
-	ctx context.Context,
-	versionNo, currency string,
-) (*channelTaxContext, error) {
-	var rows []channelTaxContext
-	if err := runtime.database.GetScan(ctx, &rows, `SELECT tax_policy_no AS policy_no,
- tax_treatment_code AS treatment,tax_rate_basis_points AS rate,tax_category_code AS category,
- rounding_scope_code AS scope,rounding_mode_code AS mode,rounding_quantum_minor AS quantum,
- price_includes_tax
-FROM plugin_idc_core_catalog_tax_policy
-WHERE tenant_id=0 AND version_no=? AND currency_code=? AND status_code='active'
-ORDER BY id LIMIT 2`, versionNo, currency); err != nil {
-		return nil, err
-	}
-	if len(rows) != 1 {
-		return nil, serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	return &rows[0], nil
-}
-
-func (runtime *channelCommerceRuntime) persistChannelPricedQuote(
-	ctx context.Context,
-	quote *channelPricedQuoteRow,
-	service *channelPricedContext,
-	resolved *catalog.ServerResizeConfiguration,
-	taxSnapshot catalog.PublicQuoteTaxSnapshot,
-) error {
-	tax, err := runtime.loadChannelTaxContext(ctx, quote.TargetVersionNo, quote.CurrencyCode)
-	if err != nil {
-		return err
-	}
-	if tax.PriceIncludesTax != taxSnapshot.PriceIncludesTax ||
-		tax.Treatment != string(taxSnapshot.TaxTreatment) ||
-		tax.Category != taxSnapshot.TaxCategoryCode || tax.Scope != string(taxSnapshot.RoundingScope) ||
-		tax.Mode != string(taxSnapshot.RoundingMode) || tax.Quantum != taxSnapshot.RoundingQuantumMinor ||
-		!equalOptionalInt(tax.Rate, taxSnapshot.TaxRateBasisPoints) {
-		return serveroperationresourcecap.ErrCapabilityUnavailable
-	}
-	return runtime.persistChannelPricedQuoteWithTax(ctx, quote, service, resolved, tax)
-}
-
-func equalOptionalInt(left, right *int) bool {
-	if left == nil || right == nil {
-		return left == nil && right == nil
-	}
-	return *left == *right
+func channelNativePriceTax(tax serveroperation.NativePriceTaxContext) *channelTaxContext {
+	return &channelTaxContext{PolicyNo: tax.PolicyNo, Treatment: tax.Treatment, Category: tax.Category,
+		Scope: tax.Scope, Mode: tax.Mode, Rate: tax.Rate, Quantum: tax.Quantum, PriceIncludesTax: tax.PriceIncludesTax}
 }
 
 func (runtime *channelCommerceRuntime) persistChannelPricedQuoteWithTax(
@@ -823,7 +525,7 @@ VALUES(0,?,?,?,?,'channel',?,1,?,0,?,?,?,?,?,?,?,?,?,?,0)`, quote.QuoteNo,
 		ConfigurationSnapshotNo: quote.TargetConfigurationNo,
 		ProductNameZhCn:         service.ProductNameZhCN, ProductNameEnUs: service.ProductNameEnUS,
 		PurchaseCycles: 1, ChargeTypeCode: chargeType, PeriodUnitCode: periodUnit,
-		PeriodCount: service.PeriodCount, RequiresContract: false,
+		PeriodCount:         service.PeriodCount,
 		FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: quote.ContentDigest,
 		TaxPolicyNo: tax.PolicyNo, PriceIncludesTax: tax.PriceIncludesTax,
@@ -1270,7 +972,7 @@ func (runtime *channelCommerceRuntime) persistChannelPricedOrder(
 	order := do.CommerceOrder{TenantId: 0, OrderNo: orderNo,
 		CustomerNo: quote.PayerCustomerNo, QuoteNo: quote.QuoteNo,
 		CurrencyCode: quote.CurrencyCode, SourceCode: "channel", StatusCode: "pending_payment",
-		RiskDecisionCode: "approved", RequiresContract: false, ItemCount: 1,
+		RiskDecisionCode: "approved", ItemCount: 1,
 		SubtotalMinor: quote.SubtotalMinor, DiscountMinor: 0, NetAmountMinor: quote.NetAmountMinor,
 		TaxAmountMinor: quote.TaxAmountMinor, TotalAmountMinor: quote.AmountMinor,
 		CheckoutIdempotencyDigest: idempotencyDigest, CheckoutRequestDigest: requestDigest,
@@ -1283,7 +985,7 @@ func (runtime *channelCommerceRuntime) persistChannelPricedOrder(
 		ProductNameZhCn:         quoteItem.ProductNameZhCn, ProductNameEnUs: quoteItem.ProductNameEnUs,
 		PurchaseCycles: 1, ChargeTypeCode: quoteItem.ChargeTypeCode,
 		PeriodUnitCode: quoteItem.PeriodUnitCode, PeriodCount: quoteItem.PeriodCount,
-		RequiresContract: false, FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
+		FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: quoteItem.RouteDecisionDigest,
 		TaxPolicyNo: quoteItem.TaxPolicyNo, PriceIncludesTax: quoteItem.PriceIncludesTax,
 		TaxTreatmentCode: quoteItem.TaxTreatmentCode, TaxRateBasisPoints: quoteItem.TaxRateBasisPoints,

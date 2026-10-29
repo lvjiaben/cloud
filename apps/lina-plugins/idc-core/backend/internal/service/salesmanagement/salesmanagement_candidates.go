@@ -14,7 +14,8 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
-// ProductTerm is one published, explicitly priced period and currency.
+// ProductTerm is one explicitly priced period and currency. Pricing preparation
+// may read drafts; sales overview remains limited to published products.
 type ProductTerm struct {
 	CurrencyCode, ChargeTypeCode, PeriodUnitCode string
 	PeriodCount                                  int
@@ -71,7 +72,15 @@ func (s *serviceImpl) productCandidates(ctx context.Context, input PageInput, pe
 	for _, row := range currencyRows {
 		result.Currencies = append(result.Currencies, row["currency_code"].String())
 	}
-	query := s.database.Model(dao.CatalogProduct.Table()).Ctx(ctx).Where(do.CatalogProduct{TenantId: 0, StatusCode: statusActive}).WhereNotNull("current_version_no")
+	query := s.database.Model(dao.CatalogProduct.Table()).Ctx(ctx).Where(do.CatalogProduct{TenantId: 0})
+	versionProjection := "current_version_no"
+	if permission == permissionPricing {
+		query = query.WhereIn("status_code", []string{"draft", statusActive})
+		versionProjection = "COALESCE(current_version_no,(SELECT v.version_no FROM plugin_idc_core_catalog_product_version v WHERE v.tenant_id=0 AND v.product_no=plugin_idc_core_catalog_product.product_no AND v.status_code='draft' ORDER BY v.version_number DESC LIMIT 1))"
+		query = query.Where(versionProjection + " IS NOT NULL")
+	} else {
+		query = query.Where(do.CatalogProduct{StatusCode: statusActive}).WhereNotNull("current_version_no")
+	}
 	if input.ProductNo != "" {
 		query = query.Where(do.CatalogProduct{ProductNo: input.ProductNo})
 	}
@@ -82,7 +91,7 @@ func (s *serviceImpl) productCandidates(ctx context.Context, input PageInput, pe
 	if err != nil {
 		return result, managementError(err)
 	}
-	rows, err := query.Fields("product_no,name_zh_cn,name_en_us,current_version_no").OrderAsc("sort_order").OrderDesc("id").Page(input.Page, input.PageSize).All()
+	rows, err := query.Fields("product_no,name_zh_cn,name_en_us,"+versionProjection+" AS current_version_no").OrderAsc("sort_order").OrderDesc("id").Page(input.Page, input.PageSize).All()
 	if err != nil {
 		return result, managementError(err)
 	}
@@ -92,7 +101,7 @@ func (s *serviceImpl) productCandidates(ctx context.Context, input PageInput, pe
 	}
 	terms := map[string][]ProductTerm{}
 	if len(versions) > 0 {
-		choices, err := s.database.Model(dao.CatalogBillingRule.Table()+" b").Ctx(ctx).InnerJoin(dao.CatalogPrice.Table()+" p", "p.tenant_id=b.tenant_id AND p.version_no=b.version_no AND p.billing_rule_no=b.billing_rule_no").Where("b.tenant_id", 0).Where("b.status_code", statusActive).Where("p.status_code", statusActive).WhereIn("b.version_no", versions).Fields("DISTINCT b.version_no,b.charge_type_code,b.period_unit_code,b.period_count,p.currency_code").Limit(4000).All()
+		choices, err := s.database.Model(dao.CatalogBillingRule.Table()+" b").Ctx(ctx).InnerJoin(dao.CatalogPrice.Table()+" p", "p.tenant_id=b.tenant_id AND p.version_no=b.version_no AND p.billing_rule_no=b.billing_rule_no").Where("b.tenant_id", 0).Where("b.status_code", statusActive).Where("p.status_code", statusActive).WhereNull("p.option_no").WhereNull("p.configuration_price_dimension_no").WhereIn("b.version_no", versions).Fields("DISTINCT b.version_no,b.charge_type_code,b.period_unit_code,b.period_count,p.currency_code").Limit(4000).All()
 		if err != nil {
 			return result, managementError(err)
 		}

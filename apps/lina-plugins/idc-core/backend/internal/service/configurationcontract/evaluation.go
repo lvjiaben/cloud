@@ -25,14 +25,15 @@ const (
 
 // FieldState is the server-owned result of all active declaration rules.
 type FieldState struct {
-	Visible         bool
-	Required        bool
-	Disabled        bool
-	CandidateValues []string
-	requiredValues  []string
-	excludedValues  []string
-	requiresActive  bool
-	excludesActive  bool
+	Visible               bool
+	Required              bool
+	Disabled              bool
+	CandidateValues       []string
+	candidateFilterActive bool
+	requiredValues        []string
+	excludedValues        []string
+	requiresActive        bool
+	excludesActive        bool
 }
 
 // Issue is one stable, localizable customer-configuration problem.
@@ -178,6 +179,7 @@ func applyConfigurationRules(
 			case capmodel.ConfigurationActionDisable:
 				state.Disabled = true
 			case capmodel.ConfigurationActionFilterCandidates:
+				state.candidateFilterActive = true
 				state.CandidateValues = intersectValues(state.CandidateValues, action.Values)
 			case capmodel.ConfigurationActionRequires:
 				state.requiresActive = true
@@ -220,7 +222,7 @@ func configurationFieldStateIssues(fieldKey string, normalized map[string]any, s
 	}
 	issues := make([]Issue, 0, 3)
 	selected := selectedValues(value)
-	if len(state.CandidateValues) > 0 && hasValueOutside(selected, state.CandidateValues) {
+	if (state.candidateFilterActive || len(state.CandidateValues) > 0) && hasValueOutside(selected, state.CandidateValues) {
 		issues = append(issues, Issue{FieldKey: fieldKey, Code: IssueFilteredOption})
 	}
 	if state.requiresActive && !relationSatisfied(selected, state.requiredValues, true) {

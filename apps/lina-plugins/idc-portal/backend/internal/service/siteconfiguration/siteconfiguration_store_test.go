@@ -41,7 +41,7 @@ func TestTemplateSettingsPersistence(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, id := range []string{"a", "b"} {
-		if err = service.Save(ctx, Settings{SelectedPlugin: id, Common: Common{SiteName: "Shop"}, Config: map[string]any{"herotitle": id}}); err != nil {
+		if err = service.Save(ctx, Settings{SelectedPlugin: id, Common: Common{SiteName: "Shop", CompanyName: "Example Ltd", ICPNumber: "ICP 123", ICPURL: "https://records.example/icp", PoliceNumber: "Police 456", PoliceURL: "https://records.example/police"}, Config: map[string]any{"herotitle": id}}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -55,6 +55,9 @@ func TestTemplateSettingsPersistence(t *testing.T) {
 	}
 	if view.Configurations["a"]["herotitle"] != "a" || view.Configurations["b"]["herotitle"] != "b" {
 		t.Fatalf("settings mixed: %#v", view)
+	}
+	if view.Common.ICPNumber != "ICP 123" || view.Common.PoliceNumber != "Police 456" || view.Common.CompanyName != "Example Ltd" {
+		t.Fatal("shared settings did not survive restart and template switch")
 	}
 	before := r.lists
 	public, active, err := restarted.Public(ctx)
@@ -94,6 +97,20 @@ func TestNormalizedImageAndColor(t *testing.T) {
 	for _, color := range []string{"red", "#123", "url(javascript:alert(1))"} {
 		if err := validate(Settings{Common: Common{SiteName: "Shop"}, Config: map[string]any{"primarycolor": color}}, schema); err == nil {
 			t.Fatalf("unsafe color accepted: %q", color)
+		}
+	}
+}
+
+// TestRegistrationLinks rejects executable or authority-confusing destinations.
+func TestRegistrationLinks(t *testing.T) {
+	for _, value := range []string{"javascript:alert(1)", "//evil.example", "https://user:password@example.com", "https://example.com\\evil", "https://example.com\r\n"} {
+		if safeRegistrationLink(value) {
+			t.Fatalf("accepted unsafe link %q", value)
+		}
+	}
+	for _, value := range []string{"", "https://records.example/query?id=123"} {
+		if !safeRegistrationLink(value) {
+			t.Fatalf("rejected safe link %q", value)
 		}
 	}
 }

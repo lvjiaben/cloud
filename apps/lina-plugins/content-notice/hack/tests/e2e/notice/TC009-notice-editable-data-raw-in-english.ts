@@ -54,7 +54,6 @@ async function ensureNotice(api: APIRequestContext) {
           '<p>系统将于本周六凌晨2:00-4:00进行升级维护，届时系统将暂停服务。</p>',
         status: 1,
         title: '系统升级通知',
-        type: 1,
       },
     }),
   );

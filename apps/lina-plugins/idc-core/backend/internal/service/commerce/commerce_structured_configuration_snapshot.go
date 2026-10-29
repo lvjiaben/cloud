@@ -24,6 +24,8 @@ import (
 const maximumStructuredSnapshotsPerOrder = 100
 
 type FreezeQuoteItemConfigurationInput struct {
+	ServerLoginToken string
+
 	QuoteItemNo string
 	Purchase    catalog.PublicPurchaseConfigurationInput
 }
@@ -42,6 +44,12 @@ type structuredConfigurationService struct {
 }
 
 type structuredSnapshotQuoteItem struct {
+	CartNo string `orm:"cart_no"`
+
+	ServerLoginToken string `orm:"server_login_token"`
+	CartItemNo       string `orm:"cart_item_no"`
+	Quantity         int    `orm:"quantity"`
+
 	QuoteNo              string    `orm:"quote_no"`
 	QuoteItemNo          string    `orm:"quote_item_no"`
 	CustomerNo           string    `orm:"customer_no"`
@@ -86,6 +94,7 @@ type structuredRequiredQuoteItem struct {
 
 type structuredSnapshotDigestInput struct {
 	CustomerNo, QuoteNo, QuoteItemNo, ProductNo, VersionNo, ConfigurationRevision                string
+	ServerLoginToken                                                                             string
 	UploaderUserID                                                                               int
 	InterfaceConfigurationRevision                                                               int64
 	InterfaceInstanceNo, CustomerDeclarationDigest, CandidateSnapshotDigest, CustomerValueDigest string
@@ -129,6 +138,10 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 	if err != nil {
 		return nil, err
 	}
+	token, err := s.quoteServerLoginChoice(ctx, customerNo, quoteItem, input.ServerLoginToken)
+	if err != nil {
+		return nil, err
+	}
 	frozen, err := s.structuredConfiguration.freezer.FreezePurchaseConfiguration(ctx, input.Purchase)
 	if err != nil {
 		return nil, err
@@ -154,7 +167,7 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 	}
 	digest, err := quoteContentDigest(&structuredSnapshotDigestInput{
 		customerNo, quoteItem.QuoteNo, quoteItem.QuoteItemNo, frozen.ProductNo, frozen.VersionNo,
-		frozen.ConfigurationRevision, uploaderUserID, frozen.InterfaceConfigurationRevision, frozen.InterfaceInstanceNo,
+		frozen.ConfigurationRevision, token, uploaderUserID, frozen.InterfaceConfigurationRevision, frozen.InterfaceInstanceNo,
 		frozen.CustomerDeclarationDigest, frozen.CandidateSnapshotDigest, frozen.CustomerValueDigest})
 	if err != nil {
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
@@ -173,6 +186,9 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 			!constantTimeDigestEqual(frozen.CustomerValueDigest, locked.CustomerValueDigest) {
 			return bizerr.NewCode(CodeConflict)
 		}
+		if loadErr = s.persistQuoteServerLogin(ctx, customerNo, locked, token); loadErr != nil {
+			return loadErr
+		}
 		var existing struct{ SnapshotNo, ContentDigest string }
 		loadErr = tx.GetScan(&existing, `SELECT snapshot_no, content_digest FROM plugin_idc_core_commerce_structured_configuration_snapshot WHERE tenant_id=0 AND quote_item_no=?`, input.QuoteItemNo)
 		if loadErr == nil && existing.SnapshotNo != "" {
@@ -185,13 +201,19 @@ func (s *serviceImpl) freezeQuoteItemConfiguration(
 		if loadErr != nil && !errors.Is(loadErr, sql.ErrNoRows) {
 			return gerror.Wrap(loadErr, "load frozen quote item configuration")
 		}
+		// SQL NULL represents an absent automation relationship. The schema,
+		// values and price-selection digest still belong to this exact order.
+		interfaceNo, interfaceRevision, referenceErr := structuredInterfaceReferences(frozen)
+		if referenceErr != nil {
+			return referenceErr
+		}
 		_, loadErr = tx.Exec(`INSERT INTO plugin_idc_core_commerce_structured_configuration_snapshot
-(tenant_id,snapshot_no,customer_no,uploader_user_id,quote_no,quote_item_no,product_no,version_no,configuration_revision,interface_instance_no,interface_configuration_revision,customer_declaration_digest,candidate_snapshot_digest,customer_value_digest,candidate_snapshot,typed_value_snapshot,content_digest,created_at)
-VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),?,?)`, snapshotNo, customerNo, uploaderUserID,
+(tenant_id,snapshot_no,customer_no,uploader_user_id,quote_no,quote_item_no,product_no,version_no,configuration_revision,interface_instance_no,interface_configuration_revision,customer_declaration_digest,candidate_snapshot_digest,customer_value_digest,candidate_snapshot,typed_value_snapshot,server_login_token,content_digest,created_at)
+VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),?,?,?)`, snapshotNo, customerNo, uploaderUserID,
 			quoteItem.QuoteNo, quoteItem.QuoteItemNo, frozen.ProductNo, frozen.VersionNo, frozen.ConfigurationRevision,
-			frozen.InterfaceInstanceNo, frozen.InterfaceConfigurationRevision, frozen.CustomerDeclarationDigest,
+			interfaceNo, interfaceRevision, frozen.CustomerDeclarationDigest,
 			frozen.CandidateSnapshotDigest, frozen.CustomerValueDigest, string(frozen.CandidateSnapshotJSON),
-			string(frozen.TypedValueSnapshotJSON), digest, now)
+			string(frozen.TypedValueSnapshotJSON), token, digest, now)
 		if loadErr != nil {
 			return gerror.Wrap(loadErr, "insert frozen quote item configuration")
 		}
@@ -213,13 +235,14 @@ VALUES (0,?,?,?,?,?,?,?,?,?,?,?,?,?,CAST(? AS jsonb),CAST(? AS jsonb),?,?)`, sna
 }
 
 func (s *structuredConfigurationService) loadQuoteItem(ctx context.Context, customerNo, quoteItemNo string, lock bool) (*structuredSnapshotQuoteItem, error) {
-	query := `SELECT quote.quote_no, item.quote_item_no, quote.customer_no, item.product_no, item.version_no,
+	query := `SELECT quote.quote_no, quote.cart_no, item.quote_item_no, quote.customer_no, item.product_no, item.version_no, item.cart_item_no, configuration.server_login_token, quantity.quantity,
 configuration.selection_digest AS price_selection_digest,configuration.customer_value_digest,quote.expires_at
 FROM plugin_idc_core_commerce_quote_item_snapshot item
 JOIN plugin_idc_core_commerce_quote_snapshot quote ON quote.quote_no=item.quote_no AND quote.tenant_id=item.tenant_id
 JOIN plugin_idc_core_commerce_configuration_snapshot configuration
   ON configuration.configuration_snapshot_no=item.configuration_snapshot_no
  AND configuration.version_no=item.version_no AND configuration.tenant_id=item.tenant_id
+JOIN plugin_idc_core_commerce_quote_item_quantity_snapshot quantity ON quantity.quote_item_no=item.quote_item_no AND quantity.tenant_id=item.tenant_id
 WHERE item.tenant_id=0 AND item.quote_item_no=? AND quote.customer_no=?`
 	if lock {
 		query += " FOR UPDATE OF item, quote"
@@ -393,4 +416,19 @@ func structuredCheckoutFileInputs(snapshots []structuredCheckoutSnapshotRow, row
 		current.FileTokens = append(current.FileTokens, row.UploadNo)
 	}
 	return result, nil
+}
+
+// structuredInterfaceReferences preserves SQL NULL for products without an
+// automation binding while rejecting partial frozen interface identities.
+func structuredInterfaceReferences(frozen *catalog.FrozenPurchaseConfiguration) (any, any, error) {
+	if frozen.InterfaceInstanceNo == "" {
+		if frozen.InterfaceConfigurationRevision != 0 {
+			return nil, nil, bizerr.NewCode(CodeInvalid)
+		}
+		return nil, nil, nil
+	}
+	if frozen.InterfaceConfigurationRevision < 1 {
+		return nil, nil, bizerr.NewCode(CodeInvalid)
+	}
+	return frozen.InterfaceInstanceNo, frozen.InterfaceConfigurationRevision, nil
 }

@@ -15,6 +15,7 @@ import (
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-plugin-idc-core/backend/cap/idccap"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
@@ -35,43 +36,49 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
 	binding, err := s.loadBinding(ctx, input.VersionNo, false)
-	if err != nil || binding == nil {
+	if err != nil {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	if binding == nil {
+		return s.saveManualConfiguration(ctx, input, authorization)
 	}
 	exact, err := s.extensions.GetProviderExact(ctx, plugincap.BusinessExtensionProviderExactInput{
 		PluginID: binding.PluginId, ReleaseVersion: binding.PluginReleaseVersion,
 		Point: binding.ExtensionPointCode, ContractVersion: binding.ContractVersion,
 		ReleaseDigest: binding.ReleaseDigest, DeclarationDigest: binding.DeclarationDigest,
 	})
-	if err != nil || !sameExactEvidence(bindingEvidence(binding), exact) {
+	if err != nil || !sameProviderContract(bindingEvidence(binding), exact) {
 		return bizerr.NewCode(CodeEvidenceUnavailable)
 	}
-	if exact.PluginID == portableImportProviderID {
-		var imported *entity.CatalogImportContract
-		if loadErr := s.database.Model(do.CatalogImportContract{}).Ctx(ctx).Where(do.CatalogImportContract{TenantId: 0, VersionNo: input.VersionNo}).Scan(&imported); loadErr != nil {
-			return bizerr.WrapCode(loadErr, catalog.CodeManagementUnavailable)
-		}
-		if imported != nil {
-			return bizerr.NewCode(catalog.CodeManagementConflict)
-		}
+	if imported, _, _, sourceErr := s.readImportedConfiguration(ctx, input.VersionNo, binding.InterfaceInstanceNo, exact); sourceErr != nil {
+		return sourceErr
+	} else if imported {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	currentInterfaceRevision, err := s.loadLatestInterfaceConfigurationRevision(ctx, binding.InterfaceInstanceNo, false)
 	if err != nil || currentInterfaceRevision == nil {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
-	scope := dynamicCandidateScope{interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: currentInterfaceRevision.Revision}
-	product, err := s.compileConfigurationResolved(ctx, exact, exact.ProductConfiguration, input.MerchantValues, configurationSurfaceProduct, scope)
+	input, err = s.prepareEditableParameterBindings(ctx, input, exact)
+	if err != nil {
+		return err
+	}
+	var relationships []resourceinterfaceprojectioncap.ChoiceRelationship
+	scope := dynamicCandidateScope{interfaceInstanceNo: binding.InterfaceInstanceNo, configurationRevision: currentInterfaceRevision.Revision, candidateRelationships: &relationships}
+	product, reused, err := s.compileEditableMerchantConfiguration(ctx, input, exact, binding.InterfaceInstanceNo, currentInterfaceRevision.Revision, scope)
+	if err != nil {
+		return err
+	}
+	customerSchema, err := s.selectEditableCustomerSchema(ctx, exact, input, scope, product.ValuesJSON)
 	if err != nil {
 		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	customerSchema, err := selectCustomerSchema(exact, input.CustomerFieldSelections)
-	if err != nil {
+	if err = s.validateEditableCustomerSchema(ctx, exact, customerSchema, scope, reused); err != nil {
 		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
-	if customerSchema != nil {
-		if err = s.validateConfigurationRuntime(ctx, exact, customerSchema, nil, configurationSurfaceCustomer, scope); err != nil {
-			return bizerr.NewCode(catalog.CodeManagementInvalid)
-		}
+	presentationJSON, err := s.compileCommercialPresentations(ctx, input, exact, customerSchema, product.ValuesJSON, relationships)
+	if err != nil {
+		return err
 	}
 	customerJSON, err := configurationDeclarationJSON(customerSchema)
 	if err != nil {
@@ -82,17 +89,14 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 			return lockErr
 		}
 		lockedBinding, loadErr := s.loadBinding(txCtx, input.VersionNo, true)
-		if loadErr != nil || lockedBinding == nil || !sameExactEvidence(bindingEvidence(lockedBinding), exact) {
+		if loadErr != nil || lockedBinding == nil || !sameProviderContract(bindingEvidence(lockedBinding), exact) {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
 		interfaceRevision, loadErr := s.loadLatestInterfaceConfigurationRevision(txCtx, lockedBinding.InterfaceInstanceNo, true)
 		if loadErr != nil || interfaceRevision == nil || interfaceRevision.Revision != currentInterfaceRevision.Revision {
 			return bizerr.NewCode(catalog.CodeManagementConflict)
 		}
-		interfaceRevisionNo := int64(0)
-		if interfaceRevision != nil {
-			interfaceRevisionNo = interfaceRevision.Revision
-		}
+		interfaceRevisionNo := interfaceRevision.Revision
 		var current *entity.CatalogProductVersionConfiguration
 		if loadErr = s.database.Model(do.CatalogProductVersionConfiguration{}).Ctx(txCtx).
 			Where(do.CatalogProductVersionConfiguration{TenantId: idccap.DefaultTenantID, VersionNo: input.VersionNo}).LockUpdate().Scan(&current); loadErr != nil {
@@ -107,7 +111,7 @@ func (s *serviceImpl) SaveVersionConfiguration(ctx context.Context, input SaveVe
 			InterfaceInstanceNo: lockedBinding.InterfaceInstanceNo, InterfaceConfigurationRevision: interfaceRevisionNo,
 			ProductSchemaVersion: productVersion, ProductDeclarationSnapshot: string(product.DeclarationJSON),
 			MerchantValueSnapshot: string(product.ValuesJSON), CustomerSchemaVersion: customerVersion,
-			CustomerDeclarationSnapshot: string(customerJSON), DeclarationDigest: declarationDigest,
+			CustomerDeclarationSnapshot: string(customerJSON), CustomerPresentationSnapshot: presentationJSON, DeclarationDigest: declarationDigest,
 			MerchantValueDigest: merchantValueDigest, ChangedBy: authorization.ActorUserID,
 		}
 		targetVersion := int64(1)
@@ -185,9 +189,11 @@ func configurationSchemaVersion(schema *capmodel.ConfigurationSchemaDeclaration)
 }
 
 type frozenConfigurationCandidates struct {
-	interfaceValues configurationcontract.ResolvedCandidates
-	productValues   configurationcontract.ResolvedCandidates
-	customerValues  configurationcontract.ResolvedCandidates
+	configurationVersion    int64
+	validatedMerchantDigest string
+	interfaceValues         configurationcontract.ResolvedCandidates
+	productValues           configurationcontract.ResolvedCandidates
+	customerValues          configurationcontract.ResolvedCandidates
 }
 
 func (s *serviceImpl) resolveFrozenConfigurationCandidates(
@@ -225,7 +231,18 @@ func (s *serviceImpl) resolveFrozenConfigurationCandidates(
 	if err != nil {
 		return nil, err
 	}
+	// Provider invocation owns the same lifecycle lock as admission. Run the
+	// pure validator before taking admission, then fence its exact snapshot
+	// under the version row lock instead of recursively acquiring that lock.
+	compiled, err := compileConfigurationWithResolved(exact, exact.ProductConfiguration, merchantValues, configurationSurfaceProduct, productValues)
+	if err != nil || configurationDigest(compiled.ValuesJSON) != row.MerchantValueDigest {
+		return nil, bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	if err = s.validateProviderProductConfiguration(ctx, exact, compiled.ValuesJSON); err != nil {
+		return nil, err
+	}
 	return &frozenConfigurationCandidates{
+		configurationVersion: row.Version, validatedMerchantDigest: configurationDigest(compiled.ValuesJSON),
 		interfaceValues: interfaceValues, productValues: productValues, customerValues: customerValues,
 	}, nil
 }
@@ -267,9 +284,8 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 	if err = model.Scan(&row); err != nil {
 		return gerror.Wrap(err, "load frozen product version configuration")
 	}
-	if row == nil || row.InterfaceInstanceNo != binding.InterfaceInstanceNo ||
-		row.InterfaceConfigurationRevision != latestInterfaceRevision.Revision {
-		return bizerr.NewCode(catalog.CodeManagementConflict)
+	if err = s.validateConfigurationInterfaceRevision(ctx, binding.InterfaceInstanceNo, row, latestInterfaceRevision); err != nil {
+		return err
 	}
 	customerSchema, schemaErr := s.importedCustomerSchema(ctx, binding, row, exact)
 	if schemaErr != nil {
@@ -279,21 +295,21 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 	if err != nil {
 		return gerror.Wrap(err, "encode exact product configuration declaration")
 	}
-	customerDeclaration, err := configurationDeclarationJSON(customerSchema)
-	if err != nil {
-		return gerror.Wrap(err, "encode exact customer configuration declaration")
-	}
 	if row.ProductSchemaVersion != configurationSchemaVersion(exact.ProductConfiguration) ||
-		row.CustomerSchemaVersion != configurationSchemaVersion(customerSchema) ||
-		row.DeclarationDigest != configurationDigest(append(append([]byte{}, productDeclaration...), customerDeclaration...)) {
+		row.CustomerSchemaVersion != configurationSchemaVersion(customerSchema) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	storedProduct, err := decodeConfigurationDeclaration(row.ProductDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(storedProduct, exact.ProductConfiguration) {
+	if err != nil || !sameCompatibleProductConfiguration(storedProduct, exact.ProductConfiguration) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	storedCustomer, err := decodeConfigurationDeclaration(row.CustomerDeclarationSnapshot)
-	if err != nil || !sameExactConfiguration(storedCustomer, customerSchema) {
+	if err != nil || !sameCompatibleProductConfiguration(storedCustomer, customerSchema) {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	storedProductJSON, productErr := configurationDeclarationJSON(storedProduct)
+	storedCustomerJSON, customerErr := configurationDeclarationJSON(storedCustomer)
+	if productErr != nil || customerErr != nil || row.DeclarationDigest != configurationDigest(append(append([]byte{}, storedProductJSON...), storedCustomerJSON...)) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	merchantValues, err := configurationValuesFromJSON(
@@ -310,8 +326,8 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 		configurationDigest(compiled.ValuesJSON) != row.MerchantValueDigest {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
-	if err = s.validateProviderProductConfiguration(ctx, exact, compiled.ValuesJSON); err != nil {
-		return err
+	if row.Version != resolved.configurationVersion || configurationDigest(compiled.ValuesJSON) != resolved.validatedMerchantDigest {
+		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	if _, err = configurationcontract.EvaluateResolved(
 		customerSchema, nil, configurationSurfaceCustomer,
@@ -319,8 +335,11 @@ func (s *serviceImpl) validateFrozenVersionConfiguration(
 	); err != nil {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
-	if err = s.validateCustomerSelectionPrices(ctx, binding.VersionNo, exact, customerSchema); err != nil {
-		return bizerr.WrapCode(err, codeCustomerOptionPricesRequired)
+	if err = s.validateCustomerSelectionPrices(ctx, binding.VersionNo, exact, customerSchema, row.CustomerPresentationSnapshot); err != nil {
+		if bizerr.Is(err, catalog.CodeManagementConflict) {
+			return bizerr.WrapCode(err, codeCustomerOptionPricesRequired)
+		}
+		return bizerr.WrapCode(err, catalog.CodeManagementUnavailable)
 	}
 	return nil
 }

@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/gogf/gf/v2/database/gdb"
+
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
 	"lina-plugin-idc-core/backend/internal/model/do"
@@ -21,12 +23,16 @@ type importedWholePriceRow struct {
 }
 
 func (s *publicCatalogReaderImpl) importedWholePrices(ctx context.Context, versions []string, currency string) (map[string]channelcommercecap.ImportWholeItemRule, error) {
+	return loadImportedWholePriceRules(ctx, s.database, versions, currency)
+}
+
+func loadImportedWholePriceRules(ctx context.Context, database gdb.DB, versions []string, currency string) (map[string]channelcommercecap.ImportWholeItemRule, error) {
 	var rows []importedWholePriceRow
 	filter := do.CatalogImportTerm{TenantId: 0}
 	if currency != "" {
 		filter.CurrencyCode = currency
 	}
-	err := s.database.Model(do.CatalogImportTerm{}).Ctx(ctx).Where(filter).WhereIn("version_no", versions).
+	err := database.Model(do.CatalogImportTerm{}).Ctx(ctx).Where(filter).WhereIn("version_no", versions).
 		Fields("version_no,billing_rule_no,currency_code,whole_item_rule").Limit(maximumPublicationPrices + 1).Scan(&rows)
 	if err != nil || len(rows) > maximumPublicationPrices {
 		return nil, bizerr.WrapCode(err, CodePublicQuoteUnavailable)
@@ -64,7 +70,11 @@ func (s *publicCatalogReaderImpl) applyImportedPurchasePrices(ctx context.Contex
 }
 
 func (s *publicCatalogReaderImpl) applyImportedPublicPrices(ctx context.Context, version string, quote *PublicConfigurationQuote) error {
-	rules, err := s.importedWholePrices(ctx, []string{version}, quote.CurrencyCode)
+	return applyImportedPublicPriceRules(ctx, s.database, version, quote)
+}
+
+func applyImportedPublicPriceRules(ctx context.Context, database gdb.DB, version string, quote *PublicConfigurationQuote) error {
+	rules, err := loadImportedWholePriceRules(ctx, database, []string{version}, quote.CurrencyCode)
 	if err != nil {
 		return err
 	}

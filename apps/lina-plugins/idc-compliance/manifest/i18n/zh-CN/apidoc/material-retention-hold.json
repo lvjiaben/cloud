@@ -1,0 +1,16 @@
+{
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.meta.tags": "IDC 合规材料留存",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.meta.summary": "设置材料人工保全",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.meta.dc": "为现有材料设置认证管理人工保全；解除前不允许确认删除原件。",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.schema.dc": "为现有材料设置认证管理人工保全；解除前不允许确认删除原件。",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.fields.targetTypeCode.dc": "受留存保护的材料类别",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.fields.targetNo.dc": "材料业务编号",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldCreateReq.fields.idempotencyKey.dc": "随机重试键",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.meta.tags": "IDC 合规材料留存",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.meta.summary": "解除材料人工保全",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.meta.dc": "仅解除认证管理中设置的人工保全；税务、争议、审计和其他业务方的保留保护继续生效。",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.schema.dc": "仅解除认证管理中设置的人工保全；税务、争议、审计和其他业务方的保留保护继续生效。",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.fields.targetTypeCode.dc": "受留存保护的材料类别",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.fields.targetNo.dc": "材料业务编号",
+  "plugins.idc_compliance.api.admin.v1.PrivacyRetentionHoldReleaseCreateReq.fields.idempotencyKey.dc": "随机重试键"
+}

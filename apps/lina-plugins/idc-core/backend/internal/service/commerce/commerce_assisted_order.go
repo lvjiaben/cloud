@@ -17,7 +17,6 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 const (
@@ -91,9 +90,8 @@ type AssistedQuoteCreateInput struct {
 	Reason              string
 	InternalNote        string
 	IdempotencyKey      string
-	ContractPolicyCode  contractpolicy.Policy
-	ContractTemplateNo  string
-	Items               []AssistedQuoteItemInput
+
+	Items []AssistedQuoteItemInput
 }
 
 // AssistedQuoteFilter is a bounded, encrypted-cursor management query.
@@ -127,28 +125,27 @@ type AssistedQuoteRequest struct {
 	ManualDiscountMinor  int64
 	PaymentTermCode      AssistedPaymentTerm
 	PaymentDueSeconds    int
-	ContractPolicyCode   contractpolicy.Policy
-	ContractTemplateNo   string
-	Reason               string
-	InternalNote         string
-	RequestedBy          int
-	DecisionCode         AssistedQuoteDecision
-	DecisionBy           int
-	DecisionReason       string
-	QuoteNo              string
-	OrderNo              string
-	OrderStatusCode      string
-	SubtotalMinor        int64
-	DiscountMinor        int64
-	TotalAmountMinor     int64
-	ExpiresAt            time.Time
-	CreatedAt            time.Time
-	DecisionAt           *time.Time
-	Items                []AssistedQuoteItem
-	CanApprove           bool
-	CanReject            bool
-	CanCheckout          bool
-	Reused               bool
+
+	Reason           string
+	InternalNote     string
+	RequestedBy      int
+	DecisionCode     AssistedQuoteDecision
+	DecisionBy       int
+	DecisionReason   string
+	QuoteNo          string
+	OrderNo          string
+	OrderStatusCode  string
+	SubtotalMinor    int64
+	DiscountMinor    int64
+	TotalAmountMinor int64
+	ExpiresAt        time.Time
+	CreatedAt        time.Time
+	DecisionAt       *time.Time
+	Items            []AssistedQuoteItem
+	CanApprove       bool
+	CanReject        bool
+	CanCheckout      bool
+	Reused           bool
 }
 
 // AssistedQuotePage contains a bounded page and the same-scope filtered total.

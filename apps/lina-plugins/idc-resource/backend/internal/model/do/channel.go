@@ -19,7 +19,7 @@ type Channel struct {
 	ProviderId                any        // Provider descriptor identifier declared through resourcecap SPI
 	ProviderPluginId          any        // Plugin that owns the frozen Provider implementation
 	DisplayName               any        //
-	Endpoint                  any        // Administrator-approved HTTPS API origin without credentials
+	Endpoint                  any        // Administrator-approved explicit HTTP(S) API origin without credentials
 	NonSecretSettings         any        // Adapter settings validated to exclude credentials and secret references
 	StatusCode                any        //
 	Version                   any        //

@@ -1,47 +1,41 @@
 {
   "plugin": {
     "content-notice": {
-      "description": "Managed dynamic plugin for notice management, publication, and inbox delivery.",
+      "description": "Built-in announcement management, publication, and reading.",
       "drawer": {
-        "createTitle": "Create Notice",
-        "editTitle": "Edit Notice"
+        "createTitle": "Create Announcement",
+        "editTitle": "Edit Announcement"
       },
       "fields": {
-        "attachments": "Attachments",
         "content": "Content",
         "createdBy": "Created By",
         "status": "Status",
-        "title": "Notice Title",
-        "type": "Notice Type"
+        "title": "Announcement Title",
+        "sortOrder": "Sort order",
+        "type": "Type"
       },
       "messages": {
-        "deleteSelectedConfirm": "Delete the selected {count} notice(s)?"
+        "deleteSelectedConfirm": "Delete the selected {count} announcement(s)?",
+        "sortFailed": "Unable to save the order. Please try again.",
+        "loadFailed": "Unable to load the announcement. Please try again."
       },
-      "name": "Content - Notices",
+      "name": "Content - Announcements",
       "placeholders": {
-        "title": "Please enter a notice title"
+        "title": "Please enter an announcement title"
       },
       "preview": {
-        "title": "Notice Preview"
+        "title": "Announcement Preview"
       },
       "status": {
         "draft": "Draft",
         "published": "Published"
       },
-      "tableTitle": "Notice List",
+      "tableTitle": "Announcement List",
       "validation": {
-        "content": "Please enter the notice content",
+        "content": "Please enter the announcement content",
         "status": "Please select a status",
-        "title": "Please enter a notice title",
-        "type": "Please select a notice type"
-      },
-      "lifecycleGuard": {
-        "uninstall_blocked": {
-          "published_notices_exist": "Published tenant notices still exist. Archive or delete them before uninstalling."
-        },
-        "disable_blocked": {
-          "pending_notices_exist": "Pending tenant notices still require processing before this plugin can be disabled."
-        }
+        "title": "Please enter an announcement title",
+        "sortOrder": "Enter a non-negative integer"
       }
     }
   }

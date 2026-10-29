@@ -62,8 +62,8 @@ func newPaymentPagesDatabase(t *testing.T) gdb.DB {
 		t.Fatal("resolve migrations")
 	}
 	paths, err := filepath.Glob(filepath.Join(filepath.Dir(file), "..", "manifest", "sql", "[0-9][0-9][0-9]-*.sql"))
-	if err != nil || len(paths) != 5 {
-		t.Fatalf("expected five payment migrations: %v", err)
+	if err != nil || len(paths) != 6 {
+		t.Fatalf("expected six payment migrations: %v", err)
 	}
 	for pass := 0; pass < 2; pass++ {
 		for _, path := range paths {

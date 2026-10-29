@@ -12,10 +12,12 @@ import (
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
 )
 
 func (s *managementServiceImpl) CommitProductCopy(ctx context.Context, input ProductCopyInput) (*ProductDraft, error) {
+	if input.Revision {
+		return s.commitProductRevision(ctx, input)
+	}
 	actor, err := s.authorizeProductCopy(ctx, input)
 	if err != nil {
 		return nil, err
@@ -44,11 +46,8 @@ func (s *managementServiceImpl) CommitProductCopy(ctx context.Context, input Pro
 	if inventory == nil {
 		return nil, bizerr.NewCode(CodeManagementConflict)
 	}
-	normalized, err := normalizeProductCreate(ProductCreateInput{CategoryNo: product.CategoryNo, PublicSlug: input.PublicSlug, NameZhCN: input.NameZhCN, NameEnUS: input.NameEnUS, SummaryZhCN: product.SummaryZhCn, SummaryEnUS: product.SummaryEnUs, SortOrder: product.SortOrder, ContractPolicyCode: contractpolicy.Policy(version.ContractPolicyCode), ContractTemplateNo: version.ContractTemplateNo, InventoryTrackingEnabled: inventory.TrackingEnabled, SellableQuantity: 0})
+	normalized, err := normalizeProductCreate(ProductCreateInput{CategoryNo: product.CategoryNo, PublicSlug: input.PublicSlug, NameZhCN: input.NameZhCN, NameEnUS: input.NameEnUS, SummaryZhCN: product.SummaryZhCn, SummaryEnUS: product.SummaryEnUs, SortOrder: product.SortOrder, InventoryTrackingEnabled: inventory.TrackingEnabled, SellableQuantity: 0})
 	if err != nil {
-		return nil, err
-	}
-	if err = s.validateProductContractRule(ctx, normalized); err != nil {
 		return nil, err
 	}
 	var newProduct, newVersion string

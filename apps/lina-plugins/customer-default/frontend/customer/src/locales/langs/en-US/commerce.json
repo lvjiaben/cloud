@@ -14,7 +14,6 @@
     "title": "My orders"
   },
   "order": {
-    "contractOptional": "Ordinary individual orders do not require a contract. Only orders explicitly marked by staff follow contract gating.",
     "created": "Created",
     "delivery": "Product delivery",
     "services": "Ongoing services",
@@ -23,7 +22,8 @@
     "invoice": "Invoice",
     "requestRefund": "Request refund",
     "items": "Product items",
-    "label": "Order"
+    "label": "Order",
+    "refresh": "Refresh status"
   },
   "quote": {
     "changed": "The price changed. Review the new amount before placing the order.",
@@ -109,7 +109,8 @@
     "terminated": "Terminated",
     "unavailable": "Status unavailable",
     "unknown": "Status unavailable",
-    "waiting_payment": "Waiting for payment"
+    "waiting_payment": "Waiting for payment",
+    "paid": "Paid"
   },
   "fulfillment": {
     "ongoing": "Ongoing service included",
@@ -129,10 +130,15 @@
       "awaiting_payment": "Awaiting payment",
       "awaiting_review": "Awaiting merchant review",
       "processing": "Processing",
+      "manual_processing": "Needs staff attention",
       "completed": "Completed",
       "not_completed": "Not completed",
       "cancelled": "Cancelled"
-    }
+    },
+    "processingHint": "Provisioning is in progress. This status updates automatically.",
+    "manualHint": "This order needs staff attention. Your payment is recorded; do not pay again.",
+    "incompleteHint": "Delivery is incomplete. Contact support for help; no repeat payment is needed.",
+    "refreshPaused": "Automatic updates have paused. Refresh the status to try again."
   },
   "units": {
     "cycles": "billing cycles",

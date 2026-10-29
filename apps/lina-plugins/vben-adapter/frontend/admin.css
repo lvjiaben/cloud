@@ -188,3 +188,112 @@
     margin-right: auto;
   }
 }
+
+/* Cloud commerce visual system. Scope shell tokens to the installed admin
+ * document so independent customer templates remain isolated.
+ * Vben/Ant controls retain their semantics, focus handling and layout sizing. */
+html[data-admin-console="true"]:not(.dark) {
+  --primary: 225 88% 54%;
+  --primary-foreground: 0 0% 100%;
+  --background: 220 30% 97%;
+  --card: 0 0% 100%;
+  --foreground: 222 36% 18%;
+  --muted: 220 24% 96%;
+  --muted-foreground: 220 12% 46%;
+  --border: 220 22% 91%;
+  --accent: 224 100% 96%;
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 22% 30%;
+  --header: 0 0% 100%;
+  --radius: 0.5rem;
+}
+.plugin-admin-page {
+  letter-spacing: 0.01em;
+  font-size: 13px;
+}
+.plugin-admin-page :where(.ant-card, .h-full.bg-card:has(> .vxe-grid)) {
+  border-radius: 10px;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 8px rgb(20 35 70 / 3%);
+}
+.plugin-admin-page .plugin-admin-tabs > .ant-tabs-nav {
+  border-radius: 10px 10px 0 0;
+  min-height: 48px;
+}
+.plugin-admin-page .ant-tabs-tab {
+  font-size: 14px;
+  padding-block: 14px;
+}
+.plugin-admin-page .ant-tabs-tab-active .ant-tabs-tab-btn {
+  font-weight: 600;
+}
+.plugin-admin-page .vxe-grid .vxe-toolbar {
+  min-height: 52px;
+  padding-inline: 16px;
+}
+.plugin-admin-page .vxe-grid--form-wrapper > .relative {
+  padding: 16px 16px 4px;
+}
+.plugin-admin-page .vxe-grid .vxe-pager {
+  padding-inline: 16px;
+  min-height: 48px;
+}
+.plugin-admin-page .vxe-header--column {
+  font-size: 12px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+.plugin-admin-page .vxe-body--column {
+  font-size: 13px;
+}
+.plugin-admin-page :where(.ant-btn, .ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select-selector) {
+  border-radius: 6px;
+}
+.plugin-admin-page .ant-btn-primary {
+  box-shadow: 0 2px 4px hsl(var(--primary) / 15%);
+}
+/* Teleported plugin dialogs use the same palette through root variables. */
+html[data-admin-console="true"] :where(.ant-modal-content, .ant-drawer-content) {
+  border-radius: 12px;
+  box-shadow: 0 16px 60px rgb(20 35 70 / 16%);
+}
+html[data-admin-console="true"] .ant-drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+html[data-admin-console="true"] .ant-drawer-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+html[data-admin-console="true"] .ant-drawer-body {
+  padding: 24px;
+}
+@media (max-width: 768px) {
+  html[data-admin-console="true"] .ant-drawer-body { padding: 16px; }
+  .plugin-admin-page .vxe-grid .vxe-toolbar { padding-inline: 8px; }
+}
+/* Vben drawers and modals are teleported and use role=dialog, rather than
+ * Ant's container classes. Include those surfaces without changing sizing. */
+html[data-admin-console="true"] [role="dialog"] {
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
+  box-shadow: 0 16px 60px rgb(20 35 70 / 16%);
+}
+html[data-admin-console="true"] :is(.ant-btn, .ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select-selector) {
+  border-radius: 6px;
+}
+html[data-admin-console="true"] .ant-btn-primary {
+  box-shadow: 0 2px 4px hsl(var(--primary) / 15%);
+}
+
+/* Override the installed host skin's universal !important square reset only
+ * for these standard surfaces; leave switches, radio dots and avatars intact. */
+html[data-admin-console="true"] body.admin-console-app :is(.ant-btn, .ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select-selector, .ant-alert) {
+  border-radius: 6px !important;
+}
+html[data-admin-console="true"] body.admin-console-app :is(.ant-card, .card-box, .ant-modal-content, [role="dialog"]) {
+  border-radius: 10px !important;
+}
+html[data-admin-console="true"] body.admin-console-app .ant-card {
+  box-shadow: 0 2px 8px rgb(20 35 70 / 3%) !important;
+}

@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"time"
 
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
@@ -27,6 +26,9 @@ func validResourceProviderInvocation(invocation *capmodel.BusinessExtensionBridg
 	}
 	if invocation.Purpose != capmodel.BusinessExtensionInvocationPurposeExistingBusiness {
 		return false
+	}
+	if invocation.Method == resourcecap.DynamicProviderMethodLookupPrincipal || invocation.Method == resourcecap.DynamicProviderMethodCreatePrincipal {
+		return true
 	}
 	for _, method := range resourcecap.DynamicProviderMethods() {
 		if invocation.Method == method {
@@ -78,6 +80,12 @@ func validateResourceProviderRequest(method string, payload json.RawMessage) err
 			return err
 		}
 		return request.Validate()
+	case resourcecap.DynamicProviderMethodLookupPrincipal, resourcecap.DynamicProviderMethodCreatePrincipal:
+		var request resourcecap.DynamicPrincipalRequest
+		if err := decodeStrictResourcePayload(payload, &request); err != nil {
+			return err
+		}
+		return request.Validate(method == resourcecap.DynamicProviderMethodCreatePrincipal)
 	case resourcecap.DynamicProviderMethodExecute:
 		var request resourcecap.DynamicOperationRequest
 		if err := decodeStrictResourcePayload(payload, &request); err != nil {
@@ -115,7 +123,8 @@ func validateResourceProviderResult(method string, payload json.RawMessage, requ
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
 			return err
 		}
-		return result.ValidateAt(time.Now().UTC())
+		prepareGuestShapeObservation(&result)
+		return result.ValidateAt(guestShapeValidationTime())
 	case resourcecap.DynamicProviderMethodDiscoverCapabilities:
 		var result resourcecap.CapabilitySnapshot
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
@@ -135,11 +144,26 @@ func validateResourceProviderResult(method string, payload json.RawMessage, requ
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
 			return err
 		}
+		prepareGuestShapeObservation(&result)
 		return result.Validate(request)
 	case resourcecap.DynamicProviderMethodConfigurationCandidates:
 		return validateResourceCandidateResult(payload, requestPayload)
 	case resourcecap.DynamicProviderMethodBuildProvisionParameters:
 		return validateStrictJSONObject(payload)
+	case resourcecap.DynamicProviderMethodLookupPrincipal:
+		var result resourcecap.PrincipalLookupResult
+		if err := decodeStrictResourcePayload(payload, &result); err != nil {
+			return err
+		}
+		prepareGuestShapeObservation(&result)
+		return result.Validate()
+	case resourcecap.DynamicProviderMethodCreatePrincipal:
+		var result resourcecap.PrincipalCreateResult
+		if err := decodeStrictResourcePayload(payload, &result); err != nil {
+			return err
+		}
+		prepareGuestShapeObservation(&result)
+		return result.Validate()
 	case resourcecap.DynamicProviderMethodExecute:
 		var result resourcecap.OperationResult
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
@@ -147,18 +171,21 @@ func validateResourceProviderResult(method string, payload json.RawMessage, requ
 		}
 		// Secret outputs never traverse WASM. The trusted owner retains any
 		// handles beside this safe acknowledgement and merges them locally.
+		prepareGuestShapeObservation(&result)
 		return result.Validate()
 	case resourcecap.DynamicProviderMethodQueryTask:
 		var result resourcecap.OperationResult
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
 			return err
 		}
+		prepareGuestShapeObservation(&result)
 		return result.Validate()
 	case resourcecap.DynamicProviderMethodQueryResource:
 		var result resourcecap.ResourceSnapshot
 		if err := decodeStrictResourcePayload(payload, &result); err != nil {
 			return err
 		}
+		prepareGuestShapeObservation(&result)
 		return result.Validate()
 	default:
 		return io.ErrUnexpectedEOF

@@ -22,10 +22,12 @@ type GateRecoveryWorker interface {
 type GateRecoveryResult struct{ Selected, Queued, Manual, Failed int }
 
 type gateRecoveryWorker struct {
-	database    gdb.DB
-	owner       OwnerGateReleaser
-	mutex       sync.Mutex
-	order, item string
+	database         gdb.DB
+	settlements      SettlementConsumer
+	settlementCursor string
+	owner            OwnerGateReleaser
+	mutex            sync.Mutex
+	order, item      string
 }
 
 // NewOwnerGateReleaser binds the same frozen validator and gates used by settlement delivery.
@@ -67,6 +69,16 @@ func (w *gateRecoveryWorker) Run(ctx context.Context, limit int) (GateRecoveryRe
 		}
 	}
 	var failures []error
+	if w.settlements != nil {
+		recovered, recoveryErr := w.recoverSettlements(ctx, limit)
+		result.Selected += recovered.Selected
+		result.Queued += recovered.Queued
+		result.Manual += recovered.Manual
+		result.Failed += recovered.Failed
+		if recoveryErr != nil {
+			failures = append(failures, recoveryErr)
+		}
+	}
 	for _, row := range rows {
 		if ctx.Err() != nil {
 			return result, errors.Join(append(failures, ctx.Err())...)
@@ -96,4 +108,14 @@ func (w *gateRecoveryWorker) selectPending(ctx context.Context, limit int) ([]ga
  WHERE tenant_id=0 AND strategy_code='payment_confirmed_plugin' AND status_code='gate_pending'
  AND (order_no,order_item_no)>(?::text,?::text) ORDER BY order_no,order_item_no LIMIT ?`, w.order, w.item, limit)
 	return rows, err
+}
+
+// NewSettlementGateRecoveryWorker also repairs locally settled orders whose
+// technical delivery failure exhausted its event budget before any intent existed.
+// It reuses the authoritative consumer; it never replays an upstream write.
+func NewSettlementGateRecoveryWorker(database gdb.DB, owner OwnerGateReleaser, settlements SettlementConsumer) (GateRecoveryWorker, error) {
+	if database == nil || owner == nil || settlements == nil {
+		return nil, gerror.New("settlement recovery requires database and authoritative consumers")
+	}
+	return &gateRecoveryWorker{database: database, owner: owner, settlements: settlements}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 
@@ -41,15 +42,16 @@ func New(database gdb.DB) (*Service, error) {
 }
 
 type taskParameters struct {
-	ContractVersion          string                      `json:"contractVersion"`
-	CustomerNo               string                      `json:"customerNo,omitempty"`
-	LifecycleTaskNo          string                      `json:"lifecycleTaskNo"`
-	Action                   lifecycleresourcecap.Action `json:"action"`
-	ExpectedServiceVersion   int64                       `json:"expectedServiceVersion"`
-	ExpectedExpiresUnixNano  int64                       `json:"expectedExpiresUnixNano"`
-	IdempotencyDigest        [sha256.Size]byte           `json:"idempotencyDigest"`
-	CapabilityEvidenceNo     string                      `json:"capabilityEvidenceNo"`
-	CapabilityEvidenceDigest [sha256.Size]byte           `json:"capabilityEvidenceDigest"`
+	InterfaceConfigurationRevision string                      `json:"interfaceConfigurationRevision"`
+	ContractVersion                string                      `json:"contractVersion"`
+	CustomerNo                     string                      `json:"customerNo,omitempty"`
+	LifecycleTaskNo                string                      `json:"lifecycleTaskNo"`
+	Action                         lifecycleresourcecap.Action `json:"action"`
+	ExpectedServiceVersion         int64                       `json:"expectedServiceVersion"`
+	ExpectedExpiresUnixNano        int64                       `json:"expectedExpiresUnixNano"`
+	IdempotencyDigest              [sha256.Size]byte           `json:"idempotencyDigest"`
+	CapabilityEvidenceNo           string                      `json:"capabilityEvidenceNo"`
+	CapabilityEvidenceDigest       [sha256.Size]byte           `json:"capabilityEvidenceDigest"`
 }
 
 type taskRow struct {
@@ -70,19 +72,21 @@ type taskRow struct {
 }
 
 type routeEvidence struct {
-	ChannelNo      string    `orm:"channel_no"`
-	PoolNo         string    `orm:"pool_no"`
-	MappingNo      string    `orm:"mapping_no"`
-	SnapshotNo     string    `orm:"snapshot_no"`
-	AdapterVersion string    `orm:"adapter_version"`
-	SupportCode    string    `orm:"support_code"`
-	Constraints    string    `orm:"constraints"`
-	ChannelVersion int64     `orm:"channel_version"`
-	PoolVersion    int64     `orm:"pool_version"`
-	MappingVersion int64     `orm:"mapping_version"`
-	ItemCount      int       `orm:"item_count"`
-	ActualCount    int       `orm:"actual_count"`
-	ObservedAt     time.Time `orm:"observed_at"`
+	ProviderRuntimeType            string    `orm:"provider_runtime_type"`
+	InterfaceConfigurationRevision string    `orm:"interface_configuration_revision"`
+	ChannelNo                      string    `orm:"channel_no"`
+	PoolNo                         string    `orm:"pool_no"`
+	MappingNo                      string    `orm:"mapping_no"`
+	SnapshotNo                     string    `orm:"snapshot_no"`
+	AdapterVersion                 string    `orm:"adapter_version"`
+	SupportCode                    string    `orm:"support_code"`
+	Constraints                    string    `orm:"constraints"`
+	ChannelVersion                 int64     `orm:"channel_version"`
+	PoolVersion                    int64     `orm:"pool_version"`
+	MappingVersion                 int64     `orm:"mapping_version"`
+	ItemCount                      int       `orm:"item_count"`
+	ActualCount                    int       `orm:"actual_count"`
+	ObservedAt                     time.Time `orm:"observed_at"`
 }
 
 // CreateTask creates or reuses one Provider task after freezing route capability evidence.
@@ -178,7 +182,8 @@ WITH latest AS (
     ORDER BY observed_at DESC, id DESC
     LIMIT 1
 )
-SELECT channel.channel_no, pool.pool_no, mapping.mapping_no,
+SELECT channel.channel_no, pool.pool_no, mapping.mapping_no,channel.provider_runtime_type,
+       COALESCE(binding.current_configuration_revision,'') AS interface_configuration_revision,
        latest.snapshot_no, latest.adapter_version, item.support_code,
        item.constraints::TEXT AS constraints,
        channel.version AS channel_version, pool.version AS pool_version,
@@ -188,6 +193,8 @@ FROM latest
 INNER JOIN plugin_idc_resource_channel channel
     ON channel.tenant_id = ? AND channel.channel_no = latest.channel_no
    AND channel.status_code = 'enabled' AND channel.deleted_at IS NULL
+LEFT JOIN plugin_idc_resource_interface_channel_binding binding
+    ON binding.tenant_id=channel.tenant_id AND binding.channel_no=channel.channel_no
 INNER JOIN plugin_idc_resource_pool pool
     ON pool.tenant_id = channel.tenant_id AND pool.channel_no = channel.channel_no
    AND pool.pool_no = ? AND pool.status_code = 'enabled' AND pool.deleted_at IS NULL
@@ -208,6 +215,7 @@ INNER JOIN plugin_idc_resource_capability_snapshot_item item
 		return nil, gerror.Wrap(err, "resolve resource lifecycle capability")
 	}
 	if row == nil || row.ChannelNo != request.ChannelNo || row.PoolNo != request.PoolNo ||
+		(row.ProviderRuntimeType == dynamicRuntimeCode && !lifecycleConfigurationRevisionPattern.MatchString(row.InterfaceConfigurationRevision)) ||
 		row.ItemCount != resourcecap.MaximumCapabilityCount ||
 		row.ActualCount != resourcecap.MaximumCapabilityCount ||
 		!usableLifecycleCapability(request.Action, row.SupportCode, row.Constraints) ||
@@ -236,15 +244,21 @@ INNER JOIN plugin_idc_resource_capability_snapshot_item item
 		return nil, decodeErr
 	}
 	return &taskParameters{
-		ContractVersion: lifecycleresourcecap.ContractVersion,
-		CustomerNo:      request.CustomerNo,
-		LifecycleTaskNo: request.LifecycleTaskNo, Action: request.Action,
+		InterfaceConfigurationRevision: row.InterfaceConfigurationRevision,
+		ContractVersion:                lifecycleresourcecap.ContractVersion,
+		CustomerNo:                     request.CustomerNo,
+		LifecycleTaskNo:                request.LifecycleTaskNo, Action: request.Action,
 		ExpectedServiceVersion:  request.ExpectedServiceVersion,
 		ExpectedExpiresUnixNano: request.ExpectedExpiresAt.UTC().UnixNano(),
 		IdempotencyDigest:       idempotencyBytes,
 		CapabilityEvidenceNo:    row.SnapshotNo, CapabilityEvidenceDigest: capabilityBytes,
 	}, nil
 }
+
+// Dynamic lifecycle tasks retain the exact configuration used at admission.
+const dynamicRuntimeCode = "dynamic"
+
+var lifecycleConfigurationRevisionPattern = regexp.MustCompile(`^rci_[0-9a-f]{32}$`)
 
 func (s *Service) loadTaskByRequest(
 	ctx context.Context,

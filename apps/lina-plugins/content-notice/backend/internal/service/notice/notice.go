@@ -1,22 +1,12 @@
-// Package notice implements notice management, publication, and delete cascading
-// for the content-notice source plugin. Notice data stays in the plugin-owned
-// table while host capabilities provide business context, tenant filtering, user
-// projections, and inbox delivery.
+// Package notice owns announcement content and each signed-in user's read state.
 package notice
 
 import (
 	"context"
 
 	"lina-core/pkg/plugin/capability/bizctxcap"
-	"lina-core/pkg/plugin/capability/notifycap"
 	"lina-core/pkg/plugin/capability/tenantcap"
 	"lina-core/pkg/plugin/capability/usercap"
-)
-
-// Notice type values (matching sys_notice_type dictionary)
-const (
-	noticeTypeNotice       = 1 // Notice
-	noticeTypeAnnouncement = 2 // Announcement
 )
 
 // Notice status values (matching sys_notice_status dictionary)
@@ -25,26 +15,25 @@ const (
 	noticeStatusPublished = 1 // Published
 )
 
-// Service defines tenant-scoped notice CRUD and publication fan-out for the plugin.
+// Service defines announcement management and current-user read state.
 type Service interface {
+	// Published lists all published announcements; read state is only loaded for the current user when signedIn is true.
+	Published(ctx context.Context, pageNum, pageSize int, signedIn bool) (*PublishedPage, error)
+	// PublishedByID returns one published announcement or CodeNoticeNotFound, without modifying read state.
+	PublishedByID(ctx context.Context, id int64, signedIn bool) (*PublishedItem, error)
+	// MarkRead idempotently persists a read record for the signed-in user; drafts and missing IDs are rejected.
+	MarkRead(ctx context.Context, id int64) error
 	// List returns notices visible to ctx's tenant using the supplied page and
-	// fuzzy title/creator/type filters. It returns DAO or tenant-scope errors.
+	// fuzzy title/creator filters. It returns DAO or tenant-scope errors.
 	List(ctx context.Context, in ListInput) (*ListOutput, error)
 	// GetById returns one tenant-visible notice by primary key with creator
 	// display metadata, or CodeNoticeNotFound when the row is outside scope or absent.
 	GetById(ctx context.Context, id int64) (*ListItem, error)
-	// Create creates a new notice and, when the status is published, fans the
-	// notice into the inbox pipeline through the host notify bridge. The row is
-	// owned by the current tenant and user from ctx; dispatch failures are logged
-	// without rolling back the persisted notice.
+	// Create stores an announcement in the current installation.
 	Create(ctx context.Context, in CreateInput) (int64, error)
-	// Update updates the notice fields. A transition from draft to published
-	// triggers inbox publication through the host notify bridge. It only updates
-	// the current tenant's row and returns CodeNoticeNotFound for missing scope.
+	// Update changes an existing announcement, including its sort order.
 	Update(ctx context.Context, in UpdateInput) error
-	// Delete removes notices by IDs through the governed store and cascades the deletion into the
-	// notify delivery records so inboxes stay consistent. Empty IDs return a
-	// business error; cascade failures are logged because the notice deletion is authoritative.
+	// Delete atomically removes the requested announcements; missing IDs reject the operation.
 	Delete(ctx context.Context, ids []int64) error
 }
 
@@ -54,7 +43,6 @@ var _ Service = (*serviceImpl)(nil)
 // serviceImpl implements Service.
 type serviceImpl struct {
 	bizCtxSvc bizctxcap.Service // Business context bridge
-	notifySvc notifycap.Service // Notification capability
 	tenantSvc tenantcap.Service // Tenant capability bridge
 	userSvc   usercap.Service   // User domain projection capability
 }
@@ -62,13 +50,11 @@ type serviceImpl struct {
 // New creates and returns a new Service instance.
 func New(
 	bizCtxSvc bizctxcap.Service,
-	notifySvc notifycap.Service,
 	tenantSvc tenantcap.Service,
 	userSvc usercap.Service,
 ) Service {
 	return &serviceImpl{
 		bizCtxSvc: bizCtxSvc,
-		notifySvc: notifySvc,
 		tenantSvc: tenantSvc,
 		userSvc:   userSvc,
 	}
@@ -79,7 +65,6 @@ type ListInput struct {
 	PageNum   int    // Page number, starting from 1
 	PageSize  int    // Page size
 	Title     string // Title, supports fuzzy search
-	Type      int    // Type: 1=Notice 2=Announcement
 	CreatedBy string // Creator username, supports fuzzy search
 }
 
@@ -97,21 +82,29 @@ type ListOutput struct {
 
 // CreateInput defines input for Create function.
 type CreateInput struct {
-	Title   string // Title
-	Type    int    // Type: 1=Notice 2=Announcement
-	Content string // Content
-	FileIds string // Attachment file IDs, comma-separated
-	Status  int    // Status: 0=Draft 1=Published
-	Remark  string // Remark
+	SortOrder int    // Smaller values appear first
+	Title     string // Title
+	Content   string // Content
+	Status    int    // Status: 0=Draft 1=Published
 }
 
 // UpdateInput defines input for Update function.
 type UpdateInput struct {
-	Id      int64   // Notice ID
-	Title   *string // Title
-	Type    *int    // Type: 1=Notice 2=Announcement
-	Content *string // Content
-	FileIds *string // Attachment file IDs, comma-separated
-	Status  *int    // Status: 0=Draft 1=Published
-	Remark  *string // Remark
+	Id        int64   // Notice ID
+	SortOrder *int    // Smaller values appear first
+	Title     *string // Title
+	Content   *string // Content
+	Status    *int    // Status: 0=Draft 1=Published
+}
+
+// PublishedItem projects a published announcement and the current user's read state.
+type PublishedItem struct {
+	*NoticeEntity
+	Read bool
+}
+
+// PublishedPage contains a bounded page and its total count.
+type PublishedPage struct {
+	List  []*PublishedItem
+	Total int
 }

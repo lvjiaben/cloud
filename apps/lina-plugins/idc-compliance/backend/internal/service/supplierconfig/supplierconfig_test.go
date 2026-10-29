@@ -91,7 +91,7 @@ func TestUnavailableRecognizerDoesNotIssueProofOrCreatePendingState(t *testing.T
 		t.Fatalf("new service: %v", err)
 	}
 	service.(*serviceImpl).now = func() time.Time { return now }
-	err = service.StartSubjectBinding(context.Background(), ProviderTencentESSBasic)
+	err = service.StartSubjectBinding(context.Background(), ProviderNuonuoInvoice)
 	if !bizerr.Is(err, CodeExternalEvidenceRequired) || issued != 0 || audit.transitions != 1 {
 		t.Fatalf("error=%v issued=%d audits=%d", err, issued, audit.transitions)
 	}
@@ -123,18 +123,18 @@ func TestAllSupplierWritesRequireActiveSessionBeforeStateAccess(t *testing.T) {
 	}{
 		{name: "credential", permission: PermissionCredentialWrite, run: func() error {
 			_, runErr := service.SaveCredential(context.Background(), CredentialSaveInput{
-				ProviderCode:       ProviderTencentESSBasic,
+				ProviderCode:       ProviderNuonuoInvoice,
 				CredentialEnvelope: []byte("opaque-local-envelope"),
 				IdempotencyKey:     "supplier-credential-0001",
 			})
 			return runErr
 		}},
 		{name: "bind", permission: PermissionSubjectBind, run: func() error {
-			return service.StartSubjectBinding(context.Background(), ProviderTencentESSBasic)
+			return service.StartSubjectBinding(context.Background(), ProviderNuonuoInvoice)
 		}},
 		{name: "revoke", permission: PermissionSubjectRevoke, run: func() error {
 			_, runErr := service.RevokeSubject(context.Background(), SubjectRevokeInput{
-				ProviderCode: ProviderTencentESSBasic,
+				ProviderCode: ProviderNuonuoInvoice,
 				BindingNo:    "lsb_0123456789abcdef0123456789abcdef",
 				ReasonCode:   "supplier_authorization_revoked", ExpectedVersion: 1,
 				IdempotencyKey: "supplier-revoke-0001",
@@ -142,7 +142,7 @@ func TestAllSupplierWritesRequireActiveSessionBeforeStateAccess(t *testing.T) {
 			return runErr
 		}},
 		{name: "reopen", permission: PermissionSubjectReopen, run: func() error {
-			return service.StartSubjectReopening(context.Background(), ProviderTencentESSBasic)
+			return service.StartSubjectReopening(context.Background(), ProviderNuonuoInvoice)
 		}},
 	}
 	for _, test := range tests {
@@ -151,7 +151,7 @@ func TestAllSupplierWritesRequireActiveSessionBeforeStateAccess(t *testing.T) {
 				t.Fatalf("error=%v", runErr)
 			}
 			if authorizer.request.Permission != test.permission ||
-				authorizer.request.TargetNo != configurationNo(ProviderTencentESSBasic) {
+				authorizer.request.TargetNo != configurationNo(ProviderNuonuoInvoice) {
 				t.Fatalf("authorization request=%+v", authorizer.request)
 			}
 		})
@@ -160,12 +160,11 @@ func TestAllSupplierWritesRequireActiveSessionBeforeStateAccess(t *testing.T) {
 
 func TestSubjectProofBindingSeparatesEveryOperationIntent(t *testing.T) {
 	base := SubjectAuthorizationRequest{
-		ProviderCode: ProviderTencentESSBasic, Operation: OperationSubjectBind,
+		ProviderCode: ProviderNuonuoInvoice, Operation: OperationSubjectBind,
 		IdempotencyKey: "supplier-subject-0001",
 	}
 	baseDigest := subjectProofBinding(base).TargetDigest
 	variants := []SubjectAuthorizationRequest{
-		{ProviderCode: ProviderNuonuoInvoice, Operation: OperationSubjectBind, IdempotencyKey: base.IdempotencyKey},
 		{ProviderCode: base.ProviderCode, Operation: OperationSubjectReopen,
 			PreviousBindingNo: "lsb_0123456789abcdef0123456789abcdef", IdempotencyKey: base.IdempotencyKey},
 		{ProviderCode: base.ProviderCode, Operation: base.Operation, IdempotencyKey: "supplier-subject-0002"},
@@ -217,13 +216,13 @@ func TestSupplierAuthorizationUsesExactInstallationTargetAndRecentLogin(t *testi
 	implementation := service.(*serviceImpl)
 	implementation.now = func() time.Time { return now }
 	actor, err := implementation.authorize(
-		context.Background(), PermissionCredentialWrite, ProviderTencentESSBasic,
+		context.Background(), PermissionCredentialWrite, ProviderNuonuoInvoice,
 	)
 	if err != nil || actor != 42 {
 		t.Fatalf("authorize actor=%d err=%v", actor, err)
 	}
 	if authorizer.request.Permission != PermissionCredentialWrite ||
-		authorizer.request.TargetNo != "local-supplier-tencent_essbasic" {
+		authorizer.request.TargetNo != "local-supplier-nuonuo_invoice" {
 		t.Fatalf("authorization request=%+v", authorizer.request)
 	}
 	if err = implementation.ensureRecentLogin(context.Background(), actor); err != nil {
@@ -256,16 +255,6 @@ func TestNormalizeSupplierSaveKeepsAdapterContractProviderNeutral(t *testing.T) 
 	}
 }
 
-func TestRecordManagedBindingRejectsNuoNuoProvider(t *testing.T) {
-	implementation := &serviceImpl{}
-	configuration, err := implementation.RecordManagedBinding(
-		context.Background(),
-		ProviderNuonuoInvoice,
-		GatewayResult{BindingNo: "lsb_0123456789abcdef0123456789abcdef"},
-	)
-	if configuration != nil || !bizerr.Is(err, CodeInvalid) {
-		t.Fatalf("configuration=%+v error=%v", configuration, err)
-	}
-}
+
 
 func timePointer(value time.Time) *time.Time { return &value }

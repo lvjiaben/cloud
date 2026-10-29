@@ -26,7 +26,6 @@ const (
 	processAuthKeyringFileEnv      = "LINAPRO_COMPLIANCE_GATEWAY_PROCESS_AUTH_KEYRING_FILE"
 	supplierIdentityKeyringFileEnv = "LINAPRO_COMPLIANCE_GATEWAY_SUPPLIER_IDENTITY_KEYRING_FILE"
 	callbackEvidenceKeyringFileEnv = "LINAPRO_COMPLIANCE_GATEWAY_CALLBACK_EVIDENCE_KEYRING_FILE"
-	tencentESSBasicConfigFileEnv   = "LINAPRO_COMPLIANCE_GATEWAY_TENCENT_ESSBASIC_CONFIG_FILE"
 	processAuthWindowEnv           = "LINAPRO_COMPLIANCE_GATEWAY_PROCESS_AUTH_WINDOW"
 	defaultListenAddress           = "127.0.0.1:9088"
 	defaultHeaderTimeout           = 5 * time.Second
@@ -47,7 +46,6 @@ type RuntimeConfig struct {
 	ProcessAuthKeyringFile      string
 	SupplierIdentityKeyringFile string
 	CallbackEvidenceKeyringFile string
-	TencentESSBasicConfigFile   string
 	ProcessAuthWindow           time.Duration
 }
 
@@ -102,7 +100,6 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 		ProcessAuthKeyringFile:      strings.TrimSpace(getenv(processAuthKeyringFileEnv)),
 		SupplierIdentityKeyringFile: strings.TrimSpace(getenv(supplierIdentityKeyringFileEnv)),
 		CallbackEvidenceKeyringFile: strings.TrimSpace(getenv(callbackEvidenceKeyringFileEnv)),
-		TencentESSBasicConfigFile:   strings.TrimSpace(getenv(tencentESSBasicConfigFileEnv)),
 	}
 	for _, item := range []struct {
 		name  string
@@ -118,22 +115,12 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 			return Config{}, err
 		}
 	}
-	if config.Runtime.TencentESSBasicConfigFile != "" {
-		if err = validateConfigurationFilePath(
-			tencentESSBasicConfigFileEnv, config.Runtime.TencentESSBasicConfigFile,
-		); err != nil {
-			return Config{}, err
-		}
-	}
 	paths := []string{
 		filepath.Clean(config.Runtime.DatabaseDSNFile),
 		filepath.Clean(config.Runtime.InstallationIDFile),
 		filepath.Clean(config.Runtime.ProcessAuthKeyringFile),
 		filepath.Clean(config.Runtime.SupplierIdentityKeyringFile),
 		filepath.Clean(config.Runtime.CallbackEvidenceKeyringFile),
-	}
-	if config.Runtime.TencentESSBasicConfigFile != "" {
-		paths = append(paths, filepath.Clean(config.Runtime.TencentESSBasicConfigFile))
 	}
 	for left := range paths {
 		for right := left + 1; right < len(paths); right++ {

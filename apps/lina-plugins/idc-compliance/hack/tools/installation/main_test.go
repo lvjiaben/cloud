@@ -6,12 +6,15 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -299,12 +302,15 @@ func TestCleanCheckoutRefusesMissingEmbeddedAssets(t *testing.T) {
 // TestDevelopmentPlan verifies isolated ports propagate to every independent entry.
 func TestDevelopmentPlan(t *testing.T) {
 	root := t.TempDir()
-	output, plan, services, err := developmentPlan(root, []string{"plan=1", "backend_port=16030", "frontend_port=16031", "customer_port=16032", "website_port=16680"}, nil)
+	output, plan, services, err := developmentPlan(root, []string{"plan=1", "rebuild=0", "backend_port=16030", "frontend_port=16031", "customer_port=16032", "website_port=16680"}, nil)
 	if err != nil || !plan || len(services) != 6 || output != filepath.Join(root, "temp", "output") {
 		t.Fatalf("invalid plan: %s %v %d %v", output, plan, len(services), err)
 	}
 	if envValue(services[0].env, "LINAPRO_SERVER_ADDRESS") != ":16030" || envValue(services[2].env, "LINAPRO_BACKEND_PROXY_TARGET") != "http://127.0.0.1:16030" {
 		t.Fatal("backend/customer port override was lost")
+	}
+	if envValue(services[2].env, "WEBSITE_PUBLIC_ORIGIN") != "http://localhost:16680" {
+		t.Fatal("customer purchase redirect lost configured website origin")
 	}
 	if envValue(services[3].env, "NUXT_PUBLIC_CUSTOMER_URL") != "http://localhost:16032" || envValue(services[3].env, "NUXT_API_ORIGIN") != "http://127.0.0.1:16030" {
 		t.Fatal("renderer used default upstreams")
@@ -316,7 +322,7 @@ func TestDevelopmentPlan(t *testing.T) {
 	if err != nil || len(entries) != 0 {
 		t.Fatal("planning changed the filesystem")
 	}
-	for _, args := range [][]string{{"backend_port=0"}, {"website_port=65535"}, {"customer_port=6030"}, {"frontend_port=6681"}, {"dir=apps/lina-core"}, {"out=" + filepath.Join(root, "apps")}} {
+	for _, args := range [][]string{{"rebuild=invalid"}, {"backend_port=0"}, {"website_port=65535"}, {"customer_port=6030"}, {"frontend_port=6681"}, {"dir=apps/lina-core"}, {"out=" + filepath.Join(root, "apps")}} {
 		if _, _, _, err := developmentPlan(root, args, nil); err == nil {
 			t.Fatalf("accepted invalid options: %v", args)
 		}
@@ -361,6 +367,17 @@ func TestDevelopmentProcessCleanup(t *testing.T) {
 // TestDevelopmentChildProcess is a subprocess fixture, never an external service.
 func TestDevelopmentChildProcess(t *testing.T) {
 	if os.Getenv("LINA_INSTALLATION_TEST_CHILD") == "1" {
+		if address := os.Getenv("LINA_INSTALLATION_TEST_ADDRESS"); address != "" {
+			server := &http.Server{Addr: address, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/exit" {
+					code, _ := strconv.Atoi(r.URL.Query().Get("code"))
+					os.Exit(code)
+				}
+				fmt.Fprint(w, os.Getpid())
+			}), ReadHeaderTimeout: time.Second}
+			_ = server.ListenAndServe()
+			os.Exit(2)
+		}
 		time.Sleep(time.Minute)
 		os.Exit(0)
 	}
@@ -390,5 +407,82 @@ func TestDevelopmentBackendReadiness(t *testing.T) {
 	defer ready.Close()
 	if consumed, err := waitDevelopmentBackend(context.Background(), ready.Listener.Addr().(*net.TCPAddr).Port, make(chan error)); consumed || err != nil {
 		t.Fatalf("ready API refused: %v", err)
+	}
+}
+
+// TestDevelopmentIndependentRecovery exercises real HTTP children, both clean and failed exits,
+// repeated recovery and shutdown during retry, without restarting an unaffected peer.
+func TestDevelopmentIndependentRecovery(t *testing.T) {
+	address := func() string {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		value := listener.Addr().String()
+		_ = listener.Close()
+		return value
+	}
+	childAddress, peerAddress := address(), address()
+	service := func(name, address string) developmentService {
+		return developmentService{name: name, program: os.Args[0], args: []string{"-test.run=^TestDevelopmentChildProcess$"}, env: append(os.Environ(), "LINA_INSTALLATION_TEST_CHILD=1", "LINA_INSTALLATION_TEST_ADDRESS="+address)}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	finished := make(chan error, 1)
+	go func() {
+		finished <- superviseDevelopment(ctx, []developmentService{service("recovering", childAddress), service("peer", peerAddress)})
+	}()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case err := <-finished:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Error("supervisor leaked owned children")
+		}
+	})
+	client := &http.Client{Timeout: 200 * time.Millisecond}
+	pid := func(address string) string {
+		response, err := client.Get("http://" + address)
+		if err != nil {
+			return ""
+		}
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+		return string(body)
+	}
+	awaitPID := func(address, previous string) string {
+		deadline := time.Now().Add(6 * time.Second)
+		for time.Now().Before(deadline) {
+			current := pid(address)
+			if current != "" && current != previous {
+				return current
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		t.Fatalf("service %s did not recover", address)
+		return ""
+	}
+	previous, peerPID := awaitPID(childAddress, ""), awaitPID(peerAddress, "")
+	for _, code := range []string{"1", "0"} {
+		response, _ := client.Get("http://" + childAddress + "/exit?code=" + code)
+		if response != nil {
+			_ = response.Body.Close()
+		}
+		previous = awaitPID(childAddress, previous)
+		if current := pid(peerAddress); current != peerPID {
+			t.Fatalf("healthy peer was restarted: %s -> %s", peerPID, current)
+		}
+	}
+	response, _ := client.Get("http://" + childAddress + "/exit?code=1")
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	// The cleanup cancels while recovery is pending; neither service may survive it.
+	cancel()
+	time.Sleep(100 * time.Millisecond)
+	if pid(childAddress) != "" || pid(peerAddress) != "" {
+		t.Fatal("cancellation left a service listening")
 	}
 }

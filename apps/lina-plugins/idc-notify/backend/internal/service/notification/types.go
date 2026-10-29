@@ -37,13 +37,10 @@ type Channel struct {
 }
 
 type ChannelPublicConfiguration struct {
-	SMTP           *SMTPPublicConfiguration
-	AliyunSMS      *AliyunSMSPublicConfiguration
-	SMSBao         *SMSBaoPublicConfiguration
-	TencentSMS     *TencentSMSPublicConfiguration
-	WeChatOfficial *WeChatOfficialPublicConfiguration
-	WeCom          *WeComPublicConfiguration
-	SignedWebhook  *SignedWebhookPublicConfiguration
+	SMTP       *SMTPPublicConfiguration
+	AliyunSMS  *AliyunSMSPublicConfiguration
+	SMSBao     *SMSBaoPublicConfiguration
+	TencentSMS *TencentSMSPublicConfiguration
 }
 
 type AliyunSMSPublicConfiguration struct {
@@ -68,21 +65,6 @@ type TencentSMSPublicConfiguration struct {
 	Region      string
 	SmsSdkAppID string
 	SignName    string
-}
-
-type WeChatOfficialPublicConfiguration struct {
-	AppID              string
-	CallbackVerified   bool
-	CallbackVerifiedAt *time.Time
-}
-
-type WeComPublicConfiguration struct {
-	CorpID  string
-	AgentID int64
-}
-
-type SignedWebhookPublicConfiguration struct {
-	EndpointURL string
 }
 
 type ChannelConfigurationInput struct {
@@ -133,30 +115,6 @@ type SMSBaoConfigurationInput struct {
 	IdempotencyKey  string
 }
 
-type WeChatOfficialConfigurationInput struct {
-	AppID           string
-	AppSecret       []byte
-	CallbackToken   []byte
-	EncodingAESKey  []byte
-	ExpectedVersion int64
-	IdempotencyKey  string
-}
-
-type WeComConfigurationInput struct {
-	CorpID          string
-	AgentID         int64
-	AppSecret       []byte
-	ExpectedVersion int64
-	IdempotencyKey  string
-}
-
-type EncryptedCallbackInput struct {
-	Signature string
-	Timestamp string
-	Nonce     string
-	Encrypted []byte
-}
-
 type ChannelTestInput struct {
 	ChannelCode     string
 	Target          []byte
@@ -195,18 +153,17 @@ type Event struct {
 }
 
 type Template struct {
-	TemplateNo     string
-	Version        int64
-	EventCode      string
-	ChannelCode    string
-	Locale         string
-	Subject        string
-	Body           string
-	Status         string
-	CreatedBy      int64
-	CreatedAt      time.Time
-	SMS            *SMSTemplateMapping
-	WeChatOfficial *WeChatOfficialTemplateMapping
+	TemplateNo  string
+	Version     int64
+	EventCode   string
+	ChannelCode string
+	Locale      string
+	Subject     string
+	Body        string
+	Status      string
+	CreatedBy   int64
+	CreatedAt   time.Time
+	SMS         *SMSTemplateMapping
 }
 
 type SMSTemplateMapping struct {
@@ -214,11 +171,6 @@ type SMSTemplateMapping struct {
 	TemplateID    string
 	VariableOrder []string
 	DataMapping   map[string]string
-}
-
-type WeChatOfficialTemplateMapping struct {
-	TemplateID  string
-	DataMapping map[string]string
 }
 
 type TemplateWriteInput struct {
@@ -232,7 +184,6 @@ type TemplateWriteInput struct {
 	ExpectedVersion int64
 	IdempotencyKey  string
 	SMS             *SMSTemplateMapping
-	WeChatOfficial  *WeChatOfficialTemplateMapping
 }
 
 type TemplatePreviewInput struct {
@@ -244,70 +195,6 @@ type TemplatePreviewInput struct {
 type TemplatePreview struct {
 	Subject string
 	Body    string
-}
-
-type PreferenceWriteInput struct {
-	ContactNo              string
-	Topic                  string
-	ChannelCode            string
-	Enabled                bool
-	MarketingConsentAction string
-	PolicyReference        string
-	PolicyVersion          string
-	Locale                 string
-	QuietHours             *QuietHoursWriteInput
-	ExpectedVersion        int64
-	IdempotencyKey         string
-}
-
-type QuietHoursWriteInput struct {
-	TimezoneName string
-	StartMinute  int
-	EndMinute    int
-	Enabled      bool
-}
-
-type PreferenceWriteResult struct {
-	Version        int64
-	EvidenceDigest string
-	AppliedAt      time.Time
-	Reused         bool
-}
-
-type PreferenceSnapshot struct {
-	CustomerNo        string
-	PreferredLocale   string
-	Version           int64
-	Preferences       []ContactPreference
-	MarketingConsents []MarketingConsent
-	QuietHours        *QuietHoursPreference
-}
-
-type ContactPreference struct {
-	ContactNo   string
-	Topic       string
-	ChannelCode string
-	Enabled     bool
-	Version     int64
-}
-
-type MarketingConsent struct {
-	ContactNo       string
-	ChannelCode     string
-	Status          string
-	PolicyReference string
-	PolicyVersion   string
-	Locale          string
-	Version         int64
-}
-
-type QuietHoursPreference struct {
-	TimezoneName    string
-	StartMinute     int
-	EndMinute       int
-	CrossesMidnight bool
-	Enabled         bool
-	Version         int64
 }
 
 type DeliveryStatus string

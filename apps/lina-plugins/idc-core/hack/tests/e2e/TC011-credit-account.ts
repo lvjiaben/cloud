@@ -146,7 +146,7 @@ test.describe("TC011 后台授信管理", () => {
       grid.locator(".vxe-table--main-wrapper .vxe-body--row"),
     ).toHaveCount(10);
   });
-  test("TC011a: 第二名审核人提交独立意见后完成双人审批", async ({
+  test("TC011a: 有权限员工无需额外认证和必填材料即可处理历史授信申请", async ({
     adminPage,
   }) => {
     const state = await installCreditManagementMock(adminPage);
@@ -160,23 +160,16 @@ test.describe("TC011 后台授信管理", () => {
     await expect(modal.getByText("通过", { exact: true })).toBeVisible();
     await expect(modal.getByText("拒绝", { exact: true })).toBeVisible();
     await credit.screenshot("credit-review-vben-form");
-    await modal.getByPlaceholder("填写审批意见").fill("额度与有效期符合政策");
-    await modal
-      .getByPlaceholder("填写审批依据")
-      .fill("银行流水与经营资料已复核");
     await adminPage
       .getByRole("dialog")
       .getByRole("button", { name: /确\s*定/u })
       .click();
     await expect.poll(() => state.reviewBodies.length).toBe(1);
-    expect(state.proofBodies).toHaveLength(1);
+    expect(state.proofBodies).toHaveLength(0);
     expect(state.reviewBodies[0]).toMatchObject({
       decisionCode: "approved",
-      proofToken: "opaque-credit-review-proof",
     });
-    expect(state.reviewBodies[0]?.requestNo).toBe(
-      state.proofBodies[0]?.requestNo,
-    );
+    expect(state.reviewBodies[0]).not.toHaveProperty("proofToken");
     expect(String(state.reviewBodies[0]?.commentDigest)).toMatch(
       /^[0-9a-f]{64}$/u,
     );

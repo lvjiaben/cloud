@@ -333,12 +333,8 @@ OR EXISTS (SELECT 1
  JOIN plugin_idc_core_billing_invoice invoice
    ON invoice.tenant_id=accessory.tenant_id AND invoice.invoice_no=accessory.pending_invoice_no
  WHERE accessory.tenant_id=0 AND accessory.service_no=?
-   AND invoice.status_code IN ('draft','pending_payment','partially_paid','overdue'))
-OR EXISTS (SELECT 1 FROM plugin_idc_core_commerce_order contract_order
- WHERE contract_order.tenant_id=0 AND contract_order.order_no=?
-   AND contract_order.requires_contract
-   AND contract_order.status_code IN ('paid','fulfilling','partially_fulfilled','manual_review'))`,
-		serviceNo, serviceNo, orderNo, serviceNo, serviceNo, serviceNo, orderNo)
+   AND invoice.status_code IN ('draft','pending_payment','partially_paid','overdue'))`,
+		serviceNo, serviceNo, orderNo, serviceNo, serviceNo, serviceNo)
 	if err != nil {
 		return false, err
 	}

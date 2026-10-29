@@ -12,11 +12,10 @@ import (
 )
 
 const (
-	OwnerPluginID              = "idc-core"
-	AllowedCallerPluginID      = "idc-notify"
-	MaximumContactBatch        = 500
-	MaximumPreferenceItems     = 500
-	MaximumStaffDirectoryBatch = 200
+	OwnerPluginID          = "idc-core"
+	AllowedCallerPluginID  = "idc-notify"
+	MaximumContactBatch    = 500
+	MaximumPreferenceItems = 500
 )
 
 type Channel string
@@ -26,7 +25,6 @@ const (
 	ChannelEmail          Channel = "email"
 	ChannelSMS            Channel = "sms"
 	ChannelWeChatOfficial Channel = "wechat_official"
-	ChannelWeChatWork     Channel = "wechat_work"
 )
 
 type Topic string
@@ -127,46 +125,6 @@ type CurrentAudienceProjection struct {
 // are rejected through the same inaccessible result.
 type CurrentAudience interface {
 	Current(context.Context) (CurrentAudienceProjection, error)
-}
-
-// CurrentStaffProjection is the smallest source-owned staff identity needed
-// for self-service internal notification bindings. StaffVersion is the
-// persisted audience version and lets consumers fence a binding against a
-// later staff revocation or replacement without receiving staff profile data.
-type CurrentStaffProjection struct {
-	HostUserID   int
-	StaffVersion int64
-}
-
-// CurrentStaff resolves only the authenticated current direct staff member.
-// Customer, revoked, acting-user, impersonation, cross-tenant, and unsupported
-// data-scope contexts fail closed. Current never creates or repairs an audience
-// binding.
-type CurrentStaff interface {
-	Current(context.Context) (CurrentStaffProjection, error)
-}
-
-// StaffDirectoryRequest identifies one already-known host employee and fences
-// the lookup against the staff audience version captured by the caller. It is
-// not a search key and cannot be used to discover staff members.
-type StaffDirectoryRequest struct {
-	HostUserID      int
-	ExpectedVersion int64
-}
-
-// StaffDirectoryProjection is aligned by index with the request batch. It
-// intentionally contains no profile, contact, locale, or channel identifier.
-// Active is true only when both the host user and the source-owned staff
-// audience remain active at ExpectedVersion.
-type StaffDirectoryProjection struct {
-	Active         bool
-	CurrentVersion int64
-}
-
-// StaffDirectory revalidates an exact bounded set of staff recipients. It
-// offers no list, count, search, or arbitrary profile lookup.
-type StaffDirectory interface {
-	ResolveActiveBatch(context.Context, []StaffDirectoryRequest) ([]StaffDirectoryProjection, error)
 }
 
 // MarketingSendInput is the bounded public form of the core marketing gate.
@@ -301,8 +259,6 @@ type PreferenceService interface {
 // Runtime is the complete source-only boundary composed for notify.
 type Runtime struct {
 	Audience        CurrentAudience
-	Staff           CurrentStaff
-	StaffDirectory  StaffDirectory
 	Events          EventFeed
 	Contacts        ContactResolver
 	BusinessObjects BusinessObjectAccess
@@ -311,7 +267,7 @@ type Runtime struct {
 }
 
 func ValidateRuntime(runtime Runtime) error {
-	if nilDependency(runtime.Audience) || nilDependency(runtime.Staff) || nilDependency(runtime.StaffDirectory) || nilDependency(runtime.Events) || nilDependency(runtime.Contacts) || nilDependency(runtime.BusinessObjects) ||
+	if nilDependency(runtime.Audience) || nilDependency(runtime.Events) || nilDependency(runtime.Contacts) || nilDependency(runtime.BusinessObjects) ||
 		nilDependency(runtime.Marketing) || nilDependency(runtime.Preferences) {
 		return gerror.New("notification source runtime is incomplete")
 	}

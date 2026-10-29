@@ -19,7 +19,7 @@ func TestProviderConfigurationValidationCreateMapsBoundedOutcome(t *testing.T) {
 		ValidationStatus: providerconfig.ValidationStatusReachable,
 		ValidatedAt:      &validatedAt, Version: 2,
 	}}
-	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{}, &electronicContractOnboardingStub{}, &electronicContractPreparationStub{}, &electronicContractTemplateStub{})
+	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,8 +9,10 @@ import (
 )
 
 func (c *ControllerV1) CatalogFulfillmentBindingDelete(ctx context.Context, req *v1.CatalogFulfillmentBindingDeleteReq) (res *v1.CatalogFulfillmentBindingDeleteRes, err error) {
-	if err := c.productAutomation.Unbind(ctx, req.VersionNo); err != nil {
-		return nil, err
-	}
-	return &v1.CatalogFulfillmentBindingDeleteRes{}, nil
+	return saveCatalogSettings(ctx, c.catalogPublication, req.VersionNo, func(ctx context.Context) (*v1.CatalogFulfillmentBindingDeleteRes, error) {
+		if err := c.productAutomation.Unbind(ctx, req.VersionNo); err != nil {
+			return nil, err
+		}
+		return &v1.CatalogFulfillmentBindingDeleteRes{}, nil
+	})
 }

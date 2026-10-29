@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_compliance_supplier_configuration (
     CONSTRAINT ck_plugin_idc_compliance_scfg_tenant
         CHECK ("tenant_id" = 0),
     CONSTRAINT ck_plugin_idc_compliance_scfg_provider
-        CHECK ("provider_code" IN ('tencent_essbasic', 'nuonuo_invoice')),
+        CHECK ("provider_code" IN ('nuonuo_invoice')),
     CONSTRAINT ck_plugin_idc_compliance_scfg_status
         CHECK ("status_code" IN ('draft', 'updating', 'configured_blocked', 'disabled')),
     CONSTRAINT ck_plugin_idc_compliance_scfg_subject

@@ -72,6 +72,9 @@ func (fulfillmentAuthorizerStub) AuthorizeReviewReject(context.Context, string) 
 func (fulfillmentAuthorizerStub) AuthorizeTakeover(context.Context, string) (productfulfillmentservice.Authorization, error) {
 	return fulfillmentAuthorization(productfulfillmentservice.PermissionManualTakeover), nil
 }
+func (fulfillmentAuthorizerStub) AuthorizeRecovery(context.Context, string) (productfulfillmentservice.Authorization, error) {
+	return fulfillmentAuthorization(productfulfillmentservice.PermissionPreparationRecover), nil
+}
 func (fulfillmentAuthorizerStub) AuthorizeManualConclude(context.Context, string) (productfulfillmentservice.Authorization, error) {
 	return fulfillmentAuthorization(productfulfillmentservice.PermissionManualConclude), nil
 }
@@ -180,7 +183,7 @@ func TestProductFulfillmentManualConclusionConcurrentReplayPostgreSQL(t *testing
 	if _, err = scenario.database.Exec(scenario.ctx, `INSERT INTO plugin_idc_core_product_fulfillment_intent(tenant_id,intent_no,settlement_no,order_no,order_item_no,customer_no,invoice_no,currency_code,product_no,version_no,product_name_zh_cn,product_name_en_us,quantity,unit_sequence,strategy_code,granularity_code,initial_status_code,status_code,policy_digest,evidence_digest,financially_settled_at) SELECT 0,'pft_action_manual',?,item.order_no,item.order_item_no,orders.customer_no,?,orders.currency_code,item.product_no,item.version_no,item.product_name_zh_cn,item.product_name_en_us,quantity.quantity,1,'manual','per_order_item','manual_pending','manual_pending',repeat('1',64),repeat('2',64),? FROM plugin_idc_core_commerce_order_item item JOIN plugin_idc_core_commerce_order orders ON orders.order_no=item.order_no JOIN plugin_idc_core_commerce_order_item_quantity_snapshot quantity ON quantity.order_item_no=item.order_item_no WHERE item.order_no=? ORDER BY item.line_number LIMIT 1`, settlement.SettlementNo, checkout.InvoiceNo, settlement.SettledAt, checkout.OrderNo); err != nil {
 		t.Fatal(err)
 	}
-	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, fulfillmentFrozenStub{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"))
+	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, fulfillmentFrozenStub{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +260,7 @@ func TestProductFulfillmentOrderCancellationUsesAuthoritativeFactPostgreSQL(t *t
 	if _, err = scenario.database.Exec(scenario.ctx, `INSERT INTO plugin_idc_core_commerce_order_cancellation(tenant_id,cancellation_no,order_no,customer_no,source_code,reason_code,request_digest,status_code,requested_by,completed_at) VALUES(0,'can_fulfillment_cancel_0001',?,'customer-commerce-service-1','admin','manual_rejected',repeat('e',64),'completed',101,CURRENT_TIMESTAMP)`, checkout.OrderNo); err != nil {
 		t.Fatal(err)
 	}
-	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, fulfillmentFrozenStub{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"))
+	service, err := productfulfillmentservice.NewFullConfigured(scenario.database, fulfillmentFrozenStub{}, fulfillmentGateStub{}, fulfillmentSystemReasons(t), fulfillmentAuthorizerStub{}, fulfillmentAuditStub{}, fulfillmentActorsStub{}, []byte("0123456789abcdef0123456789abcdef"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

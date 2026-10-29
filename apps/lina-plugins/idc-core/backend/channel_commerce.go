@@ -14,8 +14,6 @@ import (
 	"lina-core/pkg/bizerr"
 	"lina-core/pkg/plugin/capability"
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
-	contracttemplatespi "lina-plugin-idc-core/backend/cap/contracttemplatecap/spi"
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/cap/identitycap"
 	"lina-plugin-idc-core/backend/cap/lifecycleresourcecap"
@@ -36,6 +34,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
 	"lina-plugin-idc-core/backend/internal/service/renewal"
 	"lina-plugin-idc-core/backend/internal/service/salesmanagement"
+	"lina-plugin-idc-core/backend/internal/service/serveroperation"
 )
 
 type channelExternalActorResolver struct{}
@@ -54,9 +53,9 @@ type channelCommerceRuntime struct {
 	catalog         catalog.CatalogReader
 	pricing         salesmanagement.PriceRuleReader
 	purchaseFiles   purchaseconfigurationfile.Service
-	contractSource  contracttemplatecap.Source
 	renewals        renewal.RuntimeService
 	serverSource    serveroperationresourcecap.Source
+	priced          *serveroperation.NativePriceBuilder
 	lifecycleSource lifecycleresourcecap.Source
 	audit           idccap.BusinessAuditWriter
 }
@@ -174,19 +173,12 @@ func newChannelCommerceRuntime(
 	if err != nil {
 		return nil, err
 	}
-	var templates contracttemplatecap.Source
-	if factory := contracttemplatespi.Freeze().Factory(); factory != nil {
-		templates, err = factory(ctx)
-		if err != nil {
-			return nil, err
-		}
-	}
 	adjustments, err := newChannelQuoteAdjustments(ctx, services)
 	if err != nil {
 		return nil, err
 	}
-	commerceService, err := commerce.NewWithQuoteAdjustmentsAndContractTemplates(
-		g.DB(), purchaseResolver, channelFilePrincipal{}, adjustments, settlements, templates,
+	commerceService, err := commerce.NewWithQuoteAdjustments(
+		g.DB(), purchaseResolver, channelFilePrincipal{}, adjustments, settlements, nil,
 	)
 	if err != nil {
 		return nil, err
@@ -210,8 +202,12 @@ func newChannelCommerceRuntime(
 	if err != nil {
 		return nil, err
 	}
+	loginDirectory, err := buildCustomerLoginDirectory(services.BizCtx(), services.Users())
+	if err != nil {
+		return nil, err
+	}
 	activation, err := customeractivation.New(
-		g.DB(), services.BizCtx(), principalReader, services.Auth().Authz(), services.Users(),
+		g.DB(), services.BizCtx(), principalReader, services.Auth().Authz(), services.Users(), loginDirectory,
 		auditWriter, notifications, lookupKey, runtimeconfig.CustomerPublicURL,
 	)
 	clear(lookupKey)
@@ -229,6 +225,10 @@ func newChannelCommerceRuntime(
 			return nil, gerror.Wrap(err, "construct channel server operation source")
 		}
 	}
+	priced, err := newChannelPricedBuilder(g.DB(), catalogReader, serverSource)
+	if err != nil {
+		return nil, err
+	}
 	var lifecycleSource lifecycleresourcecap.Source
 	if factory := lifecycleresourcespi.Freeze().Factory(); factory != nil {
 		lifecycleSource, err = factory(ctx)
@@ -244,10 +244,19 @@ func newChannelCommerceRuntime(
 		pricing: pricing, purchaseFiles: purchaseFiles,
 		database: g.DB(), current: principalReader, activation: activation,
 		orders: channelOrders, settlements: settlements, invoices: invoices,
-		catalog: catalogReader, contractSource: templates,
-		renewals: renewals, serverSource: serverSource, lifecycleSource: lifecycleSource,
+		catalog:  catalogReader,
+		renewals: renewals, serverSource: serverSource, priced: priced, lifecycleSource: lifecycleSource,
 		audit: auditWriter,
 	}, nil
+}
+
+// newChannelPricedBuilder composes optional resource pricing only at startup;
+// channel commerce remains usable for ordinary products without that source.
+func newChannelPricedBuilder(database gdb.DB, reader catalog.CatalogReader, source serveroperationresourcecap.Source) (*serveroperation.NativePriceBuilder, error) {
+	if source == nil {
+		return nil, nil
+	}
+	return serveroperation.NewNativePriceBuilder(database, reader, source)
 }
 
 func (runtime *channelCommerceRuntime) CurrentCustomer(ctx context.Context) (*channelcommercecap.CustomerSubject, error) {

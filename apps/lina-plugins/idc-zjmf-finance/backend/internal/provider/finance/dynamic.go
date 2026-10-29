@@ -12,6 +12,8 @@ import (
 
 	"lina-core/pkg/plugin/capability/confidentialoutboundcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
+
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 )
 
@@ -31,6 +33,10 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 	case resourcecap.DynamicProviderMethodDiscoverCapabilities:
 		return json.Marshal(DeclaredCapabilitySnapshot(time.Now().UTC()))
 	case resourcecap.DynamicProviderMethodBuildProvisionParameters:
+		var native resourcecap.NativePurchasePlan
+		if strictDecode(payload, &native) == nil && native.Validate() == nil && native.Protocol == productfulfillmentcap.SaleImportProtocolNativeFinanceV1 {
+			return BuildNativePurchaseParameters(context.Background(), native.Purchase)
+		}
 		var plan resourcecap.ServerProvisionPlan
 		if json.Unmarshal(payload, &plan) != nil {
 			return nil, errInvalidConfig
@@ -45,6 +51,8 @@ func ExecuteDynamic(executor confidentialoutboundcap.Service, contextID, method 
 		return executeCatalogList(executor, contextID, payload)
 	case resourcecap.DynamicProviderMethodReadCatalogProduct:
 		return executeCatalogDetail(executor, contextID, payload)
+	case resourcecap.DynamicProviderMethodEvaluateCatalogConfiguration, resourcecap.DynamicProviderMethodCatalogBillingTerms:
+		return executeNativeConfiguration(executor, contextID, method, payload)
 	case resourcecap.DynamicProviderMethodConfigurationCandidates:
 		return executeCandidates(executor, contextID, payload)
 	case resourcecap.DynamicProviderMethodListProviderCapacity:

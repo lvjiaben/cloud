@@ -13,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/internal/service/entitlementprogress"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
@@ -33,12 +34,14 @@ type DeliveryView struct {
 // ServiceEntitlementView is present only when the frozen plugin contract says
 // the delivered product needs ongoing customer management.
 type ServiceEntitlementView struct {
-	EntitlementNo string
-	OrderItemNo   string
-	UnitSequence  int
-	StatusCode    string
-	StartedAt     time.Time
-	ExpiresAt     *time.Time
+	ManagementPreparation string
+	EntitlementOwnerID    string
+	EntitlementNo         string
+	OrderItemNo           string
+	UnitSequence          int
+	StatusCode            string
+	StartedAt             time.Time
+	ExpiresAt             *time.Time
 }
 
 // AccountDeliveryDirectory reads delivery progress only for the authenticated
@@ -256,18 +259,25 @@ WHERE tenant_id=0 AND order_no=? ORDER BY id LIMIT ?`, orderNo, maximumItems+1);
 		})
 	}
 	type entitlementRow struct {
-		EntitlementNo string     `orm:"entitlement_no"`
-		OrderItemNo   string     `orm:"order_item_no"`
-		UnitSequence  int        `orm:"unit_sequence"`
-		StatusCode    string     `orm:"status_code"`
-		StartedAt     *time.Time `orm:"started_at"`
-		ExpiresAt     *time.Time `orm:"expires_at"`
+		ManagementDeliveryState string     `orm:"management_delivery_state"`
+		EntitlementOwnerID      string     `orm:"entitlement_owner_id"`
+		EntitlementNo           string     `orm:"entitlement_no"`
+		OrderItemNo             string     `orm:"order_item_no"`
+		UnitSequence            int        `orm:"unit_sequence"`
+		StatusCode              string     `orm:"status_code"`
+		StartedAt               *time.Time `orm:"started_at"`
+		ExpiresAt               *time.Time `orm:"expires_at"`
 	}
 	entitlementRows := make([]entitlementRow, 0)
 	if err := tx.GetScan(&entitlementRows, `
-SELECT entitlement_no,order_item_no,unit_sequence,status_code,started_at,expires_at
-FROM plugin_idc_core_service_entitlement
-WHERE tenant_id=0 AND order_no=? ORDER BY order_item_no,unit_sequence LIMIT ?`,
+SELECT e.entitlement_owner_id,e.entitlement_no,e.order_item_no,e.unit_sequence,e.status_code,e.started_at,e.expires_at,
+ COALESCE(event.status_code,'') AS management_delivery_state
+FROM plugin_idc_core_service_entitlement e
+LEFT JOIN plugin_idc_core_entitlement_created_outbox event
+ ON event.tenant_id=e.tenant_id AND event.entitlement_no=e.entitlement_no
+ AND event.intent_no=e.source_intent_no AND event.customer_no=e.customer_no
+ AND event.owner_id=e.entitlement_owner_id
+WHERE e.tenant_id=0 AND e.order_no=? AND e.status_code<>'pending_activation' ORDER BY e.order_item_no,e.unit_sequence LIMIT ?`,
 		orderNo, maximumOrderDetailUnits+1); err != nil {
 		return nil, nil, err
 	}
@@ -281,6 +291,7 @@ WHERE tenant_id=0 AND order_no=? ORDER BY order_item_no,unit_sequence LIMIT ?`,
 			return nil, nil, gerror.New("commerce order service entitlement evidence is unavailable")
 		}
 		entitlements = append(entitlements, ServiceEntitlementView{
+			EntitlementOwnerID: row.EntitlementOwnerID, ManagementPreparation: string(entitlementprogress.FromDelivery(row.ManagementDeliveryState)),
 			EntitlementNo: row.EntitlementNo, OrderItemNo: row.OrderItemNo,
 			UnitSequence: row.UnitSequence,
 			StatusCode:   row.StatusCode, StartedAt: *row.StartedAt, ExpiresAt: row.ExpiresAt,

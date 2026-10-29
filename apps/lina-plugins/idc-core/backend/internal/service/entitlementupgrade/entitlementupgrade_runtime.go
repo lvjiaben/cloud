@@ -70,6 +70,7 @@ func (s *serviceImpl) List(ctx context.Context) (*Page, error) {
 type paidState struct {
 	EntitlementNo, CustomerNo, ProductNo, VersionNo, ConfigurationSnapshotNo, CurrencyCode, BillingRuleNo, PriceNo, QuoteItemNo string
 	StatusCode, ChargeTypeCode, ProductStatus, CustomerStatus                                                                   string
+	CustomerPresentation                                                                                                        string
 	PeriodUnitCode, ProductConfiguration, CurrentConfiguration                                                                  string
 	Version                                                                                                                     int64
 	PeriodCount, PurchaseCycles                                                                                                 int
@@ -82,7 +83,7 @@ func (s *serviceImpl) state(ctx context.Context, no, customer string) (*paidStat
  COALESCE(price.billing_rule_no,e.billing_rule_no) AS billing_rule_no,price.price_snapshot_no AS price_no,COALESCE(price.source_quote_item_no,oi.quote_item_no) AS quote_item_no,e.status_code,e.charge_type_code,
  p.status_code AS product_status,c.status_code AS customer_status,COALESCE(price.period_unit_code,e.period_unit_code) AS period_unit_code,COALESCE(price.period_count,e.period_count) AS period_count,COALESCE(price.purchase_cycles,oi.purchase_cycles) AS purchase_cycles,
  COALESCE((SELECT period_started_at FROM plugin_idc_core_entitlement_upgrade u WHERE u.target_price_snapshot_no=price.price_snapshot_no AND u.entitlement_no=e.entitlement_no AND u.customer_no=e.customer_no AND u.status_code='succeeded' LIMIT 1),price.original_expires_at,e.started_at) AS started_at,e.expires_at,e.version,
- vc.merchant_value_snapshot::text AS product_configuration,sc.typed_value_snapshot::text AS current_configuration
+ vc.customer_presentation_snapshot::text AS customer_presentation,vc.merchant_value_snapshot::text AS product_configuration,sc.typed_value_snapshot::text AS current_configuration
  FROM plugin_idc_core_service_entitlement e
  JOIN plugin_idc_core_customer_subject c ON c.tenant_id=e.tenant_id AND c.customer_no=e.customer_no
  JOIN plugin_idc_core_catalog_product p ON p.tenant_id=e.tenant_id AND p.product_no=e.product_no AND p.current_version_no=e.version_no AND p.deleted_at IS NULL

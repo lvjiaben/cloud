@@ -20,7 +20,6 @@ const {
   evidence,
   formatDate,
   load: loadCredit,
-  loading,
   money,
   loadPage,
   notice,

@@ -16,8 +16,6 @@ export interface AssistedQuoteCreateInput {
   currencyCode: string;
   manualDiscountMinor: string;
   paymentDueAt: number;
-  contractPolicyCode: "inherit" | "none" | "required";
-  contractTemplateNo: string;
   reason: string;
   internalNote: string;
   idempotencyKey: string;
@@ -53,8 +51,6 @@ export interface AssistedQuote {
   canReject: boolean;
   createdAt: number;
   currencyCode: string;
-  contractPolicyCode: "inherit" | "none" | "required";
-  contractTemplateNo: string;
   customerNo: string;
   customerCode: string;
   customerDisplayName: string;

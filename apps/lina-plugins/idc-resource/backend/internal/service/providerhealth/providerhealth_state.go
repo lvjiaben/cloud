@@ -86,7 +86,9 @@ func applyObservation(row *healthState, input Observation, now time.Time) {
 			row.UnknownCount++
 		}
 	}
-	if input.Operation == OperationWrite && policyProtects(row) {
+	// A successful write must not trip or extend protection because old failed
+	// samples cross the minimum window size on this successful observation.
+	if input.Operation == OperationWrite && input.Outcome != OutcomeSucceeded && policyProtects(row) {
 		until := now.Add(time.Duration(row.ProtectionDurationSeconds) * time.Second)
 		row.CircuitOpen = true
 		row.WriteProtectedUntil = &until

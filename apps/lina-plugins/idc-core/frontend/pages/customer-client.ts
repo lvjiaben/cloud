@@ -33,8 +33,6 @@ export interface CustomerSummary {
   customerNo: string;
   customerCode: string;
   displayName: string;
-  enterpriseContractPolicyCode: "none" | "required" | "";
-  enterpriseContractTemplateNo: string;
   level: CustomerLevel | null;
   preferredLocale: string;
   primaryPhone: string;
@@ -97,7 +95,6 @@ export interface CustomerBalanceSummary {
 export interface CustomerBusinessSummary {
   audits: number;
   bills: number;
-  contracts: number;
   notifications: number;
   orders: number;
   servers: number;
@@ -248,31 +245,6 @@ export interface CustomerAssistanceSession {
   status: "active" | "ended" | "expired" | "superseded";
 }
 
-export interface CustomerActivationInvitation {
-  customerNo: string;
-  customerType: CustomerType;
-  destinationHint: string;
-  displayName: string;
-  existingIdentityBound: boolean;
-  expiresAt: number;
-  invitationNo: string;
-  reused: boolean;
-  status: "active" | "consumed" | "expired" | "superseded";
-}
-
-export interface CustomerActivationCreateInput {
-  bindExistingIdentity: boolean;
-  countryCode: string;
-  customerType: CustomerType;
-  displayName: string;
-  email?: string;
-  idempotencyKey: string;
-  phone?: string;
-  phoneCountryCode?: string;
-  preferredLocale: "en-US" | "zh-CN";
-  reason: string;
-}
-
 export interface CustomerDirectCreateInput {
   countryCode: string;
   customerType: CustomerType;
@@ -284,26 +256,6 @@ export interface CustomerDirectCreateInput {
   phoneCountryCode?: string;
   preferredLocale: "en-US" | "zh-CN";
   reason: string;
-}
-
-export function customerActivationCreate(data: CustomerActivationCreateInput) {
-  return requestClient.post<CustomerActivationInvitation>(
-    pluginApiPath(pluginID, "admin/customers/activation-invitations"),
-    data,
-  );
-}
-
-export function customerActivationResend(
-  customerNo: string,
-  data: { idempotencyKey: string; reason: string },
-) {
-  return requestClient.post<CustomerActivationInvitation>(
-    pluginApiPath(
-      pluginID,
-      `admin/customers/${encodeURIComponent(customerNo)}/activation-invitations/resend`,
-    ),
-    data,
-  );
 }
 
 export function customerDirectCreate(data: CustomerDirectCreateInput) {

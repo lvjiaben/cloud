@@ -118,6 +118,7 @@ type PrepareInput struct {
 }
 
 type Status struct {
+	InvoiceNo, OrderNo                                       string
 	AttemptNo, StatusCode, ChannelNo, ModeCode, CurrencyCode string
 	PurposeCode, PurposeReference                            string
 	TotalAmountMinor, ChannelAmountMinor, BalanceAmountMinor int64
@@ -218,7 +219,7 @@ func (s *Store) ObserveReturn(ctx context.Context, attemptNo, customerRefDigest 
 	}
 	var result *Status
 	err := s.database.Transaction(ctx, func(ctx context.Context, tx gdb.TX) error {
-		row, loadErr := tx.GetOne(`SELECT a.attempt_no,a.status_code,a.channel_no,a.mode_code,a.currency_code,a.purpose_code,a.purpose_reference,a.amount_minor,a.balance_locked_minor,a.expires_at,a.confirmed_at,c.capability_snapshot FROM plugin_idc_payment_attempt a JOIN plugin_idc_payment_channel c ON c.channel_no=a.channel_no WHERE a.attempt_no=? AND a.customer_ref_digest=? FOR UPDATE OF a`, attemptNo, customerRefDigest)
+		row, loadErr := tx.GetOne(`SELECT a.attempt_no,a.invoice_no,a.order_no,a.status_code,a.channel_no,a.mode_code,a.currency_code,a.purpose_code,a.purpose_reference,a.amount_minor,a.balance_locked_minor,a.expires_at,a.confirmed_at,c.capability_snapshot FROM plugin_idc_payment_attempt a JOIN plugin_idc_payment_channel c ON c.channel_no=a.channel_no WHERE a.attempt_no=? AND a.customer_ref_digest=? FOR UPDATE OF a`, attemptNo, customerRefDigest)
 		if loadErr != nil {
 			return loadErr
 		}
@@ -236,7 +237,7 @@ func (s *Store) ObserveReturn(ctx context.Context, attemptNo, customerRefDigest 
 				queryQueued = true
 			}
 		}
-		result = &Status{AttemptNo: row["attempt_no"].String(), StatusCode: row["status_code"].String(), ChannelNo: row["channel_no"].String(), ModeCode: row["mode_code"].String(), CurrencyCode: row["currency_code"].String(), PurposeCode: row["purpose_code"].String(), PurposeReference: row["purpose_reference"].String(), TotalAmountMinor: row["amount_minor"].Int64(), BalanceAmountMinor: row["balance_locked_minor"].Int64(), ExpiresAt: row["expires_at"].Time().UTC(), ConfirmedAt: row["confirmed_at"].Time().UTC(), QueryQueued: queryQueued}
+		result = &Status{InvoiceNo: row["invoice_no"].String(), OrderNo: row["order_no"].String(), AttemptNo: row["attempt_no"].String(), StatusCode: row["status_code"].String(), ChannelNo: row["channel_no"].String(), ModeCode: row["mode_code"].String(), CurrencyCode: row["currency_code"].String(), PurposeCode: row["purpose_code"].String(), PurposeReference: row["purpose_reference"].String(), TotalAmountMinor: row["amount_minor"].Int64(), BalanceAmountMinor: row["balance_locked_minor"].Int64(), ExpiresAt: row["expires_at"].Time().UTC(), ConfirmedAt: row["confirmed_at"].Time().UTC(), QueryQueued: queryQueued}
 		result.ChannelAmountMinor = result.TotalAmountMinor - result.BalanceAmountMinor
 		return nil
 	})

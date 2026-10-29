@@ -12,7 +12,7 @@ import (
 // ProviderTaskList returns one locally projected keyset page.
 func (c *ControllerV1) ProviderTaskList(ctx context.Context, req *v1.ProviderTaskListReq) (res *v1.ProviderTaskListRes, err error) {
 	page, err := c.tasks.List(ctx, resourcetask.TaskListInput{
-		ChannelNo: req.ChannelNo, Status: resourcetask.Status(req.Status),
+		ServiceNo: req.ServiceNo, ChannelNo: req.ChannelNo, Status: resourcetask.Status(req.Status),
 		Cursor: req.Cursor, Limit: req.Limit, Page: req.Page,
 	})
 	if err != nil {

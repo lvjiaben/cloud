@@ -31,7 +31,7 @@ func TestPluginRegistrationOwnsBothSharedCapabilities(t *testing.T) {
 		case challengecap.ServiceName:
 			foundChallenge = len(descriptor.Methods) == 3
 		case inboxcap.ServiceName:
-			foundInbox = len(descriptor.Methods) == 1
+			foundInbox = len(descriptor.Methods) == 2
 		}
 	}
 	if !foundChallenge || !foundInbox {

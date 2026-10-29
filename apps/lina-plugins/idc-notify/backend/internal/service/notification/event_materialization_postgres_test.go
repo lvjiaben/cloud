@@ -112,6 +112,13 @@ func TestEventMaterializationBatchIsConcurrentAndIdempotentPostgreSQL(t *testing
 	}); !bizerr.Is(err, CodeConflict) {
 		t.Fatalf("stale event policy update must conflict: %v", err)
 	}
+	if _, err = database.Exec(t.Context(), `UPDATE plugin_idc_notify_event_policy SET enabled=TRUE WHERE event_code='account.password_reset' AND channel_code='sms'`); err != nil {
+		t.Fatal(err)
+	}
+	policies, err = policyService.ListEventPolicies(t.Context(), MaximumPageSize)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var securityEmail, securityInbox EventPolicy
 	for _, item := range policies {
 		if item.EventCode != "account.password_reset" || item.RecipientKind != notificationcap.RecipientCustomerContact {
@@ -120,7 +127,7 @@ func TestEventMaterializationBatchIsConcurrentAndIdempotentPostgreSQL(t *testing
 		switch item.ChannelCode {
 		case "email":
 			securityEmail = item
-		case "in_app":
+		case "sms":
 			securityInbox = item
 		}
 	}
@@ -168,7 +175,7 @@ func TestEventMaterializationBatchIsConcurrentAndIdempotentPostgreSQL(t *testing
 	enabledSecurityChannels, countErr := database.Model(eventPolicyTable).Ctx(t.Context()).
 		Where(tenantIDColumn, notificationTenantID).Where("event_code", securityEmail.EventCode).
 		Where("recipient_kind", string(notificationcap.RecipientCustomerContact)).Where("enabled", true).
-		WhereIn("channel_code", []string{"in_app", "email", "sms", "wechat_official"}).Count()
+		WhereIn("channel_code", supportedChannelCodes).Count()
 	if countErr != nil || enabledSecurityChannels != 1 {
 		t.Fatalf("security event must keep exactly one customer delivery channel: count=%d err=%v", enabledSecurityChannels, countErr)
 	}
@@ -207,9 +214,9 @@ func TestEventMaterializationBatchIsConcurrentAndIdempotentPostgreSQL(t *testing
 		}
 	}
 	assertNotificationCount(t, database, eventMaterializationTable, 5)
-	assertNotificationCount(t, database, deliveryTable, 3)
-	assertNotificationCount(t, database, deliveryChainTable, 3)
-	assertNotificationCount(t, database, "plugin_idc_notify_delivery_audit", 3)
+	assertNotificationCount(t, database, deliveryTable, 1)
+	assertNotificationCount(t, database, deliveryChainTable, 1)
+	assertNotificationCount(t, database, "plugin_idc_notify_delivery_audit", 1)
 	var emailStatus struct {
 		Status string `orm:"status_code"`
 		Reason string `orm:"reason_code"`
@@ -221,36 +228,9 @@ func TestEventMaterializationBatchIsConcurrentAndIdempotentPostgreSQL(t *testing
 	if emailStatus.Status != "materialized" || emailStatus.Reason != "delivery_queued" {
 		t.Fatalf("unexpected email materialization: %+v", emailStatus)
 	}
-	var inAppStatus struct {
-		Status string `orm:"status_code"`
-		Reason string `orm:"reason_code"`
-	}
-	if err = database.Model(eventMaterializationTable).Ctx(t.Context()).
-		Where("channel_code", "in_app").Fields("status_code,reason_code").Scan(&inAppStatus); err != nil {
-		t.Fatalf("read in-app materialization: %v", err)
-	}
-	if inAppStatus.Status != "materialized" || inAppStatus.Reason != "delivery_queued" {
-		t.Fatalf("in-app delivery was not materialized: %+v", inAppStatus)
-	}
-	var inAppTask struct {
-		OwnerUserID int `orm:"owner_user_id"`
-	}
-	if err = database.Model(deliveryTable).Ctx(t.Context()).Where("channel_code", "in_app").
-		Fields("owner_user_id").Scan(&inAppTask); err != nil || inAppTask.OwnerUserID != 101 {
-		t.Fatalf("in-app delivery lost the authoritative host recipient: task=%+v err=%v", inAppTask, err)
-	}
-	var webhookTask struct {
-		TemplateNo    *string `orm:"template_no"`
-		RecipientMask string  `orm:"recipient_mask"`
-		CustomerNo    string  `orm:"customer_no"`
-		ContactNo     string  `orm:"contact_no"`
-		Variables     string  `orm:"provider_variables"`
-	}
-	if err = database.Model(deliveryTable).Ctx(t.Context()).Where("channel_code", "signed_webhook").
-		Fields("template_no,recipient_mask,customer_no,contact_no,provider_variables").Scan(&webhookTask); err != nil ||
-		webhookTask.TemplateNo != nil || webhookTask.RecipientMask != "configured_endpoint" ||
-		webhookTask.CustomerNo != "" || webhookTask.ContactNo != "" || webhookTask.Variables != `{}` {
-		t.Fatalf("signed webhook task was not installation-scoped and minimal: task=%+v err=%v", webhookTask, err)
+	retired, err := database.GetValue(t.Context(), `SELECT count(*) FROM plugin_idc_notify_delivery_task WHERE channel_code NOT IN ('email','sms')`)
+	if err != nil || retired.Int() != 0 {
+		t.Fatalf("retired channel materialized: %v %v", retired, err)
 	}
 	for _, name := range []string{"000-notification-event-policy-materialization.sql", "001-notification-foundation.sql"} {
 		uninstall, readErr := os.ReadFile(filepath.Join(pluginRoot, "manifest", "sql", "uninstall", name))

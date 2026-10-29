@@ -113,13 +113,17 @@ func MapPurchaseConfigurationInput(input []*v1.PurchaseConfigurationValue) ([]ca
 
 func MapPurchaseConfigurationView(view *catalog.PublicPurchaseConfigurationView) v1.PurchaseConfigurationView {
 	result := v1.PurchaseConfigurationView{
+		ServerLoginPolicy:     mapPurchaseServerLoginPolicy(view.ServerLoginPolicy),
+		Ready:                 view.Ready,
 		ConfigurationRevision: view.ConfigurationRevision,
 		Fields:                make([]*v1.PurchaseConfigurationField, 0, len(view.Fields)),
 		Values:                make([]*v1.PurchaseConfigurationValue, 0, len(view.Values)),
 	}
 	for _, field := range view.Fields {
 		mapped := &v1.PurchaseConfigurationField{
-			FieldToken: field.FieldToken, Type: field.Type,
+			Presentation: field.Presentation,
+			GroupZhCN:    field.GroupZhCN, GroupEnUS: field.GroupEnUS, Unit: field.Unit, Advanced: field.Advanced, NumericLabels: field.NumericLabels,
+			FieldToken: field.FieldToken, Type: field.Type, DisplayControl: field.DisplayControl, QuantityStep: field.QuantityStep, NumericChoices: field.NumericChoices,
 			LabelZhCN: field.Label.ZhCN, LabelEnUS: field.Label.EnUS,
 			DescriptionZhCN: field.Description.ZhCN, DescriptionEnUS: field.Description.EnUS,
 			Visible: field.Visible, Required: field.Required, Disabled: field.Disabled,
@@ -170,4 +174,13 @@ func mapPurchaseConfigurationOptions(input []catalog.PublicPurchaseConfiguration
 		})
 	}
 	return result
+}
+
+func mapPurchaseServerLoginPolicy(policy *catalog.PublicServerLoginPolicy) *v1.PurchaseServerLoginPolicy {
+	if policy == nil {
+		return nil
+	}
+	return &v1.PurchaseServerLoginPolicy{HostnameEnabled: policy.HostnameEnabled, PasswordEnabled: policy.PasswordEnabled,
+		Hostname: v1.PurchaseServerLoginRules{Prefix: policy.Hostname.Prefix, Length: policy.Hostname.Length, Characters: policy.Hostname.Characters},
+		Password: v1.PurchaseServerLoginRules{Length: policy.Password.Length, Characters: policy.Password.Characters}}
 }

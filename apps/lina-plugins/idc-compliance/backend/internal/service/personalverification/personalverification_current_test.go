@@ -6,6 +6,7 @@ import (
 	"lina-plugin-idc-compliance/backend/internal/dao"
 	"lina-plugin-idc-compliance/backend/internal/model/do"
 	"lina-plugin-idc-compliance/backend/internal/model/entity"
+	"lina-plugin-idc-compliance/backend/internal/provider/aliyunface"
 	"lina-plugin-idc-core/backend/cap/identitycap"
 	"testing"
 	"time"
@@ -26,6 +27,25 @@ func TestCurrentManualVerification(t *testing.T) {
 	value, err = service.QueryCurrent(context.Background(), "attempt_old_0001")
 	if err != nil || value.Status != StatusUnverified {
 		t.Fatalf("old browser return: %+v %v", value, err)
+	}
+}
+
+// A retained secret can be revoked without changing the legitimate completed identity projection.
+func TestCurrentVerifiedResultWithoutSecretAccessPostgreSQL(t *testing.T) {
+	ctx := context.Background()
+	harness := newVerificationHarness(t, ctx)
+	value := startSyntheticAdult(t, ctx, harness)
+	harness.client.queries = []aliyunface.QueryResult{{State: aliyunface.QueryStatePassed}}
+	value, err := harness.service.QueryCurrent(ctx, value.AttemptNo)
+	if err != nil || value.Status != StatusVerified {
+		t.Fatalf("verified state=%+v error=%v", value, err)
+	}
+	// Current's safe projection has no dependency on the disposed private snapshot.
+	harness.impl.snapshotAccessor = nil
+	harness.impl.snapshotManager = nil
+	value, err = harness.service.Current(ctx)
+	if err != nil || value.Status != StatusVerified || value.VerifiedAt == nil || value.MaskedIdentityNo == "" {
+		t.Fatalf("safe completed result=%+v error=%v", value, err)
 	}
 }
 

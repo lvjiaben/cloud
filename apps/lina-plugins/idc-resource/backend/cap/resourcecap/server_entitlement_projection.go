@@ -23,17 +23,19 @@ var (
 // caller remains responsible for proving the matching generic entitlement;
 // idc-resource proves the matching succeeded Provider task and active mapping.
 type ServerEntitlementBinding struct {
-	Version                    string
-	EntitlementNo              string
-	SourceIntentNo             string
-	CustomerNo                 string
-	ProductNo                  string
-	ProductVersionNo           string
-	ProductNameZhCN            string
-	ProductNameEnUS            string
-	LocalResourceNo            string
-	MappingNo                  string
-	ProviderTaskNo             string
+	Version          string
+	EntitlementNo    string
+	SourceIntentNo   string
+	CustomerNo       string
+	ProductNo        string
+	ProductVersionNo string
+	ProductNameZhCN  string
+	ProductNameEnUS  string
+	LocalResourceNo  string
+	MappingNo        string
+	ProviderTaskNo   string
+	// InterfaceInstanceNo is the frozen executed interface. An authorized
+	// correction may differ from the original paid interface kept by core.
 	InterfaceInstanceNo        string
 	ProviderPluginID           string
 	PluginReleaseVersion       string

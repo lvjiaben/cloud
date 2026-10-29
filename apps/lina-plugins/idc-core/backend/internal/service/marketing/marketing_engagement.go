@@ -688,8 +688,6 @@ func marketingDestinationAvailable(contact *marketingContactRow, channel string)
 		return contact.Email != "" && contact.EmailVerifiedAt != nil
 	case "sms":
 		return contact.Phone != "" && contact.PhoneVerifiedAt != nil
-	case "in_app", "wechat_official", "wechat_work":
-		return true
 	default:
 		return false
 	}
@@ -723,8 +721,7 @@ func engagementConsentResult(
 }
 
 func validMarketingChannel(value string) bool {
-	return value == "in_app" || value == "email" || value == "sms" ||
-		value == "wechat_official" || value == "wechat_work"
+	return value == "email" || value == "sms"
 }
 
 func validMarketingConsentSource(value string) bool {

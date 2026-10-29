@@ -48,7 +48,7 @@ VALUES ('pool-incompatible-1','channel-provision-1','Incompatible Pool',
 		t.Fatalf("seed incompatible interface pool: %v", err)
 	}
 	secrets := newProvisionSecretSource(t)
-	service, err := New(database, secrets, principalReady, nil, provisionManagedBuilder{})
+	service, err := New(database, secrets, principalReady, nil, nil, provisionManagedBuilder{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,6 +110,49 @@ WHERE task_no=?`, created.ProviderTaskNo); err != nil {
 	assertProvisionCredentialState(t, ctx, database, created.ProviderTaskNo, "revealable", 1)
 }
 
+// Provider failure codes use the resource owner's casing; the core contract
+// requires canonical lower case. Real failed and unknown tasks must remain readable.
+func TestProvisionSourcePostgreSQLReadsUppercaseProviderFailure(t *testing.T) {
+	ctx, database := newProvisionSourceDatabase(t)
+	seedProvisionRoute(t, ctx, database)
+	service, err := New(database, newProvisionSecretSource(t), principalReady, nil, nil, provisionManagedBuilder{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := frozenProvisionSourceRequest(t)
+	created, err := service.CreateTask(ctx, request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		status   string
+		want     provisionresourcecap.TaskStatus
+		finished bool
+	}{
+		{string(resourcetask.StatusFailed), provisionresourcecap.TaskStatusFailed, true},
+		{string(resourcetask.StatusResultUnknown), provisionresourcecap.TaskStatusResultUnknown, false},
+		{string(resourcetask.StatusManualTakeover), provisionresourcecap.TaskStatusManualReview, true},
+	} {
+		t.Run(test.status, func(t *testing.T) {
+			_, err := database.Exec(ctx, `UPDATE plugin_idc_resource_task SET status_code=?,failure_code='UPSTREAM_RESULT_UNKNOWN',result_unknown=?,finished_at=CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE NULL END,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE task_no=?`, test.status, test.status == string(resourcetask.StatusResultUnknown), test.finished, created.ProviderTaskNo)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result, err := service.ReadTask(ctx, provisionresourcecap.TaskReadRequest{ProviderTaskNo: created.ProviderTaskNo, Request: request})
+			if err != nil || result == nil || result.Status != test.want || result.FailureCode != "upstream_result_unknown" {
+				t.Fatalf("task projection status=%s result=%+v err=%v", test.status, result, err)
+			}
+			if err := provisionresourcecap.ValidateTask(*result); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+	count, err := database.GetValue(ctx, `SELECT COUNT(*) FROM plugin_idc_resource_task`)
+	if err != nil || count.Int() != 1 {
+		t.Fatalf("reads must not create tasks: count=%v err=%v", count, err)
+	}
+}
+
 func TestProvisionSourcePostgreSQLRejectsLegacySourceRuntimeBeforeProviderInvocation(t *testing.T) {
 	ctx, database := newProvisionSourceDatabase(t)
 	seedProvisionRoute(t, ctx, database)
@@ -122,7 +165,7 @@ WHERE channel_no='channel-provision-1'`); err != nil {
 	}
 	calls := 0
 	secrets := newProvisionSecretSource(t)
-	service, err := New(database, secrets, principalReady, nil, provisionManagedBuilder{calls: &calls})
+	service, err := New(database, secrets, principalReady, nil, nil, provisionManagedBuilder{calls: &calls})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +182,7 @@ func TestPaidServerOwnerRunsDynamicProviderAndProjectsEntitlementPostgreSQL(t *t
 	ctx, database := newProvisionSourceDatabase(t)
 	seedProvisionRoute(t, ctx, database)
 	secrets := newProvisionSecretSource(t)
-	source, err := New(database, secrets, principalReady, nil, provisionManagedBuilder{})
+	source, err := New(database, secrets, principalReady, nil, nil, provisionManagedBuilder{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,6 +190,12 @@ func TestPaidServerOwnerRunsDynamicProviderAndProjectsEntitlementPostgreSQL(t *t
 	created, err := source.CreateTask(ctx, request)
 	if err != nil || created == nil {
 		t.Fatalf("create resource-owner task=%+v err=%v", created, err)
+	}
+	// Historical uncorrected tasks did not carry the paid-interface field.
+	// The exact original-channel binding must remain valid without rewriting
+	// their persisted metadata or requiring a provider call to migrate it.
+	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_task SET owner_metadata=owner_metadata-'purchasedInterfaceInstanceNo' WHERE task_no=?`, created.ProviderTaskNo); err != nil {
+		t.Fatal(err)
 	}
 	store, err := resourcetask.NewStore(database)
 	if err != nil {
@@ -168,6 +217,7 @@ func TestPaidServerOwnerRunsDynamicProviderAndProjectsEntitlementPostgreSQL(t *t
 			configuration channelconfig.Configuration,
 			method string,
 			operationSecrets []resourcecap.SecretBinding,
+			_ ...func(resourcecap.Evidence),
 		) (pluginhost.ConfidentialOutboundHandler, func(), error) {
 			if configuration.Config.ChannelRef != "channel-provision-1" ||
 				configuration.ReleaseVersion != "v0.1.0" ||
@@ -190,6 +240,9 @@ func TestPaidServerOwnerRunsDynamicProviderAndProjectsEntitlementPostgreSQL(t *t
 	health := &provisionHealthRecorder{}
 	executor, err := resourcetask.NewExecutor(
 		store, runtime.ConstructRevisionSession, store.ResolveResources, health,
+		func(ctx context.Context, _ resourcetask.ClaimedTask, _ resourcecap.OperationRequest, _ resourcecap.Provider, invoke func(context.Context) error) error {
+			return invoke(ctx)
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -376,7 +429,7 @@ WHERE task.task_no = ?`, taskNo)
 		!strings.Contains(row.Parameters, `"client": "88"`) {
 		t.Fatalf("unsafe provision parameters: %s", row.Parameters)
 	}
-	if strings.Contains(row.OwnerMetadata, row.TaskSecretRef) || len(secrets.plaintext()) < 32 {
+	if strings.Contains(row.OwnerMetadata, row.TaskSecretRef) || len(secrets.plaintext()) != 20 {
 		t.Fatalf("secret leaked or plaintext was not generated: metadata=%s", row.OwnerMetadata)
 	}
 }
@@ -704,4 +757,39 @@ func appendProvisionDSNParameter(dsn, parameter string) string {
 
 func principalReady(context.Context, string, string) (bool, error) {
 	return true, nil
+}
+
+func TestProvisionTaskStorageFailureRetainsRetryCredentialPostgreSQL(t *testing.T) {
+	ctx, db := newProvisionSourceDatabase(t)
+	seedProvisionRoute(t, ctx, db)
+	secrets := newProvisionSecretSource(t)
+	source, err := New(db, secrets, principalReady, nil, nil, provisionManagedBuilder{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = db.Exec(ctx, `CREATE FUNCTION reject_provision_task() RETURNS TRIGGER LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'isolated task store unavailable'; END $$; CREATE TRIGGER reject_provision_task BEFORE INSERT ON plugin_idc_resource_task FOR EACH ROW EXECUTE FUNCTION reject_provision_task()`); err != nil {
+		t.Fatal(err)
+	}
+	request := frozenProvisionSourceRequest(t)
+	if task, err := source.CreateTask(ctx, request); err == nil || task != nil {
+		t.Fatal("task storage failure hidden")
+	}
+	if secrets.createCalls() != 1 || secrets.revokeCalls() != 0 {
+		t.Fatal("failed task creation revoked retry credential")
+	}
+	count, err := db.GetValue(ctx, `SELECT count(*) FROM plugin_idc_resource_task`)
+	if err != nil || count.Int() != 0 {
+		t.Fatal("failed task insert survived rollback")
+	}
+	if _, err = db.Exec(ctx, `DROP TRIGGER reject_provision_task ON plugin_idc_resource_task`); err != nil {
+		t.Fatal(err)
+	}
+	created, err := source.CreateTask(ctx, request)
+	if err != nil || created == nil {
+		t.Fatalf("retry failed: %v", err)
+	}
+	if secrets.createCalls() != 1 || secrets.revokeCalls() != 0 {
+		t.Fatal("retry regenerated the staged credential")
+	}
+	assertProvisionPersistence(t, ctx, db, secrets, created.ProviderTaskNo)
 }

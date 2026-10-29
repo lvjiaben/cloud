@@ -19,6 +19,9 @@ var configurationFields = []string{"configurationRevision", "fields", "fieldToke
 var billingFields = []string{"configurationRevision", "currencyCode", "terms", "billingTermToken", "label", "zhCn", "enUs", "chargeType", "periodUnit", "periodCount", "minimumPurchaseCycles", "status", "setupAmount", "subtotalAmount", "taxAmount", "totalAmount"}
 var importSnapshotFields = []string{
 	"protocolVersion",
+	"pricingMode",
+	"customerVisible",
+	"defaultValue",
 	"product",
 	"publicSlug",
 	"nameZhCn",
@@ -79,6 +82,7 @@ var importSnapshotFields = []string{
 	"quantityMode",
 	"trialQuantity",
 	"minimumPurchaseCycles",
+	"maximumPurchaseCycles",
 	"maximumRenewalCycles",
 	"usage",
 	"meterUnit",

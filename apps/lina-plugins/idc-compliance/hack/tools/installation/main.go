@@ -898,6 +898,10 @@ func developmentPlan(root string, args []string, env []string) (string, bool, []
 			continue
 		}
 		switch key {
+		case "rebuild":
+			if value != "0" && value != "1" {
+				return "", false, nil, fmt.Errorf("rebuild must be 0 or 1")
+			}
 		case "out", "plan", "plugins":
 			outputArgs = append(outputArgs, arg)
 		default:
@@ -926,6 +930,7 @@ func developmentPlan(root string, args []string, env []string) (string, bool, []
 	adminEnv := replaceEnv(common, "ADMIN_PORT", strconv.Itoa(ports["frontend_port"]))
 	adminEnv = replaceEnv(adminEnv, "LINAPRO_BACKEND_PROXY_TARGET", backend)
 	customerEnv := replaceEnv(common, "CUSTOMER_PORT", strconv.Itoa(ports["customer_port"]))
+	customerEnv = replaceEnv(customerEnv, "WEBSITE_PUBLIC_ORIGIN", website)
 	customerEnv = replaceEnv(customerEnv, "LINAPRO_BACKEND_PROXY_TARGET", backend)
 	services := []developmentService{
 		{name: "Backend", program: binary, dir: output, env: backendEnv, port: ports["backend_port"]},
@@ -998,8 +1003,20 @@ func runDevelopment(root, state string, args []string) error {
 	if err = checkDevelopmentPorts(services); err != nil {
 		return err
 	}
-	if err = buildDelivery(root, state, []string{"plugins=1", "out=" + output}); err != nil {
-		return err
+	if !contains(args, "rebuild=0") {
+		if err = buildDelivery(root, state, []string{"plugins=1", "out=" + output}); err != nil {
+			return err
+		}
+	}
+	// Refuse an incomplete delivery before starting any service, including reuse mode.
+	for _, service := range services {
+		entry := service.program
+		if len(service.args) > 0 {
+			entry = service.args[0]
+		}
+		if info, statErr := os.Stat(entry); statErr != nil || !info.Mode().IsRegular() {
+			return fmt.Errorf("%s delivery entry is unavailable: %s; run make dev to rebuild", service.name, entry)
+		}
 	}
 	env, err := prepare(root, state, os.Environ())
 	if err != nil {
@@ -1017,7 +1034,7 @@ func runDevelopment(root, state string, args []string) error {
 	return superviseDevelopment(ctx, services)
 }
 
-// superviseDevelopment cancels every owned child if one fails or the operator exits.
+// superviseDevelopment owns every child, restarts failed services independently, and reaps all on exit.
 func superviseDevelopment(ctx context.Context, services []developmentService) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -1031,22 +1048,15 @@ func superviseDevelopment(ctx context.Context, services []developmentService) er
 		}
 	}()
 	for _, service := range services {
-		program, args := executionCommand(runtime.GOOS, service.program, service.args)
-		command := exec.CommandContext(ctx, program, args...)
-		command.Dir, command.Env = service.dir, service.env
-		command.Stdout, command.Stderr = os.Stdout, os.Stderr
-		command.WaitDelay = 5 * time.Second
-		if err := command.Start(); err != nil {
+		command, err := startDevelopmentService(ctx, service)
+		if err != nil {
 			return fmt.Errorf("start %s: %w", service.name, err)
 		}
 		started++
-		go func(name string, command *exec.Cmd) {
-			err := command.Wait()
-			if err == nil {
-				err = fmt.Errorf("service exited")
-			}
-			results <- fmt.Errorf("%s stopped: %w", name, err)
-		}(service.name, command)
+		go func(service developmentService, command *exec.Cmd) {
+			restartDevelopmentService(ctx, service, command)
+			results <- nil
+		}(service, command)
 		if service.name == "Backend" {
 			consumed, err := waitDevelopmentBackend(ctx, service.port, results)
 			if consumed {
@@ -1064,6 +1074,57 @@ func superviseDevelopment(ctx context.Context, services []developmentService) er
 	case err := <-results:
 		started--
 		return err
+	}
+}
+
+// startDevelopmentService launches a direct child with the same explicit runtime inputs.
+func startDevelopmentService(ctx context.Context, service developmentService) (*exec.Cmd, error) {
+	program, args := executionCommand(runtime.GOOS, service.program, service.args)
+	command := exec.CommandContext(ctx, program, args...)
+	command.Dir, command.Env = service.dir, service.env
+	command.Stdout, command.Stderr = os.Stdout, os.Stderr
+	command.WaitDelay = 5 * time.Second
+	if err := command.Start(); err != nil {
+		return nil, err
+	}
+	return command, nil
+}
+
+// restartDevelopmentService isolates exits and retries with a cancellable, capped backoff.
+// A stable minute resets the delay. Cancellation never launches a replacement child.
+func restartDevelopmentService(ctx context.Context, service developmentService, command *exec.Cmd) {
+	delay := time.Second
+	for {
+		started := time.Now()
+		err := command.Wait()
+		if ctx.Err() != nil {
+			return
+		}
+		if err == nil {
+			err = fmt.Errorf("service exited")
+		}
+		if time.Since(started) >= time.Minute {
+			delay = time.Second
+		}
+		for {
+			fmt.Fprintf(os.Stderr, "%s stopped: %v; restarting in %s\n", service.name, err, delay)
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			command, err = startDevelopmentService(ctx, service)
+			delay = min(delay*2, 30*time.Second)
+			if err == nil {
+				fmt.Fprintf(os.Stderr, "%s restarted (PID %d)\n", service.name, command.Process.Pid)
+				break
+			}
+		}
 	}
 }
 

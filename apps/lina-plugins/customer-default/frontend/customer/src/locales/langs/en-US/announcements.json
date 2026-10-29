@@ -1,0 +1,11 @@
+{
+  "title": "Announcements",
+  "detail": "Announcement",
+  "empty": "No announcements",
+  "read": "Read",
+  "unread": "Unread",
+  "loadFailed": "Unable to load announcements. Please try again.",
+  "readFailed": "Unable to save read status. Close and reopen to try again.",
+  "retry": "Retry",
+  "total": "Total {count}"
+}

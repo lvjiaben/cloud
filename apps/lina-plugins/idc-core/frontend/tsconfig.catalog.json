@@ -1,0 +1,22 @@
+{
+  "extends": "../../../lina-vben/apps/web-antd/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "#/*": ["../../../lina-vben/apps/web-antd/src/*"],
+      "@vben/*": ["../../../lina-vben/apps/web-antd/node_modules/@vben/*/src/index.ts"],
+      "ant-design-vue": ["../../../lina-vben/apps/web-antd/node_modules/ant-design-vue"],
+      "ant-design-vue/*": ["../../../lina-vben/apps/web-antd/node_modules/ant-design-vue/*"],
+      "dayjs": ["../../../lina-vben/apps/web-antd/node_modules/dayjs"]
+    },
+    "types": [
+      "../../../lina-vben/packages/types/global",
+      "../../../lina-vben/node_modules/vite/client"
+    ]
+  },
+  "include": [
+    "pages/catalog-client.ts",
+    "pages/components/catalog-merchant-workspace.vue",
+    "../../../lina-vben/apps/web-antd/src/**/*.d.ts"
+  ]
+}

@@ -1,3 +1,6 @@
+// This file verifies public commerce mapping preserves exact values and the
+// published manual-processing phase without exposing private execution fields.
+
 package account
 
 import (
@@ -48,7 +51,7 @@ func TestCommerceOrderMappingPreservesExactAmountsAndMilliseconds(t *testing.T) 
 		t.Fatalf("timestamps are not Unix milliseconds: %+v", detail.Summary)
 	}
 	if len(detail.Deliveries) != 1 || detail.Deliveries[0].ProductNameZhCN != "证书" ||
-		detail.Deliveries[0].Quantity != 3 || detail.Deliveries[0].StatusCode != "processing" ||
+		detail.Deliveries[0].Quantity != 3 || detail.Deliveries[0].StatusCode != "manual_processing" ||
 		!detail.Deliveries[0].OngoingService || detail.Deliveries[0].StartedAt != createdAt.UnixMilli() ||
 		detail.Deliveries[0].UpdatedAt != createdAt.UnixMilli() {
 		t.Fatalf("customer-safe delivery was not mapped: %+v", detail.Deliveries)

@@ -18,10 +18,10 @@ func TestIntentNumberedPageBounds(t *testing.T) {
 	}
 }
 
-func TestSafeIntentStatusUsesOnlyCustomerSixStateContract(t *testing.T) {
+func TestSafeIntentStatusDistinguishesManualAttention(t *testing.T) {
 	tests := map[string]string{
 		"review_pending": "awaiting_review",
-		"manual_pending": "processing",
+		"manual_pending": "manual_processing",
 		"gate_pending":   "processing",
 		"queued":         "processing",
 		"processing":     "processing",

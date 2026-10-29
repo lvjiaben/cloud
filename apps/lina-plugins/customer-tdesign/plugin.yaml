@@ -1,0 +1,84 @@
+id: customer-tdesign
+name: 腾讯云风格用户中心
+version: v0.1.14
+type: dynamic
+distribution: managed
+scope_nature: platform_only
+supports_multi_tenant: false
+default_install_mode: global
+description: 可独立安装的用户中心，支持客户服务、订单、财务和工单。
+author: linapro
+license: Apache-2.0
+i18n:
+  enabled: false
+dependencies:
+  plugins:
+    - id: idc-core
+      version: ">=0.1.172 <1.0.0"
+    - id: idc-portal
+      version: ">=0.1.11 <1.0.0"
+    - id: idc-notify
+      version: ">=0.1.10 <1.0.0"
+business_extensions:
+  - point: customer-template
+    version: v1
+    role: provider
+    owner: idc-portal
+    methods:
+      - capabilities.describe
+    interface_configuration_cardinality: singleton
+    interface_configuration:
+      version: v1
+      fields:
+        - key: websiteurl
+          type: single_line
+          label: { en-US: Website origin, zh-CN: 官网地址（含协议和域名） }
+          maximum_length: 500
+        - key: websitecatalogpath
+          type: single_line
+          label: { en-US: Website catalog path, zh-CN: 官网商品列表路径 }
+          maximum_length: 500
+        - key: websiteconfigurepath
+          type: single_line
+          label: { en-US: "Website product path with {product}", zh-CN: "官网商品配置路径（用 {product} 表示商品）" }
+          maximum_length: 500
+        - key: websitecartpath
+          type: single_line
+          label: { en-US: Website cart path, zh-CN: 官网购物车路径 }
+          maximum_length: 500
+    provider_metadata:
+      type: customer-template-contract
+      version: v1
+      values:
+        renderer: customer-tdesign-v1
+        entry: index.html
+        spa: true
+
+        pages:
+          - { id: overview, nameZh: 账户概览, nameEn: Overview, path: /account }
+          - { id: catalog, nameZh: 购买服务, nameEn: Shop, path: /account/products/catalog }
+          - { id: servers, nameZh: 服务器, nameEn: Servers, path: /account/servers }
+          - { id: orders, nameZh: 我的订单, nameEn: Orders, path: /account/orders }
+          - { id: finance, nameZh: 余额与账单, nameEn: Billing, path: /account/billing }
+          - { id: transactions, nameZh: 收支明细, nameEn: Transactions, path: /account/billing/transactions }
+          - { id: renewals, nameZh: 续费管理, nameEn: Renewals, path: /account/billing/renewals }
+          - { id: credit, nameZh: 信用账户, nameEn: Credit, path: /account/billing/credit }
+          - { id: refunds, nameZh: 退款, nameEn: Refunds, path: /account/refunds }
+          - { id: support, nameZh: 服务工单, nameEn: Support, path: /account/support }
+          - { id: profile, nameZh: 账户资料, nameEn: Profile, path: /account/profile }
+          - { id: security, nameZh: 登录与安全, nameEn: Security, path: /account/security }
+          - { id: contacts, nameZh: 通知联系人, nameEn: Contacts, path: /account/contacts }
+          - { id: addresses, nameZh: 联系地址, nameEn: Addresses, path: /account/addresses }
+          - { id: ssh-keys, nameZh: 登录密钥, nameEn: SSH keys, path: /account/ssh-keys }
+          - { id: verification, nameZh: 实名认证, nameEn: Identity verification, path: /account/verification }
+          - { id: invoice-profiles, nameZh: 发票抬头, nameEn: Invoice profiles, path: /account/invoice-profiles }
+          - { id: tax-invoices, nameZh: 发票管理, nameEn: Tax invoices, path: /account/tax-invoices }
+          - { id: referrals, nameZh: 推广与佣金, nameEn: Referrals, path: /account/referrals }
+          - { id: privacy, nameZh: 数据与账户, nameEn: Data and account, path: /account/privacy }
+          - { id: login, nameZh: 登录, nameEn: Login, path: /auth/login }
+          - { id: register, nameZh: 注册, nameEn: Register, path: /auth/register }
+          - { id: initial-password, nameZh: 修改初始密码, nameEn: Initial password, path: /auth/initial-password }
+public_assets:
+  - source: frontend/dist
+    mount: /
+    index: index.html

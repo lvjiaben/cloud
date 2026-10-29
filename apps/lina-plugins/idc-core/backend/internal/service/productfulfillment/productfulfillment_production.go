@@ -12,7 +12,7 @@ import (
 	"lina-core/pkg/plugin/capability/authcap/authz"
 	"lina-core/pkg/plugin/capability/bizctxcap"
 	"lina-core/pkg/plugin/capability/usercap"
-	"lina-plugin-idc-core/backend/cap/contractfulfillmentcap"
+
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
@@ -58,7 +58,7 @@ func (a *productionManagementAuthorizer) authorize(ctx context.Context, permissi
 }
 
 func permissionForCatalog(permission string) string {
-	for _, candidate := range []string{PermissionTaskList, PermissionTaskQuery, PermissionReviewApprove, PermissionReviewReject, PermissionManualTakeover, PermissionManualConclude} {
+	for _, candidate := range []string{PermissionTaskList, PermissionTaskQuery, PermissionReviewApprove, PermissionReviewReject, PermissionManualTakeover, PermissionManualConclude, PermissionPreparationRecover} {
 		if permission == candidate {
 			return candidate
 		}
@@ -83,6 +83,11 @@ func (a *productionManagementAuthorizer) AuthorizeTakeover(ctx context.Context, 
 }
 func (a *productionManagementAuthorizer) AuthorizeManualConclude(ctx context.Context, _ string) (Authorization, error) {
 	return a.authorize(ctx, PermissionManualConclude)
+}
+
+// AuthorizeRecovery keeps recovery separate from takeover and manual completion.
+func (a *productionManagementAuthorizer) AuthorizeRecovery(ctx context.Context, _ string) (Authorization, error) {
+	return a.authorize(ctx, PermissionPreparationRecover)
 }
 
 type productionActorDirectory struct{ users usercap.Service }
@@ -131,16 +136,15 @@ type productionOwnerGateValidator struct {
 	database interface {
 		GetScan(context.Context, any, string, ...any) error
 	}
-	contracts contractfulfillmentcap.Source
 }
 
 func NewOwnerGateValidator(database interface {
 	GetScan(context.Context, any, string, ...any) error
-}, contracts contractfulfillmentcap.Source) (OwnerGateValidator, error) {
+}) (OwnerGateValidator, error) {
 	if database == nil {
 		return nil, gerror.New("product fulfillment owner gate requires database")
 	}
-	return &productionOwnerGateValidator{database: database, contracts: contracts}, nil
+	return &productionOwnerGateValidator{database: database}, nil
 }
 
 func (v *productionOwnerGateValidator) EvaluateFulfillmentRelease(ctx context.Context, orderNo string, itemNos []string) (map[string]bool, error) {
@@ -148,25 +152,14 @@ func (v *productionOwnerGateValidator) EvaluateFulfillmentRelease(ctx context.Co
 		return nil, gerror.New("product fulfillment owner gate input is invalid")
 	}
 	var authority *struct {
-		RiskDecision     string `orm:"risk_decision_code"`
-		RequiresContract bool
-		ItemCount        int
+		RiskDecision string `orm:"risk_decision_code"`
+
+		ItemCount int
 	}
-	if err := v.database.GetScan(ctx, &authority, `SELECT orders.risk_decision_code,orders.requires_contract,count(item.order_item_no)::int AS item_count FROM plugin_idc_core_commerce_order orders JOIN plugin_idc_core_commerce_order_item item ON item.tenant_id=orders.tenant_id AND item.order_no=orders.order_no AND item.order_item_no IN(SELECT jsonb_array_elements_text(?::jsonb)) WHERE orders.tenant_id=0 AND orders.order_no=? GROUP BY orders.risk_decision_code,orders.requires_contract LIMIT 1`, mustJSON(itemNos), orderNo); err != nil || authority == nil || authority.ItemCount != len(itemNos) {
+	if err := v.database.GetScan(ctx, &authority, `SELECT orders.risk_decision_code,count(item.order_item_no)::int AS item_count FROM plugin_idc_core_commerce_order orders JOIN plugin_idc_core_commerce_order_item item ON item.tenant_id=orders.tenant_id AND item.order_no=orders.order_no AND item.order_item_no IN(SELECT jsonb_array_elements_text(?::jsonb)) WHERE orders.tenant_id=0 AND orders.order_no=? GROUP BY orders.risk_decision_code LIMIT 1`, mustJSON(itemNos), orderNo); err != nil || authority == nil || authority.ItemCount != len(itemNos) {
 		return nil, gerror.New("product fulfillment owner gates are unavailable")
 	}
-	contractReady := !authority.RequiresContract
-	if v.contracts != nil {
-		requirements := []contractfulfillmentcap.Requirement{{OrderNo: orderNo, RequiresContract: authority.RequiresContract}}
-		decisions, err := v.contracts.BatchEvaluate(ctx, requirements)
-		if err != nil || contractfulfillmentcap.ValidateDecisions(requirements, decisions) != nil || len(decisions) != 1 {
-			return nil, gerror.New("product fulfillment contract gate is unavailable")
-		}
-		contractReady = decisions[0].Ready
-	} else if authority.RequiresContract {
-		contractReady = false
-	}
-	ready := authority.RiskDecision == "approved" && contractReady
+	ready := authority.RiskDecision == "approved"
 	result := make(map[string]bool, len(itemNos))
 	for _, itemNo := range itemNos {
 		result[itemNo] = ready

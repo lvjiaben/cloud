@@ -9,6 +9,10 @@ gfcli:
       - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
         path: "internal"
         tables: >-
+          plugin_idc_core_purchase_server_login,
+          plugin_idc_core_customer_login_contact,
+          plugin_idc_core_server_operation_policy,
+          plugin_idc_core_fulfillment_non_acceptance_verification,
           plugin_idc_core_entitlement_upgrade,
           plugin_idc_core_merchant_currency,
           plugin_idc_core_peer_purchase_file,
@@ -139,6 +143,11 @@ gfcli:
           plugin_idc_core_server_accessory_price_policy_version,
           plugin_idc_core_traffic_package_product,
           plugin_idc_core_server_accessory_quote,
+          plugin_idc_core_native_server_write_fence,
+          plugin_idc_core_native_server_target_quote,
+          plugin_idc_core_channel_service_quote,
+          plugin_idc_core_server_accessory_entitlement,
+          plugin_idc_core_server_accessory_renewal_work_item,
           plugin_idc_core_billing_invoice,
           plugin_idc_core_billing_invoice_item,
           plugin_idc_core_billing_ledger_account,
@@ -251,9 +260,7 @@ gfcli:
           plugin_idc_core_support_automation_policy,
           plugin_idc_core_content_category,
           plugin_idc_core_content_item,
-          plugin_idc_core_content_customer_scope,
           plugin_idc_core_content_group_scope,
-          plugin_idc_core_content_service_scope,
           plugin_idc_core_content_action_history,
           plugin_idc_core_content_upload_session,
           plugin_idc_core_content_upload_part,

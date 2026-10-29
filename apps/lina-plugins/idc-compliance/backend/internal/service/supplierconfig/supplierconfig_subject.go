@@ -182,60 +182,6 @@ func (s *serviceImpl) CompleteSubjectAuthorization(
 	return s.currentConfiguration(ctx, request.ProviderCode)
 }
 
-// RecordManagedBinding projects the local gateway's completed Tencent
-// onboarding result into the plugin configuration record. The gateway remains
-// the sole owner of supplier subject plaintext.
-func (s *serviceImpl) RecordManagedBinding(
-	ctx context.Context,
-	provider string,
-	result GatewayResult,
-) (*Configuration, error) {
-	provider = normalizeProvider(provider)
-	if provider != ProviderTencentESSBasic || !bindingNoPattern.MatchString(result.BindingNo) ||
-		(result.OperationNo != "" && !operationNoPattern.MatchString(result.OperationNo)) {
-		return nil, bizerr.NewCode(CodeInvalid)
-	}
-	actor, err := s.authorize(ctx, PermissionSubjectBind, provider)
-	if err != nil {
-		return nil, err
-	}
-	if err = s.ensureRecentLogin(ctx, actor); err != nil {
-		return nil, err
-	}
-	row, err := s.load(ctx, provider, false)
-	if err != nil {
-		return nil, bizerr.WrapCode(err, CodeUnavailable)
-	}
-	if row != nil && SubjectStatus(row.SubjectStatusCode) == SubjectActive {
-		if safeString(row.SubjectBindingNo) != result.BindingNo {
-			return nil, bizerr.NewCode(CodeConflict)
-		}
-		if row.CapabilityEvidenceCode == EvidenceOfficialPublicContract && row.AdapterEnabled {
-			return s.currentConfiguration(ctx, provider)
-		}
-	}
-	if row != nil && SubjectStatus(row.SubjectStatusCode) != SubjectUnbound &&
-		SubjectStatus(row.SubjectStatusCode) != SubjectActive &&
-		!(SubjectStatus(row.SubjectStatusCode) == SubjectRetryableFailed && row.SubjectBindingNo == nil) {
-		return nil, bizerr.NewCode(CodeConflict)
-	}
-	expectedVersion := int64(0)
-	if row != nil {
-		if row.Version <= 0 {
-			return nil, bizerr.NewCode(CodeConflict)
-		}
-		expectedVersion = row.Version - 1
-	}
-	request := SubjectAuthorizationRequest{
-		ProviderCode: provider, Operation: OperationSubjectBind,
-		ExpectedVersion: expectedVersion, IdempotencyKey: "managed-onboarding:" + result.BindingNo,
-	}
-	if err = s.completeSubjectProjection(ctx, request, result); err != nil {
-		return nil, err
-	}
-	return s.currentConfiguration(ctx, provider)
-}
-
 func (s *serviceImpl) RevokeSubject(
 	ctx context.Context,
 	input SubjectRevokeInput,
@@ -533,10 +479,6 @@ func subjectAdapterGate(
 	operation OperationKind,
 	result OperationResult,
 ) (string, bool) {
-	if provider == ProviderTencentESSBasic {
-		enabled := result == OperationResultSucceeded && operation != OperationSubjectRevoke
-		return EvidenceOfficialPublicContract, enabled
-	}
 	return EvidenceExternalConfirmationRequired, false
 }
 

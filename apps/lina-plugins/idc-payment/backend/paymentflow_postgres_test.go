@@ -101,6 +101,9 @@ func TestPaymentSubmissionPreservesFastCallbackPostgreSQL(t *testing.T) {
 		t.Run(map[bool]string{false: "callback queued", true: "already posted"}[confirmBeforeReturn], func(t *testing.T) {
 			db, store, billing, _, adapter, flows := newSubmissionServices(t)
 			adapter.create = func(ctx context.Context, input paymentcap.CreateRequest) (*paymentcap.Redirect, error) {
+				if input.NotifyURL != "https://merchant.example.test/x/idc-payment/api/v1/callbacks/payments/submission-channel" || input.ReturnURL != "https://merchant.example.test/payment/return/"+input.AttemptNo {
+					t.Fatalf("generated public payment URLs do not match actual routes: notify=%q return=%q", input.NotifyURL, input.ReturnURL)
+				}
 				row, err := db.GetOne(ctx, `SELECT status_code FROM plugin_idc_payment_attempt WHERE attempt_no=?`, input.AttemptNo)
 				if err != nil || row["status_code"].String() != "submitted" {
 					t.Fatalf("submission was not durable before provider call: %v %v", row, err)
@@ -353,5 +356,23 @@ func TestPaymentUnknownSubmissionDoesNotInventQueryCapabilityPostgreSQL(t *testi
 	row, err := db.GetOne(ctx, `SELECT status_code,result_unknown,(SELECT COUNT(*) FROM plugin_idc_payment_work_item WHERE work_type='query_payment') AS queries FROM plugin_idc_payment_attempt`)
 	if err != nil || row["status_code"].String() != "manual_review" || !row["result_unknown"].Bool() || row["queries"].Int() != 0 || billing.releaseCalls != 0 {
 		t.Fatalf("unverified query capability was inferred: %v err=%v", row, err)
+	}
+}
+
+// TestPaymentReturnProjectsOnlyOwnedOrderPostgreSQL proves the return page
+// receives its exact local navigation target, without disclosing another payer.
+func TestPaymentReturnProjectsOnlyOwnedOrderPostgreSQL(t *testing.T) {
+	_, store, _, _, _, flows := newSubmissionServices(t)
+	ctx := context.Background()
+	created, err := flows.Create(ctx, paymentflow.CreateInput{PaymentContextNo: "context-test", ChannelNo: "submission-channel", Mode: paymentcap.ModeAlipayPage})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := store.ObserveReturn(ctx, created.AttemptNo, billingcap.PrincipalReferenceDigest(101))
+	if err != nil || status.OrderNo != "order-1" || status.InvoiceNo != "invoice-1" || status.StatusCode == "succeeded" {
+		t.Fatalf("return projection did not preserve unconfirmed owned order: %+v %v", status, err)
+	}
+	if other, err := store.ObserveReturn(ctx, created.AttemptNo, billingcap.PrincipalReferenceDigest(102)); err == nil || other != nil {
+		t.Fatal("return exposed another customer's order")
 	}
 }

@@ -19,7 +19,7 @@
 | 服务器运营平台业务基线 | [12-business-baseline.md](12-business-baseline.md) |
 | 正式设计架构决策 | [13-architecture.md](13-architecture.md) |
 | 第三方服务对接决策 | [14-integrations.md](14-integrations.md) |
-| 内容发布与可见范围长期规则 | [15-content.md](15-content.md) |
+| 内容发布与公告简化规则 | [15-content.md](15-content.md) |
 | 通知渠道要求 | [16-notifications.md](16-notifications.md) |
 | AI业务要求 | [17-ai.md](17-ai.md) |
 | 当前运营重点与性能基线 | [18-performance.md](18-performance.md) |
@@ -80,9 +80,11 @@
 | 工单角色、组织与部门队列（2026-10-10） | [75-support-role-access.md](75-support-role-access.md) |
 | 客户业务、代理销售与开放 API（2026-10-10） | [76-customer-business-openapi.md](76-customer-business-openapi.md) |
 | 严格禁止修改宿主（2026-10-10） | [74-host-boundary.md](74-host-boundary.md) |
+| 代理质量优先与完整交付（2026-10-22） | [77-agent-quality.md](77-agent-quality.md) |
 
 `migration-manifest.json`仅保存迁移时的来源与哈希，便于确认原文完整迁移；后续更新主题记录不要求保持旧哈希。新确认结论写入对应主题，避免重新堆积到入口文件。
 
 - [用户中心商品目录](73-customer-product-directory.md)：商家关联商品、商家配置服务菜单与购买分类导航；不含私人服务分组。
 
 - [商品业务与插件交付](75-product-commerce.md)：分类商品同页、任意商品插件化、人工交付、试用转正式和配置升级。
+- [插件管理与开发规范](78-plugin-management.md)：可扩展分类、内置管理插件、安装规范与并行边界。

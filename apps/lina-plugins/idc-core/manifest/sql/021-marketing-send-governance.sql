@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_marketing_channel_consent_event (
     "created_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_idc_marketing_consent_event_tenant CHECK ("tenant_id" = 0),
     CONSTRAINT ck_idc_marketing_consent_event_channel CHECK (
-        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official', 'wechat_work')
+        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official')
     ),
     CONSTRAINT ck_idc_marketing_consent_event_action CHECK (
         "action_code" IN ('granted', 'withdrawn')
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_marketing_channel_consent (
     "updated_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT ck_idc_marketing_consent_tenant CHECK ("tenant_id" = 0),
     CONSTRAINT ck_idc_marketing_consent_channel CHECK (
-        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official', 'wechat_work')
+        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official')
     ),
     CONSTRAINT ck_idc_marketing_consent_status CHECK (
         "status_code" IN ('opted_in', 'opted_out')

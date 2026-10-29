@@ -18,7 +18,8 @@ import type {
 } from "./server-accessory-client";
 import type { VxeGridProps } from "#/adapter/vxe-table";
 
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
+import { useAccess } from "./plugin-access";
 import { useRoute } from "vue-router";
 import OperationsDetailPanel from "../../../idc-core/frontend/pages/components/operations-detail-panel.vue";
 
@@ -65,6 +66,10 @@ import {
   previewStaffServerBatch,
 } from "./server-accessory-client";
 
+const props = defineProps<{ scopedServiceNo?: string }>();
+const { hasAccessByCodes } = useAccess();
+let detailGeneration = 0;
+let disposed = false;
 const serviceNo = ref("");
 const route = useRoute();
 const operationsDetail = computed(() => route.query.operationsMetric === 'servers');
@@ -222,7 +227,7 @@ const batchActions: ServerBatchAction[] = [
 ];
 
 async function loadServices({ page }: { page: { currentPage: number; pageSize: number } }, values: Record<string, unknown>) {
-  if (operationsDetail.value) return { items: [], total: 0 };
+  if (operationsDetail.value || props.scopedServiceNo) return { items: [], total: 0 };
   selectedServiceNos.value = [];
   try {
     const result = await listStaffServerServices({
@@ -406,22 +411,31 @@ function options(kind: string, state?: string) {
 }
 
 async function load() {
-  const target = serviceNo.value.trim();
+  if (disposed) return;
+  const target = (props.scopedServiceNo || serviceNo.value).trim();
   if (!target) {
     message.warning(text("message.serviceRequired"));
     return;
   }
+  const current = ++detailGeneration;
+  detail.value = undefined;
+  dialogOpen.value = false;
+  activeAction.value = undefined;
+  submitting.value = false;
   loading.value = true;
   failed.value = false;
   try {
     const result = await getStaffServerAccessories(target);
+    if (disposed || current !== detailGeneration) return;
+    if (result.detail.serviceNo !== target) throw new Error("Server context mismatch");
     detail.value = result.detail;
     serviceNo.value = result.detail.serviceNo;
   } catch {
+    if (disposed || current !== detailGeneration) return;
     failed.value = true;
     detail.value = undefined;
   } finally {
-    loading.value = false;
+    if (current === detailGeneration) loading.value = false;
   }
 }
 
@@ -435,6 +449,7 @@ function resetForm() {
 }
 
 function openAction(action: StaffAccessoryAction) {
+  if (!canAct(action) || !detail.value?.availableActions.includes(action) || !directoryFresh.value || detail.value.activeOperationNo) return;
   if (action === "traffic_add" && detail.value) {
     trafficDrawerApi.setData({ serviceNo: detail.value.serviceNo }).open();
     return;
@@ -478,7 +493,9 @@ function buildParameters(action: StaffAccessoryAction) {
 
 async function submit() {
   const action = activeAction.value;
-  if (!action || !detail.value) return;
+  if (disposed || !action || !detail.value || !canAct(action) || !detail.value.availableActions.includes(action) || !directoryFresh.value || detail.value.activeOperationNo) return;
+  const current = detailGeneration;
+  const target = detail.value.serviceNo;
   const parameters = buildParameters(action);
   if (!parameters) {
     message.warning(text("message.formRequired"));
@@ -487,7 +504,7 @@ async function submit() {
   submitting.value = true;
   try {
     const result = await createStaffServerAccessoryOperation(
-      detail.value.serviceNo,
+      target,
       {
         action,
         confirmed: true,
@@ -495,6 +512,7 @@ async function submit() {
         requestNo: `staff-accessory-${crypto.randomUUID()}`,
       },
     );
+    if (disposed || current !== detailGeneration) return;
     message.success(
       result.paymentRequired
         ? `${text("message.paymentRequired")} ${result.invoiceNo}`
@@ -503,12 +521,29 @@ async function submit() {
     dialogOpen.value = false;
     await load();
   } catch {
-    await load();
+    if (!disposed && current === detailGeneration) await load();
   } finally {
-    submitting.value = false;
+    if (!disposed && current === detailGeneration) submitting.value = false;
   }
 }
 const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
+function canAct(action: StaffAccessoryAction) {
+  const separator = action.lastIndexOf("_");
+  return hasAccessByCodes([`idc:admin:resource:server-accessory:${action.slice(0, separator).replaceAll("_", "-")}:${action.slice(separator + 1)}`]);
+}
+onBeforeUnmount(() => {
+  disposed = true;
+  ++detailGeneration;
+  detail.value = undefined;
+  dialogOpen.value = false;
+  activeAction.value = undefined;
+  void trafficDrawerApi.close();
+});
+watch(() => props.scopedServiceNo, (value) => {
+  detail.value = undefined;
+  if (value) { serviceNo.value = value; void load(); }
+}, { immediate: true });
+
 </script>
 
 <template>
@@ -518,7 +553,7 @@ const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
   >
     <div class="accessory-shell">
       <OperationsDetailPanel v-if="operationsDetail" can-open @open="openOperationsServer($event.id)" />
-      <Card v-show="!operationsDetail" class="accessory-directory">
+      <Card v-if="!props.scopedServiceNo" v-show="!operationsDetail" class="accessory-directory">
         <template #extra>
           <Button
             type="primary"
@@ -560,8 +595,8 @@ const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
         </ServiceGrid>
       </Card>
 
-      <Card v-if="detail || loading || failed" :title="text('serverTitle')">
-        <div class="accessory-search-row">
+      <Card v-if="!props.scopedServiceNo && (detail || loading || failed)" :title="text('serverTitle')">
+        <div v-if="!props.scopedServiceNo" class="accessory-search-row">
           <Input
             v-model:value="serviceNo"
             data-testid="server-accessory-service-no"
@@ -591,7 +626,7 @@ const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
       <Spin :spinning="loading">
         <template v-if="detail">
           <Card :title="text('serverTitle')">
-            <Descriptions bordered :column="{ xs: 1, md: 2, xl: 4 }">
+            <Descriptions bordered :column="props.scopedServiceNo ? { xs: 1, md: 2 } : { xs: 1, md: 2, xl: 4 }" :label-style="{ whiteSpace: 'nowrap' }">
               <DescriptionsItem :label="text('field.serviceNo')">{{
                 detail.serviceNo
               }}</DescriptionsItem>
@@ -619,7 +654,7 @@ const layoutRoot = useAdminGridLayout(serviceGridApi, previewGridApi);
             />
             <Space v-if="detail.availableActions.length" wrap>
               <Button
-                v-for="action in detail.availableActions"
+                v-for="action in detail.availableActions.filter(canAct)"
                 :key="action"
                 :danger="
                   action.endsWith('_delete') || action.endsWith('_restore')

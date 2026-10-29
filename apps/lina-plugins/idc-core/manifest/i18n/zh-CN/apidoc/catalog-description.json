@@ -1,6 +1,6 @@
 {
-  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.summary": "修改商品介绍",
-  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.dc": "有权限的管理员使用读取时的商品版本修改中英文名称和介绍；冲突时拒绝覆盖，不更改地址、价格、配置或合同。",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.summary": "修改商品基本资料",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.meta.dc": "同一事务修改中英文资料、分类、会员导航及已变更的库存、配套商品、服务器登录规则。各部分保留独立权限与版本检查，任何失败整体回滚；不改价格或历史订单。",
   "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.productNo.dc": "商品业务编号",
   "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.version.dc": "读取时的商品介绍版本，过期版本拒绝覆盖",
   "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.nameZhCn.dc": "中文商品名称",
@@ -14,6 +14,17 @@
   "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.createdAt.dc": "创建时间，Unix毫秒时间戳",
   "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.updatedAt.dc": "修改时间，Unix毫秒时间戳",
   "plugins.idc_core.api.admin.v1.CatalogProductDetailVersion.fields.createdAt.dc": "版本创建时间，Unix毫秒时间戳",
-  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.directoryNo.dc": "单个产品类型会员导航编号；留空取消归属，不传则保持当前归属",
-  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.directoryNo.dc": "当前产品类型会员导航编号；空值表示未分类"
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.directoryNo.dc": "明确提供时必须为一个有效的产品类型会员导航，空值拒绝；省略则保留现有归属。",
+  "plugins.idc_core.api.admin.v1.CatalogProductDetailProduct.fields.directoryNo.dc": "当前产品类型会员导航编号；空值表示未分类",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.categoryNo.dc": "可选的有效销售分类业务编号；不传保留当前分类，空值拒绝；不改变历史订单",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.sortOrder.dc": "可选的商品升序展示顺序；数值越小越靠前，不传保留当前顺序",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.versionNo.dc": "本商品的可编辑版本编号；提供库存或登录规则时必填",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.inventory.dc": "可选的已修改库存配置；省略保留库存且不要求库存写权限",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.addonProductNos.dc": "可选的完整配套商品集合，最多100个；省略保留，空数组清空",
+  "plugins.idc_core.api.admin.v1.CatalogProductDescriptionUpdateReq.fields.loginRules.dc": "可选的已修改服务器登录规则；保留客户选项，另需配置写权限",
+  "plugins.idc_core.api.admin.v1.CatalogBasicInventoryInput.fields.trackingEnabled.dc": "是否按可售数量限制销售",
+  "plugins.idc_core.api.admin.v1.CatalogBasicInventoryInput.fields.sellableQuantity.dc": "不小于零的可售库存数量",
+  "plugins.idc_core.api.admin.v1.CatalogBasicInventoryInput.fields.expectedVersion.dc": "读取时的库存版本；拒绝过期库存写入",
+  "plugins.idc_core.api.admin.v1.CatalogBasicLoginRulesInput.fields.expectedVersion.dc": "读取时的配置版本；拒绝过期配置写入",
+  "plugins.idc_core.api.admin.v1.CatalogBasicLoginRulesInput.fields.values.dc": "完整服务器主机名与密码生成规则及客户输入开关，最多八个字段；拒绝其他配置字段"
 }

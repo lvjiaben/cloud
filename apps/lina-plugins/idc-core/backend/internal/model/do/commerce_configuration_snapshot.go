@@ -25,4 +25,6 @@ type CommerceConfigurationSnapshot struct {
 	ContentDigest           any        //
 	CreatedAt               *time.Time //
 	CustomerValueDigest     any        //
+	TypedValueSnapshot      any        // Compiler-produced customer values for native imported pricing; NULL for historical snapshots
+	ServerLoginToken        any        //
 }

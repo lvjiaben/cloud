@@ -29,22 +29,21 @@ type eventRow struct {
 }
 
 type templateRow struct {
-	TemplateNo                string    `orm:"template_no"`
-	Version                   int64     `orm:"version"`
-	EventCode                 string    `orm:"event_code"`
-	ChannelCode               string    `orm:"channel_code"`
-	LocaleCode                string    `orm:"locale_code"`
-	SubjectTemplate           string    `orm:"subject_template"`
-	BodyTemplate              string    `orm:"body_template"`
-	ProviderCode              string    `orm:"provider_code"`
-	ProviderTemplateID        string    `orm:"provider_template_id"`
-	ProviderSMSVariableOrder  string    `orm:"provider_sms_variable_order"`
-	ProviderSMSDataMapping    string    `orm:"provider_sms_data_mapping"`
-	ProviderWeChatDataMapping string    `orm:"provider_wechat_data_mapping"`
-	StatusCode                string    `orm:"status_code"`
-	ContentDigest             string    `orm:"content_digest"`
-	CreatedBy                 int64     `orm:"created_by"`
-	CreatedAt                 time.Time `orm:"created_at"`
+	TemplateNo               string    `orm:"template_no"`
+	Version                  int64     `orm:"version"`
+	EventCode                string    `orm:"event_code"`
+	ChannelCode              string    `orm:"channel_code"`
+	LocaleCode               string    `orm:"locale_code"`
+	SubjectTemplate          string    `orm:"subject_template"`
+	BodyTemplate             string    `orm:"body_template"`
+	ProviderCode             string    `orm:"provider_code"`
+	ProviderTemplateID       string    `orm:"provider_template_id"`
+	ProviderSMSVariableOrder string    `orm:"provider_sms_variable_order"`
+	ProviderSMSDataMapping   string    `orm:"provider_sms_data_mapping"`
+	StatusCode               string    `orm:"status_code"`
+	ContentDigest            string    `orm:"content_digest"`
+	CreatedBy                int64     `orm:"created_by"`
+	CreatedAt                time.Time `orm:"created_at"`
 }
 
 func (s *serviceImpl) ListEvents(ctx context.Context) ([]Event, error) {
@@ -75,11 +74,11 @@ func (s *serviceImpl) ListTemplates(ctx context.Context, eventCode, channelCode 
 	if limit <= 0 {
 		limit = 20
 	}
-	if limit > MaximumPageSize || eventCode != "" && !stableCodePattern.MatchString(eventCode) || channelCode != "" && !stableCodePattern.MatchString(channelCode) {
+	if limit > MaximumPageSize || eventCode != "" && !stableCodePattern.MatchString(eventCode) || channelCode != "" && !validChannelCode(channelCode) {
 		return nil, bizerr.NewCode(CodeInvalid)
 	}
 	model := s.database.Model("plugin_idc_notify_template_version").Ctx(ctx).
-		Where(tenantIDColumn, notificationTenantID)
+		Where(tenantIDColumn, notificationTenantID).WhereIn("channel_code", supportedChannelCodes)
 	if eventCode != "" {
 		model = model.Where("event_code", eventCode)
 	}
@@ -131,7 +130,7 @@ func (s *serviceImpl) SaveTemplate(ctx context.Context, input TemplateWriteInput
 		}
 		providerCode = *channel.ProviderCode
 	}
-	providerTemplateID, smsVariableOrder, smsDataMapping, wechatDataMapping, err := validateProviderMapping(input, event, providerCode)
+	providerTemplateID, smsVariableOrder, smsDataMapping, err := validateProviderMapping(input, event, providerCode)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +139,7 @@ func (s *serviceImpl) SaveTemplate(ctx context.Context, input TemplateWriteInput
 		return nil, err
 	}
 	digest := digestText(input.EventCode, input.ChannelCode, input.Locale, input.Subject, input.Body, input.Status,
-		providerCode, providerTemplateID, smsVariableOrder, smsDataMapping, wechatDataMapping)
+		providerCode, providerTemplateID, smsVariableOrder, smsDataMapping)
 	var createdVersion int64
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
 		var latest templateRow
@@ -180,8 +179,7 @@ func (s *serviceImpl) SaveTemplate(ctx context.Context, input TemplateWriteInput
 			SubjectTemplate: input.Subject, BodyTemplate: input.Body,
 			ProviderCode: providerCode, ProviderTemplateId: providerTemplateID,
 			ProviderSmsVariableOrder: smsVariableOrder, ProviderSmsDataMapping: smsDataMapping,
-			ProviderWechatDataMapping: wechatDataMapping,
-			StatusCode:                input.Status, ContentDigest: digest, CreatedBy: actor,
+			StatusCode: input.Status, ContentDigest: digest, CreatedBy: actor,
 		}).Insert(); insertErr != nil {
 			return insertErr
 		}
@@ -207,7 +205,7 @@ func (s *serviceImpl) SaveTemplate(ctx context.Context, input TemplateWriteInput
 func validTemplateWriteInput(input TemplateWriteInput) bool {
 	contentLength := len(input.Subject) + len(input.Body)
 	return validateIdempotencyKey(input.IdempotencyKey) && stableCodePattern.MatchString(input.EventCode) &&
-		stableCodePattern.MatchString(input.ChannelCode) && validLocale(input.Locale) &&
+		validChannelCode(input.ChannelCode) && validLocale(input.Locale) &&
 		validTemplateStatus(input.Status) && contentLength > 0 && contentLength <= MaximumTemplateBytes &&
 		input.ExpectedVersion >= 0
 }
@@ -356,40 +354,33 @@ func projectTemplate(row templateRow) Template {
 			item.SMS = &SMSTemplateMapping{ProviderCode: row.ProviderCode, TemplateID: row.ProviderTemplateID,
 				VariableOrder: order, DataMapping: mapping}
 		}
-	case "wechat_official":
-		mapping := make(map[string]string)
-		if json.Unmarshal([]byte(row.ProviderWeChatDataMapping), &mapping) == nil {
-			item.WeChatOfficial = &WeChatOfficialTemplateMapping{TemplateID: row.ProviderTemplateID, DataMapping: mapping}
-		}
 	}
 	return item
 }
 
-func validateProviderMapping(input TemplateWriteInput, event *eventRow, activeSMSProvider string) (string, string, string, string, error) {
+func validateProviderMapping(input TemplateWriteInput, event *eventRow, activeSMSProvider string) (string, string, string, error) {
 	allowed := eventVariableSet(event)
 	switch input.ChannelCode {
 	case "sms":
 		return validateSMSProviderMapping(input, allowed, activeSMSProvider)
-	case "wechat_official":
-		return validateWeChatProviderMapping(input, allowed)
 	default:
-		if input.SMS != nil || input.WeChatOfficial != nil {
-			return "", "", "", "", bizerr.NewCode(CodeInvalid)
+		if input.SMS != nil {
+			return "", "", "", bizerr.NewCode(CodeInvalid)
 		}
-		return "", "[]", "{}", "{}", nil
+		return "", "[]", "{}", nil
 	}
 }
 
-func validateSMSProviderMapping(input TemplateWriteInput, allowed map[string]struct{}, activeSMSProvider string) (string, string, string, string, error) {
-	if input.SMS == nil || input.WeChatOfficial != nil || input.SMS.ProviderCode != activeSMSProvider ||
+func validateSMSProviderMapping(input TemplateWriteInput, allowed map[string]struct{}, activeSMSProvider string) (string, string, string, error) {
+	if input.SMS == nil || input.SMS.ProviderCode != activeSMSProvider ||
 		len(input.SMS.VariableOrder) > MaximumVariables || len(input.SMS.DataMapping) > MaximumVariables {
-		return "", "", "", "", bizerr.NewCode(CodeInvalid)
+		return "", "", "", bizerr.NewCode(CodeInvalid)
 	}
 	if !validProviderVariables(input.SMS.VariableOrder, input.SMS.DataMapping, allowed) {
-		return "", "", "", "", bizerr.NewCode(CodeInvalid)
+		return "", "", "", bizerr.NewCode(CodeInvalid)
 	}
 	if err := validateSMSProviderTemplate(input.SMS, activeSMSProvider); err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
 	variableOrder := input.SMS.VariableOrder
 	if variableOrder == nil {
@@ -401,13 +392,13 @@ func validateSMSProviderMapping(input TemplateWriteInput, allowed map[string]str
 	}
 	encodedOrder, err := json.Marshal(variableOrder)
 	if err != nil {
-		return "", "", "", "", bizerr.WrapCode(err, CodeInvalid)
+		return "", "", "", bizerr.WrapCode(err, CodeInvalid)
 	}
 	encodedMapping, err := json.Marshal(dataMapping)
 	if err != nil {
-		return "", "", "", "", bizerr.WrapCode(err, CodeInvalid)
+		return "", "", "", bizerr.WrapCode(err, CodeInvalid)
 	}
-	return input.SMS.TemplateID, string(encodedOrder), string(encodedMapping), "{}", nil
+	return input.SMS.TemplateID, string(encodedOrder), string(encodedMapping), nil
 }
 
 func validProviderVariables(order []string, mapping map[string]string, allowed map[string]struct{}) bool {
@@ -445,20 +436,6 @@ func validateSMSProviderTemplate(mapping *SMSTemplateMapping, activeSMSProvider 
 		return bizerr.NewCode(CodeChannelUnavailable)
 	}
 	return nil
-}
-
-func validateWeChatProviderMapping(input TemplateWriteInput, allowed map[string]struct{}) (string, string, string, string, error) {
-	if input.WeChatOfficial == nil || input.SMS != nil || input.WeChatOfficial.TemplateID == "" ||
-		len(input.WeChatOfficial.TemplateID) > 128 || len(input.WeChatOfficial.DataMapping) == 0 ||
-		len(input.WeChatOfficial.DataMapping) > MaximumVariables ||
-		!validProviderVariables(nil, input.WeChatOfficial.DataMapping, allowed) {
-		return "", "", "", "", bizerr.NewCode(CodeInvalid)
-	}
-	encoded, err := json.Marshal(input.WeChatOfficial.DataMapping)
-	if err != nil {
-		return "", "", "", "", bizerr.WrapCode(err, CodeInvalid)
-	}
-	return input.WeChatOfficial.TemplateID, "[]", "{}", string(encoded), nil
 }
 
 func numericTemplateID(value string) bool {

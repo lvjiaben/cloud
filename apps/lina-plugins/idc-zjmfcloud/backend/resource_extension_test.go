@@ -41,7 +41,7 @@ func TestManagedGuestResolvesCandidatesOnlyThroughResourceProvider(t *testing.T)
 		3: []byte(`{"StatusCode":200,"Data":{"data":[{"id":"premium","name":"精品线路"}]}}`),
 		4: []byte(`{"StatusCode":200,"Data":{"data":[{"id":"debian-12","name":"Debian 12"}]}}`),
 	}}
-	payload := json.RawMessage(`{"schemaVersion":"v1","currentSelections":[],"requests":[{"fieldKey":"region","parentValues":[],"selectedValues":[]},{"fieldKey":"line","parentValues":["cn-east"],"selectedValues":[]},{"fieldKey":"operating_system","parentValues":[],"selectedValues":[]}]}`)
+	payload := json.RawMessage(`{"schemaVersion":"v1","currentSelections":[{"fieldKey":"region","values":["cn-east"]},{"fieldKey":"line","values":["premium"]},{"fieldKey":"network_type","values":["normal"]},{"fieldKey":"hostname_characters","values":["lowercase","digits"]},{"fieldKey":"password_characters","values":["lowercase","uppercase","digits"]}],"requests":[{"fieldKey":"region","parentValues":[],"selectedValues":[]},{"fieldKey":"line","parentValues":["cn-east"],"selectedValues":[]},{"fieldKey":"operating_system","parentValues":[],"selectedValues":[]}]}`)
 	payload = managedInvocationEnvelope(t, payload)
 	invocation := &capmodel.BusinessExtensionBridgeRequest{
 		Version: capmodel.BusinessExtensionInvocationProtocolV1, OwnerPluginID: resourcecap.OwnerPluginID,
@@ -67,6 +67,9 @@ func TestManagedGuestResolvesCandidatesOnlyThroughResourceProvider(t *testing.T)
 	if !strings.Contains(outbound, `"path":"/areas"`) || !strings.Contains(outbound, `"path":"/nodes"`) || !strings.Contains(outbound, `"path":"/image"`) ||
 		!strings.Contains(outbound, `"area_id":["cn-east"]`) {
 		t.Fatalf("resource candidate paths were not constrained: %s", outbound)
+	}
+	if strings.Contains(outbound, "network_type") || strings.Contains(outbound, "password_characters") || strings.Contains(outbound, "hostname_characters") {
+		t.Fatal("unrelated static choices were sent to the supplier")
 	}
 	var bridge capmodel.BusinessExtensionBridgeResponse
 	if json.Unmarshal(response.Body, &bridge) != nil || !strings.Contains(string(bridge.Payload), `"FieldKey":"region"`) ||

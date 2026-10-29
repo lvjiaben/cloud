@@ -1,0 +1,65 @@
+[
+  {
+    "source": "/themes/web/www/static/banner/remoteL17069717876526.png",
+    "local": "/lina/bt-assets/remoteL17069717876526.png",
+    "position": "首屏背景",
+    "bytes": 157212,
+    "sha256": "04cefe587c8f00b5533811dbe11b40de9109e002f84eec1239d374584ba6da00"
+  },
+  {
+    "source": "/themes/web/www/static/picture/remoteL17069683484677.webp",
+    "local": "/lina/bt-assets/remoteL17069683484677.webp",
+    "position": "功能展示",
+    "bytes": 20478,
+    "sha256": "5b4de1e89001521164a695caf7e5207db91e1d8eea3cf0a2c5b3125174a07ab9"
+  },
+  {
+    "source": "/themes/web/www/static/os/2.svg",
+    "local": "/lina/bt-assets/2.svg",
+    "position": "系统图标",
+    "bytes": 1934,
+    "sha256": "45079571a4f5576cfb1c08df348d0915016cf92f82b8e3fc22c5eb7c32f30f79"
+  },
+  {
+    "source": "/themes/web/www/static/os/3.svg",
+    "local": "/lina/bt-assets/3.svg",
+    "position": "系统图标",
+    "bytes": 2231,
+    "sha256": "62306fef8bb73fead7ce00aa0cc15e193159525109cf18fb6ec62e21b01268d2"
+  },
+  {
+    "source": "/themes/web/www/static/os/4.svg",
+    "local": "/lina/bt-assets/4.svg",
+    "position": "系统图标",
+    "bytes": 5586,
+    "sha256": "110d58faed2947b5bb0752e8d39d08b9c095873ad66528da6aa1820d10212e79"
+  },
+  {
+    "source": "/themes/web/www/static/os/10.svg",
+    "local": "/lina/bt-assets/10.svg",
+    "position": "系统图标",
+    "bytes": 643,
+    "sha256": "02f995c3e00fb57c15462fc720cf48bff1493929926c586903487300ca3bd0ec"
+  },
+  {
+    "source": "/themes/web/www/static/os/1.svg",
+    "local": "/lina/bt-assets/1.svg",
+    "position": "系统图标",
+    "bytes": 395,
+    "sha256": "cfe848f7b7d533b3a3ed66cf47284241845f2a6a3c242c3b5d17dcfd1dea9a6a"
+  },
+  {
+    "source": "/themes/web/www/static/picture/remoteL17075794763815.png",
+    "local": "/lina/bt-assets/remoteL17075794763815.png",
+    "position": "注意事项背景",
+    "bytes": 9321,
+    "sha256": "3036db6621f9c2d4e75f47cc31adb43a3f3bd2e2ebd2610e5ba0fa496057bf45"
+  },
+  {
+    "source": "/themes/web/www/static/picture/remoteL17075795114472.png",
+    "local": "/lina/bt-assets/remoteL17075795114472.png",
+    "position": "注意事项背景",
+    "bytes": 26540,
+    "sha256": "b86c2f2cd0c6420020adfcd4daff2e7c5f6ea4be843f5f1b34549023e64e8bf1"
+  }
+]

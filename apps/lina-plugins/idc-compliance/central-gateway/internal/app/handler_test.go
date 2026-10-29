@@ -6,7 +6,6 @@ package app
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -57,35 +56,7 @@ func TestOperationalHandlerRejectsWrites(t *testing.T) {
 	}
 }
 
-func TestTencentCallbackRouteIsAbsentWhenCapabilityIsDisabled(t *testing.T) {
-	runtime, mock := newAdmissionTestRuntime(t)
-	request := httptest.NewRequest(http.MethodPost, TencentCallbackPath, strings.NewReader(`{}`))
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Content-Signature", "sha256="+strings.Repeat("0", 64))
-	response := httptest.NewRecorder()
-	NewHandler(buildinfo.Info{Service: "gateway", Version: "test"}, WithLocalRuntime(runtime)).
-		ServeHTTP(response, request)
-	if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), "404 page not found") {
-		t.Fatalf("disabled callback route status=%d body=%q", response.Code, response.Body.String())
-	}
-	assertAdmissionExpectations(t, runtime, mock)
-}
 
-func TestTencentContractDeliveryPageUsesReadOnlyHTTPMethod(t *testing.T) {
-	runtime, mock := newAdmissionTestRuntime(t)
-	request := httptest.NewRequest(
-		http.MethodPost,
-		processauth.TencentContractDeliveryPagesPath+"?limit=1",
-		nil,
-	)
-	response := httptest.NewRecorder()
-	NewHandler(buildinfo.Info{Service: "gateway", Version: "test"}, WithLocalRuntime(runtime)).
-		ServeHTTP(response, request)
-	if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet {
-		t.Fatalf("status=%d allow=%q", response.Code, response.Header().Get("Allow"))
-	}
-	assertAdmissionExpectations(t, runtime, mock)
-}
 
 func TestInstallationRouteUsesFixedScopeAndReadNonceFence(t *testing.T) {
 	runtime, mock := newAdmissionTestRuntime(t)
@@ -115,99 +86,8 @@ func TestInstallationRouteUsesFixedScopeAndReadNonceFence(t *testing.T) {
 	assertAdmissionExpectations(t, runtime, mock)
 }
 
-func TestTencentOnboardingStatusFailsClosedWithoutBuyerApplication(t *testing.T) {
-	runtime, mock := newAdmissionTestRuntime(t)
-	now := time.Unix(1_800_000_000, 0).UTC()
-	credentials := signAdmissionTestFrame(
-		t, runtime, processauth.TencentOnboardingReadScope, http.MethodGet,
-		processauth.TencentOnboardingPath, processauth.PayloadModeEmpty, nil,
-		admissionBusinessKey(t, 43), now, 44,
-	)
-	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT CURRENT_TIMESTAMP`).WillReturnRows(
-		sqlmock.NewRows([]string{"current_timestamp"}).AddRow(now),
-	)
-	mock.ExpectExec(`(?s)INSERT INTO idc_gateway_process_nonce`).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
 
-	request := httptest.NewRequest(http.MethodGet, processauth.TencentOnboardingPath, nil)
-	setAuthenticationHeaders(request, credentials)
-	response := httptest.NewRecorder()
-	NewHandler(buildinfo.Info{Service: "gateway", Version: "test"}, WithLocalRuntime(runtime)).
-		ServeHTTP(response, request)
-	if response.Code != http.StatusOK ||
-		!strings.Contains(response.Body.String(), `"state":"not_configured"`) ||
-		!strings.Contains(response.Body.String(), `"reasonCode":"tencent_app_not_configured"`) ||
-		strings.Contains(response.Body.String(), "secret") {
-		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
-	}
-	assertAdmissionExpectations(t, runtime, mock)
-}
 
-func TestTencentOnboardingRecheckUsesDedicatedScopeAndFailsClosedWithoutBuyerApplication(t *testing.T) {
-	runtime, mock := newAdmissionTestRuntime(t)
-	now := time.Unix(1_800_000_000, 0).UTC()
-	body := []byte(`{"legalName":"示例 IDC 有限公司"}`)
-	credentials := signAdmissionTestFrame(
-		t, runtime, processauth.TencentOnboardingRecheckScope, http.MethodPost,
-		processauth.TencentOnboardingRechecksPath, processauth.PayloadModeJSON, body,
-		admissionBusinessKey(t, 45), now, 46,
-	)
-	expectBusinessInsert(mock, 1)
-	expectNonceInsert(mock, credentials.KeyID, credentialsExpiry(credentials))
-	mock.ExpectCommit()
-
-	request := httptest.NewRequest(
-		http.MethodPost, processauth.TencentOnboardingRechecksPath, bytes.NewReader(body),
-	)
-	request.Header.Set("Content-Type", "application/json")
-	setAuthenticationHeaders(request, credentials)
-	response := httptest.NewRecorder()
-	NewHandler(buildinfo.Info{Service: "gateway", Version: "test"}, WithLocalRuntime(runtime)).
-		ServeHTTP(response, request)
-	if response.Code != http.StatusServiceUnavailable ||
-		!strings.Contains(response.Body.String(), "tencent_app_not_configured") ||
-		strings.Contains(response.Body.String(), "consoleUrl") {
-		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
-	}
-	assertAdmissionExpectations(t, runtime, mock)
-}
-
-func TestTencentOnboardingRecoveredRequestNeverCallsTencentAgain(t *testing.T) {
-	runtime, mock := newAdmissionTestRuntime(t)
-	now := time.Unix(1_800_000_000, 0).UTC().Add(time.Second)
-	body := []byte(`{"legalName":"示例 IDC 有限公司"}`)
-	credentials := signAdmissionTestFrame(
-		t, runtime, processauth.TencentOnboardingLinkScope, http.MethodPost,
-		processauth.TencentOnboardingLinksPath, processauth.PayloadModeJSON, body,
-		admissionBusinessKey(t, 47), now, 48,
-	)
-	verified := verifyAdmissionTestFrame(
-		t, runtime, processauth.TencentOnboardingLinkScope, http.MethodPost,
-		processauth.TencentOnboardingLinksPath, processauth.PayloadModeJSON, body,
-		credentials, now,
-	)
-	targetDigest := sha256.Sum256([]byte(verified.RequestTarget))
-	expectBusinessRecovery(mock, "lbr_0123456789abcdef0123456789abcdef", verified, targetDigest)
-	expectNonceInsert(mock, credentials.KeyID, credentialsExpiry(credentials))
-	mock.ExpectCommit()
-
-	request := httptest.NewRequest(
-		http.MethodPost, processauth.TencentOnboardingLinksPath, bytes.NewReader(body),
-	)
-	request.Header.Set("Content-Type", "application/json")
-	setAuthenticationHeaders(request, credentials)
-	response := httptest.NewRecorder()
-	NewHandler(buildinfo.Info{Service: "gateway", Version: "test"}, WithLocalRuntime(runtime)).
-		ServeHTTP(response, request)
-	if response.Code != http.StatusConflict ||
-		!strings.Contains(response.Body.String(), processAuthReplayCode) ||
-		strings.Contains(response.Body.String(), "consoleUrl") {
-		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
-	}
-	assertAdmissionExpectations(t, runtime, mock)
-}
 
 func TestInstallationRouteRejectsQueryAndUnsignedBodyBeforeDatabase(t *testing.T) {
 	runtime, mock := newAdmissionTestRuntime(t)

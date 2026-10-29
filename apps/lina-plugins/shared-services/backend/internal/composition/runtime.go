@@ -7,6 +7,8 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 	"github.com/gogf/gf/v2/frame/g"
 
+	"lina-core/pkg/plugin/capability/bizctxcap"
+	"lina-core/pkg/plugin/capability/notifycap"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-shared-services/backend/internal/service/challenge"
 	"lina-plugin-shared-services/backend/internal/service/inbox"
@@ -17,7 +19,7 @@ type Runtime struct {
 	Inbox     *inbox.ServiceRuntime
 }
 
-func Build() (*Runtime, error) {
+func Build(notifications notifycap.Service, bizctx bizctxcap.Service) (*Runtime, error) {
 	config, err := challenge.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -26,7 +28,7 @@ func Build() (*Runtime, error) {
 	if err != nil {
 		return nil, err
 	}
-	inboxService, err := inbox.New(g.DB())
+	inboxService, err := inbox.NewCurrentSync(g.DB(), notifications, bizctx)
 	if err != nil {
 		return nil, err
 	}

@@ -25,6 +25,19 @@ import (
 
 const portableImportProviderID = "idc-peer"
 
+// supportsPortableImport preserves the same-system protocol and admits other
+// providers only through their exact, owner-validated declaration capability.
+func supportsPortableImport(exact *capmodel.BusinessExtensionProviderEvidence) bool {
+	if exact == nil {
+		return false
+	}
+	if exact.PluginID == portableImportProviderID {
+		return true
+	}
+	declaration, err := productfulfillmentcap.ParseProviderDeclaration(exact.ProviderMetadata, exact.AuthorizedMethods)
+	return err == nil && declaration.SaleImportProtocol.NativePurchase()
+}
+
 func (s *serviceImpl) insertImportedFulfillmentPolicy(ctx context.Context, versionNo string, actor int) error {
 	contract, err := s.loadFrozenFulfillmentContract(ctx, versionNo)
 	if err != nil {
@@ -48,7 +61,7 @@ VALUES(0,?,?,?,?,?,?,?,?,?,?,?,?,?)`, versionNo, policy.StrategyCode, policy.Gra
 }
 
 func (s *serviceImpl) applyImportedFulfillmentContract(ctx context.Context, versionNo string, exact *capmodel.BusinessExtensionProviderEvidence, result *catalog.FrozenFulfillmentContract) error {
-	if exact == nil || exact.PluginID != portableImportProviderID {
+	if !supportsPortableImport(exact) {
 		return nil
 	}
 	binding, err := s.loadBinding(ctx, versionNo, false)
@@ -89,8 +102,11 @@ func (s *serviceImpl) applyImportedFulfillmentContract(ctx context.Context, vers
 }
 
 func validatePortableImportEvidence(snapshot *channelcommercecap.ImportSnapshot, read *resourceinterfaceprojectioncap.CatalogReadEvidence, exact *capmodel.BusinessExtensionProviderEvidence, supplied []resourceinterfaceprojectioncap.CatalogConfigurationValue) error {
-	if snapshot == nil || snapshot.Validate() != nil || read == nil || read.Validate() != nil || exact == nil || exact.PluginID != portableImportProviderID || read.PluginID != exact.PluginID || read.ReleaseDigest != exact.ReleaseDigest || read.DeclarationDigest != exact.DeclarationDigest {
+	if snapshot == nil || snapshot.Validate() != nil || read == nil || read.Validate() != nil || !supportsPortableImport(exact) || !sameImportReadProvider(read, exact) {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
+	}
+	if read.SaleImportProtocol.NativePurchase() && (snapshot.Fulfillment.Granularity != productfulfillmentcap.GranularityPerQuantityUnit || !snapshot.Fulfillment.OngoingService || snapshot.Fulfillment.MaximumPurchaseCycles != 1) {
+		return bizerr.NewCode(catalog.CodeManagementInvalid)
 	}
 	values := make(map[string]string, len(supplied))
 	for _, value := range supplied {
@@ -98,7 +114,11 @@ func validatePortableImportEvidence(snapshot *channelcommercecap.ImportSnapshot,
 			values[value.FieldKey] = *value.TextValue
 		}
 	}
-	if values["upstream_public_slug"] != snapshot.Product.PublicSlug || values["upstream_configuration_revision"] != snapshot.ConfigurationRevision {
+	productField := "upstream_public_slug"
+	if exact.PluginID != portableImportProviderID {
+		productField = "upstream_product_id"
+	}
+	if values[productField] != snapshot.Product.PublicSlug || values["upstream_configuration_revision"] != snapshot.ConfigurationRevision {
 		return bizerr.NewCode(catalog.CodeManagementConflict)
 	}
 	if _, err := configurationcontract.ValidateSchema(snapshot.Schema, configurationSurfaceCustomer, exact.AuthorizedMethods); err != nil {
@@ -113,7 +133,7 @@ func (s *serviceImpl) importedCustomerSchema(ctx context.Context, binding *entit
 	if binding == nil || configuration == nil || exact == nil {
 		return nil, gerror.New("import configuration evidence is unavailable")
 	}
-	if exact.PluginID != portableImportProviderID {
+	if !supportsPortableImport(exact) {
 		return verifiedCustomerSchema(exact, configuration.CustomerDeclarationSnapshot)
 	}
 	var contract *entity.CatalogImportContract
@@ -127,11 +147,11 @@ func (s *serviceImpl) importedCustomerSchema(ctx context.Context, binding *entit
 	if err := s.database.Model(do.ProductAutomationInterfaceConfigurationRevision{}).Ctx(ctx).Where(do.ProductAutomationInterfaceConfigurationRevision{TenantId: 0, InterfaceInstanceNo: binding.InterfaceInstanceNo, Revision: configuration.InterfaceConfigurationRevision}).Scan(&revision); err != nil {
 		return nil, err
 	}
-	return verifiedPortableCustomerSchema(contract, binding, revision, exact)
+	return verifiedPortableCustomerSchema(contract, binding, revision, exact, configuration.CustomerPresentationSnapshot)
 }
 
-func verifiedPortableCustomerSchema(contract *entity.CatalogImportContract, binding *entity.CatalogProductVersionFulfillmentBinding, revision *entity.ProductAutomationInterfaceConfigurationRevision, exact *capmodel.BusinessExtensionProviderEvidence) (*capmodel.ConfigurationSchemaDeclaration, error) {
-	if contract == nil || binding == nil || revision == nil || exact == nil || exact.PluginID != portableImportProviderID || !sameExactEvidence(bindingEvidence(binding), exact) || contract.VersionNo != binding.VersionNo || contract.InterfaceInstanceNo != binding.InterfaceInstanceNo || revision.InterfaceInstanceNo != binding.InterfaceInstanceNo {
+func verifiedPortableCustomerSchema(contract *entity.CatalogImportContract, binding *entity.CatalogProductVersionFulfillmentBinding, revision *entity.ProductAutomationInterfaceConfigurationRevision, exact *capmodel.BusinessExtensionProviderEvidence, presentationJSON string) (*capmodel.ConfigurationSchemaDeclaration, error) {
+	if contract == nil || binding == nil || revision == nil || !supportsPortableImport(exact) || !sameProviderContract(bindingEvidence(binding), exact) || contract.VersionNo != binding.VersionNo || contract.InterfaceInstanceNo != binding.InterfaceInstanceNo || revision.InterfaceInstanceNo != binding.InterfaceInstanceNo {
 		return nil, gerror.New("portable import binding evidence does not match")
 	}
 	var snapshot channelcommercecap.ImportSnapshot
@@ -147,11 +167,33 @@ func verifiedPortableCustomerSchema(contract *entity.CatalogImportContract, bind
 		return nil, gerror.New("portable import snapshot digest mismatch")
 	}
 	var read resourceinterfaceprojectioncap.CatalogReadEvidence
-	if err = json.Unmarshal([]byte(contract.ReadEvidence), &read); err != nil || read.Validate() != nil || read.InterfaceInstanceNo != binding.InterfaceInstanceNo || read.InterfaceConfigurationRevision != revision.ResourceOwnerConfigurationRevision || read.PluginID != exact.PluginID || read.PluginReleaseVersion != exact.ReleaseVersion || read.ContractVersion != exact.ContractVersion || read.ReleaseDigest != exact.ReleaseDigest || read.DeclarationDigest != exact.DeclarationDigest || !sameImportMethods(read.AuthorizedMethods, exact.AuthorizedMethods) {
+	if err = json.Unmarshal([]byte(contract.ReadEvidence), &read); err != nil || read.Validate() != nil || read.InterfaceInstanceNo != binding.InterfaceInstanceNo || read.InterfaceConfigurationRevision != revision.ResourceOwnerConfigurationRevision || !sameImportReadProvider(&read, exact) || read.PluginReleaseVersion != binding.PluginReleaseVersion || read.ReleaseDigest != binding.ReleaseDigest {
 		return nil, gerror.New("portable import read evidence mismatch")
 	}
 	if _, err = configurationcontract.ValidateSchema(snapshot.Schema, configurationSurfaceCustomer, exact.AuthorizedMethods); err != nil {
 		return nil, err
 	}
+	if err = verifyPortableCustomerPresentation(&snapshot, presentationJSON); err != nil {
+		return nil, err
+	}
 	return snapshot.Schema, nil
+}
+
+// sameImportReadProvider fences catalog values to the exact authorized provider
+// release; a protocol declaration never grants another release or method.
+func sameImportReadProvider(read *resourceinterfaceprojectioncap.CatalogReadEvidence, exact *capmodel.BusinessExtensionProviderEvidence) bool {
+	if read == nil || exact == nil {
+		return false
+	}
+	if exact.PluginID != portableImportProviderID {
+		declaration, err := productfulfillmentcap.ParseProviderDeclaration(exact.ProviderMetadata, exact.AuthorizedMethods)
+		if err != nil || declaration.SaleImportProtocol != read.SaleImportProtocol {
+			return false
+		}
+	} else if read.SaleImportProtocol != "" {
+		return false
+	}
+	return read.PluginID == exact.PluginID && read.PluginReleaseVersion == exact.ReleaseVersion &&
+		read.ContractVersion == exact.ContractVersion && read.ReleaseDigest == exact.ReleaseDigest && read.DeclarationDigest == exact.DeclarationDigest &&
+		sameImportMethods(read.AuthorizedMethods, exact.AuthorizedMethods)
 }

@@ -84,13 +84,11 @@ WHERE tenant_id=? AND channel_no=?`, revisionNo, idccap.DefaultTenantID, channel
 		ReleaseDigest: row.ReleaseDigest, DeclarationDigest: row.DeclarationDigest,
 		NewBusinessState: row.NewBusinessState, InterfaceConfigurationRevision: revisionNo,
 	}
-	sequenceValue, err := tx.GetValue(`SELECT COALESCE(MAX(projection_sequence),0)+1
-FROM plugin_idc_resource_interface_projection_outbox WHERE tenant_id=? AND interface_instance_no=?`,
-		idccap.DefaultTenantID, row.InterfaceInstanceNo)
+	sequence, err := interfaceprojection.NextSequence(ctx, tx, row.InterfaceInstanceNo)
 	if err != nil {
 		return "", err
 	}
-	if err = interfaceprojection.Enqueue(ctx, tx, projection, sequenceValue.Int64()); err != nil {
+	if err = interfaceprojection.Enqueue(ctx, tx, projection, sequence); err != nil {
 		return "", err
 	}
 	return revisionNo, nil

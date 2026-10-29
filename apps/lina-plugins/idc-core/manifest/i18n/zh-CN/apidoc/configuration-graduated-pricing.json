@@ -1,0 +1,4 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogMerchantPriceTarget.fields.pricingMode.dc": "原有算法：fixed 固定子项、per_unit 所在档单价乘全部数量、band_total 整档费用、graduated 分段累加；初次保存前为空",
+  "plugins.idc_core.api.admin.v1.CatalogMerchantConfigurationPriceRow.fields.pricingMode.dc": "fixed 为固定子项，per_unit 按所在档单价乘全部数量，band_total 为整档费用，graduated 为各段实际数量乘该段单价累加且仅首段可设置一次性费用；不传时子项为 fixed、数量为 per_unit"
+}

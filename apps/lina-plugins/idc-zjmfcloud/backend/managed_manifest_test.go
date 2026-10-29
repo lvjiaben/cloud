@@ -37,7 +37,7 @@ type managedManifest struct {
 func TestManagedManifestSatisfiesProductAndServerOwnerContracts(t *testing.T) {
 	t.Parallel()
 	manifest := readManagedManifest(t)
-	if manifest.ID != pluginID || manifest.Version != "v0.2.9" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
+	if manifest.ID != pluginID || manifest.Version != "v0.3.20" || manifest.Type != "dynamic" || manifest.Distribution != "managed" {
 		t.Fatalf("connector is not a managed dynamic release: %#v", manifest)
 	}
 	if !strings.Contains(manifest.Description, "product configuration discovery") ||
@@ -54,6 +54,9 @@ func TestManagedManifestSatisfiesProductAndServerOwnerContracts(t *testing.T) {
 	resourceDeclarations := declarationsForPoint(manifest.BusinessExtensions, resourcecap.DynamicProviderPoint)
 	if err := resourcecap.ValidateDynamicProviderDeclarations(resourceDeclarations); err != nil {
 		t.Fatalf("resource owner rejected dynamic Provider declaration: %v", err)
+	}
+	if len(resourceDeclarations) != 1 || resourceDeclarations[0].ProviderMetadata.Values["apiPathPrefix"] != "/v1" {
+		t.Fatal("connector must declare its API prefix instead of asking operators to enter it")
 	}
 	now := time.Date(2026, 8, 27, 12, 0, 0, 0, time.UTC)
 	contract := resourcecap.ServerFulfillmentContract{
@@ -74,7 +77,7 @@ func TestManagedManifestSatisfiesProductAndServerOwnerContracts(t *testing.T) {
 		!slices.Equal(manifest.HostServices[1].Methods, []string{"current-customer-servers.list", "current-customer-server.get"}) {
 		t.Fatalf("connector requested an unexpected host service contract: %#v", manifest.HostServices)
 	}
-	if len(manifest.CustomerSurfaces) != 1 ||
+	if len(manifest.AdminSurfaces) != 0 || len(manifest.CustomerSurfaces) != 1 ||
 		!slices.Equal(manifest.CustomerSurfaces[0].BridgeCapabilities, []string{"customer-servers.read"}) {
 		t.Fatalf("customer server page is missing its exact bridge capability: %#v", manifest.CustomerSurfaces)
 	}
@@ -102,13 +105,10 @@ func TestManagedReleaseHasNoSourceRegistrationOrUnsafeFrontendAccess(t *testing.
 		}
 	}
 	for _, entry := range []string{
-		filepath.Join("frontend", "admin", "server-management", "index.html"),
 		filepath.Join("frontend", "customer", "servers", "index.html"),
 		filepath.Join("frontend", "src", "customer", "servers", "entry.ts"),
 		filepath.Join("frontend", "src", "customer", "servers", "model.ts"),
 		filepath.Join("frontend", "src", "customer", "servers", "page.ts"),
-		filepath.Join("frontend", "src", "admin", "entry.ts"),
-		filepath.Join("frontend", "src", "admin", "page.ts"),
 		filepath.Join("frontend", "src", "shared", "bridge.ts"),
 	} {
 		content, err := os.ReadFile(filepath.Join(pluginRoot, entry))
@@ -135,4 +135,52 @@ func readManagedManifest(t *testing.T) *managedManifest {
 		t.Fatal(err)
 	}
 	return &manifest
+}
+
+// Customer selections are initialized by the commerce owner from the first
+// offered value/minimum. Descriptions must not offer a second package-default
+// selection; merchant-side API omission rules remain separate and unchanged.
+func TestManagedCustomerChoicesDoNotAdvertisePackageDefaults(t *testing.T) {
+	manifest := readManagedManifest(t)
+	declarations := declarationsForPoint(manifest.BusinessExtensions, capmodel.BusinessExtensionProductFulfillment)
+	if len(declarations) != 1 || declarations[0].CustomerConfiguration == nil {
+		t.Fatal("customer schema is missing")
+	}
+	expected := map[string][2]string{
+		"cpu": {"1", "1024"}, "memory_gib": {"1", "1024"}, "system_disk": {"1", "1048576"}, "data_disk": {"0", "1048576"}, "bandwidth": {"1", "1000000"}, "ip_count": {"0", "1024"}, "inbound_bandwidth": {"1", "1000000"}, "outbound_bandwidth": {"1", "1000000"},
+		"system_read_mbps": {"0", "2147483647"}, "system_write_mbps": {"0", "2147483647"}, "system_read_iops": {"0", "2147483647"}, "system_write_iops": {"0", "2147483647"}, "data_read_mbps": {"0", "2147483647"}, "data_write_mbps": {"0", "2147483647"}, "data_read_iops": {"0", "2147483647"}, "data_write_iops": {"0", "2147483647"},
+		"snapshot_count": {"0", "1000000"}, "backup_count": {"0", "1000000"}, "nat_forward_count": {"0", "1000000"}, "nat_website_count": {"0", "1000000"},
+	}
+	for _, field := range declarations[0].CustomerConfiguration.Fields {
+		if field.Description != nil {
+			text := strings.ToLower(field.Description.EnUS + field.Description.ZhCN)
+			for _, forbidden := range []string{"leave blank", "package default", "package size", "channel default", "套餐默认", "渠道默认", "留空"} {
+				if strings.Contains(text, forbidden) {
+					t.Fatalf("customer field %s advertises fallback %q", field.Key, forbidden)
+				}
+			}
+		}
+		bounds, exists := expected[field.Key]
+		if field.Type == capmodel.ConfigurationFieldInteger && !exists {
+			t.Fatalf("unexpected customer numeric field %s", field.Key)
+		}
+		if exists {
+			if field.Type != capmodel.ConfigurationFieldInteger || field.Minimum != bounds[0] || field.Maximum != bounds[1] {
+				t.Fatalf("customer field %s type/range changed: %+v", field.Key, field)
+			}
+			delete(expected, field.Key)
+		}
+	}
+	if len(expected) != 0 {
+		t.Fatalf("customer numeric fields removed: %+v", expected)
+	}
+	retained := false
+	for _, field := range declarations[0].ProductConfiguration.Fields {
+		if field.Key == "ip_count" && field.Description != nil {
+			retained = strings.Contains(field.Description.ZhCN, "渠道默认") && strings.Contains(field.Description.EnUS, "channel default")
+		}
+	}
+	if !retained {
+		t.Fatal("merchant-side technical omission description was removed")
+	}
 }

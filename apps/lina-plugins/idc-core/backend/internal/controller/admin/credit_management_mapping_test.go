@@ -38,3 +38,15 @@ func TestManagementCreditPolicyIntentAllowsZeroLateFeeCap(t *testing.T) {
 		t.Fatalf("policy minor-unit amounts changed during mapping: %+v", intent)
 	}
 }
+
+// A new policy no longer requires operators to configure a peer-review threshold.
+func TestManagementCreditPolicyIntentAllowsOmittedHistoricReviewThreshold(t *testing.T) {
+	intent, err := managementCreditPolicyIntent(adminv1.ManagementCreditPolicyIntent{
+		RequestNo: "credit-policy-direct-mapping", CurrencyCode: "CNY",
+		MaximumLimitMinor: "100000", BillingDay: 10, RepaymentPeriodDays: 15,
+		GracePeriodDays: 3, MaximumLateFeeMinor: "0",
+	})
+	if err != nil || intent.DualReviewThresholdMinor != intent.MaximumLimitMinor {
+		t.Fatalf("optional historic threshold: %+v %v", intent, err)
+	}
+}

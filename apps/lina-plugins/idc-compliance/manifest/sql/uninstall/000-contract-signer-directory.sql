@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS plugin_idc_compliance_contract_signer_identity_attempt;
-DROP TABLE IF EXISTS plugin_idc_compliance_contract_signer_profile;

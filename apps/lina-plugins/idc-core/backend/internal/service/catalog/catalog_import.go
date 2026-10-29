@@ -26,15 +26,17 @@ const (
 // ImportInput is one explicit staff submission. Reuse RequestKey only for retrying
 // unchanged content; another explicit import uses a new key and creates a product.
 type ImportInput struct {
-	RequestKey          string                                        `json:"requestKey"`
-	InterfaceInstanceNo string                                        `json:"interfaceInstanceNo"`
-	Reference           string                                        `json:"reference"`
-	CategoryNo          string                                        `json:"categoryNo"`
-	NameZhCN            string                                        `json:"nameZhCn"`
-	NameEnUS            string                                        `json:"nameEnUs"`
-	PricingMode         ImportPricingMode                             `json:"pricingMode"`
-	MarkupPercent       string                                        `json:"markupPercent"`
-	Prices              []resourceinterfaceprojectioncap.CatalogPrice `json:"prices"`
+	FulfillmentStrategyCode string                                        `json:"fulfillmentStrategyCode,omitempty"`
+	TargetVersionNo         string                                        `json:"targetVersionNo,omitempty"`
+	RequestKey              string                                        `json:"requestKey"`
+	InterfaceInstanceNo     string                                        `json:"interfaceInstanceNo"`
+	Reference               string                                        `json:"reference"`
+	CategoryNo              string                                        `json:"categoryNo"`
+	NameZhCN                string                                        `json:"nameZhCn"`
+	NameEnUS                string                                        `json:"nameEnUs"`
+	PricingMode             ImportPricingMode                             `json:"pricingMode"`
+	MarkupPercent           string                                        `json:"markupPercent"`
+	Prices                  []resourceinterfaceprojectioncap.CatalogPrice `json:"prices"`
 }
 
 // ImportMissingConfiguration is the initial, bilingual unfilled-field projection.
@@ -47,6 +49,7 @@ type ImportMissingConfiguration struct {
 // ImportResult records the created identity and initial readiness, not permission
 // to publish or proof of a complete machine quote.
 type ImportResult struct {
+	PricingOnly          bool `json:"-"`
 	Item                 ProductDraft
 	MissingConfiguration []ImportMissingConfiguration
 	PricingIncomplete    bool

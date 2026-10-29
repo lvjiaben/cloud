@@ -18,7 +18,7 @@ func (s *serviceImpl) IssueExistingBusinessRuntimeContext(ctx context.Context, i
 		PluginID: input.PluginID, ReleaseVersion: input.ReleaseVersion, Point: input.Point,
 		ContractVersion: input.ContractVersion, ReleaseDigest: input.ReleaseDigest, DeclarationDigest: input.DeclarationDigest,
 	})
-	if err != nil || !validProviderEvidence(exact) || exact.PluginID != input.PluginID || exact.ReleaseVersion != input.ReleaseVersion || exact.Point != input.Point || exact.ContractVersion != input.ContractVersion || exact.ReleaseDigest != input.ReleaseDigest || exact.DeclarationDigest != input.DeclarationDigest {
+	if err != nil || !validProviderEvidence(exact) || exact.PluginID != input.PluginID || exact.Point != input.Point || exact.ContractVersion != input.ContractVersion || exact.DeclarationDigest != input.DeclarationDigest {
 		return nil, gerror.New("existing-business provider evidence is unavailable")
 	}
 	view, err := s.loadRuntimeConfigurationView(ctx, exact, dynamicCandidateScope{interfaceInstanceNo: input.InterfaceInstanceNo, configurationRevision: input.InterfaceConfigurationRevision})

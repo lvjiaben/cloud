@@ -60,6 +60,8 @@ type ServiceEntitlementColumns struct {
 	UpstreamOrderReference      string //
 	UpstreamDeliveryNo          string //
 	UpstreamServiceNo           string //
+	CustomerRemark              string // Current customer non-sensitive service note
+	CustomerRemarkRevision      string // Independent optimistic revision for the customer service note
 }
 
 // serviceEntitlementColumns holds the columns for the table plugin_idc_core_service_entitlement.
@@ -103,6 +105,8 @@ var serviceEntitlementColumns = ServiceEntitlementColumns{
 	UpstreamOrderReference:      "upstream_order_reference",
 	UpstreamDeliveryNo:          "upstream_delivery_no",
 	UpstreamServiceNo:           "upstream_service_no",
+	CustomerRemark:              "customer_remark",
+	CustomerRemarkRevision:      "customer_remark_revision",
 }
 
 // NewServiceEntitlementDao creates and returns a new DAO object for table data access.

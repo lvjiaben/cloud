@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-18T02:57:29.115Z",
+  "canonicalId": "website-main",
+  "displayName": "官网模板",
+  "npmPackage": "@lina/website-main",
+  "version": "v0.1.9",
+  "canonicalLegacyMatches": 0,
+  "unchangedPublicAssets": 138,
+  "onlyDescriptorCapability": true,
+  "noOwnMenusPermissionsTablesOrI18n": true,
+  "customerTestAliasExists": true,
+  "documentationLinksValid": true,
+  "previousDirectoryContainsNoPluginManifest": true,
+  "retirementComplete": false,
+  "previewDirectoryRemoved": false
+}

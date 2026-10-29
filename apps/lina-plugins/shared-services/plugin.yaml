@@ -1,6 +1,6 @@
 id: shared-services
 name: LinaPro Shared Services
-version: v0.1.0
+version: v0.1.1
 type: source
 distribution: builtin
 scope_nature: platform_only

@@ -212,7 +212,6 @@ const (
 	ClosureFindingUnsettledFunds       ClosureFindingCode = "unsettled_funds"
 	ClosureFindingActiveServices       ClosureFindingCode = "active_services"
 	ClosureFindingUnsettledInvoices    ClosureFindingCode = "unsettled_invoices"
-	ClosureFindingActiveContracts      ClosureFindingCode = "active_contracts"
 	ClosureFindingInProgressOperations ClosureFindingCode = "in_progress_operations"
 	ClosureFindingLegalRetention       ClosureFindingCode = "legal_retention"
 )

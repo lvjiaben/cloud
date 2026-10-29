@@ -11,7 +11,7 @@ import (
 
 // ServerRenewalList exposes only customer-safe names and server identifiers.
 func (c *ControllerV1) ServerRenewalList(ctx context.Context, req *v1.ServerRenewalListReq) (res *v1.ServerRenewalListRes, err error) {
-	page, err := c.renewals.List(ctx, batchrenewal.ListInput{Cursor: req.Cursor, Limit: req.Limit, Page: req.Page})
+	page, err := c.renewals.List(ctx, batchrenewal.ListInput{Cursor: req.Cursor, Limit: req.Limit, Page: req.Page, EntitlementNo: req.EntitlementNo})
 	if err != nil {
 		return nil, err
 	}

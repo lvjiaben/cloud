@@ -8,6 +8,8 @@ import (
 )
 
 const (
+	adjustmentTypeBalanceCredit         = "balance_credit"
+	adjustmentTypeBalanceDebit          = "balance_debit"
 	adjustmentTypeManualReceipt         = "manual_receipt"
 	adjustmentTypeInvoiceWaiver         = "invoice_waiver"
 	adjustmentTypeMarketingGrantPost    = "marketing_grant_post"
@@ -71,6 +73,10 @@ type adjustmentPolicySnapshot struct {
 }
 
 func normalizeManualReceipt(input ManualReceiptInput) (adjustmentCommand, error) {
+	input.ReasonCode, input.EvidenceDigest = adjustmentMetadata(input.ReasonCode, input.EvidenceDigest, adjustmentTypeManualReceipt, input.IdempotencyKey)
+	if input.BusinessPurposeCode == "" {
+		input.BusinessPurposeCode = adjustmentTypeManualReceipt
+	}
 	if !exactlyTrimmed(
 		input.InvoiceNo, input.CreditStatementNo, input.CustomerNo,
 		input.CurrencyCode, input.ReasonCode,
@@ -78,8 +84,8 @@ func normalizeManualReceipt(input ManualReceiptInput) (adjustmentCommand, error)
 		input.EvidenceDigest, input.IdempotencyKey,
 	) || !validAmount(input.AmountMinor) || input.RequestedBy <= 0 ||
 		!adjustmentReasonPattern.MatchString(input.ReasonCode) ||
-		!validBusinessReference(input.ProofReference, 128) ||
-		!validBusinessReference(input.ReceivingAccountReference, 128) ||
+		(input.ProofReference != "" && !validBusinessReference(input.ProofReference, 128)) ||
+		(input.ReceivingAccountReference != "" && !validBusinessReference(input.ReceivingAccountReference, 128)) ||
 		!adjustmentReasonPattern.MatchString(input.BusinessPurposeCode) ||
 		!canonicalDigestPattern.MatchString(input.EvidenceDigest) ||
 		!validInvoiceTransformKey(input.IdempotencyKey) {
@@ -130,6 +136,7 @@ func boolCount(values ...bool) int {
 }
 
 func normalizeInvoiceWaiver(input InvoiceWaiverInput) (adjustmentCommand, error) {
+	input.ReasonCode, input.EvidenceDigest = adjustmentMetadata(input.ReasonCode, input.EvidenceDigest, adjustmentTypeInvoiceWaiver, input.IdempotencyKey)
 	if !exactlyTrimmed(
 		input.InvoiceNo, input.ReasonCode, input.EvidenceDigest, input.IdempotencyKey,
 	) || !validBusinessReference(input.InvoiceNo, 40) || !validAmount(input.AmountMinor) ||
@@ -157,6 +164,8 @@ func normalizeAdjustmentPolicy(input AdjustmentPolicyInput) (AdjustmentPolicyInp
 }
 
 func normalizeAdjustmentReview(input AdjustmentReviewInput) (AdjustmentReviewInput, error) {
+	_, input.CommentDigest = adjustmentMetadata("", input.CommentDigest, "", input.AdjustmentNo)
+	_, input.EvidenceDigest = adjustmentMetadata("", input.EvidenceDigest, "", input.AdjustmentNo)
 	if !exactlyTrimmed(
 		input.AdjustmentNo, input.CommentDigest, input.EvidenceDigest,
 	) || !validBusinessReference(input.AdjustmentNo, 40) || input.ReviewerID <= 0 ||
@@ -192,4 +201,16 @@ func adjustmentRequestDigest(command adjustmentCommand) (string, error) {
 		command.ReceivingAccountReference, command.BusinessPurposeCode,
 		command.EvidenceDigest, command.RequestedBy,
 	})
+}
+
+// adjustmentMetadata supplies a machine action reason and a request trace digest
+// when optional human annotations are absent. The trace is not payment proof.
+func adjustmentMetadata(reason, evidence, operation, requestKey string) (string, string) {
+	if reason == "" {
+		reason = operation
+	}
+	if evidence == "" {
+		evidence = invoiceTransformIdempotencyDigest(requestKey)
+	}
+	return reason, evidence
 }

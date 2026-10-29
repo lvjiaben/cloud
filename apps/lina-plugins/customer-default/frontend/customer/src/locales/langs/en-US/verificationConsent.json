@@ -1,0 +1,32 @@
+{
+  "heading": "Verification consent",
+  "subtitle": "View consent for identity and enterprise verification and manage future processing permissions.",
+  "evidenceTitle": "Withdrawal does not erase records that must legally be retained",
+  "evidenceDescription": "Withdrawal stops future processing that relies on this consent. Evidence needed for tax, disputes, audits or legal obligations is retained until its retention requirements have ended.",
+  "loadFailed": "Unable to load consent records. Please try again.",
+  "retry": "Reload",
+  "consentTitle": "My consent",
+  "consentEmpty": "No consent record is available",
+  "assessment": {
+    "personal_verification": "Personal verification",
+    "sensitive_personal_information": "Sensitive personal information",
+    "enterprise_verification": "Enterprise verification",
+    "tax_invoice": "Tax invoice"
+  },
+  "consent": {
+    "granted": "Granted",
+    "withdrawn": "Withdrawn"
+  },
+  "withdraw": {
+    "action": "Withdraw future consent",
+    "title": "Withdraw consent for future processing?",
+    "description": "New processing that relies on this consent will stop. Evidence that must be retained will not be deleted immediately.",
+    "confirm": "Withdraw consent"
+  },
+  "messages": {
+    "withdrawn": "Future consent was withdrawn"
+  },
+  "common": {
+    "cancel": "Cancel"
+  }
+}

@@ -20,7 +20,7 @@ func TestBuiltinSourcePluginDeclarationAndManifest(t *testing.T) {
 	}
 	for _, fragment := range []string{
 		"id: content-notice",
-		"version: v0.3.0",
+		"version: v0.3.1",
 		"type: source",
 		"distribution: builtin",
 		"default_install_mode: global",

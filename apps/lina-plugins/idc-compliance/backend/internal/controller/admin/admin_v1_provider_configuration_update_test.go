@@ -15,7 +15,7 @@ func TestProviderConfigurationUpdateConsumesRequestCredentials(t *testing.T) {
 	stub := &providerConfigurationServiceStub{saveResult: &providerconfig.Configuration{
 		ProviderCode: "aliyun_face", Status: "configured", SceneID: "100000001", Version: 2,
 	}}
-	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{}, &electronicContractOnboardingStub{}, &electronicContractPreparationStub{}, &electronicContractTemplateStub{})
+	controller, err := NewV1(stub, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestProviderConfigurationUpdateConsumesRequestCredentials(t *testing.T) {
 
 // TestProviderConfigurationUpdateRejectsMissingRequest verifies nil input is a stable business error.
 func TestProviderConfigurationUpdateRejectsMissingRequest(t *testing.T) {
-	controller, err := NewV1(&providerConfigurationServiceStub{}, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{}, &electronicContractOnboardingStub{}, &electronicContractPreparationStub{}, &electronicContractTemplateStub{})
+	controller, err := NewV1(&providerConfigurationServiceStub{}, &enterpriseManagementServiceStub{}, &supplierConfigurationStub{})
 	if err != nil {
 		t.Fatal(err)
 	}

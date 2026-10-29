@@ -264,7 +264,7 @@ CREATE TABLE IF NOT EXISTS plugin_idc_core_customer_contact_preference (
         "topic_code" IN ('account', 'billing', 'service', 'security', 'support', 'marketing')
     ),
     CONSTRAINT ck_plugin_idc_core_contact_pref_channel CHECK (
-        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official', 'wechat_work')
+        "channel_code" IN ('in_app', 'email', 'sms', 'wechat_official')
     ),
     CONSTRAINT ck_plugin_idc_core_contact_pref_version CHECK ("version" > 0),
     CONSTRAINT uk_plugin_idc_core_contact_pref UNIQUE ("contact_no", "topic_code", "channel_code"),
@@ -1373,7 +1373,6 @@ VALUES
     (0, 'idc_notification_channel', '电子邮箱', 'email', 2, 'cyan', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (0, 'idc_notification_channel', '短信', 'sms', 3, 'warning', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (0, 'idc_notification_channel', '微信公众号', 'wechat_official', 4, 'success', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-    (0, 'idc_notification_channel', '企业微信', 'wechat_work', 5, 'purple', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (0, 'idc_notification_topic', '账户', 'account', 1, 'primary', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (0, 'idc_notification_topic', '财务', 'billing', 2, 'cyan', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
     (0, 'idc_notification_topic', '服务', 'service', 3, 'processing', 1, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),

@@ -6,10 +6,10 @@ import "github.com/gogf/gf/v2/frame/g"
 
 // MarketingValueGrantAdjustmentReviewReq records an independent staff decision.
 type MarketingValueGrantAdjustmentReviewReq struct {
-	g.Meta       `path:"/admin/marketing/grant-adjustments/{adjustmentNo}/reviews" method:"post" tags:"IDC Marketing" summary:"Review a granted-value financial action" dc:"Approve or reject one pending granted-value posting or reversal. The requester cannot review their own action." permission:"idc:admin:marketing:grant:review"`
+	g.Meta       `path:"/admin/marketing/grant-adjustments/{adjustmentNo}/reviews" method:"post" tags:"IDC Marketing" summary:"Review a granted-value financial action" dc:"Approve or reject one pending granted-value posting or reversal. The authorized requester may process their own historic request." permission:"idc:admin:marketing:grant:review"`
 	AdjustmentNo string `json:"adjustmentNo" v:"required|length:1,40" dc:"Stable financial review request number"`
 	Decision     string `json:"decision" v:"required|in:approve,reject" dc:"Approve or reject decision"`
-	ReasonCode   string `json:"reasonCode" v:"required|length:1,64" dc:"Stable decision reason code"`
+	ReasonCode   string `json:"reasonCode" v:"max-length:64" dc:"Stable decision reason code"`
 }
 
 // MarketingValueGrantAdjustmentReviewRes returns the final or reused decision.

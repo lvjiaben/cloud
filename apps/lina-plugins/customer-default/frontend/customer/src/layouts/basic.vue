@@ -17,6 +17,7 @@ import { $t } from '#/locales';
 import { refreshAccessibleState } from '#/router/access-refresh';
 import { useAuthStore } from '#/store';
 import LoginForm from '#/views/_core/authentication/login.vue';
+import CustomerAnnouncements from '#/components/customer-announcements.vue';
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
@@ -56,11 +57,6 @@ const accountMenus = computed(() => [
     icon: 'lucide:file-lock-2',
     text: $t('page.customer.avatarMenu.dataRights'),
   },
-  {
-    handler: () => router.push('/account/privacy'),
-    icon: 'lucide:shield-check',
-    text: $t('page.customer.avatarMenu.privacy'),
-  },
 ]);
 
 async function handleLogout() {
@@ -70,7 +66,7 @@ async function handleLogout() {
 const memberNavigation = ref<CustomerProductDirectory[]>([]);
 function applyExternalMenus() {
   const useChinese = preferences.app.locale === 'zh-CN';
-  const managed = memberNavigation.value.map((item) => ({
+  const managed = memberNavigation.value.filter((item) => item.targetUrl !== '/account/notifications').map((item) => ({
     icon: item.icon || 'lucide:folder',
     name: useChinese ? item.nameZhCn || item.nameEnUs : item.nameEnUs || item.nameZhCn,
     order: item.sortOrder,
@@ -200,6 +196,9 @@ onBeforeUnmount(() => {
           }}
         </span>
       </div>
+    </template>
+    <template #header-right-59>
+      <CustomerAnnouncements />
     </template>
     <template #user-dropdown>
       <UserDropdown

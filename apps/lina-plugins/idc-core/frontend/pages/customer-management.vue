@@ -500,7 +500,7 @@ function verificationColor(status: VerificationStatus) {
 }
 
 function openOverview(row: CustomerSummary) {
-  customerOverviewDrawerApi.setData({ customerNo: row.customerNo });
+  customerOverviewDrawerApi.setData({ customerNo: row.customerNo, initialTab: route.query.resourceShortcut === "products" ? "services" : undefined });
   customerOverviewDrawerApi.open();
 }
 
@@ -554,6 +554,7 @@ const layoutRoot = useAdminGridLayout(gridApi);
         <Grid>
           <template #toolbar-actions>
             <div class="customer-toolbar-actions">
+              <span v-if="route.query.resourceShortcut === 'products'" class="text-muted-foreground" data-testid="resource-customer-shortcut-hint">{{ $t("plugin.idc-core.customer.resourceShortcut") }}</span>
               <a-button
                 v-if="canCreateCustomer"
                 data-testid="customer-direct-open"

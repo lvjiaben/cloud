@@ -14,6 +14,7 @@ import (
 	"lina-core/pkg/bizerr"
 	v1 "lina-plugin-idc-core/backend/api/admin/v1"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
+	"lina-plugin-idc-core/backend/internal/service/productautomation"
 	"net/http"
 	"strings"
 	"testing"
@@ -30,6 +31,10 @@ func (s *catalogImportHTTPStub) Import(_ context.Context, input catalog.ImportIn
 		s.amount = input.Prices[0].Amount
 	}
 	return &catalog.ImportResult{Item: catalog.ProductDraft{ProductNo: "created", VersionNo: "draft"}}, nil
+}
+
+func (s *catalogImportHTTPStub) ImportExisting(ctx context.Context, input catalog.ImportInput, _ catalog.PublicationService, _ productautomation.Service, _ string) (*catalog.ImportResult, error) {
+	return s.Import(ctx, input)
 }
 
 type catalogImportHTTPController struct{ target *ControllerV1 }

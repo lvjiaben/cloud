@@ -69,13 +69,13 @@ func (r *registrar) freeze() ([]customerclosurecap.Contributor, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.frozen = true
-	covered := make(map[customerclosurecap.Code]struct{}, 6)
+	covered := make(map[customerclosurecap.Code]struct{}, 5)
 	for _, contributor := range r.contributors {
 		for _, code := range contributor.Codes() {
 			covered[code] = struct{}{}
 		}
 	}
-	if len(covered) != 6 {
+	if len(covered) != 5 {
 		return nil, gerror.New("customer closure contributors do not cover every required finding")
 	}
 	result := append([]customerclosurecap.Contributor(nil), r.contributors...)
@@ -88,7 +88,6 @@ func validCode(code customerclosurecap.Code) bool {
 	case customerclosurecap.CodeUnsettledFunds,
 		customerclosurecap.CodeActiveServices,
 		customerclosurecap.CodeUnsettledInvoices,
-		customerclosurecap.CodeActiveContracts,
 		customerclosurecap.CodeInProgressOperations,
 		customerclosurecap.CodeLegalRetention:
 		return true

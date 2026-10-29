@@ -1,3 +1,6 @@
+// This file posts authorized credit write-offs and recoveries against matching
+// immutable ledger evidence; one operator may act as requester and processor.
+
 package billing
 
 import (
@@ -79,7 +82,6 @@ func normalizeCreditWriteoff(input CreditWriteoffInput) (CreditWriteoffInput, er
 		!validBusinessReference(input.LedgerTransactionNo, 40) ||
 		!creditWriteoffReasonPattern.MatchString(input.ReasonCode) ||
 		input.RequestedBy <= 0 || input.ReviewedBy <= 0 ||
-		input.RequestedBy == input.ReviewedBy ||
 		!canonicalDigestPattern.MatchString(input.ApprovalEvidenceDigest) {
 		return CreditWriteoffInput{}, bizerr.NewCode(CodeCreditInvalid)
 	}

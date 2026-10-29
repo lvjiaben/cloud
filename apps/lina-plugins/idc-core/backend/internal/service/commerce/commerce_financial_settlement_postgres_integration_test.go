@@ -262,7 +262,7 @@ WHERE order_no = ?`, checkout.OrderNo)
 	assertFinancialSettlementState(t, scenario, checkout.OrderNo, settlementNo.String(), 1)
 }
 
-func TestFinancialSettlementPostgreSQLAcceptsReviewedManualReceipt(t *testing.T) {
+func TestFinancialSettlementPostgreSQLAcceptsAuthorizedManualReceipt(t *testing.T) {
 	scenario := newCheckoutTestScenario(t, "customer-commerce-service-1", 101, 1, false, 0)
 	insertVerifiedIndividualPaymentIdentity(t, scenario, "customer-commerce-service-1")
 	checkout, err := scenario.service.CheckoutAccountQuote(scenario.ctx, CheckoutRequest{
@@ -288,16 +288,12 @@ func TestFinancialSettlementPostgreSQLAcceptsReviewedManualReceipt(t *testing.T)
 		BusinessPurposeCode:       "server_order", EvidenceDigest: strings.Repeat("c", 64),
 		IdempotencyKey: "settlement-manual-receipt-0001", RequestedBy: 1001,
 	})
-	if err != nil || request.Status != billingservice.AdjustmentStatusPendingReview {
-		t.Fatalf("create reviewed manual receipt result=%+v err=%v", request, err)
+	if err != nil || request.Status != billingservice.AdjustmentStatusPosted {
+		t.Fatalf("create permission-authorized manual receipt result=%+v err=%v", request, err)
 	}
-	posted, err := adjustments.ReviewAdjustment(scenario.ctx, billingservice.AdjustmentReviewInput{
-		AdjustmentNo: request.AdjustmentNo,
-		Decision:     billingservice.AdjustmentDecisionApprove, ReviewerID: 1002,
-		CommentDigest: strings.Repeat("d", 64), EvidenceDigest: strings.Repeat("e", 64),
-	})
-	if err != nil || posted.Status != billingservice.AdjustmentStatusPosted || posted.Invoice == nil {
-		t.Fatalf("post reviewed manual receipt result=%+v err=%v", posted, err)
+	// Historical threshold policies must not reintroduce an extra review step.
+	if request.Invoice == nil {
+		t.Fatal("direct receipt did not post its invoice allocation")
 	}
 	settlement, err := newFinancialSettlementTestService(t, scenario).SettleOrder(
 		scenario.ctx, checkout.OrderNo,
@@ -306,7 +302,7 @@ func TestFinancialSettlementPostgreSQLAcceptsReviewedManualReceipt(t *testing.T)
 		len(settlement.Sources) != 1 ||
 		settlement.Sources[0].SourceType !=
 			billingservice.FinancialSettlementSourceManualReceipt {
-		t.Fatalf("settle reviewed manual receipt result=%+v err=%v", settlement, err)
+		t.Fatalf("settle authorized manual receipt result=%+v err=%v", settlement, err)
 	}
 	assertFinancialSettlementState(t, scenario, checkout.OrderNo, settlement.SettlementNo, 1)
 }
@@ -631,6 +627,11 @@ WHERE invoice.invoice_no = ?`, input.PaymentAttemptNo, input.PaymentAttemptNo, c
 		waiting.OrderStatus != "pending_payment" || waiting.Transactions != 1 ||
 		waiting.Allocations != 1 || waiting.Settlements != 0 {
 		t.Fatalf("channel funding was not preserved independently: %+v", waiting)
+	}
+	// A later removal from sale must not strand confirmed funds or rewrite the
+	// original order when the payment owner retries its settlement boundary.
+	if _, err = scenario.database.Exec(scenario.ctx, `UPDATE plugin_idc_core_catalog_product SET status_code='retired',deleted_at=CURRENT_TIMESTAMP WHERE product_no='product-commerce-service'`); err != nil {
+		t.Fatal(err)
 	}
 	workingOwner, err := newChannelPaymentOwnerTestService(t,
 		scenario.database, newFinancialSettlementTestService(t, scenario),
@@ -1024,16 +1025,10 @@ func TestFinancialSettlementPostgreSQLRejectsInvoiceWaiver(t *testing.T) {
 		ReasonCode: "commercial_waiver", EvidenceDigest: strings.Repeat("f", 64),
 		IdempotencyKey: "settlement-waiver-0001", RequestedBy: 1001,
 	})
-	if err != nil || request.Status != billingservice.AdjustmentStatusPendingReview {
+	if err != nil || request.Status != billingservice.AdjustmentStatusPosted {
 		t.Fatalf("create invoice waiver result=%+v err=%v", request, err)
 	}
-	if _, err = adjustments.ReviewAdjustment(scenario.ctx, billingservice.AdjustmentReviewInput{
-		AdjustmentNo: request.AdjustmentNo,
-		Decision:     billingservice.AdjustmentDecisionApprove, ReviewerID: 1002,
-		CommentDigest: strings.Repeat("1", 64), EvidenceDigest: strings.Repeat("2", 64),
-	}); err != nil {
-		t.Fatalf("approve invoice waiver: %v", err)
-	}
+	// A directly posted waiver reduces debt, but never proves money received.
 	if _, err = newFinancialSettlementTestService(t, scenario).SettleOrder(
 		scenario.ctx, checkout.OrderNo,
 	); !bizerr.Is(err, billingservice.CodeSettlementNotEligible) {

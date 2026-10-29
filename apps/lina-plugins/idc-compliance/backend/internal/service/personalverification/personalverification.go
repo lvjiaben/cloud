@@ -125,7 +125,7 @@ func New(
 }
 
 // NewWithCollectionGate blocks collection unless the merchant published both
-// the assessment and the matching retention policy.
+// the matching retention policy.
 func NewWithCollectionGate(
 	database gdb.DB,
 	identities identitycap.Service,

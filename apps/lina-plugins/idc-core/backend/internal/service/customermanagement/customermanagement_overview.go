@@ -25,7 +25,7 @@ func (*daoPersistence) getOverview(ctx context.Context, customerNo string) (*Ove
 	if err := dao.CustomerSubject.Ctx(ctx).Fields(
 		columns.Id, columns.CustomerNo, columns.CustomerTypeCode, columns.StatusCode,
 		columns.DisplayName, columns.CountryCode, columns.PreferredLocale, columns.Version,
-		columns.EnterpriseContractPolicyCode, columns.EnterpriseContractTemplateNo,
+
 		columns.CreatedAt, columns.UpdatedAt,
 	).Where(do.CustomerSubject{
 		TenantId: idccap.DefaultTenantID, CustomerNo: customerNo,

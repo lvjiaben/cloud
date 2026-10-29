@@ -23,3 +23,12 @@ func New(ctx context.Context, services capability.Services, callerPluginID strin
 	}
 	return inbox.Bind(service, caller)
 }
+
+// NewCurrentSync binds a self-only inbox projection to the caller's governed
+// host notification and request identity capabilities. Publishing stays separate.
+func NewCurrentSync(ctx context.Context, services capability.Services, callerPluginID string) (inboxcap.CurrentSyncService, error) {
+	if _, err := sharedsource.Authorize(ctx, services, callerPluginID); err != nil {
+		return nil, err
+	}
+	return inbox.NewCurrentSync(g.DB(), services.Notifications(), services.BizCtx())
+}

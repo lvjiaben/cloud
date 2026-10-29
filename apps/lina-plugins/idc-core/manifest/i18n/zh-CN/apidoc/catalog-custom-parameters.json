@@ -1,0 +1,17 @@
+{
+  "Explicit provisioning API parameter name; declared fields retain their type checks, custom native names and contents are frozen for direct provisioning; empty records customer information only": "明确填写开通接口参数名；已声明字段保持类型校验，自定义名称与内容按直接开通请求冻结；留空仅记录客户资料",
+  "Whether this configuration field may change during a paid upgrade; omitted preserves existing behavior": "该配置项是否允许在付费升级时修改；不传保留原有行为",
+  "Optional minimum integer target for a configuration upgrade, within the sellable range": "可选的配置升级整数目标最小值，不得超出可售范围",
+  "Optional maximum integer target for a configuration upgrade, within the sellable range": "可选的配置升级整数目标最大值，不得超出可售范围",
+  "Optional allowed target choices for configuration upgrades; empty permits all sellable choices; at most 512 values": "可选的配置升级目标选项；空表示全部可售选项，最多五百一十二项",
+  "Merchant-owned typed purchase field with an automatically generated local_ key; only explicitly bound contents are sent to the provisioning API": "商家维护的类型化购买配置，内部标识自动生成；仅显式绑定的内容发送到开通接口",
+  "Optional explicit upstream values keyed by local single-choice identifiers; at most 512 bindings of 256 bytes each; requires an explicit provisioning parameter binding and does not change commercial prices": "本地单选子项对应的上游内容；最多五百一十二项，每项二百五十六字节；须显式填写开通接口参数名，不改变商业价格",
+  "Whether customers can edit this field; false uses the validated default value": "是否在客户表单显示此配置；隐藏时使用已验证的默认值",
+  "Typed default used for a hidden purchase field; must satisfy its sellable bounds": "隐藏购买配置使用的类型化默认值，必须满足可售范围",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.customerVisible.dc": "是否在客户表单显示此配置；隐藏时使用已验证的默认值",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.defaultValue.dc": "隐藏购买配置使用的类型化默认值，必须满足可售范围",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.upgradeEnabled.dc": "该配置项是否允许在付费升级时修改；不传保留原有行为",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.upgradeMinimum.dc": "可选的配置升级整数目标最小值，不得超出可售范围",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.upgradeMaximum.dc": "可选的配置升级整数目标最大值，不得超出可售范围",
+  "plugins.idc_core.api.admin.v1.CatalogCustomerFieldSelection.fields.upgradeCandidateValues.dc": "可选的配置升级目标选项；空表示全部可售选项，最多五百一十二项"
+}

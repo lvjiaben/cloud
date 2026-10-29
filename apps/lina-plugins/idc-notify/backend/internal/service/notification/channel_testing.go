@@ -151,7 +151,7 @@ func (s *serviceImpl) TestChannel(ctx context.Context, input ChannelTestInput) (
 
 func validChannelTestInput(input ChannelTestInput) bool {
 	switch input.ChannelCode {
-	case "email", "sms", "wechat_official":
+	case "email", "sms":
 	default:
 		return false
 	}
@@ -188,20 +188,6 @@ func materializeTestProviderMapping(template *templateRow, variables map[string]
 	switch template.ChannelCode {
 	case "sms":
 		return materializeSMSProviderMapping(template, variables)
-	case "wechat_official":
-		mapping := make(map[string]string)
-		if template.ProviderTemplateID == "" || json.Unmarshal([]byte(template.ProviderWeChatDataMapping), &mapping) != nil || len(mapping) == 0 || len(mapping) > MaximumVariables {
-			return "", nil, nil, bizerr.NewCode(CodeInvalid)
-		}
-		data := make(map[string]string, len(mapping))
-		for key, variable := range mapping {
-			value, exists := variables[variable]
-			if !providerDataKey(key) || !exists {
-				return "", nil, nil, bizerr.NewCode(CodeInvalid)
-			}
-			data[key] = value
-		}
-		return template.ProviderTemplateID, nil, data, nil
 	default:
 		return "", nil, nil, nil
 	}

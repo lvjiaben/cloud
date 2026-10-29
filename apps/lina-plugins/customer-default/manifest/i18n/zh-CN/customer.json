@@ -5,6 +5,36 @@
       "description": "独立用户中心模板，支持服务、订单、财务和工单。"
     }
   },
+  "accountConsole": {
+    "overview": "控制台",
+    "welcome": "{name}，欢迎回来",
+    "intro": "管理已购服务、订单和账单。",
+    "orders": "我的订单",
+    "support": "联系支持",
+    "purchase": "购买产品",
+    "balance": "可用余额",
+    "balanceUnavailable": "余额暂时无法读取，请重试。",
+    "retry": "重试",
+    "noBalanceAccount": "暂无余额账户",
+    "manageBalance": "充值与账单",
+    "servers": "云服务器",
+    "manageServers": "查看并管理服务器",
+    "unpaidInvoices": "待付账单",
+    "viewAndPay": "查看并付款",
+    "recentOrders": "最近订单",
+    "allOrders": "全部订单",
+    "ordersUnavailable": "订单暂时无法读取，请重试。",
+    "noOrders": "暂无订单",
+    "viewOrder": "查看订单",
+    "allServices": "全部产品服务",
+    "accountSettings": "账户设置",
+    "serverHint": "在这里查看已开通的服务器、登录信息和操作记录。",
+    "cloudUnavailable": "云服务器服务暂不可用，请联系支持人员。",
+    "otherServerServices": "其他服务器服务",
+    "myServices": "我的服务",
+    "servicesUnavailable": "服务暂时无法读取，请重试。",
+    "noServices": "暂无已购服务"
+  },
   "aiAssistant": {
     "menu": "智能助手",
     "title": "客户智能助手",
@@ -15,6 +45,17 @@
     "dataAsOf": "数据截至：{value}",
     "disabled": "智能助手暂未启用，请联系运营人员。",
     "error": "暂时无法使用智能助手，请稍后重试。"
+  },
+  "announcements": {
+    "title": "公告",
+    "detail": "公告详情",
+    "empty": "暂无公告",
+    "read": "已读",
+    "unread": "未读",
+    "loadFailed": "公告加载失败，请重试。",
+    "readFailed": "已读状态保存失败，请关闭后重试。",
+    "retry": "重试",
+    "total": "共 {count} 条"
   },
   "assistance": {
     "title": "客户模拟登录",
@@ -41,7 +82,6 @@
       "title": "我的订单"
     },
     "order": {
-      "contractOptional": "普通个人订单不强制签合同；只有后台明确要求的订单才会按合同状态处理。",
       "created": "创建时间",
       "delivery": "商品交付",
       "services": "持续服务",
@@ -50,7 +90,9 @@
       "invoice": "账单",
       "requestRefund": "申请退款",
       "items": "商品项目",
-      "label": "订单"
+      "label": "订单",
+      "refresh": "刷新状态",
+      "contractOptional": "普通个人订单不强制签合同；只有后台明确要求的订单才会按合同状态处理。"
     },
     "quote": {
       "changed": "价格已经变化，请先确认新金额再提交订单。",
@@ -136,7 +178,8 @@
       "terminated": "已终止",
       "unavailable": "状态暂不可用",
       "unknown": "状态暂不可用",
-      "waiting_payment": "等待付款"
+      "waiting_payment": "等待付款",
+      "paid": "已付款"
     },
     "fulfillment": {
       "ongoing": "包含持续服务",
@@ -156,162 +199,20 @@
         "awaiting_payment": "待付款",
         "awaiting_review": "待商家审核",
         "processing": "处理中",
+        "manual_processing": "待人工处理",
         "completed": "已完成",
         "not_completed": "处理未完成",
         "cancelled": "已取消"
-      }
+      },
+      "processingHint": "开通正在处理中，状态会自动更新。",
+      "manualHint": "商家需要进一步处理这笔订单，付款记录已保留，请勿重复付款。",
+      "incompleteHint": "当前交付未完成，请联系支持协助处理，无需重复付款。",
+      "refreshPaused": "自动更新已暂停，请点击刷新状态重试。"
     },
     "units": {
       "cycles": "个计费周期",
       "items": "件商品",
       "servers": "台服务器"
-    }
-  },
-  "contracts": {
-    "center": {
-      "menu": "合同与经办人",
-      "title": "合同与经办人",
-      "contracts": "我的合同",
-      "signers": "签署经办人",
-      "enterpriseRequired": "企业认证通过后才能维护签署经办人。"
-    },
-    "mine": {
-      "menu": "我的合同",
-      "title": "我的合同",
-      "eyebrow": "签署与存证",
-      "heading": "查看并完成你的电子合同",
-      "subtitle": "每份合同都保留固定的订单、金额、签署人和七天签署期限。腾讯页面返回或浏览器提示不能代替服务端权威结果。",
-      "refresh": "刷新列表",
-      "returnTitle": "已返回本系统，请重新检查结果",
-      "returnDescription": "返回本页面不代表签署已经完成。请在对应合同上点击“重新检查签署结果”，系统只采用腾讯的权威查询结果。",
-      "authorityTitle": "签署结果以服务端查询为准",
-      "authorityDescription": "“重新检查”只读取已有流程，不会重复发起合同；“重新获取签署入口”只生成新的 30 分钟入口，不会创建第二份合同，也不会延长七天期限。",
-      "loadFailed": "暂时无法读取合同列表，请稍后重试。",
-      "retry": "重新读取",
-      "empty": "目前没有需要查看的合同",
-      "loadMore": "加载更多合同",
-      "failedDescription": "这份合同当前无法由客户自行重新发起新流程。如页面仍提供重试，只会为原合同、原流程重新生成一条短期签署入口。",
-      "status": {
-        "processing": "处理中",
-        "completed": "已完成",
-        "failed": "失败"
-      },
-      "fields": {
-        "order": "订单编号",
-        "amount": "合同金额",
-        "created": "创建时间",
-        "deadline": "签署截止时间"
-      },
-      "actions": {
-        "openSigning": "前往腾讯签署",
-        "retrySigning": "重新获取签署入口",
-        "recheck": "重新检查签署结果"
-      },
-      "messages": {
-        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
-        "invalidSigningLink": "服务端没有返回安全的 HTTPS 签署入口，本次未打开外部页面。",
-        "openFailed": "暂时无法取得签署入口，请稍后重试。",
-        "recheckFailed": "暂时无法重新检查签署结果，请稍后重试。",
-        "rechecked": "已取得最新权威状态，合同仍在处理中。",
-        "completed": "腾讯权威状态已确认合同完成。"
-      }
-    },
-    "signers": {
-      "menu": "合同签署经办人",
-      "title": "合同签署经办人",
-      "eyebrow": "企业合同安全",
-      "heading": "维护可以代表企业签署合同的人员",
-      "subtitle": "只有本人实名和手机号都验证通过、且当前未停用的经办人，才会出现在后台发起合同时的选择名单中。",
-      "add": "添加经办人",
-      "separationTitle": "这里不是普通通知联系人",
-      "separationDescription": "通知联系人只接收消息，不能自动代表企业签合同。合同签署经办人必须在这里单独添加并完成两项验证。",
-      "returnTitle": "请主动检查实名结果",
-      "returnDescription": "从实名页面返回不代表已经通过。请找到对应经办人并点击“检查实名结果”，以服务端查询结果为准。",
-      "loadFailed": "暂时无法读取合同签署经办人，请稍后重试。",
-      "enterpriseOnlyTitle": "仅企业客户需要维护签署经办人",
-      "enterpriseOnlyDescription": "当前账号是个人客户，不需要设置企业合同签署经办人。个人合同由本人按签署流程完成。",
-      "retry": "重新读取",
-      "empty": "还没有合同签署经办人",
-      "candidateReady": "可用于新合同",
-      "fields": {
-        "identity": "证件",
-        "phone": "手机号",
-        "updated": "最近更新"
-      },
-      "status": {
-        "identity": {
-          "unverified": "未实名",
-          "verifying": "实名进行中",
-          "verified": "实名已通过",
-          "review_required": "需要人工核对",
-          "expired": "实名已过期"
-        },
-        "phone": {
-          "unverified": "未验证",
-          "verifying": "验证码已发送",
-          "verified": "手机号已验证"
-        },
-        "signer": {
-          "active": "验证未完成",
-          "disabled": "已停用"
-        }
-      },
-      "identity": {
-        "title": "本人实名认证",
-        "pending": "待完成",
-        "done": "已通过",
-        "start": "前往本人实名",
-        "check": "检查实名结果"
-      },
-      "phone": {
-        "title": "手机号验证",
-        "pending": "待验证",
-        "done": "已验证",
-        "start": "验证手机号",
-        "modalTitle": "验证经办人手机号",
-        "channelTitle": "验证码由平台统一短信通道发送",
-        "channelDescription": "本功能不会保存自己的短信账号或模板。后台未配置可用短信通道和本用途模板时会明确失败，不会假装发送成功。",
-        "humanCheck": "先完成人机验证",
-        "image": "图片题",
-        "accessible": "文字题",
-        "imageAlt": "人机验证图片",
-        "answer": "请输入题目答案",
-        "sendCode": "验证并发送短信验证码",
-        "unsupportedChallenge": "当前人机验证方式无法在此页面完成，请联系管理员检查验证服务配置。",
-        "uncertainTitle": "本次没有得到安全的发送结果",
-        "uncertainDescription": "系统不会自动重复发送。请确认短信通道后，主动获取一道新题再重新发送。",
-        "newChallenge": "获取新题",
-        "codeTitle": "验证码已请求发送",
-        "codeDescription": "请填写发送到 {destination} 的 6 位验证码，有效期至 {expires}。",
-        "codePlaceholder": "6 位短信验证码",
-        "verifyCode": "确认手机号"
-      },
-      "create": {
-        "title": "添加合同签署经办人",
-        "notice": "请填写经办人本人的真实资料",
-        "description": "资料提交后只显示脱敏内容。经办人仍需分别完成人脸实名认证和手机号验证，不能直接进入合同候选名单。",
-        "name": "本人姓名",
-        "identityNo": "本人身份证号",
-        "phone": "本人手机号",
-        "consent": "我已取得经办人同意，并确认这些资料仅用于合同签署身份核验。",
-        "cancel": "取消",
-        "submit": "确认添加"
-      },
-      "disable": {
-        "action": "停用",
-        "title": "停用这个合同签署经办人？",
-        "description": "停用后不能再用于新合同，但已经生成的合同仍保留原来冻结的签署人，不会被改写。",
-        "cancel": "暂不停用",
-        "confirm": "确认停用"
-      },
-      "messages": {
-        "created": "经办人已添加，请继续完成两项验证。",
-        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
-        "identityVerified": "本人实名认证已通过。",
-        "identityChecked": "已取得最新实名状态。",
-        "phoneVerified": "手机号验证已通过。",
-        "disabled": "经办人已停用，不会再进入新合同候选名单。"
-      }
     }
   },
   "credit": {
@@ -448,7 +349,7 @@
       "archiveDescription": "停用后，这位联系人不再接收新的通知；历史记录会继续保留。",
       "archiveTitle": "停用这位联系人？",
       "archived": "联系人已停用。",
-      "authorityWarning": "通知联系人只负责接收你授权的消息，不会获得登录、付款、服务器操作或合同签署权限。",
+      "authorityWarning": "通知联系人只负责接收你授权的消息，不会获得登录、付款或服务器操作权限。",
       "callingCode": "国际区号",
       "cancel": "取消",
       "createTitle": "新增通知联系人",
@@ -478,11 +379,11 @@
       "closureBlocked": "当前还有需要先处理的事项，暂时不能提交注销。",
       "closureCancel": "暂不申请",
       "closureConfirm": "确认申请",
-      "closureConfirmDescription": "系统会先检查余额、账单、服务器、合同和处理中业务。通过后只进入人工复核，不会立刻删除账户。",
+      "closureConfirmDescription": "系统会先检查余额、账单、服务器和处理中业务。通过后只进入人工复核，不会立刻删除账户。",
       "closureConfirmTitle": "确认申请注销账户？",
-      "closureDescription": "注销不是立即删除。系统会先检查资金、账单、服务器、合同和处理中业务，复核通过后才匿名化普通资料。依法需要保留的合同、发票和审计证据仍会保留。",
+      "closureDescription": "注销不是立即删除。系统会先检查资金、账单、服务器和处理中业务，复核通过后才匿名化普通资料。依法需要保留的合同、发票和审计证据仍会保留。",
       "closurePending": "注销申请已进入人工复核。在最终处理前，系统还会再次检查全部阻断条件。",
-      "closureSafety": "有余额、未结账单、活动服务器、有效合同或处理中业务时，注销会被阻止。",
+      "closureSafety": "有余额、未结账单、活动服务器或处理中业务时，注销会被阻止。",
       "closureSubmitted": "注销申请已提交，等待后台复核。",
       "closureTitle": "账户注销",
       "download": "下载导出文件",
@@ -514,12 +415,12 @@
       "succeeded": "生成完成"
     },
     "closureFinding": {
-      "active_contracts": "仍在处理的合同",
       "active_services": "仍在使用的服务器服务",
       "in_progress_operations": "仍在处理的业务操作",
       "legal_retention": "依法需要继续保留的证据（不阻止申请）",
       "unsettled_funds": "未结清的余额或冻结资金",
-      "unsettled_invoices": "未结清的账单"
+      "unsettled_invoices": "未结清的账单",
+      "active_contracts": "仍在处理的合同"
     }
   },
   "customerActivation": {
@@ -786,7 +687,13 @@
       "pending_payment": "待付款",
       "refunded": "已退款",
       "submitted": "已提交，待通道确认",
-      "succeeded": "已完成"
+      "succeeded": "已完成",
+      "created": "待发起付款",
+      "closed": "已关闭",
+      "late_success": "迟到款待处理",
+      "manual_review": "待人工核对",
+      "disputed": "款项有争议",
+      "unavailable": "状态暂不可用"
     },
     "invoice": {
       "detailTitle": "账单 {invoiceNo}",
@@ -830,7 +737,9 @@
         "wechat_h5": "微信 H5",
         "wechat_native": "微信扫码",
         "wechat_jsapi": "微信公众号支付",
-        "epay_cashier": "易支付收银台"
+        "epay_cashier": "易支付收银台",
+        "epay_alipay": "易支付 · 支付宝",
+        "epay_wechat": "易支付 · 微信支付"
       },
       "unavailable": "当前尚未安装通过能力门禁的支付通道，充值入口暂不可用；余额支付不受影响。"
     },
@@ -839,12 +748,19 @@
       "eyebrow": "安全付款状态",
       "complete": "充值已经到账",
       "confirming": "正在等待支付平台确认",
-      "description": "这里展示服务端确认结果。即使付款页面已返回，也不会直接把余额显示为到账。",
+      "description": "这里展示支付平台确认后的结果。付款页面返回不代表已经到账。",
       "attemptNo": "付款编号",
       "currency": "币种",
       "refresh": "刷新状态",
       "back": "返回财务中心",
-      "loadFailed": "暂时无法读取付款状态，请稍后刷新。"
+      "loadFailed": "暂时无法读取付款状态，请稍后刷新。",
+      "orderComplete": "付款已确认",
+      "orderDescription": "付款已提交到账单。商品开通单独处理，您可以进入订单查看最新进度和已交付服务。",
+      "unsuccessful": "本次付款未完成",
+      "viewDelivery": "查看开通进度",
+      "creditComplete": "还款已确认",
+      "needsReview": "付款需要核对",
+      "reviewDescription": "本次支付结果需要人工核对，请保留付款编号并联系支持。"
     },
     "merge": {
       "action": "合并所选账单",
@@ -888,6 +804,16 @@
       "merged": "账单已安全合并，列表已经刷新。",
       "paid": "余额支付成功，账单状态已经刷新。",
       "renewalSaved": "自动续费策略已更新。"
+    },
+    "onlinePayment": {
+      "action": "在线支付",
+      "title": "选择支付方式",
+      "continue": "确认并付款",
+      "failed": "付款准备失败，订单和选择已保留，请重试。",
+      "identity": "请先完成实名认证，再支付当前账单。",
+      "noChannels": "当前币种暂无可用的在线支付渠道，请联系商家或使用账户余额。",
+      "notPayable": "当前订单暂不能付款，请核对订单状态或联系商家。",
+      "alreadyPaid": "账单已付款，无需重复支付。订单处理进度请查看订单。"
     }
   },
   "identity": {
@@ -1098,82 +1024,99 @@
       "tenants": "租户管理"
     }
   },
-  "notifications": {
-    "channelChoices": "各类消息的接收方式",
-    "consentOptedIn": "已同意",
-    "consentOptedOut": "已退订",
-    "consentUnknown": "状态未知",
-    "disabled": "未启用",
-    "enabled": "已启用",
-    "marketingConsents": "营销消息授权",
-    "marketingDescription": "关闭某个接收方式就是退订；只有当前授权政策完整时，才能再次开启。",
-    "marketingEditingUnavailable": "请在下方的营销消息授权中退订或恢复接收。",
-    "marketingEvidenceMissing": "当前授权信息不完整，为避免记错你的选择，这项设置已锁定。",
-    "marketingTitle": "选择营销消息的接收方式",
-    "marketingToggleLabel": "通过{channel}接收营销消息",
-    "preferenceRetryReady": "已读取最新设置，并保留了你的选择。请再次保存。",
-    "preferenceSaveFailed": "没有保存成功，你刚才的选择已保留。请先读取最新设置。",
-    "preferenceSaved": "已保存",
-    "preferenceToggleLabel": "{category}的{channel}接收开关",
-    "preferenceVersion": "设置版本",
-    "preferredLocale": "消息语言",
-    "preferencesDescription": "普通消息可逐项开启或关闭，也可以退订或恢复营销消息并设置免打扰时间。安全消息始终保留。",
-    "preferencesEmpty": "还没有单独保存过接收方式",
-    "preferencesLoadFailed": "暂时无法读取通知偏好，请稍后重试",
-    "preferencesTitle": "通知接收设置",
-    "quietHours": "免打扰时间",
-    "quietHoursContactAmbiguous": "当前有多个营销联系方式，服务端还不能明确本次应使用哪一个，因此免打扰时间暂时锁定。",
-    "quietHoursEnabledLabel": "启用免打扰时间",
-    "quietHoursEnd": "结束时间",
-    "quietHoursEvidenceMissing": "当前营销授权信息不完整，暂时不能安全修改免打扰时间。",
-    "quietHoursInvalid": "请填写有效的时区、开始时间和结束时间。",
-    "quietHoursMissing": "当前没有可用的免打扰设置，本页没有替你新建默认值。",
-    "quietHoursStart": "开始时间",
-    "quietHoursTimezone": "所在时区（城市/地区）",
-    "refreshLatest": "读取最新设置",
-    "saveAgain": "再次保存",
-    "saveQuietHours": "保存免打扰时间",
-    "securityRequired": "为了账号和服务安全，这类通知不能关闭。",
-    "categories": {
-      "account": "账号消息",
-      "billing": "账务消息",
-      "marketing": "营销消息",
-      "security": "安全消息",
-      "service": "服务消息",
-      "support": "工单消息"
+  "nativeServers": {
+    "title": "云服务器",
+    "product": "产品",
+    "serverNo": "服务器编号",
+    "resourceState": "交付状态",
+    "runtimeState": "运行状态",
+    "entitlementState": "服务状态",
+    "actions": "操作",
+    "refresh": "刷新状态",
+    "manage": "管理",
+    "more": "加载更多",
+    "back": "返回服务器列表",
+    "sourceOrder": "查看订单",
+    "overview": "服务器概览",
+    "startedAt": "开通时间",
+    "expiresAt": "到期时间",
+    "observedAt": "状态更新时间",
+    "noExpiry": "不设到期日",
+    "notObserved": "尚未取得有效状态",
+    "loadFailed": "未能读取服务器信息，请刷新重试。",
+    "processing": "操作正在执行，状态会自动更新。请等待当前任务完成。",
+    "attention": "操作结果需要核对，已暂停新的操作。请联系支持人员处理。",
+    "observationUnavailable": "暂时无法确认上游运行状态，操作已禁用。请刷新重试。",
+    "operationFailed": "操作请求未能确认，请使用同一请求重试；不要重复创建操作。",
+    "retrySame": "重试原请求",
+    "access": "登录凭据",
+    "credentialHint": "初始密码只在开通成功后提供一次。请妥善保存，并使用所选操作系统的登录方式连接。",
+    "reveal": "查看初始密码",
+    "credentialObservationUnavailable": "暂时无法读取服务器状态，请稍后刷新再查看初始密码。",
+    "credentialUnavailable": "初始密码尚未可交付或已经展示过。如需协助，请联系支持人员。",
+    "credentialFailed": "未能完成密码展示。系统不会自动重复交付，请刷新状态或联系支持人员。",
+    "credentialConfirmation": "密码只展示一次，关闭窗口后将无法再次查看。请准备好安全保存。",
+    "powerConfirmation": "关机或重启会中断服务器上的业务。请确认已经保存工作并允许本次操作。",
+    "confirmed": "我已了解影响，确认执行",
+    "confirm": "确认执行",
+    "cancel": "取消",
+    "initialPassword": "初始密码",
+    "passwordOnce": "请现在安全保存密码。关闭窗口后，本次展示内容将被清除。",
+    "closePassword": "我已保存，关闭",
+    "history": "最近10项操作",
+    "noOperations": "暂无电源操作记录",
+    "mapping": {
+      "active": "已开通",
+      "provisioning": "开通中",
+      "quarantined": "需要处理",
+      "released": "已释放",
+      "releasing": "释放中",
+      "unknown": "待核对"
     },
-    "channels": {
-      "email": "邮件",
-      "in_app": "站内信",
-      "sms": "短信",
-      "wechat_official": "微信公众号"
+    "runtime": {
+      "active": "运行中",
+      "running": "运行中",
+      "stopped": "已关机",
+      "pending": "处理中",
+      "suspended": "已暂停",
+      "terminated": "已终止",
+      "failed": "异常",
+      "unknown": "待核对"
     },
-    "completedAt": "完成于",
-    "deliveryHistory": "发送记录",
-    "empty": "还没有通知发送记录",
-    "loadFailed": "暂时无法读取通知发送记录，请稍后重试",
-    "menu": "通知中心",
-    "nextPage": "下一页",
-    "pageNumber": "第 {page} 页",
-    "preferences": "接收偏好",
-    "previousPage": "上一页",
-    "queuedAt": "创建于",
-    "retry": "重试",
-    "statuses": {
+    "entitlement": {
+      "active": "有效",
+      "suspended": "已暂停",
+      "expired": "已到期",
+      "terminated": "已终止",
       "cancelled": "已取消",
-      "delivered": "已送达",
-      "failed": "发送失败",
-      "manual_review": "等待人工确认",
-      "manual_unknown_closed": "人工确认已结束",
-      "preference_blocked": "已按你的偏好跳过",
-      "queued": "等待发送",
-      "result_unknown": "结果待确认",
+      "pending_activation": "等待激活",
+      "unknown": "待核对"
+    },
+    "power": {
+      "start": "开机",
+      "stop": "关机",
+      "reboot": "重启",
+      "unknown": "操作"
+    },
+    "operationStatus": {
+      "pending": "等待执行",
+      "submitting": "提交中",
+      "accepted": "已受理",
+      "running": "执行中",
       "retry_wait": "等待重试",
-      "sending": "发送中",
-      "submitted": "已交给发送渠道",
-      "succeeded": "发送成功",
-      "template_error": "内容准备失败"
-    }
+      "succeeded": "已完成",
+      "failed": "未成功",
+      "canceled": "已取消",
+      "result_unknown": "结果待核对",
+      "manual_takeover": "人工处理中",
+      "unknown": "待核对"
+    },
+    "ipAddresses": "IP地址",
+    "noAddresses": "当前未分配IP地址",
+    "addressesUnavailable": "暂未取得已核对的IP地址，请刷新或联系支持人员",
+    "allAddresses": "展开全部{count}个IP地址",
+    "collapseAddresses": "收起",
+    "waitingForProvider": "上游通道暂时暂停接收操作，此请求尚未发送。预计在 {time} 后自动继续，请勿重复提交。"
   },
   "page": {
     "auth": {
@@ -2881,82 +2824,6 @@
     "verified": "联系方式已验证",
     "verifyAndSendCode": "验证并发送验证码"
   },
-  "privacy": {
-    "menu": "隐私与授权",
-    "title": "隐私与授权",
-    "eyebrow": "你的资料，由你了解和管理",
-    "heading": "隐私与授权",
-    "subtitle": "查看资料用途、保留期限和当前授权，也可以申请导出或删除本人的资料。",
-    "evidenceTitle": "撤回不会抹掉依法必须保留的记录",
-    "evidenceDescription": "撤回只停止依赖该授权的后续处理。合同、税务、争议、审计或法律要求保留的证据，会在期限结束且确认没有继续保留理由后再处理。",
-    "loadFailed": "隐私信息加载失败，请稍后重试",
-    "retry": "重新加载",
-    "noticeTitle": "我们如何处理资料",
-    "noticeEmpty": "当前没有已发布的资料处理说明",
-    "consentTitle": "我的授权",
-    "consentEmpty": "当前没有授权记录",
-    "requestTitle": "我的申请",
-    "requestEmpty": "还没有导出或删除申请",
-    "days": "天",
-    "fields": {
-      "purpose": "处理目的",
-      "necessity": "为什么需要",
-      "impact": "可能影响",
-      "recipients": "资料接收方",
-      "storage": "保存位置",
-      "retention": "保留期限",
-      "rights": "如何行使权利"
-    },
-    "assessment": {
-      "personal_verification": "个人实名认证",
-      "sensitive_personal_information": "敏感个人信息",
-      "enterprise_verification": "企业实名认证",
-      "electronic_contract": "电子合同",
-      "tax_invoice": "税务发票"
-    },
-    "consent": {
-      "granted": "已同意",
-      "withdrawn": "已撤回"
-    },
-    "withdraw": {
-      "action": "撤回未来授权",
-      "title": "确认撤回未来授权？",
-      "description": "撤回后，依赖这项授权的新处理会停止；已经形成且依法需要保留的证据不会立即删除。",
-      "confirm": "确认撤回"
-    },
-    "request": {
-      "export": "申请导出资料",
-      "delete": "申请删除资料",
-      "exportDescription": "提交后，系统会核对并准备仅属于你的资料。",
-      "deleteDescription": "提交后，系统会先核对合同、税务、争议、审计和法律保留要求，不会绕过这些要求立即删除。",
-      "submit": "确认提交"
-    },
-    "requestType": {
-      "export": "资料导出",
-      "delete": "资料删除"
-    },
-    "requestStatus": {
-      "submitted": "已提交",
-      "processing": "处理中",
-      "retention_blocked": "暂需保留",
-      "completed": "已完成",
-      "rejected": "未通过"
-    },
-    "hold": {
-      "contract": "合同证据仍需保留",
-      "tax": "税务证据仍需保留",
-      "dispute": "争议处理仍需保留",
-      "audit": "审计仍需保留",
-      "legal_hold": "法律要求仍需保留"
-    },
-    "messages": {
-      "withdrawn": "未来授权已撤回",
-      "requested": "申请已提交"
-    },
-    "common": {
-      "cancel": "取消"
-    }
-  },
   "productDirectories": {
     "menu": "我的服务",
     "all": "全部服务",
@@ -2981,7 +2848,11 @@
       "provisioning": "开通中",
       "pending_activation": "待激活"
     },
-    "notStarted": "未开始"
+    "notStarted": "未开始",
+    "management": {
+      "preparing": "管理入口准备中，请稍后刷新。",
+      "needs_attention": "管理入口需要管理员处理，请联系支持。"
+    }
   },
   "purchaseConfiguration": {
     "actions": {
@@ -3023,9 +2894,22 @@
       "navigationFailed": "配置已保存，请返回购物车继续操作",
       "previewOnly": "当前未关联购物车商品，可以校验配置并查看价格；从商品购买入口进入后可以保存到购物车。",
       "quoteFailed": "价格计算失败，请稍后重试",
-      "quoted": "配置校验通过，价格已更新"
+      "quoted": "配置校验通过，价格已更新",
+      "loginCompleted": "已登录，正在返回官网结算。",
+      "websiteRedirect": "正在进入官网购买页面。",
+      "websiteUnavailable": "官网暂时不可用，请稍后重试。"
     },
-    "title": "商品购买配置"
+    "title": "商品购买配置",
+    "handoff": {
+      "restored": "官网选择已恢复，请补全配置并重新查看价格后加入购物车。",
+      "failed": "官网配置无法恢复，可能已过期、被领取或商品已变更。请返回官网重新选择；未使用默认配置代替。",
+      "quantity": "商品数量",
+      "cycles": "购买周期数",
+      "term": "结算周期（先校验并查看价格）",
+      "selectTerm": "请选择当前可用的结算周期，并检查购买周期数。",
+      "cartFailed": "未能确认加车结果，请先查看购物车，避免重复添加。",
+      "add": "加入购物车"
+    }
   },
   "refunds": {
     "actions": {
@@ -3168,6 +3052,18 @@
         "emptyEntries": "暂无佣金流水。"
       }
     }
+  },
+  "serverRenewal": {
+    "title": "续费",
+    "cycles": "续费周期数",
+    "help": "按当前商品价格核价，保留现有服务器配置。",
+    "quote": "核算续费价格",
+    "confirm": "确认并前往付款",
+    "cancel": "取消",
+    "failed": "未能确认续费，请重试。报价过期时请重新核价。",
+    "amount": "应付金额",
+    "expiry": "续费后到期",
+    "payment": "确认后生成账单，付款成功后才会延长服务期限。"
   },
   "servers": {
     "actions": {
@@ -3402,7 +3298,7 @@
       "accepted": "转移申请已受理。如果邮箱对应符合条件的客户，对方会在客户中心看到待确认记录。",
       "confirm": "确认接收",
       "confirmDescription": "确认后，服务器 {serviceNo} 将转入你的账号；原客户的历史账单、合同、发票和工单不会转给你，历史支付和退款也仍归原客户。已经付款、仍有效且只属于这台服务器的快照和备份会一同转入，自动续费会关闭，需要时请你重新开启。",
-      "confirmFailed": "当前无法完成转移。申请可能已过期，或服务器还有未付款的续费或增购账单、退款、操作或合同正在处理。",
+      "confirmFailed": "当前无法完成转移。申请可能已过期，或服务器还有未付款的续费或增购账单、退款、操作正在处理。",
       "confirmTitle": "确认接收这台服务器",
       "confirmed": "服务器已转入你的账号。",
       "description": "请输入接收方已经注册并完成实名的邮箱。无论邮箱是否存在，系统都会显示相同的受理结果；对方须在 24 小时内确认。转移前请先处理完未付款的续费和增购账单，转移完成后原自动续费会关闭。",
@@ -3658,8 +3554,340 @@
     "paymentRequired": "订单已生成，请完成付款后等待流量到账",
     "created": "流量追加任务已提交"
   },
+  "verificationConsent": {
+    "heading": "认证授权记录",
+    "subtitle": "查看实名与企业认证的授权记录，管理后续资料处理授权。",
+    "evidenceTitle": "撤回不会抹掉依法必须保留的记录",
+    "evidenceDescription": "撤回只停止依赖该授权的后续处理。税务、争议、审计或法律要求保留的证据，会在期限结束且确认没有继续保留理由后再处理。",
+    "loadFailed": "授权记录加载失败，请稍后重试",
+    "retry": "重新加载",
+    "consentTitle": "我的授权",
+    "consentEmpty": "当前没有授权记录",
+    "assessment": {
+      "personal_verification": "个人实名认证",
+      "sensitive_personal_information": "敏感个人信息",
+      "enterprise_verification": "企业实名认证",
+      "tax_invoice": "税务发票"
+    },
+    "consent": {
+      "granted": "已同意",
+      "withdrawn": "已撤回"
+    },
+    "withdraw": {
+      "action": "撤回未来授权",
+      "title": "确认撤回未来授权？",
+      "description": "撤回后，依赖这项授权的新处理会停止；已经形成且依法需要保留的证据不会立即删除。",
+      "confirm": "确认撤回"
+    },
+    "messages": {
+      "withdrawn": "未来授权已撤回"
+    },
+    "common": {
+      "cancel": "取消"
+    }
+  },
   "cancel": "取消",
   "confirm": "确认",
   "collapse": "收起",
-  "expand": "展开"
+  "expand": "展开",
+  "contracts": {
+    "center": {
+      "menu": "合同与经办人",
+      "title": "合同与经办人",
+      "contracts": "我的合同",
+      "signers": "签署经办人",
+      "enterpriseRequired": "企业认证通过后才能维护签署经办人。"
+    },
+    "mine": {
+      "menu": "我的合同",
+      "title": "我的合同",
+      "eyebrow": "签署与存证",
+      "heading": "查看并完成你的电子合同",
+      "subtitle": "每份合同都保留固定的订单、金额、签署人和七天签署期限。腾讯页面返回或浏览器提示不能代替服务端权威结果。",
+      "refresh": "刷新列表",
+      "returnTitle": "已返回本系统，请重新检查结果",
+      "returnDescription": "返回本页面不代表签署已经完成。请在对应合同上点击“重新检查签署结果”，系统只采用腾讯的权威查询结果。",
+      "authorityTitle": "签署结果以服务端查询为准",
+      "authorityDescription": "“重新检查”只读取已有流程，不会重复发起合同；“重新获取签署入口”只生成新的 30 分钟入口，不会创建第二份合同，也不会延长七天期限。",
+      "loadFailed": "暂时无法读取合同列表，请稍后重试。",
+      "retry": "重新读取",
+      "empty": "目前没有需要查看的合同",
+      "loadMore": "加载更多合同",
+      "failedDescription": "这份合同当前无法由客户自行重新发起新流程。如页面仍提供重试，只会为原合同、原流程重新生成一条短期签署入口。",
+      "status": {
+        "processing": "处理中",
+        "completed": "已完成",
+        "failed": "失败"
+      },
+      "fields": {
+        "order": "订单编号",
+        "amount": "合同金额",
+        "created": "创建时间",
+        "deadline": "签署截止时间"
+      },
+      "actions": {
+        "openSigning": "前往腾讯签署",
+        "retrySigning": "重新获取签署入口",
+        "recheck": "重新检查签署结果"
+      },
+      "messages": {
+        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
+        "invalidSigningLink": "服务端没有返回安全的 HTTPS 签署入口，本次未打开外部页面。",
+        "openFailed": "暂时无法取得签署入口，请稍后重试。",
+        "recheckFailed": "暂时无法重新检查签署结果，请稍后重试。",
+        "rechecked": "已取得最新权威状态，合同仍在处理中。",
+        "completed": "腾讯权威状态已确认合同完成。"
+      }
+    },
+    "signers": {
+      "menu": "合同签署经办人",
+      "title": "合同签署经办人",
+      "eyebrow": "企业合同安全",
+      "heading": "维护可以代表企业签署合同的人员",
+      "subtitle": "只有本人实名和手机号都验证通过、且当前未停用的经办人，才会出现在后台发起合同时的选择名单中。",
+      "add": "添加经办人",
+      "separationTitle": "这里不是普通通知联系人",
+      "separationDescription": "通知联系人只接收消息，不能自动代表企业签合同。合同签署经办人必须在这里单独添加并完成两项验证。",
+      "returnTitle": "请主动检查实名结果",
+      "returnDescription": "从实名页面返回不代表已经通过。请找到对应经办人并点击“检查实名结果”，以服务端查询结果为准。",
+      "loadFailed": "暂时无法读取合同签署经办人，请稍后重试。",
+      "enterpriseOnlyTitle": "仅企业客户需要维护签署经办人",
+      "enterpriseOnlyDescription": "当前账号是个人客户，不需要设置企业合同签署经办人。个人合同由本人按签署流程完成。",
+      "retry": "重新读取",
+      "empty": "还没有合同签署经办人",
+      "candidateReady": "可用于新合同",
+      "fields": {
+        "identity": "证件",
+        "phone": "手机号",
+        "updated": "最近更新"
+      },
+      "status": {
+        "identity": {
+          "unverified": "未实名",
+          "verifying": "实名进行中",
+          "verified": "实名已通过",
+          "review_required": "需要人工核对",
+          "expired": "实名已过期"
+        },
+        "phone": {
+          "unverified": "未验证",
+          "verifying": "验证码已发送",
+          "verified": "手机号已验证"
+        },
+        "signer": {
+          "active": "验证未完成",
+          "disabled": "已停用"
+        }
+      },
+      "identity": {
+        "title": "本人实名认证",
+        "pending": "待完成",
+        "done": "已通过",
+        "start": "前往本人实名",
+        "check": "检查实名结果"
+      },
+      "phone": {
+        "title": "手机号验证",
+        "pending": "待验证",
+        "done": "已验证",
+        "start": "验证手机号",
+        "modalTitle": "验证经办人手机号",
+        "channelTitle": "验证码由平台统一短信通道发送",
+        "channelDescription": "本功能不会保存自己的短信账号或模板。后台未配置可用短信通道和本用途模板时会明确失败，不会假装发送成功。",
+        "humanCheck": "先完成人机验证",
+        "image": "图片题",
+        "accessible": "文字题",
+        "imageAlt": "人机验证图片",
+        "answer": "请输入题目答案",
+        "sendCode": "验证并发送短信验证码",
+        "unsupportedChallenge": "当前人机验证方式无法在此页面完成，请联系管理员检查验证服务配置。",
+        "uncertainTitle": "本次没有得到安全的发送结果",
+        "uncertainDescription": "系统不会自动重复发送。请确认短信通道后，主动获取一道新题再重新发送。",
+        "newChallenge": "获取新题",
+        "codeTitle": "验证码已请求发送",
+        "codeDescription": "请填写发送到 {destination} 的 6 位验证码，有效期至 {expires}。",
+        "codePlaceholder": "6 位短信验证码",
+        "verifyCode": "确认手机号"
+      },
+      "create": {
+        "title": "添加合同签署经办人",
+        "notice": "请填写经办人本人的真实资料",
+        "description": "资料提交后只显示脱敏内容。经办人仍需分别完成人脸实名认证和手机号验证，不能直接进入合同候选名单。",
+        "name": "本人姓名",
+        "identityNo": "本人身份证号",
+        "phone": "本人手机号",
+        "consent": "我已取得经办人同意，并确认这些资料仅用于合同签署身份核验。",
+        "cancel": "取消",
+        "submit": "确认添加"
+      },
+      "disable": {
+        "action": "停用",
+        "title": "停用这个合同签署经办人？",
+        "description": "停用后不能再用于新合同，但已经生成的合同仍保留原来冻结的签署人，不会被改写。",
+        "cancel": "暂不停用",
+        "confirm": "确认停用"
+      },
+      "messages": {
+        "created": "经办人已添加，请继续完成两项验证。",
+        "popupBlocked": "浏览器阻止了新窗口，请允许弹出窗口后重试。",
+        "identityVerified": "本人实名认证已通过。",
+        "identityChecked": "已取得最新实名状态。",
+        "phoneVerified": "手机号验证已通过。",
+        "disabled": "经办人已停用，不会再进入新合同候选名单。"
+      }
+    }
+  },
+  "notifications": {
+    "channelChoices": "各类消息的接收方式",
+    "consentOptedIn": "已同意",
+    "consentOptedOut": "已退订",
+    "consentUnknown": "状态未知",
+    "disabled": "未启用",
+    "enabled": "已启用",
+    "marketingConsents": "营销消息授权",
+    "marketingDescription": "关闭某个接收方式就是退订；只有当前授权政策完整时，才能再次开启。",
+    "marketingEditingUnavailable": "请在下方的营销消息授权中退订或恢复接收。",
+    "marketingEvidenceMissing": "当前授权信息不完整，为避免记错你的选择，这项设置已锁定。",
+    "marketingTitle": "选择营销消息的接收方式",
+    "marketingToggleLabel": "通过{channel}接收营销消息",
+    "preferenceRetryReady": "已读取最新设置，并保留了你的选择。请再次保存。",
+    "preferenceSaveFailed": "没有保存成功，你刚才的选择已保留。请先读取最新设置。",
+    "preferenceSaved": "已保存",
+    "preferenceToggleLabel": "{category}的{channel}接收开关",
+    "preferenceVersion": "设置版本",
+    "preferredLocale": "消息语言",
+    "preferencesDescription": "普通消息可逐项开启或关闭，也可以退订或恢复营销消息并设置免打扰时间。安全消息始终保留。",
+    "preferencesEmpty": "还没有单独保存过接收方式",
+    "preferencesLoadFailed": "暂时无法读取通知偏好，请稍后重试",
+    "preferencesTitle": "通知接收设置",
+    "quietHours": "免打扰时间",
+    "quietHoursContactAmbiguous": "当前有多个营销联系方式，服务端还不能明确本次应使用哪一个，因此免打扰时间暂时锁定。",
+    "quietHoursEnabledLabel": "启用免打扰时间",
+    "quietHoursEnd": "结束时间",
+    "quietHoursEvidenceMissing": "当前营销授权信息不完整，暂时不能安全修改免打扰时间。",
+    "quietHoursInvalid": "请填写有效的时区、开始时间和结束时间。",
+    "quietHoursMissing": "当前没有可用的免打扰设置，本页没有替你新建默认值。",
+    "quietHoursStart": "开始时间",
+    "quietHoursTimezone": "所在时区（城市/地区）",
+    "refreshLatest": "读取最新设置",
+    "saveAgain": "再次保存",
+    "saveQuietHours": "保存免打扰时间",
+    "securityRequired": "为了账号和服务安全，这类通知不能关闭。",
+    "categories": {
+      "account": "账号消息",
+      "billing": "账务消息",
+      "marketing": "营销消息",
+      "security": "安全消息",
+      "service": "服务消息",
+      "support": "工单消息"
+    },
+    "channels": {
+      "email": "邮件",
+      "in_app": "站内信",
+      "sms": "短信",
+      "wechat_official": "微信公众号"
+    },
+    "completedAt": "完成于",
+    "deliveryHistory": "发送记录",
+    "empty": "还没有通知发送记录",
+    "loadFailed": "暂时无法读取通知发送记录，请稍后重试",
+    "menu": "通知中心",
+    "nextPage": "下一页",
+    "pageNumber": "第 {page} 页",
+    "preferences": "接收偏好",
+    "previousPage": "上一页",
+    "queuedAt": "创建于",
+    "retry": "重试",
+    "statuses": {
+      "cancelled": "已取消",
+      "delivered": "已送达",
+      "failed": "发送失败",
+      "manual_review": "等待人工确认",
+      "manual_unknown_closed": "人工确认已结束",
+      "preference_blocked": "已按你的偏好跳过",
+      "queued": "等待发送",
+      "result_unknown": "结果待确认",
+      "retry_wait": "等待重试",
+      "sending": "发送中",
+      "submitted": "已交给发送渠道",
+      "succeeded": "发送成功",
+      "template_error": "内容准备失败"
+    }
+  },
+  "privacy": {
+    "menu": "隐私与授权",
+    "title": "隐私与授权",
+    "eyebrow": "你的资料，由你了解和管理",
+    "heading": "隐私与授权",
+    "subtitle": "查看资料用途、保留期限和当前授权，也可以申请导出或删除本人的资料。",
+    "evidenceTitle": "撤回不会抹掉依法必须保留的记录",
+    "evidenceDescription": "撤回只停止依赖该授权的后续处理。合同、税务、争议、审计或法律要求保留的证据，会在期限结束且确认没有继续保留理由后再处理。",
+    "loadFailed": "隐私信息加载失败，请稍后重试",
+    "retry": "重新加载",
+    "noticeTitle": "我们如何处理资料",
+    "noticeEmpty": "当前没有已发布的资料处理说明",
+    "consentTitle": "我的授权",
+    "consentEmpty": "当前没有授权记录",
+    "requestTitle": "我的申请",
+    "requestEmpty": "还没有导出或删除申请",
+    "days": "天",
+    "fields": {
+      "purpose": "处理目的",
+      "necessity": "为什么需要",
+      "impact": "可能影响",
+      "recipients": "资料接收方",
+      "storage": "保存位置",
+      "retention": "保留期限",
+      "rights": "如何行使权利"
+    },
+    "assessment": {
+      "personal_verification": "个人实名认证",
+      "sensitive_personal_information": "敏感个人信息",
+      "enterprise_verification": "企业实名认证",
+      "electronic_contract": "电子合同",
+      "tax_invoice": "税务发票"
+    },
+    "consent": {
+      "granted": "已同意",
+      "withdrawn": "已撤回"
+    },
+    "withdraw": {
+      "action": "撤回未来授权",
+      "title": "确认撤回未来授权？",
+      "description": "撤回后，依赖这项授权的新处理会停止；已经形成且依法需要保留的证据不会立即删除。",
+      "confirm": "确认撤回"
+    },
+    "request": {
+      "export": "申请导出资料",
+      "delete": "申请删除资料",
+      "exportDescription": "提交后，系统会核对并准备仅属于你的资料。",
+      "deleteDescription": "提交后，系统会先核对合同、税务、争议、审计和法律保留要求，不会绕过这些要求立即删除。",
+      "submit": "确认提交"
+    },
+    "requestType": {
+      "export": "资料导出",
+      "delete": "资料删除"
+    },
+    "requestStatus": {
+      "submitted": "已提交",
+      "processing": "处理中",
+      "retention_blocked": "暂需保留",
+      "completed": "已完成",
+      "rejected": "未通过"
+    },
+    "hold": {
+      "contract": "合同证据仍需保留",
+      "tax": "税务证据仍需保留",
+      "dispute": "争议处理仍需保留",
+      "audit": "审计仍需保留",
+      "legal_hold": "法律要求仍需保留"
+    },
+    "messages": {
+      "withdrawn": "未来授权已撤回",
+      "requested": "申请已提交"
+    },
+    "common": {
+      "cancel": "取消"
+    }
+  }
 }

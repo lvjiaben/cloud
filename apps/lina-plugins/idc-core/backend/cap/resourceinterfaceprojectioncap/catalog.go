@@ -6,6 +6,7 @@ package resourceinterfaceprojectioncap
 import (
 	"context"
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 )
 
 // CatalogPeriod is a connector-proven billing interval, never a display label.
@@ -42,7 +43,8 @@ type CatalogPage struct {
 
 // CatalogProductQuery identifies exactly one product selected by an operator.
 type CatalogProductQuery struct {
-	Reference string `json:"reference"`
+	IncludePricePreview bool   `json:"includePricePreview,omitempty"`
+	Reference           string `json:"reference"`
 }
 
 // CatalogPrice is an explicit base/option component in major currency units.
@@ -111,6 +113,9 @@ type CatalogDetail struct {
 // The catalog owner persists this relationship through the imported version's
 // frozen fulfillment binding and configuration revision, not in guest JSON.
 type CatalogReadEvidence struct {
+	// SaleImportProtocol is stamped only by the resource owner after exact
+	// provider metadata admission; guests cannot supply this provenance.
+	SaleImportProtocol             productfulfillmentcap.SaleImportProtocol `json:",omitempty"`
 	InterfaceInstanceNo            string
 	OwnerID                        string
 	ResourceChannelRef             string
@@ -137,4 +142,17 @@ type CatalogSource interface {
 type CatalogConfigurationSource interface {
 	EvaluateCatalogConfiguration(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.ConfigurationEvaluation, error)
 	ReadCatalogBillingTerms(context.Context, string, channelcommercecap.ConfigurationInput) (*channelcommercecap.BillingTerms, error)
+}
+
+// ImportedBillingRequest is an owner-to-owner read authorized through a frozen
+// product binding. It cannot be supplied by guest JSON or a public HTTP route.
+type ImportedBillingRequest struct {
+	Evidence CatalogReadEvidence
+	Input    channelcommercecap.ConfigurationInput
+}
+
+// ImportedBillingSource preserves supplier credentials inside the resource owner.
+// Core proves the published product and frozen read before making this bounded read.
+type ImportedBillingSource interface {
+	ReadImportedBillingTerms(context.Context, ImportedBillingRequest) (*channelcommercecap.BillingTerms, error)
 }

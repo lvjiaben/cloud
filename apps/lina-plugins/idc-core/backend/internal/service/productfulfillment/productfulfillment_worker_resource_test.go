@@ -22,7 +22,7 @@ type resourceSourceStub struct {
 	err     error
 }
 
-func (stub *resourceSourceStub) CreateTask(_ context.Context, request provisionresourcecap.TaskRequest) (*provisionresourcecap.Task, error) {
+func (stub *resourceSourceStub) CreateTask(_ context.Context, request provisionresourcecap.TaskRequest, _ ...*provisionresourcecap.RecoveryConfiguration) (*provisionresourcecap.Task, error) {
 	stub.created = append(stub.created, request)
 	return stub.task, stub.err
 }
@@ -34,6 +34,10 @@ func (stub *resourceSourceStub) ReadTask(_ context.Context, request provisionres
 
 func (*resourceSourceStub) ReportOutcome(context.Context, provisionresourcecap.OutcomeReport) error {
 	return nil
+}
+
+func (stub *resourceSourceStub) RecoverRejected(ctx context.Context, request provisionresourcecap.TaskReadRequest) (*provisionresourcecap.Task, error) {
+	return stub.CreateTask(ctx, request.Request)
 }
 
 func TestResourceOwnerQueryFirstDoesNotCreateTask(t *testing.T) {
@@ -147,4 +151,75 @@ func validResourceTask(status provisionresourcecap.TaskStatus) *provisionresourc
 		task.FailureCode = "resource.needs_attention"
 	}
 	return task
+}
+
+func (*resourceSourceStub) InspectRecovery(context.Context, provisionresourcecap.RecoverySelectionRequest) (*provisionresourcecap.RecoveryEditor, error) {
+	return nil, provisionresourcecap.ErrSourceUnavailable
+}
+func (*resourceSourceStub) ValidateRecovery(context.Context, provisionresourcecap.RecoverySelectionRequest) (*provisionresourcecap.RecoveryConfiguration, error) {
+	return nil, provisionresourcecap.ErrSourceUnavailable
+}
+
+func (*resourceSourceStub) VerifyNonAcceptance(context.Context, provisionresourcecap.NonAcceptanceVerification) error {
+	return provisionresourcecap.ErrTaskConflict
+}
+
+// Local preparation evidence is informational and must not change retry or write-boundary decisions.
+func TestResourceOwnerPreparationErrorRetainsSafeEvidenceWithoutChangingOutcome(t *testing.T) {
+	stub := &resourceSourceStub{err: provisionresourcecap.WrapPreparationFailure(provisionresourcecap.PreparationFailureTaskInput, errors.New("password=must-never-leak"))}
+	worker := &fulfillmentWorker{resourceSource: stub}
+	claimed, request := resourceWorkerFixture(productfulfillmentcap.ActionSubmit)
+	invocation := worker.invokeResourceOwner(context.Background(), claimed, request)
+	if !invocation.failed || invocation.providerBoundaryCrossed || invocation.result != nil {
+		t.Fatal("local diagnostic changed fulfillment semantics")
+	}
+	if invocation.failureCode != string(provisionresourcecap.PreparationFailureTaskInput) || invocation.responseExcerpt == "" {
+		t.Fatal("pre-task owner error lost its diagnostic")
+	}
+	if strings.Contains(invocation.responseExcerpt, "must-never-leak") {
+		t.Fatal("private owner cause leaked")
+	}
+	if sanitizeExecutionDiagnostic(&ExecutionDiagnostic{FailureCode: invocation.failureCode, ResponseExcerpt: invocation.responseExcerpt}).ResponseExcerpt == "" {
+		t.Fatal("reviewed preparation evidence was dropped from staff projection")
+	}
+}
+
+func TestResourceFrozenRequestFailureRetainsDiagnosticBeforeOwnerCall(t *testing.T) {
+	for _, action := range []productfulfillmentcap.Action{productfulfillmentcap.ActionSubmit, productfulfillmentcap.ActionQuery} {
+		t.Run(string(action), func(t *testing.T) {
+			stub := &resourceSourceStub{}
+			worker := &fulfillmentWorker{resourceSource: stub}
+			claimed, request := resourceWorkerFixture(action)
+			request.ProductConfiguration = json.RawMessage(`{"password":"private-broken-snapshot"`)
+			if action == productfulfillmentcap.ActionQuery {
+				claimed.PreviousExternalReference = "previous-resource-task"
+				request.PreviousExternalReference = claimed.PreviousExternalReference
+			}
+			invocation := worker.invokeResourceOwner(t.Context(), claimed, request)
+			if !invocation.failed || invocation.providerBoundaryCrossed || invocation.result != nil || len(stub.created) != 0 || len(stub.read) != 0 {
+				t.Fatal("invalid frozen request reached the owner or changed failure semantics")
+			}
+			if invocation.failureCode != string(provisionresourcecap.PreparationFailureRequest) || invocation.responseExcerpt == "" || strings.Contains(invocation.responseExcerpt, "private-broken") {
+				t.Fatal("local frozen request failure has no safe diagnostic")
+			}
+		})
+	}
+}
+
+// An unavailable local progress read after acceptance never becomes an absence
+// result, never creates a task, and preserves the bounded observation phase.
+func TestAcceptedResourceReadFailurePreservesWriteFence(t *testing.T) {
+	stub := &resourceSourceStub{err: errors.New("local owner temporarily unavailable")}
+	worker := &fulfillmentWorker{resourceSource: stub}
+	claim, request := resourceWorkerFixture(productfulfillmentcap.ActionQuery)
+	claim.PreviousExternalReference = "known-task"
+	claim.PreviousPhase = "post_submit_query"
+	claim.PreviousStatus = "running"
+	claim.EntitlementOwnerID = provisionresourcecap.OwnerID
+	claim.QueryAttempts = 20
+	invocation := worker.invokeResourceOwner(t.Context(), claim, request)
+	decision := decideWorkerResult(claim.PreviousStatus, claim.PreviousPhase, claim.Action, invocation.result, invocation.failed, invocation.providerBoundaryCrossed, false, false, resourceWorkerQueryAttempts(claim), 1)
+	if !invocation.failed || !decision.ScheduleNext || decision.PhaseCode != "post_submit_query" || decision.TaskStatus != "running" || len(stub.created) != 0 {
+		t.Fatalf("accepted task lost its observation fence: %+v", decision)
+	}
 }

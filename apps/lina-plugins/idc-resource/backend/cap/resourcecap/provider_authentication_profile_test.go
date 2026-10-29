@@ -104,3 +104,41 @@ func TestProviderCorrelationAcceptsGovernedHTTPSCallback(t *testing.T) {
 		t.Fatalf("governed callback rejected: %v", err)
 	}
 }
+
+func TestConnectorOwnsAPIVersionPrefixForRootAddresses(t *testing.T) {
+	schema := &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "access_token", Type: capmodel.ConfigurationFieldSecret}}}
+	metadata := &capmodel.BusinessExtensionProviderMetadata{Type: DynamicProviderMetadataType, Version: "v1", Values: map[string]any{
+		"providerId": "root-address", "apiPathPrefix": "/v1",
+		"authenticationProfiles": map[string]any{"profiles": map[string]any{"default": map[string]any{"strategy": "per_request_headers", "fields": map[string]any{"access-token": "access_token"}}}},
+	}}
+	if err := ValidateProviderMetadata(metadata, schema); err != nil {
+		t.Fatal(err)
+	}
+	compiled, err := CompileInterfaceSettings(json.RawMessage(`{}`), metadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, endpoint := range []string{"https://supplier.example/W5SHNaHntv/", "https://supplier.example/W5SHNaHntv", "https://supplier.example/W5SHNaHntv/v1/"} {
+		got, err := ResolveInterfaceAPIEndpoint(endpoint, compiled)
+		if err != nil || got != "https://supplier.example/W5SHNaHntv/v1" {
+			t.Fatalf("root normalization %q: got=%q err=%v", endpoint, got, err)
+		}
+	}
+	if _, err := ResolveInterfaceAPIEndpoint("https://supplier.example/W5SHNaHntv/v2", compiled); err == nil {
+		t.Fatal("incompatible explicit API version accepted")
+	}
+	for _, prefix := range []any{"https://other.example/v1", "/../v1", "/v1/other", 12} {
+		metadata.Values["apiPathPrefix"] = prefix
+		if err := ValidateProviderMetadata(metadata, schema); err == nil {
+			t.Fatalf("invalid prefix accepted: %v", prefix)
+		}
+	}
+	public, err := ProjectPublicInterfaceSettings(compiled, true)
+	if err != nil || strings.Contains(string(public), "apiPathPrefix") {
+		t.Fatalf("transport metadata leaked to guest: %s err=%v", public, err)
+	}
+	legacy, err := ResolveInterfaceAPIEndpoint("https://supplier.example/administrator/v1", json.RawMessage(`{}`))
+	if err != nil || legacy != "https://supplier.example/administrator/v1" {
+		t.Fatal("existing API root changed")
+	}
+}

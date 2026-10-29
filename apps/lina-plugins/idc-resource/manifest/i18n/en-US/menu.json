@@ -1,7 +1,13 @@
 {
   "menu": {
-    "plugin:idc-resource:provider-configuration": {
+    "plugin:idc-resource:provider-tools-shortcut": {
+      "title": "Supplier Operations"
+    },
+    "plugin:idc-resource:provider-workspace": {
       "title": "Server Provider Configuration"
+    },
+    "plugin:idc-resource:provider-configuration": {
+      "title": "View Provider Configuration"
     },
     "plugin:idc-resource:provider-configuration:write": {
       "title": "Manage Provider Channels and Pools"
@@ -22,7 +28,7 @@
       "title": "Update Health Policy"
     },
     "plugin:idc-resource:tasks": {
-      "title": "Operations"
+      "title": "Automation task queue"
     },
     "plugin:idc-resource:tasks:query": {
       "title": "View Provider Task Evidence"
@@ -83,6 +89,9 @@
     },
     "plugin:idc-resource:server-management": {
       "title": "Server Management"
+    },
+    "plugin:idc-resource:api-logs": {
+      "title": "Provider API logs"
     }
   }
 }

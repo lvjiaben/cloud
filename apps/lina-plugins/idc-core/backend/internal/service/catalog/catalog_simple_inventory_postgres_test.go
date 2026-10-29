@@ -166,3 +166,40 @@ func simpleInventoryMigrationPath(t *testing.T) string {
 	}
 	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "manifest", "sql", "081-simple-product-version-inventory.sql")
 }
+
+// TestSimpleInventoryReservationsSpanProductSettingsPostgreSQL verifies old
+// orders still consume capacity after a merchant saves new product settings.
+func TestSimpleInventoryReservationsSpanProductSettingsPostgreSQL(t *testing.T) {
+	dsn := strings.TrimSpace(os.Getenv("LINAPRO_IDC_CORE_TEST_DSN"))
+	if dsn == "" {
+		t.Skip("set LINAPRO_IDC_CORE_TEST_DSN")
+	}
+	ctx := context.Background()
+	database := configureFulfillmentPolicyTestDatabase(t, ctx, dsn)
+	if _, err := database.Exec(ctx, `CREATE TABLE plugin_idc_core_catalog_product_version(tenant_id INT DEFAULT 0,version_no TEXT PRIMARY KEY,product_no TEXT);
+ CREATE TABLE plugin_idc_core_catalog_product_version_inventory(version_no TEXT PRIMARY KEY,tracking_enabled BOOL,sellable_quantity BIGINT,version BIGINT,updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP);
+ CREATE TABLE plugin_idc_core_commerce_inventory_reservation(version_no TEXT,reserved_quantity BIGINT,status_code TEXT);
+ INSERT INTO plugin_idc_core_catalog_product_version(version_no,product_no)VALUES('old','same-product'),('current','same-product'),('foreign','another-product');
+ INSERT INTO plugin_idc_core_catalog_product_version_inventory VALUES('current',TRUE,9,1,CURRENT_TIMESTAMP);
+ INSERT INTO plugin_idc_core_commerce_inventory_reservation VALUES('old',2,'held'),('old',3,'committed'),('old',5,'released'),('foreign',100,'held');`); err != nil {
+		t.Fatal(err)
+	}
+	read := func() purchaseQuoteSimpleInventoryRow {
+		t.Helper()
+		var rows []purchaseQuoteSimpleInventoryRow
+		if err := database.GetScan(ctx, &rows, purchaseQuoteSimpleInventorySQL, "current", "current", 2); err != nil || len(rows) != 1 {
+			t.Fatalf("read stock after edit: %v", err)
+		}
+		return rows[0]
+	}
+	first := read()
+	if first.SellableQuantity != 9 || first.ReservedQuantity != 5 {
+		t.Fatalf("old sales were replenished by saving: %+v", first)
+	}
+	if _, err := database.Exec(ctx, `UPDATE plugin_idc_core_commerce_inventory_reservation SET status_code='released' WHERE version_no='old' AND status_code='held'`); err != nil {
+		t.Fatal(err)
+	}
+	if next := read(); next.ReservedQuantity != 3 {
+		t.Fatalf("cancelled old order did not release stock: %+v", next)
+	}
+}

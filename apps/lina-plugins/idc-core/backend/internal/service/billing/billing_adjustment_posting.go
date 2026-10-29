@@ -32,6 +32,8 @@ func (s *serviceImpl) postFinancialAdjustment(
 	var transaction *transactionRow
 	var posting *FinancialAdjustment
 	switch request.AdjustmentTypeCode {
+	case adjustmentTypeBalanceCredit, adjustmentTypeBalanceDebit:
+		transaction, posting, err = s.postCustomerBalanceAdjustment(ctx, request, merchantNo)
 	case adjustmentTypeManualReceipt:
 		transaction, posting, err = s.postManualReceipt(
 			ctx, request, invoice, creditStatement, merchantNo,

@@ -16,6 +16,20 @@ import (
 
 // Common contains content shared by every installed website template.
 type Common struct {
+	HeaderLogoURL             string `json:"headerLogoUrl"`
+	FooterLogoURL             string `json:"footerLogoUrl"`
+	Copyright                 string `json:"copyright"`
+	BusinessQQ                string `json:"businessQq"`
+	CompanyAddress            string `json:"companyAddress"`
+	EnterpriseWechatQRCodeURL string `json:"enterpriseWechatQrCodeUrl"`
+	WechatOfficialQRCodeURL   string `json:"wechatOfficialQrCodeUrl"`
+	TelecomLicenseNumber      string `json:"telecomLicenseNumber"`
+	TelecomLicenseURL         string `json:"telecomLicenseUrl"`
+
+	ICPNumber    string `json:"icpNumber"`
+	ICPURL       string `json:"icpUrl"`
+	PoliceNumber string `json:"policeNumber"`
+	PoliceURL    string `json:"policeUrl"`
 	SiteName     string `json:"siteName"`
 	SiteTitle    string `json:"siteTitle"`
 	CompanyName  string `json:"companyName"`

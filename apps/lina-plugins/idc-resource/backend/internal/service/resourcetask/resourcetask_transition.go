@@ -31,6 +31,8 @@ type LeaseRef struct {
 }
 
 // TransitionInput records a submission outcome while the exact lease is live.
+// Accepted/running results with nil NextAt request the owner's short schedule
+// from current database time; explicit schedules retain their existing bounds.
 type TransitionInput struct {
 	Lease         LeaseRef
 	To            Status
@@ -77,6 +79,10 @@ func (s *Store) Transition(ctx context.Context, input TransitionInput) error {
 		}
 		if err = ValidateTransition(Status(row.StatusCode), input.To, input.Evidence); err != nil {
 			return err
+		}
+		if input.NextAt == nil && (input.To == StatusAccepted || input.To == StatusRunning) {
+			next := nextObservationAt(row.TaskNo, 1, now)
+			input.NextAt = &next
 		}
 		if err = validateTransitionDetails(input, row, now); err != nil {
 			return err
@@ -136,6 +142,7 @@ func loadLiveSubmittingTask(
 			columns.LocalResourceNo,
 			columns.ChannelNo,
 			columns.PoolNo,
+			columns.OwnerMetadata,
 			columns.StatusCode,
 			columns.AttemptCount,
 			columns.MaxAttempts,
@@ -396,6 +403,11 @@ func persistLeasedTransition(
 		FailureCode:    input.FailureCode,
 		FailureSummary: input.FailureText,
 		Version:        gdb.Raw(columns.Version + " + 1"),
+	}
+	// Only the lease-fenced transition matrix can persist this proof. A later
+	// owner admission may authorize a new attempt, never replay an unknown one.
+	if input.Evidence.NonAcceptanceProven {
+		data.OwnerMetadata = gdb.Raw(columns.OwnerMetadata + " || jsonb_build_object('nonAcceptanceAttempt', " + columns.AttemptCount + ")")
 	}
 	if input.NextAt != nil {
 		next := input.NextAt.UTC()

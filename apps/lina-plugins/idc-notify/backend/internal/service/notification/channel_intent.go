@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -145,14 +144,6 @@ func (s *serviceImpl) prepareConfigureIntent(
 		return nil, err
 	}
 	return &prepared, nil
-}
-
-func wecomCorpID(configuration string) string {
-	var values map[string]string
-	if json.Unmarshal([]byte(configuration), &values) != nil {
-		return ""
-	}
-	return values["corp_id"]
 }
 
 func (s *serviceImpl) prepareClearIntent(
@@ -502,7 +493,7 @@ func (s *serviceImpl) finalizeChannelIntent(ctx context.Context, operationNo str
 			}
 			operation, reason = "configure", "merchant_configuration"
 			targetStatus := string(ChannelEnabled)
-			if intent.ChannelCode == "wechat_official" || ChannelStatus(intent.BaseStatusCode) == ChannelDisabled {
+			if ChannelStatus(intent.BaseStatusCode) == ChannelDisabled {
 				targetStatus = string(ChannelDisabled)
 			}
 			data = modeldo.Channel{
@@ -514,18 +505,13 @@ func (s *serviceImpl) finalizeChannelIntent(ctx context.Context, operationNo str
 				ConfigurationGeneration: gdb.Raw("configuration_generation + 1"),
 				ConfigurationVersion:    gdb.Raw("configuration_version + 1"),
 			}
-			if intent.ChannelCode == "wechat_official" {
-				data.CallbackVerifiedGeneration = 0
-				data.CallbackVerifiedAt = gdb.Raw("NULL")
-			}
 		case channelIntentClear:
 			operation, reason = "clear", "merchant_clear_configuration"
 			data = modeldo.Channel{
 				ProviderCode: gdb.Raw("NULL"), StatusCode: string(ChannelUnconfigured), BalanceState: channelBalanceState(intent.ChannelCode),
 				NonSecretConfiguration: gdb.Raw("'{}'::jsonb"), CredentialSecretRef: gdb.Raw("NULL"),
 				CredentialMaskedTail: "", CredentialUpdatedAt: gdb.Raw("NULL"), DisabledAt: gdb.Raw("NULL"),
-				ConfigurationVersion: gdb.Raw("configuration_version + 1"), CallbackVerifiedGeneration: 0,
-				CallbackVerifiedAt: gdb.Raw("NULL"),
+				ConfigurationVersion: gdb.Raw("configuration_version + 1"),
 			}
 		default:
 			return bizerr.NewCode(CodeConflict)
@@ -537,16 +523,6 @@ func (s *serviceImpl) finalizeChannelIntent(ctx context.Context, operationNo str
 			Where("status_code", string(ChannelConfiguring)).Data(data).Update()
 		if updateErr != nil || requireOne(updated) != nil {
 			return firstChannelIntentError(updateErr, CodeConflict)
-		}
-		if intent.ChannelCode == "wechat_work" {
-			previousCorpID := wecomCorpID(channel.NonSecretConfiguration)
-			currentCorpID := ""
-			if intent.OperationCode != channelIntentClear {
-				currentCorpID = wecomCorpID(intent.DesiredNonSecretConfig)
-			}
-			if err = s.InvalidateWeComBindingsForCorpChange(ctx, previousCorpID, currentCorpID, intent.ActorUserID); err != nil {
-				return err
-			}
 		}
 		if err = s.appendChannelAudit(ctx, intent.ActorUserID, intent.ChannelCode, operation, reason,
 			intent.BaseVersion, 0, intent.OperationNo); err != nil {

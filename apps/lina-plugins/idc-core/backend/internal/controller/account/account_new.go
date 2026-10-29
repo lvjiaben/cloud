@@ -10,6 +10,7 @@ import (
 	"lina-plugin-idc-core/backend/internal/service/invoiceprofile"
 	"lina-plugin-idc-core/backend/internal/service/marketing"
 	"lina-plugin-idc-core/backend/internal/service/purchaseconfigurationfile"
+	"lina-plugin-idc-core/backend/internal/service/purchaseserverlogin"
 	"lina-plugin-idc-core/backend/internal/service/renewal"
 	"lina-plugin-idc-core/backend/internal/service/serveroperation"
 	"lina-plugin-idc-core/backend/internal/service/sshkey"
@@ -28,6 +29,7 @@ type ControllerV1 struct {
 	sshKeys               sshkey.Service
 	invoiceProfiles       invoiceprofile.Service
 	purchaseFiles         purchaseconfigurationfile.Service
+	serverLogins          purchaseserverlogin.Service
 	servers               serveroperation.Directory
 	serverOperations      serveroperation.AccountService
 	accessoryPricing      serveroperation.AccessoryPricing
@@ -99,13 +101,11 @@ func BindPurchaseConfigurationFiles(controller *ControllerV1, files purchaseconf
 	return nil
 }
 
-func BindInvoiceProfiles(controller *ControllerV1, profiles invoiceprofile.Service) error {
-	if controller == nil || profiles == nil {
-		return gerror.New("account controller invoice-profile binding requires both parties")
+// BindPurchaseServerLogins installs the same registry used by cart creation.
+func BindPurchaseServerLogins(controller *ControllerV1, service purchaseserverlogin.Service) error {
+	if controller == nil || service == nil || controller.serverLogins != nil {
+		return gerror.New("account server login binding requires one unbound controller and service")
 	}
-	if controller.invoiceProfiles != nil {
-		return gerror.New("account controller invoice-profile service is already bound")
-	}
-	controller.invoiceProfiles = profiles
+	controller.serverLogins = service
 	return nil
 }

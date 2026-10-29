@@ -21,9 +21,9 @@
   "plugin.idc-core.addons.paid": "付款成功，附加商品已进入交付队列",
   "plugin.idc-core.addons.another": "继续购买",
   "plugin.idc-core.addons.failed": "操作未完成，请检查提示后重试；已生成的订单会保留，不会重复扣款。",
-  "plugin.idc-core.addons.adminTitle": "附加商品",
+  "plugin.idc-core.addons.adminTitle": "可选配套商品",
   "plugin.idc-core.addons.adminHint": "选择客户可以为本商品的有效服务单独购买的商品。按各自价格和周期收费，付款后进入人工交付队列。",
-  "plugin.idc-core.addons.search": "搜索并勾选附加商品，最多100个",
-  "plugin.idc-core.addons.save": "保存附加商品",
+  "plugin.idc-core.addons.search": "搜索并勾选配套商品",
+  "plugin.idc-core.addons.save": "保存配套商品",
   "plugin.idc-core.addons.saved": "附加商品已保存"
 }

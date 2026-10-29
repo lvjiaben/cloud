@@ -9,7 +9,7 @@ type ManagementCreditPolicyIntent struct {
 	RequestNo                string `json:"requestNo" v:"required|min-length:8|max-length:128" dc:"Stable request number shared by proof issuance and execution" eg:"credit-policy-01J2"`
 	CurrencyCode             string `json:"currencyCode" v:"required|regex:^[A-Z]{3}$" dc:"Exact configured policy currency" eg:"CNY"`
 	MaximumLimitMinor        string `json:"maximumLimitMinor" v:"required|regex:^[1-9][0-9]{0,15}$" dc:"Maximum permitted account limit in decimal minor units" eg:"1000000"`
-	DualReviewThresholdMinor string `json:"dualReviewThresholdMinor" v:"required|regex:^[1-9][0-9]{0,15}$" dc:"Limit requiring two distinct reviewers in decimal minor units" eg:"500000"`
+	DualReviewThresholdMinor string `json:"dualReviewThresholdMinor" v:"regex:^$|^[1-9][0-9]{0,15}$" dc:"Optional historical threshold metadata; defaults to maximumLimitMinor and does not require a second reviewer" eg:"500000"`
 	BillingDay               int    `json:"billingDay" v:"required|min:1|max:28" dc:"Merchant-timezone monthly billing day" eg:"10"`
 	RepaymentPeriodDays      int    `json:"repaymentPeriodDays" v:"required|min:1|max:365" dc:"Default repayment period in days" eg:"15"`
 	GracePeriodDays          int    `json:"gracePeriodDays" v:"min:0|max:365" dc:"Default delinquency grace period in days" eg:"3"`
@@ -32,7 +32,7 @@ type ManagementCreditPolicyProofRes struct {
 type ManagementCreditPolicyConfigureReq struct {
 	g.Meta `path:"/admin/billing/credit/policies" method:"post" tags:"IDC Credit Management" summary:"Configure a credit policy" dc:"Re-authorize and consume the exact-preview proof before appending one immutable currency-local policy revision." permission:"idc:admin:billing:credit-policy:write"`
 	ManagementCreditPolicyIntent
-	ProofToken string `json:"proofToken" v:"required|max-length:4096" dc:"Opaque proof issued for this exact policy preview" eg:"opaque-proof"`
+	ProofToken string `json:"proofToken" v:"max-length:4096" dc:"Optional exact-policy proof; current action permission is sufficient" eg:"opaque-proof"`
 }
 
 // ManagementCreditPolicyConfigureRes returns the committed immutable policy revision.

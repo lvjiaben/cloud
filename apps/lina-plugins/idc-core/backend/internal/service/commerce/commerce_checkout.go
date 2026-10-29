@@ -9,7 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
+
 	"regexp"
 	"sort"
 	"strings"
@@ -19,19 +19,20 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
+
 	"lina-plugin-idc-core/backend/cap/idccap"
 	"lina-plugin-idc-core/backend/internal/dao"
 	"lina-plugin-idc-core/backend/internal/model/do"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"lina-plugin-idc-core/backend/internal/service/billing"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+
 	"lina-plugin-idc-core/backend/internal/service/outbox"
 	"lina-plugin-idc-core/backend/internal/service/principal"
 )
 
 const (
 	maximumCheckoutFulfillmentUnits = 1000
+	checkoutProductActive           = "active"
 )
 
 var checkoutIdempotencyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$`)
@@ -53,9 +54,9 @@ type Checkout struct {
 	CurrencyCode     string
 	ItemCount        int
 	TotalAmountMinor int64
-	RequiresContract bool
-	PaymentDueAt     time.Time
-	Reused           bool
+
+	PaymentDueAt time.Time
+	Reused       bool
 }
 
 type checkoutInput struct {
@@ -65,14 +66,14 @@ type checkoutInput struct {
 }
 
 type checkoutAuthority struct {
-	customerNo         string
-	userID             int
-	sourceCode         string
-	assistedRequestNo  *string
-	paymentTermCode    string
-	paymentDueAt       *time.Time
-	paymentDueSeconds  int
-	contractOverride   contractpolicy.Rule
+	customerNo        string
+	userID            int
+	sourceCode        string
+	assistedRequestNo *string
+	paymentTermCode   string
+	paymentDueAt      *time.Time
+	paymentDueSeconds int
+
 	channelAttribution *channelCheckoutAttribution
 }
 
@@ -93,12 +94,12 @@ type checkoutGenericInventoryFact struct {
 }
 
 type checkoutRows struct {
-	orderNo             string
-	invoiceNo           string
-	sourceCode          string
-	statusCode          string
-	paymentDueAt        time.Time
-	requiresContract    bool
+	orderNo      string
+	invoiceNo    string
+	sourceCode   string
+	statusCode   string
+	paymentDueAt time.Time
+
 	order               do.CommerceOrder
 	items               []do.CommerceOrderItem
 	itemQuantities      []map[string]any
@@ -110,7 +111,8 @@ type checkoutRows struct {
 }
 
 // CheckoutAccountQuote derives ownership exclusively from the active customer
-// principal and never performs network I/O. Safe replay returns the first order.
+// principal. Native supplier prices receive a bounded read-only preflight;
+// ordinary quotes remain local. Safe replay returns the first order.
 func (s *serviceImpl) CheckoutAccountQuote(
 	ctx context.Context,
 	request CheckoutRequest,
@@ -129,7 +131,6 @@ func (s *serviceImpl) CheckoutAccountQuote(
 		authority := checkoutAuthority{
 			customerNo: audience.CustomerNo, userID: audience.UserID,
 			sourceCode: "portal", paymentTermCode: "standard_prepay",
-			contractOverride: contractpolicy.Rule{Policy: contractpolicy.PolicyInherit},
 		}
 		result, checkoutErr = s.checkoutInTransaction(ctx, tx, authority, input)
 		return checkoutErr
@@ -137,9 +138,7 @@ func (s *serviceImpl) CheckoutAccountQuote(
 	if err != nil {
 		if bizerr.Is(err, CodeInvalid) || bizerr.Is(err, CodeNotAccessible) ||
 			bizerr.Is(err, CodeConflict) || bizerr.Is(err, CodeCapacityExceeded) ||
-			bizerr.Is(err, CodeQuoteNotAvailable) || bizerr.Is(err, CodeContractPolicyInvalid) ||
-			bizerr.Is(err, CodeContractTemplateUnavailable) ||
-			bizerr.Is(err, CodeContractTemplateConflict) {
+			bizerr.Is(err, CodeQuoteNotAvailable) {
 			return nil, err
 		}
 		return nil, bizerr.WrapCode(err, CodeUnavailable)
@@ -156,6 +155,7 @@ func (s *serviceImpl) CheckoutAccountQuote(
 				settled.Basis != billing.SettlementBasisFullDiscount) {
 			return nil, bizerr.NewCode(CodeUnavailable)
 		}
+		result.StatusCode = "paid"
 	}
 	return result, nil
 }
@@ -252,12 +252,15 @@ func (s *serviceImpl) checkoutInTransaction(
 	if err != nil {
 		return nil, err
 	}
-	customer, err := lockCheckoutCustomer(ctx, tx, authority.customerNo, *quote.CustomerSubjectVersion)
+	_, err = lockCheckoutCustomer(ctx, tx, authority.customerNo, *quote.CustomerSubjectVersion)
 	if err != nil {
 		return nil, err
 	}
 	items, err := loadCheckoutQuoteItems(ctx, tx, quote)
 	if err != nil {
+		return nil, err
+	}
+	if err = s.lockCheckoutSaleAdmission(ctx, items); err != nil {
 		return nil, err
 	}
 	if err = s.validateAddonCheckout(ctx, authority.customerNo, quote.QuoteNo); err != nil {
@@ -267,15 +270,14 @@ func (s *serviceImpl) checkoutInTransaction(
 	if err != nil {
 		return nil, err
 	}
+	if err = s.requireNativeCheckoutPrice(ctx, quote, items, quantities); err != nil {
+		return nil, err
+	}
 	inventoryFacts, err := loadCheckoutQuoteItemInventories(ctx, tx, quote, items)
 	if err != nil {
 		return nil, err
 	}
-	_, manualReview, _, err := checkoutRequirements(items, quantities, inventoryFacts)
-	if err != nil {
-		return nil, err
-	}
-	contractDecision, err := s.resolveCheckoutContractDecision(ctx, customer, items, authority)
+	_, manualReview, err := checkoutRequirements(items, quantities, inventoryFacts)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +296,7 @@ func (s *serviceImpl) checkoutInTransaction(
 
 	rows, err := s.buildCheckoutRows(
 		quote, items, authority, input, now, paymentDueAt,
-		manualReview, contractDecision, quantities, inventoryFacts,
+		manualReview, quantities, inventoryFacts,
 	)
 	if err != nil {
 		return nil, err
@@ -563,51 +565,6 @@ func lockCheckoutCustomer(
 	return customer, nil
 }
 
-func (s *serviceImpl) resolveCheckoutContractDecision(
-	ctx context.Context,
-	customer *entity.CustomerSubject,
-	items []entity.CommerceQuoteItemSnapshot,
-	authority checkoutAuthority,
-) (contractpolicy.Decision, error) {
-	if customer == nil {
-		return contractpolicy.Decision{}, bizerr.NewCode(CodeContractPolicyInvalid)
-	}
-	customerType := contracttemplatecap.CustomerType(customer.CustomerTypeCode)
-	enterpriseRule := contractpolicy.Rule{Policy: contractpolicy.PolicyNone}
-	if customerType == contracttemplatecap.CustomerTypeEnterprise {
-		enterpriseRule = contractpolicy.Rule{
-			Policy:     contractpolicy.Policy(customer.EnterpriseContractPolicyCode),
-			TemplateNo: customer.EnterpriseContractTemplateNo,
-		}
-	}
-	productRules := make([]contractpolicy.Rule, 0, len(items))
-	for _, item := range items {
-		productRules = append(productRules, contractpolicy.Rule{
-			Policy: contractpolicy.Policy(item.ContractPolicyCode), TemplateNo: item.ContractTemplateNo,
-		})
-	}
-	decision, err := s.contractPolicy.Resolve(ctx, contractpolicy.ResolveInput{
-		CustomerType: customerType, EnterpriseRule: enterpriseRule,
-		ProductRules: productRules, OrderOverride: authority.contractOverride,
-	})
-	if err == nil {
-		return decision, nil
-	}
-	return contractpolicy.Decision{}, mapContractPolicyResolveError(err)
-}
-
-func mapContractPolicyResolveError(err error) error {
-	switch {
-	case errors.Is(err, contractpolicy.ErrTemplateConflict):
-		return bizerr.WrapCode(err, CodeContractTemplateConflict)
-	case errors.Is(err, contracttemplatecap.ErrSourceUnavailable),
-		errors.Is(err, contracttemplatecap.ErrTemplateUnavailable):
-		return bizerr.WrapCode(err, CodeContractTemplateUnavailable)
-	default:
-		return bizerr.WrapCode(err, CodeContractPolicyInvalid)
-	}
-}
-
 func loadCheckoutQuoteItems(
 	ctx context.Context,
 	tx gdb.TX,
@@ -653,52 +610,82 @@ func loadCheckoutQuoteItems(
 	return items, nil
 }
 
+// lockCheckoutSaleAdmission closes the quote-to-order window after a product
+// is removed from sale. One ordered batch lock serializes with deletion within
+// the local checkout transaction. Existing order replays return before
+// this check; frozen prices and already-created orders remain unchanged.
+func (s *serviceImpl) lockCheckoutSaleAdmission(ctx context.Context, items []entity.CommerceQuoteItemSnapshot) error {
+	var (
+		seen       = make(map[string]struct{}, len(items))
+		productNos = make([]string, 0, len(items))
+		products   []struct {
+			ProductNo string
+		}
+	)
+	for _, item := range items {
+		if _, found := seen[item.ProductNo]; !found {
+			seen[item.ProductNo] = struct{}{}
+			productNos = append(productNos, item.ProductNo)
+		}
+	}
+	columns := dao.CatalogProduct.Columns()
+	if err := s.database.Model(dao.CatalogProduct.Table()).Ctx(ctx).
+		Fields(columns.ProductNo).
+		Where(do.CatalogProduct{TenantId: idccap.DefaultTenantID, StatusCode: checkoutProductActive}).
+		WhereIn(columns.ProductNo, productNos).OrderAsc(columns.ProductNo).
+		LockUpdate().Scan(&products); err != nil {
+		return gerror.Wrap(err, "lock checkout product sale admission")
+	}
+	if len(products) != len(productNos) {
+		return bizerr.NewCode(CodeQuoteNotAvailable)
+	}
+	return nil
+}
+
 func checkoutRequirements(
 	items []entity.CommerceQuoteItemSnapshot,
 	quantities map[string]int,
 	inventoryFactSets ...map[string]checkoutGenericInventoryFact,
-) (int, bool, bool, error) {
+) (int, bool, error) {
 	var inventoryFacts map[string]checkoutGenericInventoryFact
 	if len(inventoryFactSets) > 0 {
 		inventoryFacts = inventoryFactSets[0]
 	}
 	totalUnits := 0
 	manualReview := false
-	requiresContract := false
 	trialItems := 0
 	for _, item := range items {
 		quantity := quantities[item.QuoteItemNo]
 		if quantity < 1 || totalUnits > maximumCheckoutFulfillmentUnits-quantity {
-			return 0, false, false, bizerr.NewCode(CodeCapacityExceeded)
+			return 0, false, bizerr.NewCode(CodeCapacityExceeded)
 		}
 		totalUnits += quantity
 		if item.ChargeTypeCode == "trial" {
 			trialItems++
 			if !validCheckoutTrialItem(item) {
-				return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+				return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 			}
 		} else if item.TrialLimitQuantity != 0 || item.PriorTrialUses != 0 {
-			return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+			return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 		}
-		requiresContract = requiresContract || item.RequiresContract
 		if item.InventoryDecisionCode != "available" {
-			return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+			return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 		}
 		manualReview = manualReview || item.RiskDecisionCode == "manual_review" ||
 			item.FulfillmentModeCode == "manual_review"
 		if fact, generic := inventoryFacts[item.QuoteItemNo]; generic && fact.InventoryVersion > 0 {
 			if fact.VersionNo != item.VersionNo || fact.SellableQuantity < 0 ||
 				(fact.TrackingEnabled && fact.SellableQuantity < int64(quantity)) {
-				return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+				return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 			}
 			continue
 		}
-		return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+		return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 	}
 	if trialItems != 0 && trialItems != len(items) {
-		return 0, false, false, bizerr.NewCode(CodeQuoteNotAvailable)
+		return 0, false, bizerr.NewCode(CodeQuoteNotAvailable)
 	}
-	return totalUnits, manualReview, requiresContract, nil
+	return totalUnits, manualReview, nil
 }
 
 func validCheckoutTrialItem(item entity.CommerceQuoteItemSnapshot) bool {
@@ -792,10 +779,12 @@ WHERE version_no=ANY(string_to_array(?,',')) ORDER BY version_no FOR UPDATE`, st
 		VersionNo string `orm:"version_no"`
 		Quantity  int64  `orm:"quantity"`
 	}, 0, len(versions))
-	if err := tx.Ctx(ctx).GetScan(&reserved, `SELECT version_no,COALESCE(SUM(reserved_quantity),0) quantity
-FROM plugin_idc_core_commerce_inventory_reservation
-WHERE version_no=ANY(string_to_array(?,',')) AND status_code IN('held','committed')
-GROUP BY version_no`, strings.Join(versions, ",")); err != nil {
+	if err := tx.Ctx(ctx).GetScan(&reserved, `SELECT requested.version_no,COALESCE(SUM(reservation.reserved_quantity),0) quantity
+FROM plugin_idc_core_catalog_product_version requested
+JOIN plugin_idc_core_catalog_product_version sibling ON sibling.tenant_id=requested.tenant_id AND sibling.product_no=requested.product_no
+JOIN plugin_idc_core_commerce_inventory_reservation reservation ON reservation.version_no=sibling.version_no
+WHERE requested.version_no=ANY(string_to_array(?,',')) AND reservation.status_code IN('held','committed')
+GROUP BY requested.version_no`, strings.Join(versions, ",")); err != nil {
 		return gerror.Wrap(err, "load generic product inventory reservations")
 	}
 	for _, row := range reserved {
@@ -842,7 +831,6 @@ func (s *serviceImpl) buildCheckoutRows(
 	now time.Time,
 	paymentDueAt time.Time,
 	manualReview bool,
-	contractDecision contractpolicy.Decision,
 	quantities map[string]int,
 	inventoryFacts map[string]checkoutGenericInventoryFact,
 ) (checkoutRows, error) {
@@ -874,31 +862,15 @@ func (s *serviceImpl) buildCheckoutRows(
 		TenantId: idccap.DefaultTenantID, OrderNo: orderNo, CustomerNo: authority.customerNo,
 		QuoteNo: quote.QuoteNo, CurrencyCode: quote.CurrencyCode, SourceCode: authority.sourceCode,
 		StatusCode: status, RiskDecisionCode: checkoutRiskDecision(items),
-		RequiresContract: contractDecision.RequiresContract, ItemCount: len(items),
+		ItemCount:     len(items),
 		SubtotalMinor: quote.SubtotalMinor, DiscountMinor: quote.DiscountMinor,
 		NetAmountMinor: quote.NetAmountMinor, TaxAmountMinor: quote.TaxAmountMinor,
 		TotalAmountMinor:          quote.TotalAmountMinor,
 		CheckoutIdempotencyDigest: input.idempotencyDigest,
 		CheckoutRequestDigest:     input.requestDigest, PaymentDueAt: &paymentDueAt,
 		AssistedRequestNo: authority.assistedRequestNo, PaymentTermCode: authority.paymentTermCode,
-		ContractOverridePolicyCode:   string(contractDecision.OrderOverride.Policy),
-		EnterpriseContractPolicyCode: string(contractDecision.EnterpriseRule.Policy),
-		ContractDecisionSourceCode:   string(contractDecision.Source),
-		Version:                      1, CreatedBy: authority.userID, CreatedAt: &now, UpdatedAt: &now,
-	}
-	if contractDecision.OrderOverride.TemplateNo != "" {
-		order.ContractOverrideTemplateNo = contractDecision.OrderOverride.TemplateNo
-	}
-	if contractDecision.EnterpriseRule.TemplateNo != "" {
-		order.EnterpriseContractTemplateNo = contractDecision.EnterpriseRule.TemplateNo
-	}
-	if contractDecision.RequiresContract {
-		order.ContractTemplateNo = contractDecision.Template.TemplateNo
-		order.ContractTemplateVersionNo = contractDecision.Template.VersionNo
-		order.ContractTemplateName = contractDecision.Template.Name
-		order.ContractLanguageCode = contractDecision.Template.LanguageCode
-		order.ContractScopeCode = contractDecision.Template.ScopeCode
-		order.ContractSigningOrderCode = contractDecision.Template.SigningOrderCode
+
+		Version: 1, CreatedBy: authority.userID, CreatedAt: &now, UpdatedAt: &now,
 	}
 	orderItems := make([]do.CommerceOrderItem, 0, len(items))
 	itemQuantities := make([]map[string]any, 0, len(items))
@@ -1023,8 +995,8 @@ func (s *serviceImpl) buildCheckoutRows(
 	}
 	return checkoutRows{
 		orderNo: orderNo, invoiceNo: invoiceNo, sourceCode: authority.sourceCode, statusCode: status,
-		paymentDueAt: paymentDueAt, requiresContract: contractDecision.RequiresContract,
-		order: order, items: orderItems, itemQuantities: itemQuantities, itemInventories: itemInventories,
+		paymentDueAt: paymentDueAt,
+		order:        order, items: orderItems, itemQuantities: itemQuantities, itemInventories: itemInventories,
 		invoice: invoice, invoiceItems: invoiceItems,
 		genericReservations: genericReservations, reviews: reviews,
 	}, nil
@@ -1058,10 +1030,9 @@ func checkoutOrderItem(
 		PurchaseCycles:  item.PurchaseCycles, ChargeTypeCode: item.ChargeTypeCode,
 		TrialLimitQuantity: item.TrialLimitQuantity, PriorTrialUses: item.PriorTrialUses,
 		PeriodUnitCode: item.PeriodUnitCode, PeriodCount: item.PeriodCount,
-		RequiresContract: item.RequiresContract, FulfillmentModeCode: item.FulfillmentModeCode,
-		ContractPolicyCode: item.ContractPolicyCode,
-		ContractTemplateNo: nullableCommerceContractTemplate(item.ContractTemplateNo),
-		RiskDecisionCode:   item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
+		FulfillmentModeCode: item.FulfillmentModeCode,
+
+		RiskDecisionCode: item.RiskDecisionCode, InventoryDecisionCode: item.InventoryDecisionCode,
 		RouteDecisionDigest: item.RouteDecisionDigest, TaxPolicyNo: item.TaxPolicyNo,
 		PriceIncludesTax: item.PriceIncludesTax, TaxTreatmentCode: item.TaxTreatmentCode,
 		TaxRateBasisPoints: item.TaxRateBasisPoints, TaxCategoryCode: item.TaxCategoryCode,
@@ -1181,8 +1152,8 @@ func projectCheckoutRows(
 		QuoteNo: quote.QuoteNo, StatusCode: rows.statusCode,
 		CurrencyCode: quote.CurrencyCode, ItemCount: quote.ItemCount,
 		TotalAmountMinor: quote.TotalAmountMinor,
-		RequiresContract: rows.requiresContract, PaymentDueAt: rows.paymentDueAt,
-		Reused: reused,
+		PaymentDueAt:     rows.paymentDueAt,
+		Reused:           reused,
 	}, nil
 }
 
@@ -1206,8 +1177,8 @@ func projectPersistedCheckout(
 	return &Checkout{
 		OrderNo: order.OrderNo, InvoiceNo: invoice.InvoiceNo, QuoteNo: order.QuoteNo,
 		StatusCode: order.StatusCode, CurrencyCode: order.CurrencyCode, ItemCount: order.ItemCount,
-		TotalAmountMinor: order.TotalAmountMinor, RequiresContract: order.RequiresContract,
-		PaymentDueAt: *order.PaymentDueAt, Reused: reused,
+		TotalAmountMinor: order.TotalAmountMinor,
+		PaymentDueAt:     *order.PaymentDueAt, Reused: reused,
 	}, nil
 }
 

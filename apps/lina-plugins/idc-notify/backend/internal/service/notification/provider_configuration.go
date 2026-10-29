@@ -6,12 +6,10 @@ import (
 )
 
 const (
-	providerSMTP           = "smtp_tls_v1"
-	providerAliyunSMS      = "aliyun_sms_v20170525"
-	providerSMSBao         = "smsbao_http_v1"
-	providerTencentSMS     = "tencent_cloud_sms_v20210111"
-	providerWeChatOfficial = "wechat_official_template_v1"
-	providerWeCom          = "wecom_custom_app_v1"
+	providerSMTP       = "smtp_tls_v1"
+	providerAliyunSMS  = "aliyun_sms_v20170525"
+	providerSMSBao     = "smsbao_http_v1"
+	providerTencentSMS = "tencent_cloud_sms_v20210111"
 )
 
 func (s *serviceImpl) ConfigureAliyunSMS(ctx context.Context, input AliyunSMSConfigurationInput) (*Channel, error) {
@@ -62,32 +60,6 @@ func (s *serviceImpl) ConfigureTencentSMS(ctx context.Context, input TencentSMSC
 		ChannelCode: "sms", ProviderCode: providerTencentSMS,
 		NonSecret:       map[string]string{"region": input.Region, "sms_sdk_app_id": input.SmsSdkAppID, "sign_name": input.SignName},
 		Secrets:         map[string][]byte{"secret_id": append([]byte(nil), input.SecretID...), "secret_key": append([]byte(nil), input.SecretKey...)},
-		ExpectedVersion: input.ExpectedVersion, IdempotencyKey: input.IdempotencyKey,
-	})
-}
-
-func (s *serviceImpl) ConfigureWeChatOfficial(ctx context.Context, input WeChatOfficialConfigurationInput) (*Channel, error) {
-	defer clear(input.AppSecret)
-	defer clear(input.CallbackToken)
-	defer clear(input.EncodingAESKey)
-	return s.ConfigureChannel(ctx, ChannelConfigurationInput{
-		ChannelCode: "wechat_official", ProviderCode: providerWeChatOfficial,
-		NonSecret: map[string]string{"app_id": input.AppID},
-		Secrets: map[string][]byte{
-			"app_secret":       append([]byte(nil), input.AppSecret...),
-			"callback_token":   append([]byte(nil), input.CallbackToken...),
-			"encoding_aes_key": append([]byte(nil), input.EncodingAESKey...),
-		},
-		ExpectedVersion: input.ExpectedVersion, IdempotencyKey: input.IdempotencyKey,
-	})
-}
-
-func (s *serviceImpl) ConfigureWeCom(ctx context.Context, input WeComConfigurationInput) (*Channel, error) {
-	defer clear(input.AppSecret)
-	return s.ConfigureChannel(ctx, ChannelConfigurationInput{
-		ChannelCode: "wechat_work", ProviderCode: providerWeCom,
-		NonSecret:       map[string]string{"corp_id": input.CorpID, "agent_id": strconv.FormatInt(input.AgentID, 10)},
-		Secrets:         map[string][]byte{"app_secret": append([]byte(nil), input.AppSecret...)},
 		ExpectedVersion: input.ExpectedVersion, IdempotencyKey: input.IdempotencyKey,
 	})
 }

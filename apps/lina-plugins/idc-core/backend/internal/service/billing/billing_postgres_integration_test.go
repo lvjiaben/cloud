@@ -1065,6 +1065,8 @@ func billingServiceMigrationPaths(t *testing.T) []string {
 		filepath.Join(root, "054-credit-online-refund-integration.sql"),
 		filepath.Join(root, "055-credit-evidence.sql"),
 		filepath.Join(root, "070-customer-short-code.sql"),
+		filepath.Join(root, "131-customer-balance-adjustment.sql"),
+		filepath.Join(root, "133-direct-admin-financial-actions.sql"),
 		filepath.Join(root, "108-credit-directory-pagination-indexes.sql"),
 	}
 }

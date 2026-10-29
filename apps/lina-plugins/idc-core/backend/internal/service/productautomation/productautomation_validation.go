@@ -144,20 +144,18 @@ func sameEvidence(left, right *capmodel.BusinessExtensionProviderEvidence) bool 
 	return true
 }
 
-func sameExactEvidence(frozen, exact *capmodel.BusinessExtensionProviderEvidence) bool {
-	// Persisted interface/binding snapshots intentionally omit the provider's
-	// executable declaration and configuration schemas. Validate the complete
-	// declaration on the current exact release, then compare only the frozen
-	// identity fields shared by both projections. The interface display name is
-	// merchant-owned and may differ from the connector's manifest name.
-	if !validProviderEvidence(exact) || !validFrozenEvidence(frozen) {
-		return false
-	}
-	canonical := *exact
-	canonical.DisplayName = frozen.DisplayName
-	return sameEvidence(frozen, &canonical)
+func sameProviderContract(frozen, exact *capmodel.BusinessExtensionProviderEvidence) bool {
+	// Editing and execution follow the current provider. Old package/declaration
+	// digests never decide whether an existing interface remains usable.
+	return frozen != nil && validProviderEvidence(exact) && frozen.PluginID == exact.PluginID && frozen.Point == exact.Point && frozen.ContractVersion == exact.ContractVersion
 }
 
 func sameOptionalConfiguration(left, right *capmodel.ConfigurationSchemaDeclaration) bool {
 	return left == nil || right == nil || reflect.DeepEqual(left, right)
+}
+
+// sameCompatibleProductConfiguration retains frozen choices after an adapter-
+// proven optional extension; it is never used for credentials or interface data.
+func sameCompatibleProductConfiguration(stored, current *capmodel.ConfigurationSchemaDeclaration) bool {
+	return sameExactConfiguration(stored, current) || productfulfillmentcap.IsAdditiveConfigurationSchema(stored, current)
 }

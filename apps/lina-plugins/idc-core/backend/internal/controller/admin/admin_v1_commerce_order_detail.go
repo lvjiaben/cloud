@@ -18,7 +18,6 @@ func (c *ControllerV1) CommerceOrderDetail(ctx context.Context, req *v1.Commerce
 		return nil, err
 	}
 	return &v1.CommerceOrderDetailRes{
-		Order:        accountcontroller.ToAPICommerceOrderDetail(order),
-		ContractRule: toAPIOrderContractRule(order.Summary),
+		Order: accountcontroller.ToAPICommerceOrderDetail(order),
 	}, nil
 }

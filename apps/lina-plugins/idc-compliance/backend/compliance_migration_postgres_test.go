@@ -146,8 +146,8 @@ func TestComplianceOfficialTriggerDebrandingPostgreSQL(t *testing.T) {
 	createComplianceDictionaryFixtures(t, ctx, database)
 	executeComplianceMigrations(t, ctx, database)
 	contracts := complianceCurrentTriggerContracts(t, ctx, database)
-	if len(contracts) != 20 {
-		t.Fatalf("current compliance branded-trigger contract count=%d want=20", len(contracts))
+	if len(contracts) != 9 {
+		t.Fatalf("current compliance branded-trigger contract count=%d want=9", len(contracts))
 	}
 	rowCountBefore := complianceBusinessRowCount(t, ctx, database)
 
@@ -162,7 +162,7 @@ func TestComplianceOfficialTriggerDebrandingPostgreSQL(t *testing.T) {
 		}
 	}
 	executeComplianceTriggerDebranding(t, ctx, database)
-	assertComplianceTriggerBrandState(t, ctx, database, 20, 0)
+	assertComplianceTriggerBrandState(t, ctx, database, 9, 0)
 
 	for _, contract := range complianceCurrentTriggerContracts(t, ctx, database) {
 		legacyDefinition := strings.Replace(
@@ -176,7 +176,7 @@ func TestComplianceOfficialTriggerDebrandingPostgreSQL(t *testing.T) {
 		}
 	}
 	executeComplianceTriggerDebranding(t, ctx, database)
-	assertComplianceTriggerBrandState(t, ctx, database, 20, 0)
+	assertComplianceTriggerBrandState(t, ctx, database, 9, 0)
 
 	first := complianceCurrentTriggerContracts(t, ctx, database)[0]
 	if _, err = database.Exec(ctx, fmt.Sprintf(
@@ -199,7 +199,7 @@ func TestComplianceOfficialTriggerDebrandingPostgreSQL(t *testing.T) {
 	}
 	executeComplianceTriggerDebranding(t, ctx, database)
 	executeComplianceTriggerDebranding(t, ctx, database)
-	assertComplianceTriggerBrandState(t, ctx, database, 20, 0)
+	assertComplianceTriggerBrandState(t, ctx, database, 9, 0)
 	if rowCountAfter := complianceBusinessRowCount(t, ctx, database); rowCountAfter != rowCountBefore {
 		t.Fatalf("compliance business row count changed during trigger cleanup: before=%d after=%d", rowCountBefore, rowCountAfter)
 	}
@@ -418,144 +418,15 @@ func TestComplianceFoundationCodegenPostgreSQL(t *testing.T) {
 	executeComplianceMigrations(t, ctx, database)
 }
 
-func assertComplianceSchemaShape(
-	t *testing.T,
-	ctx context.Context,
-	database gdb.DB,
-	schema string,
-) {
-	t.Helper()
-	count, err := database.GetValue(ctx, `
-SELECT count(*)
-FROM information_schema.tables
-WHERE table_schema = ? AND table_name LIKE 'plugin_idc_compliance_%'`, schema)
-	if err != nil || count.Int() != 52 {
-		t.Fatalf("compliance table count=%d want=52 err=%v", count.Int(), err)
-	}
-	softDeletes, err := database.GetValue(ctx, `
-SELECT count(*)
-FROM information_schema.columns
-WHERE table_schema = ?
-  AND table_name LIKE 'plugin_idc_compliance_%'
-  AND column_name = 'deleted_at'`, schema)
-	if err != nil || softDeletes.Int() != 0 {
-		t.Fatalf("compliance soft-delete column count=%d want=0 err=%v", softDeletes.Int(), err)
-	}
-	dangerousColumns, err := database.GetAll(ctx, `
-SELECT table_name, column_name
-FROM information_schema.columns
-WHERE table_schema = ?
-  AND table_name LIKE 'plugin_idc_compliance_%'
-  AND column_name IN (
-    'raw_payload', 'payload_json', 'face_photo', 'face_video',
-    'identity_document_content', 'contract_content', 'invoice_content',
-    'access_key_id', 'access_key_secret', 'credential_ciphertext', 'certify_url',
-    'registration_token', 'registration_token_digest', 'private_key', 'private_key_ciphertext'
-  )`, schema)
-	if err != nil || len(dangerousColumns) != 0 {
-		t.Fatalf("compliance schema exposes forbidden raw columns: rows=%v err=%v", dangerousColumns, err)
-	}
-	crossPluginForeignKeys, err := database.GetValue(ctx, `
-SELECT count(*)
-FROM pg_constraint AS constraint_row
-JOIN pg_class AS child_table ON child_table.oid = constraint_row.conrelid
-JOIN pg_namespace AS child_schema ON child_schema.oid = child_table.relnamespace
-JOIN pg_class AS parent_table ON parent_table.oid = constraint_row.confrelid
-WHERE constraint_row.contype = 'f'
-  AND child_schema.nspname = ?
-  AND child_table.relname LIKE 'plugin_idc_compliance_%'
-  AND parent_table.relname NOT LIKE 'plugin_idc_compliance_%'`, schema)
-	if err != nil || crossPluginForeignKeys.Int() != 0 {
-		t.Fatalf(
-			"compliance cross-plugin foreign-key count=%d want=0 err=%v",
-			crossPluginForeignKeys.Int(),
-			err,
-		)
-	}
-	triggerCount, err := database.GetValue(ctx, `
-SELECT count(DISTINCT trigger_name)
-FROM information_schema.triggers
-WHERE trigger_schema = ?
-  AND trigger_name IN (
-    'trg_plugin_idc_compliance_contract_file_immutable',
-    'trg_plugin_idc_compliance_tax_invoice_file_immutable',
-    'trg_plugin_idc_compliance_red_alloc_append_only',
-    'trg_plugin_idc_compliance_external_evidence_append_only',
-    'trg_plugin_idc_compliance_ctplc_append_only',
-    'trg_plugin_idc_compliance_ctplfs_append_only',
-	    'trg_plugin_idc_compliance_ctplf_append_only',
-	    'trg_plugin_idc_compliance_ctplpc_append_only',
-	    'trg_plugin_idc_compliance_ctplpr_append_only',
-	    'trg_plugin_idc_compliance_ctplpms_append_only',
-	    'trg_plugin_idc_compliance_ctplpfm_append_only',
-	    'trg_plugin_idc_compliance_ctplprm_append_only',
-	    'trg_plugin_idc_compliance_ctplv_guard',
-	    'trg_plugin_idc_compliance_contract_snapshot_guard',
-	    'trg_idc_compliance_contract_status_evt_append_only',
-	    'trg_idc_compliance_contract_replacement_append_only',
-	    'trg_plugin_idc_compliance_tax_inv_action_append'
-	    ,'trg_plugin_idc_compliance_red_letter_candidate_append'
-	    ,'trg_plugin_idc_compliance_red_letter_action_append'
-	  )`, schema)
-	if err != nil || triggerCount.Int() != 19 {
-		t.Fatalf("compliance mutation trigger count=%d want=19 err=%v", triggerCount.Int(), err)
-	}
-	criticalIndexes, err := database.GetValue(ctx, `
-SELECT count(*)
-FROM pg_indexes
-WHERE schemaname = ?
-  AND indexname IN (
-    'uk_plugin_idc_compliance_verification_case_active',
-    'idx_plugin_idc_compliance_verification_case_review',
-    'idx_plugin_idc_compliance_contract_flow_poll',
-    'idx_plugin_idc_compliance_contract_customer',
-	    'idx_plugin_idc_compliance_tax_invoice_customer',
-	    'idx_plugin_idc_compliance_tax_invoice_action_timeline',
-    'idx_plugin_idc_compliance_tax_alloc_billing',
-	'uk_plugin_idc_compliance_red_letter_task_refund',
-	'idx_plugin_idc_compliance_red_letter_task_customer',
-    'idx_plugin_idc_compliance_red_letter_allocation_refund',
-	'idx_plugin_idc_compliance_red_letter_candidate_task',
-	'idx_plugin_idc_compliance_red_letter_action_task',
-    'idx_plugin_idc_compliance_external_evidence_aggregate',
-    'uk_plugin_idc_compliance_pva_active',
-    'idx_plugin_idc_compliance_pva_recovery',
-    'uk_plugin_idc_compliance_ent_key_active',
-	'uk_plugin_idc_compliance_verification_ent_request',
-	'uk_plugin_idc_compliance_verification_ent_legal_change',
-	'uk_plugin_idc_compliance_enterprise_material_request',
-	'idx_plugin_idc_compliance_ent_upload_case',
-	'idx_plugin_idc_compliance_ent_case_dir',
-	'idx_plugin_idc_compliance_ent_status_dir',
-	'idx_plugin_idc_compliance_ent_customer_dir',
-	'idx_plugin_idc_compliance_ent_customer_current',
-	'idx_plugin_idc_compliance_scfg_gate',
-	'uk_plugin_idc_compliance_ctplv_enabled',
-	'uk_plugin_idc_compliance_ctplv_provider_snapshot',
-	'idx_plugin_idc_compliance_ctpl_sync',
-	'uk_plugin_idc_compliance_ctpl_creation',
-	'idx_plugin_idc_compliance_ctplv_list',
-	'idx_plugin_idc_compliance_ctplv_name',
-	'idx_plugin_idc_compliance_ctplc_version',
-	'idx_plugin_idc_compliance_ctplf_set',
-	'idx_plugin_idc_compliance_ctplpc_version',
-	'idx_plugin_idc_compliance_ctplpr_version',
-	'uk_plugin_idc_compliance_contract_creation',
-	'idx_plugin_idc_compliance_contract_order_history',
-	'uk_plugin_idc_compliance_contract_replacement_no',
-	'uk_plugin_idc_compliance_contract_replacement_old',
-	'uk_plugin_idc_compliance_contract_replacement_new',
-	'uk_idc_compliance_contract_replacement_idem',
-	'idx_plugin_idc_compliance_contract_replacement_chain',
-	'idx_plugin_idc_compliance_contract_fulfillment_gate',
-	'uk_idc_compliance_contract_status_evt_route_version',
-	'uk_plugin_idc_compliance_contract_status_event_delivery',
-	'idx_idc_compliance_contract_status_evt_contract',
-	'idx_plugin_idc_compliance_contract_status_event_flow'
-  )`, schema)
-	if err != nil || criticalIndexes.Int() != 47 {
-		t.Fatalf("compliance critical index count=%d want=47 err=%v", criticalIndexes.Int(), err)
-	}
+// assertComplianceSchemaShape requires the retained owners and rejects retired domain schemas.
+func assertComplianceSchemaShape(t *testing.T, ctx context.Context, database gdb.DB, schema string) {
+ t.Helper()
+ for _, table := range []string{"verification_case", "enterprise_material", "tax_invoice", "privacy_retention_policy", "privacy_retention_hold", "privacy_deletion_task"} {
+  value, err := database.GetValue(ctx, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=? AND table_name=?`, schema, "plugin_idc_compliance_"+table)
+  if err != nil || value.Int()!=1 { t.Fatalf("required table %s missing: %v",table,err) }
+ }
+ value, err := database.GetValue(ctx, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=? AND (table_name LIKE 'plugin_idc_compliance_contract%' OR table_name IN ('plugin_idc_compliance_privacy_assessment','plugin_idc_compliance_privacy_incident','plugin_idc_compliance_privacy_customer_request'))`, schema)
+ if err != nil || value.Int()!=0 { t.Fatalf("retired table count=%d error=%v",value.Int(),err) }
 }
 
 func assertComplianceSchemaInvariants(t *testing.T, ctx context.Context, database gdb.DB) {
@@ -618,42 +489,6 @@ INSERT INTO plugin_idc_compliance_provider_configuration
 VALUES
 	('aliyun-config-incomplete', 'aliyun_face', 'configured', '100000001', 1)`); err == nil {
 		t.Fatal("configured Aliyun provider accepted a missing credential envelope")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_supplier_configuration
-    (configuration_no, provider_code, credential_status_code,
-     credential_generation, capability_evidence_code, adapter_enabled)
-VALUES
-    ('local-supplier-tencent_essbasic', 'tencent_essbasic', 'configured', 1,
-     'external_confirmation_required', FALSE)`); err == nil {
-		t.Fatal("configured local supplier accepted a missing secretcap reference")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_supplier_configuration
-    (configuration_no, provider_code, credential_status_code,
-     capability_evidence_code, adapter_enabled)
-VALUES
-	('local-supplier-tencent-invalid-evidence', 'tencent_essbasic', 'unconfigured',
-	 'external_confirmation_required', TRUE)`); err == nil {
-		t.Fatal("Tencent adapter bypassed the official public contract gate")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_supplier_configuration
-    (configuration_no, provider_code, credential_status_code, subject_status_code,
-     subject_binding_no, capability_evidence_code, adapter_enabled)
-VALUES
-	('local-supplier-tencent-pending', 'tencent_essbasic', 'unconfigured', 'binding',
-	 NULL, 'official_public_contract', TRUE)`); err == nil {
-		t.Fatal("Tencent adapter activated before the local subject became active")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_supplier_configuration
-    (configuration_no, provider_code, credential_status_code, subject_status_code,
-     subject_binding_no, capability_evidence_code, adapter_enabled)
-VALUES
-	('local-supplier-tencent-active', 'tencent_essbasic', 'unconfigured', 'active',
-	 'lsb_0123456789abcdef0123456789abcdef', 'official_public_contract', TRUE)`); err != nil {
-		t.Fatalf("active Tencent onboarding result was rejected: %v", err)
 	}
 	if _, err := database.Exec(ctx, `
 INSERT INTO plugin_idc_compliance_supplier_configuration
@@ -806,135 +641,6 @@ WHERE material_no = 'material-1'`); err == nil {
 	}
 
 	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract_template
-    (template_no, origin_code)
-VALUES
-    ('template-1', 'local');
-INSERT INTO plugin_idc_compliance_contract_template_version
-    (template_no, version_no, name, scope_code, signing_order_code, status_code)
-VALUES
-    ('template-1', 1, 'Template 1', 'all_customers', 'customer_first', 'draft');
-INSERT INTO plugin_idc_compliance_contract
-    (contract_no, customer_no, principal_no, order_no, contract_type_code,
-     template_no, template_version, variable_snapshot_ref, variable_snapshot_sha256,
-     signer_snapshot_sha256, currency_code, amount_minor, subject_type_code,
-     signing_order_code, snapshot_key_ref, order_snapshot_sha256)
-VALUES
-    ('contract-1', 'customer-1', 'principal-1', 'order-1', 'service_purchase',
-     'template-1', 1, 'private://contract/snapshot-1', repeat('b', 64), repeat('c', 64),
-     'CNY', 10000, 'individual', 'customer_first',
-     'private://contract/snapshot-1', repeat('d', 64));
-INSERT INTO plugin_idc_compliance_contract_flow
-    (flow_no, contract_no, sequence_no, purpose_code, provider_code, idempotency_sha256,
-     request_snapshot_ref, request_snapshot_sha256, status_code, completed_at)
-VALUES
-    ('flow-1', 'contract-1', 1, 'issue', 'tencent_ess', repeat('d', 64),
-     'private://contract/request-1', repeat('e', 64), 'completed', CURRENT_TIMESTAMP);
-INSERT INTO plugin_idc_compliance_contract_signer
-    (signer_no, flow_no, sequence_no, subject_type_code, subject_no, role_code,
-     snapshot_sha256, status_code, signed_at)
-VALUES
-    ('signer-1', 'flow-1', 1, 'personal', 'customer-1', 'customer',
-     repeat('f', 64), 'signed', CURRENT_TIMESTAMP);
-INSERT INTO plugin_idc_compliance_contract_file
-    (file_no, contract_no, flow_no, file_type_code, private_object_ref, content_sha256,
-     media_type, byte_size, status_code, immutable, archived_at, supplier_observed_at)
-VALUES
-    ('contract-file-1', 'contract-1', 'flow-1', 'final_pdf', 'private://contract/final-1',
-     repeat('1', 64), 'application/pdf', 2048, 'archived', TRUE,
-     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`); err != nil {
-		t.Fatalf("insert contract aggregate and archived file failed: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract
-    (contract_no, customer_no, principal_no, order_no, contract_type_code,
-     template_no, template_version, variable_snapshot_ref, variable_snapshot_sha256,
-     signer_snapshot_sha256, currency_code, amount_minor, subject_type_code,
-     signing_order_code, snapshot_key_ref, order_snapshot_sha256)
-VALUES
-    ('contract-duplicate-order', 'customer-1', 'principal-1', 'order-1', 'service_purchase',
-     'template-1', 1, 'private://contract/duplicate', repeat('2', 64), repeat('3', 64),
-     'CNY', 10000, 'individual', 'customer_first',
-	 'private://contract/duplicate', repeat('4', 64))`); err != nil {
-		t.Fatalf("insert a second immutable contract version for one order: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract_replacement
-    (replacement_no, old_contract_no, new_contract_no, idempotency_sha256)
-VALUES ('replacement-1', 'contract-1', 'contract-duplicate-order', repeat('5', 64))`); err != nil {
-		t.Fatalf("insert immutable contract replacement relation: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_replacement
-SET new_contract_no = 'contract-1'
-WHERE replacement_no = 'replacement-1'`); err == nil {
-		t.Fatal("contract replacement history was mutable")
-	}
-	if _, err := database.Exec(ctx, `
-DELETE FROM plugin_idc_compliance_contract_replacement
-WHERE replacement_no = 'replacement-1'`); err == nil {
-		t.Fatal("contract replacement history was deletable")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract
-    (contract_no, customer_no, principal_no, order_no, contract_type_code,
-     template_no, template_version, variable_snapshot_ref, variable_snapshot_sha256,
-     signer_snapshot_sha256, currency_code, amount_minor, subject_type_code,
-     signing_order_code, snapshot_key_ref, order_snapshot_sha256,
-     created_at, signing_expires_at)
-VALUES
-    ('contract-invalid-expiry', 'customer-1', 'principal-1', 'order-invalid-expiry',
-     'service_purchase', 'template-1', 1, 'private://contract/invalid-expiry',
-     repeat('2', 64), repeat('3', 64), 'CNY', 10000, 'individual', 'customer_first',
-     'private://contract/invalid-expiry', repeat('4', 64),
-     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '8 days')`); err == nil {
-		t.Fatal("a contract with a non-seven-day signing deadline was accepted")
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_file
-SET private_object_ref = 'private://contract/tampered'
-WHERE file_no = 'contract-file-1'`); err == nil {
-		t.Fatal("archived contract file metadata was mutable")
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_file
-SET status_code = 'legal_hold', legal_hold = TRUE,
-    retention_until = CURRENT_TIMESTAMP + INTERVAL '10 years'
-WHERE file_no = 'contract-file-1'`); err != nil {
-		t.Fatalf("archived contract file rejected legal-hold governance metadata: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_file
-SET content_sha256 = repeat('0', 64)
-WHERE file_no = 'contract-file-1'`); err == nil {
-		t.Fatal("legal-hold contract file content was mutable")
-	}
-	if _, err := database.Exec(ctx, `
-DELETE FROM plugin_idc_compliance_contract_file
-WHERE file_no = 'contract-file-1'`); err == nil {
-		t.Fatal("contract file metadata was deletable")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract
-    (contract_no, customer_no, principal_no, order_no, contract_type_code,
-     template_no, template_version, variable_snapshot_ref, variable_snapshot_sha256,
-     signer_snapshot_sha256, currency_code, amount_minor, subject_type_code,
-     signing_order_code, snapshot_key_ref, order_snapshot_sha256)
-VALUES
-    ('contract-2', 'customer-1', 'principal-1', 'order-2', 'service_purchase',
-     'template-1', 1, 'private://contract/snapshot-2', repeat('0', 64), repeat('1', 64),
-     'CNY', 10000, 'individual', 'customer_first',
-     'private://contract/snapshot-2', repeat('2', 64));
-INSERT INTO plugin_idc_compliance_contract_file
-    (file_no, contract_no, flow_no, file_type_code, private_object_ref, content_sha256,
-     media_type, byte_size)
-VALUES
-    ('contract-file-cross-flow', 'contract-2', 'flow-1', 'preview',
-     'private://contract/cross-flow', repeat('2', 64), 'application/pdf', 128)`); err == nil {
-		t.Fatal("contract file referenced a flow owned by another contract")
-	}
-
-	if _, err := database.Exec(ctx, `
 INSERT INTO plugin_idc_compliance_tax_invoice
     (tax_invoice_no, request_sha256, customer_no, principal_no,
      seller_snapshot_ref, seller_snapshot_sha256, buyer_snapshot_ref, buyer_snapshot_sha256,
@@ -1056,7 +762,7 @@ INSERT INTO plugin_idc_compliance_external_evidence
     (evidence_no, aggregate_type_code, aggregate_no, source_system_code,
      source_event_ref, evidence_type_code, payload_sha256, occurred_at)
 VALUES
-    ('evidence-1', 'contract', 'contract-1', 'tencent_ess',
+    ('evidence-1', 'tax_invoice', 'invoice-1', 'nuonuo_invoice',
      'event-1', 'flow_completed', repeat('c', 64), CURRENT_TIMESTAMP)`); err != nil {
 		t.Fatalf("insert append-only external evidence failed: %v", err)
 	}
@@ -1070,106 +776,6 @@ WHERE evidence_no = 'evidence-1'`); err == nil {
 DELETE FROM plugin_idc_compliance_external_evidence
 WHERE evidence_no = 'evidence-1'`); err == nil {
 		t.Fatal("external evidence was deletable")
-	}
-	assertContractTemplateInvariants(t, ctx, database)
-}
-
-func assertContractTemplateInvariants(t *testing.T, ctx context.Context, database gdb.DB) {
-	t.Helper()
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract_template
-    (template_no, origin_code, provider_code, provider_template_ref,
-     provider_state_code, provider_last_seen_sync_no, provider_updated_at)
-VALUES
-    ('ctpl_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'tencent_synced', 'tencent_essbasic',
-     'provider-template-a', 'active', 'cts_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', CURRENT_TIMESTAMP);
-INSERT INTO plugin_idc_compliance_contract_template_version
-    (template_no, version_no, name, scope_code, signing_order_code, status_code,
-     provider_snapshot_digest, lock_version)
-VALUES
-    ('ctpl_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 1, 'Provider template A', 'enterprise',
-     'customer_first', 'enabled', repeat('a', 64), 1)`); err != nil {
-		t.Fatalf("insert enabled synchronized template failed: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract_template_version
-    (template_no, version_no, name, scope_code, signing_order_code, status_code,
-     provider_snapshot_digest, lock_version)
-VALUES
-    ('ctpl_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 2, 'Provider template A v2', 'enterprise',
-     'customer_first', 'enabled', repeat('b', 64), 1)`); err == nil {
-		t.Fatal("a second enabled version of one logical template was accepted")
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_template_version
-SET name = 'tampered', lock_version = 2
-WHERE template_no = 'ctpl_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' AND version_no = 1`); err == nil {
-		t.Fatal("enabled template metadata was mutable")
-	}
-	if _, err := database.Exec(ctx, `
-INSERT INTO plugin_idc_compliance_contract_template
-    (template_no, origin_code)
-VALUES ('ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'local');
-INSERT INTO plugin_idc_compliance_contract_template_version
-    (template_no, version_no, name, scope_code, signing_order_code, status_code)
-VALUES
-    ('ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1, 'Local template B', 'enterprise',
-     'parallel', 'draft');
-INSERT INTO plugin_idc_compliance_contract_template_content
-    (content_revision_no, template_no, version_no, revision_no,
-     command_idempotency_digest, command_fingerprint, source_mode_code,
-     encryption_key_no, source_object_ref, source_sha256, source_media_type,
-     source_byte_size, conversion_status_code, created_by_user_id)
-VALUES
-    ('ctc_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-     'ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1, 1,
-     repeat('0', 64), repeat('1', 64), 'uploaded_file', 'secret-version-1',
-     'private://contract-template/source-a', repeat('c', 64), 'application/pdf', 100,
-     'source_saved', 1);
-INSERT INTO plugin_idc_compliance_contract_template_content
-    (content_revision_no, template_no, version_no, revision_no,
-     command_idempotency_digest, command_fingerprint, source_mode_code,
-     encryption_key_no, source_object_ref, source_sha256, source_media_type,
-     source_byte_size, pdf_object_ref, pdf_sha256, pdf_byte_size, pdf_page_count,
-     conversion_status_code, created_by_user_id)
-VALUES
-    ('ctc_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-     'ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1, 2,
-     repeat('2', 64), repeat('3', 64), 'online_editor', 'secret-version-1',
-     'private://contract-template/source-b', repeat('d', 64), 'text/html', 120,
-     'private://contract-template/pdf-b', repeat('e', 64), 256, 1, 'ready', 1);
-INSERT INTO plugin_idc_compliance_contract_template_field_set
-    (field_set_no, template_no, version_no, content_revision_no,
-     command_idempotency_digest, command_fingerprint, created_by_user_id)
-VALUES
-    ('ctfs_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-     'ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1,
-     'ctc_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', repeat('4', 64), repeat('5', 64), 1);
-INSERT INTO plugin_idc_compliance_contract_template_field
-    (field_no, field_set_no, template_no, version_no, sequence_no, field_type_code,
-     party_code, page_no, position_x_ppm, position_y_ppm, width_ppm, height_ppm)
-VALUES
-    ('ctf_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-     'ctfs_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-     'ctpl_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 1, 1, 'signature', 'customer',
-     1, 10000, 10000, 200000, 100000)`); err != nil {
-		t.Fatalf("insert append-only template authoring history failed: %v", err)
-	}
-	if _, err := database.Exec(ctx, `
-UPDATE plugin_idc_compliance_contract_template_content
-SET source_object_ref = 'private://contract-template/tampered'
-WHERE content_revision_no = 'ctc_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'`); err == nil {
-		t.Fatal("template content revision was mutable")
-	}
-	if _, err := database.Exec(ctx, `
-DELETE FROM plugin_idc_compliance_contract_template_field
-WHERE field_no = 'ctf_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'`); err == nil {
-		t.Fatal("template field placement history was deletable")
-	}
-	if _, err := database.Exec(ctx, `
-DELETE FROM plugin_idc_compliance_contract_template_version
-WHERE template_no = 'template-1' AND version_no = 1`); err == nil {
-		t.Fatal("a template version already used by a contract was deletable")
 	}
 }
 

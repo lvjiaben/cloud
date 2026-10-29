@@ -1,3 +1,4 @@
+// Package paymentflow submits durable payment attempts and verifies provider results.
 package paymentflow
 
 import (
@@ -12,11 +13,18 @@ import (
 	"time"
 
 	"github.com/gogf/gf/v2/errors/gerror"
+	"lina-core/pkg/bizerr"
 
 	"lina-plugin-idc-core/backend/cap/billingcap"
 	"lina-plugin-idc-payment/backend/cap/paymentcap"
 	"lina-plugin-idc-payment/backend/internal/service/channelconfig"
 	"lina-plugin-idc-payment/backend/internal/service/paymentattempt"
+)
+
+// Callback paths include the source plugin's public route prefix.
+const (
+	paymentCallbackPath = "/x/idc-payment/api/v1/callbacks/payments/"
+	refundCallbackPath  = "/x/idc-payment/api/v1/callbacks/refunds/"
 )
 
 type Config struct{ PublicOrigin string }
@@ -56,15 +64,16 @@ func New(attempts *paymentattempt.Store, channels *channelconfig.Service, config
 		return nil, gerror.New("payment flow dependencies are required")
 	}
 	origin, err := url.Parse(strings.TrimRight(config.PublicOrigin, "/"))
-	if err != nil || origin.Scheme != "https" || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" {
-		return nil, gerror.New("payment public origin must use HTTPS")
+	if err != nil || origin.Scheme != "https" || origin.Host == "" || origin.User != nil || origin.RawQuery != "" || origin.Fragment != "" || origin.Path != "" || origin.RawPath != "" || origin.Opaque != "" {
+		return nil, gerror.New("payment public origin must be an HTTPS site origin without a path")
 	}
 	return &Service{attempts: attempts, channels: channels, origin: origin.String(), ready: !strings.HasSuffix(strings.ToLower(origin.Hostname()), ".invalid")}, nil
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*Created, error) {
-	if !s.ready {
-		return nil, gerror.New("payment public origin is not configured")
+	addresses, err := s.publicAddresses(ctx)
+	if err != nil {
+		return nil, err
 	}
 	attemptNo, err := randomNo("PAT_")
 	if err != nil {
@@ -78,12 +87,13 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Created, erro
 	if err != nil {
 		return nil, err
 	}
-	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.InvoiceNo, input.Mode, prepared.CurrencyCode, prepared.ChannelAmountMinor, "IDC server order "+prepared.OrderNo, input.ClientIP, input.OpenID, prepared.ExpiresAt)
+	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.InvoiceNo, input.Mode, prepared.CurrencyCode, prepared.ChannelAmountMinor, "IDC server order "+prepared.OrderNo, input.ClientIP, input.OpenID, prepared.ExpiresAt, addresses)
 }
 
 func (s *Service) CreateCreditRepayment(ctx context.Context, input CreditCreateInput) (*Created, error) {
-	if !s.ready {
-		return nil, gerror.New("payment public origin is not configured")
+	addresses, err := s.publicAddresses(ctx)
+	if err != nil {
+		return nil, err
 	}
 	attemptNo, err := randomNo("PAT_")
 	if err != nil {
@@ -97,12 +107,13 @@ func (s *Service) CreateCreditRepayment(ctx context.Context, input CreditCreateI
 	if err != nil {
 		return nil, err
 	}
-	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.StatementNo, input.Mode, prepared.CurrencyCode, prepared.AmountMinor, "IDC credit statement "+prepared.StatementNo, input.ClientIP, input.OpenID, prepared.ExpiresAt)
+	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.StatementNo, input.Mode, prepared.CurrencyCode, prepared.AmountMinor, "IDC credit statement "+prepared.StatementNo, input.ClientIP, input.OpenID, prepared.ExpiresAt, addresses)
 }
 
 func (s *Service) CreateBalanceRecharge(ctx context.Context, input RechargeCreateInput) (*Created, error) {
-	if !s.ready {
-		return nil, gerror.New("payment public origin is not configured")
+	addresses, err := s.publicAddresses(ctx)
+	if err != nil {
+		return nil, err
 	}
 	attemptNo, err := randomNo("PAT_")
 	if err != nil {
@@ -116,10 +127,10 @@ func (s *Service) CreateBalanceRecharge(ctx context.Context, input RechargeCreat
 	if err != nil {
 		return nil, err
 	}
-	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.RechargeContextNo, input.Mode, prepared.CurrencyCode, prepared.AmountMinor, "IDC account balance recharge", input.ClientIP, input.OpenID, prepared.ExpiresAt)
+	return s.submit(ctx, attemptNo, input.ChannelNo, prepared.RechargeContextNo, input.Mode, prepared.CurrencyCode, prepared.AmountMinor, "IDC account balance recharge", input.ClientIP, input.OpenID, prepared.ExpiresAt, addresses)
 }
 
-func (s *Service) submit(ctx context.Context, attemptNo, channelNo, billingReference string, mode paymentcap.Mode, currency string, amountMinor int64, subject, clientIP, openID string, expiresAt time.Time) (*Created, error) {
+func (s *Service) submit(ctx context.Context, attemptNo, channelNo, billingReference string, mode paymentcap.Mode, currency string, amountMinor int64, subject, clientIP, openID string, expiresAt time.Time, addresses *channelconfig.PublicAddress) (*Created, error) {
 	var (
 		redirect   *paymentcap.Redirect
 		dispatched bool
@@ -132,7 +143,7 @@ func (s *Service) submit(ctx context.Context, attemptNo, channelNo, billingRefer
 		}
 		dispatched = true
 		var createErr error
-		redirect, createErr = adapter.Create(ctx, credentials, paymentcap.CreateRequest{AttemptNo: attemptNo, InvoiceNo: billingReference, Mode: mode, Currency: currency, AmountMinor: amountMinor, Subject: subject, NotifyURL: s.origin + "/api/v1/callbacks/payments/" + url.PathEscape(channelNo), ReturnURL: s.origin + "/payment/return/" + url.PathEscape(attemptNo), ClientIP: clientIP, OpenID: openID, ExpiresAt: expiresAt})
+		redirect, createErr = adapter.Create(ctx, credentials, paymentcap.CreateRequest{AttemptNo: attemptNo, InvoiceNo: billingReference, Mode: mode, Currency: currency, AmountMinor: amountMinor, Subject: subject, NotifyURL: addresses.NotificationOrigin + paymentCallbackPath + url.PathEscape(channelNo), ReturnURL: addresses.CustomerReturnOrigin + "/payment/return/" + url.PathEscape(attemptNo), ClientIP: clientIP, OpenID: openID, ExpiresAt: expiresAt})
 		return createErr
 	})
 	if err == nil && redirect == nil {
@@ -179,10 +190,19 @@ func (s *Service) AvailableChannels(ctx context.Context, currencyCode string) ([
 }
 
 func (s *Service) Callback(ctx context.Context, channelNo string, input paymentcap.CallbackRequest) (*paymentattempt.CallbackOutcome, paymentcap.ProviderCode, error) {
+	return s.callback(ctx, channelNo, input, "")
+}
+
+// callback applies an optional exact provider requirement before signature
+// verification or receipt creation; GET notifications are EPay-only.
+func (s *Service) callback(ctx context.Context, channelNo string, input paymentcap.CallbackRequest, required paymentcap.ProviderCode) (*paymentattempt.CallbackOutcome, paymentcap.ProviderCode, error) {
 	var verified *paymentcap.VerifiedResult
 	var provider paymentcap.ProviderCode
 	err := s.channels.WithCredentials(ctx, channelNo, func(adapter paymentcap.Adapter, credentials paymentcap.Credentials) error {
 		provider = adapter.Provider()
+		if required != "" && provider != required {
+			return bizerr.NewCode(CodeEPayNotificationInvalid)
+		}
 		var verifyErr error
 		verified, verifyErr = adapter.VerifyCallback(ctx, credentials, input)
 		return verifyErr
@@ -325,13 +345,17 @@ func (s *Service) submitRefund(
 	payment paymentattempt.RefundPaymentContext,
 	attempt paymentattempt.RefundAttempt,
 ) (*paymentcap.VerifiedResult, error) {
+	addresses, err := s.publicAddresses(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var result *paymentcap.VerifiedResult
-	err := s.channels.WithCredentials(ctx, payment.ChannelNo, func(adapter paymentcap.Adapter, credentials paymentcap.Credentials) error {
+	err = s.channels.WithCredentials(ctx, payment.ChannelNo, func(adapter paymentcap.Adapter, credentials paymentcap.Credentials) error {
 		var callErr error
 		result, callErr = adapter.Refund(ctx, credentials, paymentcap.RefundRequest{
 			RefundAttemptNo: attempt.RefundAttemptNo, ExternalTradeReference: payment.ExternalTradeReference,
 			Currency: work.CurrencyCode, AmountMinor: work.AmountMinor, TotalAmountMinor: payment.TotalAmountMinor,
-			NotifyURL: s.origin + "/api/v1/callbacks/refunds/" + url.PathEscape(payment.ChannelNo),
+			NotifyURL: addresses.NotificationOrigin + refundCallbackPath + url.PathEscape(payment.ChannelNo),
 		})
 		return callErr
 	})

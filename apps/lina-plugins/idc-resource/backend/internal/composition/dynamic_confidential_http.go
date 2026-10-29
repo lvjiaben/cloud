@@ -21,6 +21,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-core/pkg/logger"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -45,18 +46,26 @@ var forbiddenConfidentialHTTPFields = map[string]struct{}{
 }
 
 type confidentialHTTPHandler struct {
-	configuration            channelconfig.Configuration
-	environment              resourcecap.ProviderEnv
-	operationSecrets         []resourcecap.SecretBinding
-	login                    *resourcecap.ConfidentialHTTPRequest
-	forceFreshAuthentication bool
+	configuration               channelconfig.Configuration
+	environment                 resourcecap.ProviderEnv
+	operationSecrets            []resourcecap.SecretBinding
+	providerMethod              string
+	login                       *resourcecap.ConfidentialHTTPRequest
+	forceFreshAuthentication    bool
+	preparedProbeAuthentication bool
+	observeResponse             func(resourcecap.Evidence)
+	businessHTTPStarted         int
+	businessHTTPResponded       int
 }
 
 func NewProductionDynamicOutboundFactory(secretSource secretcap.Source, leases ...*channelinvocation.Service) DynamicOutboundFactory {
-	return func(ctx context.Context, configuration channelconfig.Configuration, method string, operationSecrets []resourcecap.SecretBinding) (pluginhost.ConfidentialOutboundHandler, func(), error) {
+	return func(ctx context.Context, configuration channelconfig.Configuration, method string, operationSecrets []resourcecap.SecretBinding, observations ...func(resourcecap.Evidence)) (pluginhost.ConfidentialOutboundHandler, func(), error) {
+		if len(observations) > 1 {
+			return nil, nil, gerror.New("only one response observer is allowed")
+		}
 		var invocationLease *channelinvocation.Lease
 		settings, settingsErr := decodeChannelAuthenticationSettings(configuration.Config.Settings)
-		if settingsErr == nil && settings.SerializeInvocations && method == resourcecap.DynamicProviderMethodExecute {
+		if settingsErr == nil && settings.SerializeInvocations && (method == resourcecap.DynamicProviderMethodExecute || method == resourcecap.DynamicProviderMethodCreatePrincipal) {
 			if len(leases) != 1 || leases[0] == nil {
 				return nil, nil, gerror.New("resource channel invocation serialization is unavailable")
 			}
@@ -66,33 +75,49 @@ func NewProductionDynamicOutboundFactory(secretSource secretcap.Source, leases .
 				return nil, nil, leaseErr
 			}
 		}
+		releaseLease := func() {
+			if invocationLease == nil {
+				return
+			}
+			releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+			defer cancel()
+			if releaseErr := invocationLease.Release(releaseCtx); releaseErr != nil {
+				logger.Warningf(ctx, "provider invocation lease cleanup failed")
+			}
+		}
 		environment, cleanup, err := productionProviderEnvironment(ctx, configuration, secretSource)
 		if err != nil {
-			if invocationLease != nil {
-				_ = invocationLease.Release(context.WithoutCancel(ctx))
-			}
+			releaseLease()
 			return nil, nil, err
 		}
-		handler := &confidentialHTTPHandler{configuration: configuration, environment: environment, operationSecrets: append([]resourcecap.SecretBinding(nil), operationSecrets...), forceFreshAuthentication: method == resourcecap.DynamicProviderMethodVerifyConnection}
-		return handler.Execute, func() {
-			cleanup()
-			if invocationLease != nil {
-				releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-				defer cancel()
-				_ = invocationLease.Release(releaseCtx)
-			}
-		}, nil
+		handler := &confidentialHTTPHandler{configuration: configuration, environment: environment, operationSecrets: append([]resourcecap.SecretBinding(nil), operationSecrets...), providerMethod: method, forceFreshAuthentication: method == resourcecap.DynamicProviderMethodVerifyConnection}
+		if len(observations) == 1 {
+			handler.observeResponse = observations[0]
+		}
+		cleanupAll := func() { cleanup(); releaseLease() }
+		if err := handler.prepareAuthentication(ctx); err != nil {
+			handler.observeCallFailure(ctx, resourcecap.ConfidentialHTTPKindAuthenticate, err, 0, 0)
+			cleanupAll()
+			return nil, nil, err
+		}
+		return handler.Execute, cleanupAll, nil
 	}
 }
 
-func (h *confidentialHTTPHandler) Execute(ctx context.Context, input *pluginhost.ConfidentialOutboundRequest) (*pluginhost.ConfidentialOutboundResult, error) {
+func (h *confidentialHTTPHandler) Execute(ctx context.Context, input *pluginhost.ConfidentialOutboundRequest) (result *pluginhost.ConfidentialOutboundResult, executeErr error) {
 	if h == nil || input == nil || input.Sequence == 0 || ctx == nil || ctx.Err() != nil {
 		return nil, gerror.New("confidential Provider HTTP step is invalid")
 	}
 	var request resourcecap.ConfidentialHTTPRequest
+	started, responded := h.businessHTTPStarted, h.businessHTTPResponded
+	defer func() {
+		if executeErr != nil {
+			h.observeCallFailure(ctx, request.Kind, executeErr, started, responded)
+		}
+	}()
 	decoder := json.NewDecoder(bytes.NewReader(input.Payload))
 	decoder.DisallowUnknownFields()
-	if decoder.Decode(&request) != nil || decoder.Decode(&struct{}{}) != io.EOF || normalizeConfidentialSecretFormBindings(&request) != nil || validateConfidentialHTTPRequest(request) != nil {
+	if decoder.Decode(&request) != nil || decoder.Decode(&struct{}{}) != io.EOF || normalizeConfidentialPublicFormFields(&request) != nil || normalizeConfidentialSecretFormBindings(&request) != nil || h.validateConfidentialRequest(request) != nil {
 		return nil, gerror.New("confidential Provider HTTP step is invalid")
 	}
 	if err := h.validateConfidentialOperationSlots(request); err != nil {
@@ -433,8 +458,20 @@ func confidentialPlaintextAppears(content, secret []byte) bool {
 // authenticate bypasses shared session caches for explicit connection tests.
 // The probe token is cleared without replacing or invalidating business sessions.
 func (h *confidentialHTTPHandler) authenticate(ctx context.Context, request resourcecap.ConfidentialHTTPRequest) error {
+	settings, err := h.authenticationSettings()
+	canonicalPath := confidentialCanonicalLoginPath(h.configuration.Config.Endpoint, settings.LoginPath)
+	if err != nil || settings.Strategy != "login_session" ||
+		(request.Path != settings.LoginPath && request.Path != canonicalPath) ||
+		(len(request.CredentialFields) > 0 && !equalStringMap(request.CredentialFields, settings.Fields)) ||
+		(h.configuration.PluginID == "idc-zjmfcloud" && request.Method != http.MethodPost) {
+		return bizerr.NewCode(resourcecap.CodeProviderLocalAuthPolicy)
+	}
 	h.login = &request
 	if h.forceFreshAuthentication {
+		if h.preparedProbeAuthentication {
+			h.preparedProbeAuthentication = false
+			return nil
+		}
 		token, err := h.performLogin(ctx, request)
 		clear(token)
 		return err
@@ -484,7 +521,7 @@ func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request reso
 	visit = func(index int) error {
 		if index == len(fields) {
 			response, err := h.perform(ctx, resourcecap.ConfidentialHTTPRequest{
-				Kind: resourcecap.ConfidentialHTTPKindRequest, Method: request.Method, Path: request.Path,
+				Kind: resourcecap.ConfidentialHTTPKindAuthenticate, Method: request.Method, Path: request.Path,
 				Form: firstValues(values),
 			}, nil)
 			if err != nil {
@@ -532,7 +569,11 @@ func (h *confidentialHTTPHandler) performLogin(ctx context.Context, request reso
 }
 
 func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcecap.ConfidentialHTTPRequest, token []byte) (*resourcecap.ConfidentialHTTPResponse, error) {
-	base, err := url.Parse(h.configuration.Config.Endpoint)
+	endpoint, err := resourcecap.ResolveInterfaceAPIEndpoint(h.configuration.Config.Endpoint, h.configuration.Config.Settings)
+	if err != nil {
+		return nil, err
+	}
+	base, err := url.Parse(endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -579,6 +620,12 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 		httpRequest.Header.Set(settings.TokenHeader, value)
 		defer httpRequest.Header.Del(settings.TokenHeader)
 	}
+	if request.Kind == resourcecap.ConfidentialHTTPKindRequest {
+		h.businessHTTPStarted++
+		if h.observeResponse != nil && h.providerMethod == resourcecap.DynamicProviderMethodExecute {
+			h.observeResponse(resourcecap.Evidence{Kind: businessHTTPAttemptObserved, ObservedAt: time.Now().UTC()})
+		}
+	}
 	response, err := h.environment.HTTPClient.Do(httpRequest)
 	if err != nil {
 		return nil, confidentialTransportError(err)
@@ -586,20 +633,19 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 	if response == nil || response.Body == nil {
 		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
+	if request.Kind == resourcecap.ConfidentialHTTPKindRequest {
+		h.businessHTTPResponded++
+	}
 	defer response.Body.Close()
-	if response.StatusCode == http.StatusNotFound {
-		return nil, bizerr.NewCode(resourcecap.CodeProviderEndpointNotFound)
-	}
-	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
-		return nil, bizerr.NewCode(resourcecap.CodeProviderAuthRejected)
-	}
-	if response.StatusCode >= http.StatusMultipleChoices && response.StatusCode < http.StatusBadRequest {
-		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
-	}
-	content, err := io.ReadAll(io.LimitReader(response.Body, maximumConfidentialHTTPResponse+1))
-	if err != nil {
+	content, readErr := io.ReadAll(io.LimitReader(response.Body, maximumConfidentialHTTPResponse+1))
+	h.observeHTTPResponse(ctx, request, response.StatusCode, content, token)
+	if result, statusErr, handled := h.reviewedResponseStatus(response.StatusCode); handled {
 		clear(content)
-		return nil, confidentialTransportError(err)
+		return result, statusErr
+	}
+	if readErr != nil {
+		clear(content)
+		return nil, confidentialTransportError(readErr)
 	}
 	if len(content) > maximumConfidentialHTTPResponse || !json.Valid(content) {
 		clear(content)
@@ -626,6 +672,13 @@ func (h *confidentialHTTPHandler) perform(ctx context.Context, request resourcec
 		return nil, bizerr.NewCode(resourcecap.CodeProviderInvalidResponse)
 	}
 	return &resourcecap.ConfidentialHTTPResponse{StatusCode: response.StatusCode, Data: projected}, nil
+}
+
+// confidentialOperationValidationRejected recognizes definitive request
+// validation responses without relying on the supplier's private error text.
+func confidentialOperationValidationRejected(pluginID, method string, status int) bool {
+	return pluginID == "idc-zjmfcloud" && method == resourcecap.DynamicProviderMethodExecute &&
+		(status == http.StatusBadRequest || status == http.StatusUnprocessableEntity)
 }
 
 func (h *confidentialHTTPHandler) authenticationSettings() (channelAuthenticationSettings, error) {
@@ -860,6 +913,12 @@ func projectConfidentialHTTPValue(value any, allowed map[string]struct{}, depth 
 		result := make(map[string]any)
 		for key, child := range typed {
 			if _, ok := allowed[key]; !ok {
+				continue
+			}
+			if _, dictionary := child.(map[string]any); key == "sub_id" && dictionary {
+				if projected, ok := projectConfidentialRelationshipIDs(child, allowed); ok {
+					result[key] = projected
+				}
 				continue
 			}
 			if projected, ok := projectConfidentialHTTPValue(child, allowed, depth+1); ok {

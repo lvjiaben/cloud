@@ -1,4 +1,4 @@
-// This file implements the resource-owner outbound HTTPS and DNS rebinding policy.
+// This file enforces the explicitly configured HTTP(S) origin and DNS policy.
 package composition
 
 import (
@@ -38,6 +38,7 @@ type requestDoer interface {
 
 // outboundHTTPClient restricts every request to the configured channel origin.
 type outboundHTTPClient struct {
+	scheme string
 	host   string
 	port   string
 	client requestDoer
@@ -45,14 +46,14 @@ type outboundHTTPClient struct {
 
 var _ resourcecap.HTTPClient = (*outboundHTTPClient)(nil)
 
-// NewOutboundHTTPClient constructs a Provider HTTP client with exact-origin,
-// TLS, redirect, DNS, and destination-address enforcement.
+// NewOutboundHTTPClient preserves the configured scheme and enforces origin,
+// redirect, DNS and destination-address boundaries without automatic downgrades.
 func NewOutboundHTTPClient(endpoint string) (resourcecap.HTTPClient, func(), error) {
 	return newOutboundHTTPClient(endpoint, "")
 }
 
-// newOutboundHTTPClient accepts an optional exact leaf-certificate pin for a
-// supplier with a self-signed certificate; it never disables verification globally.
+// newOutboundHTTPClient retains the historical fingerprint argument while
+// applying the explicitly configured channel protocol and certificate policy.
 func newOutboundHTTPClient(endpoint, certificateFingerprint string) (resourcecap.HTTPClient, func(), error) {
 	origin, err := parseOutboundOrigin(endpoint)
 	if err != nil {
@@ -89,14 +90,14 @@ func newOutboundHTTPClient(endpoint, certificateFingerprint string) (resourcecap
 		transport.CloseIdleConnections()
 	}
 	return &outboundHTTPClient{
-		host: origin.Hostname(), port: canonicalHTTPSPort(origin), client: client,
+		scheme: origin.Scheme, host: origin.Hostname(), port: canonicalHTTPSPort(origin), client: client,
 	}, closeClient, nil
 }
 
 func (c *outboundHTTPClient) Do(request *http.Request) (*http.Response, error) {
 	if c == nil || c.client == nil || request == nil || request.URL == nil ||
 		request.Context() == nil || request.Context().Err() != nil ||
-		request.URL.Scheme != "https" || request.URL.User != nil || request.URL.Opaque != "" ||
+		request.URL.Scheme != c.scheme || request.URL.User != nil || request.URL.Opaque != "" ||
 		request.URL.Fragment != "" || !strings.EqualFold(request.URL.Hostname(), c.host) ||
 		canonicalHTTPSPort(request.URL) != c.port ||
 		(request.Host != "" && !strings.EqualFold(request.Host, request.URL.Host)) {
@@ -107,7 +108,7 @@ func (c *outboundHTTPClient) Do(request *http.Request) (*http.Response, error) {
 
 func parseOutboundOrigin(endpoint string) (*url.URL, error) {
 	parsed, err := url.Parse(endpoint)
-	if err != nil || parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.User != nil ||
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Hostname() == "" || parsed.User != nil ||
 		parsed.Opaque != "" || parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" {
 		return nil, gerror.New("resource Provider outbound endpoint is invalid")
 	}
@@ -126,6 +127,9 @@ func canonicalHTTPSPort(value *url.URL) string {
 	}
 	if port := value.Port(); port != "" {
 		return port
+	}
+	if value.Scheme == "http" {
+		return "80"
 	}
 	return "443"
 }

@@ -19,7 +19,6 @@ var requiredCodes = []customer360cap.Code{
 	customer360cap.CodeBills,
 	customer360cap.CodeTransactions,
 	customer360cap.CodeServers,
-	customer360cap.CodeContracts,
 	customer360cap.CodeTaxInvoices,
 	customer360cap.CodeTickets,
 	customer360cap.CodeNotifications,
@@ -32,7 +31,6 @@ type Summary struct {
 	Bills         int64
 	Transactions  int64
 	Servers       int64
-	Contracts     int64
 	TaxInvoices   int64
 	Tickets       int64
 	Notifications int64
@@ -148,8 +146,8 @@ func (r *reader) Get(ctx context.Context, customerNo string) (Summary, error) {
 	return Summary{
 		Orders: counts[customer360cap.CodeOrders], Bills: counts[customer360cap.CodeBills],
 		Transactions: counts[customer360cap.CodeTransactions], Servers: counts[customer360cap.CodeServers],
-		Contracts: counts[customer360cap.CodeContracts], TaxInvoices: counts[customer360cap.CodeTaxInvoices],
-		Tickets: counts[customer360cap.CodeTickets], Notifications: counts[customer360cap.CodeNotifications],
+		TaxInvoices: counts[customer360cap.CodeTaxInvoices],
+		Tickets:     counts[customer360cap.CodeTickets], Notifications: counts[customer360cap.CodeNotifications],
 		Audits: counts[customer360cap.CodeAudits], Balances: balances,
 	}, nil
 }

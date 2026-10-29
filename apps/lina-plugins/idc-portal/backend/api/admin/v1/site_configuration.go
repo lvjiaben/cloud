@@ -9,6 +9,20 @@ import (
 
 // WebsiteCommon contains public details shared by all templates.
 type WebsiteCommon struct {
+	HeaderLogoURL             string `json:"headerLogoUrl" dc:"Header logo image URL" eg:"/header-logo.png"`
+	FooterLogoURL             string `json:"footerLogoUrl" dc:"Footer logo image URL" eg:"/footer-logo.png"`
+	Copyright                 string `json:"copyright" dc:"Copyright text" eg:"© Example Cloud"`
+	BusinessQQ                string `json:"businessQq" dc:"Business QQ" eg:"12345678"`
+	CompanyAddress            string `json:"companyAddress" dc:"Company address" eg:"Example business park"`
+	EnterpriseWechatQRCodeURL string `json:"enterpriseWechatQrCodeUrl" dc:"Enterprise WeChat QR code image URL" eg:"/enterprise-wechat.png"`
+	WechatOfficialQRCodeURL   string `json:"wechatOfficialQrCodeUrl" dc:"WeChat official account QR code image URL" eg:"/wechat-official.png"`
+	TelecomLicenseNumber      string `json:"telecomLicenseNumber" dc:"Value-added telecom license number" eg:"Example license"`
+	TelecomLicenseURL         string `json:"telecomLicenseUrl" dc:"Value-added telecom license lookup URL" eg:"https://records.example/telecom"`
+
+	ICPNumber    string `json:"icpNumber" dc:"Optional Website ICP registration number" eg:"Example registration"`
+	ICPURL       string `json:"icpUrl" dc:"Optional Website ICP registration link" eg:"https://records.example/lookup"`
+	PoliceNumber string `json:"policeNumber" dc:"Optional Public security registration number" eg:"Example registration"`
+	PoliceURL    string `json:"policeUrl" dc:"Optional Public security registration link" eg:"https://records.example/lookup"`
 	SiteName     string `json:"siteName" dc:"Website name" eg:"My Cloud"`
 	SiteTitle    string `json:"siteTitle" dc:"Website title" eg:"Cloud services"`
 	CompanyName  string `json:"companyName" dc:"Company name" eg:"Cloud Ltd"`

@@ -31,8 +31,8 @@ type resourceOutcomeWorker struct {
 }
 
 type resourceOutcomeClaim struct {
-	TaskNo, LeaseToken, ReportPayload, ReportDigest string
-	AttemptCount                                    int
+	TaskNo, ProviderTaskNo, LeaseToken, ReportPayload, ReportDigest string
+	AttemptCount                                                    int
 }
 
 // NewResourceOutcomeWorker constructs the post-commit resource-owner reporter.
@@ -91,21 +91,21 @@ func (worker *resourceOutcomeWorker) claim(ctx context.Context) (*resourceOutcom
 			return err
 		}
 		var row *struct {
-			TaskNo, ReportPayload, ReportDigest string
-			AttemptCount                        int
+			TaskNo, ProviderTaskNo, ReportPayload, ReportDigest string
+			AttemptCount                                        int
 		}
-		if err := worker.database.GetScan(txCtx, &row, `SELECT task_no,report_payload,report_digest,attempt_count FROM plugin_idc_core_product_fulfillment_resource_outcome_outbox WHERE tenant_id=0 AND attempt_count<10 AND ((status_code IN ('pending','retry_wait') AND next_attempt_at<=CURRENT_TIMESTAMP) OR (status_code='delivering' AND lease_expires_at<=CURRENT_TIMESTAMP)) ORDER BY next_attempt_at,task_no LIMIT 1 FOR UPDATE SKIP LOCKED`); err != nil || row == nil {
+		if err := worker.database.GetScan(txCtx, &row, `SELECT task_no,provider_task_no,report_payload,report_digest,attempt_count FROM plugin_idc_core_product_fulfillment_resource_outcome_outbox WHERE tenant_id=0 AND attempt_count<10 AND ((status_code IN ('pending','retry_wait') AND next_attempt_at<=CURRENT_TIMESTAMP) OR (status_code='delivering' AND lease_expires_at<=CURRENT_TIMESTAMP)) ORDER BY next_attempt_at,task_no LIMIT 1 FOR UPDATE SKIP LOCKED`); err != nil || row == nil {
 			return err
 		}
 		lease, err := resourceOutcomeLease()
 		if err != nil {
 			return err
 		}
-		result, err := worker.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_resource_outcome_outbox SET status_code='delivering',attempt_count=attempt_count+1,lease_token=?,lease_expires_at=CURRENT_TIMESTAMP+INTERVAL '60 seconds',updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND attempt_count=? AND status_code IN ('pending','retry_wait','delivering')`, lease, row.TaskNo, row.AttemptCount)
+		result, err := worker.database.Exec(txCtx, `UPDATE plugin_idc_core_product_fulfillment_resource_outcome_outbox SET status_code='delivering',attempt_count=attempt_count+1,lease_token=?,lease_expires_at=CURRENT_TIMESTAMP+INTERVAL '60 seconds',updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND provider_task_no=? AND attempt_count=? AND status_code IN ('pending','retry_wait','delivering')`, lease, row.TaskNo, row.ProviderTaskNo, row.AttemptCount)
 		if err != nil || affected(result) != 1 {
 			return errorsNew("product_fulfillment_resource_outcome_claim_conflict")
 		}
-		claim = &resourceOutcomeClaim{TaskNo: row.TaskNo, LeaseToken: lease, ReportPayload: row.ReportPayload, ReportDigest: row.ReportDigest, AttemptCount: row.AttemptCount + 1}
+		claim = &resourceOutcomeClaim{TaskNo: row.TaskNo, ProviderTaskNo: row.ProviderTaskNo, LeaseToken: lease, ReportPayload: row.ReportPayload, ReportDigest: row.ReportDigest, AttemptCount: row.AttemptCount + 1}
 		return nil
 	})
 	return claim, err
@@ -113,7 +113,7 @@ func (worker *resourceOutcomeWorker) claim(ctx context.Context) (*resourceOutcom
 
 func (worker *resourceOutcomeWorker) finish(ctx context.Context, claim *resourceOutcomeClaim, deliveryErr error) (bool, error) {
 	status, errorCode, manual := resourceOutcomeDeliveryState(claim.AttemptCount, deliveryErr)
-	result, err := worker.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_resource_outcome_outbox SET status_code=?,next_attempt_at=CURRENT_TIMESTAMP+INTERVAL '30 seconds',lease_token='',lease_expires_at=NULL,last_error_code=?,reported_at=CASE WHEN ?='reported' THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND status_code='delivering' AND lease_token=?`, status, errorCode, status, claim.TaskNo, claim.LeaseToken)
+	result, err := worker.database.Exec(ctx, `UPDATE plugin_idc_core_product_fulfillment_resource_outcome_outbox SET status_code=?,next_attempt_at=CURRENT_TIMESTAMP+INTERVAL '30 seconds',lease_token='',lease_expires_at=NULL,last_error_code=?,reported_at=CASE WHEN ?='reported' THEN CURRENT_TIMESTAMP ELSE NULL END,updated_at=CURRENT_TIMESTAMP WHERE tenant_id=0 AND task_no=? AND provider_task_no=? AND status_code='delivering' AND lease_token=?`, status, errorCode, status, claim.TaskNo, claim.ProviderTaskNo, claim.LeaseToken)
 	if err != nil || affected(result) != 1 {
 		return false, errorsNew("product_fulfillment_resource_outcome_finish_conflict")
 	}

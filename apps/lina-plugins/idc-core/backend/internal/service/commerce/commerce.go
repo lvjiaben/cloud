@@ -13,10 +13,11 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
-	"lina-plugin-idc-core/backend/cap/contracttemplatecap"
+
 	"lina-plugin-idc-core/backend/internal/service/billing"
 	"lina-plugin-idc-core/backend/internal/service/catalog"
-	"lina-plugin-idc-core/backend/internal/service/contractpolicy"
+	"lina-plugin-idc-core/backend/internal/service/purchaseserverlogin"
+
 	"lina-plugin-idc-core/backend/internal/service/marketing"
 	"lina-plugin-idc-core/backend/internal/service/outbox"
 	"lina-plugin-idc-core/backend/internal/service/principal"
@@ -74,21 +75,6 @@ var (
 		"The shopping cart is temporarily unavailable",
 		gcode.CodeInternalError,
 	)
-	CodeContractPolicyInvalid = bizerr.MustDefine(
-		"IDC_COMMERCE_CONTRACT_POLICY_INVALID",
-		"The order contract rule is invalid; review the customer, product, and order settings",
-		gcode.CodeInvalidOperation,
-	)
-	CodeContractTemplateUnavailable = bizerr.MustDefine(
-		"IDC_COMMERCE_CONTRACT_TEMPLATE_UNAVAILABLE",
-		"The selected contract template is unavailable; choose an enabled matching template",
-		gcode.CodeInvalidOperation,
-	)
-	CodeContractTemplateConflict = bizerr.MustDefine(
-		"IDC_COMMERCE_CONTRACT_TEMPLATE_CONFLICT",
-		"The products require different contract templates; select one order template before payment",
-		gcode.CodeInvalidOperation,
-	)
 	CodeOrderNotCancelable = bizerr.MustDefine(
 		"IDC_COMMERCE_ORDER_NOT_CANCELABLE",
 		"The order cannot be cancelled in its current state",
@@ -143,21 +129,49 @@ type AddItemInput struct {
 	Purchase            catalog.PurchaseConfigurationInput
 }
 
+// UpdateItemInput changes one owned intent atomically. Purchase is omitted for
+// quantity-only updates; replacing configuration uses the same published resolver.
+type UpdateItemInput struct {
+	CartItemNo          string
+	ExpectedCartVersion int64
+	ExpectedItemVersion int64
+	Quantity            int
+	Purchase            *catalog.PurchaseConfigurationInput
+}
+
+// CartConfiguration describes a persisted priced choice without exposing tokens.
+type CartConfiguration struct {
+	LabelZhCN string
+	LabelEnUS string
+	ValueZhCN string
+	ValueEnUS string
+}
+
 // CartItem is one purchase intent and its current, read-only repair projection.
 type CartItem struct {
-	CartItemNo            string
-	ProductNameZhCN       string
-	ProductNameEnUS       string
-	PublicSlug            string
-	ConfigurationRequired bool
-	ConfigurationFrozen   bool
-	ConfigurationRevision string
-	Quantity              int
-	PurchaseCycles        int
-	StatusCode            string
-	IssueCode             string
-	RepairAction          string
-	Version               int64
+	HasServerLogin                bool
+	ServerLoginToken              string
+	ServerLoginHostname           string
+	ServerLoginPasswordConfigured bool
+
+	ConfigurationReference string
+	CartItemNo             string
+	ProductNameZhCN        string
+	ProductNameEnUS        string
+	PublicSlug             string
+	ConfigurationRequired  bool
+	ConfigurationFrozen    bool
+	ConfigurationRevision  string
+	Configuration          []CartConfiguration
+	ChargeTypeCode         string
+	PeriodUnitCode         string
+	PeriodCount            int
+	Quantity               int
+	PurchaseCycles         int
+	StatusCode             string
+	IssueCode              string
+	RepairAction           string
+	Version                int64
 }
 
 // Cart is the bounded owner-scoped cart projection.
@@ -186,11 +200,20 @@ type Service interface {
 	OpenAccountCart(context.Context, string) (*Cart, error)
 	GetAccountCart(context.Context) (*Cart, error)
 	AddAccountItem(context.Context, AddItemInput) (*Cart, error)
+	// UpdateAccountItem validates ownership and both versions, replaces a quantity
+	// or configuration and invalidates pricing; invalid/foreign/stale inputs fail.
+	UpdateAccountItem(context.Context, UpdateItemInput) (*Cart, error)
 	RemoveAccountItem(context.Context, string, int64, int64) (*Cart, error)
 	SwitchAccountCurrency(context.Context, string, int64) (*Cart, error)
 	MergeGuestCart(context.Context, string) (*Cart, error)
 	QuoteGuestCart(context.Context, string, QuoteRequest) (*Quote, error)
 	QuoteAccountCart(context.Context, QuoteRequest) (*Quote, error)
+	// QuoteAccountTarget creates one owned same-product/period target quote without changing the customer cart; invalid, foreign or stale targets fail closed.
+	QuoteAccountTarget(context.Context, AccountTargetQuoteInput) (*Quote, error)
+	// QuoteStaffTarget requires exact server edit authorization and retains the actual employee actor.
+	QuoteStaffTarget(context.Context, string, AccountTargetQuoteInput) (*Quote, error)
+	// FreezeStaffTargetQuoteItemConfiguration only freezes that employee's owned change target.
+	FreezeStaffTargetQuoteItemConfiguration(context.Context, string, string, FreezeQuoteItemConfigurationInput) (*FrozenQuoteItemConfiguration, error)
 	CheckoutAccountQuote(context.Context, CheckoutRequest) (*Checkout, error)
 	FreezeAccountQuoteItemConfiguration(context.Context, FreezeQuoteItemConfigurationInput) (*FrozenQuoteItemConfiguration, error)
 	// CancelAccountOrder derives customer ownership from the active principal.
@@ -199,6 +222,9 @@ type Service interface {
 }
 
 type serviceImpl struct {
+	serverLogins purchaseserverlogin.Service
+
+	targetQuoteAuthorizer   TargetQuoteAuthorizer
 	currencies              CheckoutCurrencyReader
 	database                gdb.DB
 	catalog                 catalog.PurchaseConfigurationResolver
@@ -210,7 +236,7 @@ type serviceImpl struct {
 	hasReservationReverser  bool
 	outbox                  checkoutEventWriter
 	settlements             billing.FinancialSettlementService
-	contractPolicy          contractpolicy.Resolver
+
 	principal               principal.Reader
 	random                  io.Reader
 	structuredConfiguration *structuredConfigurationService
@@ -229,20 +255,6 @@ func New(
 	principalReader principal.Reader,
 	settlements billing.FinancialSettlementService,
 ) (Service, error) {
-	return NewWithContractTemplates(
-		database, catalogResolver, principalReader, settlements, nil,
-	)
-}
-
-// NewWithContractTemplates enables fail-closed order contract resolution when
-// the compliance plugin supplies its installation-local template directory.
-func NewWithContractTemplates(
-	database gdb.DB,
-	catalogResolver catalog.PurchaseConfigurationResolver,
-	principalReader principal.Reader,
-	settlements billing.FinancialSettlementService,
-	templates contracttemplatecap.Source,
-) (Service, error) {
 	marketingService, err := marketing.New(database, marketing.Config{})
 	if err != nil {
 		return nil, gerror.Wrap(err, "create commerce marketing service")
@@ -257,7 +269,6 @@ func NewWithContractTemplates(
 	if err != nil {
 		return nil, err
 	}
-	service.contractPolicy = contractpolicy.NewResolver(templates)
 	return service, nil
 }
 
@@ -270,10 +281,16 @@ func NewWithQuoteAdjustments(
 	principalReader principal.Reader,
 	evaluator QuoteAdjustmentEvaluator,
 	settlements billing.FinancialSettlementService,
+	serverLogins purchaseserverlogin.Service,
 ) (Service, error) {
-	return newServiceWithQuoteAdjustments(
+	service, err := newServiceWithQuoteAdjustments(
 		database, catalogResolver, principalReader, evaluator, settlements,
 	)
+	if err != nil {
+		return nil, err
+	}
+	service.serverLogins = serverLogins
+	return service, nil
 }
 
 func newServiceWithQuoteAdjustments(
@@ -336,18 +353,7 @@ func newService(
 		adjustments: noQuoteAdjustments{}, reservations: noQuoteReservationFinalizer{},
 		reservationReverser: noQuoteReservationReverser{},
 		outbox:              outboxService, settlements: settlements,
-		contractPolicy: contractpolicy.NewResolver(nil),
-		principal:      principalReader, random: random,
-	}, nil
-}
 
-// NewWithQuoteAdjustmentsAndContractTemplates reuses the shared pricing policy
-// and preserves the same contract gate for channel and website checkout.
-func NewWithQuoteAdjustmentsAndContractTemplates(database gdb.DB, resolver catalog.PurchaseConfigurationResolver, reader principal.Reader, evaluator QuoteAdjustmentEvaluator, settlements billing.FinancialSettlementService, templates contracttemplatecap.Source) (Service, error) {
-	service, err := newServiceWithQuoteAdjustments(database, resolver, reader, evaluator, settlements)
-	if err != nil {
-		return nil, err
-	}
-	service.contractPolicy = contractpolicy.NewResolver(templates)
-	return service, nil
+		principal: principalReader, random: random,
+	}, nil
 }

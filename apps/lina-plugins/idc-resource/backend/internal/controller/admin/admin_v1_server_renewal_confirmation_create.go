@@ -8,7 +8,7 @@ import (
 )
 
 func (c *ControllerV1) ServerRenewalConfirmationCreate(ctx context.Context, req *v1.ServerRenewalConfirmationCreateReq) (res *v1.ServerRenewalConfirmationCreateRes, err error) {
-	confirmation, err := c.renewals.Confirm(ctx, req.RequestKey, req.RenewalCycles, req.ServerNos, req.ConfirmationDigest)
+	confirmation, err := c.renewals.Confirm(ctx, req.RequestKey, req.RenewalCycles, req.ServerNos, req.ConfirmationDigest, req.EntitlementNo)
 	if err != nil {
 		return nil, err
 	}

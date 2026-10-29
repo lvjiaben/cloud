@@ -98,6 +98,9 @@ func (s *onlineRefundService) insertRefundRequest(
 	if preview == nil || customerUserID <= 0 {
 		return nil, bizerr.NewCode(CodeRefundIntegrity)
 	}
+	if err := s.ensureNativeCommercialRefundIdle(ctx, preview); err != nil {
+		return nil, err
+	}
 	now, err := refundDatabaseNow(ctx, s.database)
 	if err != nil {
 		return nil, err

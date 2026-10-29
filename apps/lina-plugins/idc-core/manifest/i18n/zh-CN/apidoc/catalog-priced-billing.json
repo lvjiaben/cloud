@@ -1,0 +1,17 @@
+{
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.meta.tags": "商品管理",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.meta.summary": "添加计费周期及基础售价",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.meta.dc": "将一个普通固定价周期及首笔币种售价共同保存；校验计费、价格及商品保存权限，失败不改变周期或售价。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.schema.dc": "将一个普通固定价周期及首笔币种售价共同保存；校验计费、价格及商品保存权限，失败不改变周期或售价。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.versionNo.dc": "可编辑商品配置编号。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.ruleCode.dc": "同一商品配置内稳定的周期代码；重试同次新增时复用。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.periodUnit.dc": "周期单位：once 单次、hour 小时、day 天、month 月、year 年；单次为一次性收费，其余为周期收费。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.periodCount.dc": "每个周期包含的单位数量；一次性收费必须为一。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.minimumPurchaseCycles.dc": "最少购买周期数；一次性收费为一。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.maximumRenewalCycles.dc": "可选的单次续费周期上限，不填表示无额外上限；一次性收费不得填写。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.currencyCode.dc": "明确的大写 ISO 币种，不换算币种、不推断售价。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.amountMinor.dc": "最小货币单位的新购基础金额；明确填写零表示免费。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.setupFeeMinor.dc": "最小货币单位的额外一次性开通费。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateReq.fields.renewalAmountMinor.dc": "明确的最小货币单位续费金额；周期收费必填，一次性收费不填。",
+  "plugins.idc_core.api.admin.v1.CatalogPricedBillingRuleCreateRes.fields.billingRuleNo.dc": "与基础售价一起创建的计费周期编号。"
+}

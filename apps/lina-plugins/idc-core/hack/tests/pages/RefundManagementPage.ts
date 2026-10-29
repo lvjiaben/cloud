@@ -89,7 +89,7 @@ export class RefundManagementPage {
     const directory = resolve(process.cwd(), "../../temp", day);
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
-    await this.page.screenshot({ fullPage: false, path });
+    await this.page.screenshot({ animations: "disabled", fullPage: false, path });
     return path;
   }
 }

@@ -1,0 +1,7 @@
+gfcli:
+  gen:
+    dao: []
+build:
+  commands:
+    - node "$(BUILD_DIR)/scripts/build.mjs"
+    - node "$(BUILD_DIR)/scripts/package.mjs"

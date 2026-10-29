@@ -1,6 +1,6 @@
 id: customer-default
 name: 默认用户中心
-version: v0.2.0
+version: v0.2.30
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -45,7 +45,7 @@ business_extensions:
 
         pages:
           - { id: overview, nameZh: 账户概览, nameEn: Overview, path: /account }
-          - { id: services, nameZh: 我的服务, nameEn: Services, path: /account/servers }
+          - { id: services, nameZh: 我的服务, nameEn: Services, path: /account/product-directories }
           - { id: orders, nameZh: 我的订单, nameEn: Orders, path: /account/orders }
           - { id: finance, nameZh: 账单与余额, nameEn: Finance, path: /account/billing }
           - { id: support, nameZh: 服务工单, nameEn: Support, path: /account/support }

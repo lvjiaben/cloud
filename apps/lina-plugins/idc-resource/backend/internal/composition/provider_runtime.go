@@ -7,6 +7,9 @@ import (
 
 	"github.com/gogf/gf/v2/errors/gerror"
 
+	"lina-core/pkg/logger"
+	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-core/pkg/plugin/capability/plugincap"
 	"lina-core/pkg/plugin/pluginhost"
 	"lina-plugin-idc-core/backend/cap/secretcap"
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
@@ -114,6 +117,7 @@ func (r *ProviderRuntime) ConstructSession(
 	}
 	configuration, err := r.channels.ReadEnabled(ctx, channelRef)
 	if err != nil {
+		logger.Warningf(ctx, "resource provider channel read failed: %s", gerror.Current(err).Error())
 		return nil, nil, gerror.New("resource Provider construction failed")
 	}
 	return r.constructConfiguration(ctx, channelRef, configuration)
@@ -136,6 +140,42 @@ func (r *ProviderRuntime) ConstructConfiguredSession(
 	configuration, err := reader.ReadConfigured(ctx, channelRef)
 	if err != nil {
 		return nil, nil, gerror.New("resource Provider construction failed")
+	}
+	if configuration.RuntimeType == "dynamic" {
+		if r.businessExtensions == nil {
+			return nil, nil, gerror.New("resource Provider connector is unavailable")
+		}
+		page, listErr := r.businessExtensions.ListProviders(ctx, plugincap.BusinessExtensionProviderListInput{
+			Point: resourcecap.DynamicProviderPoint, ContractVersion: configuration.ContractVersion,
+			Page: capmodel.PageRequest{PageNum: 1, PageSize: 100, Limit: 100},
+		})
+		if listErr != nil || page == nil || len(page.Items) > 100 {
+			return nil, nil, gerror.New("resource Provider connector is unavailable")
+		}
+		var selected *capmodel.BusinessExtensionProviderEvidence
+		for _, item := range page.Items {
+			if item != nil && item.PluginID == configuration.PluginID && item.ContractVersion == configuration.ContractVersion {
+				if selected != nil {
+					return nil, nil, gerror.New("resource Provider connector is ambiguous")
+				}
+				selected = item
+			}
+		}
+		if selected == nil || resourcecap.ValidateProviderMetadata(selected.ProviderMetadata, selected.InterfaceConfiguration) != nil ||
+			selected.ProviderMetadata.Values["providerId"] != configuration.ProviderID {
+			return nil, nil, gerror.New("resource Provider connector is incompatible")
+		}
+		settings, settingsErr := resourcecap.ProjectPublicInterfaceSettings(configuration.Config.Settings, false)
+		if settingsErr != nil {
+			return nil, nil, settingsErr
+		}
+		configuration.Config.Settings, settingsErr = resourcecap.CompileInterfaceSettings(settings, selected.ProviderMetadata)
+		if settingsErr != nil {
+			return nil, nil, settingsErr
+		}
+		configuration.ReleaseVersion = selected.ReleaseVersion
+		configuration.ReleaseDigest = selected.ReleaseDigest
+		configuration.DeclarationDigest = selected.DeclarationDigest
 	}
 	return r.constructConfiguration(ctx, channelRef, configuration)
 }

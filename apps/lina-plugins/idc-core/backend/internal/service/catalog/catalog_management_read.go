@@ -13,6 +13,7 @@ import (
 	"github.com/gogf/gf/v2/errors/gerror"
 
 	"lina-core/pkg/bizerr"
+	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/dao"
 )
 
@@ -36,26 +37,42 @@ type ProductManagementSearchInput struct {
 	Limit      int
 }
 
+// ProductManagementBasePrice is one public base price with an explicit purchase
+// period; configuration supplements, customer prices and costs are excluded.
+type ProductManagementBasePrice struct {
+	CurrencyCode  string
+	AmountMinor   string
+	SetupFeeMinor string
+	PeriodUnit    string
+	PeriodCount   int
+	ChargeType    string
+}
+
 type ProductManagementSummary struct {
-	ProductNo        string
-	CategoryNo       string
-	CategoryNameZhCN string
-	CategoryNameEnUS string
-	VersionNo        string
-	VersionNumber    int
-	Status           string
-	VersionStatus    string
-	Source           string
-	PublicSlug       string
-	NameZhCN         string
-	NameEnUS         string
-	SummaryZhCN      string
-	SummaryEnUS      string
-	BillingRuleCount int64
-	CurrencyCount    int64
-	PublishedAt      *time.Time
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	AvailableQuantity   *int64
+	ProvisionedQuantity int64
+	TotalQuantity       int64
+	SortOrder           int64
+	BasePrice           *ProductManagementBasePrice
+	ProductNo           string
+	CategoryNo          string
+	CategoryNameZhCN    string
+	CategoryNameEnUS    string
+	VersionNo           string
+	VersionNumber       int
+	Status              string
+	VersionStatus       string
+	Source              string
+	PublicSlug          string
+	NameZhCN            string
+	NameEnUS            string
+	SummaryZhCN         string
+	SummaryEnUS         string
+	BillingRuleCount    int64
+	CurrencyCount       int64
+	PublishedAt         *time.Time
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // ProductPauseImpactPreview is a read-only projection used before a product is
@@ -90,6 +107,10 @@ type CategoryManagementSummary struct {
 }
 
 type ProductManagementReader interface {
+	// PreviewProductPrice authorizes the global merchant product scope before reading
+	// one saved version. ResolvedCandidates must come from the existing authorized
+	// configuration service; it returns advisory checkout-calculated prices only.
+	PreviewProductPrice(context.Context, ProductEditorPricePreviewInput) (*ProductEditorPricePreview, error)
 	SearchProducts(ctx context.Context, input ProductManagementSearchInput) (*ProductManagementPage, error)
 	GetProductDetail(ctx context.Context, productNo string) (*ProductManagementDetail, error)
 	ListCategories(ctx context.Context, deletionState string) ([]CategoryManagementSummary, error)
@@ -97,8 +118,9 @@ type ProductManagementReader interface {
 }
 
 type productManagementReaderImpl struct {
-	authorizer ManagementAuthorizer
-	cursor     *productManagementCursorCodec
+	importedBilling resourceinterfaceprojectioncap.ImportedBillingSource
+	authorizer      ManagementAuthorizer
+	cursor          *productManagementCursorCodec
 }
 
 var _ ProductManagementReader = (*productManagementReaderImpl)(nil)
@@ -269,5 +291,26 @@ func validateProductManagementPage(page *ProductManagementPage) error {
 	if len(encoded) > maximumCatalogManagementResponseBytes {
 		return gerror.New("catalog product management page exceeds response bound")
 	}
+	return nil
+}
+
+// BindEditorImportedBillingSource attaches the existing owner source after
+// startup assembles it. It never installs a public source or creates a service.
+func BindEditorImportedBillingSource(reader ProductManagementReader, source resourceinterfaceprojectioncap.CatalogSource) error {
+	concrete, ok := reader.(*productManagementReaderImpl)
+	if !ok || concrete == nil {
+		return gerror.New("editor reader unavailable")
+	}
+	if source == nil {
+		return nil
+	}
+	billing, ok := source.(resourceinterfaceprojectioncap.ImportedBillingSource)
+	if !ok {
+		return gerror.New("editor imported billing source unavailable")
+	}
+	if concrete.importedBilling != nil {
+		return gerror.New("editor imported billing source already bound")
+	}
+	concrete.importedBilling = billing
 	return nil
 }

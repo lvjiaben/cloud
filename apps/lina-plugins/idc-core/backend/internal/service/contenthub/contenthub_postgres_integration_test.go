@@ -1,3 +1,5 @@
+// Isolated PostgreSQL tests verify content visibility, lifecycle, file fences, and numbered administration.
+
 package contenthub
 
 import (
@@ -5,7 +7,9 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
@@ -65,26 +69,6 @@ func TestSearchCategoriesUsesRuntimeTranslationForUncategorized(t *testing.T) {
 	}
 	if len(page.Items) != 1 || !page.Items[0].Synthetic || page.Items[0].Name != "translated:dict.idc_content_category_group.uncategorized.label" {
 		t.Fatalf("unexpected synthetic category: %+v", page.Items)
-	}
-}
-
-func TestServiceAudienceUsesGenericEntitlementAndFrozenProductNamePostgreSQL(t *testing.T) {
-	ctx, database := newContentHubTestDatabase(t)
-	service := newAuthorizedContentHubTestService(database)
-	for _, statement := range []string{
-		`INSERT INTO plugin_idc_core_product_fulfillment_intent (tenant_id,intent_no,product_name_zh_cn,product_name_en_us) VALUES (0,'INT_phone','手机套餐','Phone plan')`,
-		`INSERT INTO plugin_idc_core_service_entitlement (tenant_id,entitlement_no,source_intent_no,customer_no,status_code,version) VALUES (0,'ENT_phone','INT_phone','CUS_owner','active',3)`,
-	} {
-		if _, err := database.Exec(ctx, statement); err != nil {
-			t.Fatal(err)
-		}
-	}
-	page, err := service.SearchAudienceServices(ctx, AudienceSearchInput{Keyword: "手机", Limit: 10})
-	if err != nil {
-		t.Fatalf("search generic entitlement audience: %v", err)
-	}
-	if len(page.Items) != 1 || page.Items[0].Number != "ENT_phone" || !strings.Contains(page.Items[0].Label, "手机套餐") {
-		t.Fatalf("unexpected generic entitlement audience: %+v", page.Items)
 	}
 }
 
@@ -400,8 +384,12 @@ func TestDeleteContentCancelsFilesUploadsAndLateScanPostgreSQL(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if _, err := service.Delete(ctx, "cnt_delete_files", 1); err != nil {
+	deleted, err := service.Delete(ctx, "cnt_delete_files", 1)
+	if err != nil {
 		t.Fatalf("delete content with file workflows: %v", err)
+	}
+	if deleted == nil || deleted.Status != "deleted" || deleted.Version != 2 || deleted.Body != "" {
+		t.Fatalf("invalid deletion acknowledgement: %+v", deleted)
 	}
 	var files []struct{ FileNo, Role, Status, ObjectRef string }
 	if err := database.GetScan(ctx, &files, `SELECT file_no,role_code AS role,status_code AS status,
@@ -630,4 +618,104 @@ func validContentHubTestSchema(schema string) bool {
 	}
 	_, err := hex.DecodeString(strings.TrimPrefix(schema, prefix))
 	return err == nil
+}
+
+type audienceQueryCounter struct {
+	gdb.DB
+	writes int
+}
+
+func (c *audienceQueryCounter) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	c.writes++
+	return c.DB.Exec(ctx, query, args...)
+}
+
+// Batch replacement must retain exact audience membership and rollback atomically.
+func TestReplaceAudienceBatchAndRollbackPostgreSQL(t *testing.T) {
+	ctx, database := newContentHubTestDatabase(t)
+	service := newAuthorizedContentHubTestService(database)
+	counter := &audienceQueryCounter{DB: database}
+	service.database = counter
+	input := WriteInput{}
+	for i := 0; i < 500; i++ {
+		input.TargetCustomerGroupNos = append(input.TargetCustomerGroupNos, fmt.Sprintf("GRP_%03d", i))
+	}
+	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_content_item (tenant_id,content_no,content_type,visibility_code,title,body,public_path,status_code,version,created_by,updated_by) VALUES (0,'cnt_batch','news','customer_group','Batch','Body','/pages/cnt_batch','draft',1,7,7),(0,'cnt_other','news','customer_group','Other','Body','/pages/cnt_other','draft',1,7,7)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_content_group_scope(tenant_id,content_no,group_no) VALUES(0,'cnt_other','GRP_keep')`); err != nil {
+		t.Fatal(err)
+	}
+	if err := database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error { return service.replaceTargets(ctx, "cnt_batch", input) }); err != nil {
+		t.Fatal(err)
+	}
+	if counter.writes > 2 {
+		t.Fatalf("audience save performed %d writes for 500 groups", counter.writes)
+	}
+	for _, check := range []struct {
+		table string
+		want  int
+	}{{"group", 500}} {
+		count, err := database.GetValue(ctx, "SELECT COUNT(*) FROM plugin_idc_core_content_"+check.table+"_scope WHERE tenant_id=0 AND content_no='cnt_batch'")
+		if err != nil || count.Int() != check.want {
+			t.Fatalf("%s audience count=%v err=%v", check.table, count, err)
+		}
+	}
+	// Duplicate membership violates uniqueness after deletes, so the transaction
+	// must restore all original target sets rather than partially removing access.
+	invalid := WriteInput{TargetCustomerGroupNos: []string{"GRP_dup", "GRP_dup"}}
+	if err := database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error { return service.replaceTargets(ctx, "cnt_batch", invalid) }); err == nil {
+		t.Fatal("duplicate audience committed")
+	}
+	count, err := database.GetValue(ctx, `SELECT COUNT(*) FROM plugin_idc_core_content_group_scope WHERE tenant_id=0 AND content_no='cnt_batch'`)
+	if err != nil || count.Int() != 500 {
+		t.Fatal("failed replacement did not restore audience", err)
+	}
+	if err := database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
+		return service.replaceTargets(ctx, "cnt_batch", WriteInput{})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	count, err = database.GetValue(ctx, `SELECT COUNT(*) FROM plugin_idc_core_content_group_scope`)
+	if err != nil || count.Int() != 1 {
+		t.Fatal("empty replacement changed another content", err)
+	}
+}
+
+// TestAdminNumberedContentPages checks exact totals, page boundaries and deleted-item isolation.
+func TestAdminNumberedContentPages(t *testing.T) {
+	ctx, database := newContentHubTestDatabase(t)
+	service := newAuthorizedContentHubTestService(database)
+	for index := 1; index <= 4; index++ {
+		status := "draft"
+		if index == 4 {
+			status = "deleted"
+		}
+		_, err := database.Exec(ctx, `INSERT INTO plugin_idc_core_content_item (tenant_id,content_no,content_type,visibility_code,title,summary,body,seo_title,seo_description,public_path,status_code,created_by,updated_by) VALUES (0,?,'news','public',?,'Description','<p>Body</p>','Old metadata','Old description',?,?,7,7)`, fmt.Sprintf("CNT_PAGE_%d", index), fmt.Sprintf("Page %d", index), fmt.Sprintf("/news/page-%d", index), status)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	first, err := service.SearchAdmin(ctx, SearchInput{Type: "news", Query: "Page", Page: 1, Limit: 2})
+	if err != nil || first.Total != 3 || len(first.Items) != 2 || first.Items[0].ContentNo != "CNT_PAGE_3" {
+		t.Fatalf("first=%+v err=%v", first, err)
+	}
+	second, err := service.SearchAdmin(ctx, SearchInput{Type: "news", Query: "Page", Page: 2, Limit: 2})
+	if err != nil || second.Total != 3 || len(second.Items) != 1 || second.Items[0].ContentNo != "CNT_PAGE_1" {
+		t.Fatalf("second=%+v err=%v", second, err)
+	}
+	empty, err := service.SearchAdmin(ctx, SearchInput{Type: "download", Page: 1, Limit: 2})
+	if err != nil || empty.Total != 0 || len(empty.Items) != 0 {
+		t.Fatalf("empty=%+v err=%v", empty, err)
+	}
+	if _, err = service.SearchAdmin(ctx, SearchInput{Page: 1, Cursor: first.NextCursor, Limit: 2}); err == nil {
+		t.Fatal("numbered page accepted a cursor")
+	}
+	if _, err = service.DetailAdmin(ctx, "CNT_PAGE_4"); err == nil {
+		t.Fatal("deleted content remained readable in ordinary administration")
+	}
+	item, err := service.DetailAdmin(ctx, "CNT_PAGE_1")
+	if err != nil || item.SEOTitle != "Page 1" || item.SEODescription != "Description" {
+		t.Fatalf("metadata=%+v err=%v", item, err)
+	}
 }

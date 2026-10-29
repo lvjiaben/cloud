@@ -111,6 +111,16 @@
               "accessible": "无权查看该服务器"
             }
           }
+        },
+        "customer": {
+          "operation": {
+            "unavailable": "服务器不存在或当前不可访问",
+            "conflict": "服务器状态已变化或已有任务未结束，请刷新后重试",
+            "invalid": "请填写有效操作并确认操作影响"
+          },
+          "configuration": {
+            "timeout": "暂时未能读取服务器配置，请稍后重试"
+          }
         }
       }
     }

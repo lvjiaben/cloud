@@ -27,7 +27,7 @@ func toAPICommerceAssistedQuote(input *commerce.AssistedQuoteRequest) *v1.Commer
 		CustomerPrimaryPhone: input.CustomerPrimaryPhone,
 		StatusCode:           string(input.StatusCode), ManualDiscountMinor: strconv.FormatInt(input.ManualDiscountMinor, 10),
 		PaymentTermCode: string(input.PaymentTermCode), PaymentDueSeconds: input.PaymentDueSeconds,
-		ContractPolicyCode: string(input.ContractPolicyCode), ContractTemplateNo: input.ContractTemplateNo,
+
 		Reason: input.Reason, InternalNote: input.InternalNote, RequestedBy: input.RequestedBy,
 		DecisionCode: string(input.DecisionCode), DecisionBy: input.DecisionBy,
 		DecisionReason: input.DecisionReason, QuoteNo: input.QuoteNo, OrderNo: input.OrderNo,

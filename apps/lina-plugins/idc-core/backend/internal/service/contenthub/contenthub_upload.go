@@ -1,3 +1,5 @@
+// This file handles resumable content uploads and candidate promotion; expiry uses database time.
+
 package contenthub
 
 import (
@@ -184,12 +186,13 @@ func (s *serviceImpl) UploadChunk(ctx context.Context, uploadNo string, offset i
 		}
 		etag = part.ETag
 	} else {
-		objectRef = row.ObjectRef + "/parts/" + strconv.FormatInt(int64(partNumber), 10)
+		// Keep parts beside the final object: local storage cannot replace a directory with a file.
+		objectRef = row.ObjectRef + ".parts/" + strconv.FormatInt(int64(partNumber), 10)
 		if _, uploadErr := s.storage.Put(ctx, storagecap.PutInput{Path: objectRef, Body: bytes.NewReader(content), Size: int64(len(content)), ContentType: "application/octet-stream", Overwrite: false}); uploadErr != nil {
 			return nil, contentWrap(uploadErr, "store upload chunk")
 		}
 	}
-	result, err := s.database.Exec(ctx, `WITH part AS (INSERT INTO plugin_idc_core_content_upload_part (tenant_id,upload_no,part_number,offset_bytes,size_bytes,etag,object_ref,sha256_hex) VALUES (0,?,?,?,?,?,?,?) ON CONFLICT (upload_no,part_number) DO NOTHING RETURNING 1) UPDATE plugin_idc_core_content_upload_session SET persisted_size_bytes=persisted_size_bytes+?,last_data_at=?,expires_at=?+INTERVAL '24 hours',version=version+1,updated_at=? WHERE tenant_id=0 AND upload_no=? AND status_code='uploading' AND version=? AND persisted_size_bytes=? AND EXISTS (SELECT 1 FROM part)`, uploadNo, partNumber, offset, len(content), contentNullable(etag), contentNullable(objectRef), hash, len(content), now, now, now, uploadNo, row.Version, offset)
+	result, err := s.database.Exec(ctx, `WITH part AS (INSERT INTO plugin_idc_core_content_upload_part (tenant_id,upload_no,part_number,offset_bytes,size_bytes,etag,object_ref,sha256_hex) VALUES (0,?,?,?,?,?,?,?) ON CONFLICT (upload_no,part_number) DO NOTHING RETURNING 1) UPDATE plugin_idc_core_content_upload_session SET persisted_size_bytes=persisted_size_bytes+?,last_data_at=?,expires_at=?,version=version+1,updated_at=? WHERE tenant_id=0 AND upload_no=? AND status_code='uploading' AND version=? AND persisted_size_bytes=? AND EXISTS (SELECT 1 FROM part)`, uploadNo, partNumber, offset, len(content), contentNullable(etag), contentNullable(objectRef), hash, len(content), now, now.Add(24*time.Hour), now, uploadNo, row.Version, offset)
 	if err != nil {
 		if objectRef != "" {
 			err = errors.Join(err, s.storage.Delete(ctx, storagecap.DeleteInput{Path: objectRef}))
@@ -264,8 +267,8 @@ func (s *serviceImpl) CompleteUpload(ctx context.Context, input CompleteInput) (
 	if err != nil {
 		return nil, contentWrap(err, "read content upload time")
 	}
-	generation := int64(1)
-	if err = s.database.GetScan(ctx, &generation, `SELECT COALESCE(MAX(candidate_generation),0)+1 FROM plugin_idc_core_content_file WHERE tenant_id=0 AND content_no=?`, row.ContentNo); err != nil {
+	generation, err := s.database.GetValue(ctx, `SELECT COALESCE(MAX(candidate_generation),0)+1 FROM plugin_idc_core_content_file WHERE tenant_id=0 AND content_no=?`, row.ContentNo)
+	if err != nil {
 		return nil, contentWrap(err, "allocate candidate generation")
 	}
 	status, scanStatus := "ready", "passed"
@@ -277,8 +280,12 @@ func (s *serviceImpl) CompleteUpload(ctx context.Context, input CompleteInput) (
 			scanStatus, expires = "scanning", nil
 		}
 	}
+	var cleanupAt any
+	if row.TransferMode == "provider_multipart" {
+		cleanupAt = now
+	}
 	err = s.database.Transaction(ctx, func(ctx context.Context, _ gdb.TX) error {
-		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_content_upload_session SET status_code='completed',completed_at=?,cleanup_completed_at=CASE WHEN transfer_mode='provider_multipart' THEN ? ELSE NULL END,version=version+1,updated_at=? WHERE tenant_id=0 AND upload_no=? AND status_code='uploading' AND version=?`, now, now, now, row.UploadNo, row.Version)
+		result, updateErr := s.database.Exec(ctx, `UPDATE plugin_idc_core_content_upload_session SET status_code='completed',completed_at=?,cleanup_completed_at=?,version=version+1,updated_at=? WHERE tenant_id=0 AND upload_no=? AND status_code='uploading' AND version=?`, now, cleanupAt, now, row.UploadNo, row.Version)
 		if updateErr != nil {
 			return updateErr
 		}
@@ -289,7 +296,7 @@ func (s *serviceImpl) CompleteUpload(ctx context.Context, input CompleteInput) (
 		if changed != 1 {
 			return bizerr.NewCode(CodeConflict)
 		}
-		if _, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_file (tenant_id,file_no,content_no,upload_no,candidate_generation,role_code,status_code,file_name,media_type,content_kind,size_bytes,sha256_hex,object_ref,scan_required,scan_status,gate_completed_at,retention_expires_at,version,created_by,created_at,updated_at) VALUES (0,?,?,?,?,'candidate',?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)`, fileNo, row.ContentNo, row.UploadNo, generation, status, row.FileName, inspection.MediaType, inspection.Kind, row.DeclaredSize, inspection.SHA256, row.ObjectRef, inspection.ScanRequired, scanStatus, gateAt, expires, userID, now, now); insertErr != nil {
+		if _, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_file (tenant_id,file_no,content_no,upload_no,candidate_generation,role_code,status_code,file_name,media_type,content_kind,size_bytes,sha256_hex,object_ref,scan_required,scan_status,gate_completed_at,retention_expires_at,version,created_by,created_at,updated_at) VALUES (0,?,?,?,?,'candidate',?,?,?,?,?,?,?,?,?,?,?,1,?,?,?)`, fileNo, row.ContentNo, row.UploadNo, generation.Int64(), status, row.FileName, inspection.MediaType, inspection.Kind, row.DeclaredSize, inspection.SHA256, row.ObjectRef, inspection.ScanRequired, scanStatus, gateAt, expires, userID, now, now); insertErr != nil {
 			return insertErr
 		}
 		if row.TransferMode == "provider_multipart" {
@@ -300,7 +307,7 @@ func (s *serviceImpl) CompleteUpload(ctx context.Context, input CompleteInput) (
 		if attemptNo == "" {
 			return nil
 		}
-		_, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_scan_attempt (tenant_id,attempt_no,file_no,candidate_generation,status_code,queued_at,created_by,version) VALUES (0,?,?,?,'pending',?,?,1)`, attemptNo, fileNo, generation, now, userID)
+		_, insertErr := s.database.Exec(ctx, `INSERT INTO plugin_idc_core_content_scan_attempt (tenant_id,attempt_no,file_no,candidate_generation,status_code,queued_at,created_by,version) VALUES (0,?,?,?,'pending',?,?,1)`, attemptNo, fileNo, generation.Int64(), now, userID)
 		return insertErr
 	})
 	if err != nil {
@@ -336,8 +343,10 @@ func validParts(parts []uploadPart, row *uploadRow) bool {
 	}
 	return offset == row.DeclaredSize
 }
-func (s *serviceImpl) assembleChunkObjects(ctx context.Context, row *uploadRow, parts []uploadPart) error {
+func (s *serviceImpl) assembleChunkObjects(ctx context.Context, row *uploadRow, parts []uploadPart) (resultErr error) {
 	reader, writer := io.Pipe()
+	// Unblock the producer if the storage provider rejects the write before reading.
+	defer func() { resultErr = errors.Join(resultErr, reader.Close()) }()
 	go func() {
 		var copyErr error
 		defer func() {

@@ -39,6 +39,22 @@ func NewWorker(database gdb.DB, sink resourceinterfaceprojectioncap.Sink) (*Work
 	return &Worker{database: database, sink: sink, random: deliveryToken}, nil
 }
 
+// NextSequence allocates the next sequence from this interface's shared outbox.
+// The caller must hold its interface binding row lock until the enqueue transaction
+// commits, so channel edits and secret revisions serialize on the same authority.
+func NextSequence(ctx context.Context, tx gdb.TX, interfaceInstanceNo string) (int64, error) {
+	if ctx == nil || ctx.Err() != nil || tx == nil || interfaceInstanceNo == "" {
+		return 0, gerror.New("resource interface projection sequence input is invalid")
+	}
+	value, err := tx.GetValue(`SELECT COALESCE(MAX(projection_sequence),0)+1
+FROM plugin_idc_resource_interface_projection_outbox WHERE tenant_id=? AND interface_instance_no=?`,
+		idccap.DefaultTenantID, interfaceInstanceNo)
+	if err != nil {
+		return 0, gerror.Wrap(err, "read resource interface projection sequence")
+	}
+	return value.Int64(), nil
+}
+
 // Enqueue inserts one deterministic projection sequence in the caller's
 // resource transaction. Exact retries are ignored; conflicting payloads fail.
 func Enqueue(

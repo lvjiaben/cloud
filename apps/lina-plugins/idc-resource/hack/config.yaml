@@ -4,7 +4,10 @@ gfcli:
       - link: "pgsql:linapro_idc_codegen:linapro_idc_codegen@tcp(127.0.0.1:5432)/linapro_idc_codegen?sslmode=disable"
         path: "internal"
         tables: >-
+          plugin_idc_resource_provision_non_acceptance_verification,
           plugin_idc_resource_channel,
+          plugin_idc_resource_interface_candidate_snapshot,
+          plugin_idc_resource_provider_api_log,
           plugin_idc_resource_channel_secret_binding,
           plugin_idc_resource_pool,
           plugin_idc_resource_mapping,
@@ -25,6 +28,7 @@ gfcli:
           plugin_idc_resource_provision_credential,
           plugin_idc_resource_provision_outcome_receipt,
           plugin_idc_resource_server_entitlement_projection,
+          plugin_idc_resource_server_runtime_fact, plugin_idc_resource_native_accessory_receipt,plugin_idc_resource_native_commercial_task,
           plugin_idc_resource_accessory_snapshot,
           plugin_idc_resource_accessory_snapshot_item,
           plugin_idc_resource_accessory_refresh_state

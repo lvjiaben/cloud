@@ -64,10 +64,12 @@ var (
 
 // catalogWireProduct contains only non-secret source fields needed by the view.
 type catalogWireProduct struct {
-	ID          json.RawMessage `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	PayType     string          `json:"pay_type"`
+	ID                json.RawMessage `json:"id"`
+	Name              string          `json:"name"`
+	Description       string          `json:"description"`
+	PayType           string          `json:"pay_type"`
+	APIType           string          `json:"api_type"`
+	UpstreamPriceType string          `json:"upstream_price_type"`
 }
 
 // executeCatalogList performs exactly one authenticated GET after login.
@@ -94,10 +96,7 @@ func executeCatalogDetail(executor confidentialoutboundcap.Service, contextID st
 	if strictDecode(payload, &query) != nil || query.Validate() != nil || !positiveDecimal(query.Reference) {
 		return nil, errInvalidConfig
 	}
-	fields := []string{"status", "data", "products", "id", "name", "description", "pay_type", "product_pricings", "code", "config_groups", "options", "sub", "option_name", "pricings"}
-	for _, cycle := range catalogCycles {
-		fields = append(fields, cycle.amount, cycle.setup)
-	}
+	fields := nativeCatalogResponseFields()
 	response, err := catalogRead(executor, contextID, "/cart/get_product_config", map[string][]string{"pid": {query.Reference}}, fields)
 	if err != nil {
 		return nil, err
@@ -106,13 +105,22 @@ func executeCatalogDetail(executor confidentialoutboundcap.Service, contextID st
 	if err != nil {
 		return nil, err
 	}
+	if query.IncludePricePreview {
+		if err = attachNativePricePreview(executor, contextID, detail); err != nil {
+			return nil, err
+		}
+	}
 	return json.Marshal(detail)
 }
 
 // catalogRead uses an endpoint-specific response allowlist. It deliberately
 // omits supplier messages and private product configuration from the guest.
 func catalogRead(executor confidentialoutboundcap.Service, contextID, path string, query map[string][]string, fields []string) (json.RawMessage, error) {
-	response, err := confidentialCall(executor, contextID, 2, resourcecap.ConfidentialHTTPRequest{
+	return catalogReadSequence(executor, contextID, 2, path, query, fields)
+}
+
+func catalogReadSequence(executor confidentialoutboundcap.Service, contextID string, sequence uint8, path string, query map[string][]string, fields []string) (json.RawMessage, error) {
+	response, err := confidentialCall(executor, contextID, sequence, resourcecap.ConfidentialHTTPRequest{
 		Kind: resourcecap.ConfidentialHTTPKindRequest, Method: http.MethodGet, Path: path,
 		Query: query, ResponseFields: fields, UseAuthentication: true,
 	})
@@ -177,6 +185,7 @@ func projectCatalogDetail(raw json.RawMessage, query resourceinterfaceprojection
 	var envelope struct {
 		Status json.RawMessage `json:"status"`
 		Data   *struct {
+			Flag    json.RawMessage              `json:"flag"`
 			Product catalogWireProduct           `json:"products"`
 			Prices  []map[string]json.RawMessage `json:"product_pricings"`
 			Groups  []struct {
@@ -200,21 +209,9 @@ func projectCatalogDetail(raw json.RawMessage, query resourceinterfaceprojection
 	if err != nil || product.Reference != query.Reference {
 		return nil, errInvalidResponse
 	}
-	var payment struct {
-		Type  catalogPaymentType `json:"pay_type"`
-		Trial json.RawMessage    `json:"pay_ontrial_status"`
-	}
-	// Unknown billing metadata is readable, but has no importable base schedule.
-	if envelope.Data.Product.PayType != "" && json.Unmarshal([]byte(envelope.Data.Product.PayType), &payment) != nil {
-		return nil, errInvalidResponse
-	}
-	prices, complete, err := projectCatalogPrices(envelope.Data.Prices, payment.Type)
+	payment, prices, complete, err := catalogProductPrices(envelope.Data.Product, envelope.Data.Flag, envelope.Data.Prices)
 	if err != nil {
 		return nil, err
-	}
-	trial := strings.TrimSpace(string(payment.Trial))
-	if trial != "" && trial != "null" && trial != "false" && trial != "0" && trial != `"0"` && trial != `""` {
-		complete = false
 	}
 	detail := &resourceinterfaceprojectioncap.CatalogDetail{
 		Product: product, BasePrices: prices, Options: make([]resourceinterfaceprojectioncap.CatalogOption, 0),
@@ -252,12 +249,28 @@ func projectCatalogDetail(raw json.RawMessage, query resourceinterfaceprojection
 				if err != nil {
 					return nil, err
 				}
+				choicePrices, periodsComplete := catalogBillingPeriods(choicePrices, payment.Hour, payment.Day)
+				choiceComplete = choiceComplete && periodsComplete
 				projected.Choices = append(projected.Choices, resourceinterfaceprojectioncap.CatalogChoice{Reference: scalar(choice.ID), Name: label, Prices: choicePrices})
 				detail.PriceScheduleComplete = detail.PriceScheduleComplete && choiceComplete
 				choiceCount++
 			}
 			detail.Options = append(detail.Options, projected)
 		}
+	}
+	snapshot, err := nativeImportSnapshot(raw, detail)
+	if err != nil {
+		return nil, err
+	}
+	detail.ImportSnapshot = snapshot
+	detail.BasePrices = []resourceinterfaceprojectioncap.CatalogPrice{}
+	detail.Options = []resourceinterfaceprojectioncap.CatalogOption{}
+	detail.PriceScheduleComplete = snapshot != nil && snapshot.PricingComplete
+	if snapshot == nil {
+		detail.PriceScheduleComplete = false
+	} else {
+		revision := snapshot.ConfigurationRevision
+		detail.ProductConfiguration = append(detail.ProductConfiguration, resourceinterfaceprojectioncap.CatalogConfigurationValue{FieldKey: "upstream_configuration_revision", TextValue: &revision})
 	}
 	if detail.Validate(query) != nil {
 		return nil, errInvalidResponse
@@ -363,4 +376,12 @@ func catalogPlainText(value string, limit int, optional bool) (string, error) {
 		return "", errInvalidResponse
 	}
 	return cleaned, nil
+}
+
+func nativeCatalogResponseFields() []string {
+	fields := []string{"status", "data", "products", "id", "name", "description", "pay_type", "product_pricings", "code", "config_groups", "options", "sub", "option_name", "pricings", "api_type", "upstream_price_type", "flag", "customfields", "advanced", "fieldname", "fieldtype", "fieldoptions", "required", "regexpr", "option_type", "qty_minimum", "qty_maximum", "linkage_pid", "order", "sort_order", "currency", "config_id", "sub_id", "relation", "relation_id", "type"}
+	for _, cycle := range catalogCycles {
+		fields = append(fields, cycle.amount, cycle.setup)
+	}
+	return fields
 }

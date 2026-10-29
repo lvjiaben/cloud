@@ -4,20 +4,6 @@
 
 ## 安装与启动
 
-1. 校验`manifest.json`中每个文件的`SHA-256`。
-2. 把`config/local-gateway.env.example`复制到安装环境的私有配置目录，并按最小权限设置文件权限。
-3. 创建只包含当前安装 PostgreSQL DSN 的私有文件，并把`LINAPRO_COMPLIANCE_GATEWAY_DATABASE_DSN_FILE`设置为其绝对路径。
-4. 使用`bin/idc-compliance-local-gateway-keyring -out <密钥环绝对路径> -installation-id-out <安装标识绝对路径>`同时生成安装标识和进程认证密钥环，把`LINAPRO_COMPLIANCE_GATEWAY_PROCESS_AUTH_KEYRING_FILE`与`LINAPRO_COMPLIANCE_GATEWAY_INSTALLATION_ID_FILE`分别设置为对应路径，并把`LINAPRO_COMPLIANCE_GATEWAY_PROCESS_AUTH_WINDOW`显式设置在`1s`至`60s`之间；不得从软件提供方服务获取销售注册令牌或业务网关身份。
-5. 使用`bin/idc-compliance-local-gateway-supplier-keyring -out <供应商主体密钥环绝对路径>`生成独立供应商主体密钥环，并把`LINAPRO_COMPLIANCE_GATEWAY_SUPPLIER_IDENTITY_KEYRING_FILE`设置为该路径。该文件包含三套独立版本化密钥，只能放在当前安装私有秘密目录，不能与进程密钥环共用。
-6. 使用`bin/idc-compliance-local-gateway-evidence-keyring -out <回调对账密钥环绝对路径>`生成独立回调对账密钥环，并把`LINAPRO_COMPLIANCE_GATEWAY_CALLBACK_EVIDENCE_KEYRING_FILE`设置为该路径。文件包含证据加密、外部事件摘要、外部流程号加密、外部流程号查询摘要和人工接管操作摘要五套独立版本化密钥，不得复用前两类密钥环。
-7. 如需启用腾讯电子签，把`config/tencent-essbasic.json.example`复制到私有秘密目录，用当前购买方安装自己的应用凭据替换占位值，只选择该账号已经购买并授权的能力，再把`LINAPRO_COMPLIANCE_GATEWAY_TENCENT_ESSBASIC_CONFIG_FILE`设置为该文件的绝对路径。该文件故意不提供端点、代理、企业主体或操作人主体字段；企业与操作人编号只能来自服务端收到的腾讯授权结果，并由供应商主体服务加密保存。
-8. 以非特权专用系统账号运行`bin/idc-compliance-local-gateway`，默认只监听`127.0.0.1:9088`。
-9. 让同机 LinaPro 源码插件读取相同的安装标识、进程认证密钥环和认证时窗，并把它的`LINAPRO_COMPLIANCE_GATEWAY_INTERNAL_BASE_URL`固定为回环地址`http://127.0.0.1:9088`；不得通过反向代理发布内部路由。
-10. 启用腾讯回调时，把当前购买方腾讯应用的回调地址设为`/callbacks/v1/tencent-essbasic`，在私有腾讯配置文件中启用`callback.receive`，并同时填入购买方自有的验签令牌和精确`32`字节`CallbackUrlKey`。缺少任一项时不注册回调路由，也不接受明文回调。
-11. 监管器先检查`GET /health/live`，再检查`GET /health/ready`。就绪只表示本地数据库、迁移、安装标识、各密钥环以及已配置的腾讯 SDK 客户端和回调验证器能够完成装配；不代表腾讯主体已活动或远程能力检查已通过。
-
-组件包已经包含经过审查的腾讯电子签`2021-05-26`官方 SDK 客户端。仅存在配置文件不会自动访问腾讯：只读能力检查必须由明确操作触发，合同创建必须先通过本地数据库写保护，且只有配置`flow.query`后才会启动主动查询工作线程。本切片尚未启用腾讯用量采集器，诺诺仍完全关闭；禁止通过修改数据库状态绕过这些门禁。后续经过审查的采集器即使失败，也必须保留最后一份完整投影且不得让进程就绪检查失败。
-
 ## 进程密钥轮换与撤销
 
 先执行`-out <新文件绝对路径> -rotate <当前文件绝对路径>`生成替换文件；轮换禁止传入`-installation-id-out`，现有安装标识必须保持不变。随后原子更新本地两个进程的密钥环文件引用并重启；旧密钥在受控重叠期内只允许验签。确认旧进程签发的请求均已结束后，使用`-revoke <旧密钥 ID>`再生成一份替换文件，原子部署并重启两个进程，最后按安装方的秘密留存策略归档或销毁旧文件。命令拒绝原地覆盖，避免轮换中断损坏当前有效密钥环。
@@ -41,3 +27,6 @@
 ## 独立运行边界
 
 本组件不得连接软件提供方的中央业务网关、中央结算、平台销售注册或平台操作者服务。商业授权只约束软件使用权、版本和升级权益，不参与供应商主体、业务签名、回调路由、用量或结算。
+
+
+电子签适配器、公开回调与合同路由已经退役；诺诺供应商能力在独立接口证据验证前继续关闭。旧业务证据保留，不恢复旧电子签处理。

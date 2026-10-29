@@ -1,0 +1,75 @@
+{
+  "checkedAt": "2026-10-18T04:42:24.336Z",
+  "canonical": "website-main",
+  "canonicalAssets": 138,
+  "readOnly": true,
+  "candidates": [
+    {
+      "plugin": "website-storefront",
+      "manifestExists": true,
+      "assetCount": 138,
+      "identical": 125,
+      "different": [
+        "about.html",
+        "announcements.html",
+        "configure.html",
+        "contact.html",
+        "content.html",
+        "downloads.html",
+        "help.html",
+        "index.html",
+        "lina/site.css",
+        "lina/site.js",
+        "news.html",
+        "products.html",
+        "static/css/global-f91e2263a2aa0a0be4deafd52918362b.css"
+      ],
+      "onlyCanonical": [],
+      "onlyCandidate": []
+    },
+    {
+      "plugin": "website-html",
+      "manifestExists": true,
+      "assetCount": 138,
+      "identical": 126,
+      "different": [
+        "about.html",
+        "announcements.html",
+        "configure.html",
+        "contact.html",
+        "content.html",
+        "downloads.html",
+        "help.html",
+        "index.html",
+        "lina/site.css",
+        "lina/site.js",
+        "news.html",
+        "products.html"
+      ],
+      "onlyCanonical": [],
+      "onlyCandidate": []
+    },
+    {
+      "plugin": "website-xiaobai",
+      "manifestExists": false,
+      "assetCount": 138,
+      "identical": 126,
+      "different": [
+        "about.html",
+        "announcements.html",
+        "configure.html",
+        "contact.html",
+        "content.html",
+        "downloads.html",
+        "help.html",
+        "index.html",
+        "lina/site.css",
+        "lina/site.js",
+        "news.html",
+        "products.html"
+      ],
+      "onlyCanonical": [],
+      "onlyCandidate": []
+    }
+  ]
+}

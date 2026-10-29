@@ -31,7 +31,7 @@ VALUES ('credit-ledger-cny', 'customer', 'customer-ledger', 'customer-ledger',
 		t.Fatalf("seed credit policy and ledger account: %v", err)
 	}
 
-	expectCreditTransactionRejected(t, ctx, database, "high limit without two approvals", func(ctx context.Context) error {
+	expectCreditTransactionRejected(t, ctx, database, "approved application without a decision", func(ctx context.Context) error {
 		_, err := database.Exec(ctx, `
 INSERT INTO plugin_idc_core_credit_application
     (application_no, customer_no, currency_code, policy_no, policy_version,
@@ -43,12 +43,7 @@ VALUES ('credit-application-invalid', 'customer-ledger', 'CNY',
         CURRENT_TIMESTAMP + INTERVAL '1 year', 2, 'private:risk/invalid',
         repeat('b', 64), repeat('c', 64), 'approved', 'staff', 150,
         CURRENT_TIMESTAMP);
-INSERT INTO plugin_idc_core_credit_application_review
-    (review_no, application_no, customer_no, currency_code, review_sequence,
-     decision_code, reviewer_id, comment_digest, evidence_digest, content_digest)
-VALUES ('credit-review-invalid-1', 'credit-application-invalid',
-        'customer-ledger', 'CNY', 1, 'approved', 201,
-        repeat('d', 64), repeat('e', 64), repeat('f', 64))`)
+`)
 		return err
 	})
 

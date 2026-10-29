@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Locator, Page } from "@host-tests/support/playwright";
 
@@ -17,7 +18,9 @@ export class ContentManagementPage {
   constructor(page: Page) {
     this.page = page;
     this.pageRoot = page.getByTestId("content-management-page");
-    this.fileInput = page.getByTestId("content-upload-file");
+    this.fileInput = page
+      .getByTestId("content-upload-file")
+      .locator('input[type="file"]');
     this.inspectionUnavailable = page.getByTestId(
       "content-upload-inspection-unavailable",
     );
@@ -40,15 +43,39 @@ export class ContentManagementPage {
     await this.pageRoot.waitFor({ state: "visible" });
     await waitForRouteReady(this.page, 15_000);
     await this.page.getByTestId(`content-item-${contentNo}`).click();
-    await this.fileInput.waitFor({ state: "visible" });
+    await this.fileInput.waitFor({ state: "attached" });
+  }
+
+  // Open a fresh editor without relying on a previous content row's state.
+  async startNew() {
+    await this.page.getByRole("button", { name: /取\s*消/ }).click();
+    await this.page.getByTestId("content-create").click();
+  }
+
+  async openTypeChoices() {
+    await this.page
+      .getByTestId("content-editor")
+      .locator('.ant-select[aria-label="内容类型"] .ant-select-selector')
+      .click();
+    return this.page.locator(
+      ".ant-select-dropdown:visible .ant-select-item-option",
+    );
   }
 
   async screenshot(description: string) {
     await this.page.waitForTimeout(300);
     const now = new Date();
     const day = now.toISOString().slice(0, 10).replaceAll("-", "");
-    const stamp = now.toISOString().slice(11, 19).replaceAll(":", "");
-    const directory = resolve(process.cwd(), "../../temp", day);
+    const stamp = now
+      .toISOString()
+      .slice(11, 23)
+      .replaceAll(":", "")
+      .replace(".", "");
+    const directory = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../../../../../temp",
+      day,
+    );
     await mkdir(directory, { recursive: true });
     const path = resolve(directory, `${stamp}-${description}.png`);
     await this.page.screenshot({ fullPage: false, path });

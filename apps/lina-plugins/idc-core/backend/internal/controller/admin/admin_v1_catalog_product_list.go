@@ -23,8 +23,13 @@ func (c *ControllerV1) CatalogProductList(
 	}
 	items := make([]*v1.CatalogProductSummaryItem, 0, len(page.Products))
 	for _, product := range page.Products {
+		var basePrice *v1.CatalogProductBasePricePreview
+		if product.BasePrice != nil {
+			price := product.BasePrice
+			basePrice = &v1.CatalogProductBasePricePreview{CurrencyCode: price.CurrencyCode, AmountMinor: price.AmountMinor, SetupFeeMinor: price.SetupFeeMinor, PeriodUnit: price.PeriodUnit, PeriodCount: price.PeriodCount, ChargeType: price.ChargeType}
+		}
 		items = append(items, &v1.CatalogProductSummaryItem{
-			ProductNo: product.ProductNo, CategoryNo: product.CategoryNo,
+			AvailableQuantity: product.AvailableQuantity, ProvisionedQuantity: product.ProvisionedQuantity, TotalQuantity: product.TotalQuantity, SortOrder: product.SortOrder, ProductNo: product.ProductNo, CategoryNo: product.CategoryNo, BasePrice: basePrice,
 			CategoryNameZhCn: product.CategoryNameZhCN, CategoryNameEnUs: product.CategoryNameEnUS,
 			VersionNo: product.VersionNo, VersionNumber: product.VersionNumber,
 			Status: product.Status, VersionStatus: product.VersionStatus, Source: product.Source,

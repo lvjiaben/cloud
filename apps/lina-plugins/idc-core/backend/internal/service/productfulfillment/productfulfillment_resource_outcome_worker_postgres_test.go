@@ -23,7 +23,11 @@ type outcomeReportSource struct {
 	reports []provisionresourcecap.OutcomeReport
 }
 
-func (*outcomeReportSource) CreateTask(context.Context, provisionresourcecap.TaskRequest) (*provisionresourcecap.Task, error) {
+func (*outcomeReportSource) RecoverRejected(context.Context, provisionresourcecap.TaskReadRequest) (*provisionresourcecap.Task, error) {
+	return nil, errors.New("not used")
+}
+
+func (*outcomeReportSource) CreateTask(context.Context, provisionresourcecap.TaskRequest, ...*provisionresourcecap.RecoveryConfiguration) (*provisionresourcecap.Task, error) {
 	return nil, errors.New("not used")
 }
 
@@ -149,4 +153,15 @@ func appendOutcomeSearchPath(dsn, schema string) string {
 		separator = "&"
 	}
 	return dsn + separator + "search_path=" + url.QueryEscape(schema)
+}
+
+func (*outcomeReportSource) InspectRecovery(context.Context, provisionresourcecap.RecoverySelectionRequest) (*provisionresourcecap.RecoveryEditor, error) {
+	return nil, provisionresourcecap.ErrSourceUnavailable
+}
+func (*outcomeReportSource) ValidateRecovery(context.Context, provisionresourcecap.RecoverySelectionRequest) (*provisionresourcecap.RecoveryConfiguration, error) {
+	return nil, provisionresourcecap.ErrSourceUnavailable
+}
+
+func (*outcomeReportSource) VerifyNonAcceptance(context.Context, provisionresourcecap.NonAcceptanceVerification) error {
+	return provisionresourcecap.ErrTaskConflict
 }

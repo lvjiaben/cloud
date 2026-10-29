@@ -1,0 +1,6 @@
+{
+  "plugin.idc-core.catalog.inventory.save": "Save inventory",
+  "plugin.idc-core.catalog.inventory.conflict": "Inventory has changed. Your unsaved input is preserved. Reload the current inventory before editing again.",
+  "plugin.idc-core.catalog.inventory.reload": "Reload inventory",
+  "plugin.idc-core.catalog.inventory.quantityTooLarge": "This inventory quantity is too large to edit accurately on this page."
+}

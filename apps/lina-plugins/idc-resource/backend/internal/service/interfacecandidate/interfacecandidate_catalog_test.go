@@ -5,7 +5,11 @@ package interfacecandidate
 import (
 	"context"
 	"github.com/gogf/gf/v2/database/gdb"
+	"lina-core/pkg/plugin/capability/capmodel"
+	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
+	"strings"
 	"testing"
 
 	"github.com/gogf/gf/v2/errors/gerror"
@@ -100,4 +104,36 @@ func (sink *catalogProjectionSink) RefreshUnused(ctx context.Context, projection
 		return err
 	}
 	return sink.Upsert(ctx, projection)
+}
+
+// TestNativeCatalogSnapshotPinsProductFacingRelease verifies the source owner
+// checks the product declaration as well as the resource-facing read release.
+func TestNativeCatalogSnapshotPinsProductFacingRelease(t *testing.T) {
+	evidence := nativeCatalogProductEvidence(t)
+	snapshot := &channelcommercecap.ImportSnapshot{ProtocolVersion: channelcommercecap.ImportPurchaseCycleLimitProtocolVersion, Product: channelcommercecap.CatalogProduct{PublicSlug: "41"}, ConfigurationRevision: strings.Repeat("a", 64), Schema: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{}}, Mappings: []channelcommercecap.ImportFieldMapping{}, Currencies: []channelcommercecap.CatalogCurrency{{CurrencyCode: "CNY", Precision: 2}}, Prices: []channelcommercecap.ImportPriceSchedule{{CurrencyCode: "CNY", TermReference: "monthly", ChargeType: "recurring", PeriodUnit: "month", PeriodCount: 1, MinimumPurchaseCycles: 1, Base: []channelcommercecap.ImportPriceBand{{AmountMinor: 1000}}}}, PricingComplete: true, Fulfillment: channelcommercecap.ImportFulfillment{Granularity: productfulfillmentcap.GranularityPerQuantityUnit, OngoingService: true, RenewalMode: productfulfillmentcap.RenewalModeUnavailable, MaximumPurchaseCycles: 1}}
+	reader := NewLazy()
+	reader.deps = &dependencies{extensions: &catalogReadExtensions{evidence: evidence}}
+	read := &resourceinterfaceprojectioncap.CatalogReadEvidence{PluginID: evidence.PluginID, PluginReleaseVersion: evidence.ReleaseVersion, ContractVersion: evidence.ContractVersion, AuthorizedMethods: append([]string(nil), evidence.AuthorizedMethods...), ReleaseDigest: evidence.ReleaseDigest, DeclarationDigest: evidence.DeclarationDigest}
+	detail := &resourceinterfaceprojectioncap.CatalogDetail{ImportSnapshot: snapshot}
+	if err := reader.validateNativeCatalogSnapshot(t.Context(), read, detail); err != nil {
+		t.Fatal(err)
+	}
+	evidence.DeclarationDigest = strings.Repeat("c", 64)
+	if reader.validateNativeCatalogSnapshot(t.Context(), read, detail) == nil {
+		t.Fatal("read mixed the resource release with another product declaration")
+	}
+	evidence.DeclarationDigest = read.DeclarationDigest
+	snapshot.Mappings = []channelcommercecap.ImportFieldMapping{{FieldKey: "invented", FieldToken: "config:11"}}
+	if reader.validateNativeCatalogSnapshot(t.Context(), read, detail) == nil {
+		t.Fatal("source owner admitted an invented field mapping")
+	}
+}
+
+func nativeCatalogProductEvidence(t *testing.T) *capmodel.BusinessExtensionProviderEvidence {
+	t.Helper()
+	metadata, err := productfulfillmentcap.NewProviderMetadata(&productfulfillmentcap.ProviderDeclaration{SaleImportProtocol: productfulfillmentcap.SaleImportProtocolNativeFinanceV1, Capability: productfulfillmentcap.ProviderCapability{EnUS: "Native sale", ZhCN: "原生转售"}, EntitlementOwnerID: "idc-resource", Granularity: productfulfillmentcap.GranularityPerQuantityUnit, OngoingManagement: true, RenewalSupport: productfulfillmentcap.RenewalSupportUnsupported, ExpiryManagement: productfulfillmentcap.ExpiryManagementUnsupported, MethodRoles: productfulfillmentcap.ProviderMethodRoles{Provision: "provision", Query: "query"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &capmodel.BusinessExtensionProviderEvidence{PluginID: "native-contract", Point: capmodel.BusinessExtensionProductFulfillment, ReleaseVersion: "v1.0.0", ContractVersion: "v1", ReleaseDigest: strings.Repeat("a", 64), DeclarationDigest: strings.Repeat("b", 64), AuthorizedMethods: []string{"provision", "query", "configuration.candidates"}, ProviderMetadata: metadata, ProductConfiguration: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "upstream_product_id", Type: capmodel.ConfigurationFieldSingleSelect, Required: true, DynamicCandidates: &capmodel.DynamicCandidateDeclaration{Version: "v1", Method: "configuration.candidates"}}, {Key: "upstream_configuration_revision", Type: capmodel.ConfigurationFieldSingleLine, Required: true, MinimumLength: 64, MaximumLength: 64}}}}
 }

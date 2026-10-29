@@ -16,7 +16,7 @@ test.describe('TC010 通知公告静态文案不再泄漏原始 i18n key', () =>
     await waitForTableReady(adminPage);
 
     const bodyText = await adminPage.locator('body').innerText();
-    expect(bodyText).toContain('Notice Title');
+    expect(bodyText).toContain('Announcement Title');
     expect(bodyText).toContain('Created By');
     expect([...new Set(bodyText.match(untranslatedKeyPattern) || [])]).toEqual([]);
   });
@@ -37,7 +37,7 @@ test.describe('TC010 通知公告静态文案不再泄漏原始 i18n key', () =>
     const messages = payload?.data?.messages ?? payload?.messages;
 
     expect(messages?.plugin?.['content-notice']?.fields?.title).toBe(
-      'Notice Title',
+      'Announcement Title',
     );
   });
 });

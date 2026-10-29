@@ -6,6 +6,7 @@ export const pluginPageMeta = {
 </script>
 
 <script setup lang="ts">
+import { minorToMajorAmount } from "./catalog-money";
 import "../../../vben-adapter/frontend/admin.css";
 import { useAdminGridLayout } from "../../../vben-adapter/frontend/use-admin-grid-layout";
 import type { VbenFormProps } from "#/adapter/form";
@@ -118,9 +119,6 @@ const canCreateWaiver = computed(() =>
 );
 const canReview = computed(() =>
   hasAccessByCodes(["idc:admin:billing:adjustment:review"]),
-);
-const canWritePolicy = computed(() =>
-  hasAccessByCodes(["idc:admin:billing:adjustment-policy:write"]),
 );
 
 const overview = ref<FinancialOverview>();
@@ -458,7 +456,7 @@ const adjustmentStatusOptions = computed(() =>
   optionList(["pending_review", "posted", "rejected"]),
 );
 const adjustmentTypeOptions = computed(() =>
-  optionList(["manual_receipt", "invoice_waiver"]),
+  optionList(["manual_receipt", "balance_credit", "balance_debit", "invoice_waiver"]),
 );
 const transactionTypeOptions = computed(() =>
   optionList([
@@ -466,6 +464,7 @@ const transactionTypeOptions = computed(() =>
     "recharge",
     "payment",
     "balance_payment",
+    "adjustment",
     "refund",
     "reversal",
     "manual_receipt",
@@ -703,20 +702,8 @@ function statusColor(value: string) {
 }
 
 function formatMinor(value: string, currency: string) {
-  try {
-    const digits =
-      new Intl.NumberFormat(undefined, {
-        currency,
-        style: "currency",
-      }).resolvedOptions().maximumFractionDigits ?? 2;
-    const raw = BigInt(value);
-    const divisor = 10n ** BigInt(digits);
-    const absolute = raw < 0n ? -raw : raw;
-    const fraction = (absolute % divisor).toString().padStart(digits, "0");
-    return `${raw < 0n ? "−" : ""}${currency} ${absolute / divisor}${digits ? `.${fraction}` : ""}`;
-  } catch {
-    return `${currency} —`;
-  }
+ const negative = value.startsWith('-');
+ return `${negative ? '−' : ''}${currency} ${minorToMajorAmount(negative ? value.slice(1) : value, currency)}`;
 }
 
 function shortNo(value?: string) {
@@ -968,7 +955,6 @@ function actionRequestNo() {
 
 async function digestEvidence(value: string) {
   const canonical = value.trim();
-  if (!canonical) throw new Error("evidence-required");
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(canonical),
@@ -1058,6 +1044,8 @@ onBeforeUnmount(() => {
   adjustmentPagination.invalidate();
 });
 
+watch(() => route.query.tab, tab => { if (tab === "refunds") activeTab.value = "refunds"; }, {immediate: true});
+
 function openRequestedInvoice() {
   const reference = route.query.invoiceNo;
   if (route.path.endsWith("/idc/finance") && typeof reference === "string" && reference.length > 0 && reference.length <= 128 &&
@@ -1094,13 +1082,6 @@ const layoutRoot = useAdminGridLayout(invoiceGridApi, transactionGridApi, adjust
               data-testid="finance-manual-receipt"
               @click="openAction('manual_receipt')"
               >{{ t("action.manual_receipt.button") }}</Button
-            >
-            <Button
-              v-if="canWritePolicy"
-              class="policy-button"
-              data-testid="finance-policy"
-              @click="openAction('policy')"
-              >{{ t("action.policy.button") }}</Button
             >
           </Space>
       </div>
@@ -1312,7 +1293,7 @@ const layoutRoot = useAdminGridLayout(invoiceGridApi, transactionGridApi, adjust
                 t("tabs.refunds")
               }}</span>
             </template>
-            <RefundManagementPanel />
+            <RefundManagementPanel :initial-refund-no="typeof route.query.refundNo === 'string' ? route.query.refundNo : undefined" />
           </TabPane>
           <TabPane v-if="canViewCredit" key="credit">
             <template #tab>
@@ -1447,12 +1428,6 @@ const layoutRoot = useAdminGridLayout(invoiceGridApi, transactionGridApi, adjust
         @ok="submitAction"
       >
         <div data-testid="finance-action-modal"></div>
-        <Alert
-          class="reauth-alert"
-          :message="t('action.reauth')"
-          show-icon
-          type="warning"
-        />
         <Alert
           v-if="actionError"
           class="reauth-alert"

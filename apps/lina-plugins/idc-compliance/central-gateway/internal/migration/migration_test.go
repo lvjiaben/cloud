@@ -21,8 +21,8 @@ func TestEmbeddedLocalMigrationContract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load migrations: %v", err)
 	}
-	if len(migrations) != 21 {
-		t.Fatalf("migration count=%d want=21", len(migrations))
+	if len(migrations) != 20 {
+		t.Fatalf("migration count=%d want=20", len(migrations))
 	}
 	var contents strings.Builder
 	for _, item := range migrations {
@@ -73,7 +73,6 @@ func TestEmbeddedLocalMigrationContract(t *testing.T) {
 		"idc_gateway_local_route_delivery",
 		"idc_gateway_local_supplier_takeover",
 		"idc_gateway_local_takeover_evidence",
-		"idc_gateway_tencent_contract_report_job",
 	} {
 		if !strings.Contains(content, required) {
 			t.Fatalf("migration set is missing %q", required)
@@ -150,18 +149,6 @@ func TestLocalMigrationPostgreSQL(t *testing.T) {
 	if err = Apply(ctx, database); err != nil {
 		t.Fatalf("apply idempotent migration: %v", err)
 	}
-	migrations, loadErr := load()
-	if loadErr != nil {
-		t.Fatalf("load migrations for direct idempotency check: %v", loadErr)
-	}
-	for _, item := range migrations {
-		if item.Name != "020-tencent-contract-status.sql" {
-			continue
-		}
-		if _, err = database.ExecContext(ctx, item.SQL); err != nil {
-			t.Fatalf("repeat migration %s directly: %v", item.Name, err)
-		}
-	}
 	for _, table := range []string{
 		"idc_gateway_local_business_request", "idc_gateway_process_nonce",
 		"idc_gateway_supplier_operation",
@@ -188,7 +175,6 @@ func TestLocalMigrationPostgreSQL(t *testing.T) {
 		"idc_gateway_local_route_delivery",
 		"idc_gateway_local_supplier_takeover",
 		"idc_gateway_local_takeover_evidence",
-		"idc_gateway_tencent_contract_report_job",
 		"idc_gateway_schema_migration",
 	} {
 		assertTableExists(t, ctx, database, table, true)
@@ -208,8 +194,8 @@ func TestLocalMigrationPostgreSQL(t *testing.T) {
 		assertTableExists(t, ctx, database, obsolete, false)
 	}
 	var migrationCount int
-	if err = database.QueryRowContext(ctx, `SELECT COUNT(*) FROM idc_gateway_schema_migration`).Scan(&migrationCount); err != nil || migrationCount != 21 {
-		t.Fatalf("migration count=%d want=21 err=%v", migrationCount, err)
+	if err = database.QueryRowContext(ctx, `SELECT COUNT(*) FROM idc_gateway_schema_migration`).Scan(&migrationCount); err != nil || migrationCount != 20 {
+		t.Fatalf("migration count=%d want=20 err=%v", migrationCount, err)
 	}
 	if err = Verify(ctx, database); err != nil {
 		t.Fatalf("verify migration ledger: %v", err)

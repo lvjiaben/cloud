@@ -16,7 +16,7 @@ import type {
   ServerRenewalResultItem,
 } from "./server-batch-renewal-client";
 
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Page, useVbenModal } from "@vben/common-ui";
 import { preferences } from "@vben/preferences";
 import {
@@ -41,6 +41,7 @@ import {
   previewServerRenewals,
 } from "./server-batch-renewal-client";
 
+const props = defineProps<{ entitlementNo?: string }>();
 const tr = (key: string, params?: Record<string, number | string>) =>
   $t(`plugin.idc-resource.serverRenewal.${key}`, params ?? {});
 const rows = ref<ServerRenewalCandidate[]>([]);
@@ -50,6 +51,8 @@ const preview = ref<ServerRenewalPreview>();
 const results = ref<ServerRenewalResultItem[]>([]);
 const confirmed = ref(false);
 let accessRevision = 0;
+let disposed = false;
+let previewEntitlementNo: string | undefined;
 const directory = createResourcePage<ServerRenewalCandidate>({
   onPage: (page) => candidateGridApi.setGridOptions({ pagerConfig: { currentPage: page.currentPage, pageSize: page.pageSize, total: page.total } }),
   onDenied: () => {
@@ -65,8 +68,9 @@ const directory = createResourcePage<ServerRenewalCandidate>({
   onFailure: () => message.error(tr("loadFailed")),
 });
 const { hasAccessByCodes } = useAccess();
+const canView = computed(() => hasAccessByCodes(["idc:admin:resource:server-batch:view"]));
 const canRenew = computed(() =>
-  hasAccessByCodes(["idc:admin:resource:server-batch:safe"]),
+  canView.value && hasAccessByCodes(["idc:admin:resource:server-batch:safe"]),
 );
 const selectedCount = computed(() => selected.value.length);
 
@@ -122,7 +126,7 @@ function previewColumns(): VxeGridProps<ServerRenewalPreviewItem>["columns"] {
       field: "amount",
       slots: { default: "amount" },
       title: tr("amount"),
-      width: 150,
+      width: 250,
     },
     {
       field: "originalExpiresAt",
@@ -152,7 +156,7 @@ function resultColumns(): VxeGridProps<ServerRenewalResultItem>["columns"] {
       field: "amount",
       slots: { default: "amount" },
       title: tr("amount"),
-      width: 150,
+      width: 250,
     },
   ];
 }
@@ -204,6 +208,26 @@ const [ResultModal, resultModalApi] = useVbenModal({
   onConfirm: () => resultModalApi.close(),
 });
 
+function invalidateContext() {
+  ++accessRevision;
+  directory.invalidate();
+  rows.value = [];
+  selected.value = [];
+  preview.value = undefined;
+  previewEntitlementNo = undefined;
+  results.value = [];
+  confirmed.value = false;
+  loading.value = false;
+  previewModalApi.unlock();
+  void previewModalApi.close();
+  void resultModalApi.close();
+}
+watch([() => props.entitlementNo, canView, canRenew], () => {
+  invalidateContext();
+  if (!disposed && canView.value) void load(directory.current);
+});
+onBeforeUnmount(() => { disposed = true; invalidateContext(); });
+
 watch(rows, (value) => candidateGridApi.setGridOptions({ data: value }), {
   deep: true,
 });
@@ -239,7 +263,7 @@ function money(minor: string, currency: string) {
     });
     const digits = formatter.resolvedOptions().maximumFractionDigits;
     if (digits === undefined) return "—";
-    const scale = 10n ** BigInt(digits);
+    const scale = BigInt(`1${"0".repeat(digits)}`);
     const absolute = value < 0n ? -value : value;
     const fraction = (absolute % scale).toString().padStart(digits, "0");
     const formatted = formatter
@@ -269,45 +293,55 @@ async function selectAndPreview(row: ServerRenewalCandidate) {
   await createPreview();
 }
 async function load(requested: {currentPage: number; pageSize: number} = directory.current, resetSelection = false) {
+  if (disposed || !canView.value) return;
+  const revision = accessRevision;
+  const entitlementNo = props.entitlementNo;
   loading.value = true;
   try {
     await directory.query(requested, "",
-      (page, limit) => listServerRenewalCandidates({ page, limit }),
+      (page, limit) => listServerRenewalCandidates({ page, limit, entitlementNo }),
       (response) => {
         rows.value = response.items;
         if (resetSelection) selected.value = [];
       });
   } finally {
-    loading.value = false;
+    if (revision === accessRevision) loading.value = false;
   }
 }
 async function createPreview() {
-  const revision = accessRevision;
+  if (disposed || !canRenew.value || loading.value) return;
+  const revision = ++accessRevision;
+  const entitlementNo = props.entitlementNo;
+  const serverNos = [...selected.value];
   if (!selected.value.length) {
     message.warning(tr("selectRequired"));
     return;
   }
   const { valid } = await renewalFormApi.validate();
-  if (!valid) return;
+  if (!valid || revision !== accessRevision || !canRenew.value || disposed) return;
   const values = await renewalFormApi.getValues<{ renewalCycles: number }>();
+  if (revision !== accessRevision || !canRenew.value || disposed) return;
   loading.value = true;
   try {
     const result = await previewServerRenewals({
+      entitlementNo,
       renewalCycles: values.renewalCycles,
       requestKey: `server-renewal-${crypto.randomUUID()}`,
-      serverNos: [...selected.value],
+      serverNos,
     });
-    if (revision !== accessRevision) return;
+    if (revision !== accessRevision || disposed || !canRenew.value || entitlementNo !== props.entitlementNo) return;
     preview.value = result;
+    previewEntitlementNo = entitlementNo;
     confirmed.value = false;
     previewModalApi.open();
   } catch {
-    message.error(tr("previewFailed"));
+    if (revision === accessRevision) message.error(tr("previewFailed"));
   } finally {
-    loading.value = false;
+    if (revision === accessRevision) loading.value = false;
   }
 }
 async function execute() {
+  if (disposed || !canRenew.value || previewEntitlementNo !== props.entitlementNo) return;
   const revision = accessRevision;
   if (!preview.value || !confirmed.value) {
     message.warning(tr("confirmationRequired"));
@@ -316,6 +350,7 @@ async function execute() {
   previewModalApi.lock();
   try {
     const response = await confirmServerRenewals({
+      entitlementNo: props.entitlementNo,
       confirmationDigest: preview.value.confirmationDigest,
       renewalCycles: preview.value.renewalCycles,
       requestKey: preview.value.requestKey,
@@ -326,9 +361,9 @@ async function execute() {
     previewModalApi.close();
     resultModalApi.open();
   } catch {
-    message.error(tr("confirmationFailed"));
+    if (revision === accessRevision) message.error(tr("confirmationFailed"));
   } finally {
-    previewModalApi.unlock();
+    if (revision === accessRevision) previewModalApi.unlock();
   }
 }
 

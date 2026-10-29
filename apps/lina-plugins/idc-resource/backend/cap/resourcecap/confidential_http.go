@@ -20,6 +20,9 @@ type ConfidentialHTTPRequest struct {
 	Path   string              `json:"path"`
 	Query  map[string][]string `json:"query,omitempty"`
 	Form   map[string]string   `json:"form,omitempty"`
+	// FormFields carries public HTTP form names as values, so bracket notation
+	// does not become an invalid object key at the governed JSON boundary.
+	FormFields []ConfidentialFormField `json:"formFields,omitempty"`
 	// JSONBody carries public configuration in an object request body. It cannot
 	// be combined with forms or secret form bindings; credentials remain host-owned.
 	JSONBody         json.RawMessage   `json:"jsonBody,omitempty"`
@@ -50,6 +53,28 @@ type ConfidentialHTTPResponse struct {
 type ConfidentialSecretFormBinding struct {
 	Field string `json:"field"`
 	Slot  string `json:"slot"`
+}
+
+// ConfidentialFormField carries one public form entry, never a secret binding.
+// The resource owner validates names, limits and duplicates before any HTTP call.
+type ConfidentialFormField struct {
+	Field string `json:"field"`
+	Value string `json:"value"`
+}
+
+// NewConfidentialFormFields preserves upstream names in deterministic order
+// without placing supplier-specific field syntax in governed JSON object keys.
+func NewConfidentialFormFields(fields map[string]string) []ConfidentialFormField {
+	keys := make([]string, 0, len(fields))
+	for field := range fields {
+		keys = append(keys, field)
+	}
+	sort.Strings(keys)
+	items := make([]ConfidentialFormField, 0, len(keys))
+	for _, field := range keys {
+		items = append(items, ConfidentialFormField{Field: field, Value: fields[field]})
+	}
+	return items
 }
 
 // NewConfidentialSecretFormBindings creates a deterministic secret-free wire

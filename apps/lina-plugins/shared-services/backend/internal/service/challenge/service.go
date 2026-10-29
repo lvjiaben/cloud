@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/tls"
 	"encoding/hex"
 	"net/http"
 	"strings"
@@ -62,7 +63,7 @@ func New(database gdb.DB, config Config) (*serviceImpl, error) {
 	if config.Provider == "turnstile" && (config.TurnstileSiteKey == "" || config.TurnstileSecret == "" || config.TurnstileURL != turnstileVerifyURL) {
 		return nil, gerror.New("shared challenge Turnstile configuration is invalid")
 	}
-	return &serviceImpl{database: database, config: config, httpClient: &http.Client{Timeout: config.RequestTimeout}}, nil
+	return &serviceImpl{database: database, config: config, httpClient: &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: config.RequestTimeout}}, nil
 }
 
 func Bind(service *serviceImpl, caller string) (challengecap.Service, error) {

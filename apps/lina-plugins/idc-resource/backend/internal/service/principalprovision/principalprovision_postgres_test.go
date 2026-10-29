@@ -336,6 +336,47 @@ func (p *principalTestProvider) CreatePrincipal(
 	return nil, callError
 }
 
+// A successful supplier acknowledgement still needs an exact lookup, but
+// must not wait for an already released two-minute write lease.
+func TestPrincipalProvisionPostgreSQLAcknowledgedCreateVerifiesImmediately(t *testing.T) {
+	ctx, database := principalTestDatabase(t)
+	seedPrincipalRoute(t, ctx, database)
+	manager := newPrincipalTestManager()
+	service, err := New(database, func(string) (secretcap.Manager, error) { return manager, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.EnsureForPool(ctx, "customer-principal-fast", "pool-principal-1"); err != nil {
+		t.Fatal(err)
+	}
+	provider := &principalAcknowledgedProvider{}
+	worker, err := NewWorker(database, func(string) (secretcap.Manager, error) { return manager, nil }, func(context.Context, string) (resourcecap.Provider, func(), error) { return provider, func() {}, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	for step := 0; step < 3; step++ {
+		worked, err := worker.RunOne(ctx)
+		if err != nil || !worked {
+			t.Fatalf("immediate step %d worked=%v err=%v", step, worked, err)
+		}
+	}
+	var state struct{ StatusCode, ExternalPrincipalRef string }
+	if err = database.GetScan(ctx, &state, `SELECT task.status_code,mapping.external_principal_ref FROM plugin_idc_resource_principal_task task JOIN plugin_idc_resource_principal_mapping mapping USING(customer_no,channel_no) WHERE task.customer_no='customer-principal-fast'`); err != nil {
+		t.Fatal(err)
+	}
+	if state.StatusCode != "cleanup_pending" || state.ExternalPrincipalRef != "42" || provider.createCalls.Load() != 1 || provider.lookupCalls.Load() != 2 {
+		t.Fatalf("verified state=%+v creates=%d lookups=%d", state, provider.createCalls.Load(), provider.lookupCalls.Load())
+	}
+}
+
+type principalAcknowledgedProvider struct{ principalTestProvider }
+
+func (p *principalAcknowledgedProvider) CreatePrincipal(context.Context, resourcecap.PrincipalCreateRequest) (*resourcecap.PrincipalCreateResult, error) {
+	p.createCalls.Add(1)
+	now := time.Now().UTC()
+	return &resourcecap.PrincipalCreateResult{ExternalPrincipalRef: "42", ObservedAt: now, Evidence: []resourcecap.Evidence{{Kind: "principal_acceptance", Reference: "prt_fast", Summary: "principal creation returned an identifier", ObservedAt: now}}}, nil
+}
+
 type principalAlwaysAbsentProvider struct{ principalTestProvider }
 
 func (p *principalAlwaysAbsentProvider) LookupPrincipal(
@@ -461,7 +502,7 @@ func (m *principalTestManager) Create(
 		return secretcap.CreateResult{}, err
 	}
 	defer clear(plaintext)
-	if strings.Contains(string(plaintext), "customer-principal-1") || len(plaintext) < 32 {
+	if strings.Contains(string(plaintext), "customer-principal-1") || (len(plaintext) < 32 && !(strings.HasPrefix(key, "resource-principal-password-20-") && len(plaintext) == 20)) {
 		return secretcap.CreateResult{}, errors.New("principal plaintext was not opaque and bounded")
 	}
 	handle, err := secretcap.NewHandle("sec_principal_test_" + hex.EncodeToString([]byte{byte(len(m.byKey) + 1)}))

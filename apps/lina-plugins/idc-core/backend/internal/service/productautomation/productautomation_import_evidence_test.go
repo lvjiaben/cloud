@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"lina-core/pkg/plugin/capability/capmodel"
 	"lina-plugin-idc-core/backend/cap/channelcommercecap"
+	"lina-plugin-idc-core/backend/cap/productfulfillmentcap"
 	"lina-plugin-idc-core/backend/cap/resourceinterfaceprojectioncap"
 	"lina-plugin-idc-core/backend/internal/model/entity"
 	"strings"
@@ -29,7 +30,7 @@ func TestPortableCustomerSchemaEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	contract := &entity.CatalogImportContract{VersionNo: binding.VersionNo, InterfaceInstanceNo: binding.InterfaceInstanceNo, Snapshot: string(encoded), SnapshotDigest: configurationDigest(encoded), ReadEvidence: string(readJSON)}
-	got, err := verifiedPortableCustomerSchema(contract, binding, revision, exact)
+	got, err := verifiedPortableCustomerSchema(contract, binding, revision, exact, "{}")
 	if err != nil || !sameExactConfiguration(got, snapshot.Schema) {
 		t.Fatalf("valid import rejected: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestPortableCustomerSchemaEvidence(t *testing.T) {
 		t.Run(scenario.name, func(t *testing.T) {
 			c, b, r := *contract, *binding, *revision
 			scenario.change(&c, &b, &r)
-			if _, e := verifiedPortableCustomerSchema(&c, &b, &r, exact); e == nil {
+			if _, e := verifiedPortableCustomerSchema(&c, &b, &r, exact, "{}"); e == nil {
 				t.Fatal("invalid import accepted")
 			}
 		})
@@ -63,4 +64,43 @@ func TestPortableCustomerSchemaEvidence(t *testing.T) {
 func portableAutomationSnapshot() *channelcommercecap.ImportSnapshot {
 	label := &capmodel.LocalizedText{ZhCN: "区域", EnUS: "Region"}
 	return &channelcommercecap.ImportSnapshot{ProtocolVersion: "1", Product: channelcommercecap.CatalogProduct{PublicSlug: "demo"}, ConfigurationRevision: "revision-a", Schema: &capmodel.ConfigurationSchemaDeclaration{Version: "v1", Fields: []*capmodel.ConfigurationFieldDeclaration{{Key: "region", Type: capmodel.ConfigurationFieldSingleLine, Label: label}}}, Mappings: []channelcommercecap.ImportFieldMapping{{FieldKey: "region", FieldToken: "field-token"}}, Currencies: []channelcommercecap.CatalogCurrency{{CurrencyCode: "USD", Precision: 2}}, PricingComplete: true, Fulfillment: channelcommercecap.ImportFulfillment{Granularity: "per_order_item", RenewalMode: "unavailable"}, Prices: []channelcommercecap.ImportPriceSchedule{{CurrencyCode: "USD", TermReference: "term-token", ChargeType: "one_time", PeriodUnit: "once", PeriodCount: 1, PricePhase: "new_purchase", QuantityMode: "fixed", MinimumPurchaseCycles: 1, Base: []channelcommercecap.ImportPriceBand{{AmountMinor: 100}}, Tax: channelcommercecap.ImportTaxPolicy{Treatment: "exempt", CategoryCode: "service", RoundingScope: "line", RoundingMode: "half_up", RoundingQuantumMinor: 1}}}}
+}
+
+func TestNativeImportAdmissionRequiresExactExplicitProtocol(t *testing.T) {
+	exact := automationEvidence([]string{"provision", "query.status"})
+	exact.PluginID = "unlisted-native-provider"
+	declaration := testFulfillmentDeclaration()
+	declaration.SaleImportProtocol = productfulfillmentcap.SaleImportProtocolNativeFinanceV1
+	declaration.Granularity = productfulfillmentcap.GranularityPerQuantityUnit
+	declaration.OngoingManagement = true
+	declaration.EntitlementOwnerID = "idc-resource"
+	exact.ProviderMetadata = mustTestProviderMetadata(t, declaration)
+	if !supportsPortableImport(exact) {
+		t.Fatal("explicit native protocol rejected")
+	}
+	snapshot := portableAutomationSnapshot()
+	snapshot.Product.PublicSlug = "41"
+	snapshot.Fulfillment.MaximumPurchaseCycles = 1
+	snapshot.ProtocolVersion = channelcommercecap.ImportPurchaseCycleLimitProtocolVersion
+	snapshot.Fulfillment.Granularity = productfulfillmentcap.GranularityPerQuantityUnit
+	snapshot.Fulfillment.OngoingService = true
+	read := &resourceinterfaceprojectioncap.CatalogReadEvidence{SaleImportProtocol: declaration.SaleImportProtocol, InterfaceInstanceNo: "pfi_" + strings.Repeat("a", 32), OwnerID: "idc-resource", ResourceChannelRef: "CHN_native", InterfaceConfigurationRevision: "rci_" + strings.Repeat("b", 32), PluginID: exact.PluginID, PluginReleaseVersion: exact.ReleaseVersion, ContractVersion: exact.ContractVersion, AuthorizedMethods: exact.AuthorizedMethods, ReleaseDigest: exact.ReleaseDigest, DeclarationDigest: exact.DeclarationDigest}
+	supplied := []resourceinterfaceprojectioncap.CatalogConfigurationValue{{FieldKey: "upstream_product_id", TextValue: &snapshot.Product.PublicSlug}, {FieldKey: "upstream_configuration_revision", TextValue: &snapshot.ConfigurationRevision}}
+	if err := validatePortableImportEvidence(snapshot, read, exact, supplied); err != nil {
+		t.Fatal(err)
+	}
+	read.SaleImportProtocol = ""
+	if validatePortableImportEvidence(snapshot, read, exact, supplied) == nil {
+		t.Fatal("unstamped native read accepted")
+	}
+	read.SaleImportProtocol = declaration.SaleImportProtocol
+	read.ReleaseDigest = strings.Repeat("f", 64)
+	if validatePortableImportEvidence(snapshot, read, exact, supplied) == nil {
+		t.Fatal("another release read accepted")
+	}
+	declaration.SaleImportProtocol = ""
+	exact.ProviderMetadata = mustTestProviderMetadata(t, declaration)
+	if supportsPortableImport(exact) {
+		t.Fatal("provider name without explicit native capability accepted")
+	}
 }

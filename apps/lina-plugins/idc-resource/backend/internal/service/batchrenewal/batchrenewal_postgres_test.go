@@ -27,6 +27,14 @@ VALUES(0,?,?,?,?,?,?)`, serverNo, "ent_"+strings.Repeat(string(rune('a'+index)),
 		}
 	}
 	store := &sqlStore{database: database}
+	filtered, err := store.List(ctx, ListInput{Limit: 2, EntitlementNo: "ent_" + strings.Repeat("a", 32)})
+	if err != nil || filtered.Total != 1 || len(filtered.Items) != 1 || filtered.Items[0].ServerNo != serverA || filtered.NextCursor != "" {
+		t.Fatalf("product-scoped candidates=%+v err=%v", filtered, err)
+	}
+	missing, err := store.List(ctx, ListInput{Limit: 2, EntitlementNo: "ENT_MISSING"})
+	if err != nil || missing.Total != 0 || len(missing.Items) != 0 {
+		t.Fatalf("unknown product leaked candidates=%+v err=%v", missing, err)
+	}
 	first, err := store.List(ctx, ListInput{Limit: 2})
 	if err != nil || len(first.Items) != 2 || first.NextCursor != serverB {
 		t.Fatalf("first page=%+v err=%v", first, err)

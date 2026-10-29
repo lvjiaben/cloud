@@ -4,5 +4,15 @@
   "error.idc.payment.reconciliation.page.invalid": "The payment page request is invalid",
   "error.idc.payment.reconciliation.page.unavailable": "The payment list is temporarily unavailable",
   "error.idc.payment.exception.fund.page.invalid": "The payment page request is invalid",
-  "error.idc.payment.exception.fund.page.unavailable": "The payment list is temporarily unavailable"
+  "error.idc.payment.exception.fund.page.unavailable": "The payment list is temporarily unavailable",
+  "error.idc.payment.public.address.invalid": "Enter a valid HTTPS notification origin and a valid customer return origin",
+  "error.idc.payment.public.address.conflict": "Payment addresses changed; reload before saving",
+  "error.idc.payment.public.address.unavailable": "Payment address settings are temporarily unavailable",
+  "error.idc.payment.public.address.unconfigured": "Configure payment notification and customer return addresses before accepting online payments",
+  "error.idc.payment.public.address.forbidden": "Only directly authenticated staff can change payment addresses",
+  "error.idc.payment.channel.modes.invalid": "Choose supported payment modes for this channel",
+  "error.idc.payment.channel.modes.conflict": "Payment channel changed; reload before saving",
+  "error.idc.payment.channel.modes.unavailable": "Payment channel settings are temporarily unavailable",
+  "error.idc.payment.channel.modes.forbidden": "Only directly authenticated staff can change payment modes",
+  "error.idc.payment.epay.notification.invalid": "The EPay notification is invalid"
 }

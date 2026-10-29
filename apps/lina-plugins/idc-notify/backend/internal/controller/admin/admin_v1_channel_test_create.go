@@ -9,7 +9,7 @@ import (
 	"lina-plugin-idc-notify/backend/internal/service/notification"
 )
 
-// ChannelTestCreate routes WeCom tests to the current operator's binding and other tests to typed targets.
+// ChannelTestCreate sends a confirmed test to one typed destination.
 func (c *ControllerV1) ChannelTestCreate(ctx context.Context, req *v1.ChannelTestCreateReq) (res *v1.ChannelTestCreateRes, err error) {
 	variables := make(map[string]string, len(req.Variables))
 	for key, value := range req.Variables {
@@ -24,12 +24,7 @@ func (c *ControllerV1) ChannelTestCreate(ctx context.Context, req *v1.ChannelTes
 		TemplateVersion: req.TemplateVersion, Variables: variables, ExpectedVersion: req.ExpectedVersion,
 		IdempotencyKey: req.IdempotencyKey, Confirmed: req.Confirmed,
 	}
-	var item *notification.ChannelTestResult
-	if req.ChannelCode == "wechat_work" {
-		item, err = c.notifications.TestOwnWeCom(ctx, input)
-	} else {
-		item, err = c.notifications.TestChannel(ctx, input)
-	}
+	item, err := c.notifications.TestChannel(ctx, input)
 	if err != nil {
 		return nil, err
 	}

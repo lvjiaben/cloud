@@ -18,7 +18,6 @@ const (
 	CodeBills         Code = "bills"
 	CodeTransactions  Code = "transactions"
 	CodeServers       Code = "servers"
-	CodeContracts     Code = "contracts"
 	CodeTaxInvoices   Code = "tax_invoices"
 	CodeTickets       Code = "tickets"
 	CodeNotifications Code = "notifications"

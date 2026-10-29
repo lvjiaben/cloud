@@ -24,7 +24,7 @@ func (c *ControllerV1) EntitlementList(ctx context.Context, req *v1.EntitlementL
 	if err != nil {
 		return nil, err
 	}
-	items, next, err := c.service.ListEntitlements(ctx, actor, before, req.Limit)
+	items, next, err := c.service.ListEntitlements(ctx, actor, before, req.Limit, serviceaction.DirectoryFilter{DirectoryNo: req.DirectoryNo, PluginID: req.PluginID})
 	if err != nil {
 		return nil, err
 	}

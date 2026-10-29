@@ -19,7 +19,7 @@ test.describe("TC001 通知中心", () => {
     await adminPage.unrouteAll({ behavior: "wait" });
   });
 
-  test("TC001a: 五个已冻结渠道只显示安全状态且企业微信没有 UserID 入口", async ({
+  test("TC001a: 仅保留邮件短信渠道并移除其他通知入口", async ({
     adminPage,
   }) => {
     state = await installNotificationCenterMock(adminPage);
@@ -27,11 +27,8 @@ test.describe("TC001 通知中心", () => {
     await notification.gotoChannels();
 
     for (const name of [
-      "站内信",
       "电子邮件",
       "短信",
-      "微信公众号",
-      "企业微信",
     ]) {
       await expect(notification.channelCard(name)).toBeVisible();
     }
@@ -70,27 +67,10 @@ test.describe("TC001 通知中心", () => {
       notification.channelWizard().getByLabel("腾讯云访问账号"),
     ).toBeVisible();
 
-    await notification.openChannelConfiguration("微信公众号");
-    await expect(
-      notification.channelWizard().getByLabel("公众号固定回调地址"),
-    ).toBeVisible();
-
-    await notification.openChannelConfiguration("企业微信");
-    const wizard = notification.channelWizard();
-    await expect(wizard).toContainText("员工需登录后台后自行扫码绑定企业微信");
-    await expect(wizard.getByLabel(/UserID|用户编号|员工账号/iu)).toHaveCount(
-      0,
-    );
-    await expect(wizard.getByLabel(/企业编号|Corporation ID/iu)).toBeVisible();
-
-    await expect(
-      notification
-        .channelCard("企业微信")
-        .getByRole("button", { name: "测试发送" }),
-    ).toHaveCount(1);
-    await notification.screenshot(
-      "notification-channels-wecom-binding-required",
-    );
+    for (const removed of ["站内信", "微信公众号", "签名 Webhook", "钉钉", "飞书", "企业微信"]) {
+      await expect(notification.channelCard(removed)).toHaveCount(0);
+    }
+    await notification.screenshot("notification-email-sms-only");
   });
 
   test("TC001b: 无权限时菜单隐藏且直接请求也被拒绝", async ({ adminPage }) => {
@@ -279,7 +259,7 @@ test.describe("TC001 通知中心", () => {
     await notification.screenshot("notification-sms-provider-selection");
   });
 
-  test("TC001e: 模板页面保留短信顺序和公众号字段映射", async ({
+  test("TC001e: 模板页面只保留邮件短信并保存短信变量映射", async ({
     adminPage,
   }) => {
     state = await installNotificationCenterMock(adminPage);
@@ -304,14 +284,8 @@ test.describe("TC001 通知中心", () => {
     });
     await expect(channelTabs.getByRole("tab")).toHaveText([
       "全部渠道",
-      "站内信",
       "电子邮件",
       "短信",
-      "微信公众号",
-      "企业微信",
-      "签名 Webhook",
-      "钉钉",
-      "飞书",
     ]);
     await channelTabs
       .getByRole("tab", { name: "电子邮件", exact: true })
@@ -339,7 +313,7 @@ test.describe("TC001 通知中心", () => {
       .click();
     await expect(
       notification.pageRoot.locator(".policy-scroll .row"),
-    ).toHaveCount(2);
+    ).toHaveCount(1);
     await expect(notification.pageRoot.locator(".policy-scroll")).toHaveCSS(
       "max-height",
       "520px",
@@ -382,26 +356,7 @@ test.describe("TC001 通知中心", () => {
       },
     });
 
-    const wechatRow = rows.filter({ hasText: "支付结果" });
-    await wechatRow.getByRole("button", { name: "查看详情" }).click();
-    await expect(editor.getByText("公众号模板对应关系")).toBeVisible();
-    await expect(editor.getByLabel("服务商模板编号")).toHaveValue(
-      "wechat-template-public-id",
-    );
-    await expect(editor.getByPlaceholder("公众号模板字段名")).toHaveCount(3);
-    await editor.getByRole("button", { name: "保存" }).click();
-    expect(state?.templateRequests[1]).toMatchObject({
-      channelCode: "wechat_official",
-      expectedVersion: 4,
-      weChatOfficial: {
-        dataMapping: {
-          amount1: "amount",
-          character_string1: "invoice_no",
-          thing2: "currency",
-        },
-        templateId: "wechat-template-public-id",
-      },
-    });
+    await expect(notification.pageRoot).not.toContainText("公众号模板对应关系");
     await notification.screenshot("notification-template-provider-mappings");
   });
 
@@ -511,23 +466,38 @@ test.describe("TC001 通知中心", () => {
   }) => {
     state = await installNotificationCenterMock(adminPage);
     const notification = new NotificationCenterPage(adminPage);
+    async function useEnglish(page: "channels" | "templates") {
+      const drawer = adminPage.getByRole("dialog").filter({has:notification.pageRoot});
+      const inDrawer = await drawer.isVisible().catch(() => false);
+      if (inDrawer) {
+        await drawer.getByRole("button").first().click();
+        await expect(notification.pageRoot).toBeHidden();
+      }
+      await mainLayout.switchLanguage("English");
+      if (inDrawer) {
+        const configuration = adminPage.getByTestId("system-configuration-center");
+        await configuration.getByRole("tab",{name:"Messaging",exact:true}).click();
+        const title = page === "channels" ? "Messaging channels" : "Notification templates";
+        await configuration.locator("article.configuration-item").filter({hasText:title}).getByRole("button",{name:"Configure",exact:true}).click();
+      }
+    }
     await notification.gotoChannels();
-    await mainLayout.switchLanguage("English");
+    await useEnglish("channels");
 
     await expect(notification.pageRoot).toContainText(
       "External channels use your company accounts. Passwords and keys are never shown again after saving.",
     );
-    await expect(notification.channelCard("In-app message")).toContainText(
-      "Enabled",
-    );
-    await expect(notification.channelCard("WeCom")).toContainText("Enabled");
+    await expect(notification.channelCard("Email")).toContainText("Enabled");
+    await expect(notification.channelCard("In-app message")).toHaveCount(0);
+    await expect(notification.channelCard("WeChat Official Account")).toHaveCount(0);
+    await expect(notification.channelCard("WeCom")).toHaveCount(0);
     await expect(notification.pageRoot).not.toContainText(
       /titleChannels|channel_wechat|plugin\.linapro/iu,
     );
 
-    // 通知配置已经统一收进“系统配置”，不再依赖被隐藏的独立菜单。
     await notification.gotoTemplates();
-    await mainLayout.switchLanguage("English");
+    await useEnglish("templates");
+
     await expect(
       notification.pageRoot.getByRole("tablist", {
         exact: true,
@@ -537,189 +507,9 @@ test.describe("TC001 通知中心", () => {
     await expect(notification.pageRoot).toContainText(
       "Service expiry reminder",
     );
-    await notification.pageRoot
-      .locator(".panel")
-      .first()
-      .locator(".row")
-      .filter({ hasText: "Payment result" })
-      .getByRole("button", { name: "View details" })
-      .click();
-    await expect(notification.pageRoot).toContainText(
-      "Official Account template mapping",
-    );
+    await expect(notification.pageRoot).not.toContainText("Official Account template mapping");
 
-    await notification.gotoDeliveries();
-    await mainLayout.switchLanguage("English");
-    await expect(notification.pageRoot).toContainText("Waiting to retry");
-    await expect(notification.pageRoot).toContainText("Manual review");
     await notification.screenshot("notification-center-en-us");
-  });
-
-  test("TC001i: 当前员工只能扫码绑定本人且接口始终走通知插件前缀", async ({
-    adminPage,
-  }) => {
-    state = await installNotificationCenterMock(adminPage, {
-      canManage: false,
-    });
-    const notification = new NotificationCenterPage(adminPage);
-    await notification.gotoWeComBinding();
-
-    await expect(
-      notification.pageRoot.getByRole("heading", { name: "当前绑定状态" }),
-    ).toBeVisible();
-    await expect(notification.pageRoot).toContainText("只能绑定你本人的账号");
-    await expect(
-      notification.pageRoot.getByLabel(/UserID|用户编号|员工账号/iu),
-    ).toHaveCount(0);
-    await notification.pageRoot
-      .getByRole("button", { name: "扫码绑定" })
-      .click();
-
-    await expect(
-      notification.pageRoot.getByRole("link", { name: "打开企业微信扫码页" }),
-    ).toHaveAttribute("href", /^https:\/\/login\.work\.weixin\.qq\.com\//u);
-    await expect(
-      notification.pageRoot.getByRole("link", { name: "在企业微信中继续授权" }),
-    ).toHaveAttribute("href", /^https:\/\/open\.weixin\.qq\.com\//u);
-    expect(state?.weComBindingRequests).toHaveLength(1);
-    expect(state?.weComBindingRequests[0]?.path).toBe(
-      "/x/idc-notify/api/v1/staff/notifications/wechat-work/oauth-authorizations",
-    );
-    expect(state?.weComBindingRequests[0]?.body).not.toHaveProperty("userId");
-    await notification.screenshot("notification-wecom-self-binding");
-  });
-
-  test("TC001j: 企业微信测试只发给当前操作员本人绑定且不接受 UserID", async ({
-    adminPage,
-  }) => {
-    state = await installNotificationCenterMock(adminPage, {
-      weComBound: true,
-    });
-    const notification = new NotificationCenterPage(adminPage);
-    await notification.gotoChannels();
-    await notification.openChannelTest("企业微信");
-
-    const wizard = notification.channelWizard();
-    await expect(wizard).toContainText(
-      "测试消息发到你已绑定的企业微信",
-    );
-    await expect(
-      wizard.getByLabel(/UserID|用户编号|员工账号|收件人/iu),
-    ).toHaveCount(0);
-    await expect(wizard).toContainText("工单编号");
-    await notification.fillWeComSelfTest("TICKET-E2E-001", "企业微信本人测试");
-
-    const prompt = await notification.submitRealChannelTest();
-    expect(prompt).toContain("你本人绑定的企业微信");
-    await expect(notification.pageRoot.getByRole("status")).toContainText(
-      "测试请求已完成",
-    );
-    await expect(wizard).toContainText("当前操作员本人的企业微信绑定");
-    await expect(wizard).not.toContainText("current_staff_binding");
-
-    expect(state?.testRequests).toHaveLength(1);
-    expect(state?.testRequests[0]?.path).toBe(
-      "/x/idc-notify/api/v1/admin/notifications/channels/wechat-work/tests",
-    );
-    expect(state?.testRequests[0]?.body).not.toHaveProperty("target");
-    expect(state?.testRequests[0]?.body).not.toHaveProperty("userId");
-    await notification.screenshot("notification-wecom-self-test");
-  });
-
-  test("TC001k: 当前操作员没有企业微信绑定时测试失败且不伪造发送", async ({
-    adminPage,
-  }) => {
-    state = await installNotificationCenterMock(adminPage);
-    const notification = new NotificationCenterPage(adminPage);
-    await notification.gotoChannels();
-    await notification.openChannelTest("企业微信");
-    await notification.fillWeComSelfTest("TICKET-E2E-002", "未绑定不发送");
-
-    await notification.submitRealChannelTest();
-
-    await expect(notification.pageRoot.getByRole("alert")).toContainText(
-      "测试没有成功完成",
-    );
-    expect(state?.testRequests).toHaveLength(0);
-  });
-
-  test("TC001l: 签名 Webhook 只能配置安全目标并由事件策略明确订阅", async ({
-    adminPage,
-  }) => {
-    state = await installNotificationCenterMock(adminPage);
-    const notification = new NotificationCenterPage(adminPage);
-    await notification.gotoChannels();
-    await notification.openChannelConfiguration("签名 Webhook");
-
-    const wizard = notification.channelWizard();
-    await expect(wizard).toContainText("只允许公网 HTTPS");
-    await expect(
-      wizard.getByLabel(/允许内网|跳过证书|关闭安全检查/iu),
-    ).toHaveCount(0);
-    await wizard
-      .getByLabel(/Webhook 公网地址|Public Webhook endpoint/iu)
-      .fill("https://127.0.0.1/lina/events");
-    await wizard
-      .getByLabel("签名密钥")
-      .fill("signed-webhook-secret-at-least-32-bytes");
-    await notification.saveConfiguration();
-
-    await expect(notification.pageRoot.getByRole("alert")).toContainText(
-      "配置没有保存",
-    );
-    expect(state?.configurationRequests).toHaveLength(0);
-    await wizard
-      .getByLabel(/Webhook 公网地址|Public Webhook endpoint/iu)
-      .fill("https://hooks.example.com/lina/events");
-    await wizard
-      .getByLabel("签名密钥")
-      .fill("signed-webhook-secret-at-least-32-bytes");
-    await notification.saveConfiguration();
-
-    expect(state?.configurationRequests.at(-1)).toMatchObject({
-      path: "/x/idc-notify/api/v1/admin/notifications/channels/signed-webhook/configuration",
-      body: {
-        endpointUrl: "https://hooks.example.com/lina/events",
-        signingSecret: "signed-webhook-secret-at-least-32-bytes",
-      },
-    });
-    await expect(notification.pageRoot).not.toContainText(
-      "signed-webhook-secret-at-least-32-bytes",
-    );
-
-    await notification.gotoTemplates();
-    await notification.pageRoot
-      .getByRole("tab", { name: "发送规则" })
-      .click();
-    const policy = notification.pageRoot
-      .locator(".row")
-      .filter({ hasText: "签名 Webhook" });
-    await expect(policy).toContainText("工单更新");
-    await policy.getByRole("button", { name: "重新启用" }).click();
-    expect(state?.eventPolicyRequests).toHaveLength(1);
-    expect(state?.eventPolicyRequests[0]).toMatchObject({
-      path: "/x/idc-notify/api/v1/admin/notifications/event-policies/support.ticket.updated/customer_contact/signed_webhook",
-      body: { enabled: true, expectedVersion: 1 },
-    });
-    await expect(policy.getByRole("button", { name: "停用" })).toBeVisible();
-
-    const stalePolicy = await adminPage.evaluate(async () => {
-      const response = await fetch(
-        "/x/idc-notify/api/v1/admin/notifications/event-policies/support.ticket.updated/customer_contact/signed_webhook",
-        {
-          body: JSON.stringify({
-            enabled: false,
-            expectedVersion: 1,
-            idempotencyKey: "event-policy-stale-e2e-0001",
-          }),
-          headers: { "Content-Type": "application/json" },
-          method: "PUT",
-        },
-      );
-      return response.status;
-    });
-    expect(stalePolicy).toBe(409);
-    expect(state?.eventPolicyRequests).toHaveLength(1);
   });
 
   test("TC001m: 待核对任务显示安全数量并同时阻止页面和直接清除", async ({

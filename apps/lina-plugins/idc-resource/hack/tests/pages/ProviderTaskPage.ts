@@ -21,6 +21,7 @@ export class ProviderTaskPage {
   }
 
   async goto() {
+    await this.page.reload({ waitUntil: "domcontentloaded" });
     await this.page.goto(workspacePath("/idc/resource/tasks"), {
       waitUntil: "domcontentloaded",
     });
@@ -58,6 +59,7 @@ export class ProviderTaskPage {
     const directory = resolve(process.cwd(), "temp", date);
     await mkdir(directory, { recursive: true });
     await this.page.screenshot({
+      animations: "disabled",
       fullPage: false,
       path: resolve(directory, `${time}-${name}.png`),
     });

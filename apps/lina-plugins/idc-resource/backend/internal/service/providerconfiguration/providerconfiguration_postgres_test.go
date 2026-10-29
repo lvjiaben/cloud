@@ -26,6 +26,7 @@ import (
 	"lina-plugin-idc-resource/backend/cap/resourcecap"
 	providerspi "lina-plugin-idc-resource/backend/cap/resourcecap/spi"
 	"lina-plugin-idc-resource/backend/internal/service/channelconfig"
+	"lina-plugin-idc-resource/backend/internal/service/interfaceprojection"
 )
 
 const providerConfigurationDSNEnv = "LINAPRO_IDC_RESOURCE_TEST_DSN"
@@ -398,6 +399,23 @@ VALUES ('BND_btpanel000000001',?,'api_key','secret_bt_panel_a','active')`, chann
 	if err != nil {
 		t.Fatalf("freeze BT Panel revision: %v", err)
 	}
+	// Credential revisions can advance the outbox beyond the channel row version.
+	// A subsequent settings/name edit must append after them, never reuse version*2.
+	if err = database.Transaction(ctx, func(txCtx context.Context, tx gdb.TX) error {
+		if err := interfaceprojection.Enqueue(txCtx, tx, projection, 6); err != nil {
+			return err
+		}
+		return enqueueUpdatedChannelProjection(txCtx, tx, ChannelInput{
+			ChannelNo: channelNo, DisplayName: "BT Panel renamed", Status: "disabled", Version: 2,
+		}, 101, true, revisionNo)
+	}); err != nil {
+		t.Fatalf("editing after credential revisions reused a sequence: %v", err)
+	}
+	sequence, err := database.GetValue(ctx, `SELECT MAX(projection_sequence) FROM plugin_idc_resource_interface_projection_outbox WHERE interface_instance_no=?`, interfaceNo)
+	if err != nil || sequence.Int64() != 8 {
+		t.Fatalf("expected ordered configuration/name events 7 and 8 after secret event 6: sequence=%v err=%v", sequence, err)
+	}
+
 	if _, err = database.Exec(ctx, `UPDATE plugin_idc_resource_channel_secret_binding
 SET secret_ref='secret_bt_panel_b' WHERE channel_no=? AND binding_name='api_key'`, channelNo); err != nil {
 		t.Fatal(err)

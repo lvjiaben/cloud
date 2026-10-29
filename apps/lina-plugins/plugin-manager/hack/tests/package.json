@@ -1,0 +1,5 @@
+{
+  "name": "@linapro/plugin-manager-e2e",
+  "private": true,
+  "type": "module"
+}

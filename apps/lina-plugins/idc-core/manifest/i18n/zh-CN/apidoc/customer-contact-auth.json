@@ -1,0 +1,11 @@
+{
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshReq.meta.tags": "IDC 客户登录",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshReq.meta.summary": "刷新一页客户登录联系方式索引",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshReq.meta.dc": "使用当前管理员的公开接口和数据范围读取一页用户，更新加密的客户联系方式索引；按固定大小逐页处理可见记录。",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshReq.fields.repairCustomerAccess.dc": "明确修复后台直接创建且当前没有角色的有效客户；排除员工、冻结账户和已有角色分配",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshReq.fields.pageNum.dc": "要刷新的页码，每页最多读取 100 个可见用户",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshRes.fields.repairCandidateUserIds.dc": "符合明确权限修复条件且当前没有角色的有效后台开户客户编号",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshRes.fields.accessRepaired.dc": "是否已执行本页明确请求的权限修复",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshRes.fields.refreshed.dc": "本页刷新的客户索引数量",
+  "plugins.idc_core.api.loginadmin.v1.ContactIndexRefreshRes.fields.total.dc": "当前工作人员可见的用户总数，不暴露全局账户数量"
+}

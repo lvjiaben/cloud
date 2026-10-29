@@ -570,7 +570,7 @@ VALUES (0,?,?,?,'change','customer',?,1,?,0,?,?,?,?,?,?,?,?,?,?,0)`, quote.Quote
 		BillingRuleNo: quote.TargetBillingRuleNo, ConfigurationSnapshotNo: quote.TargetConfigurationNo,
 		ProductNameZhCn: value.NameZhCN, ProductNameEnUs: value.NameEnUS, PurchaseCycles: 1,
 		ChargeTypeCode: "recurring", PeriodUnitCode: service.PeriodUnitCode, PeriodCount: service.PeriodCount,
-		RequiresContract: false, FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
+		FulfillmentModeCode: "automatic", RiskDecisionCode: "approved",
 		InventoryDecisionCode: "manual_confirmation", RouteDecisionDigest: quote.ContentDigest,
 		TaxPolicyNo: value.TaxPolicyNo, PriceIncludesTax: true, TaxTreatmentCode: value.TaxTreatment,
 		TaxRateBasisPoints: value.TaxRate, TaxCategoryCode: value.TaxCategory,

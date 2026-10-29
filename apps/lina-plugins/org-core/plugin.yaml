@@ -8,7 +8,7 @@ name: 组织管理
 
 # Plugin semantic version used for plugin sync, upgrades, and delivery asset identity.
 # 插件语义化版本号，用于插件同步、升级和交付资产识别。
-version: v0.1.0
+version: v0.1.1
 
 # Plugin type enum. Allowed values: `source` is compiled with the host; `dynamic` is loaded as a runtime plugin artifact.
 # 插件类型枚举。可选值：`source` 表示随宿主源码编译交付；`dynamic` 表示作为运行时动态插件产物加载。

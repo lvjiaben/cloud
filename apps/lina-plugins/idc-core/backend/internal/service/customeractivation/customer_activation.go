@@ -245,11 +245,25 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 			return duplicateContactError(value.contactKind)
 		}
 
-		loginName := directLoginName(value)
-		enabled := statusflag.EnabledValue
+		// Both the host profile and login projection use the same complete
+		// number; the customer contact keeps its separate calling-code fields.
+		var (
+			loginName  = directLoginName(value)
+			loginPhone string
+			roleID     int
+			enabled    = statusflag.EnabledValue
+		)
+		if value.Phone != "" {
+			loginPhone = value.PhoneCountryCode + value.Phone
+		}
+
+		roleID, txErr = s.loginRecorder.DefaultRoleID(ctx)
+		if txErr != nil {
+			return txErr
+		}
 		createdUserID, txErr := s.users.Create(ctx, usercap.CreateInput{
-			Username: loginName, Password: password, Nickname: value.DisplayName,
-			Email: value.Email, Phone: value.Phone, Status: &enabled, Remark: "IDC customer created directly by an administrator",
+			Username: loginName, Password: password, Nickname: value.DisplayName, RoleIDs: []int{roleID},
+			Email: value.Email, Phone: loginPhone, Status: &enabled, Remark: "IDC customer created directly by an administrator",
 		})
 		if txErr != nil {
 			return txErr
@@ -294,6 +308,9 @@ func (s *serviceImpl) CreateDirect(ctx context.Context, input DirectCreateInput)
 			return txErr
 		}
 		if _, txErr = s.database.Exec(ctx, `INSERT INTO plugin_idc_core_customer_identity_binding (tenant_id,binding_no,sys_user_id,customer_no,source_code,source_reference_no,status_code,activated_at,must_change_password,idempotency_key_digest,request_fingerprint,version,created_by,updated_by,created_at,updated_at) VALUES (0,?,?,?,'admin_direct',?,'active',?,FALSE,?,?,1,?,?,?,?)`, bindingNo, userID, customerNo, bindingNo, now, requestDigest, requestFingerprint, staffID, staffID, now, now); txErr != nil {
+			return txErr
+		}
+		if txErr = s.loginRecorder.RecordProvisioned(ctx, userID, loginName, value.Email, loginPhone); txErr != nil {
 			return txErr
 		}
 		if txErr = s.audit.AppendBusinessTransition(ctx, idccap.BusinessAuditTransition{IdempotencyScope: "customer.direct.create", IdempotencyKey: bindingNo, OperationCode: "customer.direct.create", TargetType: "customer", TargetNo: customerNo, CustomerNo: customerNo, ResultCode: "succeeded", ReasonCode: "admin_direct", RiskCode: "medium", RequiredPermission: PermissionCustomerCreate, CorrelationNo: bindingNo, BeforeSnapshot: map[string]any{}, AfterSnapshot: map[string]any{"customer_type": value.CustomerType, "status": "active", "login_kind": value.contactKind, "must_change_password": false}}); txErr != nil {
@@ -358,7 +375,17 @@ type ExpiryWorker interface {
 	Expire(context.Context, int) (int, error)
 }
 
+// LoginRecorder receives only successfully provisioned host identity values.
+type LoginRecorder interface {
+	// DefaultRoleID resolves the enabled public-registration self-only role.
+	DefaultRoleID(context.Context) (int, error)
+	// RecordProvisioned joins the account owner's transaction and publishes only
+	// the exact username and contacts accepted by user creation.
+	RecordProvisioned(context.Context, int, string, string, string) error
+}
+
 type serviceImpl struct {
+	loginRecorder LoginRecorder
 	database      gdb.DB
 	bizCtx        bizctxcap.Service
 	principal     principal.Reader
@@ -370,11 +397,11 @@ type serviceImpl struct {
 	publicURL     func(string) (string, error)
 }
 
-func New(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, users usercap.Service, auditWriter idccap.BusinessAuditWriter, notifications notificationcap.EventSink, lookupKey []byte, publicURL func(string) (string, error)) (Service, error) {
-	if database == nil || bizCtx == nil || principalReader == nil || authorization == nil || users == nil || auditWriter == nil || notifications == nil || len(lookupKey) != sha256.Size || publicURL == nil {
+func New(database gdb.DB, bizCtx bizctxcap.Service, principalReader principal.Reader, authorization authz.Service, users usercap.Service, loginRecorder LoginRecorder, auditWriter idccap.BusinessAuditWriter, notifications notificationcap.EventSink, lookupKey []byte, publicURL func(string) (string, error)) (Service, error) {
+	if database == nil || bizCtx == nil || principalReader == nil || authorization == nil || users == nil || loginRecorder == nil || auditWriter == nil || notifications == nil || len(lookupKey) != sha256.Size || publicURL == nil {
 		return nil, gerror.New("customer activation requires all governed dependencies")
 	}
-	return &serviceImpl{database: database, bizCtx: bizCtx, principal: principalReader, authorization: authorization, users: users, audit: auditWriter, notifications: notifications, lookupKey: append([]byte(nil), lookupKey...), publicURL: publicURL}, nil
+	return &serviceImpl{database: database, bizCtx: bizCtx, principal: principalReader, authorization: authorization, users: users, loginRecorder: loginRecorder, audit: auditWriter, notifications: notifications, lookupKey: append([]byte(nil), lookupKey...), publicURL: publicURL}, nil
 }
 
 type expiryWorker struct{ database gdb.DB }
@@ -870,11 +897,9 @@ func createFingerprint(value normalizedCreate) string {
 	return digest(strings.Join([]string{value.CustomerType, value.DisplayName, value.CountryCode, value.PreferredLocale, value.contactKind, value.contactValue, strconv.FormatBool(value.BindExistingIdentity), strconv.Itoa(value.TargetUserID), value.Reason}, "\x00"))
 }
 
+// directLoginName creates a stable independent name; contacts remain login aliases.
 func directLoginName(value normalizedCreate) string {
-	if value.contactKind == "sms" {
-		return value.Phone
-	}
-	return value.Email
+	return "customer_" + digest(value.contactKind + "\x00" + value.contactValue)[:24]
 }
 
 func (s *serviceImpl) destinationDigest(kind, value string) string {

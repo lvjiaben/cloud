@@ -44,6 +44,9 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/i18n'],
   nitro: {
     preset: 'node-server',
+    externals: {
+      inline: ['sanitize-html', 'htmlparser2', 'domutils', 'domhandler', 'dom-serializer', 'domelementtype', 'entities', 'escape-string-regexp', 'is-plain-object', 'parse-srcset', 'postcss'],
+    },
     output: staticBuild ? { dir: '.static-output' } : undefined,
     prerender: staticBuild ? { crawlLinks: false, routes: ['/'] } : undefined,
   },

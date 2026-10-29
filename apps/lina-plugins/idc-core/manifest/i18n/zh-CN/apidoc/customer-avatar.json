@@ -1,0 +1,11 @@
+{
+  "plugins.idc_core.api.customeraccount.v1.AvatarUploadReq.meta.tags": "IDC 客户账户",
+  "plugins.idc_core.api.customeraccount.v1.AvatarUploadReq.meta.summary": "上传我的头像",
+  "plugins.idc_core.api.customeraccount.v1.AvatarUploadReq.meta.dc": "仅为当前有效客户保存经过验证的头像，身份和文件用途由服务端确定。",
+  "plugins.idc_core.api.customeraccount.v1.AvatarUploadReq.fields.file.dc": "不超过 5 MiB 的 PNG、JPEG 或 WebP 图片",
+  "plugins.idc_core.api.customeraccount.v1.AvatarUploadRes.fields.url.dc": "上传后的受治理头像地址",
+  "plugins.idc_core.api.public.v1.CustomerAvatarOpenReq.meta.tags": "IDC 客户账户",
+  "plugins.idc_core.api.public.v1.CustomerAvatarOpenReq.meta.summary": "读取客户头像",
+  "plugins.idc_core.api.public.v1.CustomerAvatarOpenReq.meta.dc": "通过不可预测的公开图片键读取头像，不暴露客户编号或任意存储路径。",
+  "plugins.idc_core.api.public.v1.CustomerAvatarOpenReq.fields.key.dc": "192 位随机图片键与 PNG、JPEG 或 WebP 扩展名"
+}

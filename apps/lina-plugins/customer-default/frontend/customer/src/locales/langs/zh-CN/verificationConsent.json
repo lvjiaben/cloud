@@ -1,0 +1,32 @@
+{
+  "heading": "认证授权记录",
+  "subtitle": "查看实名与企业认证的授权记录，管理后续资料处理授权。",
+  "evidenceTitle": "撤回不会抹掉依法必须保留的记录",
+  "evidenceDescription": "撤回只停止依赖该授权的后续处理。税务、争议、审计或法律要求保留的证据，会在期限结束且确认没有继续保留理由后再处理。",
+  "loadFailed": "授权记录加载失败，请稍后重试",
+  "retry": "重新加载",
+  "consentTitle": "我的授权",
+  "consentEmpty": "当前没有授权记录",
+  "assessment": {
+    "personal_verification": "个人实名认证",
+    "sensitive_personal_information": "敏感个人信息",
+    "enterprise_verification": "企业实名认证",
+    "tax_invoice": "税务发票"
+  },
+  "consent": {
+    "granted": "已同意",
+    "withdrawn": "已撤回"
+  },
+  "withdraw": {
+    "action": "撤回未来授权",
+    "title": "确认撤回未来授权？",
+    "description": "撤回后，依赖这项授权的新处理会停止；已经形成且依法需要保留的证据不会立即删除。",
+    "confirm": "确认撤回"
+  },
+  "messages": {
+    "withdrawn": "未来授权已撤回"
+  },
+  "common": {
+    "cancel": "取消"
+  }
+}

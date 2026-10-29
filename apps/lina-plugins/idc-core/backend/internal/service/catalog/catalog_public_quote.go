@@ -209,8 +209,14 @@ func buildPublicConfigurationQuote(
 	}
 	sort.Strings(optionNumbers)
 	availability, err := pricing.Evaluate(currency, optionNumbers)
-	if err != nil || !availability.Sellable {
+	if err != nil {
 		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
+	}
+	// Availability belongs to each billing period. A missing option price in
+	// one period cannot suppress another complete, authoritative price.
+	unavailable := make(map[string]bool, len(availability.Issues))
+	for _, issue := range availability.Issues {
+		unavailable[issue.BillingRuleNo] = true
 	}
 	quote := &PublicConfigurationQuote{
 		Revision: revision, CurrencyCode: currency,
@@ -220,11 +226,17 @@ func buildPublicConfigurationQuote(
 		return rules[left].BillingRuleNo < rules[right].BillingRuleNo
 	})
 	for _, rule := range rules {
+		if unavailable[rule.BillingRuleNo] {
+			continue
+		}
 		term, buildErr := buildPublicQuoteTerm(rule, pricing, currency, policy, optionNumbers, selections)
 		if buildErr != nil {
 			return nil, buildErr
 		}
 		quote.Terms = append(quote.Terms, term)
+	}
+	if len(quote.Terms) == 0 {
+		return nil, bizerr.NewCode(CodePublicQuoteNotAvailable)
 	}
 	return quote, nil
 }

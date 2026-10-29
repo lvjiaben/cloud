@@ -1,6 +1,6 @@
 id: idc-payment-epay
 name: 易支付
-version: v0.1.0
+version: v0.1.2
 type: dynamic
 distribution: managed
 scope_nature: platform_only
@@ -12,7 +12,7 @@ license: Proprietary
 dependencies:
   plugins:
     - id: idc-payment
-      version: ">=0.1.7 <1.0.0"
+      version: ">=0.1.11 <1.0.0"
 business_extensions:
   - point: payment-method
     version: v1
@@ -45,5 +45,5 @@ business_extensions:
       values:
         providerCode: epay
         endpointOrigin: https://www.ezfp.cn/submit.php
-        modes: [epay_cashier]
+        modes: [epay_cashier, epay_alipay, epay_wechat]
         currencies: [CNY]

@@ -10,6 +10,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -52,7 +53,7 @@ func New(endpoint string, client *http.Client) (*Adapter, error) {
 		return nil, gerror.New("UnionPay endpoint must be an official ACP web cashier URL")
 	}
 	if client == nil {
-		client = &http.Client{Timeout: 15 * time.Second}
+		client = &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: true}}, Timeout: 15 * time.Second}
 	}
 	return &Adapter{endpoint: endpoint, client: client, now: time.Now}, nil
 }

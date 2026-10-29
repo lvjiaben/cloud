@@ -188,20 +188,12 @@ func (s *Service) RunChannel(ctx context.Context, channelNo string, businessDate
 		if txErr != nil {
 			return txErr
 		}
-		for _, record := range records {
-			customerDigest := recordCustomerDigest(record, localPayments)
-			if _, txErr = tx.Exec(`INSERT INTO plugin_idc_payment_reconciliation_source(source_no,batch_no,record_type_code,local_subject_no,provider_event_reference,external_reference,customer_ref_digest,currency_code,amount_minor,observed_status_code,evidence_digest,observed_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(source_no) DO NOTHING`, stableNo("prs", batchNo, record.RecordType, record.ProviderEventReference), batchNo, record.RecordType, record.LocalSubjectNo, record.ProviderEventReference, record.ExternalReference, customerDigest, record.CurrencyCode, record.AmountMinor, record.StatusCode, record.EvidenceDigest, record.ObservedAt.UTC()); txErr != nil {
-				return txErr
-			}
+		if txErr = s.persistSources(ctx, batchNo, records, localPayments); txErr != nil {
+			return txErr
 		}
-		differenceCount := 0
-		for _, line := range lines {
-			if line.DifferenceCode != "none" {
-				differenceCount++
-			}
-			if _, txErr = tx.Exec(`INSERT INTO plugin_idc_payment_reconciliation_line(line_no,batch_no,attempt_no,refund_attempt_no,external_reference,difference_code,local_amount_minor,channel_amount_minor,currency_code,resolution_code,evidence_digest,record_type_code,customer_ref_digest,local_status_code,channel_status_code) VALUES(?,?,?,?,?,?,?,?,?,'pending',?,?,?,?,?) ON CONFLICT(line_no) DO NOTHING`, line.LineNo, batchNo, line.AttemptNo, line.RefundAttemptNo, line.ExternalReference, line.DifferenceCode, line.LocalAmountMinor, line.ChannelAmountMinor, line.CurrencyCode, line.EvidenceDigest, line.RecordType, line.CustomerDigest, line.LocalStatus, line.ChannelStatus); txErr != nil {
-				return txErr
-			}
+		differenceCount, txErr := s.persistLines(ctx, batchNo, lines)
+		if txErr != nil {
+			return txErr
 		}
 		status := "matched"
 		if differenceCount > 0 {
@@ -408,16 +400,6 @@ func supplementFromRecord(row gdb.Record) *Supplement {
 		return nil
 	}
 	return &Supplement{RequestNo: row["request_no"].String(), LineNo: row["line_no"].String(), AttemptNo: row["attempt_no"].String(), ChannelNo: row["channel_no"].String(), CurrencyCode: row["currency_code"].String(), AmountMinor: row["amount_minor"].Int64(), ExternalReference: row["external_reference"].String(), StatusCode: row["status_code"].String(), SubmitterUserID: row["submitter_user_id"].Int(), ReviewerUserID: row["reviewer_user_id"].Int(), RejectionReasonCode: row["rejection_reason_code"].String(), Version: row["version"].Int64()}
-}
-func recordCustomerDigest(record SourceRecord, payments gdb.Result) string {
-	if record.RecordType == "payment" {
-		for _, row := range payments {
-			if row["attempt_no"].String() == record.LocalSubjectNo {
-				return row["customer_ref_digest"].String()
-			}
-		}
-	}
-	return strings.Repeat("0", 64)
 }
 func zeroDigest(value string) string {
 	if len(value) == 64 {

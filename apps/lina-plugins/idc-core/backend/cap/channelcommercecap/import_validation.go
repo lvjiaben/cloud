@@ -82,6 +82,9 @@ func validateImportBands(input []ImportPriceBand) error {
 }
 
 func (f ImportFulfillment) validate() error {
+	if f.MaximumPurchaseCycles < 0 || f.MaximumPurchaseCycles > 120 {
+		return gerror.New("import maximum purchase cycles are invalid")
+	}
 	if f.Granularity != productfulfillmentcap.GranularityPerOrderItem && f.Granularity != productfulfillmentcap.GranularityPerQuantityUnit {
 		return gerror.New("import fulfillment granularity is invalid")
 	}
@@ -98,12 +101,12 @@ func (f ImportFulfillment) validate() error {
 
 // validate keeps quantity algorithms separate from fixed option setup rules.
 func (p ImportOptionPrice) validate() error {
-	quantity := p.PricingMode == ImportConfigurationPricePerUnit || p.PricingMode == ImportConfigurationPriceBandTotal
+	quantity := p.PricingMode == ImportConfigurationPricePerUnit || p.PricingMode == ImportConfigurationPriceBandTotal || p.PricingMode == ImportConfigurationPriceGraduated
 	if quantity && p.Value != "" || !quantity && (p.Value == "" || p.PricingMode != "" && p.PricingMode != ImportConfigurationPriceFixed) {
 		return gerror.New("invalid import configuration pricing mode")
 	}
 	bands := append([]ImportPriceBand(nil), p.Bands...)
-	if quantity {
+	if quantity && p.PricingMode != ImportConfigurationPriceGraduated {
 		for index := range bands {
 			if bands[index].SetupAmountMinor < 0 {
 				return gerror.New("import price band amount is invalid")

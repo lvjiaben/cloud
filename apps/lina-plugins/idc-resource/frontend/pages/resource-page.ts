@@ -24,6 +24,12 @@ export function createResourcePage<T>(options: {
   };
   return {
     get current() { return state; },
+    invalidate() {
+      ++generation;
+      signature = "";
+      state = { items: [], total: 0, currentPage: 1, pageSize: state.pageSize };
+      options.onPage(state);
+    },
     async query<R extends { items: T[]; total: number }>(
       requested: { currentPage: number; pageSize: number },
       filterSignature: string,

@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator, Page } from '@host-tests/support/playwright';
 import { workspacePath } from '../../../../../../hack/tests/fixtures/config';
 import { capturePaymentScreenshot } from '../support/screenshot';
 

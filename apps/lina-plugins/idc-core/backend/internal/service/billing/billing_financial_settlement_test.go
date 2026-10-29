@@ -331,3 +331,29 @@ INSERT INTO plugin_idc_core_commerce_order_item_inventory_snapshot VALUES
 INSERT INTO plugin_idc_core_commerce_inventory_reservation
     VALUES (0,'order-generic','item-tracked',4,'held');
 `
+
+// Optional documents must not prevent a real, authorized manual receipt from
+// settling its invoice; malformed supplied references and missing actors fail.
+func TestManualReceiptSettlementAcceptsOptionalDocuments(t *testing.T) {
+	var (
+		digest   = strings.Repeat("a", 64)
+		required = false
+		actor    = 901
+		purpose  = adjustmentTypeManualReceipt
+		now      = time.Now()
+	)
+	row := settlementAllocationEvidenceRow{AdjustmentEvidenceDigest: &digest, AdjustmentRequestDigest: &digest, AdjustmentApprovalRequired: &required, AdjustmentRequestedBy: &actor, AdjustmentBusinessPurpose: &purpose, AdjustmentPostedAt: &now}
+	if err := validateManualReceiptSettlementReview(row); err != nil {
+		t.Fatalf("receipt without optional documents: %v", err)
+	}
+	badReference := " "
+	row.AdjustmentProofReference = &badReference
+	if err := validateManualReceiptSettlementReview(row); err == nil {
+		t.Fatal("malformed supplied proof accepted")
+	}
+	row.AdjustmentProofReference = nil
+	row.AdjustmentRequestedBy = nil
+	if err := validateManualReceiptSettlementReview(row); err == nil {
+		t.Fatal("receipt without operator accepted")
+	}
+}
