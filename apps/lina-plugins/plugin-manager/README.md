@@ -2,6 +2,8 @@
 
 `plugin-manager` is a platform-only built-in source plugin. Its published menu filter hides the original plugin-management navigation entry. The workspace lives at `/extension/plugin-manager` under **System settings → Plugin management**, attached to the stable `setting` catalog so the frontend's extension-center hiding does not conceal it. No host source changes are required.
 
+Source-plugin builds must refresh the official temporary workspace through `plugins=1`. Do not reuse an outdated registration aggregate. Verify that the delivered binary includes `lina-plugin-plugin-manager`, then check the live category API and replacement navigation; an enabled database record alone does not prove runtime registration.
+
 ## Categories and list
 
 Initial tabs are Payment, SMS, Servers, Cloud products, Website, Customer center, and System features. `manifest/config/config.yaml` defines `catalog`; deployment plugin configuration may override it. Ordered `categories` contain `id`, `name`, exact `plugins`, and optional `prefixes`. Exact IDs win, followed by the longest prefix; `fallback` assigns unmatched plugins. New categories require no frontend enum changes. The initial categories have matching icons; additional categories use a generic icon. The toolbar includes a development-documentation drawer using the published host guide messages.
